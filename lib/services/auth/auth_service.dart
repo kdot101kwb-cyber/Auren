@@ -1,22 +1,29 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 abstract interface class AurenAuthService {
-  Future<String?> currentUserId();
+  Stream<String?> get authStateChanges;
+  String? get currentUserId;
   Future<String> signInAnonymously();
   Future<void> signOut();
 }
 
-/// Firebase-ready contract. Replace the adapter internals when Firebase is configured.
-class FirebaseAuthService implements AurenAuthService {
-  String? _userId;
+class FirebaseAurenAuthService implements AurenAuthService {
+  final FirebaseAuth _auth;
+
+  FirebaseAurenAuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
   @override
-  Future<String?> currentUserId() async => _userId;
+  Stream<String?> get authStateChanges => _auth.authStateChanges().map((user) => user?.uid);
+
+  @override
+  String? get currentUserId => _auth.currentUser?.uid;
 
   @override
   Future<String> signInAnonymously() async {
-    _userId ??= 'local-user';
-    return _userId!;
+    final credential = await _auth.signInAnonymously();
+    return credential.user!.uid;
   }
 
   @override
-  Future<void> signOut() async => _userId = null;
+  Future<void> signOut() => _auth.signOut();
 }
