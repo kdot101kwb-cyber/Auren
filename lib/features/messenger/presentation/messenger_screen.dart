@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/message.dart';
-import '../../../services/ai/ai_gateway.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
@@ -17,7 +16,7 @@ class MessengerScreen extends StatefulWidget {
 
 class _MessengerScreenState extends State<MessengerScreen> {
   final _auth = FirebaseAurenAuthService();
-  final _gateway = LocalAiGateway();
+  final _gateway = const HttpsAurenAiGateway();
   final _messagesRepository = FirestoreMessageRepository();
   final _conversationRepository = ConversationRepository();
   final _controller = TextEditingController();
