@@ -1,0 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/models/action_request.dart';
+class ActionRepository {
+ final FirebaseFirestore _db;
+ ActionRepository({FirebaseFirestore? firestore}):_db=firestore??FirebaseFirestore.instance;
+ CollectionReference<Map<String,dynamic>> _actions(String uid)=>_db.collection('users').doc(uid).collection('actions');
+ Future<void> create(String uid,AurenActionRequest action)=>_actions(uid).doc(action.id).set(action.toMap());
+ Stream<List<AurenActionRequest>> watchPending(String uid)=>_actions(uid).where('status',isEqualTo:'pending').orderBy('createdAt').snapshots().map((s)=>s.docs.map((d)=>AurenActionRequest.fromMap(d.id,d.data())).toList());
+ Future<void> setStatus(String uid,String id,String status)=>_actions(uid).doc(id).update({'status':status});
+}
