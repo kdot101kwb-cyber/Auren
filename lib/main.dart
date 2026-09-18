@@ -5,6 +5,8 @@ import 'firebase_options.dart';
 import 'features/messenger/presentation/messenger_screen.dart';
 import 'features/personal_ai/presentation/personal_ai_screen.dart';
 import 'services/auth/auth_service.dart';
+import 'services/users/user_repository.dart';
+import 'services/messaging/conversation_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,6 +39,7 @@ class _AurenHomeState extends State<AurenHome> {
   final _auth = FirebaseAurenAuthService();
   bool _loading = true;
   String? _uid;
+  String? _conversationId;
 
   @override
   void initState() {
@@ -47,6 +50,9 @@ class _AurenHomeState extends State<AurenHome> {
   Future<void> _bootstrap() async {
     try {
       _uid = _auth.currentUserId ?? await _auth.signInAnonymously();
+      await UserRepository().getOrCreate(_uid!);
+      final conversation = await ConversationRepository().getOrCreateAiConversation(_uid!);
+      _conversationId = conversation.id;
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -74,7 +80,7 @@ class _AurenHomeState extends State<AurenHome> {
           Card(child: ListTile(
             leading: const Icon(Icons.chat_bubble_outline),
             title: const Text('Messenger'),
-            subtitle: const Text('Chat with people and AUREN AI'),
+            subtitle: Text(_conversationId == null ? 'Chat with people and AUREN AI' : 'AUREN AI • conversation ready'),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen())),
           )),
           Card(child: ListTile(
