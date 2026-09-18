@@ -1,0 +1,2 @@
+import 'package:flutter/material.dart';
+class AurenCommunitiesScreen extends StatelessWidget{const AurenCommunitiesScreen({super.key});@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Communities')),body:ListView(children:const[ ListTile(leading:Icon(Icons.groups),title:Text('Discover Communities'),subtitle:Text('Join people around interests, goals and places.')),ListTile(leading:Icon(Icons.add_circle_outline),title:Text('Create Community'),subtitle:Text('Build your own space on AUREN.'))]));}
