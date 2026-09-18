@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
-import '../../messenger/presentation/messenger_screen.dart';
 
 class PersonalAiScreen extends StatelessWidget {
   const PersonalAiScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Personal AI')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text('What do you want to achieve?', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          const Text('حوّل هدفك إلى خطوات، ثم نفّذها بإذنك.'),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen())),
-            icon: const Icon(Icons.auto_awesome),
-            label: const Text('Talk to AUREN AI'),
-          ),
-          const SizedBox(height: 12),
-          const ListTile(leading: Icon(Icons.flag_outlined), title: Text('Goals'), subtitle: Text('Goal → Reality')), 
-          const ListTile(leading: Icon(Icons.task_alt), title: Text('Action Center'), subtitle: Text('Actions requiring your approval')), 
-          const ListTile(leading: Icon(Icons.memory), title: Text('AI Memory'), subtitle: Text('User-controlled personal context')), 
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Personal AI')),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const Text('What do you want to achieve?', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        const Text('حوّل الهدف إلى خطوات، ثم نفّذها بإذنك.'),
+        const SizedBox(height: 24),
+        _tile(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل الهدف إلى خطة قابلة للتنفيذ.'),
+        _tile(context, Icons.check_circle_outline, 'Action Center', 'الأوامر الحساسة تحتاج موافقتك.'),
+        _tile(context, Icons.psychology_outlined, 'AI Memory', 'ذاكرة شخصية تحت تحكمك.'),
+        _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.'),
+        _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.'),
+      ],
+    ),
+  );
+
+  static Widget _tile(BuildContext context, IconData icon, String title, String subtitle) =>
+      Card(child: ListTile(
+        leading: Icon(icon),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right),
+      ));
 }
