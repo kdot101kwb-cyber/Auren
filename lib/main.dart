@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'features/messenger/presentation/messenger_screen.dart';
 import 'features/home/presentation/auren_home_v2.dart';
+import 'features/shell/presentation/auren_shell.dart';
 import 'features/personal_ai/presentation/personal_ai_screen.dart';
 import 'services/auth/auth_service.dart';
 import 'services/users/user_repository.dart';
@@ -25,7 +26,7 @@ class AurenApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'AUREN',
         theme: ThemeData.dark(useMaterial3: true),
-        home: const AurenHomeV2(),
+        home: const AurenShell(),
       );
 }
 
