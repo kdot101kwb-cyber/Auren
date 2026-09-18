@@ -1,0 +1,2 @@
+import 'package:flutter/material.dart';
+class AurenMediaHubScreen extends StatelessWidget{const AurenMediaHubScreen({super.key});@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('AUREN Media')),body:GridView.count(crossAxisCount:2,padding:const EdgeInsets.all(16),children:const[Card(child:Center(child:Text('Photos'))),Card(child:Center(child:Text('Video'))),Card(child:Center(child:Text('Audio'))),Card(child:Center(child:Text('Files')))]));}
