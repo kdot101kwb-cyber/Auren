@@ -227,6 +227,17 @@ app.post('/api/agents/commerce/disputes',requireUser,async(req,res)=>{
     const agent=await loadAgentIdentity(db,req.uid);
     if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
     const result=await openDispute(db,req.uid,{transactionId:req.body?.transactionId,reason:req.body?.reason,description:req.body?.description});
+    const trustRef=db.collection('agent_trust').doc(agent.agentId);
+    const updatedTrust=await db.runTransaction(async tx=>{
+      const snap=await tx.get(trustRef);
+      const current=snap.exists?snap.data():{score:0,completed:0,disputes:0,failures:0};
+      const disputes=(current.disputes||0)+1;
+      const score=Math.max(0,Math.min(100,Math.round((current.score||0)-5)));
+      const next={score,completed:current.completed||0,disputes,failures:current.failures||0};
+      tx.set(trustRef,{...next,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      return next;
+    });
+    await applyRiskPolicy(db,agent.agentId,req.uid,updatedTrust);
     await writeAuditEvent(db,req.uid,{event:'commerce_dispute_opened',agentId:agent.agentId,disputeId:result.disputeId,transactionId:req.body?.transactionId});
     return res.status(201).json(result);
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to open dispute.');}
