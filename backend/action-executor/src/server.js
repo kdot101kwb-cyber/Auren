@@ -198,11 +198,16 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
     const risk = await db.collection('agent_risk').doc(agent.agentId).get();
     if (risk.exists) assertOperationalRisk(risk.data());
     const existing = await db.collection('agent_listings').doc(agent.agentId).get();
-    const packageMetadata = validatePackageMetadata(req.body?.packageMetadata);
-    if (packageMetadata.pluginId !== manifest.pluginId || packageMetadata.version !== manifest.version) return error(res, 409, 'Plugin package does not match manifest.');
+    const artifactId = validateArtifactId(req.body?.artifactId);
+    const artifactSnap = await db.collection('plugin_artifacts').doc(artifactId).get();
+    if (!artifactSnap.exists) return error(res, 404, 'Plugin artifact not found.');
+    const artifact = artifactSnap.data();
+    if (artifact.agentId !== agent.agentId || artifact.pluginId !== manifest.pluginId || artifact.version !== manifest.version || artifact.entrypoint !== manifest.entrypoint) return error(res, 409, 'Plugin artifact does not match manifest.');
+    if (artifact.state !== 'uploaded') return error(res, 403, 'Plugin artifact is not available for publishing.');
+    const packageMetadata = {pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
     const signingSecret = process.env.AUREN_PLUGIN_SIGNING_SECRET || '';
     if (!signingSecret) return error(res, 503, 'Plugin signing is not configured.');
-    if (!verifyPackageSignature(packageMetadata, req.body?.signature, signingSecret)) return error(res, 403, 'Invalid plugin package signature.');
+    const signature = verifyPackageSignature(packageMetadata, req.body?.signature, signingSecret) ? req.body.signature : null;
     const listing = {
       agentId: agent.agentId,
       ownerUid: req.uid,
@@ -227,11 +232,14 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
       sha256: packageMetadata.sha256,
       sizeBytes: packageMetadata.sizeBytes,
       artifactState: 'approved',
-      provenance: 'server-validated-signature',
-      signature: req.body.signature,
+      provenance: 'firebase-storage-server-verified',
+      signature: signature || null,
+      artifactId,
+      objectPath: artifact.objectPath,
       manifest,
       createdAt: FieldValue.serverTimestamp(),
     }, {merge:true});
+    await db.collection('plugin_artifacts').doc(artifactId).update({state:'approved',signature:signature||null,approvedAt:FieldValue.serverTimestamp()});
     await writeAuditEvent(db, req.uid, {event:'agent_plugin_drafted',agentId:agent.agentId,pluginId:manifest.pluginId,version:manifest.version});
     return res.status(existing.exists ? 200 : 201).json({state:'draft',listing});
   } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 400, e.message || 'Plugin publish failed.'); }
