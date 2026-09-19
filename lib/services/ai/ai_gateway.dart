@@ -7,7 +7,6 @@ abstract interface class AurenAiGateway {
   });
 }
 
-/// Local development implementation. Replace with Firebase/HTTPS gateway later.
 class LocalAiGateway implements AurenAiGateway {
   @override
   Future<AurenAiResponse> send({
