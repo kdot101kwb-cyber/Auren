@@ -13,7 +13,10 @@ class PostRepository {
       .snapshots()
       .map((s) => s.docs.map((d) => AurenPost.fromMap(d.id, d.data())).toList());
 
-  Future<void> create(AurenPost post) => _posts.doc(post.id).set(post.toMap());
+  Future<void> create(AurenPost post) => _posts.doc(post.id).set({
+    ...post.toMap(),
+    'searchText': post.text.trim().toLowerCase(),
+  });
 
   Future<void> toggleLike(String postId, String uid, bool liked) async {
     final ref = _posts.doc(postId);
