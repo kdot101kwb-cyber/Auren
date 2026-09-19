@@ -41,9 +41,13 @@ export function assertPermission(ledger, action) {
 }
 
 export function assertSpendingLimit(ledger, action) {
-  const amount = Number.isInteger(action.spendingLimitMinor)
-    ? action.spendingLimitMinor : 0;
-  if (amount < 0) throw Object.assign(
+  const amount = Number.isInteger(action.payload?.amountMinor)
+    ? action.payload.amountMinor : 0;
+  if (Number.isInteger(action.spendingLimitMinor) &&
+      action.spendingLimitMinor >= 0 && amount > action.spendingLimitMinor) {
+    throw Object.assign(new Error('Action amount exceeds its approved spending limit.'), { code: 403 });
+  }
+  if (amount < 0 || !Number.isSafeInteger(amount)) throw Object.assign(
     new Error('Invalid spending amount.'), { code: 400 }
   );
   if (ledger.dailySpendingLimitMinor !== null &&
