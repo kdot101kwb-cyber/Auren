@@ -16,7 +16,7 @@ class AurenGlobalSearchRepository {
       _searchCollection(q, 'places', AurenSearchType.places, const ['name', 'title'], const ['city', 'country', 'description']),
       _searchCollection(q, 'opportunities', AurenSearchType.opportunities, const ['title', 'name'], const ['company', 'category', 'location']),
     ]);
-    return results.expand<AurenSearchResult>((x) => x as List<AurenSearchResult>).toList();
+    return results.expand<AurenSearchResult>((x) => x).toList();
   }
 
   Future<List<AurenSearchResult>> _searchPeople(String q) async {
