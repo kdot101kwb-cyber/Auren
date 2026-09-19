@@ -28,9 +28,9 @@ if (getApps().length === 0) {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
   if (serviceAccountJson) {
     const serviceAccount = JSON.parse(serviceAccountJson);
-    initializeApp({ credential: cert(serviceAccount) });
+    initializeApp({ credential: cert(serviceAccount), storageBucket: process.env.AUREN_STORAGE_BUCKET || undefined });
   } else {
-    initializeApp({ credential: applicationDefault() });
+    initializeApp({ credential: applicationDefault(), storageBucket: process.env.AUREN_STORAGE_BUCKET || undefined });
   }
 }
 
