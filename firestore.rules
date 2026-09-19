@@ -72,6 +72,11 @@ service cloud.firestore {
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
 
+      match /action_executions/{executionId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
       match /action_audit/{eventId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
