@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/message.dart';
+import '../../../core/models/action_request.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/ai/https_ai_gateway.dart';
+import '../../../services/actions/action_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
 
@@ -21,6 +23,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
   final _gateway = const HttpsAurenAiGateway();
   final _messagesRepository = FirestoreMessageRepository();
   final _conversationRepository = ConversationRepository();
+  final _actionRepository = ActionRepository();
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -57,33 +60,54 @@ class _MessengerScreenState extends State<MessengerScreen> {
     setState(() => _sending = true);
 
     final now = DateTime.now();
-    final userMessage = AurenMessage(
+    await _messagesRepository.send(AurenMessage(
       id: 'msg_${now.microsecondsSinceEpoch}',
       conversationId: _conversationId!,
       senderId: _uid!,
       text: text,
       createdAt: now,
-    );
+    ));
 
     try {
-      await _messagesRepository.send(userMessage);
       final response = await _gateway.send(
         conversationId: _conversationId!,
         message: text,
       );
 
       final aiNow = DateTime.now();
-      await _messagesRepository.send(
-        AurenMessage(
-          id: 'ai_${aiNow.microsecondsSinceEpoch}',
-          conversationId: _conversationId!,
-          senderId: 'auren-ai',
-          text: response.text,
-          createdAt: aiNow,
-          isAi: true,
-        ),
-      );
+      await _messagesRepository.send(AurenMessage(
+        id: 'ai_${aiNow.microsecondsSinceEpoch}',
+        conversationId: _conversationId!,
+        senderId: 'auren-ai',
+        text: response.text,
+        createdAt: aiNow,
+        isAi: true,
+      ));
+
+      if (response.action != null && response.action!.trim().isNotEmpty &&
+          response.requiresApproval) {
+        final actionNow = DateTime.now();
+        await _actionRepository.create(
+          _uid!,
+          AurenActionRequest(
+            id: 'action_${actionNow.microsecondsSinceEpoch}',
+            conversationId: _conversationId!,
+            title: 'AUREN Action',
+            description: response.action!.trim(),
+            requiresApproval: true,
+            status: 'pending',
+            createdAt: actionNow,
+          ),
+        );
+      }
+
       await _conversationRepository.touch(_conversationId!);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AUREN could not complete the request: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -116,7 +140,11 @@ class _MessengerScreenState extends State<MessengerScreen> {
 
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
-                    _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+                    _scrollController.animateTo(
+                      _scrollController.position.maxScrollExtent,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                    );
                   }
                 });
 
@@ -134,7 +162,9 @@ class _MessengerScreenState extends State<MessengerScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(18),
-                          color: mine ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: mine
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.surfaceContainerHighest,
                         ),
                         child: Text(message.text),
                       ),
@@ -155,11 +185,17 @@ class _MessengerScreenState extends State<MessengerScreen> {
                       controller: _controller,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(hintText: 'اكتب لـ AUREN AI…', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        hintText: 'اكتب لـ AUREN AI…',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton.filled(onPressed: _sending ? null : _send, icon: const Icon(Icons.send)),
+                  IconButton.filled(
+                    onPressed: _sending ? null : _send,
+                    icon: const Icon(Icons.send),
+                  ),
                 ],
               ),
             ),
