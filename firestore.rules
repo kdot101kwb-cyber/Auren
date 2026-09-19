@@ -267,7 +267,16 @@ service cloud.firestore {
           && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 2000;
         allow delete: if request.auth != null
-          && resource.data.authorId == request.auth.uid;
+          && resource.data.authorId == request.auth.uid
+          && getAfter(
+            /databases/$(database)/documents/posts/$(postId)
+          ).data.comments == (get(
+            /databases/$(database)/documents/posts/$(postId)
+          ).data.comments > 0
+            ? get(
+              /databases/$(database)/documents/posts/$(postId)
+            ).data.comments - 1
+            : 0);
       }
     }
 
