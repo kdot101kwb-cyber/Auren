@@ -4,6 +4,7 @@ import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
+import 'more_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -44,6 +45,8 @@ class AurenHomeV2 extends StatelessWidget {
           leading: const Icon(Icons.more_horiz),
           title: const Text('More'),
           subtitle: const Text('Business • Marketplace • Education • Travel • Entertainment'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMoreScreen())),
         )),
       ],
     ),
