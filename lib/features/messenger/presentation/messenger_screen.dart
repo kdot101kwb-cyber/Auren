@@ -5,6 +5,7 @@ import '../../../core/models/action_request.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/ai/https_ai_gateway.dart';
 import '../../../services/actions/action_repository.dart';
+import '../../../services/actions/action_registry.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
 
@@ -86,19 +87,24 @@ class _MessengerScreenState extends State<MessengerScreen> {
 
       if (response.action != null && response.action!.trim().isNotEmpty &&
           response.requiresApproval) {
+        // The gateway must return a registered action type.
         final actionNow = DateTime.now();
-        await _actionRepository.create(
-          _uid!,
-          AurenActionRequest(
-            id: 'action_${actionNow.microsecondsSinceEpoch}',
-            conversationId: _conversationId!,
-            title: 'AUREN Action',
-            description: response.action!.trim(),
-            requiresApproval: true,
-            status: 'pending',
-            createdAt: actionNow,
-          ),
-        );
+        final actionType = response.action!.trim();
+        final definition = AurenActionRegistry.get(actionType);
+        if (definition != null) {
+          await _actionRepository.create(
+            _uid!,
+            AurenActionRegistry.fromAi(
+              id: 'action_${actionNow.microsecondsSinceEpoch}',
+              conversationId: _conversationId!,
+              actionType: actionType,
+              title: definition.title,
+              description: 'طلب تنفيذ: ${definition.title}',
+              payload: const {},
+              createdAt: actionNow,
+            ),
+          );
+        }
       }
 
       await _conversationRepository.touch(_conversationId!);
