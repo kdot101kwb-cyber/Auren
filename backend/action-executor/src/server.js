@@ -2,6 +2,7 @@ import express from 'express';
 import { getApps, initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getActionDefinition, validatePayload } from './action-registry.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -12,11 +13,6 @@ app.use(express.json({ limit: '32kb' }));
 
 const db = getFirestore();
 const auth = getAuth();
-
-const allowedActions = new Set([
-  'demo.echo',
-  'demo.create_note',
-]);
 
 function error(res, status, message) {
   return res.status(status).json({ error: message });
@@ -87,10 +83,28 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
         );
       }
 
-      if (!allowedActions.has(action.title)) {
+      const definition = getActionDefinition(action.actionType);
+      if (!definition) {
         throw Object.assign(
-          new Error('Action type is not allowed by the executor.'),
+          new Error('Action type is not registered.'),
           { code: 403 },
+        );
+      }
+
+      if (action.requiresApproval !== definition.requiresApproval ||
+          action.permission !== definition.permission ||
+          action.riskLevel !== definition.riskLevel ||
+          action.approvalLevel !== definition.approvalLevel) {
+        throw Object.assign(
+          new Error('Action security metadata does not match the registry.'),
+          { code: 409 },
+        );
+      }
+
+      if (!validatePayload(definition, action.payload)) {
+        throw Object.assign(
+          new Error('Action payload is not allowed.'),
+          { code: 400 },
         );
       }
 
@@ -103,7 +117,7 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
         actionId,
         event: 'execution_started',
         uid: req.uid,
-        actionType: action.title,
+        actionType: action.actionType,
         createdAt: FieldValue.serverTimestamp(),
       });
 
@@ -112,9 +126,9 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
 
     let executionResult;
 
-    switch (result.title) {
+    switch (result.actionType) {
       case 'demo.echo':
-        executionResult = result.description;
+        executionResult = result.payload?.text ?? result.description;
         break;
       case 'demo.create_note':
         executionResult = 'Demo note action accepted by the trusted executor.';
