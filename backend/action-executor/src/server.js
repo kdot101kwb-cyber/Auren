@@ -171,6 +171,11 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
     const risk = await db.collection('agent_risk').doc(agent.agentId).get();
     if (risk.exists) assertOperationalRisk(risk.data());
     const existing = await db.collection('agent_listings').doc(agent.agentId).get();
+    const packageMetadata = validatePackageMetadata(req.body?.packageMetadata);
+    if (packageMetadata.pluginId !== manifest.pluginId || packageMetadata.version !== manifest.version) return error(res, 409, 'Plugin package does not match manifest.');
+    const signingSecret = process.env.AUREN_PLUGIN_SIGNING_SECRET || '';
+    if (!signingSecret) return error(res, 503, 'Plugin signing is not configured.');
+    if (!verifyPackageSignature(packageMetadata, req.body?.signature, signingSecret)) return error(res, 403, 'Invalid plugin package signature.');
     const listing = {
       agentId: agent.agentId,
       ownerUid: req.uid,
@@ -187,6 +192,19 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
       ...(existing.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
     };
     await db.collection('agent_listings').doc(agent.agentId).set(listing, {merge:true});
+    await db.collection('agent_listings').doc(agent.agentId).collection('versions').doc(manifest.version).set({
+      agentId: agent.agentId,
+      pluginId: manifest.pluginId,
+      version: manifest.version,
+      entrypoint: manifest.entrypoint,
+      sha256: packageMetadata.sha256,
+      sizeBytes: packageMetadata.sizeBytes,
+      artifactState: 'approved',
+      provenance: 'server-validated-signature',
+      signature: req.body.signature,
+      manifest,
+      createdAt: FieldValue.serverTimestamp(),
+    }, {merge:true});
     await writeAuditEvent(db, req.uid, {event:'agent_plugin_drafted',agentId:agent.agentId,pluginId:manifest.pluginId,version:manifest.version});
     return res.status(existing.exists ? 200 : 201).json({state:'draft',listing});
   } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 400, e.message || 'Plugin publish failed.'); }
