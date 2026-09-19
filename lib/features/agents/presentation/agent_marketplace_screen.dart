@@ -13,5 +13,5 @@ class AgentMarketplaceScreen extends StatelessWidget {
  return Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.smart_toy)),title:Text(agent.name),subtitle:Text(agent.description+'\n'+agent.capabilities.join(' • ')),isThreeLine:true,trailing:Text(agent.pricingModel)));
  });
  }));
- }
+  }
 }
