@@ -193,7 +193,7 @@ app.post('/api/agents/commerce/reserve', requireUser, async (req, res) => {
     } catch {
       return error(res, 409, 'Commerce capability token has already been used.');
     }
-    const reservation = await reserveSpending(db, req.uid, req.body.amountMinor, req.body.currency, req.body.actionId || req.body.idempotencyKey, req.body.idempotencyKey);
+    const reservation = await reserveSpending(db, req.uid, req.body.amountMinor, req.body.currency, req.body.actionId || req.body.idempotencyKey, req.body.idempotencyKey, agent.agentId);
     await writeAuditEvent(db, req.uid, {event:'commerce_reservation_created',agentId:agent.agentId,transactionId:reservation.transactionId,amountMinor:req.body.amountMinor,currency:req.body.currency,idempotencyKey:req.body.idempotencyKey});
     return res.status(201).json(reservation);
   } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 500, e.message || 'Commerce reservation failed.'); }
