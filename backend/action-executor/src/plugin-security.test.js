@@ -26,3 +26,8 @@ test('scanner detects dangerous imports',()=>{
   assert.equal(scanPluginArtifact(Buffer.from("import 'node:child_process';")).status,'rejected');
   assert.equal(scanPluginArtifact(Buffer.from('const x = 1;')).status,'passed');
 });
+
+test('dependency paths cannot escape package scope',()=>{
+  assert.throws(()=>validateDependencyList(['pkg/../escape']),/invalid/);
+  assert.throws(()=>validateDependencyList(['pkg/./nested']),/invalid/);
+});
