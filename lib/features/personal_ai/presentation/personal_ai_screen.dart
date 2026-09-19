@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'action_center_screen.dart';
 import 'memory_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
+import 'goals_screen.dart';
 
 class PersonalAiScreen extends StatelessWidget {
   const PersonalAiScreen({super.key});
@@ -16,7 +17,7 @@ class PersonalAiScreen extends StatelessWidget {
         const SizedBox(height: 8),
         const Text('حوّل الهدف إلى خطوات، ثم نفّذها بإذنك.'),
         const SizedBox(height: 24),
-        _tile(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل الهدف إلى خطة قابلة للتنفيذ.'),
+        _tile(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل الهدف إلى خطة قابلة للتنفيذ.', const AurenGoalsScreen()),
         _tile(context, Icons.check_circle_outline, 'Action Center', 'الأوامر الحساسة تحتاج موافقتك.', const AurenActionCenterScreen()),
         _tile(context, Icons.psychology_outlined, 'AI Memory', 'ذاكرة شخصية تحت تحكمك.', const AurenMemoryScreen()),
         _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.'),
