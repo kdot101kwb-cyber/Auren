@@ -6,6 +6,8 @@ import { getActionDefinition, validatePayload } from './action-registry.js';
 import { loadPermissionLedger, assertPermission, assertSpendingLimit } from './permission-ledger.js';
 import { loadAgentIdentity } from './agent-identity.js';
 import { writeAuditEvent } from './audit-log.js';
+import { createExecutionKey } from './execution-guard.js';
+import { publicCredential } from './credentials.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -57,6 +59,7 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
     .doc(actionId);
 
   const agent = await loadAgentIdentity(db, req.uid);
+  const credential = publicCredential(agent.agentId);
   if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
 
   try {
@@ -68,6 +71,8 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
       }
 
       const action = snap.data();
+      const executionKey = createExecutionKey(req.uid, actionId);
+      const executionRef = db.collection('users').doc(req.uid).collection('action_executions').doc(executionKey);
 
       if (action.status !== 'approved') {
         throw Object.assign(
@@ -112,6 +117,25 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
       assertPermission(ledger, action);
       assertSpendingLimit(ledger, action);
 
+      const executionSnap = await tx.get(executionRef);
+      if (executionSnap.exists) {
+        const execution = executionSnap.data();
+        if (execution.status === 'completed') {
+          throw Object.assign(new Error('Action has already been completed.'), { code: 409 });
+        }
+        throw Object.assign(new Error('Action execution is already claimed.'), { code: 409 });
+      }
+
+      tx.create(executionRef, {
+        actionId,
+        executionKey,
+        agentId: agent.agentId,
+        credentialId: credential.credentialId,
+        status: 'executing',
+        attempt: 1,
+        startedAt: FieldValue.serverTimestamp(),
+      });
+
       tx.update(actionRef, {
         status: 'executing',
         executionStartedAt: FieldValue.serverTimestamp(),
@@ -124,6 +148,7 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
       actionId,
       event: 'execution_started',
       agentId: agent.agentId,
+      credentialId: credential.credentialId,
       actionType: result.actionType,
     });
 
@@ -140,10 +165,18 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
         return error(res, 403, 'Action type is not executable.');
     }
 
+    const executionKey = createExecutionKey(req.uid, actionId);
+    const executionRef = db.collection('users').doc(req.uid).collection('action_executions').doc(executionKey);
+
     await actionRef.update({
       status: 'completed',
       result: executionResult,
       executionCompletedAt: FieldValue.serverTimestamp(),
+    });
+    await executionRef.update({
+      status: 'completed',
+      result: executionResult,
+      completedAt: FieldValue.serverTimestamp(),
     });
 
     await writeAuditEvent(db, req.uid, {
