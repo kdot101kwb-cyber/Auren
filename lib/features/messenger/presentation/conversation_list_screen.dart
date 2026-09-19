@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import 'messenger_screen.dart';
+import '../../notifications/presentation/notifications_screen.dart';
+import '../../../services/notifications/notification_repository.dart';
 
 class AurenConversationListScreen extends StatefulWidget {
   const AurenConversationListScreen({super.key});
@@ -10,6 +12,7 @@ class AurenConversationListScreen extends StatefulWidget {
 class _AurenConversationListScreenState extends State<AurenConversationListScreen> {
   final _auth = FirebaseAurenAuthService();
   final _repo = ConversationRepository();
+  final _notifications = NotificationRepository();
   String? _uid;
   @override void initState() { super.initState(); _bootstrap(); }
   Future<void> _bootstrap() async { try { final uid = _auth.currentUserId ?? await _auth.signInAnonymously(); if (mounted) setState(() => _uid = uid); } catch (_) {} }
@@ -46,7 +49,22 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
   @override Widget build(BuildContext context) {
     final uid = _uid;
     return Scaffold(
-      appBar: AppBar(title: const Text('Messenger'), actions: [IconButton(onPressed: _createGroup, icon: const Icon(Icons.group_add))]),
+      appBar: AppBar(title: const Text('Messenger'), actions: [
+        IconButton(onPressed: _createGroup, icon: const Icon(Icons.group_add)),
+        if (uid != null)
+          StreamBuilder<int>(
+            stream: _notifications.watchUnreadCount(uid),
+            builder: (_, snapshot) => IconButton(
+              tooltip: 'Notifications',
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenNotificationsScreen())),
+              icon: Badge(
+                isLabelVisible: (snapshot.data ?? 0) > 0,
+                label: Text('${snapshot.data ?? 0}'),
+                child: const Icon(Icons.notifications_none),
+              ),
+            ),
+          ),
+      ]),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen())),
         icon: const Icon(Icons.auto_awesome), label: const Text('AUREN AI'),
