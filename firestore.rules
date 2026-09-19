@@ -15,8 +15,18 @@ service cloud.firestore {
           && request.resource.data.status == 'pending'
           && request.resource.data.requiresApproval == true
           && request.resource.data.conversationId is string
+          && request.resource.data.actionType is string
           && request.resource.data.title is string
-          && request.resource.data.description is string;
+          && request.resource.data.description is string
+          && request.resource.data.payload is map
+          && request.resource.data.permission is string
+          && request.resource.data.riskLevel is string
+          && request.resource.data.approvalLevel is int
+          && request.resource.data.actionType in ['demo.echo', 'demo.create_note']
+          && request.resource.data.permission == 'userApproval'
+          && request.resource.data.riskLevel == 'low'
+          && request.resource.data.approvalLevel == 1
+          && request.resource.data.requiresApproval == true;
 
         allow update: if request.auth != null
           && request.auth.uid == userId
@@ -24,8 +34,14 @@ service cloud.firestore {
           && request.resource.data.status in ['approved', 'rejected']
           && request.resource.data.requiresApproval == resource.data.requiresApproval
           && request.resource.data.conversationId == resource.data.conversationId
+          && request.resource.data.actionType == resource.data.actionType
           && request.resource.data.title == resource.data.title
-          && request.resource.data.description == resource.data.description;
+          && request.resource.data.description == resource.data.description
+          && request.resource.data.payload == resource.data.payload
+          && request.resource.data.permission == resource.data.permission
+          && request.resource.data.riskLevel == resource.data.riskLevel
+          && request.resource.data.approvalLevel == resource.data.approvalLevel
+          && request.resource.data.requiresApproval == resource.data.requiresApproval;
 
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
