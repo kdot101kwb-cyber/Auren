@@ -13,7 +13,7 @@ import { saveMessage } from './a2a-store.js';
 import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
 import { validateCommerceRequest, reserveSpending } from './commerce.js';
 import { loadTrust, assertTrust } from './trust.js';
-import { issueCapabilityToken, validateCapabilityToken } from './capability-token.js';
+import { issueCapabilityToken, validateCapabilityToken, decodeAndValidateCapabilityToken } from './capability-token.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -51,6 +51,12 @@ app.post('/api/a2a/send', requireUser, async (req, res) => {
   if (!validateEnvelope(envelope)) return error(res, 400, 'Invalid AUREN-A2A envelope.');
 
   const sender = await loadAgentIdentity(db, req.uid);
+  const capabilityToken = decodeAndValidateCapabilityToken(req.body?.capabilityToken, sender.agentId, 'messages.send');
+  if (!capabilityToken) return error(res, 403, 'Valid messages.send capability is required.');
+  const tokenRef = db.collection('agent_capability_nonces').doc(capabilityToken.tokenId);
+  const tokenSnap = await tokenRef.get();
+  if (tokenSnap.exists) return error(res, 409, 'Capability token has already been used.');
+  await tokenRef.create({tokenId:capabilityToken.tokenId,agentId:sender.agentId,capability:'messages.send',usedAt:FieldValue.serverTimestamp()});
   if (sender.status !== 'active' || envelope.senderAgentId !== sender.agentId) {
     return error(res, 403, 'Sender agent is not authorized.');
   }
@@ -172,6 +178,7 @@ app.post('/api/agents/commerce/reserve', requireUser, async (req, res) => {
     if (!validateCapabilityToken(req.body.capabilityToken, agent.agentId, 'commerce.request')) return error(res, 403, 'Valid commerce capability is required.');
     const trust = await loadTrust(db, agent.agentId);
     assertTrust(trust, 0);
+    if (req.body.idempotencyKey.length < 16) return error(res, 400, 'Commerce idempotency key must be at least 16 characters.');
     const reservation = await reserveSpending(db, req.uid, req.body.amountMinor, req.body.currency, req.body.actionId || req.body.idempotencyKey, req.body.idempotencyKey);
     await writeAuditEvent(db, req.uid, {event:'commerce_reservation_created',agentId:agent.agentId,transactionId:reservation.transactionId,amountMinor:req.body.amountMinor,currency:req.body.currency,idempotencyKey:req.body.idempotencyKey});
     return res.status(201).json(reservation);
