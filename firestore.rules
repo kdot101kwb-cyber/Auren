@@ -61,6 +61,22 @@ service cloud.firestore {
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
 
+      match /agents/{agentId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && agentId == 'primary'
+          && request.resource.data.name is string
+          && request.resource.data.version is string
+          && request.resource.data.status in ['active', 'paused', 'revoked'];
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /action_audit/{eventId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
       match /memory/{memoryId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
