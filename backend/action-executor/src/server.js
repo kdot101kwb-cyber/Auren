@@ -62,6 +62,7 @@ app.post('/api/a2a/send', requireUser, async (req, res) => {
     .get();
 
   if (recipientSnap.empty) return error(res, 404, 'Recipient agent is not published.');
+  const recipient = recipientSnap.docs[0].data();
 
   const messageRef = db.collection('agent_messages').doc(envelope.messageId);
   const existing = await messageRef.get();
@@ -71,6 +72,8 @@ app.post('/api/a2a/send', requireUser, async (req, res) => {
     messageId: envelope.messageId,
     senderAgentId: envelope.senderAgentId,
     recipientAgentId: envelope.recipientAgentId,
+    senderUid: req.uid,
+    recipientUid: recipient.ownerUid ?? null,
     protocol: envelope.protocol,
     version: envelope.version,
     type: envelope.type,
@@ -106,6 +109,7 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
     const existing = await db.collection('agent_listings').doc(agent.agentId).get();
     const listing = {
       agentId: agent.agentId,
+      ownerUid: req.uid,
       name: manifest.name,
       description: typeof req.body?.description === 'string' ? req.body.description.slice(0, 1000) : '',
       capabilities: manifest.capabilities,
@@ -314,6 +318,16 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
       completedAt: FieldValue.serverTimestamp(),
     });
 
+    const trustRef = db.collection('agent_trust').doc(agent.agentId);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(trustRef);
+      const current = snap.exists ? snap.data() : {score: 0, completed: 0, disputes: 0};
+      const completed = (current.completed || 0) + 1;
+      const disputes = current.disputes || 0;
+      const score = Math.max(0, Math.min(100, Math.round(Math.min(100, completed * 2) - Math.min(30, disputes * 5))));
+      tx.set(trustRef, {score, completed, disputes, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
+    });
+
     await writeAuditEvent(db, req.uid, {
       actionId,
       event: 'execution_completed',
@@ -335,6 +349,14 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
           status: 'failed',
           result: e.message || 'Execution failed.',
           executionCompletedAt: FieldValue.serverTimestamp(),
+        });
+        const trustRef = db.collection('agent_trust').doc(agent.agentId);
+        await db.runTransaction(async (tx) => {
+          const snap = await tx.get(trustRef);
+          const current = snap.exists ? snap.data() : {score: 0, completed: 0, disputes: 0};
+          const disputes = (current.disputes || 0) + 1;
+          const score = Math.max(0, Math.min(100, Math.round((current.score || 0) - 5)));
+          tx.set(trustRef, {score, completed: current.completed || 0, disputes, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
         });
         await writeAuditEvent(db, req.uid, {
           actionId,
