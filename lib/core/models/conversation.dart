@@ -4,6 +4,8 @@ class AurenConversation {
   final String title;
   final bool isAi;
   final DateTime updatedAt;
+  final String type;
+  final String? ownerId;
   final String? lastMessage;
   final DateTime? lastMessageAt;
 
@@ -15,6 +17,8 @@ class AurenConversation {
     required this.updatedAt,
     this.lastMessage,
     this.lastMessageAt,
+    this.type = 'direct',
+    this.ownerId,
   });
 
   Map<String, dynamic> toMap() => {
@@ -24,6 +28,8 @@ class AurenConversation {
         'updatedAt': updatedAt.toUtc().toIso8601String(),
         if (lastMessage != null) 'lastMessage': lastMessage,
         if (lastMessageAt != null) 'lastMessageAt': lastMessageAt!.toUtc().toIso8601String(),
+        'type': type,
+        if (ownerId != null) 'ownerId': ownerId,
       };
 
   factory AurenConversation.fromMap(
@@ -37,6 +43,8 @@ class AurenConversation {
       isAi: map['isAi'] as bool? ?? false,
       lastMessage: map['lastMessage'] as String?,
       lastMessageAt: DateTime.tryParse(map['lastMessageAt'] as String? ?? ''),
+      type: map['type'] as String? ?? 'direct',
+      ownerId: map['ownerId'] as String?,
       updatedAt: DateTime.tryParse(
             map['updatedAt'] as String? ?? '',
           )?.toLocal() ??
