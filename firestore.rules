@@ -121,6 +121,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /plugin_invocations/{invocationId} {
+      allow read, write: if false;
+    }
+
     match /agent_reputation/{agentId} {
       allow read: if request.auth != null;
       allow write: if false;
