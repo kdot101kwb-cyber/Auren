@@ -17,11 +17,17 @@ class ActionRepository {
       .where('status', isEqualTo: 'pending')
       .orderBy('createdAt')
       .snapshots()
-      .map(
-        (s) => s.docs
-            .map((d) => AurenActionRequest.fromMap(d.id, d.data()))
-            .toList(),
-      );
+      .map((s) => s.docs.map((d) => AurenActionRequest.fromMap(d.id, d.data())).toList());
+
+  /// Includes approved actions so a temporary network/backend failure does not
+  /// strand a user-approved action outside the Action Center.
+  Stream<List<AurenActionRequest>> watchOutstanding(String uid) => _actions(uid)
+      .orderBy('createdAt')
+      .snapshots()
+      .map((s) => s.docs
+          .map((d) => AurenActionRequest.fromMap(d.id, d.data()))
+          .where((a) => a.status == 'pending' || a.status == 'approved')
+          .toList());
 
   Future<AurenActionRequest?> get(String uid, String id) async {
     final snapshot = await _actions(uid).doc(id).get();
