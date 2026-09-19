@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/follow_repository.dart';
+import '../../../services/messaging/conversation_repository.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenPublicProfileScreen extends StatefulWidget {
   final AurenUserProfile profile;
@@ -11,7 +13,9 @@ class AurenPublicProfileScreen extends StatefulWidget {
 
 class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
   final repo = FollowRepository();
+  final conversations = ConversationRepository();
   bool busy = false;
+  bool messaging = false;
 
   Future<void> _toggle(String me, bool following) async {
     if (busy) return;
@@ -24,6 +28,33 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
       );
     } finally {
       if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _message(String me) async {
+    if (messaging) return;
+    setState(() => messaging = true);
+    try {
+      final conversation = await conversations.getOrCreateDirectConversation(
+        uid: me,
+        otherUid: widget.profile.uid,
+        otherTitle: widget.profile.displayName,
+      );
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MessengerScreen(conversationId: conversation.id),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open conversation: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => messaging = false);
     }
   }
 
@@ -51,6 +82,12 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
             )),
           ]),
           const SizedBox(height: 20),
+          if (!own && me != null)
+            FilledButton.tonalIcon(
+              onPressed: messaging ? null : () => _message(me),
+              icon: const Icon(Icons.chat_bubble_outline),
+              label: Text(messaging ? 'Opening…' : 'Message'),
+            ),
           if (!own && me != null)
             StreamBuilder<bool>(
               stream: repo.watchFollowing(me, widget.profile.uid),
