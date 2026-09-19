@@ -8,7 +8,7 @@ export function calculateRisk(trust){
   const score=Number(trust?.score||0);
   const invalid=![disputes,failures,score].every(Number.isFinite);
   if(invalid) throw Object.assign(new Error('Invalid trust metrics.'),{code:409});
-  const severe=disputes>=5||failures>=5||score<=0&&disputes>0;
+  const severe=disputes>=5||failures>=5;
   const restricted=disputes>=3||failures>=3||score<20;
   const watch=disputes>=1||failures>=1||score<50;
   return severe?'suspended':restricted?'restricted':watch?'watch':'normal';
