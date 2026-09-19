@@ -9,10 +9,7 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-      allow read: if isOwner(userId);
-      allow create, update, delete: if isOwner(userId);
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
 
       match /actions/{actionId} {
         allow read: if request.auth != null && request.auth.uid == userId;
