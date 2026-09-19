@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import 'messenger_screen.dart';
+import '../../../core/models/conversation.dart';
 
 class AurenConversationListScreen extends StatefulWidget {
   const AurenConversationListScreen({super.key});
@@ -13,10 +14,40 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
   String? _uid;
   @override void initState() { super.initState(); _bootstrap(); }
   Future<void> _bootstrap() async { try { final uid = _auth.currentUserId ?? await _auth.signInAnonymously(); if (mounted) setState(() => _uid = uid); } catch (_) {} }
+  Future<void> _createGroup() async {
+    final title = TextEditingController();
+    final member = TextEditingController();
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create group'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: title, decoration: const InputDecoration(labelText: 'Group name')),
+          TextField(controller: member, decoration: const InputDecoration(labelText: 'Member UID')),
+          const SizedBox(height: 8),
+          const Text('Add members by UID. You can add more later from the group screen.'),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, [title.text, member.text]), child: const Text('Create')),
+        ],
+      ),
+    );
+    title.dispose(); member.dispose();
+    if (result == null || uid == null) return;
+    try {
+      final c = await _repo.createGroup(uid: uid!, title: result[0], memberIds: [result[1]]);
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: c.id)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إنشاء المجموعة: $e')));
+    }
+  }
+
   @override Widget build(BuildContext context) {
     final uid = _uid;
     return Scaffold(
-      appBar: AppBar(title: const Text('Messenger')),
+      appBar: AppBar(title: const Text('Messenger'), actions: [IconButton(onPressed: _createGroup, icon: const Icon(Icons.group_add))]),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen())),
         icon: const Icon(Icons.auto_awesome), label: const Text('AUREN AI'),
