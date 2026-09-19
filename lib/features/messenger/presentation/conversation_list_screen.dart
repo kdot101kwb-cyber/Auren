@@ -25,7 +25,7 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
         title: const Text('Create group'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: title, decoration: const InputDecoration(labelText: 'Group name')),
-          TextField(controller: member, decoration: const InputDecoration(labelText: 'Member UID')),
+          TextField(controller: member, decoration: const InputDecoration(labelText: 'Member UIDs (comma separated)')),
           const SizedBox(height: 8),
           const Text('Add members by UID. You can add more later from the group screen.'),
         ]),
@@ -38,7 +38,8 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
     title.dispose(); member.dispose();
     if (result == null || uid == null) return;
     try {
-      final c = await _repo.createGroup(uid: uid!, title: result[0], memberIds: [result[1]]);
+      final members = result[1].split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      final c = await _repo.createGroup(uid: uid!, title: result[0], memberIds: members);
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: c.id)));
     } catch (e) {
