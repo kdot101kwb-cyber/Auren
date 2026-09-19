@@ -4,6 +4,7 @@ import '../../../services/messaging/conversation_repository.dart';
 import 'messenger_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../../services/notifications/notification_repository.dart';
+import '../../safety/presentation/blocked_users_screen.dart';
 
 class AurenConversationListScreen extends StatefulWidget {
   const AurenConversationListScreen({super.key});
@@ -51,6 +52,11 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
     final uid = _uid;
     return Scaffold(
       appBar: AppBar(title: const Text('Messenger'), actions: [
+        IconButton(
+          tooltip: 'Safety',
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBlockedUsersScreen())),
+          icon: const Icon(Icons.shield_outlined),
+        ),
         IconButton(onPressed: _createGroup, icon: const Icon(Icons.group_add)),
         if (uid != null)
           StreamBuilder<int>(
