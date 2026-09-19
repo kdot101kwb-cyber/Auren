@@ -15,6 +15,8 @@ import { validateCommerceRequest, reserveSpending, settleSpending, releaseSpendi
 import { loadTrust, assertTrust } from './trust.js';
 import { issueCapabilityToken, validateCapabilityToken, decodeAndValidateCapabilityToken } from './capability-token.js';
 import { openDispute, addEvidence, resolveDispute, transitionDispute } from './disputes.js';
+import { calculateRisk, applyRiskPolicy, assertOperationalRisk } from './risk-engine.js';
+import { recoverStaleExecution } from './execution-recovery.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -394,7 +396,7 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
       const completed = (current.completed || 0) + 1;
       const disputes = current.disputes || 0;
       const score = Math.max(0, Math.min(100, Math.round(Math.min(100, completed * 2) - Math.min(30, disputes * 5))));
-      tx.set(trustRef, {score, completed, disputes, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
+      tx.set(trustRef, {score, completed, disputes, failures: current.failures || 0, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
     });
 
     await writeAuditEvent(db, req.uid, {
@@ -425,7 +427,7 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
           const current = snap.exists ? snap.data() : {score: 0, completed: 0, disputes: 0};
           const disputes = (current.disputes || 0) + 1;
           const score = Math.max(0, Math.min(100, Math.round((current.score || 0) - 5)));
-          tx.set(trustRef, {score, completed: current.completed || 0, disputes, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
+          tx.set(trustRef, {score, completed: current.completed || 0, disputes, failures, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
         });
         await writeAuditEvent(db, req.uid, {
           actionId,
