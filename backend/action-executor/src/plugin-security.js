@@ -17,10 +17,10 @@ export function createArtifactId(){return 'art_'+crypto.randomUUID();}
 export function packageSha256(bytes){return crypto.createHash('sha256').update(bytes).digest('hex');}
 
 const SUSPICIOUS_PATTERNS=Object.freeze([
-  {name:'child_process',pattern:/\\b(?:require\\(|from\\s+|import\\s*\\()\\s*['"]node:child_process['"]/},
-  {name:'process_exec',pattern:/\\bprocess\\.(?:binding|dlopen)\\b/},
-  {name:'dynamic_eval',pattern:/\\b(?:eval|Function)\\s*\\(/},
-  {name:'network_module',pattern:/\\b(?:node:net|node:dgram|node:http|node:https|node:tls)\\b/},
+  {name:'child_process',pattern:/\b(?:require\(|from\s+|import\s*\()\s*['"]node:child_process['"]/},
+  {name:'process_exec',pattern:/\bprocess\.(?:binding|dlopen)\b/},
+  {name:'dynamic_eval',pattern:/\b(?:eval|Function)\s*\(/},
+  {name:'network_module',pattern:/\b(?:node:net|node:dgram|node:http|node:https|node:tls)\b/},
 ]);
 export function scanPluginArtifact(bytes){
   if(!Buffer.isBuffer(bytes))throw Object.assign(new Error('Plugin artifact bytes are required.'),{code:400});
