@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/notifications/notification_repository.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenNotificationsScreen extends StatefulWidget {
   const AurenNotificationsScreen({super.key});
@@ -31,7 +32,13 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
               leading: Icon(n.read ? Icons.notifications_none : Icons.notifications_active),
               title: Text(n.title, style: TextStyle(fontWeight: n.read ? FontWeight.normal : FontWeight.bold)),
               subtitle: Text(n.body),
-              onTap: n.read ? null : () => _repo.markRead(uid, n.id),
+              onTap: () async {
+                if (!n.read) await _repo.markRead(uid, n.id);
+                if (!mounted || n.conversationId == null || n.conversationId!.isEmpty) return;
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => MessengerScreen(conversationId: n.conversationId),
+                ));
+              },
             ); },
           );
         },
