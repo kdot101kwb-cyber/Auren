@@ -11,7 +11,7 @@ import { publicCredential } from './credentials.js';
 import { validateEnvelope } from './agent-protocol.js';
 import { saveMessage } from './a2a-store.js';
 import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
-import { validateCommerceRequest, reserveSpending } from './commerce.js';
+import { validateCommerceRequest, reserveSpending, settleSpending, releaseSpending, refundSpending } from './commerce.js';
 import { loadTrust, assertTrust } from './trust.js';
 import { issueCapabilityToken, validateCapabilityToken, decodeAndValidateCapabilityToken } from './capability-token.js';
 
@@ -195,6 +195,22 @@ app.post('/api/agents/commerce/reserve', requireUser, async (req, res) => {
     return res.status(201).json(reservation);
   } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 500, e.message || 'Commerce reservation failed.'); }
 });
+
+async function commerceLifecycle(req,res,operation){
+  try{
+    const transactionId=typeof req.body?.transactionId==='string'?req.body.transactionId.trim():'';
+    if(!transactionId)return error(res,400,'transactionId is required.');
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const trust=await loadTrust(db,agent.agentId); assertTrust(trust,0);
+    const result=operation==='settle'?await settleSpending(db,req.uid,transactionId):operation==='release'?await releaseSpending(db,req.uid,transactionId):await refundSpending(db,req.uid,transactionId);
+    await writeAuditEvent(db,req.uid,{event:'commerce_'+operation,agentId:agent.agentId,transactionId,status:result.status});
+    return res.json(result);
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Commerce lifecycle operation failed.');}
+}
+app.post('/api/agents/commerce/settle',requireUser,(req,res)=>commerceLifecycle(req,res,'settle'));
+app.post('/api/agents/commerce/release',requireUser,(req,res)=>commerceLifecycle(req,res,'release'));
+app.post('/api/agents/commerce/refund',requireUser,(req,res)=>commerceLifecycle(req,res,'refund'));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'auren-action-executor' });
