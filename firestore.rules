@@ -295,6 +295,7 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.resource.data.followerId == request.auth.uid
+        && followId == request.resource.data.followerId + '_' + request.resource.data.followingId
         && request.resource.data.followingId is string
         && request.resource.data.followerId != request.resource.data.followingId
         && request.resource.data.keys().hasOnly([
