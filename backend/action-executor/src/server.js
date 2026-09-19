@@ -197,6 +197,7 @@ app.post('/api/agents/plugins/runtime/execute', requireUser, async(req,res)=>{
     const prepared=await preparePluginInvocation(db,{agent,manifest:req.body?.manifest,packageMetadata,signature:artifact.signature,secret,payload:req.body?.payload||{}});
     const result=await executePluginThroughWorker({prepared,workerUrl,workerSecret});
     await writeAuditEvent(db,req.uid,{event:'plugin_runtime_executed',agentId:agent.agentId,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,resultStatus:result.status});
+    await db.collection('plugin_invocations').add({agentId:agent.agentId,ownerUid:req.uid,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,status:result.status,quotaInvocation:prepared.quota.invocations,createdAt:FieldValue.serverTimestamp()});
     return res.json({status:result.status,result:result.result,quota:prepared.quota});
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin runtime execution failed.');}
 });
@@ -257,6 +258,31 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
   } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 400, e.message || 'Plugin publish failed.'); }
 });
 
+
+app.post('/api/agents/plugins/rollback', requireUser, async (req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const risk=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(risk.exists)assertOperationalRisk(risk.data());
+    const target=typeof req.body?.version==='string'?req.body.version.trim():'';
+    if(!target)return error(res,400,'version is required.');
+    const ref=db.collection('agent_listings').doc(agent.agentId);
+    const listingSnap=await ref.get();
+    if(!listingSnap.exists)return error(res,404,'Listing not found.');
+    const listing=listingSnap.data();
+    const versionSnap=await ref.collection('versions').doc(target).get();
+    if(!versionSnap.exists)return error(res,404,'Target version not found.');
+    const version=versionSnap.data();
+    if(version.artifactState!=='approved')return error(res,409,'Target version is not approved.');
+    if(!version.artifactId||!version.objectPath)return error(res,409,'Target version artifact reference is incomplete.');
+    const artifactSnap=await db.collection('plugin_artifacts').doc(version.artifactId).get();
+    if(!artifactSnap.exists||artifactSnap.data()?.state!=='approved')return error(res,409,'Target artifact is not approved.');
+    await ref.update({version:target,pluginId:version.pluginId,entrypoint:version.entrypoint,state:'published',updatedAt:FieldValue.serverTimestamp()});
+    await writeAuditEvent(db,req.uid,{event:'plugin_version_rollback',agentId:agent.agentId,fromVersion:listing.version,toVersion:target});
+    return res.json({agentId:agent.agentId,state:'published',version:target,previousVersion:listing.version});
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin rollback failed.');}
+});
 
 app.post('/api/agents/plugins/revoke-version', requireUser, async (req,res)=>{
   try{
