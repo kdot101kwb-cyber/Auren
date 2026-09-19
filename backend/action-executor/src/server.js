@@ -38,6 +38,9 @@ const app = express();
 app.use(express.json({ limit: '8mb' }));
 
 const db = getFirestore();
+const aiRate = new Map();
+const AI_RATE_WINDOW_MS = 60_000;
+const AI_RATE_MAX = 30;
 const auth = getAuth();
 const storage = getStorage();
 
@@ -548,8 +551,21 @@ app.post('/api/agents/marketplace/review',requireUser,async(req,res)=>{
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to submit review.');}
 });
 
+function allowAiRequest(uid) {
+  const now = Date.now();
+  const current = aiRate.get(uid);
+  if (!current || now - current.startedAt >= AI_RATE_WINDOW_MS) {
+    aiRate.set(uid, { startedAt: now, count: 1 });
+    return true;
+  }
+  if (current.count >= AI_RATE_MAX) return false;
+  current.count += 1;
+  return true;
+}
+
 app.post('/api/ai/chat', requireUser, async (req, res) => {
   try {
+    if (!allowAiRequest(req.uid)) return error(res, 429, 'AI rate limit exceeded.');
     const baseUrl = (process.env.AUREN_AI_BASE_URL || '').trim().replace(/\\/$/, '');
     const apiKey = (process.env.AUREN_AI_API_KEY || '').trim();
     const model = (process.env.AUREN_AI_MODEL || '').trim();
