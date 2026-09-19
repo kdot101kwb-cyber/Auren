@@ -660,16 +660,26 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
     const text = envelope?.text || rawText.trim();
     const action = envelope?.action || null;
     const payload = envelope?.payload || {};
-    const requiresApproval = Boolean(envelope?.requiresApproval && action);
+    let validatedAction = null;
+    let validatedPayload = {};
+    let validatedRequiresApproval = false;
+    if (action) {
+      const definition = getActionDefinition(action);
+      if (!definition || !validatePayload(definition, payload)) {
+        return error(res, 502, 'AUREN AI returned an unsupported action request.');
+      }
+      validatedAction = definition.type;
+      validatedPayload = payload;
+      validatedRequiresApproval = definition.requiresApproval === true && envelope?.requiresApproval === true;
+    }
 
-    await writeAuditEvent(db, req.uid, {
-      event: 'ai_chat_completed',
+    await writeAuditEvent(db, req.uid, {\n      event: 'ai_chat_completed',
       conversationId,
       model,
       providerStatus: providerResponse.status,
     });
 
-    return res.json({ text: text.trim(), action, payload, requiresApproval });
+    return res.json({ text: text.trim(), action: validatedAction, payload: validatedPayload, requiresApproval: validatedRequiresApproval });
   } catch (e) {
     return error(res, 502, e.message || 'AUREN AI request failed.');
   } finally {
@@ -861,6 +871,12 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
           result: e.message || 'Execution failed.',
           executionCompletedAt: FieldValue.serverTimestamp(),
         });
+        const failedExecutionKey = createExecutionKey(req.uid, actionId);
+        await db.collection('users').doc(req.uid).collection('action_executions').doc(failedExecutionKey).set({
+          status: 'failed',
+          error: e.message || 'Execution failed.',
+          completedAt: FieldValue.serverTimestamp(),
+        }, {merge:true});
         const trustRef = db.collection('agent_trust').doc(agent.agentId);
         await db.runTransaction(async (tx) => {
           const snap = await tx.get(trustRef);
