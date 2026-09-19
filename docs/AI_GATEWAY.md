@@ -47,7 +47,9 @@ The backend must:
 - verify the Firebase ID token and derive the UID from the token, not from client input
 - load `users/{uid}/actions/{actionId}` from Firestore
 - require the action to be in `approved` state
-- validate the action type/arguments against an allowlist
+- resolve the action type through the server-side Action Registry
+- validate the action payload against the registered schema
+- verify permission, risk level, approval level and spending limits against the registry
 - enforce spending, permission and safety limits
 - execute the action server-side
 - write `executing`, then `completed` or `failed`
