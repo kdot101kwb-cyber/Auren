@@ -562,6 +562,30 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
     if (!message || message.length > 12000) return error(res, 400, 'A valid message is required.');
     if (!conversationId || conversationId.length > 200) return error(res, 400, 'A valid conversationId is required.');
 
+    const conversationSnap = await db.collection('conversations').doc(conversationId).get();
+    if (!conversationSnap.exists) return error(res, 404, 'Conversation not found.');
+    const memberIds = Array.isArray(conversationSnap.data()?.memberIds)
+      ? conversationSnap.data().memberIds
+      : [];
+    if (!memberIds.includes(req.uid)) return error(res, 403, 'You are not a member of this conversation.');
+
+    const memorySnap = await db.collection('users').doc(req.uid).collection('memory')
+      .where('enabled', '==', true)
+      .limit(20)
+      .get();
+    const memories = memorySnap.docs
+      .map((doc) => doc.data())
+      .filter((item) => typeof item.key === 'string' && typeof item.value === 'string')
+      .map((item) => `${item.key}: ${item.value}`)
+      .join('\\n')
+      .slice(0, 6000);
+
+    const systemPrompt = [
+      'You are AUREN AI. Be useful, concise, safe, and action-oriented.',
+      'Never claim to have executed an external action unless the trusted AUREN Action Center has explicitly executed it.',
+      memories ? `User-approved memory context:\\n${memories}` : '',
+    ].filter(Boolean).join('\\n\\n');
+
     const providerResponse = await fetch(baseUrl, {
       method: 'POST',
       headers: {
@@ -574,7 +598,7 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: 'You are AUREN AI. Be useful, concise, safe, and action-oriented. Never claim to have executed an external action unless the trusted AUREN Action Center has explicitly executed it.',
+            content: systemPrompt,
           },
           { role: 'user', content: message },
         ],
