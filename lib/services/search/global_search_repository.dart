@@ -20,7 +20,7 @@ class AurenGlobalSearchRepository {
   }
 
   Future<List<AurenSearchResult>> _searchPeople(String q) async {
-    final snap = await _db.collection('users').orderBy('displayNameLower').startAt([q]).endAt(['$q\\uf8ff']).limit(8).get();
+    final snap = await _db.collection('users').orderBy('displayNameLower').startAt([q]).endAt(['$q\uf8ff']).limit(8).get();
     return snap.docs.map((d) {
       final p = AurenUserProfile.fromMap(d.id, d.data());
       return AurenSearchResult(id: d.id, type: AurenSearchType.people, title: p.displayName, subtitle: 'People', imageUrl: p.photoUrl);
@@ -28,7 +28,7 @@ class AurenGlobalSearchRepository {
   }
 
   Future<List<AurenSearchResult>> _searchPosts(String q) async {
-    final snap = await _db.collection('posts').orderBy('searchText').startAt([q]).endAt(['$q\\uf8ff']).limit(8).get();
+    final snap = await _db.collection('posts').orderBy('searchText').startAt([q]).endAt(['$q\uf8ff']).limit(8).get();
     return snap.docs.map((d) {
       final data = d.data();
       return AurenSearchResult(id: d.id, type: AurenSearchType.posts, title: (data['text'] as String? ?? '').trim(), subtitle: 'Pulse');
@@ -36,7 +36,7 @@ class AurenGlobalSearchRepository {
   }
 
   Future<List<AurenSearchResult>> _searchCollection(String q, String collection, AurenSearchType type, List<String> titleFields, List<String> subtitleFields) async {
-    final snap = await _db.collection(collection).where('visibility', isEqualTo: 'public').orderBy('searchText').startAt([q]).endAt(['$q\\uf8ff']).limit(8).get();
+    final snap = await _db.collection(collection).where('visibility', isEqualTo: 'public').orderBy('searchText').startAt([q]).endAt(['$q\uf8ff']).limit(8).get();
     return snap.docs.map((d) {
       final data = d.data();
       String value(List<String> fields, String fallback) {
