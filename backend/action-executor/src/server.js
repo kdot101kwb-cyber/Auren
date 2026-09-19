@@ -11,6 +11,9 @@ import { publicCredential } from './credentials.js';
 import { validateEnvelope } from './agent-protocol.js';
 import { saveMessage } from './a2a-store.js';
 import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
+import { validateCommerceRequest, reserveSpending } from './commerce.js';
+import { loadTrust, assertTrust } from './trust.js';
+import { issueCapabilityToken, validateCapabilityToken } from './capability-token.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -91,6 +94,38 @@ app.post('/api/agents/plugins/validate', requireUser, async (req,res)=>{
     const manifest=validatePluginManifest(req.body?.manifest);
     return res.json({valid:true,manifest,policy:sandboxPolicy()});
   } catch(e) { return error(res,Number.isInteger(e?.code)?e.code:400,e.message||'Invalid plugin manifest.'); }
+});
+
+
+app.post('/api/agents/capabilities/issue', requireUser, async (req, res) => {
+  try {
+    const agent = await loadAgentIdentity(db, req.uid);
+    if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
+    const capability = typeof req.body?.capability === 'string' ? req.body.capability.trim() : '';
+    const allowed = ['actions.execute', 'actions.discover', 'messages.send', 'commerce.request'];
+    if (!allowed.includes(capability)) return error(res, 403, 'Capability is not issuable.');
+    const trust = await loadTrust(db, agent.agentId);
+    assertTrust(trust, 0);
+    const requested = Number(req.body?.expiresAt);
+    const maxExpiry = Date.now() + 10 * 60 * 1000;
+    const expiresAt = Number.isFinite(requested) ? Math.min(requested, maxExpiry) : maxExpiry;
+    if (expiresAt <= Date.now()) return error(res, 400, 'Capability expiry must be in the future.');
+    return res.json(issueCapabilityToken({agentId: agent.agentId, capability, expiresAt}));
+  } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 500, e.message || 'Capability issue failed.'); }
+});
+
+app.post('/api/agents/commerce/reserve', requireUser, async (req, res) => {
+  try {
+    if (!validateCommerceRequest(req.body)) return error(res, 400, 'Invalid commerce request.');
+    const agent = await loadAgentIdentity(db, req.uid);
+    if (agent.status !== 'active' || req.body.agentId !== agent.agentId) return error(res, 403, 'Agent is not authorized.');
+    if (!validateCapabilityToken(req.body.capabilityToken, agent.agentId, 'commerce.request')) return error(res, 403, 'Valid commerce capability is required.');
+    const trust = await loadTrust(db, agent.agentId);
+    assertTrust(trust, 0);
+    const reservation = await reserveSpending(db, req.uid, req.body.amountMinor, req.body.currency, req.body.actionId || req.body.idempotencyKey, req.body.idempotencyKey);
+    await writeAuditEvent(db, req.uid, {event:'commerce_reservation_created',agentId:agent.agentId,transactionId:reservation.transactionId,amountMinor:req.body.amountMinor,currency:req.body.currency,idempotencyKey:req.body.idempotencyKey});
+    return res.status(201).json(reservation);
+  } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 500, e.message || 'Commerce reservation failed.'); }
 });
 
 app.get('/health', (_req, res) => {
