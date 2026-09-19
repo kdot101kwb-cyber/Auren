@@ -5,10 +5,11 @@ const MAX_PACKAGE_BYTES = 5 * 1024 * 1024;
 const MAX_DAILY_INVOCATIONS = 10000;
 const MAX_DEPENDENCIES = 50;
 const SAFE_DEPENDENCY = /^[a-z0-9@._/-]{1,120}$/;
+const UNSAFE_DEPENDENCY_PATH = /(^|\/)\.\.(\/|$)|(^|\/)\.(\/|$)/;
 const SAFE_ID = /^[a-z0-9._-]{3,64}$/;
 
 const SUSPICIOUS_PATTERNS = Object.freeze([
-  { name: 'child_process', pattern: /\b(?:require\(|from\s+|import\s*\()\s*['"](?:node:)?child_process['"]/ },
+  { name: 'child_process', pattern: /\b(?:require\(|from\s+|import\s*\(|import\s+)\s*['"](?:node:)?child_process['"]/ },
   { name: 'process_exec', pattern: /\bprocess\.(?:binding|dlopen|abort|kill)\b/ },
   { name: 'dynamic_eval', pattern: /\b(?:eval|Function)\s*\(/ },
   { name: 'network_module', pattern: /\b(?:node:net|node:dgram|node:http|node:https|node:tls|node:http2)\b/ },
