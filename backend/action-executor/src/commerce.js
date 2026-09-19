@@ -17,7 +17,7 @@ function updateDailySpend(t,db,uid,delta){
     return next;
   });
 }
-export const TRANSACTION_STATES=Object.freeze(['reserved','settled','released','refunded','disputed']);
+export const TRANSACTION_STATES=Object.freeze(['reserved','settled','released','refunded','partially_refunded','disputed']);
 
 export function validateCommerceRequest(input){
   return !!input&&typeof input.agentId==='string'&&typeof input.currency==='string'&&/^[A-Z]{3}$/.test(input.currency)&&Number.isInteger(input.amountMinor)&&input.amountMinor>0&&typeof input.idempotencyKey==='string'&&input.idempotencyKey.length>=16;
