@@ -229,15 +229,36 @@ service cloud.firestore {
 
     match /profiles/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+          'displayName', 'displayNameLower', 'photoUrl', 'createdAt'
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 80;
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+          'displayName', 'displayNameLower', 'photoUrl', 'createdAt'
+        ])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 80
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
     match /follows/{followId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
-        && request.resource.data.followerId == request.auth.uid;
+        && request.resource.data.followerId == request.auth.uid
+        && request.resource.data.followingId is string
+        && request.resource.data.followerId != request.resource.data.followingId
+        && request.resource.data.keys().hasOnly([
+          'followerId', 'followingId', 'createdAt'
+        ]);
       allow delete: if request.auth != null
         && resource.data.followerId == request.auth.uid;
+      allow update: if false;
     }
 
     match /businesses/{businessId} {
