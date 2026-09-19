@@ -15,6 +15,7 @@ Run the Action Executor and Plugin Worker on a private Docker-capable host/netwo
 
 - `FIREBASE_SERVICE_ACCOUNT_JSON` (Render secret; JSON for the Firebase service account)
 - `AUREN_PLUGIN_SIGNING_SECRET` (Render generates this automatically)
+- `AUREN_STORAGE_BUCKET` (the Firebase Storage bucket, for example `<project-id>.appspot.com`)
 - `AUREN_PLUGIN_WORKER_URL` (wired automatically from the private worker)
 - `AUREN_PLUGIN_WORKER_SECRET` (wired automatically from the worker secret)
 - `PORT=8080`
@@ -28,4 +29,4 @@ Keep Worker network access disabled unless a plugin capability explicitly requir
 
 ## Deployment status
 
-No public production endpoint is currently configured in this repository. A real deployment requires a connected hosting target and its credentials/secrets.
+No public production endpoint is currently configured in this repository. Firebase Storage must also be enabled and the bucket name supplied to the Action Executor. A real deployment requires a connected hosting target and its credentials/secrets.
