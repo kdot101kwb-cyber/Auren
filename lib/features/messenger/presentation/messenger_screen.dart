@@ -34,6 +34,8 @@ class _MessengerScreenState extends State<MessengerScreen> {
   bool _initialPromptSent = false;
   bool _showDetails = false;
   String? _error;
+  bool _isAi = true;
+  String _conversationTitle = 'AUREN Messenger';
 
   @override
   void initState() {
@@ -44,8 +46,15 @@ class _MessengerScreenState extends State<MessengerScreen> {
   Future<void> _bootstrap() async {
     try {
       _uid = _auth.currentUserId ?? await _auth.signInAnonymously();
-      _conversationId = widget.conversationId ??
-          (await _conversationRepository.getOrCreateAiConversation(_uid!)).id;
+      final conversation = widget.conversationId != null
+          ? await _conversationRepository.findById(widget.conversationId!)
+          : await _conversationRepository.getOrCreateAiConversation(_uid!);
+      if (conversation == null || !conversation.memberIds.contains(_uid)) {
+        throw StateError('Conversation not found or access denied.');
+      }
+      _conversationId = conversation.id;
+      _isAi = conversation.isAi;
+      _conversationTitle = conversation.title;
       if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
         _controller.text = widget.initialPrompt!.trim();
       }
@@ -73,40 +82,41 @@ class _MessengerScreenState extends State<MessengerScreen> {
         createdAt: now,
       ));
 
-      final response = await _gateway.send(
-        conversationId: _conversationId!,
-        message: text,
-      );
+      if (_isAi) {
+        final response = await _gateway.send(
+          conversationId: _conversationId!,
+          message: text,
+        );
 
-      final aiNow = DateTime.now();
-      await _messagesRepository.send(AurenMessage(
-        id: 'ai_${aiNow.microsecondsSinceEpoch}',
-        conversationId: _conversationId!,
-        senderId: 'auren-ai',
-        text: response.text,
-        createdAt: aiNow,
-        isAi: true,
-      ));
+        final aiNow = DateTime.now();
+        await _messagesRepository.send(AurenMessage(
+          id: 'ai_${aiNow.microsecondsSinceEpoch}',
+          conversationId: _conversationId!,
+          senderId: 'auren-ai',
+          text: response.text,
+          createdAt: aiNow,
+          isAi: true,
+        ));
 
-      if (response.action != null && response.action!.trim().isNotEmpty &&
-          response.requiresApproval) {
-        // The gateway must return a registered action type.
-        final actionNow = DateTime.now();
-        final actionType = response.action!.trim();
-        final definition = AurenActionRegistry.get(actionType);
-        if (definition != null) {
-          await _actionRepository.create(
-            _uid!,
-            AurenActionRegistry.fromAi(
-              id: 'action_${actionNow.microsecondsSinceEpoch}',
-              conversationId: _conversationId!,
-              actionType: actionType,
-              title: definition.title,
-              description: 'طلب تنفيذ: ${definition.title}',
-              payload: response.payload,
-              createdAt: actionNow,
-            ),
-          );
+        if (response.action != null && response.action!.trim().isNotEmpty &&
+            response.requiresApproval) {
+          final actionNow = DateTime.now();
+          final actionType = response.action!.trim();
+          final definition = AurenActionRegistry.get(actionType);
+          if (definition != null) {
+            await _actionRepository.create(
+              _uid!,
+              AurenActionRegistry.fromAi(
+                id: 'action_${actionNow.microsecondsSinceEpoch}',
+                conversationId: _conversationId!,
+                actionType: actionType,
+                title: definition.title,
+                description: 'طلب تنفيذ: ${definition.title}',
+                payload: response.payload,
+                createdAt: actionNow,
+              ),
+            );
+          }
         }
       }
 
@@ -166,7 +176,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('AUREN Messenger')),
+      appBar: AppBar(title: Text(_conversationTitle)),
       body: Column(
         children: [
           if (_showDetails)
@@ -184,7 +194,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
                 final messages = snapshot.data!;
-                if (messages.isEmpty) return const Center(child: Text('ابدأ محادثتك مع AUREN AI'));
+                if (messages.isEmpty) return Center(child: Text(_isAi ? 'ابدأ محادثتك مع AUREN AI' : 'ابدأ المحادثة'));
 
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
@@ -234,7 +244,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
                       decoration: const InputDecoration(
-                        hintText: 'اكتب لـ AUREN AI…',
+                        hintText: _isAi ? 'اكتب لـ AUREN AI…' : 'اكتب رسالة…',
                         border: OutlineInputBorder(),
                       ),
                     ),
