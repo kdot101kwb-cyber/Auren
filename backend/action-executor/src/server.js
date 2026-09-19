@@ -568,6 +568,7 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
         'content-type': 'application/json',
         authorization: `Bearer ${apiKey}`,
       },
+      signal: AbortSignal.timeout(30000),
       body: JSON.stringify({
         model,
         messages: [
