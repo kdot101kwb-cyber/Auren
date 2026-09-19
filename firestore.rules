@@ -97,6 +97,16 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /disputes/{disputeId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
+      match /agent_liability/{liabilityId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
       match /memory/{memoryId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
