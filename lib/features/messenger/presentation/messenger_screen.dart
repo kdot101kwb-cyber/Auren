@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/message.dart';
-import '../../../core/models/action_request.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/ai/https_ai_gateway.dart';
 import '../../../services/actions/action_repository.dart';
