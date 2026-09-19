@@ -51,9 +51,18 @@ class _AurenGlobalSearchScreenState extends State<AurenGlobalSearchScreen> {
   void _openResult(AurenSearchResult result) {
     if (result.type == AurenSearchType.people) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => AurenPublicProfileScreen(profile: AurenUserProfile(uid: result.id, displayName: result.title, photoUrl: result.imageUrl, createdAt: DateTime.now()))));
-    } else if (result.type == AurenSearchType.ai) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: _lastQuery)));
+      return;
     }
+
+    final prompts = <AurenSearchType, String>{
+      AurenSearchType.posts: 'افتح وفسّر لي Pulse: ${result.title}',
+      AurenSearchType.businesses: 'ساعدني أتعرف على Business: ${result.title}. ${result.subtitle}',
+      AurenSearchType.places: 'ساعدني أستكشف المكان: ${result.title}. ${result.subtitle}',
+      AurenSearchType.opportunities: 'ساعدني أقيّم فرصة: ${result.title}. ${result.subtitle}',
+      AurenSearchType.ai: _lastQuery,
+    };
+
+    Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompts[result.type] ?? _lastQuery)));
   }
 
   @override Widget build(BuildContext context) {
