@@ -46,12 +46,21 @@ export async function settleSpending(db,uid,transactionId,agentId=null){
     if(agentId!==null&&tx.agentId!==agentId)throw Object.assign(new Error('Transaction is not owned by the acting agent.'),{code:403});
     if(tx.status==='settled')return tx;
     if(tx.status!=='reserved')throw Object.assign(new Error('Transaction is not reservable for settlement.'),{code:409});
-    const ref=walletRef(db,uid), s=await t.get(ref), w=s.data()||{};
+    const ref=walletRef(db,uid);
+    const permission=permissionRef(db,uid);
+    const [s,permissionSnap]=await Promise.all([t.get(ref),t.get(permission)]);
+    const w=s.data()||{};
     const reserved=w.reservedMinor||0;
     if(reserved<(tx.amountMinor||0))throw Object.assign(new Error('Wallet reservation mismatch.'),{code:409});
+    const ledger=permissionSnap.exists?permissionSnap.data():{};
+    const today=new Date().toISOString().slice(0,10);
+    const storedDay=typeof ledger.spentTodayDate==='string'?ledger.spentTodayDate:null;
+    const current=storedDay===today&&Number.isInteger(ledger.spentTodayMinor)?ledger.spentTodayMinor:0;
+    const next=current+tx.amountMinor;
+    if(!Number.isSafeInteger(next)||next<0)throw Object.assign(new Error('Invalid daily spending total.'),{code:409});
     t.update(ref,{reservedMinor:reserved-tx.amountMinor,availableMinor:(w.availableMinor||0)-tx.amountMinor,updatedAt:FieldValue.serverTimestamp()});
     t.update(txRef,{status:'settled',settledAt:FieldValue.serverTimestamp()});
-    await updateDailySpend(t,db,uid,tx.amountMinor);
+    t.set(permission,{spentTodayMinor:next,spentTodayDate:today,updatedAt:FieldValue.serverTimestamp()},{merge:true});
     return {...tx,status:'settled'};
   });
 }
@@ -77,10 +86,18 @@ export async function refundSpending(db,uid,transactionId,agentId=null){
     if(agentId!==null&&tx.agentId!==agentId)throw Object.assign(new Error('Transaction is not owned by the acting agent.'),{code:403});
     if(tx.status==='refunded')return tx;
     if(tx.status!=='settled')throw Object.assign(new Error('Only settled transactions can be refunded.'),{code:409});
-    const ref=walletRef(db,uid), s=await t.get(ref), w=s.data()||{};
+    const ref=walletRef(db,uid);
+    const permission=permissionRef(db,uid);
+    const [s,permissionSnap]=await Promise.all([t.get(ref),t.get(permission)]);
+    const w=s.data()||{};
+    const ledger=permissionSnap.exists?permissionSnap.data():{};
+    const today=new Date().toISOString().slice(0,10);
+    const storedDay=typeof ledger.spentTodayDate==='string'?ledger.spentTodayDate:null;
+    const current=storedDay===today&&Number.isInteger(ledger.spentTodayMinor)?ledger.spentTodayMinor:0;
+    const next=Math.max(0,current-tx.amountMinor);
     t.update(ref,{availableMinor:(w.availableMinor||0)+tx.amountMinor,updatedAt:FieldValue.serverTimestamp()});
     t.update(txRef,{status:'refunded',refundedAt:FieldValue.serverTimestamp()});
-    await updateDailySpend(t,db,uid,-tx.amountMinor);
+    t.set(permission,{spentTodayMinor:next,spentTodayDate:today,updatedAt:FieldValue.serverTimestamp()},{merge:true});
     return {...tx,status:'refunded'};
   });
 }
