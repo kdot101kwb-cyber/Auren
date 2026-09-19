@@ -564,6 +564,22 @@ function allowAiRequest(uid) {
   return true;
 }
 
+function parseAiEnvelope(raw) {
+  if (typeof raw !== 'string') return null;
+  const cleaned = raw.trim().replace(/^\`\`\`(?:json)?\s*/i, '').replace(/\s*\`\`\`$/i, '');
+  try {
+    const value = JSON.parse(cleaned);
+    if (!value || typeof value !== 'object') return null;
+    const action = typeof value.action === 'string' ? value.action.trim() : null;
+    const text = typeof value.text === 'string' ? value.text.trim() : '';
+    const payload = value.payload && typeof value.payload === 'object' && !Array.isArray(value.payload) ? value.payload : {};
+    const requiresApproval = value.requiresApproval === true;
+    return { text, action, payload, requiresApproval };
+  } catch {
+    return null;
+  }
+}
+
 app.post('/api/ai/chat', requireUser, async (req, res) => {
   try {
     if (!allowAiRequest(req.uid)) return error(res, 429, 'AI rate limit exceeded.');
@@ -603,6 +619,7 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
     const systemPrompt = [
       'You are AUREN AI. Be useful, concise, safe, and action-oriented.',
       'Never claim to have executed an external action unless the trusted AUREN Action Center has explicitly executed it.',
+      'When the user clearly requests a supported AUREN action, return JSON only with keys text, action, payload, requiresApproval. Supported actions are demo.echo and demo.create_note. Otherwise return normal text.',
       memories ? `User-approved memory context:\\n${memories}` : '',
     ].filter(Boolean).join('\\n\\n');
 
@@ -637,10 +654,13 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
       return error(res, 502, 'AUREN AI provider returned invalid JSON.');
     }
 
-    const text = data?.choices?.[0]?.message?.content;
-    if (typeof text !== 'string' || !text.trim()) {
-      return error(res, 502, 'AUREN AI provider returned no message content.');
-    }
+    const rawText = data?.choices?.[0]?.message?.content;
+    if (typeof rawText !== 'string' || !rawText.trim()) return error(res, 502, 'AUREN AI provider returned no message content.');
+    const envelope = parseAiEnvelope(rawText);
+    const text = envelope?.text || rawText.trim();
+    const action = envelope?.action || null;
+    const payload = envelope?.payload || {};
+    const requiresApproval = Boolean(envelope?.requiresApproval && action);
 
     await writeAuditEvent(db, req.uid, {
       event: 'ai_chat_completed',
@@ -649,7 +669,7 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
       providerStatus: providerResponse.status,
     });
 
-    return res.json({ text: text.trim() });
+    return res.json({ text: text.trim(), action, payload, requiresApproval });
   } catch (e) {
     return error(res, 502, e.message || 'AUREN AI request failed.');
   } finally {
