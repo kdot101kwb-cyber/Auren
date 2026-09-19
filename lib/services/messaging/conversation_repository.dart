@@ -140,6 +140,37 @@ class ConversationRepository {
     });
   }
 
+  Future<void> updateGroupMembers({
+    required String conversationId,
+    required String ownerUid,
+    required List<String> memberIds,
+  }) async {
+    final members = {...memberIds, ownerUid}.where((id) => id.trim().isNotEmpty).toList();
+    if (members.length < 3 || members.length > 50) {
+      throw ArgumentError('A group must have 3-50 members.');
+    }
+    await _conversations.doc(conversationId).update({'memberIds': members});
+  }
+
+  Future<void> leaveGroup({
+    required String conversationId,
+    required String uid,
+  }) async {
+    final conversation = await findById(conversationId);
+    if (conversation == null || conversation.type != 'group') {
+      throw StateError('Group not found.');
+    }
+    if (!conversation.memberIds.contains(uid)) {
+      throw StateError('You are not a member of this group.');
+    }
+    if (conversation.ownerId == uid) {
+      throw StateError('The group owner must transfer ownership before leaving.');
+    }
+    final members = conversation.memberIds.where((id) => id != uid).toList();
+    if (members.length < 3) throw StateError('A group must keep at least 3 members.');
+    await _conversations.doc(conversationId).update({'memberIds': members});
+  }
+
   Future<AurenConversation?> findById(String conversationId) async {
     if (conversationId.trim().isEmpty) return null;
     final doc = await _conversations.doc(conversationId).get();
