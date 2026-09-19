@@ -1,0 +1,2 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+class AurenAgentTrustRepository{final FirebaseFirestore _db;AurenAgentTrustRepository({FirebaseFirestore? db}):_db=db??FirebaseFirestore.instance;Stream<QuerySnapshot<Map<String,dynamic>>> watchTop({int limit=50})=>_db.collection('agent_trust').orderBy('score',descending:true).limit(limit).snapshots();}
