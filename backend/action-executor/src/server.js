@@ -39,6 +39,7 @@ app.use(express.json({ limit: '8mb' }));
 
 const db = getFirestore();
 const aiRate = new Map();
+const aiInFlight = new Set();
 const AI_RATE_WINDOW_MS = 60_000;
 const AI_RATE_MAX = 30;
 const auth = getAuth();
@@ -566,6 +567,9 @@ function allowAiRequest(uid) {
 app.post('/api/ai/chat', requireUser, async (req, res) => {
   try {
     if (!allowAiRequest(req.uid)) return error(res, 429, 'AI rate limit exceeded.');
+    const aiKey = `${req.uid}:${req.body?.conversationId || ''}`;
+    if (aiInFlight.has(aiKey)) return error(res, 429, 'An AI request is already in progress for this conversation.');
+    aiInFlight.add(aiKey);
     const baseUrl = (process.env.AUREN_AI_BASE_URL || '').trim().replace(/\\/$/, '');
     const apiKey = (process.env.AUREN_AI_API_KEY || '').trim();
     const model = (process.env.AUREN_AI_MODEL || '').trim();
@@ -648,6 +652,9 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
     return res.json({ text: text.trim() });
   } catch (e) {
     return error(res, 502, e.message || 'AUREN AI request failed.');
+  } finally {
+    const aiKey = `${req.uid}:${req.body?.conversationId || ''}`;
+    aiInFlight.delete(aiKey);
   }
 });
 
