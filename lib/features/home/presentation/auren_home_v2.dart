@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
-import '../../social/presentation/user_search_screen.dart';
+import '../../discover/presentation/discover_screen.dart';
+import '../../search/presentation/global_search_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -12,12 +13,9 @@ class AurenHomeV2 extends StatelessWidget {
       title: const Text('AUREN'),
       actions: [
         IconButton(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AurenUserSearchScreen()),
-          ),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGlobalSearchScreen())),
           icon: const Icon(Icons.search),
-          tooltip: 'Search people',
+          tooltip: 'Search AUREN',
         ),
       ],
     ),
@@ -29,7 +27,7 @@ class AurenHomeV2 extends StatelessWidget {
         const Text('AUREN يتكيف معك، وليس العكس.'),
         const SizedBox(height: 20),
         _card(context, Icons.auto_awesome, 'AUREN AI', 'اسأل، خطط، وأنجز.', const MessengerScreen()),
-        _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.'),
+        _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.', const AurenDiscoverScreen()),
         _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
         _card(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل هدفك إلى خطوات.', const PersonalAiScreen()),
         const SizedBox(height: 12),
