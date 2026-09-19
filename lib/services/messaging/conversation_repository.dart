@@ -61,6 +61,30 @@ class ConversationRepository {
       title: otherTitle.trim().isEmpty ? 'Direct message' : otherTitle.trim(),
       isAi: false,
       updatedAt: DateTime.now(),
+      type: 'direct',
+    );
+    await ref.set(conversation.toMap());
+    return conversation;
+  }
+
+  Future<AurenConversation> createGroup({
+    required String uid,
+    required String title,
+    required List<String> memberIds,
+  }) async {
+    final members = {...memberIds, uid}.toList();
+    if (title.trim().isEmpty || members.length < 3 || members.length > 50) {
+      throw ArgumentError('A group needs a title and 3-50 members.');
+    }
+    final ref = _conversations.doc();
+    final conversation = AurenConversation(
+      id: ref.id,
+      memberIds: members,
+      title: title.trim(),
+      isAi: false,
+      updatedAt: DateTime.now(),
+      type: 'group',
+      ownerId: uid,
     );
     await ref.set(conversation.toMap());
     return conversation;
