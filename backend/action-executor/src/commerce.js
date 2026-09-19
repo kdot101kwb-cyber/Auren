@@ -119,8 +119,10 @@ export async function resolveDisputedSpending(db,uid,transactionId,resolution,am
       t.update(txRef,{status:'released',resolvedAt:FieldValue.serverTimestamp()});
       return {...tx,status:'released'};
     }
-    if(resolution==='no_action') return {...tx,status:'disputed'};
+    if(resolution==='no_action') return {...tx,status:tx.originalStatus};
     if(!Number.isInteger(amount)||amount<=0||amount>tx.amountMinor) throw Object.assign(new Error('Invalid dispute refund amount.'),{code:400});
+    if(resolution==='partial_refund' && amount===tx.amountMinor) throw Object.assign(new Error('Use full refund resolution for the full transaction amount.'),{code:400});
+    if(resolution==='refund' && amount!==tx.amountMinor) throw Object.assign(new Error('A full refund must equal the disputed transaction amount.'),{code:400});
     if(tx.originalStatus==='reserved') throw Object.assign(new Error('Reserved disputes must use release.'),{code:409});
     const ref=walletRef(db,uid), permission=permissionRef(db,uid), [snap,permissionSnap]=await Promise.all([t.get(ref),t.get(permission)]), w=snap.data()||{}, ledger=permissionSnap.exists?permissionSnap.data():{};
     const today=new Date().toISOString().slice(0,10), storedDay=typeof ledger.spentTodayDate==='string'?ledger.spentTodayDate:null;
