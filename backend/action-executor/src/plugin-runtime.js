@@ -1,7 +1,6 @@
 import { validatePackageMetadata, verifyPackageSignature, consumeQuota, packageSha256 } from './plugin-security.js';
 import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
 import { getStorage } from 'firebase-admin/storage';
-import { FieldValue } from 'firebase-admin/firestore';
 export async function preparePluginInvocation(db,{agent,manifest,packageMetadata,signature,secret,payload={}}){
   const normalized=validatePluginManifest(manifest);
   const meta=validatePackageMetadata(packageMetadata);
