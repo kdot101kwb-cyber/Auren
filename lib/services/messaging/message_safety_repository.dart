@@ -17,6 +17,12 @@ class MessageSafetyRepository {
   Stream<bool> watchBlocked(String uid, String blockedUid) =>
       _db.collection('message_blocks').doc(uid + '_' + blockedUid).snapshots().map((doc) => doc.exists);
 
+  Stream<List<String>> watchBlockedUsers(String uid) =>
+      _db.collection('message_blocks')
+          .where('ownerUid', isEqualTo: uid)
+          .snapshots()
+          .map((s) => s.docs.map((d) => d.data()['blockedUid'] as String? ?? '').where((id) => id.isNotEmpty).toList());
+
   Future<void> report({required String reporterUid, required String conversationId, required String messageId, required String reason}) async {
     final clean = reason.trim();
     if (reporterUid.isEmpty || conversationId.isEmpty || messageId.isEmpty || clean.isEmpty || clean.length > 500) throw ArgumentError('Invalid message report.');
