@@ -1,0 +1,1 @@
+class AurenAgentCapability{final String agentId,capability;final DateTime expiresAt;const AurenAgentCapability({required this.agentId,required this.capability,required this.expiresAt});bool get isExpired=>DateTime.now().isAfter(expiresAt);}
