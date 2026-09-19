@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../home/presentation/auren_home_v2.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
-import '../../messenger/presentation/messenger_screen.dart';
+import '../../messenger/presentation/conversation_list_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../social/presentation/create_post_screen.dart';
 
@@ -16,7 +16,7 @@ class _AurenShellState extends State<AurenShell>{
    AurenHomeV2(),
    AurenTimelineScreen(),
    AurenDiscoverScreen(),
-   MessengerScreen(),
+   AurenConversationListScreen(),
    AurenProfileScreen(),
  ];
  @override Widget build(BuildContext context)=>Scaffold(
