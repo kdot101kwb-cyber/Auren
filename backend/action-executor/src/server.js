@@ -22,7 +22,7 @@ import { recoverStaleExecution } from './execution-recovery.js';
 import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
 import { submitReview } from './agent-reputation.js';
 import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
-import { validatePackageMetadata, verifyPackageSignature, packageSha256, validateArtifactId, artifactObjectPath, createArtifactId } from './plugin-security.js';
+import { validatePackageMetadata, verifyPackageSignature, packageSha256, scanPluginArtifact, validateArtifactId, artifactObjectPath, createArtifactId } from './plugin-security.js';
 
 if (getApps().length === 0) {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -137,14 +137,16 @@ app.post('/api/agents/plugins/artifacts/upload', requireUser, async (req,res)=>{
     if(!signingSecret)return error(res,503,'Plugin signing is not configured.');
     const artifactId=createArtifactId();
     const sha256=packageSha256(bytes);
+    const scan=scanPluginArtifact(bytes);
+    if(scan.status!=='passed')return error(res,422,`Plugin artifact security scan rejected the upload: ${scan.findings.join(', ')}`);
     const packageMetadata={pluginId,version,sha256,sizeBytes:bytes.length};
     const signature=crypto.createHmac('sha256',signingSecret).update(pluginId+'|'+version+'|'+sha256+'|'+bytes.length).digest('hex');
     const path=artifactObjectPath(agent.agentId,artifactId);
     const file=storage.bucket().file(path);
     await file.save(bytes,{resumable:false,metadata:{contentType:'application/javascript',metadata:{agentId:agent.agentId,pluginId,version,entrypoint,sha256,artifactId}}});
-    await db.collection('plugin_artifacts').doc(artifactId).set({artifactId,agentId:agent.agentId,ownerUid:req.uid,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,objectPath:path,signature,state:'uploaded',createdAt:FieldValue.serverTimestamp()});
+    await db.collection('plugin_artifacts').doc(artifactId).set({artifactId,agentId:agent.agentId,ownerUid:req.uid,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,objectPath:path,signature,state:'scanned',scanStatus:'passed',scannedAt:FieldValue.serverTimestamp(),createdAt:FieldValue.serverTimestamp()});
     await writeAuditEvent(db,req.uid,{event:'plugin_artifact_uploaded',agentId:agent.agentId,artifactId,pluginId,version,sha256,sizeBytes:bytes.length});
-    return res.status(201).json({artifactId,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,signature,state:'uploaded'});
+    return res.status(201).json({artifactId,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,signature,state:'scanned'});
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin artifact upload failed.');}
 });
 
@@ -212,7 +214,7 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
     if (!artifactSnap.exists) return error(res, 404, 'Plugin artifact not found.');
     const artifact = artifactSnap.data();
     if (artifact.agentId !== agent.agentId || artifact.pluginId !== manifest.pluginId || artifact.version !== manifest.version || artifact.entrypoint !== manifest.entrypoint) return error(res, 409, 'Plugin artifact does not match manifest.');
-    if (artifact.state !== 'uploaded') return error(res, 403, 'Plugin artifact is not available for publishing.');
+    if (artifact.state !== 'scanned') return error(res, 403, 'Plugin artifact must pass the security scan before publishing.');
     const packageMetadata = {pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
     const signingSecret = process.env.AUREN_PLUGIN_SIGNING_SECRET || '';
     if (!signingSecret) return error(res, 503, 'Plugin signing is not configured.');
