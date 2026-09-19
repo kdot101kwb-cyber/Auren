@@ -25,6 +25,12 @@ services:
         generateValue: true
       - key: AUREN_STORAGE_BUCKET
         sync: false
+      - key: AUREN_AI_BASE_URL
+        sync: false
+      - key: AUREN_AI_API_KEY
+        sync: false
+      - key: AUREN_AI_MODEL
+        sync: false
 
   - type: pserv
     name: auren-plugin-worker
