@@ -46,17 +46,20 @@ service cloud.firestore {
 
     match /businesses/{businessId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
-      allow create, update, delete: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
     match /places/{placeId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
-      allow create, update, delete: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
     match /opportunities/{opportunityId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
-      allow create, update, delete: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
     match /conversations/{conversationId} {
