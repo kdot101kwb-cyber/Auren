@@ -7,6 +7,7 @@ import '../../../services/actions/action_repository.dart';
 import '../../../services/actions/action_registry.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
+import '../../../services/messaging/message_safety_repository.dart';
 
 class MessengerScreen extends StatefulWidget {
   final String? conversationId;
@@ -24,6 +25,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
   final _messagesRepository = FirestoreMessageRepository();
   final _conversationRepository = ConversationRepository();
   final _actionRepository = ActionRepository();
+  final _safetyRepository = MessageSafetyRepository();
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -74,6 +76,17 @@ class _MessengerScreenState extends State<MessengerScreen> {
     setState(() => _sending = true);
 
     try {
+      if (!_isAi) {
+        final conversation = await _conversationRepository.findById(_conversationId!);
+        final otherUid = conversation?.memberIds.where((id) => id != _uid).firstOrNull;
+        if (otherUid != null) {
+          final blockedMe = await _safetyRepository.watchBlocked(otherUid, _uid!).first;
+          final blockedByMe = await _safetyRepository.watchBlocked(_uid!, otherUid).first;
+          if (blockedMe || blockedByMe) {
+            throw StateError('Messaging is unavailable because one of the users is blocked.');
+          }
+        }
+      }
       final now = DateTime.now();
       await _messagesRepository.send(AurenMessage(
       id: 'msg_${now.microsecondsSinceEpoch}',
@@ -225,7 +238,38 @@ class _MessengerScreenState extends State<MessengerScreen> {
                               ? Theme.of(context).colorScheme.primary
                               : Theme.of(context).colorScheme.surfaceContainerHighest,
                         ),
-                        child: Text(message.text),
+                        child: GestureDetector(
+                          onLongPress: () async {
+                            if (message.isAi || message.senderId == _uid) return;
+                            final reason = await showDialog<String>(
+                              context: context,
+                              builder: (dialogContext) => SimpleDialog(
+                                title: const Text('Message safety'),
+                                children: [
+                                  SimpleDialogOption(
+                                    onPressed: () => Navigator.pop(dialogContext, 'Report'),
+                                    child: const Text('Report message'),
+                                  ),
+                                  SimpleDialogOption(
+                                    onPressed: () => Navigator.pop(dialogContext, 'Block'),
+                                    child: const Text('Block user'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (reason == 'Report') {
+                              await _safetyRepository.report(
+                                reporterUid: _uid!,
+                                conversationId: _conversationId!,
+                                messageId: message.id,
+                                reason: 'User reported message',
+                              );
+                            } else if (reason == 'Block') {
+                              await _safetyRepository.block(_uid!, message.senderId);
+                            }
+                          },
+                          child: Text(message.text),
+                        ),
                       ),
                     );
                   },
