@@ -19,6 +19,9 @@ Run the Action Executor and Plugin Worker on a private Docker-capable host/netwo
 - `AUREN_PLUGIN_WORKER_URL` (wired automatically from the private worker)
 - `AUREN_PLUGIN_WORKER_SECRET` (wired automatically from the worker secret)
 - `PORT=8080`
+- `AUREN_AI_BASE_URL` (OpenAI-compatible provider base URL)
+- `AUREN_AI_API_KEY` (provider secret; backend only)
+- `AUREN_AI_MODEL` (provider model name)
 
 ### Plugin Worker environment
 
