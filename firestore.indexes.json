@@ -4,24 +4,56 @@
       "collectionGroup": "businesses",
       "queryScope": "COLLECTION",
       "fields": [
-        {"fieldPath": "visibility", "order": "ASCENDING"},
-        {"fieldPath": "searchText", "order": "ASCENDING"}
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchText",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "places",
       "queryScope": "COLLECTION",
       "fields": [
-        {"fieldPath": "visibility", "order": "ASCENDING"},
-        {"fieldPath": "searchText", "order": "ASCENDING"}
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchText",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "opportunities",
       "queryScope": "COLLECTION",
       "fields": [
-        {"fieldPath": "visibility", "order": "ASCENDING"},
-        {"fieldPath": "searchText", "order": "ASCENDING"}
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "searchText",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isAi",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],
