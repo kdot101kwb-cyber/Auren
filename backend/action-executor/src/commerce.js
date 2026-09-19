@@ -25,11 +25,12 @@ export async function reserveSpending(db,uid,amountMinor,currency,actionId,idemp
     return {transactionId,status:'reserved'};
   });
 }
-export async function settleSpending(db,uid,transactionId){
+export async function settleSpending(db,uid,transactionId,agentId=null){
   return db.runTransaction(async t=>{
     const q=await t.get(db.collection('users').doc(uid).collection('wallet_transactions').where('transactionId','==',transactionId).limit(1));
     if(q.empty)throw Object.assign(new Error('Transaction not found.'),{code:404});
     const txRef=q.docs[0].ref, tx=q.docs[0].data();
+    if(agentId!==null&&tx.agentId!==agentId)throw Object.assign(new Error('Transaction is not owned by the acting agent.'),{code:403});
     if(tx.status==='settled')return tx;
     if(tx.status!=='reserved')throw Object.assign(new Error('Transaction is not reservable for settlement.'),{code:409});
     const ref=walletRef(db,uid), s=await t.get(ref), w=s.data()||{};
@@ -40,11 +41,12 @@ export async function settleSpending(db,uid,transactionId){
     return {...tx,status:'settled'};
   });
 }
-export async function releaseSpending(db,uid,transactionId){
+export async function releaseSpending(db,uid,transactionId,agentId=null){
   return db.runTransaction(async t=>{
     const q=await t.get(db.collection('users').doc(uid).collection('wallet_transactions').where('transactionId','==',transactionId).limit(1));
     if(q.empty)throw Object.assign(new Error('Transaction not found.'),{code:404});
     const txRef=q.docs[0].ref, tx=q.docs[0].data();
+    if(agentId!==null&&tx.agentId!==agentId)throw Object.assign(new Error('Transaction is not owned by the acting agent.'),{code:403});
     if(tx.status==='released')return tx;
     if(tx.status!=='reserved')throw Object.assign(new Error('Only reserved transactions can be released.'),{code:409});
     const ref=walletRef(db,uid), s=await t.get(ref), w=s.data()||{};
@@ -53,11 +55,12 @@ export async function releaseSpending(db,uid,transactionId){
     return {...tx,status:'released'};
   });
 }
-export async function refundSpending(db,uid,transactionId){
+export async function refundSpending(db,uid,transactionId,agentId=null){
   return db.runTransaction(async t=>{
     const q=await t.get(db.collection('users').doc(uid).collection('wallet_transactions').where('transactionId','==',transactionId).limit(1));
     if(q.empty)throw Object.assign(new Error('Transaction not found.'),{code:404});
     const txRef=q.docs[0].ref, tx=q.docs[0].data();
+    if(agentId!==null&&tx.agentId!==agentId)throw Object.assign(new Error('Transaction is not owned by the acting agent.'),{code:403});
     if(tx.status==='refunded')return tx;
     if(tx.status!=='settled')throw Object.assign(new Error('Only settled transactions can be refunded.'),{code:409});
     const ref=walletRef(db,uid), s=await t.get(ref), w=s.data()||{};
