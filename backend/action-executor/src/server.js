@@ -2,6 +2,7 @@ import express from 'express';
 import { getApps, initializeApp, applicationDefault, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 import { getActionDefinition, validatePayload } from './action-registry.js';
 import { loadPermissionLedger, assertPermission, assertSpendingLimit } from './permission-ledger.js';
 import { loadAgentIdentity } from './agent-identity.js';
@@ -20,7 +21,7 @@ import { recoverStaleExecution } from './execution-recovery.js';
 import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
 import { submitReview } from './agent-reputation.js';
 import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
-import { validatePackageMetadata, verifyPackageSignature } from './plugin-security.js';
+import { validatePackageMetadata, verifyPackageSignature, packageSha256, validateArtifactId, artifactObjectPath, createArtifactId } from './plugin-security.js';
 
 if (getApps().length === 0) {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -33,10 +34,11 @@ if (getApps().length === 0) {
 }
 
 const app = express();
-app.use(express.json({ limit: '32kb' }));
+app.use(express.json({ limit: '8mb' }));
 
 const db = getFirestore();
 const auth = getAuth();
+const storage = getStorage();
 
 function error(res, status, message) {
   return res.status(status).json({ error: message });
@@ -115,6 +117,31 @@ app.post('/api/a2a/send', requireUser, async (req, res) => {
   return res.status(202).json({ status: 'accepted', messageId: envelope.messageId });
 });
 
+
+app.post('/api/agents/plugins/artifacts/upload', requireUser, async (req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const risk=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(risk.exists)assertOperationalRisk(risk.data());
+    const pluginId=typeof req.body?.pluginId==='string'?req.body.pluginId.trim():'';
+    const version=typeof req.body?.version==='string'?req.body.version.trim():'';
+    const entrypoint=typeof req.body?.entrypoint==='string'?req.body.entrypoint.trim():'';
+    const encoded=typeof req.body?.contentBase64==='string'?req.body.contentBase64:'';
+    if(!pluginId||!version||!entrypoint||!encoded)return error(res,400,'pluginId, version, entrypoint and contentBase64 are required.');
+    if(!/^file:[a-z0-9._-]{3,64}\/[^/]+\\.js$/.test(entrypoint))return error(res,400,'Only file entrypoints are supported for uploaded plugins.');
+    const bytes=Buffer.from(encoded,'base64');
+    if(!bytes.length||bytes.length>5*1024*1024)return error(res,413,'Plugin artifact exceeds the 5 MB limit.');
+    const artifactId=createArtifactId();
+    const sha256=packageSha256(bytes);
+    const path=artifactObjectPath(agent.agentId,artifactId);
+    const file=storage.bucket().file(path);
+    await file.save(bytes,{resumable:false,metadata:{contentType:'application/javascript',metadata:{agentId:agent.agentId,pluginId,version,entrypoint,sha256,artifactId}}});
+    await db.collection('plugin_artifacts').doc(artifactId).set({artifactId,agentId:agent.agentId,ownerUid:req.uid,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,objectPath:path,state:'uploaded',createdAt:FieldValue.serverTimestamp()});
+    await writeAuditEvent(db,req.uid,{event:'plugin_artifact_uploaded',agentId:agent.agentId,artifactId,pluginId,version,sha256,sizeBytes:bytes.length});
+    return res.status(201).json({artifactId,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,state:'uploaded'});
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin artifact upload failed.');}
+});
 
 app.post('/api/agents/plugins/validate', requireUser, async (req,res)=>{
   try {
