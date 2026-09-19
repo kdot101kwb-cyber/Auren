@@ -90,6 +90,22 @@ class ConversationRepository {
     return conversation;
   }
 
+  Future<void> updateGroupMembers({required String conversationId, required String ownerUid, required List<String> memberIds}) async {
+    final clean = memberIds.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
+    if (ownerUid.isEmpty || !clean.contains(ownerUid) || clean.length < 3 || clean.length > 50) {
+      throw ArgumentError('Groups must contain the owner and 3-50 members.');
+    }
+    final ref = _conversations.doc(conversationId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+      if (!snap.exists || data == null || data['type'] != 'group' || data['ownerId'] != ownerUid) {
+        throw StateError('Only the group owner can manage members.');
+      }
+      tx.update(ref, {'memberIds': clean});
+    });
+  }
+
   Future<void> addGroupMember({required String conversationId, required String uid, required String memberUid}) async {
     if (conversationId.isEmpty || uid.isEmpty || memberUid.isEmpty) throw ArgumentError('Invalid member.');
     final ref = _conversations.doc(conversationId);
