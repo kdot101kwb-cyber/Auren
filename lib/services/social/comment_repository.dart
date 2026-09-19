@@ -28,7 +28,7 @@ class CommentRepository {
       final data = postSnap.data() ?? {};
       final count = (data['comments'] as num?)?.toInt() ?? 0;
       tx.set(commentRef, comment.toMap());
-      tx.update(postRef, {'comments': count + 1});
+      tx.update(postRef, {'comments': count + 1, 'lastCommentId': comment.id});
     });
   }
 }
