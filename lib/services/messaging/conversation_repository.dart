@@ -10,8 +10,16 @@ class ConversationRepository {
   CollectionReference<Map<String, dynamic>> get _conversations =>
       _firestore.collection('conversations');
 
+  DocumentReference<Map<String, dynamic>> _aiRef(String uid) =>
+      _conversations.doc('ai_$uid');
+
   Future<AurenConversation> createAiConversation(String uid) async {
-    final ref = _conversations.doc();
+    final ref = _aiRef(uid);
+    final existing = await ref.get();
+    if (existing.exists && existing.data() != null) {
+      return AurenConversation.fromMap(ref.id, existing.data()!);
+    }
+
     final conversation = AurenConversation(
       id: ref.id,
       memberIds: [uid],
@@ -19,21 +27,14 @@ class ConversationRepository {
       isAi: true,
       updatedAt: DateTime.now(),
     );
-
     await ref.set(conversation.toMap());
     return conversation;
   }
 
   Future<AurenConversation?> findAiConversation(String uid) async {
-    final snapshot = await _conversations
-        .where('memberIds', arrayContains: uid)
-        .where('isAi', isEqualTo: true)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isEmpty) return null;
-    final doc = snapshot.docs.first;
-    return AurenConversation.fromMap(doc.id, doc.data());
+    final doc = await _aiRef(uid).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return AurenConversation.fromMap(doc.id, doc.data()!);
   }
 
   Future<AurenConversation> getOrCreateAiConversation(String uid) async {
