@@ -53,10 +53,6 @@ app.post('/api/a2a/send', requireUser, async (req, res) => {
   const sender = await loadAgentIdentity(db, req.uid);
   const capabilityToken = decodeAndValidateCapabilityToken(req.body?.capabilityToken, sender.agentId, 'messages.send');
   if (!capabilityToken) return error(res, 403, 'Valid messages.send capability is required.');
-  const tokenRef = db.collection('agent_capability_nonces').doc(capabilityToken.tokenId);
-  const tokenSnap = await tokenRef.get();
-  if (tokenSnap.exists) return error(res, 409, 'Capability token has already been used.');
-  await tokenRef.create({tokenId:capabilityToken.tokenId,agentId:sender.agentId,capability:'messages.send',usedAt:FieldValue.serverTimestamp()});
   if (sender.status !== 'active' || envelope.senderAgentId !== sender.agentId) {
     return error(res, 403, 'Sender agent is not authorized.');
   }
@@ -73,6 +69,13 @@ app.post('/api/a2a/send', requireUser, async (req, res) => {
   const messageRef = db.collection('agent_messages').doc(envelope.messageId);
   const existing = await messageRef.get();
   if (existing.exists) return error(res, 409, 'A2A message already exists.');
+
+  const tokenRef = db.collection('agent_capability_nonces').doc(capabilityToken.tokenId);
+  try {
+    await tokenRef.create({tokenId:capabilityToken.tokenId,agentId:sender.agentId,capability:'messages.send',usedAt:FieldValue.serverTimestamp()});
+  } catch {
+    return error(res, 409, 'Capability token has already been used.');
+  }
 
   await saveMessage(db, {
     messageId: envelope.messageId,
@@ -179,6 +182,14 @@ app.post('/api/agents/commerce/reserve', requireUser, async (req, res) => {
     const trust = await loadTrust(db, agent.agentId);
     assertTrust(trust, 0);
     if (req.body.idempotencyKey.length < 16) return error(res, 400, 'Commerce idempotency key must be at least 16 characters.');
+    const capability = decodeAndValidateCapabilityToken(req.body.capabilityToken, agent.agentId, 'commerce.request');
+    if (!capability) return error(res, 403, 'Valid commerce capability is required.');
+    const capabilityRef = db.collection('agent_capability_nonces').doc(capability.tokenId);
+    try {
+      await capabilityRef.create({tokenId:capability.tokenId,agentId:agent.agentId,capability:'commerce.request',usedAt:FieldValue.serverTimestamp()});
+    } catch {
+      return error(res, 409, 'Commerce capability token has already been used.');
+    }
     const reservation = await reserveSpending(db, req.uid, req.body.amountMinor, req.body.currency, req.body.actionId || req.body.idempotencyKey, req.body.idempotencyKey);
     await writeAuditEvent(db, req.uid, {event:'commerce_reservation_created',agentId:agent.agentId,transactionId:reservation.transactionId,amountMinor:req.body.amountMinor,currency:req.body.currency,idempotencyKey:req.body.idempotencyKey});
     return res.status(201).json(reservation);
