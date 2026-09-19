@@ -7,13 +7,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-    allow read, write: if isOwner(userId);
-
     match /goals/{goalId} {
       allow read, write: if isOwner(userId);
     }
-
-      allow read, write: if isOwner(userId);
 
       match /actions/{actionId} {
         allow read: if request.auth != null && request.auth.uid == userId;
@@ -34,7 +30,12 @@ service cloud.firestore {
           && request.resource.data.permission == 'userApproval'
           && request.resource.data.riskLevel == 'low'
           && request.resource.data.approvalLevel == 1
-          && request.resource.data.requiresApproval == true;
+          && request.resource.data.requiresApproval == true
+          && request.resource.data.keys().hasOnly([
+            'conversationId', 'actionType', 'title', 'description', 'payload',
+            'permission', 'riskLevel', 'approvalLevel', 'spendingLimitMinor',
+            'currency', 'requiresApproval', 'status', 'result', 'createdAt'
+          ]);
 
         allow update: if request.auth != null
           && request.auth.uid == userId
@@ -49,7 +50,8 @@ service cloud.firestore {
           && request.resource.data.permission == resource.data.permission
           && request.resource.data.riskLevel == resource.data.riskLevel
           && request.resource.data.approvalLevel == resource.data.approvalLevel
-          && request.resource.data.requiresApproval == resource.data.requiresApproval;
+          && request.resource.data.requiresApproval == resource.data.requiresApproval
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
 
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
