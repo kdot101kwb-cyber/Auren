@@ -14,7 +14,9 @@ export async function preparePluginInvocation(db,{agent,manifest,packageMetadata
   const versionSnap=await versionRef.get();
   if(!versionSnap.exists)throw Object.assign(new Error('Published plugin version artifact is not registered.'),{code:409});
   const version=versionSnap.data();
-  if(version.sha256&&version.sha256!==meta.sha256)throw Object.assign(new Error('Plugin artifact hash does not match the published version.'),{code:409});
+  if(version.artifactState!=='approved')throw Object.assign(new Error('Plugin artifact is not approved for execution.'),{code:403});
+  if(version.pluginId!==normalized.pluginId||version.version!==normalized.version||version.entrypoint!==normalized.entrypoint)throw Object.assign(new Error('Registered plugin artifact provenance does not match the requested version.'),{code:409});
+  if(version.sha256!==meta.sha256||version.sizeBytes!==meta.sizeBytes)throw Object.assign(new Error('Plugin artifact metadata does not match the registered provenance.'),{code:409});
   if(!verifyPackageSignature(meta,signature,secret))throw Object.assign(new Error('Invalid plugin package signature.'),{code:403});
   const bytes=Buffer.byteLength(JSON.stringify(payload),'utf8');
   if(bytes>sandboxPolicy().maxPayloadBytes)throw Object.assign(new Error('Plugin payload exceeds sandbox limit.'),{code:413});
