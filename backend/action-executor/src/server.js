@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'node:crypto';
 import { getApps, initializeApp, applicationDefault, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
@@ -132,14 +133,18 @@ app.post('/api/agents/plugins/artifacts/upload', requireUser, async (req,res)=>{
     if(!/^file:[a-z0-9._-]{3,64}\/[^/]+\\.js$/.test(entrypoint))return error(res,400,'Only file entrypoints are supported for uploaded plugins.');
     const bytes=Buffer.from(encoded,'base64');
     if(!bytes.length||bytes.length>5*1024*1024)return error(res,413,'Plugin artifact exceeds the 5 MB limit.');
+    const signingSecret=process.env.AUREN_PLUGIN_SIGNING_SECRET||'';
+    if(!signingSecret)return error(res,503,'Plugin signing is not configured.');
     const artifactId=createArtifactId();
     const sha256=packageSha256(bytes);
+    const packageMetadata={pluginId,version,sha256,sizeBytes:bytes.length};
+    const signature=crypto.createHmac('sha256',signingSecret).update(pluginId+'|'+version+'|'+sha256+'|'+bytes.length).digest('hex');
     const path=artifactObjectPath(agent.agentId,artifactId);
     const file=storage.bucket().file(path);
     await file.save(bytes,{resumable:false,metadata:{contentType:'application/javascript',metadata:{agentId:agent.agentId,pluginId,version,entrypoint,sha256,artifactId}}});
-    await db.collection('plugin_artifacts').doc(artifactId).set({artifactId,agentId:agent.agentId,ownerUid:req.uid,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,objectPath:path,state:'uploaded',createdAt:FieldValue.serverTimestamp()});
+    await db.collection('plugin_artifacts').doc(artifactId).set({artifactId,agentId:agent.agentId,ownerUid:req.uid,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,objectPath:path,signature,state:'uploaded',createdAt:FieldValue.serverTimestamp()});
     await writeAuditEvent(db,req.uid,{event:'plugin_artifact_uploaded',agentId:agent.agentId,artifactId,pluginId,version,sha256,sizeBytes:bytes.length});
-    return res.status(201).json({artifactId,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,state:'uploaded'});
+    return res.status(201).json({artifactId,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,signature,state:'uploaded'});
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin artifact upload failed.');}
 });
 
@@ -207,8 +212,8 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
     const packageMetadata = {pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
     const signingSecret = process.env.AUREN_PLUGIN_SIGNING_SECRET || '';
     if (!signingSecret) return error(res, 503, 'Plugin signing is not configured.');
-    if (!verifyPackageSignature(packageMetadata, req.body?.signature, signingSecret)) return error(res, 403, 'Invalid plugin package signature.');
-    const signature = req.body.signature;
+    if (!verifyPackageSignature(packageMetadata, artifact.signature, signingSecret)) return error(res, 403, 'Stored plugin artifact signature is invalid.');
+    const signature = artifact.signature;
     const listing = {
       agentId: agent.agentId,
       ownerUid: req.uid,
