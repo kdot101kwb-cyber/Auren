@@ -375,14 +375,20 @@ service cloud.firestore {
           && request.auth.uid in get(
             /databases/$(database)/documents/conversations/$(conversationId)
           ).data.memberIds
-          && request.resource.data.senderId == request.auth.uid
-          && request.resource.data.isAi == false
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 12000
           && request.resource.data.keys().hasOnly([
             'senderId', 'text', 'createdAt', 'isAi'
-          ]);
+          ])
+          && (
+            (!request.resource.data.isAi && request.resource.data.senderId == request.auth.uid)
+            || (
+              request.resource.data.isAi
+              && request.resource.data.senderId == 'auren-ai'
+              && get(/databases/$(database)/documents/conversations/$(conversationId)).data.isAi == true
+            )
+          );
         allow update, delete: if false;
       }
     }
