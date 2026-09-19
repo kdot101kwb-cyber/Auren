@@ -24,7 +24,20 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
   @override
   void initState() {
     super.initState();
-    _uid = _auth.currentUserId;
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      final uid = _auth.currentUserId ?? await _auth.signInAnonymously();
+      if (mounted) setState(() => _uid = uid);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تجهيز Action Center: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _reject(AurenActionRequest action) async {
@@ -54,7 +67,9 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     try {
       // The client only records explicit user approval.
       // The trusted backend is responsible for execution and final status.
-      await _repo.setStatus(uid, action.id, 'approved');
+      if (action.status == 'pending') {
+        await _repo.setStatus(uid, action.id, 'approved');
+      }
 
       final execution = await _executor.execute(
         uid: uid,
@@ -89,7 +104,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Action Center')),
       body: StreamBuilder<List<AurenActionRequest>>(
-        stream: _repo.watchPending(uid),
+        stream: _repo.watchOutstanding(uid),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
@@ -116,7 +131,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.shield_outlined),
                   title: Text(action.title),
-                  subtitle: Text(action.description),
+                  subtitle: Text('${action.description}\n${action.status == 'approved' ? 'تمت الموافقة — جاري/جاهز للتنفيذ' : 'بانتظار موافقتك'}'),
                   isThreeLine: true,
                   trailing: busy
                       ? const SizedBox(
@@ -132,7 +147,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                               icon: const Icon(Icons.close),
                             ),
                             IconButton(
-                              tooltip: 'Approve',
+                              tooltip: action.status == 'approved' ? 'Execute' : 'Approve & execute',
                               onPressed: () => _approve(action),
                               icon: const Icon(Icons.check),
                             ),
