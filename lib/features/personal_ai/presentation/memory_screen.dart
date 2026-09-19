@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/memory/memory_repository.dart';
 import '../../../core/models/memory_item.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenMemoryScreen extends StatelessWidget {
   const AurenMemoryScreen({super.key});
@@ -64,9 +65,23 @@ class AurenMemoryScreen extends StatelessWidget {
                     id: item.id, key: item.key, value: item.value,
                     enabled: enabled, updatedAt: DateTime.now(),
                   )),
-                  secondary: IconButton(
-                    onPressed: () => repo.delete(uid, item.id),
-                    icon: const Icon(Icons.delete_outline),
+                  secondary: Wrap(
+                    spacing: 4,
+                    children: [
+                      IconButton(
+                        tooltip: 'Ask AUREN',
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => MessengerScreen(
+                            initialPrompt: 'استخدم هذه المعلومة كجزء من سياقي الشخصي: "${item.key}: ${item.value}".',
+                          ),
+                        )),
+                        icon: const Icon(Icons.auto_awesome),
+                      ),
+                      IconButton(
+                        onPressed: () => repo.delete(uid, item.id),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
                   ),
                 ),
               );
