@@ -1,0 +1,1 @@
+class AurenAgentMessage { final String messageId,senderAgentId,recipientAgentId,type; final Map<String,dynamic> payload; final DateTime createdAt; const AurenAgentMessage({required this.messageId,required this.senderAgentId,required this.recipientAgentId,required this.type,required this.payload,required this.createdAt});}
