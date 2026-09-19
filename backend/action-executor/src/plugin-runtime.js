@@ -16,14 +16,14 @@ export async function preparePluginInvocation(db,{agent,manifest,packageMetadata
   const version=versionSnap.data();
   if(version.artifactState==='revoked')throw Object.assign(new Error('Plugin artifact version has been revoked.'),{code:403});
   if(version.artifactState!=='approved')throw Object.assign(new Error('Plugin artifact is not approved for execution.'),{code:403});
-  if(version.pluginId!==normalized.pluginId||version.version!==normalized.version||version.entrypoint!==normalized.entrypoint)throw Object.assign(new Error('Registered plugin artifact provenance does not match the requested version.'),{code:409});
+  if(version.agentId!==agent.agentId||version.pluginId!==normalized.pluginId||version.version!==normalized.version||version.entrypoint!==normalized.entrypoint)throw Object.assign(new Error('Registered plugin artifact provenance does not match the requested version.'),{code:409});
   if(!version.artifactId||!version.objectPath)throw Object.assign(new Error('Plugin artifact storage reference is missing.'),{code:409});
-  if(version.sha256!==meta.sha256||version.sizeBytes!==meta.sizeBytes)throw Object.assign(new Error('Plugin artifact metadata does not match the registered provenance.'),{code:409});
+  if(version.sha256!==meta.sha256||version.sizeBytes!==meta.sizeBytes||JSON.stringify(version.dependencies||[])!==JSON.stringify(meta.dependencies||[]))throw Object.assign(new Error('Plugin artifact metadata does not match the registered provenance.'),{code:409});
   if(!verifyPackageSignature(meta,signature,secret))throw Object.assign(new Error('Invalid plugin package signature.'),{code:403});
   const artifactSnap=await db.collection('plugin_artifacts').doc(version.artifactId).get();
   if(!artifactSnap.exists)throw Object.assign(new Error('Plugin artifact registry record is missing.'),{code:409});
   const artifact=artifactSnap.data();
-  if(artifact.state!=='approved'||artifact.agentId!==agent.agentId||artifact.objectPath!==version.objectPath)throw Object.assign(new Error('Plugin artifact provenance is not trusted.'),{code:403});
+  if(artifact.state!=='approved'||artifact.agentId!==agent.agentId||artifact.objectPath!==version.objectPath||artifact.sha256!==version.sha256||artifact.sizeBytes!==version.sizeBytes)throw Object.assign(new Error('Plugin artifact provenance is not trusted.'),{code:403});
   const bucket=getStorage().bucket();
   let artifactBytes;
   try{[artifactBytes]=await bucket.file(version.objectPath).download();}catch{throw Object.assign(new Error('Plugin artifact could not be loaded from trusted storage.'),{code:404});}

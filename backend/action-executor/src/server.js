@@ -22,7 +22,7 @@ import { recoverStaleExecution } from './execution-recovery.js';
 import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
 import { submitReview } from './agent-reputation.js';
 import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
-import { validatePackageMetadata, verifyPackageSignature, packageSha256, scanPluginArtifact, validateArtifactId, artifactObjectPath, createArtifactId } from './plugin-security.js';
+import { validatePackageMetadata, validateDependencyList, verifyPackageSignature, packageSha256, scanPluginArtifact, validateArtifactId, artifactObjectPath, createArtifactId } from './plugin-security.js';
 
 if (getApps().length === 0) {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -139,15 +139,47 @@ app.post('/api/agents/plugins/artifacts/upload', requireUser, async (req,res)=>{
     const sha256=packageSha256(bytes);
     const scan=scanPluginArtifact(bytes);
     if(scan.status!=='passed')return error(res,422,`Plugin artifact security scan rejected the upload: ${scan.findings.join(', ')}`);
-    const packageMetadata={pluginId,version,sha256,sizeBytes:bytes.length};
-    const signature=crypto.createHmac('sha256',signingSecret).update(pluginId+'|'+version+'|'+sha256+'|'+bytes.length).digest('hex');
+    const dependencies=validateDependencyList(req.body?.dependencies);
+    const packageMetadata={pluginId,version,sha256,sizeBytes:bytes.length,dependencies};
+    const signature=crypto.createHmac('sha256',signingSecret).update(JSON.stringify([pluginId,version,sha256,bytes.length,dependencies])).digest('hex');
     const path=artifactObjectPath(agent.agentId,artifactId);
     const file=storage.bucket().file(path);
     await file.save(bytes,{resumable:false,metadata:{contentType:'application/javascript',metadata:{agentId:agent.agentId,pluginId,version,entrypoint,sha256,artifactId}}});
-    await db.collection('plugin_artifacts').doc(artifactId).set({artifactId,agentId:agent.agentId,ownerUid:req.uid,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,objectPath:path,signature,state:'scanned',scanStatus:'passed',scannedAt:FieldValue.serverTimestamp(),createdAt:FieldValue.serverTimestamp()});
+    await db.collection('plugin_artifacts').doc(artifactId).set({artifactId,agentId:agent.agentId,ownerUid:req.uid,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,dependencies,objectPath:path,signature,state:'scanned',scanStatus:'passed',scannedAt:FieldValue.serverTimestamp(),createdAt:FieldValue.serverTimestamp()});
     await writeAuditEvent(db,req.uid,{event:'plugin_artifact_uploaded',agentId:agent.agentId,artifactId,pluginId,version,sha256,sizeBytes:bytes.length});
     return res.status(201).json({artifactId,pluginId,version,entrypoint,sha256,sizeBytes:bytes.length,signature,state:'scanned'});
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin artifact upload failed.');}
+});
+
+app.post('/api/agents/plugins/artifacts/review', requireUser, async (req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const risk=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(risk.exists)assertOperationalRisk(risk.data());
+    const artifactId=validateArtifactId(req.body?.artifactId);
+    const decision=typeof req.body?.decision==='string'?req.body.decision.trim():'';
+    if(!['approved','rejected'].includes(decision))return error(res,400,'Decision must be approved or rejected.');
+    const ref=db.collection('plugin_artifacts').doc(artifactId);
+    const snap=await ref.get();
+    if(!snap.exists)return error(res,404,'Plugin artifact not found.');
+    const artifact=snap.data();
+    if(artifact.agentId!==agent.agentId||artifact.ownerUid!==req.uid)return error(res,403,'Artifact is not owned by this agent.');
+    if(artifact.state!=='scanned')return error(res,409,'Only scanned artifacts can be reviewed.');
+    if(decision==='rejected'){
+      await ref.update({state:'rejected',reviewedAt:FieldValue.serverTimestamp(),reviewedBy:req.uid,reviewReason:String(req.body?.reason||'').slice(0,1000)});
+      await writeAuditEvent(db,req.uid,{event:'plugin_artifact_rejected',agentId:agent.agentId,artifactId,reason:String(req.body?.reason||'').slice(0,500)});
+      return res.json({artifactId,state:'rejected'});
+    }
+    const [bytes]=await storage.bucket().file(artifact.objectPath).download();
+    if(bytes.length!==artifact.sizeBytes||packageSha256(bytes)!==artifact.sha256)return error(res,409,'Artifact integrity check failed during review.');
+    const meta={pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes,dependencies:artifact.dependencies||[]};
+    const secret=process.env.AUREN_PLUGIN_SIGNING_SECRET||'';
+    if(!secret||!verifyPackageSignature(meta,artifact.signature,secret))return error(res,409,'Artifact signature verification failed during review.');
+    await ref.update({state:'approved',reviewedAt:FieldValue.serverTimestamp(),reviewedBy:req.uid,scanStatus:'passed'});
+    await writeAuditEvent(db,req.uid,{event:'plugin_artifact_approved',agentId:agent.agentId,artifactId});
+    return res.json({artifactId,state:'approved'});
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin artifact review failed.');}
 });
 
 app.post('/api/agents/plugins/validate', requireUser, async (req,res)=>{
@@ -171,14 +203,13 @@ app.post('/api/agents/plugins/runtime/prepare', requireUser, async (req,res)=>{
     const artifactSnap=await db.collection('plugin_artifacts').doc(artifactId).get();
     if(!artifactSnap.exists)return error(res,404,'Plugin artifact not found.');
     const artifact=artifactSnap.data();
-    const packageMetadata={pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
+    const packageMetadata={pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes,dependencies:artifact.dependencies||[]};
     const signature=artifact.signature;
     const result=await preparePluginInvocation(db,{agent,manifest:req.body?.manifest,packageMetadata,signature,secret,payload:req.body?.payload||{}});
     await writeAuditEvent(db,req.uid,{event:'plugin_runtime_prepared',agentId:agent.agentId,pluginId:result.manifest.pluginId,version:result.manifest.version});
     return res.json(result);
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin runtime validation failed.');}
 });
-
 app.post('/api/agents/plugins/runtime/execute', requireUser, async(req,res)=>{
   try{
     const agent=await loadAgentIdentity(db,req.uid);
@@ -215,8 +246,8 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
     if (!artifactSnap.exists) return error(res, 404, 'Plugin artifact not found.');
     const artifact = artifactSnap.data();
     if (artifact.agentId !== agent.agentId || artifact.pluginId !== manifest.pluginId || artifact.version !== manifest.version || artifact.entrypoint !== manifest.entrypoint) return error(res, 409, 'Plugin artifact does not match manifest.');
-    if (artifact.state !== 'scanned') return error(res, 403, 'Plugin artifact must pass the security scan before publishing.');
-    const packageMetadata = {pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
+    if (artifact.state !== 'approved') return error(res, 403, 'Plugin artifact must be explicitly approved before publishing.');
+    const packageMetadata = {pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes,dependencies:artifact.dependencies||[]};
     const signingSecret = process.env.AUREN_PLUGIN_SIGNING_SECRET || '';
     if (!signingSecret) return error(res, 503, 'Plugin signing is not configured.');
     if (!verifyPackageSignature(packageMetadata, artifact.signature, signingSecret)) return error(res, 403, 'Stored plugin artifact signature is invalid.');
@@ -244,6 +275,7 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
       entrypoint: manifest.entrypoint,
       sha256: packageMetadata.sha256,
       sizeBytes: packageMetadata.sizeBytes,
+      dependencies: packageMetadata.dependencies,
       artifactState: 'approved',
       provenance: 'firebase-storage-server-verified',
       signature: signature || null,
@@ -297,6 +329,7 @@ app.post('/api/agents/plugins/revoke-version', requireUser, async (req,res)=>{
     const versionRef=ref.collection('versions').doc(version);
     const versionSnap=await versionRef.get(); if(!versionSnap.exists)return error(res,404,'Version not found.');
     const current=versionSnap.data();
+    if(current.artifactId){const artifactSnap=await db.collection('plugin_artifacts').doc(current.artifactId).get();if(artifactSnap.exists)await artifactSnap.ref.update({state:'revoked',revokedAt:FieldValue.serverTimestamp()});}
     await versionRef.update({artifactState:'revoked',revokedAt:FieldValue.serverTimestamp()});
     if(current.version===snap.data()?.version) await ref.update({state:'revoked',updatedAt:FieldValue.serverTimestamp()});
     await writeAuditEvent(db,req.uid,{event:'plugin_version_revoked',agentId:agent.agentId,version});
@@ -357,8 +390,7 @@ app.post('/api/agents/commerce/reserve', requireUser, async (req, res) => {
     assertTrust(trust, 0);
     if (req.body.idempotencyKey.length < 16) return error(res, 400, 'Commerce idempotency key must be at least 16 characters.');
     const capability = decodeAndValidateCapabilityToken(req.body.capabilityToken, agent.agentId, 'commerce.request');
-    if (!capability) return error(res, 403, 'Valid commerce capability is required.');
-    const capabilityRef = db.collection('agent_capability_nonces').doc(capability.tokenId);
+    if (!capability) return error(res, 403, 'Valid commerce capability is required.');    const capabilityRef = db.collection('agent_capability_nonces').doc(capability.tokenId);
     try {
       await capabilityRef.create({tokenId:capability.tokenId,agentId:agent.agentId,capability:'commerce.request',usedAt:FieldValue.serverTimestamp()});
     } catch {
@@ -475,6 +507,9 @@ app.post('/api/agents/marketplace/rollback',requireUser,async(req,res)=>{
     if(!versionSnap.exists)return error(res,404,'Requested version is not registered.');
     const candidate=versionSnap.data();
     if(candidate.pluginId!==listing.pluginId||candidate.agentId!==agent.agentId)return error(res,409,'Version does not belong to this plugin.');
+    if(candidate.artifactState!=='approved'||!candidate.artifactId||!candidate.objectPath)return error(res,409,'Rollback target is not an approved trusted artifact.');
+    const artifactSnap=await db.collection('plugin_artifacts').doc(candidate.artifactId).get();
+    if(!artifactSnap.exists||artifactSnap.data()?.state!=='approved'||artifactSnap.data()?.objectPath!==candidate.objectPath)return error(res,409,'Rollback artifact provenance is invalid.');
     await ref.update({version,entrypoint:candidate.entrypoint||listing.entrypoint,state:'published',rolledBackFrom:listing.version||null,updatedAt:FieldValue.serverTimestamp(),rolledBackAt:FieldValue.serverTimestamp()});
     await writeAuditEvent(db,req.uid,{event:'agent_listing_rolled_back',agentId:agent.agentId,fromVersion:listing.version||null,toVersion:version});
     return res.json({agentId:agent.agentId,state:'published',version});
@@ -538,7 +573,6 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
       if (!snap.exists) {
         throw Object.assign(new Error('Action not found.'), { code: 404 });
       }
-
       const action = snap.data();
       const executionKey = createExecutionKey(req.uid, actionId);
       const executionRef = db.collection('users').doc(req.uid).collection('action_executions').doc(executionKey);
@@ -651,10 +685,10 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
     const trustRef = db.collection('agent_trust').doc(agent.agentId);
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(trustRef);
-      const current = snap.exists ? snap.data() : {score: 0, completed: 0, disputes: 0};
+      const current = snap.exists ? snap.data() : {score: 100, completed: 0, disputes: 0, failures: 0};
       const completed = (current.completed || 0) + 1;
       const disputes = current.disputes || 0;
-      const score = Math.max(0, Math.min(100, Math.round(Math.min(100, completed * 2) - Math.min(30, disputes * 5))));
+      const score = Math.max(0, Math.min(100, 100 + Math.min(20, completed) - Math.min(100, disputes * 5) - Math.min(100, (current.failures || 0) * 5)));
       tx.set(trustRef, {score, completed, disputes, failures: current.failures || 0, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
     });
 
@@ -683,10 +717,10 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
         const trustRef = db.collection('agent_trust').doc(agent.agentId);
         await db.runTransaction(async (tx) => {
           const snap = await tx.get(trustRef);
-          const current = snap.exists ? snap.data() : {score: 0, completed: 0, disputes: 0};
+          const current = snap.exists ? snap.data() : {score: 100, completed: 0, disputes: 0, failures: 0};
           const disputes = (current.disputes || 0) + 1;
           const failures = (current.failures || 0) + 1;
-          const score = Math.max(0, Math.min(100, Math.round((current.score || 0) - 5)));
+          const score = Math.max(0, Math.min(100, Math.round((current.score ?? 100) - 5)));
           tx.set(trustRef, {score, completed: current.completed || 0, disputes, failures, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
         });
         await writeAuditEvent(db, req.uid, {
