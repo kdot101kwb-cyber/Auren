@@ -17,6 +17,8 @@ import { issueCapabilityToken, validateCapabilityToken, decodeAndValidateCapabil
 import { openDispute, addEvidence, resolveDispute, transitionDispute } from './disputes.js';
 import { calculateRisk, applyRiskPolicy, assertOperationalRisk } from './risk-engine.js';
 import { recoverStaleExecution } from './execution-recovery.js';
+import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
+import { submitReview } from './agent-reputation.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -265,6 +267,41 @@ app.post('/api/agents/commerce/disputes/resolve',requireUser,async(req,res)=>{
     await writeAuditEvent(db,req.uid,{event:'commerce_dispute_resolved',disputeId:result.disputeId,resolution:result.resolution,amountMinor:result.resolutionAmountMinor});
     return res.json(result);
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to resolve dispute.');}
+});
+
+app.post('/api/agents/marketplace/listing',requireUser,async(req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const listing=normalizeListing(req.body,agent);
+    const ref=db.collection('agent_listings').doc(agent.agentId);
+    await ref.set({...listing,state:'draft',updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    await writeAuditEvent(db,req.uid,{event:'agent_listing_updated',agentId:agent.agentId,version:listing.version});
+    return res.status(201).json(listing);
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to update listing.');}
+});
+
+app.post('/api/agents/marketplace/publish',requireUser,async(req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    const ref=db.collection('agent_listings').doc(agent.agentId);
+    const snap=await ref.get(); if(!snap.exists)return error(res,404,'Listing not found.');
+    const listing=snap.data(); if(!validateListingForPublish(listing))return error(res,400,'Listing is not publishable.');
+    await ref.update({state:'published',publishedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    await writeAuditEvent(db,req.uid,{event:'agent_listing_published',agentId:agent.agentId,version:listing.version});
+    return res.json({agentId:agent.agentId,state:'published',version:listing.version});
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to publish listing.');}
+});
+
+app.post('/api/agents/marketplace/review',requireUser,async(req,res)=>{
+  try{
+    const agentId=typeof req.body?.agentId==='string'?req.body.agentId:'';
+    const listing=await db.collection('agent_listings').doc(agentId).get();
+    if(!listing.exists||listing.data()?.state!=='published')return error(res,404,'Published agent not found.');
+    const result=await submitReview(db,req.uid,agentId,req.body?.rating,req.body?.comment);
+    await writeAuditEvent(db,req.uid,{event:'agent_review_submitted',agentId,reviewId:result.reviewId});
+    return res.status(201).json(result);
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to submit review.');}
 });
 
 app.get('/health', (_req, res) => {
