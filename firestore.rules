@@ -230,6 +230,14 @@ service cloud.firestore {
                 ).exists())
             )
           )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
+            && resource.data.comments is int
+            && request.resource.data.comments == resource.data.comments + 1
+            && getAfter(
+              /databases/$(database)/documents/posts/$(postId)/comments/$(request.auth.uid)
+            ).data.authorId == request.auth.uid
+          )
         );
       allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
 
@@ -241,8 +249,22 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read: if request.auth != null;
         allow create: if request.auth != null
-          && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if request.auth != null
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.postId == postId
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.createdAt is string
+          && request.resource.data.keys().hasOnly([
+            'postId', 'authorId', 'text', 'createdAt'
+          ]);
+        allow update: if request.auth != null
+          && resource.data.authorId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
+        allow delete: if request.auth != null
           && resource.data.authorId == request.auth.uid;
       }
     }
