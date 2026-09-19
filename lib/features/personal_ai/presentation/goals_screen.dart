@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/goal.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/goals/goal_repository.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenGoalsScreen extends StatefulWidget {
   const AurenGoalsScreen({super.key});
@@ -73,9 +74,22 @@ class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
                     Text('${goal.progress}%'),
                   ]),
                   isThreeLine: true,
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () => _repo.delete(uid, goal.id),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'ask') {
+                        await Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => MessengerScreen(
+                            initialPrompt: 'هذا هدفي: "${goal.title}". ${goal.description ?? ''}\\nحوّله إلى خطة عملية، وحدد أول 3 خطوات ومؤشرات التقدم.',
+                          ),
+                        ));
+                      } else if (value == 'delete') {
+                        await _repo.delete(uid, goal.id);
+                      }
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'ask', child: Text('خلّي AUREN يخطط له')),
+                      PopupMenuItem(value: 'delete', child: Text('حذف')),
+                    ],
                   ),
                 ),
               );
