@@ -4,10 +4,12 @@ import { FieldValue } from 'firebase-admin/firestore';
 export function createTransactionId(){return 'txn_'+crypto.randomUUID();}
 function walletRef(db,uid){return db.collection('users').doc(uid).collection('wallet').doc('primary');}
 function transactionRef(db,uid,id){return db.collection('users').doc(uid).collection('wallet_transactions').doc(id);}
+export const TRANSACTION_STATES=Object.freeze(['reserved','settled','released','refunded','disputed']);
+
 export function validateCommerceRequest(input){
   return !!input&&typeof input.agentId==='string'&&typeof input.currency==='string'&&/^[A-Z]{3}$/.test(input.currency)&&Number.isInteger(input.amountMinor)&&input.amountMinor>0&&typeof input.idempotencyKey==='string'&&input.idempotencyKey.length>=16;
 }
-export async function reserveSpending(db,uid,amountMinor,currency,actionId,idempotencyKey){
+export async function reserveSpending(db,uid,amountMinor,currency,actionId,idempotencyKey,agentId=null){
   if(!Number.isInteger(amountMinor)||amountMinor<=0)throw Object.assign(new Error('Invalid transaction amount.'),{code:400});
   if(!idempotencyKey||idempotencyKey.length<16)throw Object.assign(new Error('Invalid idempotency key.'),{code:400});
   return db.runTransaction(async t=>{
@@ -19,7 +21,7 @@ export async function reserveSpending(db,uid,amountMinor,currency,actionId,idemp
     if(available<amountMinor)throw Object.assign(new Error('Insufficient available wallet balance.'),{code:403});
     const transactionId=createTransactionId();
     t.set(ref,{currency,availableMinor:w.availableMinor||0,reservedMinor:(w.reservedMinor||0)+amountMinor,updatedAt:FieldValue.serverTimestamp()},{merge:true});
-    t.create(txRef,{transactionId,type:'reserve',amountMinor,currency,status:'reserved',actionId,idempotencyKey,createdAt:FieldValue.serverTimestamp()});
+    t.create(txRef,{transactionId,type:'reserve',amountMinor,currency,status:'reserved',agentId,actionId,idempotencyKey,createdAt:FieldValue.serverTimestamp()});
     return {transactionId,status:'reserved'};
   });
 }
