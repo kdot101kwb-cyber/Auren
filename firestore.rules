@@ -57,15 +57,27 @@ service cloud.firestore {
 
       match /agent_permissions/{permissionId} {
         allow read: if request.auth != null && request.auth.uid == userId;
-        allow create, update: if request.auth != null
+        allow create: if request.auth != null
           && request.auth.uid == userId
           && permissionId == 'primary'
-          && request.resource.data.agentId is string
+          && request.resource.data.agentId == 'primary'
           && request.resource.data.enabled is bool
           && request.resource.data.allowedActions is list
-          && request.resource.data.dailySpendingLimitMinor is int
-          && request.resource.data.spentTodayMinor is int
-          && request.resource.data.currency is string;
+          && (request.resource.data.dailySpendingLimitMinor == null
+            || request.resource.data.dailySpendingLimitMinor is int)
+          && request.resource.data.spentTodayMinor == 0
+          && request.resource.data.currency is string
+          && request.resource.data.currency.size() == 3;
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && permissionId == 'primary'
+          && request.resource.data.agentId == resource.data.agentId
+          && request.resource.data.enabled is bool
+          && request.resource.data.allowedActions is list
+          && (request.resource.data.dailySpendingLimitMinor == null
+            || request.resource.data.dailySpendingLimitMinor is int)
+          && request.resource.data.spentTodayMinor == resource.data.spentTodayMinor
+          && request.resource.data.currency == resource.data.currency;
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
 
