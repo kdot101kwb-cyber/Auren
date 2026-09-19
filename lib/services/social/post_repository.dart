@@ -23,12 +23,16 @@ class PostRepository {
     final like = ref.collection('likes').doc(uid);
     await _db.runTransaction((tx) async {
       final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('Post not found.');
+      final likeSnap = await tx.get(like);
       final data = snap.data() ?? {};
       final count = (data['likes'] as num?)?.toInt() ?? 0;
       if (liked) {
+        if (!likeSnap.exists) return;
         tx.delete(like);
         tx.update(ref, {'likes': count > 0 ? count - 1 : 0});
       } else {
+        if (likeSnap.exists) return;
         tx.set(like, {'createdAt': FieldValue.serverTimestamp()});
         tx.update(ref, {'likes': count + 1});
       }
