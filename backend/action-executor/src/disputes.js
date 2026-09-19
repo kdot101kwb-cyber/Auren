@@ -21,12 +21,14 @@ export async function openDispute(db, uid, {transactionId, reason, description})
   if(typeof description!=='string'||description.trim().length<5) throw Object.assign(new Error('Dispute description is required.'),{code:400});
   const txQuery=await db.collection('users').doc(uid).collection('wallet_transactions').where('transactionId','==',transactionId.trim()).limit(1).get();
   if(txQuery.empty) throw Object.assign(new Error('Transaction not found.'),{code:404});
-  const tx=txQuery.docs[0].data();
+  const txDoc=txQuery.docs[0];
+  const tx=txDoc.data();
   if(!['reserved','settled','refunded'].includes(tx.status)) throw Object.assign(new Error('Transaction is not eligible for dispute.'),{code:409});
   const disputeId=createDisputeId();
   const ref=db.collection('users').doc(uid).collection('disputes').doc(disputeId);
   const liabilityRef=db.collection('users').doc(uid).collection('agent_liability').doc(disputeId);
   await db.runTransaction(async t=>{
+    t.update(txDoc.ref,{status:'disputed',disputeId,disputedAt:FieldValue.serverTimestamp()});
     t.create(ref,{disputeId,transactionId,reason:reason.trim().slice(0,200),description:description.trim().slice(0,4000),state:'open',resolution:null,resolutionAmountMinor:null,evidenceCount:0,liabilityState:'pending',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     t.create(liabilityRef,{disputeId,transactionId,agentId:tx.agentId||null,state:'pending',amountMinor:tx.amountMinor||0,currency:tx.currency||null,assignedParty:null,policy:'agent-default-liability-v1',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
   });
