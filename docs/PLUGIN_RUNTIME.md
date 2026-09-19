@@ -6,9 +6,12 @@ AUREN now has a runtime security gate before plugin execution.
 1. Manifest validation and capability allowlisting.
 2. SHA-256 package integrity metadata.
 3. HMAC signature verification for trusted publishing.
-4. Payload size limits.
-5. Per-agent/per-plugin daily invocation quotas.
-6. Version matching between manifest and package.
+4. Server-side artifact upload to Firebase Storage.
+5. SHA-256 computed from uploaded bytes on the server.
+6. Immutable artifact provenance and signed artifact metadata.
+7. Payload size limits.
+8. Per-agent/per-plugin daily invocation quotas.
+9. Version matching between manifest and stored artifact.
 
 ## Important boundary
 This gate does not execute arbitrary plugin code inside the API process.
@@ -29,7 +32,7 @@ The API should invoke that worker only after the runtime gate succeeds.
 
 ## End-to-end flow
 
-`POST /api/agents/plugins/runtime/execute` authenticates the Firebase user, validates the agent, verifies package signature/version/hash metadata, consumes quota, then sends only the validated manifest and payload to the isolated worker.
+`POST /api/agents/plugins/runtime/execute` authenticates the Firebase user, validates the agent, verifies stored artifact provenance/signature/hash, consumes quota, loads the exact artifact from trusted storage, then sends the verified artifact bytes plus manifest and payload to the isolated worker.
 
 The worker requires a separate shared secret and only accepts mounted `file:` entrypoints. The Action Executor never executes plugin code itself.
 
@@ -37,6 +40,7 @@ The worker requires a separate shared secret and only accepts mounted `file:` en
 
 Action Executor:
 - `AUREN_PLUGIN_SIGNING_SECRET`
+- `AUREN_STORAGE_BUCKET`
 - `AUREN_PLUGIN_WORKER_URL`
 - `AUREN_PLUGIN_WORKER_SECRET`
 
