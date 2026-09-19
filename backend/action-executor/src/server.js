@@ -8,6 +8,8 @@ import { loadAgentIdentity } from './agent-identity.js';
 import { writeAuditEvent } from './audit-log.js';
 import { createExecutionKey } from './execution-guard.js';
 import { publicCredential } from './credentials.js';
+import { validateEnvelope } from './agent-protocol.js';
+import { saveMessage } from './a2a-store.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -38,6 +40,49 @@ async function requireUser(req, res, next) {
     return error(res, 401, 'Invalid Firebase ID token.');
   }
 }
+
+
+app.post('/api/a2a/send', requireUser, async (req, res) => {
+  const envelope = req.body?.envelope;
+  if (!validateEnvelope(envelope)) return error(res, 400, 'Invalid AUREN-A2A envelope.');
+
+  const sender = await loadAgentIdentity(db, req.uid);
+  if (sender.status !== 'active' || envelope.senderAgentId !== sender.agentId) {
+    return error(res, 403, 'Sender agent is not authorized.');
+  }
+
+  const recipientSnap = await db.collection('agent_listings')
+    .where('agentId', '==', envelope.recipientAgentId)
+    .where('state', '==', 'published')
+    .limit(1)
+    .get();
+
+  if (recipientSnap.empty) return error(res, 404, 'Recipient agent is not published.');
+
+  const messageRef = db.collection('agent_messages').doc(envelope.messageId);
+  const existing = await messageRef.get();
+  if (existing.exists) return error(res, 409, 'A2A message already exists.');
+
+  await saveMessage(db, {
+    messageId: envelope.messageId,
+    senderAgentId: envelope.senderAgentId,
+    recipientAgentId: envelope.recipientAgentId,
+    protocol: envelope.protocol,
+    version: envelope.version,
+    type: envelope.type,
+    payload: envelope.payload ?? {},
+  });
+
+  await writeAuditEvent(db, req.uid, {
+    event: 'a2a_message_sent',
+    agentId: sender.agentId,
+    recipientAgentId: envelope.recipientAgentId,
+    messageId: envelope.messageId,
+    messageType: envelope.type,
+  });
+
+  return res.status(202).json({ status: 'accepted', messageId: envelope.messageId });
+});
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'auren-action-executor' });
