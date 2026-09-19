@@ -1,0 +1,73 @@
+name: Publish AUREN runtime images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/plugin-worker/**'
+      - 'backend/action-executor/**'
+      - '.github/workflows/publish-images.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+
+jobs:
+  plugin-worker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push plugin worker
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/plugin-worker
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/auren-plugin-worker:main
+            ghcr.io/${{ github.repository_owner }}/auren-plugin-worker:${{ github.sha }}
+
+  action-executor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Dockerfile
+        run: |
+          cat > backend/action-executor/Dockerfile <<'EOF'
+          FROM node:20-alpine
+          WORKDIR /app
+          COPY package*.json ./
+          RUN npm install --omit=dev
+          COPY src ./src
+          RUN addgroup -S auren && adduser -S auren -G auren && chown -R auren:auren /app
+          USER auren
+          ENV NODE_ENV=production
+          EXPOSE 8080
+          CMD ["node","src/server.js"]
+          EOF
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push action executor
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/action-executor
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/auren-action-executor:main
+            ghcr.io/${{ github.repository_owner }}/auren-action-executor:${{ github.sha }}
