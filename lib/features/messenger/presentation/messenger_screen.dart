@@ -55,6 +55,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
       _conversationId = conversation.id;
       _isAi = conversation.isAi;
       _conversationTitle = conversation.title;
+      await _conversationRepository.markRead(_conversationId!, _uid!);
       if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
         _controller.text = widget.initialPrompt!.trim();
       }
