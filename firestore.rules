@@ -390,29 +390,49 @@ service cloud.firestore {
           'memberIds', 'title', 'isAi', 'updatedAt', 'lastMessage', 'lastMessageAt', 'type', 'ownerId'
         ])
         && request.resource.data.type in ['direct', 'group', 'ai']
-        && ((!request.resource.data.isAi && request.resource.data.type == 'group'
-          && request.resource.data.ownerId == request.auth.uid
-          && request.resource.data.memberIds.size() >= 3)
+        && (
+          (!request.resource.data.isAi && request.resource.data.type == 'group'
+            && request.resource.data.ownerId == request.auth.uid
+            && request.resource.data.memberIds.size() >= 3)
           || (!request.resource.data.isAi && request.resource.data.type == 'direct'
             && request.resource.data.memberIds.size() == 2
             && request.resource.data.ownerId == null)
           || (request.resource.data.isAi && request.resource.data.type == 'ai'
             && request.resource.data.memberIds.size() == 1
-            && request.resource.data.ownerId == null))
-        && ((request.resource.data.isAi && request.resource.data.type == 'ai'
-            && request.resource.data.memberIds.size() == 1)
-          || (request.resource.data.isAi && request.resource.data.type == 'ai'
-            && request.resource.data.memberIds.size() == 1));
+            && request.resource.data.ownerId == null)
+        );
       allow update: if request.auth != null
         && request.auth.uid in resource.data.memberIds
-        && request.resource.data.memberIds == resource.data.memberIds
         && request.resource.data.isAi == resource.data.isAi
         && request.resource.data.type == resource.data.type
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.title == resource.data.title
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'updatedAt', 'lastMessage', 'lastMessageAt'
-        ]);
+        && (
+          (
+            request.resource.data.memberIds == resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'updatedAt', 'lastMessage', 'lastMessageAt'
+            ])
+          )
+          || (
+            resource.data.type == 'group'
+            && request.auth.uid == resource.data.ownerId
+            && request.resource.data.memberIds is list
+            && request.resource.data.memberIds.size() >= 3
+            && request.resource.data.memberIds.size() <= 50
+            && request.resource.data.memberIds.hasAll([resource.data.ownerId])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+          )
+          || (
+            resource.data.type == 'group'
+            && request.resource.data.memberIds is list
+            && request.resource.data.memberIds.size() >= 2
+            && request.resource.data.memberIds.size() <= 50
+            && request.resource.data.memberIds.hasAll([resource.data.ownerId])
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+          )
+        );
       allow delete: if request.auth != null
         && request.auth.uid in resource.data.memberIds;
 
