@@ -35,7 +35,15 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
             itemBuilder: (_, i) { final c = conversations[i]; return ListTile(
               leading: CircleAvatar(child: Icon(c.isAi ? Icons.auto_awesome : Icons.chat_bubble_outline)),
               title: Text(c.title), subtitle: Text(c.lastMessage?.isNotEmpty == true ? c.lastMessage! : (c.isAi ? 'AUREN AI' : 'محادثة')),
-              trailing: Text('${c.updatedAt.hour.toString().padLeft(2, '0')}:${c.updatedAt.minute.toString().padLeft(2, '0')}'),
+              trailing: StreamBuilder<int>(
+                stream: _repo.watchUnreadCount(c.id, uid),
+                builder: (_, unread) {
+                  final count = unread.data ?? 0;
+                  return count > 0
+                      ? CircleAvatar(radius: 14, child: Text(count > 99 ? '99+' : '$count'))
+                      : Text('${c.updatedAt.hour.toString().padLeft(2, '0')}:${c.updatedAt.minute.toString().padLeft(2, '0')}');
+                },
+              ),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: c.id))),
             ); },
           );
