@@ -1,5 +1,6 @@
-import { validatePackageMetadata, verifyPackageSignature, consumeQuota } from './plugin-security.js';
+import { validatePackageMetadata, verifyPackageSignature, consumeQuota, packageSha256 } from './plugin-security.js';
 import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
+import { getStorage } from 'firebase-admin/storage';
 import { FieldValue } from 'firebase-admin/firestore';
 export async function preparePluginInvocation(db,{agent,manifest,packageMetadata,signature,secret,payload={}}){
   const normalized=validatePluginManifest(manifest);
@@ -17,12 +18,21 @@ export async function preparePluginInvocation(db,{agent,manifest,packageMetadata
   if(version.artifactState==='revoked')throw Object.assign(new Error('Plugin artifact version has been revoked.'),{code:403});
   if(version.artifactState!=='approved')throw Object.assign(new Error('Plugin artifact is not approved for execution.'),{code:403});
   if(version.pluginId!==normalized.pluginId||version.version!==normalized.version||version.entrypoint!==normalized.entrypoint)throw Object.assign(new Error('Registered plugin artifact provenance does not match the requested version.'),{code:409});
+  if(!version.artifactId||!version.objectPath)throw Object.assign(new Error('Plugin artifact storage reference is missing.'),{code:409});
   if(version.sha256!==meta.sha256||version.sizeBytes!==meta.sizeBytes)throw Object.assign(new Error('Plugin artifact metadata does not match the registered provenance.'),{code:409});
   if(!verifyPackageSignature(meta,signature,secret))throw Object.assign(new Error('Invalid plugin package signature.'),{code:403});
+  const artifactSnap=await db.collection('plugin_artifacts').doc(version.artifactId).get();
+  if(!artifactSnap.exists)throw Object.assign(new Error('Plugin artifact registry record is missing.'),{code:409});
+  const artifact=artifactSnap.data();
+  if(artifact.state!=='approved'||artifact.agentId!==agent.agentId||artifact.objectPath!==version.objectPath)throw Object.assign(new Error('Plugin artifact provenance is not trusted.'),{code:403});
+  const bucket=getStorage().bucket();
+  let artifactBytes;
+  try{[artifactBytes]=await bucket.file(version.objectPath).download();}catch{throw Object.assign(new Error('Plugin artifact could not be loaded from trusted storage.'),{code:404});}
+  if(artifactBytes.length!==version.sizeBytes||packageSha256(artifactBytes)!==version.sha256)throw Object.assign(new Error('Stored plugin artifact integrity check failed.'),{code:409});
   const bytes=Buffer.byteLength(JSON.stringify(payload),'utf8');
   if(bytes>sandboxPolicy().maxPayloadBytes)throw Object.assign(new Error('Plugin payload exceeds sandbox limit.'),{code:413});
   const quota=await consumeQuota(db,agent.agentId,normalized.pluginId);
-  return {status:'validated',manifest:normalized,package:meta,sandbox:sandboxPolicy(),quota,payload};
+  return {status:'validated',manifest:normalized,package:meta,artifactBase64:artifactBytes.toString('base64'),sandbox:sandboxPolicy(),quota,payload};
 }
 
 export async function executePluginThroughWorker({prepared,workerUrl,workerSecret,fetchImpl=fetch}){
@@ -31,7 +41,7 @@ export async function executePluginThroughWorker({prepared,workerUrl,workerSecre
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7000);
   try{
-    const response=await fetchImpl(workerUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({authorization:workerSecret,manifest:prepared.manifest,expectedSha256:prepared.package.sha256,payload:prepared.payload||{}}),signal:controller.signal});
+    const response=await fetchImpl(workerUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({authorization:workerSecret,manifest:prepared.manifest,expectedSha256:prepared.package.sha256,artifactBase64:prepared.artifactBase64,payload:prepared.payload||{}}),signal:controller.signal});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw Object.assign(new Error(data.error||'Plugin worker failed.'),{code:response.status});
     return data;
