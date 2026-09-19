@@ -21,7 +21,9 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen())),
         icon: const Icon(Icons.auto_awesome), label: const Text('AUREN AI'),
       ),
-      body: uid == null ? const Center(child: CircularProgressIndicator()) : StreamBuilder(
+      body: uid == null ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
+        onRefresh: () async { if (mounted) setState(() {}); },
+        child: StreamBuilder(
         stream: _repo.watchForUser(uid),
         builder: (context, snapshot) {
           if (snapshot.hasError) return Center(child: Text('تعذر تحميل المحادثات: ${snapshot.error}'));
@@ -38,6 +40,7 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
             ); },
           );
         },
+      ),
       ),
     );
   }
