@@ -32,6 +32,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
   bool _loading = true;
   bool _sending = false;
   bool _initialPromptSent = false;
+  String? _error;
 
   @override
   void initState() {
@@ -47,6 +48,8 @@ class _MessengerScreenState extends State<MessengerScreen> {
       if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
         _controller.text = widget.initialPrompt!.trim();
       }
+    } catch (e) {
+      _error = 'تعذر تجهيز AUREN Messenger: $e';
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -59,16 +62,16 @@ class _MessengerScreenState extends State<MessengerScreen> {
     _controller.clear();
     setState(() => _sending = true);
 
-    final now = DateTime.now();
-    await _messagesRepository.send(AurenMessage(
+    try {
+      final now = DateTime.now();
+      await _messagesRepository.send(AurenMessage(
       id: 'msg_${now.microsecondsSinceEpoch}',
       conversationId: _conversationId!,
       senderId: _uid!,
       text: text,
-      createdAt: now,
-    ));
+        createdAt: now,
+      ));
 
-    try {
       final response = await _gateway.send(
         conversationId: _conversationId!,
         message: text,
