@@ -19,7 +19,7 @@ import { calculateRisk, applyRiskPolicy, assertOperationalRisk } from './risk-en
 import { recoverStaleExecution } from './execution-recovery.js';
 import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
 import { submitReview } from './agent-reputation.js';
-import { preparePluginInvocation } from './plugin-runtime.js';
+import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -133,6 +133,21 @@ app.post('/api/agents/plugins/runtime/prepare', requireUser, async (req,res)=>{
     await writeAuditEvent(db,req.uid,{event:'plugin_runtime_prepared',agentId:agent.agentId,pluginId:result.manifest.pluginId,version:result.manifest.version});
     return res.json(result);
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin runtime validation failed.');}
+});
+
+app.post('/api/agents/plugins/runtime/execute', requireUser, async(req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const secret=process.env.AUREN_PLUGIN_SIGNING_SECRET||'';
+    const workerUrl=process.env.AUREN_PLUGIN_WORKER_URL||'';
+    const workerSecret=process.env.AUREN_PLUGIN_WORKER_SECRET||'';
+    if(!secret||!workerUrl||!workerSecret)return error(res,503,'Plugin runtime worker is not configured.');
+    const prepared=await preparePluginInvocation(db,{agent,manifest:req.body?.manifest,packageMetadata:req.body?.packageMetadata,signature:req.body?.signature,secret,payload:req.body?.payload||{}});
+    const result=await executePluginThroughWorker({prepared,workerUrl,workerSecret});
+    await writeAuditEvent(db,req.uid,{event:'plugin_runtime_executed',agentId:agent.agentId,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,resultStatus:result.status});
+    return res.json({status:result.status,result:result.result,quota:prepared.quota});
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin runtime execution failed.');}
 });
 
 app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
