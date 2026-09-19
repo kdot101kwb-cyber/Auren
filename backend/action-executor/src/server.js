@@ -10,6 +10,7 @@ import { createExecutionKey } from './execution-guard.js';
 import { publicCredential } from './credentials.js';
 import { validateEnvelope } from './agent-protocol.js';
 import { saveMessage } from './a2a-store.js';
+import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -82,6 +83,14 @@ app.post('/api/a2a/send', requireUser, async (req, res) => {
   });
 
   return res.status(202).json({ status: 'accepted', messageId: envelope.messageId });
+});
+
+
+app.post('/api/agents/plugins/validate', requireUser, async (req,res)=>{
+  try {
+    const manifest=validatePluginManifest(req.body?.manifest);
+    return res.json({valid:true,manifest,policy:sandboxPolicy()});
+  } catch(e) { return error(res,Number.isInteger(e?.code)?e.code:400,e.message||'Invalid plugin manifest.'); }
 });
 
 app.get('/health', (_req, res) => {
