@@ -101,3 +101,34 @@ export async function refundSpending(db,uid,transactionId,agentId=null){
     return {...tx,status:'refunded'};
   });
 }
+
+export async function resolveDisputedSpending(db,uid,transactionId,resolution,amountMinor,agentId=null){
+  if(!['refund','release','partial_refund','no_action'].includes(resolution)) throw Object.assign(new Error('Invalid commerce dispute resolution.'),{code:400});
+  return db.runTransaction(async t=>{
+    const q=await t.get(db.collection('users').doc(uid).collection('wallet_transactions').where('transactionId','==',transactionId).limit(1));
+    if(q.empty) throw Object.assign(new Error('Transaction not found.'),{code:404});
+    const txRef=q.docs[0].ref, tx=q.docs[0].data();
+    if(agentId!==null&&tx.agentId!==agentId) throw Object.assign(new Error('Transaction is not owned by the acting agent.'),{code:403});
+    if(tx.status!=='disputed') throw Object.assign(new Error('Transaction must be disputed before resolution.'),{code:409});
+    const amount=resolution==='no_action'?0:amountMinor;
+    if(resolution==='release'){
+      if(tx.originalStatus!=='reserved') throw Object.assign(new Error('Only reserved disputes can be released.'),{code:409});
+      const ref=walletRef(db,uid), snap=await t.get(ref), w=snap.data()||{};
+      if((w.reservedMinor||0)<tx.amountMinor) throw Object.assign(new Error('Wallet reservation mismatch.'),{code:409});
+      t.update(ref,{reservedMinor:(w.reservedMinor||0)-tx.amountMinor,updatedAt:FieldValue.serverTimestamp()});
+      t.update(txRef,{status:'released',resolvedAt:FieldValue.serverTimestamp()});
+      return {...tx,status:'released'};
+    }
+    if(resolution==='no_action') return {...tx,status:'disputed'};
+    if(!Number.isInteger(amount)||amount<=0||amount>tx.amountMinor) throw Object.assign(new Error('Invalid dispute refund amount.'),{code:400});
+    if(tx.originalStatus==='reserved') throw Object.assign(new Error('Reserved disputes must use release.'),{code:409});
+    const ref=walletRef(db,uid), permission=permissionRef(db,uid), [snap,permissionSnap]=await Promise.all([t.get(ref),t.get(permission)]), w=snap.data()||{}, ledger=permissionSnap.exists?permissionSnap.data():{};
+    const today=new Date().toISOString().slice(0,10), storedDay=typeof ledger.spentTodayDate==='string'?ledger.spentTodayDate:null;
+    const current=storedDay===today&&Number.isInteger(ledger.spentTodayMinor)?ledger.spentTodayMinor:0;
+    const next=Math.max(0,current-amount);
+    t.update(ref,{availableMinor:(w.availableMinor||0)+amount,updatedAt:FieldValue.serverTimestamp()});
+    t.update(txRef,{status:amount===tx.amountMinor?'refunded':'partially_refunded',refundedAmountMinor:amount,resolvedAt:FieldValue.serverTimestamp()});
+    t.set(permission,{spentTodayMinor:next,spentTodayDate:today,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    return {...tx,status:amount===tx.amountMinor?'refunded':'partially_refunded',refundedAmountMinor:amount};
+  });
+}
