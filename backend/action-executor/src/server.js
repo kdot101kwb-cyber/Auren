@@ -20,6 +20,7 @@ import { recoverStaleExecution } from './execution-recovery.js';
 import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
 import { submitReview } from './agent-reputation.js';
 import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
+import { validatePackageMetadata, verifyPackageSignature } from './plugin-security.js';
 
 if (getApps().length === 0) {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -149,6 +150,8 @@ app.post('/api/agents/plugins/runtime/execute', requireUser, async(req,res)=>{
   try{
     const agent=await loadAgentIdentity(db,req.uid);
     if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const risk=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(risk.exists)assertOperationalRisk(risk.data());
     const secret=process.env.AUREN_PLUGIN_SIGNING_SECRET||'';
     const workerUrl=process.env.AUREN_PLUGIN_WORKER_URL||'';
     const workerSecret=process.env.AUREN_PLUGIN_WORKER_SECRET||'';
@@ -214,6 +217,8 @@ app.post('/api/agents/capabilities/issue', requireUser, async (req, res) => {
   try {
     const agent = await loadAgentIdentity(db, req.uid);
     if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
+    const risk = await db.collection('agent_risk').doc(agent.agentId).get();
+    if (risk.exists) assertOperationalRisk(risk.data());
     const capability = typeof req.body?.capability === 'string' ? req.body.capability.trim() : '';
     const allowed = ['actions.execute', 'actions.discover', 'messages.send', 'commerce.request'];
     if (!allowed.includes(capability)) return error(res, 403, 'Capability is not issuable.');
@@ -344,6 +349,8 @@ app.post('/api/agents/marketplace/rollback',requireUser,async(req,res)=>{
   try{
     const agent=await loadAgentIdentity(db,req.uid);
     if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const risk=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(risk.exists)assertOperationalRisk(risk.data());
     const version=typeof req.body?.version==='string'?req.body.version.trim():'';
     if(!version)return error(res,400,'version is required.');
     const ref=db.collection('agent_listings').doc(agent.agentId);
@@ -404,6 +411,8 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
   const agent = await loadAgentIdentity(db, req.uid);
   const credential = publicCredential(agent.agentId);
   if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
+  const actionRisk = await db.collection('agent_risk').doc(agent.agentId).get();
+  if (actionRisk.exists) assertOperationalRisk(actionRisk.data());
 
   try {
     const executionKeyForRecovery = createExecutionKey(req.uid, actionId);
