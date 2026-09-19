@@ -41,6 +41,31 @@ class ConversationRepository {
     return await findAiConversation(uid) ?? createAiConversation(uid);
   }
 
+  Future<AurenConversation> getOrCreateDirectConversation({
+    required String uid,
+    required String otherUid,
+    required String otherTitle,
+  }) async {
+    if (uid.isEmpty || otherUid.isEmpty || uid == otherUid) {
+      throw ArgumentError('Invalid direct conversation members.');
+    }
+    final members = [uid, otherUid]..sort();
+    final ref = _conversations.doc('dm_' + members.join('_'));
+    final existing = await ref.get();
+    if (existing.exists && existing.data() != null) {
+      return AurenConversation.fromMap(ref.id, existing.data()!);
+    }
+    final conversation = AurenConversation(
+      id: ref.id,
+      memberIds: members,
+      title: otherTitle.trim().isEmpty ? 'Direct message' : otherTitle.trim(),
+      isAi: false,
+      updatedAt: DateTime.now(),
+    );
+    await ref.set(conversation.toMap());
+    return conversation;
+  }
+
   Stream<List<AurenConversation>> watchForUser(String uid) => _conversations
       .where('memberIds', arrayContains: uid)
       .orderBy('updatedAt', descending: true)
