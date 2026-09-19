@@ -211,6 +211,26 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
 });
 
 
+app.post('/api/agents/plugins/revoke-version', requireUser, async (req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const risk=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(risk.exists)assertOperationalRisk(risk.data());
+    const version=typeof req.body?.version==='string'?req.body.version.trim():'';
+    if(!version)return error(res,400,'version is required.');
+    const ref=db.collection('agent_listings').doc(agent.agentId);
+    const snap=await ref.get(); if(!snap.exists)return error(res,404,'Listing not found.');
+    const versionRef=ref.collection('versions').doc(version);
+    const versionSnap=await versionRef.get(); if(!versionSnap.exists)return error(res,404,'Version not found.');
+    const current=versionSnap.data();
+    await versionRef.update({artifactState:'revoked',revokedAt:FieldValue.serverTimestamp()});
+    if(current.version===snap.data()?.version) await ref.update({state:'revoked',updatedAt:FieldValue.serverTimestamp()});
+    await writeAuditEvent(db,req.uid,{event:'plugin_version_revoked',agentId:agent.agentId,version});
+    return res.json({agentId:agent.agentId,version,artifactState:'revoked'});
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to revoke plugin version.');}
+});
+
 app.post('/api/agents/plugins/state', requireUser, async (req, res) => {
   try {
     const requested = typeof req.body?.state === 'string' ? req.body.state : '';
