@@ -165,14 +165,13 @@ app.post('/api/agents/plugins/runtime/prepare', requireUser, async (req,res)=>{
     if(risk.exists)assertOperationalRisk(risk.data());
     const secret=process.env.AUREN_PLUGIN_SIGNING_SECRET||'';
     if(!secret)return error(res,503,'Plugin signing is not configured.');
-    const result=await preparePluginInvocation(db,{
-      agent,
-      manifest:req.body?.manifest,
-      packageMetadata:req.body?.packageMetadata,
-      signature:req.body?.signature,
-      secret,
-      payload:req.body?.payload||{},
-    });
+    const artifactId=validateArtifactId(req.body?.artifactId);
+    const artifactSnap=await db.collection('plugin_artifacts').doc(artifactId).get();
+    if(!artifactSnap.exists)return error(res,404,'Plugin artifact not found.');
+    const artifact=artifactSnap.data();
+    const packageMetadata={pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
+    const signature=artifact.signature;
+    const result=await preparePluginInvocation(db,{agent,manifest:req.body?.manifest,packageMetadata,signature,secret,payload:req.body?.payload||{}});
     await writeAuditEvent(db,req.uid,{event:'plugin_runtime_prepared',agentId:agent.agentId,pluginId:result.manifest.pluginId,version:result.manifest.version});
     return res.json(result);
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin runtime validation failed.');}
@@ -188,7 +187,12 @@ app.post('/api/agents/plugins/runtime/execute', requireUser, async(req,res)=>{
     const workerUrl=process.env.AUREN_PLUGIN_WORKER_URL||'';
     const workerSecret=process.env.AUREN_PLUGIN_WORKER_SECRET||'';
     if(!secret||!workerUrl||!workerSecret)return error(res,503,'Plugin runtime worker is not configured.');
-    const prepared=await preparePluginInvocation(db,{agent,manifest:req.body?.manifest,packageMetadata:req.body?.packageMetadata,signature:req.body?.signature,secret,payload:req.body?.payload||{}});
+    const artifactId=validateArtifactId(req.body?.artifactId);
+    const artifactSnap=await db.collection('plugin_artifacts').doc(artifactId).get();
+    if(!artifactSnap.exists)return error(res,404,'Plugin artifact not found.');
+    const artifact=artifactSnap.data();
+    const packageMetadata={pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
+    const prepared=await preparePluginInvocation(db,{agent,manifest:req.body?.manifest,packageMetadata,signature:artifact.signature,secret,payload:req.body?.payload||{}});
     const result=await executePluginThroughWorker({prepared,workerUrl,workerSecret});
     await writeAuditEvent(db,req.uid,{event:'plugin_runtime_executed',agentId:agent.agentId,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,resultStatus:result.status});
     return res.json({status:result.status,result:result.result,quota:prepared.quota});
