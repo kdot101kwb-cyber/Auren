@@ -16,7 +16,9 @@ services:
       PORT: 8090
       PLUGIN_TIMEOUT_MS: 5000
       WORKER_SHARED_SECRET: ${WORKER_SHARED_SECRET}
+      NODE_OPTIONS: --max-old-space-size=192
     volumes:
       - ./plugins:/app/plugins:ro
     ports:
       - "127.0.0.1:8090:8090"
+    restart: unless-stopped
