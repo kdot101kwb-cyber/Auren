@@ -244,9 +244,9 @@ class _MessengerScreenState extends State<MessengerScreen> {
                       controller: _controller,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: _isAi ? 'اكتب لـ AUREN AI…' : 'اكتب رسالة…',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
