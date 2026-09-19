@@ -23,7 +23,7 @@ export async function openDispute(db, uid, {transactionId, reason, description})
   if(txQuery.empty) throw Object.assign(new Error('Transaction not found.'),{code:404});
   const txDoc=txQuery.docs[0];
   const tx=txDoc.data();
-  if(!['reserved','settled','refunded'].includes(tx.status)) throw Object.assign(new Error('Transaction is not eligible for dispute.'),{code:409});
+  if(!['reserved','settled'].includes(tx.status)) throw Object.assign(new Error('Transaction is not eligible for dispute.'),{code:409});
   const disputeId=createDisputeId();
   const ref=db.collection('users').doc(uid).collection('disputes').doc(disputeId);
   const liabilityRef=db.collection('users').doc(uid).collection('agent_liability').doc(disputeId);
@@ -59,7 +59,13 @@ export async function resolveDispute(db, uid, {disputeId,resolution,amountMinor=
   if(!snap.exists) throw Object.assign(new Error('Dispute not found.'),{code:404});
   const current=snap.data();
   if(!allowedTransitions[current.state]?.includes('resolved')) throw Object.assign(new Error('Dispute is not ready for resolution.'),{code:409});
+  const txQuery=await db.collection('users').doc(uid).collection('wallet_transactions').where('transactionId','==',current.transactionId).limit(1).get();
+  if(txQuery.empty) throw Object.assign(new Error('Disputed transaction not found.'),{code:404});
+  const tx=txQuery.docs[0].data();
+  if(!['reserved','settled','disputed'].includes(tx.status)) throw Object.assign(new Error('Transaction is no longer eligible for dispute resolution.'),{code:409});
   if((resolution==='partial_refund'||resolution==='refund') && (!Number.isInteger(amountMinor)||amountMinor<=0)) throw Object.assign(new Error('A positive resolution amount is required.'),{code:400});
+  if((resolution==='partial_refund'||resolution==='refund') && amountMinor>(tx.amountMinor||0)) throw Object.assign(new Error('Resolution amount cannot exceed the disputed transaction amount.'),{code:400});
+  if(resolution==='refund' && amountMinor!==(tx.amountMinor||0)) throw Object.assign(new Error('A full refund must equal the disputed transaction amount.'),{code:400});
   await ref.update({state:'resolved',resolution,resolutionAmountMinor:resolution==='no_action'?0:amountMinor,liabilityState:'resolved',updatedAt:FieldValue.serverTimestamp(),resolvedAt:FieldValue.serverTimestamp()});
   const liabilityRef=db.collection('users').doc(uid).collection('agent_liability').doc(disputeId);
   await liabilityRef.set({state:'resolved',resolution,resolutionAmountMinor:resolution==='no_action'?0:amountMinor,updatedAt:FieldValue.serverTimestamp()},{merge:true});
