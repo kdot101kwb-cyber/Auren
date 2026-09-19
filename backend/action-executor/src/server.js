@@ -291,6 +291,8 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
   if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
 
   try {
+    const executionKeyForRecovery = createExecutionKey(req.uid, actionId);
+    await recoverStaleExecution(db, req.uid, actionId, executionKeyForRecovery);
     const result = await db.runTransaction(async (tx) => {
       const snap = await tx.get(actionRef);
 
