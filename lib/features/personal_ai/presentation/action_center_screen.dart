@@ -52,18 +52,13 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     setState(() => _busyActionId = action.id);
 
     try {
-      await _repo.setStatus(uid, action.id, 'executing');
+      // The client only records explicit user approval.
+      // The trusted backend is responsible for execution and final status.
+      await _repo.setStatus(uid, action.id, 'approved');
 
       final execution = await _executor.execute(
         uid: uid,
         action: action,
-      );
-
-      await _repo.setStatus(
-        uid,
-        action.id,
-        execution.status == 'completed' ? 'completed' : execution.status,
-        result: execution.result,
       );
 
       if (mounted) {
@@ -72,16 +67,9 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
         );
       }
     } catch (e) {
-      await _repo.setStatus(
-        uid,
-        action.id,
-        'failed',
-        result: e.toString(),
-      );
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل تنفيذ الأمر: $e')),
+          SnackBar(content: Text('فشل إرسال الأمر للتنفيذ: $e')),
         );
       }
     } finally {
