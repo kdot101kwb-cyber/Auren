@@ -28,7 +28,7 @@ export async function executePluginThroughWorker({prepared,workerUrl,workerSecre
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7000);
   try{
-    const response=await fetchImpl(workerUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({authorization:workerSecret,manifest:prepared.manifest,payload:prepared.payload||{}}),signal:controller.signal});
+    const response=await fetchImpl(workerUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({authorization:workerSecret,manifest:prepared.manifest,expectedSha256:prepared.package.sha256,payload:prepared.payload||{}}),signal:controller.signal});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw Object.assign(new Error(data.error||'Plugin worker failed.'),{code:response.status});
     return data;
