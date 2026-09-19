@@ -15,6 +15,21 @@ export function artifactObjectPath(agentId,artifactId){
 }
 export function createArtifactId(){return 'art_'+crypto.randomUUID();}
 export function packageSha256(bytes){return crypto.createHash('sha256').update(bytes).digest('hex');}
+
+const SUSPICIOUS_PATTERNS=Object.freeze([
+  {name:'child_process',pattern:/\\b(?:require\\(|from\\s+|import\\s*\\()\\s*['"]node:child_process['"]/},
+  {name:'process_exec',pattern:/\\bprocess\\.(?:binding|dlopen)\\b/},
+  {name:'dynamic_eval',pattern:/\\b(?:eval|Function)\\s*\\(/},
+  {name:'network_module',pattern:/\\b(?:node:net|node:dgram|node:http|node:https|node:tls)\\b/},
+]);
+export function scanPluginArtifact(bytes){
+  if(!Buffer.isBuffer(bytes))throw Object.assign(new Error('Plugin artifact bytes are required.'),{code:400});
+  const source=bytes.toString('utf8');
+  if(source.includes('\\u0000'))throw Object.assign(new Error('Plugin artifact contains invalid binary data.'),{code:400});
+  const findings=SUSPICIOUS_PATTERNS.filter(x=>x.pattern.test(source)).map(x=>x.name);
+  return {status:findings.length?'rejected':'passed',findings};
+}
+
 export function validateDependencyList(dependencies){
   if(dependencies===undefined||dependencies===null)return [];
   if(!Array.isArray(dependencies)||dependencies.length>MAX_DEPENDENCIES)throw Object.assign(new Error('Plugin dependency list is invalid.'),{code:400});
