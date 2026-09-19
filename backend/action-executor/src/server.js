@@ -679,7 +679,17 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'auren-action-executor' });
+  const aiConfigured = Boolean(
+    process.env.AUREN_AI_BASE_URL &&
+    process.env.AUREN_AI_API_KEY &&
+    process.env.AUREN_AI_MODEL
+  );
+  res.json({
+    ok: true,
+    service: 'auren-action-executor',
+    aiConfigured,
+    pluginWorkerConfigured: Boolean(process.env.AUREN_PLUGIN_WORKER_URL),
+  });
 });
 
 app.post('/api/actions/execute', requireUser, async (req, res) => {
