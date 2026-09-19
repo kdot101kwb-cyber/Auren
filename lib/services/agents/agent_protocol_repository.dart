@@ -1,0 +1,2 @@
+import 'package:cloud_firestore/cloud_firestore.dart'; import '../../core/models/agent_message.dart';
+class AurenAgentProtocolRepository{final FirebaseFirestore _db; AurenAgentProtocolRepository({FirebaseFirestore? db}):_db=db??FirebaseFirestore.instance; Future<void> enqueue(AurenAgentMessage m)=>_db.collection('agent_messages').doc(m.messageId).set({'messageId':m.messageId,'senderAgentId':m.senderAgentId,'recipientAgentId':m.recipientAgentId,'protocol':'AUREN-A2A','version':'1.0','type':m.type,'payload':m.payload,'createdAt':Timestamp.fromDate(m.createdAt.toUtc())});}
