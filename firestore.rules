@@ -231,11 +231,13 @@ service cloud.firestore {
             )
           )
           || (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'lastCommentId'])
             && resource.data.comments is int
             && request.resource.data.comments == resource.data.comments + 1
+            && request.resource.data.lastCommentId is string
+            && request.resource.data.lastCommentId.size() > 0
             && getAfter(
-              /databases/$(database)/documents/posts/$(postId)/comments/$(request.auth.uid)
+              /databases/$(database)/documents/posts/$(postId)/comments/$(request.resource.data.lastCommentId)
             ).data.authorId == request.auth.uid
           )
         );
