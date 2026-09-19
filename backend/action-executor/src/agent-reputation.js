@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 export async function loadReputation(db,agentId){const s=await db.collection('agent_reputation').doc(agentId).get();return s.exists?s.data():{agentId,score:0,reviews:0,completed:0,disputes:0};}
 export async function recordCompletion(db,agentId){const r=db.collection('agent_reputation').doc(agentId);await r.set({agentId,completed:FieldValue.increment(1),updatedAt:FieldValue.serverTimestamp()},{merge:true});}
