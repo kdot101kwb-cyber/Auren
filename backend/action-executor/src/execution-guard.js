@@ -55,6 +55,3 @@ export async function claimExecution(db, uid, actionId, actionRef) {
   return result;
 }
 
-export function executionGuardPath(uid, key) {
-  return db.collection('users').doc(uid).collection('action_executions').doc(key);
-}
