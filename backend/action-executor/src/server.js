@@ -285,7 +285,11 @@ app.post('/api/agents/plugins/state', requireUser, async (req, res) => {
     if (!snap.exists) return error(res, 404, 'Agent listing not found.');
     const listing = snap.data();
     if (listing.state === 'revoked' && requested !== 'revoked') return error(res, 409, 'Revoked listing cannot be reactivated.');
-    if (requested === 'published' && (!listing.pluginId || !listing.version || !Array.isArray(listing.capabilities))) return error(res, 409, 'Listing is incomplete.');
+    if (requested === 'published') {
+      if (!listing.pluginId || !listing.version || !Array.isArray(listing.capabilities)) return error(res, 409, 'Listing is incomplete.');
+      const versionSnap=await ref.collection('versions').doc(listing.version).get();
+      if(!versionSnap.exists||versionSnap.data()?.artifactState!=='approved')return error(res,409,'A verified plugin artifact is required before publishing.');
+    }
     await ref.update({state: requested, updatedAt: FieldValue.serverTimestamp()});
     await writeAuditEvent(db, req.uid, {event:'agent_listing_state_changed',agentId:agent.agentId,from:listing.state,to:requested,pluginId:listing.pluginId||null});
     return res.json({agentId:agent.agentId,state:requested});
