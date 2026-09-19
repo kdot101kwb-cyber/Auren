@@ -90,6 +90,56 @@ class ConversationRepository {
     return conversation;
   }
 
+  Future<void> addGroupMember({required String conversationId, required String uid, required String memberUid}) async {
+    if (conversationId.isEmpty || uid.isEmpty || memberUid.isEmpty) throw ArgumentError('Invalid member.');
+    final ref = _conversations.doc(conversationId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+      if (!snap.exists || data == null || data['type'] != 'group' || data['ownerId'] != uid) {
+        throw StateError('Only the group owner can add members.');
+      }
+      final members = List<String>.from(data['memberIds'] as List? ?? const []);
+      if (members.contains(memberUid)) return;
+      if (members.length >= 50) throw StateError('Group member limit reached.');
+      members.add(memberUid);
+      tx.update(ref, {'memberIds': members});
+    });
+  }
+
+  Future<void> removeGroupMember({required String conversationId, required String uid, required String memberUid}) async {
+    if (conversationId.isEmpty || uid.isEmpty || memberUid.isEmpty) throw ArgumentError('Invalid member.');
+    final ref = _conversations.doc(conversationId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+      if (!snap.exists || data == null || data['type'] != 'group' || data['ownerId'] != uid) {
+        throw StateError('Only the group owner can remove members.');
+      }
+      final members = List<String>.from(data['memberIds'] as List? ?? const []);
+      if (memberUid == uid) throw StateError('The owner cannot be removed.');
+      if (!members.contains(memberUid)) return;
+      if (members.length <= 3) throw StateError('A group must keep at least 3 members.');
+      members.remove(memberUid);
+      tx.update(ref, {'memberIds': members});
+    });
+  }
+
+  Future<void> leaveGroup({required String conversationId, required String uid}) async {
+    final ref = _conversations.doc(conversationId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+      if (!snap.exists || data == null || data['type'] != 'group' || !(data['memberIds'] as List).contains(uid)) {
+        throw StateError('Group membership not found.');
+      }
+      if (data['ownerId'] == uid) throw StateError('Transfer ownership before leaving the group.');
+      final members = List<String>.from(data['memberIds'] as List);
+      members.remove(uid);
+      tx.update(ref, {'memberIds': members});
+    });
+  }
+
   Future<AurenConversation?> findById(String conversationId) async {
     if (conversationId.trim().isEmpty) return null;
     final doc = await _conversations.doc(conversationId).get();
