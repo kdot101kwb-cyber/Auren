@@ -73,6 +73,34 @@ class ConversationRepository {
     return AurenConversation.fromMap(doc.id, doc.data()!);
   }
 
+  Future<void> markRead(String conversationId, String uid) async {
+    if (conversationId.isEmpty || uid.isEmpty) return;
+    await _conversations.doc(conversationId).collection('reads').doc(uid).set({
+      'readAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Stream<DateTime?> watchReadAt(String conversationId, String uid) {
+    return _conversations.doc(conversationId).collection('reads').doc(uid)
+        .snapshots()
+        .map((doc) {
+          final value = doc.data()?['readAt'];
+          return value is Timestamp ? value.toDate() : null;
+        });
+  }
+
+  Stream<int> watchUnreadCount(String conversationId, String uid) {
+    return watchReadAt(conversationId, uid).asyncExpand((readAt) {
+      var query = _conversations.doc(conversationId).collection('messages')
+          .where('isAi', isEqualTo: false);
+      if (readAt != null) {
+        query = query.where('createdAt', isGreaterThan: Timestamp.fromDate(readAt));
+      }
+      return query.snapshots().map((s) =>
+          s.docs.where((d) => d.data()['senderId'] != uid).length);
+    });
+  }
+
   Stream<List<AurenConversation>> watchForUser(String uid) => _conversations
       .where('memberIds', arrayContains: uid)
       .orderBy('updatedAt', descending: true)
