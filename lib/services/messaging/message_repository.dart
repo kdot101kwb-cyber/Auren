@@ -34,12 +34,21 @@ class FirestoreMessageRepository implements MessageRepository {
   }
 
   @override
-  Future<void> send(AurenMessage message) {
-    return _messages(message.conversationId).doc(message.id).set({
-      'senderId': message.senderId,
-      'text': message.text,
-      'createdAt': Timestamp.fromDate(message.createdAt),
-      'isAi': message.isAi,
+  Future<void> send(AurenMessage message) async {
+    final messageRef = _messages(message.conversationId).doc(message.id);
+    final conversationRef = _firestore.collection('conversations').doc(message.conversationId);
+    await _firestore.runTransaction((tx) async {
+      tx.set(messageRef, {
+        'senderId': message.senderId,
+        'text': message.text,
+        'createdAt': Timestamp.fromDate(message.createdAt),
+        'isAi': message.isAi,
+      });
+      tx.update(conversationRef, {
+        'lastMessage': message.text.length > 120 ? message.text.substring(0, 120) + '…' : message.text,
+        'lastMessageAt': Timestamp.fromDate(message.createdAt),
+        'updatedAt': message.createdAt.toUtc().toIso8601String(),
+      });
     });
   }
 }
