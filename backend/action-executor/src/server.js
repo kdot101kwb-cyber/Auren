@@ -276,9 +276,17 @@ app.post('/api/agents/marketplace/listing',requireUser,async(req,res)=>{
     const listing=normalizeListing(req.body,agent);
     const ref=db.collection('agent_listings').doc(agent.agentId);
     await ref.set({...listing,state:'draft',updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    await ref.collection('versions').doc(listing.version).set({...listing,createdAt:FieldValue.serverTimestamp()},{merge:true});
     await writeAuditEvent(db,req.uid,{event:'agent_listing_updated',agentId:agent.agentId,version:listing.version});
     return res.status(201).json(listing);
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to update listing.');}
+});
+
+app.get('/api/agents/marketplace/:agentId/versions',requireUser,async(req,res)=>{
+  try{
+    const snap=await db.collection('agent_listings').doc(req.params.agentId).collection('versions').orderBy('createdAt','desc').limit(50).get();
+    return res.json({versions:snap.docs.map(d=>d.data())});
+  }catch(e){return error(res,500,e.message||'Unable to load versions.');}
 });
 
 app.post('/api/agents/marketplace/publish',requireUser,async(req,res)=>{
