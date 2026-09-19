@@ -27,6 +27,16 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /presence/{presenceId} {
+        allow read: if request.auth != null;
+        allow create, update: if isOwner(userId)
+          && presenceId == 'primary'
+          && request.resource.data.keys().hasOnly(['online', 'lastSeen'])
+          && request.resource.data.online is bool
+          && request.resource.data.lastSeen is timestamp;
+        allow delete: if isOwner(userId);
+      }
+
       match /goals/{goalId} {
         allow read, write: if isOwner(userId);
       }
