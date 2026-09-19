@@ -136,6 +136,10 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /plugin_artifacts/{artifactId} {
+      allow read, write: if false;
+    }
+
     match /agent_listings/{agentId} {
       allow read: if request.auth != null && resource.data.state == 'published';
       allow write: if false;
