@@ -77,8 +77,13 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      match /users/{uid}/wallet/{walletId} {
-        allow read: if request.auth != null && request.auth.uid == uid;
+      match /wallet/{walletId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
+      match /wallet_transactions/{transactionId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }
 
@@ -104,7 +109,8 @@ service cloud.firestore {
 
     match /agent_messages/{messageId} {
       allow read: if request.auth != null
-        && (resource.data.senderUid == request.auth.uid || resource.data.recipientUid == request.auth.uid);
+        && (resource.data.senderUid == request.auth.uid
+          || resource.data.recipientUid == request.auth.uid);
       allow write: if false;
     }
 
