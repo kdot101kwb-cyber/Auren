@@ -14,7 +14,7 @@ import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
 import { validateCommerceRequest, reserveSpending, settleSpending, releaseSpending, refundSpending } from './commerce.js';
 import { loadTrust, assertTrust } from './trust.js';
 import { issueCapabilityToken, validateCapabilityToken, decodeAndValidateCapabilityToken } from './capability-token.js';
-import { openDispute } from './disputes.js';
+import { openDispute, addEvidence, resolveDispute, transitionDispute } from './disputes.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -221,6 +221,30 @@ app.post('/api/agents/commerce/disputes',requireUser,async(req,res)=>{
     await writeAuditEvent(db,req.uid,{event:'commerce_dispute_opened',agentId:agent.agentId,disputeId:result.disputeId,transactionId:req.body?.transactionId});
     return res.status(201).json(result);
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to open dispute.');}
+});
+
+app.post('/api/agents/commerce/disputes/evidence',requireUser,async(req,res)=>{
+  try{
+    const result=await addEvidence(db,req.uid,{disputeId:req.body?.disputeId,type:req.body?.type,description:req.body?.description,reference:req.body?.reference});
+    await writeAuditEvent(db,req.uid,{event:'commerce_dispute_evidence_added',disputeId:result.disputeId,evidenceId:result.evidenceId});
+    return res.status(201).json(result);
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to add evidence.');}
+});
+
+app.post('/api/agents/commerce/disputes/transition',requireUser,async(req,res)=>{
+  try{
+    const result=await transitionDispute(db,req.uid,{disputeId:req.body?.disputeId,toState:req.body?.toState});
+    await writeAuditEvent(db,req.uid,{event:'commerce_dispute_transitioned',disputeId:result.disputeId,from:result.from,to:result.to});
+    return res.json(result);
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to transition dispute.');}
+});
+
+app.post('/api/agents/commerce/disputes/resolve',requireUser,async(req,res)=>{
+  try{
+    const result=await resolveDispute(db,req.uid,{disputeId:req.body?.disputeId,resolution:req.body?.resolution,amountMinor:req.body?.amountMinor});
+    await writeAuditEvent(db,req.uid,{event:'commerce_dispute_resolved',disputeId:result.disputeId,resolution:result.resolution,amountMinor:result.resolutionAmountMinor});
+    return res.json(result);
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to resolve dispute.');}
 });
 
 app.get('/health', (_req, res) => {
