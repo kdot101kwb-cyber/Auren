@@ -9,6 +9,7 @@ import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
 import '../../../services/messaging/message_safety_repository.dart';
 import 'group_details_screen.dart';
+import '../../../services/users/presence_service.dart';
 
 class MessengerScreen extends StatefulWidget {
   final String? conversationId;
@@ -27,6 +28,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
   final _conversationRepository = ConversationRepository();
   final _actionRepository = ActionRepository();
   final _safetyRepository = MessageSafetyRepository();
+  final _presence = AurenPresenceHeartbeat(AurenPresenceService());
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -56,6 +58,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
         throw StateError('Conversation not found or access denied.');
       }
       _conversationId = conversation.id;
+      _presence.start(_uid!);
       _isAi = conversation.isAi;
       _conversationTitle = conversation.title;
       await _conversationRepository.markRead(_conversationId!, _uid!);
@@ -149,6 +152,17 @@ class _MessengerScreenState extends State<MessengerScreen> {
   }
 
   @override
+  @override
+  void dispose() {
+    final uid = _uid;
+    if (uid != null) {
+      _presence.stop(uid);
+    }
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Widget build(BuildContext context) {
     if (!_initialPromptSent && !_loading && widget.initialPrompt != null) {
       _initialPromptSent = true;
