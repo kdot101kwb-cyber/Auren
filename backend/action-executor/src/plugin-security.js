@@ -2,6 +2,16 @@ import crypto from 'node:crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 const MAX_PACKAGE_BYTES=5*1024*1024;
 const MAX_DAILY_INVOCATIONS=10000;
+const SAFE_ID=/^[a-z0-9._-]{3,64}$/;
+export function validateArtifactId(value){
+  if(typeof value!=='string'||!SAFE_ID.test(value))throw Object.assign(new Error('Invalid plugin artifact id.'),{code:400});
+  return value;
+}
+export function artifactObjectPath(agentId,artifactId){
+  if(typeof agentId!=='string'||!agentId||!SAFE_ID.test(artifactId))throw Object.assign(new Error('Invalid plugin artifact reference.'),{code:400});
+  return `plugin-artifacts/${agentId}/${artifactId}/entrypoint.js`;
+}
+export function createArtifactId(){return 'art_'+crypto.randomUUID();}
 export function packageSha256(bytes){return crypto.createHash('sha256').update(bytes).digest('hex');}
 export function validatePackageMetadata(meta){
   if(!meta||typeof meta!=='object')throw Object.assign(new Error('Invalid plugin package metadata.'),{code:400});
