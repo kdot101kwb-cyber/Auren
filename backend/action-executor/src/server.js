@@ -330,6 +330,25 @@ app.get('/api/agents/marketplace/:agentId/versions',requireUser,async(req,res)=>
   }catch(e){return error(res,500,e.message||'Unable to load versions.');}
 });
 
+app.post('/api/agents/marketplace/rollback',requireUser,async(req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const version=typeof req.body?.version==='string'?req.body.version.trim():'';
+    if(!version)return error(res,400,'version is required.');
+    const ref=db.collection('agent_listings').doc(agent.agentId);
+    const snap=await ref.get(); if(!snap.exists)return error(res,404,'Listing not found.');
+    const listing=snap.data();
+    const versionSnap=await ref.collection('versions').doc(version).get();
+    if(!versionSnap.exists)return error(res,404,'Requested version is not registered.');
+    const candidate=versionSnap.data();
+    if(candidate.pluginId!==listing.pluginId||candidate.agentId!==agent.agentId)return error(res,409,'Version does not belong to this plugin.');
+    await ref.update({version,entrypoint:candidate.entrypoint||listing.entrypoint,state:'published',rolledBackFrom:listing.version||null,updatedAt:FieldValue.serverTimestamp(),rolledBackAt:FieldValue.serverTimestamp()});
+    await writeAuditEvent(db,req.uid,{event:'agent_listing_rolled_back',agentId:agent.agentId,fromVersion:listing.version||null,toVersion:version});
+    return res.json({agentId:agent.agentId,state:'published',version});
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to rollback listing.');}
+});
+
 app.post('/api/agents/marketplace/publish',requireUser,async(req,res)=>{
   try{
     const agent=await loadAgentIdentity(db,req.uid);
