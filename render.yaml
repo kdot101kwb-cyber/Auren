@@ -8,13 +8,21 @@ services:
     autoDeploy: true
     envVars:
       - key: PORT
-        value: 8080
+        value: "8080"
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
       - key: AUREN_PLUGIN_WORKER_URL
-        value: http://auren-plugin-worker:8090
+        fromService:
+          name: auren-plugin-worker
+          type: pserv
+          property: hostport
       - key: AUREN_PLUGIN_WORKER_SECRET
-        sync: false
+        fromService:
+          name: auren-plugin-worker
+          type: pserv
+          envVarKey: WORKER_SHARED_SECRET
       - key: AUREN_PLUGIN_SIGNING_SECRET
-        sync: false
+        generateValue: true
 
   - type: pserv
     name: auren-plugin-worker
@@ -23,8 +31,8 @@ services:
     dockerContext: ./backend/plugin-worker
     envVars:
       - key: PORT
-        value: 8090
+        value: "8090"
       - key: PLUGIN_TIMEOUT_MS
-        value: 5000
+        value: "5000"
       - key: WORKER_SHARED_SECRET
-        sync: false
+        generateValue: true
