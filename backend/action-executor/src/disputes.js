@@ -28,7 +28,7 @@ export async function openDispute(db, uid, {transactionId, reason, description})
   const ref=db.collection('users').doc(uid).collection('disputes').doc(disputeId);
   const liabilityRef=db.collection('users').doc(uid).collection('agent_liability').doc(disputeId);
   await db.runTransaction(async t=>{
-    t.update(txDoc.ref,{status:'disputed',disputeId,disputedAt:FieldValue.serverTimestamp()});
+    t.update(txDoc.ref,{status:'disputed',originalStatus:tx.status,disputeId,disputedAt:FieldValue.serverTimestamp()});
     t.create(ref,{disputeId,transactionId,reason:reason.trim().slice(0,200),description:description.trim().slice(0,4000),state:'open',resolution:null,resolutionAmountMinor:null,evidenceCount:0,liabilityState:'pending',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     t.create(liabilityRef,{disputeId,transactionId,agentId:tx.agentId||null,state:'pending',amountMinor:tx.amountMinor||0,currency:tx.currency||null,assignedParty:null,policy:'agent-default-liability-v1',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
   });
