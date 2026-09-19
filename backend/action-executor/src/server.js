@@ -239,17 +239,20 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
   } catch (e) {
     const status = Number.isInteger(e?.code) ? e.code : 500;
     try {
-      await actionRef.update({
-        status: 'failed',
-        result: e.message || 'Execution failed.',
-        executionCompletedAt: FieldValue.serverTimestamp(),
-      });
-      await writeAuditEvent(db, req.uid, {
-        actionId,
-        event: 'execution_failed',
-        agentId: agent.agentId,
-        error: e.message || 'Execution failed.',
-      });
+      const current = await actionRef.get();
+      if (current.exists && current.data()?.status === 'executing') {
+        await actionRef.update({
+          status: 'failed',
+          result: e.message || 'Execution failed.',
+          executionCompletedAt: FieldValue.serverTimestamp(),
+        });
+        await writeAuditEvent(db, req.uid, {
+          actionId,
+          event: 'execution_failed',
+          agentId: agent.agentId,
+          error: e.message || 'Execution failed.',
+        });
+      }
     } catch {}
 
     return error(res, status, e.message || 'Execution failed.');
