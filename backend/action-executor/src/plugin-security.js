@@ -4,7 +4,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 const MAX_PACKAGE_BYTES = 5 * 1024 * 1024;
 const MAX_DAILY_INVOCATIONS = 10000;
 const MAX_DEPENDENCIES = 50;
-const SAFE_DEPENDENCY = /^[a-z0-9@._/-]{1,120}$/;
+const SAFE_DEPENDENCY = /^[a-z0-9][a-z0-9@._/-]{0,119}$/;
 const UNSAFE_DEPENDENCY_PATH = /(^|\/)\.\.(\/|$)|(^|\/)\.(\/|$)/;
 const SAFE_ID = /^[a-z0-9._-]{3,64}$/;
 
