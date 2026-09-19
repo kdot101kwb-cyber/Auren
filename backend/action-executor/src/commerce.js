@@ -4,6 +4,19 @@ import { FieldValue } from 'firebase-admin/firestore';
 export function createTransactionId(){return 'txn_'+crypto.randomUUID();}
 function walletRef(db,uid){return db.collection('users').doc(uid).collection('wallet').doc('primary');}
 function transactionRef(db,uid,id){return db.collection('users').doc(uid).collection('wallet_transactions').doc(id);}
+function permissionRef(db,uid){return db.collection('users').doc(uid).collection('agent_permissions').doc('primary');}
+function updateDailySpend(t,db,uid,delta){
+  const ref=permissionRef(db,uid);
+  const today=new Date().toISOString().slice(0,10);
+  return t.get(ref).then(s=>{
+    const data=s.exists?s.data():{};
+    const storedDay=typeof data.spentTodayDate==='string'?data.spentTodayDate:null;
+    const current=storedDay===today&&Number.isInteger(data.spentTodayMinor)?data.spentTodayMinor:0;
+    const next=Math.max(0,current+delta);
+    t.set(ref,{spentTodayMinor:next,spentTodayDate:today,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    return next;
+  });
+}
 export const TRANSACTION_STATES=Object.freeze(['reserved','settled','released','refunded','disputed']);
 
 export function validateCommerceRequest(input){
@@ -38,6 +51,7 @@ export async function settleSpending(db,uid,transactionId,agentId=null){
     if(reserved<(tx.amountMinor||0))throw Object.assign(new Error('Wallet reservation mismatch.'),{code:409});
     t.update(ref,{reservedMinor:reserved-tx.amountMinor,availableMinor:(w.availableMinor||0)-tx.amountMinor,updatedAt:FieldValue.serverTimestamp()});
     t.update(txRef,{status:'settled',settledAt:FieldValue.serverTimestamp()});
+    await updateDailySpend(t,db,uid,tx.amountMinor);
     return {...tx,status:'settled'};
   });
 }
@@ -66,6 +80,7 @@ export async function refundSpending(db,uid,transactionId,agentId=null){
     const ref=walletRef(db,uid), s=await t.get(ref), w=s.data()||{};
     t.update(ref,{availableMinor:(w.availableMinor||0)+tx.amountMinor,updatedAt:FieldValue.serverTimestamp()});
     t.update(txRef,{status:'refunded',refundedAt:FieldValue.serverTimestamp()});
+    await updateDailySpend(t,db,uid,-tx.amountMinor);
     return {...tx,status:'refunded'};
   });
 }
