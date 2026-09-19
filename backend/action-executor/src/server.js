@@ -124,6 +124,25 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
   } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 400, e.message || 'Plugin publish failed.'); }
 });
 
+
+app.post('/api/agents/plugins/state', requireUser, async (req, res) => {
+  try {
+    const requested = typeof req.body?.state === 'string' ? req.body.state : '';
+    if (!['published', 'paused', 'revoked'].includes(requested)) return error(res, 400, 'Invalid plugin state.');
+    const agent = await loadAgentIdentity(db, req.uid);
+    if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
+    const ref = db.collection('agent_listings').doc(agent.agentId);
+    const snap = await ref.get();
+    if (!snap.exists) return error(res, 404, 'Agent listing not found.');
+    const listing = snap.data();
+    if (listing.state === 'revoked' && requested !== 'revoked') return error(res, 409, 'Revoked listing cannot be reactivated.');
+    if (requested === 'published' && (!listing.pluginId || !listing.version || !Array.isArray(listing.capabilities))) return error(res, 409, 'Listing is incomplete.');
+    await ref.update({state: requested, updatedAt: FieldValue.serverTimestamp()});
+    await writeAuditEvent(db, req.uid, {event:'agent_listing_state_changed',agentId:agent.agentId,from:listing.state,to:requested,pluginId:listing.pluginId||null});
+    return res.json({agentId:agent.agentId,state:requested});
+  } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 500, e.message || 'Plugin state change failed.'); }
+});
+
 app.post('/api/agents/capabilities/issue', requireUser, async (req, res) => {
   try {
     const agent = await loadAgentIdentity(db, req.uid);
