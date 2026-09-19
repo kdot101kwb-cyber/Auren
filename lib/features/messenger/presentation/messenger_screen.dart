@@ -8,6 +8,7 @@ import '../../../services/actions/action_registry.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
 import '../../../services/messaging/message_safety_repository.dart';
+import 'group_details_screen.dart';
 
 class MessengerScreen extends StatefulWidget {
   final String? conversationId;
@@ -190,7 +191,27 @@ class _MessengerScreenState extends State<MessengerScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_conversationTitle)),
+      appBar: AppBar(
+        title: Text(_conversationTitle),
+        actions: [
+          if (!_isAi)
+            IconButton(
+              tooltip: 'Conversation details',
+              onPressed: () async {
+                final conversation = await _conversationRepository.findById(_conversationId!);
+                if (!mounted || conversation == null) return;
+                if (conversation.type == 'group') {
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => AurenGroupDetailsScreen(conversation: conversation),
+                  ));
+                } else {
+                  setState(() => _showDetails = !_showDetails);
+                }
+              },
+              icon: const Icon(Icons.info_outline),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           if (_showDetails)
