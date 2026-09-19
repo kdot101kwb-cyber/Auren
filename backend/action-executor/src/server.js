@@ -129,18 +129,6 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
 
     let executionResult;
 
-    switch (result.actionType) {      return action;
-    });
-
-    await writeAuditEvent(db, req.uid, {
-      actionId,
-      event: 'execution_started',
-      agentId: agent.agentId,
-      actionType: result.actionType,
-    });
-
-    let executionResult;
-
     switch (result.actionType) {
       case 'demo.echo':
         executionResult = result.payload?.text ?? result.description;
