@@ -224,11 +224,20 @@ app.post('/api/agents/plugins/runtime/execute', requireUser, async(req,res)=>{
     const artifactSnap=await db.collection('plugin_artifacts').doc(artifactId).get();
     if(!artifactSnap.exists)return error(res,404,'Plugin artifact not found.');
     const artifact=artifactSnap.data();
-    const packageMetadata={pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
+    const packageMetadata={pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes,dependencies:artifact.dependencies||[]};
     const prepared=await preparePluginInvocation(db,{agent,manifest:req.body?.manifest,packageMetadata,signature:artifact.signature,secret,payload:req.body?.payload||{}});
-    const result=await executePluginThroughWorker({prepared,workerUrl,workerSecret});
-    await writeAuditEvent(db,req.uid,{event:'plugin_runtime_executed',agentId:agent.agentId,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,resultStatus:result.status});
-    await db.collection('plugin_invocations').add({agentId:agent.agentId,ownerUid:req.uid,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,status:result.status,quotaInvocation:prepared.quota.invocations,createdAt:FieldValue.serverTimestamp()});
+    const startedAt=Date.now();
+    let result;
+    try {
+      result=await executePluginThroughWorker({prepared,workerUrl,workerSecret});
+    } catch(e) {
+      await db.collection('plugin_invocations').add({agentId:agent.agentId,ownerUid:req.uid,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,status:'failed',errorCode:Number.isInteger(e?.code)?e.code:null,durationMs:Date.now()-startedAt,payloadBytes:Buffer.byteLength(JSON.stringify(prepared.payload||{}),'utf8'),quotaInvocation:prepared.quota.invocations,createdAt:FieldValue.serverTimestamp()});
+      throw e;
+    }
+    const outputBytes=Buffer.byteLength(typeof result.result==='string'?result.result:JSON.stringify(result.result??''),'utf8');
+    const durationMs=Date.now()-startedAt;
+    await writeAuditEvent(db,req.uid,{event:'plugin_runtime_executed',agentId:agent.agentId,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,resultStatus:result.status,durationMs,outputBytes});
+    await db.collection('plugin_invocations').add({agentId:agent.agentId,ownerUid:req.uid,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,status:result.status,durationMs,payloadBytes:Buffer.byteLength(JSON.stringify(prepared.payload||{}),'utf8'),outputBytes,quotaInvocation:prepared.quota.invocations,createdAt:FieldValue.serverTimestamp()});
     return res.json({status:result.status,result:result.result,quota:prepared.quota});
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin runtime execution failed.');}
 });
@@ -435,9 +444,9 @@ app.post('/api/agents/commerce/disputes',requireUser,async(req,res)=>{
     const trustRef=db.collection('agent_trust').doc(agent.agentId);
     const updatedTrust=await db.runTransaction(async tx=>{
       const snap=await tx.get(trustRef);
-      const current=snap.exists?snap.data():{score:0,completed:0,disputes:0,failures:0};
+      const current=snap.exists?snap.data():{score:100,completed:0,disputes:0,failures:0};
       const disputes=(current.disputes||0)+1;
-      const score=Math.max(0,Math.min(100,Math.round((current.score||0)-5)));
+      const score=Math.max(0,Math.min(100,Math.round((current.score??100)-5)));
       const next={score,completed:current.completed||0,disputes,failures:current.failures||0};
       tx.set(trustRef,{...next,updatedAt:FieldValue.serverTimestamp()},{merge:true});
       return next;

@@ -9,6 +9,8 @@ const TIMEOUT_MS=Math.min(Number(process.env.PLUGIN_TIMEOUT_MS||5000),10000);
 const MAX_BODY=32768;
 const MAX_ARTIFACT_BYTES=5*1024*1024;
 const MAX_REQUEST_BODY=7*1024*1024;
+const MAX_PAYLOAD_BYTES=32768;
+const MAX_OUTPUT_BYTES=32768;
 const SHARED_SECRET=process.env.WORKER_SHARED_SECRET||'';
 
 function json(res,status,body){res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(body));}
@@ -40,7 +42,7 @@ function runIsolated(manifest,payload,expectedSha256,artifactBase64){
     },(error,stdout,stderr)=>{
       cleanup();
       if(error)return reject(Object.assign(new Error((stderr||error.message).slice(0,2000)),{code:error.killed?408:500}));
-      resolve(stdout.slice(0,MAX_BODY));
+      resolve(stdout.slice(0,MAX_OUTPUT_BYTES));
     });
   });
 }
@@ -58,6 +60,8 @@ const server=http.createServer(async(req,res)=>{
       if(!SHARED_SECRET)return json(res,503,{error:'Worker secret is not configured.'});
       const body=JSON.parse(raw||'{}');
       if(!safeEqual(body.authorization,SHARED_SECRET))return json(res,403,{error:'Unauthorized worker request.'});
+      const payloadBytes=Buffer.byteLength(JSON.stringify(body.payload||{}),'utf8');
+      if(payloadBytes>MAX_PAYLOAD_BYTES)return json(res,413,{error:'Plugin payload exceeds the worker limit.'});
       const result=await runIsolated(body.manifest,body.payload||{},body.expectedSha256,body.artifactBase64);
       return json(res,200,{status:'completed',result});
     }catch(e){return json(res,Number.isInteger(e?.code)?e.code:500,{error:e.message||'Plugin execution failed.'});}

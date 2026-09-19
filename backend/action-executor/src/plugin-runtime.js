@@ -40,7 +40,9 @@ export async function executePluginThroughWorker({prepared,workerUrl,workerSecre
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7000);
   try{
-    const response=await fetchImpl(workerUrl,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({authorization:workerSecret,manifest:prepared.manifest,expectedSha256:prepared.package.sha256,artifactBase64:prepared.artifactBase64,payload:prepared.payload||{}}),signal:controller.signal});
+    const requestBody=JSON.stringify({authorization:workerSecret,manifest:prepared.manifest,expectedSha256:prepared.package.sha256,artifactBase64:prepared.artifactBase64,payload:prepared.payload||{}});
+    if(Buffer.byteLength(requestBody,'utf8')>7*1024*1024)throw Object.assign(new Error('Plugin worker request exceeds the bounded runtime payload.'),{code:413});
+    const response=await fetchImpl(workerUrl,{method:'POST',headers:{'content-type':'application/json','x-auren-runtime-version':'1'},body:requestBody,signal:controller.signal});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw Object.assign(new Error(data.error||'Plugin worker failed.'),{code:response.status});
     return data;
