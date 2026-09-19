@@ -19,6 +19,7 @@ import { calculateRisk, applyRiskPolicy, assertOperationalRisk } from './risk-en
 import { recoverStaleExecution } from './execution-recovery.js';
 import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
 import { submitReview } from './agent-reputation.js';
+import { preparePluginInvocation } from './plugin-runtime.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -114,6 +115,25 @@ app.post('/api/agents/plugins/validate', requireUser, async (req,res)=>{
 });
 
 
+
+app.post('/api/agents/plugins/runtime/prepare', requireUser, async (req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const secret=process.env.AUREN_PLUGIN_SIGNING_SECRET||'';
+    if(!secret)return error(res,503,'Plugin signing is not configured.');
+    const result=await preparePluginInvocation(db,{
+      agent,
+      manifest:req.body?.manifest,
+      packageMetadata:req.body?.packageMetadata,
+      signature:req.body?.signature,
+      secret,
+      payload:req.body?.payload||{},
+    });
+    await writeAuditEvent(db,req.uid,{event:'plugin_runtime_prepared',agentId:agent.agentId,pluginId:result.manifest.pluginId,version:result.manifest.version});
+    return res.json(result);
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Plugin runtime validation failed.');}
+});
 
 app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
   try {
