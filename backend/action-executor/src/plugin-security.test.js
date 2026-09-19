@@ -21,3 +21,8 @@ test('artifact scanner rejects dangerous capabilities',()=>{
   assert.equal(scanPluginArtifact(Buffer.from('module.exports=1')).status,'passed');
   assert.equal(scanPluginArtifact(Buffer.from("import 'node:child_process';")).status,'rejected');
 });
+
+test('scanner detects dangerous imports',()=>{
+  assert.equal(scanPluginArtifact(Buffer.from("import 'node:child_process';")).status,'rejected');
+  assert.equal(scanPluginArtifact(Buffer.from('const x = 1;')).status,'passed');
+});
