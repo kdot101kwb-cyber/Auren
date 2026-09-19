@@ -207,7 +207,8 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
     const packageMetadata = {pluginId:artifact.pluginId,version:artifact.version,sha256:artifact.sha256,sizeBytes:artifact.sizeBytes};
     const signingSecret = process.env.AUREN_PLUGIN_SIGNING_SECRET || '';
     if (!signingSecret) return error(res, 503, 'Plugin signing is not configured.');
-    const signature = verifyPackageSignature(packageMetadata, req.body?.signature, signingSecret) ? req.body.signature : null;
+    if (!verifyPackageSignature(packageMetadata, req.body?.signature, signingSecret)) return error(res, 403, 'Invalid plugin package signature.');
+    const signature = req.body.signature;
     const listing = {
       agentId: agent.agentId,
       ownerUid: req.uid,
