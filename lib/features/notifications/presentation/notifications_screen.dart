@@ -8,6 +8,15 @@ class AurenNotificationsScreen extends StatefulWidget {
   @override State<AurenNotificationsScreen> createState() => _AurenNotificationsScreenState();
 }
 class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
+  IconData _iconFor(String type, bool read) {
+    if (type == 'message') return read ? Icons.chat_bubble_outline : Icons.chat;
+    if (type == 'follow') return read ? Icons.person_outline : Icons.person_add;
+    if (type == 'like') return read ? Icons.favorite_border : Icons.favorite;
+    if (type == 'comment') return read ? Icons.mode_comment_outlined : Icons.mode_comment;
+    if (type == 'group') return read ? Icons.groups_outlined : Icons.groups;
+    if (type == 'action') return read ? Icons.task_alt : Icons.pending_actions;
+    return read ? Icons.notifications_none : Icons.notifications_active;
+  }
   final _auth = FirebaseAurenAuthService();
   final _repo = NotificationRepository();
   String? _uid;
@@ -29,7 +38,7 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
           return ListView.separated(
             itemCount: items.length, separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (_, i) { final n = items[i]; return ListTile(
-              leading: Icon(n.read ? Icons.notifications_none : Icons.notifications_active),
+              leading: Icon(_iconFor(n.type, n.read)),
               title: Text(n.title, style: TextStyle(fontWeight: n.read ? FontWeight.normal : FontWeight.bold)),
               subtitle: Text(n.body),
               onTap: () async {
