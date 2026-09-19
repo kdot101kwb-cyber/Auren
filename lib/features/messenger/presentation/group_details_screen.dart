@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/models/conversation.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/messaging/conversation_repository.dart';
 
