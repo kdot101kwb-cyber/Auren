@@ -63,6 +63,8 @@ app.post('/api/a2a/send', requireUser, async (req, res) => {
   if (!validateEnvelope(envelope)) return error(res, 400, 'Invalid AUREN-A2A envelope.');
 
   const sender = await loadAgentIdentity(db, req.uid);
+  const senderRisk = await db.collection('agent_risk').doc(sender.agentId).get();
+  if (senderRisk.exists) assertOperationalRisk(senderRisk.data());
   const capabilityToken = decodeAndValidateCapabilityToken(req.body?.capabilityToken, sender.agentId, 'messages.send');
   if (!capabilityToken) return error(res, 403, 'Valid messages.send capability is required.');
   if (sender.status !== 'active' || envelope.senderAgentId !== sender.agentId) {
@@ -126,6 +128,8 @@ app.post('/api/agents/plugins/runtime/prepare', requireUser, async (req,res)=>{
   try{
     const agent=await loadAgentIdentity(db,req.uid);
     if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const risk=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(risk.exists)assertOperationalRisk(risk.data());
     const secret=process.env.AUREN_PLUGIN_SIGNING_SECRET||'';
     if(!secret)return error(res,503,'Plugin signing is not configured.');
     const result=await preparePluginInvocation(db,{
@@ -161,6 +165,8 @@ app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
     const manifest = validatePluginManifest(req.body?.manifest);
     const agent = await loadAgentIdentity(db, req.uid);
     if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
+    const risk = await db.collection('agent_risk').doc(agent.agentId).get();
+    if (risk.exists) assertOperationalRisk(risk.data());
     const existing = await db.collection('agent_listings').doc(agent.agentId).get();
     const listing = {
       agentId: agent.agentId,
@@ -190,6 +196,8 @@ app.post('/api/agents/plugins/state', requireUser, async (req, res) => {
     if (!['published', 'paused', 'revoked'].includes(requested)) return error(res, 400, 'Invalid plugin state.');
     const agent = await loadAgentIdentity(db, req.uid);
     if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
+    const risk = await db.collection('agent_risk').doc(agent.agentId).get();
+    if (risk.exists) assertOperationalRisk(risk.data());
     const ref = db.collection('agent_listings').doc(agent.agentId);
     const snap = await ref.get();
     if (!snap.exists) return error(res, 404, 'Agent listing not found.');
@@ -269,6 +277,8 @@ app.post('/api/agents/commerce/disputes',requireUser,async(req,res)=>{
   try{
     const agent=await loadAgentIdentity(db,req.uid);
     if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const risk=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(risk.exists)assertOperationalRisk(risk.data());
     const result=await openDispute(db,req.uid,{transactionId:req.body?.transactionId,reason:req.body?.reason,description:req.body?.description});
     const trustRef=db.collection('agent_trust').doc(agent.agentId);
     const updatedTrust=await db.runTransaction(async tx=>{
