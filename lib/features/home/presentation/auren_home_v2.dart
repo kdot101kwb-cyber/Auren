@@ -3,6 +3,7 @@ import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
+import '../../social/presentation/timeline_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -31,6 +32,14 @@ class AurenHomeV2 extends StatelessWidget {
         _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
         _card(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل هدفك إلى خطوات.', const PersonalAiScreen()),
         const SizedBox(height: 12),
+        Card(child: ListTile(
+          leading: const Icon(Icons.dynamic_feed_outlined),
+          title: const Text('Pulse'),
+          subtitle: const Text('شارك، تفاعل واكتشف ما يحدث الآن.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTimelineScreen())),
+        )),
+        const SizedBox(height: 4),
         Card(child: ListTile(
           leading: const Icon(Icons.more_horiz),
           title: const Text('More'),
