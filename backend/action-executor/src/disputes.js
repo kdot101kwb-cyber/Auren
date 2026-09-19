@@ -72,7 +72,7 @@ export async function resolveDispute(db, uid, {disputeId,resolution,amountMinor=
     if(!['reserved','settled'].includes(tx.originalStatus)) throw Object.assign(new Error('Disputed transaction has no valid original state.'),{code:409});
     const amount=resolution==='no_action'?0:amountMinor;
     if(resolution==='partial_refund'||resolution==='refund'){
-      if(resolution==='partial_refund' && amountMinor===tx.amountMinor) resolution='refund';
+      if(resolution==='partial_refund' && amountMinor===tx.amountMinor) throw Object.assign(new Error('Use full refund resolution for the full transaction amount.'),{code:400});
       if(!Number.isInteger(amount)||amount<=0) throw Object.assign(new Error('A positive resolution amount is required.'),{code:400});
       if(amount>tx.amountMinor) throw Object.assign(new Error('Resolution amount cannot exceed the disputed transaction amount.'),{code:400});
       if(tx.originalStatus!=='settled') throw Object.assign(new Error('Reserved disputes must use release.'),{code:409});
