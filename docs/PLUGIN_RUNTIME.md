@@ -26,3 +26,22 @@ Production execution must use a separately deployed isolated worker/container wi
 - kill switch and rollback
 
 The API should invoke that worker only after the runtime gate succeeds.
+
+## End-to-end flow
+
+`POST /api/agents/plugins/runtime/execute` authenticates the Firebase user, validates the agent, verifies package signature/version/hash metadata, consumes quota, then sends only the validated manifest and payload to the isolated worker.
+
+The worker requires a separate shared secret and only accepts mounted `file:` entrypoints. The Action Executor never executes plugin code itself.
+
+### Required deployment environment
+
+Action Executor:
+- `AUREN_PLUGIN_SIGNING_SECRET`
+- `AUREN_PLUGIN_WORKER_URL`
+- `AUREN_PLUGIN_WORKER_SECRET`
+
+Plugin Worker:
+- `WORKER_SHARED_SECRET`
+- `PLUGIN_TIMEOUT_MS`
+
+The worker should remain private/internal; do not expose port 8090 publicly.
