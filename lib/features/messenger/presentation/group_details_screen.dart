@@ -15,6 +15,8 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
   final _auth = FirebaseAurenAuthService();
   final _repo = ConversationRepository();
   bool _busy = false;
+  late AurenConversation _current;
+  @override void initState() { super.initState(); _current = widget.conversation; }
 
   Future<void> _addMembers() async {
     final controller = TextEditingController();
@@ -36,14 +38,29 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
       ),
     );
     controller.dispose();
-    if (value == null || _auth.currentUserId != widget.conversation.ownerId) return;
+    if (value == null || _auth.currentUserId != _current.ownerId) return;
     final additions = value.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
-    final members = {...widget.conversation.memberIds, ...additions}.toList();
+    final members = {..._current.memberIds, ...additions}.toList();
     await _run(() => _repo.updateGroupMembers(
       conversationId: widget.conversation.id,
-      ownerUid: widget.conversation.ownerId!,
+      ownerUid: _current.ownerId!,
       memberIds: members,
     ));
+    final updated = await _repo.findById(_current.id);
+    if (mounted && updated != null) setState(() => _current = updated);
+  }
+
+  Future<void> _removeMember(String memberUid) async {
+    if (_auth.currentUserId != _current.ownerId) return;
+    await _run(() async {
+      await _repo.removeGroupMember(
+        conversationId: _current.id,
+        uid: _current.ownerId!,
+        memberUid: memberUid,
+      );
+      final updated = await _repo.findById(_current.id);
+      if (mounted && updated != null) setState(() => _current = updated);
+    });
   }
 
   Future<void> _leave() async {
@@ -60,7 +77,7 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
     );
     if (ok != true) return;
     await _run(() async {
-      await _repo.leaveGroup(conversationId: widget.conversation.id, uid: _auth.currentUserId!);
+      await _repo.leaveGroup(conversationId: _current.id, uid: _auth.currentUserId!);
       if (mounted) Navigator.pop(context);
     });
   }
@@ -81,22 +98,24 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = _auth.currentUserId;
-    final isOwner = uid != null && uid == widget.conversation.ownerId;
+    final isOwner = uid != null && uid == _current.ownerId;
     return Scaffold(
-      appBar: AppBar(title: const Text('Group details')),
+      appBar: AppBar(title: Text(_current.title)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           ListTile(
             leading: const CircleAvatar(child: Icon(Icons.groups)),
-            title: Text(widget.conversation.title),
-            subtitle: Text('${widget.conversation.memberIds.length} members'),
+            title: Text(_current.title),
+            subtitle: Text('${_current.memberIds.length} members'),
           ),
           const Divider(),
-          ...widget.conversation.memberIds.map((id) => ListTile(
+          ..._current.memberIds.map((id) => ListTile(
             leading: const Icon(Icons.person_outline),
             title: Text(id),
-            trailing: id == widget.conversation.ownerId ? const Chip(label: Text('Owner')) : null,
+            trailing: id == _current.ownerId
+                ? const Chip(label: Text('Owner'))
+                : isOwner ? IconButton(onPressed: _busy ? null : () => _removeMember(id), icon: const Icon(Icons.person_remove_outlined)) : null,
           )),
           const SizedBox(height: 12),
           if (isOwner)
