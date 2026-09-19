@@ -74,7 +74,7 @@ service cloud.firestore {
 
       match /agent_listings/{agentId} {
         allow read: if request.auth != null && resource.data.state == 'published';
-        allow write: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+        allow write: if false;
       }
 
       match /agent_messages/{messageId} {
