@@ -14,6 +14,7 @@ export async function preparePluginInvocation(db,{agent,manifest,packageMetadata
   const versionSnap=await versionRef.get();
   if(!versionSnap.exists)throw Object.assign(new Error('Published plugin version artifact is not registered.'),{code:409});
   const version=versionSnap.data();
+  if(version.artifactState==='revoked')throw Object.assign(new Error('Plugin artifact version has been revoked.'),{code:403});
   if(version.artifactState!=='approved')throw Object.assign(new Error('Plugin artifact is not approved for execution.'),{code:403});
   if(version.pluginId!==normalized.pluginId||version.version!==normalized.version||version.entrypoint!==normalized.entrypoint)throw Object.assign(new Error('Registered plugin artifact provenance does not match the requested version.'),{code:409});
   if(version.sha256!==meta.sha256||version.sizeBytes!==meta.sizeBytes)throw Object.assign(new Error('Plugin artifact metadata does not match the registered provenance.'),{code:409});
