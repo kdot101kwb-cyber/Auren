@@ -339,6 +339,33 @@ service cloud.firestore {
         && resource.data.ownerId == request.auth.uid;
     }
 
+    match /message_reports/{reportId} {
+      allow create: if request.auth != null
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.conversationId is string
+        && request.resource.data.messageId is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0
+        && request.resource.data.reason.size() <= 500
+        && request.resource.data.keys().hasOnly([
+          'reporterUid', 'conversationId', 'messageId', 'reason', 'createdAt'
+        ]);
+      allow read, update, delete: if false;
+    }
+
+    match /message_blocks/{blockId} {
+      allow read: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.blockedUid is string
+        && request.resource.data.blockedUid != request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'blockedUid', 'createdAt'
+        ]);
+      allow delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow update: if false;
+    }
+
     match /conversations/{conversationId} {
       allow read: if request.auth != null
         && request.auth.uid in resource.data.memberIds;
