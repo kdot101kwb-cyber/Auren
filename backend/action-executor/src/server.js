@@ -3,6 +3,7 @@ import { getApps, initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getActionDefinition, validatePayload } from './action-registry.js';
+import { loadPermissionLedger, assertPermission, assertSpendingLimit } from './permission-ledger.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -107,6 +108,10 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
           { code: 400 },
         );
       }
+
+      const ledger = await loadPermissionLedger(db, req.uid);
+      assertPermission(ledger, action);
+      assertSpendingLimit(ledger, action);
 
       tx.update(actionRef, {
         status: 'executing',
