@@ -800,9 +800,7 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
       case 'demo.echo':
         executionResult = result.payload?.text ?? result.description;
         break;
-      case 'demo.create_note':
-        executionResult = 'Demo note action accepted by the trusted executor.';
-        break;
+      case 'demo.create_note': {\n        const noteText = typeof result.payload?.text === 'string' ? result.payload.text.trim() : '';\n        if (!noteText || noteText.length > 4000) throw Object.assign(new Error('A valid note text is required.'), { code: 400 });\n        const noteRef = db.collection('users').doc(req.uid).collection('notes').doc();\n        await noteRef.set({noteId:noteRef.id,text:noteText,source:'auren-action',actionId,createdAt:FieldValue.serverTimestamp()});\n        executionResult = `Note created: ${noteText}`;\n        break;\n      }
       default:
         return error(res, 403, 'Action type is not executable.');
     }
