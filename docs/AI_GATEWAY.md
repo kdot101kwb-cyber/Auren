@@ -3,7 +3,13 @@
 The Flutter app never stores provider API keys. It calls one HTTPS backend endpoint.
 
 ## Request
-{ "conversationId": "string", "message": "string" }
+`POST /api/ai/chat`
+
+Headers:
+`Authorization: Bearer <Firebase ID token>`
+
+Body:
+`{ "conversationId": "string", "message": "string" }`
 
 ## Response
 { "text": "string", "action": "optional string", "requiresApproval": false }
@@ -20,7 +26,7 @@ The Flutter app never stores provider API keys. It calls one HTTPS backend endpo
 - write audit events for executed actions
 
 ## Provider routing
-AUREN can later support OpenAI, Gemini, Claude and compatible gateways behind this single contract. Provider choice remains a server-side concern.
+The current backend uses a single OpenAI-compatible chat-completions endpoint configured by environment variables. OpenAI, Gemini, Claude-compatible gateways and other providers can later sit behind the same server contract.
 
 ## Client configuration
 Run Flutter with:
@@ -62,3 +68,12 @@ Client configuration:
 `--dart-define=AUREN_ACTION_EXECUTOR_URL=https://your-backend.example/api/actions/execute`
 
 This separation is intentional: Firestore Security Rules authorize client data access, while trusted server code performs privileged execution. Firebase documents that server client libraries bypass Firestore Security Rules and instead use IAM/Application Default Credentials, so the execution backend must enforce its own authorization checks.
+
+## Current backend configuration
+
+The action-executor requires:
+- `AUREN_AI_BASE_URL`
+- `AUREN_AI_API_KEY`
+- `AUREN_AI_MODEL`
+
+Provider requests are authenticated server-side and have a 30-second timeout. The provider key is never sent to Flutter.
