@@ -66,6 +66,13 @@ class ConversationRepository {
     return conversation;
   }
 
+  Future<AurenConversation?> findById(String conversationId) async {
+    if (conversationId.trim().isEmpty) return null;
+    final doc = await _conversations.doc(conversationId).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return AurenConversation.fromMap(doc.id, doc.data()!);
+  }
+
   Stream<List<AurenConversation>> watchForUser(String uid) => _conversations
       .where('memberIds', arrayContains: uid)
       .orderBy('updatedAt', descending: true)
