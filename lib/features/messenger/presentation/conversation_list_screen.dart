@@ -32,7 +32,7 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
             padding: const EdgeInsets.all(12), itemCount: conversations.length, separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (_, i) { final c = conversations[i]; return ListTile(
               leading: CircleAvatar(child: Icon(c.isAi ? Icons.auto_awesome : Icons.chat_bubble_outline)),
-              title: Text(c.title), subtitle: Text(c.isAi ? 'AUREN AI' : 'محادثة'),
+              title: Text(c.title), subtitle: Text(c.lastMessage?.isNotEmpty == true ? c.lastMessage! : (c.isAi ? 'AUREN AI' : 'محادثة')),
               trailing: Text('${c.updatedAt.hour.toString().padLeft(2, '0')}:${c.updatedAt.minute.toString().padLeft(2, '0')}'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: c.id))),
             ); },
