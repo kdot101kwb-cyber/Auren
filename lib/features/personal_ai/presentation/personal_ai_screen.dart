@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'action_center_screen.dart';
 import 'memory_screen.dart';
+import '../../agents/presentation/agent_hub_screen.dart';
 
 class PersonalAiScreen extends StatelessWidget {
   const PersonalAiScreen({super.key});
@@ -20,6 +21,7 @@ class PersonalAiScreen extends StatelessWidget {
         _tile(context, Icons.psychology_outlined, 'AI Memory', 'ذاكرة شخصية تحت تحكمك.', const AurenMemoryScreen()),
         _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.'),
         _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.'),
+        _tile(context, Icons.smart_toy_outlined, 'AUREN Agents', 'Marketplace + A2A + Trust + Wallet.', const AurenAgentHubScreen()),
       ],
     ),
   );
