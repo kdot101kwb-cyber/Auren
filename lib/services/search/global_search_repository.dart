@@ -1,0 +1,52 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/models/search_result.dart';
+import '../../core/models/user_profile.dart';
+
+class AurenGlobalSearchRepository {
+  final FirebaseFirestore _db;
+  AurenGlobalSearchRepository({FirebaseFirestore? firestore}) : _db = firestore ?? FirebaseFirestore.instance;
+
+  Future<List<AurenSearchResult>> search(String text) async {
+    final q = text.trim().toLowerCase();
+    if (q.isEmpty) return [];
+    final results = await Future.wait([
+      _searchPeople(q),
+      _searchPosts(q),
+      _searchCollection(q, 'businesses', AurenSearchType.businesses, const ['name', 'title'], const ['category', 'description', 'location']),
+      _searchCollection(q, 'places', AurenSearchType.places, const ['name', 'title'], const ['city', 'country', 'description']),
+      _searchCollection(q, 'opportunities', AurenSearchType.opportunities, const ['title', 'name'], const ['company', 'category', 'location']),
+    ]);
+    return results.expand<AurenSearchResult>((x) => x as List<AurenSearchResult>).toList();
+  }
+
+  Future<List<AurenSearchResult>> _searchPeople(String q) async {
+    final snap = await _db.collection('users').orderBy('displayNameLower').startAt([q]).endAt(['$q\\uf8ff']).limit(8).get();
+    return snap.docs.map((d) {
+      final p = AurenUserProfile.fromMap(d.id, d.data());
+      return AurenSearchResult(id: d.id, type: AurenSearchType.people, title: p.displayName, subtitle: 'People', imageUrl: p.photoUrl);
+    }).toList();
+  }
+
+  Future<List<AurenSearchResult>> _searchPosts(String q) async {
+    final snap = await _db.collection('posts').orderBy('searchText').startAt([q]).endAt(['$q\\uf8ff']).limit(8).get();
+    return snap.docs.map((d) {
+      final data = d.data();
+      return AurenSearchResult(id: d.id, type: AurenSearchType.posts, title: (data['text'] as String? ?? '').trim(), subtitle: 'Pulse');
+    }).where((r) => r.title.isNotEmpty).toList();
+  }
+
+  Future<List<AurenSearchResult>> _searchCollection(String q, String collection, AurenSearchType type, List<String> titleFields, List<String> subtitleFields) async {
+    final snap = await _db.collection(collection).where('visibility', isEqualTo: 'public').orderBy('searchText').startAt([q]).endAt(['$q\\uf8ff']).limit(8).get();
+    return snap.docs.map((d) {
+      final data = d.data();
+      String value(List<String> fields, String fallback) {
+        for (final field in fields) {
+          final v = data[field];
+          if (v is String && v.trim().isNotEmpty) return v.trim();
+        }
+        return fallback;
+      }
+      return AurenSearchResult(id: d.id, type: type, title: value(titleFields, d.id), subtitle: value(subtitleFields, type.name), imageUrl: data['imageUrl'] as String?);
+    }).toList();
+  }
+}
