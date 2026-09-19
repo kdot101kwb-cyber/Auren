@@ -4,6 +4,8 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getActionDefinition, validatePayload } from './action-registry.js';
 import { loadPermissionLedger, assertPermission, assertSpendingLimit } from './permission-ledger.js';
+import { loadAgentIdentity } from './agent-identity.js';
+import { writeAuditEvent } from './audit-log.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -54,11 +56,8 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
     .collection('actions')
     .doc(actionId);
 
-  const auditRef = db
-    .collection('users')
-    .doc(req.uid)
-    .collection('action_audit')
-    .doc();
+  const agent = await loadAgentIdentity(db, req.uid);
+  if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
 
   try {
     const result = await db.runTransaction(async (tx) => {
@@ -118,15 +117,26 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
         executionStartedAt: FieldValue.serverTimestamp(),
       });
 
-      tx.set(auditRef, {
-        actionId,
-        event: 'execution_started',
-        uid: req.uid,
-        actionType: action.actionType,
-        createdAt: FieldValue.serverTimestamp(),
-      });
-
       return action;
+    });
+
+    await writeAuditEvent(db, req.uid, {
+      actionId,
+      event: 'execution_started',
+      agentId: agent.agentId,
+      actionType: result.actionType,
+    });
+
+    let executionResult;
+
+    switch (result.actionType) {      return action;
+    });
+
+    await writeAuditEvent(db, req.uid, {
+      actionId,
+      event: 'execution_started',
+      agentId: agent.agentId,
+      actionType: result.actionType,
     });
 
     let executionResult;
@@ -148,10 +158,12 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
       executionCompletedAt: FieldValue.serverTimestamp(),
     });
 
-    await auditRef.update({
+    await writeAuditEvent(db, req.uid, {
+      actionId,
       event: 'execution_completed',
+      agentId: agent.agentId,
+      actionType: result.actionType,
       result: executionResult,
-      completedAt: FieldValue.serverTimestamp(),
     });
 
     return res.json({
@@ -166,13 +178,12 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
         result: e.message || 'Execution failed.',
         executionCompletedAt: FieldValue.serverTimestamp(),
       });
-      await auditRef.set({
+      await writeAuditEvent(db, req.uid, {
         actionId,
         event: 'execution_failed',
-        uid: req.uid,
+        agentId: agent.agentId,
         error: e.message || 'Execution failed.',
-        createdAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
+      });
     } catch {}
 
     return error(res, status, e.message || 'Execution failed.');
