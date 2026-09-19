@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/post.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
+import 'comments_screen.dart';
 import 'create_post_screen.dart';
 
 class AurenTimelineScreen extends StatelessWidget {
@@ -54,23 +55,30 @@ class _PostCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(post.text),
           const SizedBox(height: 12),
-          StreamBuilder<bool>(
-            stream: repo.watchLiked(post.id, uid),
-            builder: (context, s) {
-              final liked = s.data ?? false;
-              return Row(children: [
-                IconButton(
-                  onPressed: s.connectionState == ConnectionState.waiting ? null : () => repo.toggleLike(post.id, uid, liked),
+          Row(children: [
+            StreamBuilder<bool>(
+              stream: repo.watchLiked(post.id, uid),
+              builder: (context, s) {
+                final liked = s.data ?? false;
+                return IconButton(
+                  onPressed: s.connectionState == ConnectionState.waiting
+                      ? null
+                      : () => repo.toggleLike(post.id, uid, liked),
                   icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
-                ),
-                Text('${post.likes}'),
-                const SizedBox(width: 16),
-                const Icon(Icons.comment_outlined),
-                const SizedBox(width: 4),
-                Text('${post.comments}'),
-              ]);
-            },
-          ),
+                );
+              },
+            ),
+            Text('${post.likes}'),
+            const SizedBox(width: 16),
+            IconButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AurenCommentsScreen(postId: post.id)),
+              ),
+              icon: const Icon(Icons.comment_outlined),
+            ),
+            Text('${post.comments}'),
+          ]),
         ]),
       ),
     );
