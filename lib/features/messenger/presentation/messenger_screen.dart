@@ -32,6 +32,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
   bool _loading = true;
   bool _sending = false;
   bool _initialPromptSent = false;
+  bool _showDetails = false;
   String? _error;
 
   @override
@@ -132,7 +133,16 @@ class _MessengerScreenState extends State<MessengerScreen> {
     if (_loading || _conversationId == null) {
       if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
       return Scaffold(
-        appBar: AppBar(title: const Text('AUREN Messenger')),
+        appBar: AppBar(
+        title: const Text('AUREN Messenger'),
+        actions: [
+          IconButton(
+            tooltip: 'Conversation details',
+            onPressed: () => setState(() => _showDetails = !_showDetails),
+            icon: Icon(_showDetails ? Icons.info : Icons.info_outline),
+          ),
+        ],
+      ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -159,6 +169,13 @@ class _MessengerScreenState extends State<MessengerScreen> {
       appBar: AppBar(title: const Text('AUREN Messenger')),
       body: Column(
         children: [
+          if (_showDetails)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Text('Conversation: $_conversationId\nAI actions require your approval before execution.'),
+            ),
           Expanded(
             child: StreamBuilder<List<AurenMessage>>(
               stream: _messagesRepository.watchConversation(_conversationId!),
