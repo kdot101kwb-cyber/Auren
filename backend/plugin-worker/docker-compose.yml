@@ -1,0 +1,22 @@
+services:
+  plugin-worker:
+    build: .
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 0.5
+    network_mode: none
+    environment:
+      PORT: 8090
+      PLUGIN_TIMEOUT_MS: 5000
+      WORKER_SHARED_SECRET: ${WORKER_SHARED_SECRET}
+    volumes:
+      - ./plugins:/app/plugins:ro
+    ports:
+      - "127.0.0.1:8090:8090"
