@@ -1,5 +1,5 @@
 import express from 'express';
-import { getApps, initializeApp, applicationDefault } from 'firebase-admin/app';
+import { getApps, initializeApp, applicationDefault, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getActionDefinition, validatePayload } from './action-registry.js';
@@ -22,7 +22,13 @@ import { submitReview } from './agent-reputation.js';
 import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
 
 if (getApps().length === 0) {
-  initializeApp({ credential: applicationDefault() });
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  if (serviceAccountJson) {
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    initializeApp({ credential: cert(serviceAccount) });
+  } else {
+    initializeApp({ credential: applicationDefault() });
+  }
 }
 
 const app = express();
