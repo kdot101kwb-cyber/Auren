@@ -62,7 +62,7 @@ export function validateDependencyList(dependencies) {
   const unique = [...new Set(dependencies)];
   if (
     unique.length !== dependencies.length ||
-    unique.some((value) => typeof value !== 'string' || !SAFE_DEPENDENCY.test(value))
+    unique.some((value) => typeof value !== 'string' || !SAFE_DEPENDENCY.test(value) || UNSAFE_DEPENDENCY_PATH.test(value))
   ) {
     throw Object.assign(new Error('Plugin dependencies contain an invalid or duplicate package.'), { code: 400 });
   }
