@@ -1,9 +1,20 @@
 import { validatePackageMetadata, verifyPackageSignature, consumeQuota } from './plugin-security.js';
 import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
+import { FieldValue } from 'firebase-admin/firestore';
 export async function preparePluginInvocation(db,{agent,manifest,packageMetadata,signature,secret,payload={}}){
   const normalized=validatePluginManifest(manifest);
   const meta=validatePackageMetadata(packageMetadata);
   if(normalized.pluginId!==meta.pluginId||normalized.version!==meta.version)throw Object.assign(new Error('Manifest and package version mismatch.'),{code:409});
+  const listingRef=db.collection('agent_listings').doc(agent.agentId);
+  const listingSnap=await listingRef.get();
+  if(!listingSnap.exists||listingSnap.data()?.state!=='published')throw Object.assign(new Error('Plugin must be published before runtime execution.'),{code:403});
+  const listing=listingSnap.data();
+  if(listing.pluginId!==normalized.pluginId||listing.version!==normalized.version||listing.entrypoint!==normalized.entrypoint)throw Object.assign(new Error('Plugin does not match the published agent listing.'),{code:409});
+  const versionRef=listingRef.collection('versions').doc(normalized.version);
+  const versionSnap=await versionRef.get();
+  if(!versionSnap.exists)throw Object.assign(new Error('Published plugin version artifact is not registered.'),{code:409});
+  const version=versionSnap.data();
+  if(version.sha256&&version.sha256!==meta.sha256)throw Object.assign(new Error('Plugin artifact hash does not match the published version.'),{code:409});
   if(!verifyPackageSignature(meta,signature,secret))throw Object.assign(new Error('Invalid plugin package signature.'),{code:403});
   const bytes=Buffer.byteLength(JSON.stringify(payload),'utf8');
   if(bytes>sandboxPolicy().maxPayloadBytes)throw Object.assign(new Error('Plugin payload exceeds sandbox limit.'),{code:413});
