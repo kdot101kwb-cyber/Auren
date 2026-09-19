@@ -1,0 +1,7 @@
+import 'package:flutter/material.dart';
+import '../../../core/models/user_profile.dart';
+import '../../../services/users/user_search_repository.dart';
+class AurenUserSearchScreen extends StatefulWidget{const AurenUserSearchScreen({super.key});@override State<AurenUserSearchScreen> createState()=>_AurenUserSearchScreenState();}
+class _AurenUserSearchScreenState extends State<AurenUserSearchScreen>{final c=TextEditingController();List<AurenUserProfile> results=[];bool loading=false;
+Future<void> search()async{final q=c.text.trim();if(q.isEmpty){setState(()=>results=[]);return;}setState(()=>loading=true);try{results=await UserSearchRepository().search(q);}finally{if(mounted)setState(()=>loading=false);}}
+@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Search people')),body:Padding(padding:const EdgeInsets.all(16),child:Column(children:[TextField(controller:c,textInputAction:TextInputAction.search,onSubmitted:(_)=>search(),decoration:InputDecoration(hintText:'Search AUREN users',suffixIcon:IconButton(onPressed:search,icon:const Icon(Icons.search)))),const SizedBox(height:12),Expanded(child:loading?const Center(child:CircularProgressIndicator()):ListView.builder(itemCount:results.length,itemBuilder:(context,i){final p=results[i];return ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(p.displayName),subtitle:Text(p.uid),onTap:()=>Navigator.pop(context,p));}))]));@override void dispose(){c.dispose();super.dispose();}}
