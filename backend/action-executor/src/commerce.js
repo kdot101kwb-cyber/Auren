@@ -20,7 +20,16 @@ function updateDailySpend(t,db,uid,delta){
 export const TRANSACTION_STATES=Object.freeze(['reserved','settled','released','refunded','partially_refunded','disputed']);
 
 export function validateCommerceRequest(input){
-  return !!input&&typeof input.agentId==='string'&&typeof input.currency==='string'&&/^[A-Z]{3}$/.test(input.currency)&&Number.isInteger(input.amountMinor)&&input.amountMinor>0&&typeof input.idempotencyKey==='string'&&input.idempotencyKey.length>=16;
+  return !!input
+    && typeof input.agentId === 'string'
+    && input.agentId.trim().length >= 3
+    && /^[a-z0-9._-]{3,64}$/.test(input.agentId)
+    && typeof input.currency === 'string'
+    && /^[A-Z]{3}$/.test(input.currency)
+    && Number.isSafeInteger(input.amountMinor)
+    && input.amountMinor > 0
+    && typeof input.idempotencyKey === 'string'
+    && input.idempotencyKey.length >= 16;
 }
 export async function reserveSpending(db,uid,amountMinor,currency,actionId,idempotencyKey,agentId=null){
   if(!Number.isInteger(amountMinor)||amountMinor<=0)throw Object.assign(new Error('Invalid transaction amount.'),{code:400});
