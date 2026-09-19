@@ -7,6 +7,8 @@ import path from 'node:path';
 const PORT=Number(process.env.PORT||8090);
 const TIMEOUT_MS=Math.min(Number(process.env.PLUGIN_TIMEOUT_MS||5000),10000);
 const MAX_BODY=32768;
+const MAX_ARTIFACT_BYTES=5*1024*1024;
+const MAX_REQUEST_BODY=7*1024*1024;
 const SHARED_SECRET=process.env.WORKER_SHARED_SECRET||'';
 
 function json(res,status,body){res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(body));}
@@ -22,7 +24,7 @@ function runIsolated(manifest,payload,expectedSha256,artifactBase64){
     if(typeof artifactBase64!=='string'||artifactBase64.length>7*1024*1024)return reject(Object.assign(new Error('Plugin artifact payload is invalid.'),{code:413}));
     let bytes;
     try{bytes=Buffer.from(artifactBase64,'base64');}catch{return reject(Object.assign(new Error('Plugin artifact encoding is invalid.'),{code:400}));}
-    if(!bytes.length||bytes.length>5*1024*1024)return reject(Object.assign(new Error('Plugin artifact exceeds the 5 MB limit.'),{code:413}));
+    if(!bytes.length||bytes.length>MAX_ARTIFACT_BYTES)return reject(Object.assign(new Error('Plugin artifact exceeds the 5 MB limit.'),{code:413}));
     const actualSha256=packageSha256(bytes);
     if(actualSha256!==expectedSha256)return reject(Object.assign(new Error('Plugin artifact hash verification failed.'),{code:409}));
     const tempDir=fs.mkdtempSync('/tmp/auren-plugin-');
@@ -48,7 +50,7 @@ const server=http.createServer(async(req,res)=>{
   let raw='';
   req.on('data',chunk=>{
     raw+=chunk;
-    if(Buffer.byteLength(raw)>MAX_BODY){res.destroy();req.destroy();}
+    if(Buffer.byteLength(raw)>MAX_REQUEST_BODY){res.destroy();req.destroy();}
   });
   req.on('error',()=>{});
   req.on('end',async()=>{
