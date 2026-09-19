@@ -41,6 +41,14 @@ class ConversationRepository {
     return await findAiConversation(uid) ?? createAiConversation(uid);
   }
 
+  Stream<List<AurenConversation>> watchForUser(String uid) => _conversations
+      .where('memberIds', arrayContains: uid)
+      .orderBy('updatedAt', descending: true)
+      .snapshots()
+      .map((s) => s.docs
+          .map((d) => AurenConversation.fromMap(d.id, d.data()))
+          .toList());
+
   Future<void> touch(String conversationId) {
     return _conversations.doc(conversationId).update({
       'updatedAt': DateTime.now().toUtc().toIso8601String(),
