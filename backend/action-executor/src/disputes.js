@@ -86,6 +86,8 @@ export async function resolveDispute(db, uid, {disputeId,resolution,amountMinor=
       if((w.reservedMinor||0)<tx.amountMinor) throw Object.assign(new Error('Wallet reservation mismatch.'),{code:409});
       t.update(wallet,{reservedMinor:(w.reservedMinor||0)-tx.amountMinor,updatedAt:FieldValue.serverTimestamp()});
       t.update(txRef,{status:'released',resolvedAt:FieldValue.serverTimestamp()});
+    } else if(resolution==='no_action'){
+      t.update(txRef,{status:tx.originalStatus,resolvedAt:FieldValue.serverTimestamp()});
     } else if(resolution==='refund'||resolution==='partial_refund'){
       const permission=permissionRef(db,uid);
       const permissionSnap=await t.get(permission);
