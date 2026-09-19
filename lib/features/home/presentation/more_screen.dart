@@ -1,0 +1,54 @@
+import 'package:flutter/material.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+import '../../personal_ai/presentation/personal_ai_screen.dart';
+
+class AurenMoreScreen extends StatelessWidget {
+  const AurenMoreScreen({super.key});
+
+  static const _items = <_MoreItem>[
+    _MoreItem('Business', 'شركات، متاجر وخدمات وفرص نمو.', Icons.storefront_outlined, 'ساعدني أكتشف وأطوّر فرص Business مناسبة لي.'),
+    _MoreItem('Marketplace', 'اكتشف واشترِ وبِع داخل AUREN.', Icons.shopping_bag_outlined, 'ساعدني أجد ما أحتاجه في Marketplace.'),
+    _MoreItem('Education', 'تعلم مهارات عملية خطوة بخطوة.', Icons.school_outlined, 'ساعدني أختار مسار تعلم يناسب هدفي الحالي.'),
+    _MoreItem('Travel', 'أماكن، رحلات وتجارب حول العالم.', Icons.flight_takeoff_outlined, 'خطط لي رحلة مناسبة لميزانيتي واهتماماتي.'),
+    _MoreItem('Entertainment', 'Series • Music • Gaming • Live.', Icons.play_circle_outline, 'اقترح لي ترفيهًا يناسب مزاجي ووقتي اليوم.'),
+  ];
+
+  void _open(BuildContext context, _MoreItem item) => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: item.prompt)),
+  );
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('More')),
+    body: ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('AUREN World', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        const Text('كل مسارات AUREN في مكان واحد — واختر كيف تريد أن تبدأ.'),
+        const SizedBox(height: 18),
+        ..._items.map((item) => Card(child: ListTile(
+          leading: Icon(item.icon),
+          title: Text(item.title),
+          subtitle: Text(item.subtitle),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _open(context, item),
+        ))),
+        Card(child: ListTile(
+          leading: const Icon(Icons.auto_awesome),
+          title: const Text('Personal AI'),
+          subtitle: const Text('الأهداف، الذاكرة، الفرص والوكلاء.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalAiScreen())),
+        )),
+      ],
+    ),
+  );
+}
+
+class _MoreItem {
+  final String title, subtitle, prompt;
+  final IconData icon;
+  const _MoreItem(this.title, this.subtitle, this.icon, this.prompt);
+}
