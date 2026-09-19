@@ -72,6 +72,17 @@ service cloud.firestore {
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
 
+      match /agent_listings/{agentId} {
+        allow read: if request.auth != null && resource.data.state == 'published';
+        allow write: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+      }
+
+      match /agent_messages/{messageId} {
+        allow read: if request.auth != null
+          && (resource.data.senderUid == request.auth.uid || resource.data.recipientUid == request.auth.uid);
+        allow write: if false;
+      }
+
       match /action_executions/{executionId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
