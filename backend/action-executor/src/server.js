@@ -206,6 +206,13 @@ async function commerceLifecycle(req,res,operation){
     const agent=await loadAgentIdentity(db,req.uid);
     if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
     const trust=await loadTrust(db,agent.agentId); assertTrust(trust,0);
+    const riskSnap=await db.collection('agent_risk').doc(agent.agentId).get();
+    if(riskSnap.exists) assertOperationalRisk(riskSnap.data());
+    const capability=decodeAndValidateCapabilityToken(req.body?.capabilityToken,agent.agentId,'commerce.request');
+    if(!capability)return error(res,403,'Valid commerce capability is required.');
+    const capabilityRef=db.collection('agent_capability_nonces').doc(capability.tokenId);
+    try{await capabilityRef.create({tokenId:capability.tokenId,agentId:agent.agentId,capability:'commerce.request',operation,usedAt:FieldValue.serverTimestamp()});}
+    catch{return error(res,409,'Commerce capability token has already been used.');}
     const result=operation==='settle'?await settleSpending(db,req.uid,transactionId):operation==='release'?await releaseSpending(db,req.uid,transactionId):await refundSpending(db,req.uid,transactionId);
     await writeAuditEvent(db,req.uid,{event:'commerce_'+operation,agentId:agent.agentId,transactionId,status:result.status});
     return res.json(result);
@@ -426,6 +433,7 @@ app.post('/api/actions/execute', requireUser, async (req, res) => {
           const snap = await tx.get(trustRef);
           const current = snap.exists ? snap.data() : {score: 0, completed: 0, disputes: 0};
           const disputes = (current.disputes || 0) + 1;
+          const failures = (current.failures || 0) + 1;
           const score = Math.max(0, Math.min(100, Math.round((current.score || 0) - 5)));
           tx.set(trustRef, {score, completed: current.completed || 0, disputes, failures, updatedAt: FieldValue.serverTimestamp()}, {merge:true});
         });
