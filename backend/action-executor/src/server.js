@@ -97,6 +97,33 @@ app.post('/api/agents/plugins/validate', requireUser, async (req,res)=>{
 });
 
 
+
+app.post('/api/agents/plugins/publish', requireUser, async (req, res) => {
+  try {
+    const manifest = validatePluginManifest(req.body?.manifest);
+    const agent = await loadAgentIdentity(db, req.uid);
+    if (agent.status !== 'active') return error(res, 403, 'AUREN agent is not active.');
+    const existing = await db.collection('agent_listings').doc(agent.agentId).get();
+    const listing = {
+      agentId: agent.agentId,
+      name: manifest.name,
+      description: typeof req.body?.description === 'string' ? req.body.description.slice(0, 1000) : '',
+      capabilities: manifest.capabilities,
+      version: manifest.version,
+      state: 'draft',
+      pricing: { model: 'free', currency: 'USD', amountMinor: 0 },
+      pluginId: manifest.pluginId,
+      entrypoint: manifest.entrypoint,
+      sandbox: sandboxPolicy(),
+      updatedAt: FieldValue.serverTimestamp(),
+      ...(existing.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
+    };
+    await db.collection('agent_listings').doc(agent.agentId).set(listing, {merge:true});
+    await writeAuditEvent(db, req.uid, {event:'agent_plugin_drafted',agentId:agent.agentId,pluginId:manifest.pluginId,version:manifest.version});
+    return res.status(existing.exists ? 200 : 201).json({state:'draft',listing});
+  } catch (e) { return error(res, Number.isInteger(e?.code) ? e.code : 400, e.message || 'Plugin publish failed.'); }
+});
+
 app.post('/api/agents/capabilities/issue', requireUser, async (req, res) => {
   try {
     const agent = await loadAgentIdentity(db, req.uid);
