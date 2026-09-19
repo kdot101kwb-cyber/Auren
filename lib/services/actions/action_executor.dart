@@ -60,9 +60,6 @@ class HttpsAurenActionExecutor implements AurenActionExecutor {
       },
       body: jsonEncode({
         'actionId': action.id,
-        'conversationId': action.conversationId,
-        'title': action.title,
-        'description': action.description,
       }),
     );
 
