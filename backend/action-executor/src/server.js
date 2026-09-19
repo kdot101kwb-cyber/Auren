@@ -548,6 +548,68 @@ app.post('/api/agents/marketplace/review',requireUser,async(req,res)=>{
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to submit review.');}
 });
 
+app.post('/api/ai/chat', requireUser, async (req, res) => {
+  try {
+    const baseUrl = (process.env.AUREN_AI_BASE_URL || '').trim().replace(/\\/$/, '');
+    const apiKey = (process.env.AUREN_AI_API_KEY || '').trim();
+    const model = (process.env.AUREN_AI_MODEL || '').trim();
+    if (!baseUrl || !apiKey || !model) {
+      return error(res, 503, 'AUREN AI provider is not configured.');
+    }
+
+    const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    const conversationId = typeof req.body?.conversationId === 'string' ? req.body.conversationId.trim() : '';
+    if (!message || message.length > 12000) return error(res, 400, 'A valid message is required.');
+    if (!conversationId || conversationId.length > 200) return error(res, 400, 'A valid conversationId is required.');
+
+    const providerResponse = await fetch(baseUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are AUREN AI. Be useful, concise, safe, and action-oriented. Never claim to have executed an external action unless the trusted AUREN Action Center has explicitly executed it.',
+          },
+          { role: 'user', content: message },
+        ],
+      }),
+    });
+
+    const raw = await providerResponse.text();
+    if (!providerResponse.ok) {
+      return error(res, 502, `AUREN AI provider returned ${providerResponse.status}.`);
+    }
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return error(res, 502, 'AUREN AI provider returned invalid JSON.');
+    }
+
+    const text = data?.choices?.[0]?.message?.content;
+    if (typeof text !== 'string' || !text.trim()) {
+      return error(res, 502, 'AUREN AI provider returned no message content.');
+    }
+
+    await writeAuditEvent(db, req.uid, {
+      event: 'ai_chat_completed',
+      conversationId,
+      model,
+      providerStatus: providerResponse.status,
+    });
+
+    return res.json({ text: text.trim() });
+  } catch (e) {
+    return error(res, 502, e.message || 'AUREN AI request failed.');
+  }
+});
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'auren-action-executor' });
 });
