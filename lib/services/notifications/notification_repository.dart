@@ -6,6 +6,9 @@ class AurenNotification {
   final String body;
   final bool read;
   final DateTime createdAt;
+  final String type;
+  final String? entityId;
+  final String? conversationId;
 
   const AurenNotification({
     required this.id,
@@ -13,6 +16,9 @@ class AurenNotification {
     required this.body,
     required this.read,
     required this.createdAt,
+    this.type = 'general',
+    this.entityId,
+    this.conversationId,
   });
 
   factory AurenNotification.fromMap(String id, Map<String, dynamic> map) {
@@ -23,6 +29,9 @@ class AurenNotification {
       body: map['body'] as String? ?? '',
       read: map['read'] as bool? ?? false,
       createdAt: raw is Timestamp ? raw.toDate() : DateTime.now(),
+      type: map['type'] as String? ?? 'general',
+      entityId: map['entityId'] as String?,
+      conversationId: map['conversationId'] as String?,
     );
   }
 }
