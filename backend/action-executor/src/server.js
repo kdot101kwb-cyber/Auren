@@ -14,6 +14,7 @@ import { validatePluginManifest, sandboxPolicy } from './agent-sandbox.js';
 import { validateCommerceRequest, reserveSpending, settleSpending, releaseSpending, refundSpending } from './commerce.js';
 import { loadTrust, assertTrust } from './trust.js';
 import { issueCapabilityToken, validateCapabilityToken, decodeAndValidateCapabilityToken } from './capability-token.js';
+import { openDispute } from './disputes.js';
 
 if (getApps().length === 0) {
   initializeApp({ credential: applicationDefault() });
@@ -211,6 +212,16 @@ async function commerceLifecycle(req,res,operation){
 app.post('/api/agents/commerce/settle',requireUser,(req,res)=>commerceLifecycle(req,res,'settle'));
 app.post('/api/agents/commerce/release',requireUser,(req,res)=>commerceLifecycle(req,res,'release'));
 app.post('/api/agents/commerce/refund',requireUser,(req,res)=>commerceLifecycle(req,res,'refund'));
+
+app.post('/api/agents/commerce/disputes',requireUser,async(req,res)=>{
+  try{
+    const agent=await loadAgentIdentity(db,req.uid);
+    if(agent.status!=='active')return error(res,403,'AUREN agent is not active.');
+    const result=await openDispute(db,req.uid,{transactionId:req.body?.transactionId,reason:req.body?.reason,description:req.body?.description});
+    await writeAuditEvent(db,req.uid,{event:'commerce_dispute_opened',agentId:agent.agentId,disputeId:result.disputeId,transactionId:req.body?.transactionId});
+    return res.status(201).json(result);
+  }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Unable to open dispute.');}
+});
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'auren-action-executor' });
