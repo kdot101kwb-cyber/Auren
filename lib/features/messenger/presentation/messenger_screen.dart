@@ -112,8 +112,9 @@ class _MessengerScreenState extends State<MessengerScreen> {
       await _conversationRepository.touch(_conversationId!);
     } catch (e) {
       if (mounted) {
+        setState(() => _error = 'فشل الطلب: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('AUREN could not complete the request: $e')),
+          SnackBar(content: Text('فشل الطلب — يمكنك المحاولة مرة ثانية.')),
         );
       }
     } finally {
@@ -129,7 +130,29 @@ class _MessengerScreenState extends State<MessengerScreen> {
     }
 
     if (_loading || _conversationId == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: AppBar(title: const Text('AUREN Messenger')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.cloud_off, size: 48),
+              const SizedBox(height: 12),
+              Text(_error ?? 'تعذر تجهيز المحادثة.'),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () {
+                  setState(() { _loading = true; _error = null; });
+                  _bootstrap();
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('حاول مرة ثانية'),
+              ),
+            ]),
+          ),
+        ),
+      );
     }
 
     return Scaffold(
