@@ -366,6 +366,15 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && request.auth.uid in resource.data.memberIds;
 
+      match /reads/{userId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['readAt'])
+          && request.resource.data.readAt is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
       match /messages/{messageId} {
         allow read: if request.auth != null
           && request.auth.uid in get(
