@@ -256,7 +256,7 @@ async function commerceLifecycle(req,res,operation){
     const capabilityRef=db.collection('agent_capability_nonces').doc(capability.tokenId);
     try{await capabilityRef.create({tokenId:capability.tokenId,agentId:agent.agentId,capability:'commerce.request',operation,usedAt:FieldValue.serverTimestamp()});}
     catch{return error(res,409,'Commerce capability token has already been used.');}
-    const result=operation==='settle'?await settleSpending(db,req.uid,transactionId):operation==='release'?await releaseSpending(db,req.uid,transactionId):await refundSpending(db,req.uid,transactionId);
+    const result=operation==='settle'?await settleSpending(db,req.uid,transactionId,agent.agentId):operation==='release'?await releaseSpending(db,req.uid,transactionId,agent.agentId):await refundSpending(db,req.uid,transactionId,agent.agentId);
     await writeAuditEvent(db,req.uid,{event:'commerce_'+operation,agentId:agent.agentId,transactionId,status:result.status});
     return res.json(result);
   }catch(e){return error(res,Number.isInteger(e?.code)?e.code:500,e.message||'Commerce lifecycle operation failed.');}
