@@ -8,7 +8,7 @@ export async function preparePluginInvocation(db,{agent,manifest,packageMetadata
   const bytes=Buffer.byteLength(JSON.stringify(payload),'utf8');
   if(bytes>sandboxPolicy().maxPayloadBytes)throw Object.assign(new Error('Plugin payload exceeds sandbox limit.'),{code:413});
   const quota=await consumeQuota(db,agent.agentId,normalized.pluginId);
-  return {status:'validated',manifest:normalized,package:meta,sandbox:sandboxPolicy(),quota};
+  return {status:'validated',manifest:normalized,package:meta,sandbox:sandboxPolicy(),quota,payload};
 }
 
 export async function executePluginThroughWorker({prepared,workerUrl,workerSecret,fetchImpl=fetch}){
