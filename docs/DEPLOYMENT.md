@@ -13,15 +13,15 @@ Run the Action Executor and Plugin Worker on a private Docker-capable host/netwo
 
 ### Action Executor environment
 
-- `GOOGLE_APPLICATION_CREDENTIALS` or workload identity for Firebase Admin
-- `AUREN_PLUGIN_SIGNING_SECRET`
-- `AUREN_PLUGIN_WORKER_URL`
-- `AUREN_PLUGIN_WORKER_SECRET`
+- `FIREBASE_SERVICE_ACCOUNT_JSON` (Render secret; JSON for the Firebase service account)
+- `AUREN_PLUGIN_SIGNING_SECRET` (Render generates this automatically)
+- `AUREN_PLUGIN_WORKER_URL` (wired automatically from the private worker)
+- `AUREN_PLUGIN_WORKER_SECRET` (wired automatically from the worker secret)
 - `PORT=8080`
 
 ### Plugin Worker environment
 
-- `WORKER_SHARED_SECRET`
+- `WORKER_SHARED_SECRET` (Render generates this automatically)
 - `PLUGIN_TIMEOUT_MS=5000`
 
 Keep Worker network access disabled unless a plugin capability explicitly requires an allowlisted destination. Do not put provider API keys in plugin environments.
