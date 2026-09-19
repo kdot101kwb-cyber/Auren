@@ -23,6 +23,8 @@ services:
           envVarKey: WORKER_SHARED_SECRET
       - key: AUREN_PLUGIN_SIGNING_SECRET
         generateValue: true
+      - key: AUREN_STORAGE_BUCKET
+        sync: false
 
   - type: pserv
     name: auren-plugin-worker
