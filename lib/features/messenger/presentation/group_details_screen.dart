@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/conversation.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/messaging/conversation_repository.dart';
+import '../../../services/notifications/notification_api.dart';
 
 class AurenGroupDetailsScreen extends StatefulWidget {
   final AurenConversation conversation;
@@ -14,6 +15,7 @@ class AurenGroupDetailsScreen extends StatefulWidget {
 class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
   final _auth = FirebaseAurenAuthService();
   final _repo = ConversationRepository();
+  final _notificationApi = AurenNotificationApi();
   bool _busy = false;
   late AurenConversation _current;
   @override void initState() { super.initState(); _current = widget.conversation; }
@@ -41,11 +43,24 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
     if (value == null || _auth.currentUserId != _current.ownerId) return;
     final additions = value.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
     final members = {..._current.memberIds, ...additions}.toList();
-    await _run(() => _repo.updateGroupMembers(
-      conversationId: widget.conversation.id,
-      ownerUid: _current.ownerId!,
-      memberIds: members,
-    ));
+    await _run(() async {
+      await _repo.updateGroupMembers(
+        conversationId: widget.conversation.id,
+        ownerUid: _current.ownerId!,
+        memberIds: members,
+      );
+      for (final member in additions) {
+        if (member != _current.ownerId && !_current.memberIds.contains(member)) {
+          try {
+            await _notificationApi.notifyGroupChange(
+              conversationId: _current.id,
+              type: 'group_member_added',
+              targetUid: member,
+            );
+          } catch (_) {}
+        }
+      }
+    });
     final updated = await _repo.findById(_current.id);
     if (mounted && updated != null) setState(() => _current = updated);
   }
@@ -58,6 +73,13 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
         uid: _current.ownerId!,
         memberUid: memberUid,
       );
+      try {
+        await _notificationApi.notifyGroupChange(
+          conversationId: _current.id,
+          type: 'group_member_removed',
+          targetUid: memberUid,
+        );
+      } catch (_) {}
       final updated = await _repo.findById(_current.id);
       if (mounted && updated != null) setState(() => _current = updated);
     });
@@ -78,6 +100,13 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
     );
     if (ok != true) return;
     await _run(() async {
+      try {
+        await _notificationApi.notifyGroupChange(
+          conversationId: _current.id,
+          type: 'group_owner_changed',
+          targetUid: memberUid,
+        );
+      } catch (_) {}
       await _repo.transferGroupOwnership(
         conversationId: _current.id,
         ownerUid: _current.ownerId!,
