@@ -20,17 +20,21 @@ export async function createUserNotification(db, uid, {
   if (!safeTitle || !safeBody) throw new Error('Notification title and body are required.');
   const id = clean(dedupeId, 180) || db.collection('_').doc().id;
   const ref = db.collection('users').doc(uid).collection('notifications').doc(id);
-  await ref.set({
-    type: clean(type, 40) || 'general',
-    title: safeTitle,
-    body: safeBody,
-    actorUid: clean(actorUid, 128) || null,
-    targetId: clean(targetId, 180) || null,
-    entityId: clean(entityId, 180) || null,
-    conversationId: clean(conversationId, 180) || null,
-    read: false,
-    createdAt: FieldValue.serverTimestamp(),
-  }, { merge: false });
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists) return;
+    tx.create(ref, {
+      type: clean(type, 40) || 'general',
+      title: safeTitle,
+      body: safeBody,
+      actorUid: clean(actorUid, 128) || null,
+      targetId: clean(targetId, 180) || null,
+      entityId: clean(entityId, 180) || null,
+      conversationId: clean(conversationId, 180) || null,
+      read: false,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  });
   return ref.id;
 }
 
