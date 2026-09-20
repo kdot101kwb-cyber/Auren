@@ -34,13 +34,77 @@ class _AurenAgentHubScreenState extends State<AurenAgentHubScreen> {
     } finally { if (mounted) setState(() => busy = false); }
   }
 
-  Future<void> _setAgentEnabled(bool enabled, Map<String, dynamic>? current) async {
+  Future<void> _savePermissions(Map<String, dynamic>? current, {
+    bool? enabled,
+    List<String>? actions,
+    int? dailyLimit,
+    bool clearLimit = false,
+  }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    await _actionRepo.setPermissionLedger(uid, enabled: enabled,
-      allowedActions: List<String>.from(current?['allowedActions'] ?? _allowedActions),
-      dailySpendingLimitMinor: current?['dailySpendingLimitMinor'] as int?,
-      currency: current?['currency']?.toString() ?? 'USD');
+    final currentActions = List<String>.from(current?['allowedActions'] ?? _allowedActions);
+    final currentLimit = current?['dailySpendingLimitMinor'] as int?;
+    await _actionRepo.setPermissionLedger(
+      uid,
+      enabled: enabled ?? current?['enabled'] == true,
+      allowedActions: actions ?? currentActions,
+      dailySpendingLimitMinor: clearLimit ? null : (dailyLimit ?? currentLimit),
+      currency: current?['currency']?.toString() ?? 'USD',
+    );
+  }
+
+  Future<void> _editPermissions(String uid, Map<String, dynamic>? current) async {
+    final selected = <String>{
+      ...List<String>.from(current?['allowedActions'] ?? _allowedActions),
+    };
+    final limitController = TextEditingController(
+      text: ((current?['dailySpendingLimitMinor'] as int?) ?? 0).toString(),
+    );
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Agent Permissions'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              for (final action in _allowedActions)
+                CheckboxListTile(
+                  value: selected.contains(action),
+                  title: Text(action),
+                  onChanged: (value) => setDialogState(() {
+                    if (value == true) {
+                      selected.add(action);
+                    } else {
+                      selected.remove(action);
+                    }
+                  }),
+                ),
+              TextField(
+                controller: limitController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Daily spending limit (minor units)',
+                  helperText: '0 = no spending allowed',
+                ),
+              ),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('حفظ')),
+          ],
+        ),
+      ),
+    );
+    final limit = int.tryParse(limitController.text.trim());
+    limitController.dispose();
+    if (result != true || limit == null || limit < 0) {
+      if (result == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل حد إنفاق صحيح.')));
+      }
+      return;
+    }
+    await _savePermissions(current, actions: selected.toList(), dailyLimit: limit);
   }
 
   void _showAudit(String uid) {
@@ -89,9 +153,21 @@ class _AurenAgentHubScreenState extends State<AurenAgentHubScreen> {
     return Scaffold(appBar: AppBar(title: const Text('AUREN Agents')), body: ListView(padding: const EdgeInsets.all(16), children: [
       if (uid != null) _trustCard(uid),
       if (uid != null) StreamBuilder<Map<String, dynamic>?>(stream: _actionRepo.watchPermissionLedger(uid), builder: (context, snapshot) {
-        final permission = snapshot.data; final enabled = permission?['enabled'] == true;
-        return Card(child: ListTile(leading: const Icon(Icons.security_outlined), title: const Text('Agent Permission Ledger'),
-          subtitle: Text(enabled ? 'الصلاحيات مفعّلة' : 'الصلاحيات متوقفة'), trailing: Switch(value: enabled, onChanged: (v) => _setAgentEnabled(v, permission))));
+        final permission = snapshot.data;
+        final enabled = permission?['enabled'] == true;
+        return Card(child: ListTile(
+          leading: const Icon(Icons.security_outlined),
+          title: const Text('Agent Permission Ledger'),
+          subtitle: Text(enabled ? 'الصلاحيات مفعّلة' : 'الصلاحيات متوقفة'),
+          trailing: Wrap(children: [
+            IconButton(
+              tooltip: 'إدارة الصلاحيات',
+              icon: const Icon(Icons.tune),
+              onPressed: () => _editPermissions(uid, permission),
+            ),
+            Switch(value: enabled, onChanged: (v) => _savePermissions(permission, enabled: v)),
+          ]),
+        ));
       }),
       if (uid != null) Card(child: ListTile(leading: const Icon(Icons.receipt_long_outlined), title: const Text('Audit Trail'),
         subtitle: const Text('سجل التنفيذ والموافقات والنتائج'), onTap: () => _showAudit(uid))),
