@@ -23,7 +23,7 @@ class MessengerScreen extends StatefulWidget {
   State<MessengerScreen> createState() => _MessengerScreenState();
 }
 
-class _MessengerScreenState extends State<MessengerScreen> {
+class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingObserver {
   final _auth = FirebaseAurenAuthService();
   final _gateway = const HttpsAurenAiGateway();
   final _messagesRepository = FirestoreMessageRepository();
@@ -48,7 +48,19 @@ class _MessengerScreenState extends State<MessengerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _bootstrap();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final uid = _uid;
+    if (uid == null) return;
+    if (state == AppLifecycleState.resumed) {
+      _presence.start(uid);
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      _presence.stop(uid);
+    }
   }
 
   Future<void> _bootstrap() async {
@@ -167,6 +179,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     final uid = _uid;
     if (uid != null) {
       _presence.stop(uid);
