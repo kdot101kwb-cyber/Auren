@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'agent_marketplace_screen.dart';
 import 'agent_wallet_screen.dart';
 import 'agent_disputes_screen.dart';
+import 'agent_messages_screen.dart';
 import '../../../services/actions/action_repository.dart';
 import '../../../services/agents/agent_plugin_repository.dart';
 import '../../../services/agents/agent_installation_repository.dart';
@@ -221,7 +222,7 @@ class _AurenAgentHubScreenState extends State<AurenAgentHubScreen> {
       Card(child: ListTile(leading: const Icon(Icons.extension_outlined), title: const Text('Developer / Plugins'),
         subtitle: const Text('تحقق من Plugin Manifest قبل النشر'), trailing: busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator()) : const Icon(Icons.verified_outlined),
         onTap: busy ? null : validatePlugin)),
-      const Card(child: ListTile(leading: Icon(Icons.hub_outlined), title: Text('Agent-to-Agent'), subtitle: Text('AUREN-A2A • هوية وصلاحيات وAudit'))),
+      Card(child: ListTile(leading: const Icon(Icons.hub_outlined), title: const Text('Agent-to-Agent'), subtitle: const Text('الوارد والمرسل عبر AUREN-A2A'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentMessagesScreen())))),
       Card(child: ListTile(leading: const Icon(Icons.account_balance_wallet_outlined), title: const Text('Agent Wallet'), subtitle: const Text('الرصيد والعمليات وحدود الإنفاق'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentWalletScreen())))),
       Card(child: ListTile(leading: const Icon(Icons.gavel_outlined), title: const Text('Disputes & Liability'), subtitle: const Text('إدارة النزاعات المرتبطة بتنفيذ Agents'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentDisputesScreen())))),
     ]));
