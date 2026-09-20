@@ -26,7 +26,7 @@ class BusinessRepository {
 
   DocumentReference<Map<String,dynamic>> _saved(String uid,String id)=>_db.collection('users').doc(uid).collection('savedBusinesses').doc(id);
   Stream<bool> watchSaved(String uid,String id)=>_saved(uid,id).snapshots().map((d)=>d.exists);
-  Future<void> toggleSaved(String uid,String id)async{final r=_saved(uid,id);final s=await r.get();if(s.exists){await r.delete();}else{await r.set({'businessId':id,'createdAt':FieldValue.serverTimestamp()});}}
+  Future<void> toggleSaved(String uid,String id)async{final r=_saved(uid,id);final s=await r.get();if(s.exists){await r.delete();}else{await r.set({'businessId':id,'createdAt':FieldValue.serverTimestamp()});final b=await getById(id);if(b.exists&&b.data()!=null){final business=AurenBusiness.fromMap(id,b.data()!);await recordEvent(business:business,viewerUid:uid,type:'save');}}}
   Stream<List<String>> watchSavedIds(String uid)=>_db.collection('users').doc(uid).collection('savedBusinesses').orderBy('createdAt',descending:true).snapshots().map((s)=>s.docs.map((d)=>d.id).toList());
   Future<DocumentSnapshot<Map<String,dynamic>>> getById(String id)=>_c.doc(id).get();
 
