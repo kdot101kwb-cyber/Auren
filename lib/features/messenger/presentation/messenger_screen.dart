@@ -132,12 +132,20 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
         // Only enabled personal memories are shared with the AI gateway.
         // Keep the context bounded so normal chat remains fast and predictable.
         final memories = await _memoryRepository.watch(_uid!).first;
+        final recentMessages = await _messagesRepository.recent(_conversationId!, limit: 20);
+        final historyContext = recentMessages.isEmpty
+            ? ''
+            : '\\n\\nسجل المحادثة الأخير (للسياق فقط):\\n' +
+                recentMessages.map((m) {
+                  final speaker = m.isAi ? 'AUREN AI' : (m.senderId == _uid ? 'المستخدم' : 'مستخدم آخر');
+                  return '- $speaker: ${m.text}';
+                }).join('\\n');
         final enabledMemories = memories.where((m) => m.enabled).take(20).toList();
         final memoryContext = enabledMemories.isEmpty
             ? ''
             : '\\n\\nسياق شخصي محفوظ ومفعّل:\\n' +
                 enabledMemories.map((m) => '- ${m.key}: ${m.value}').join('\\n');
-        final gatewayMessage = '$text$memoryContext';
+        final gatewayMessage = '$text$historyContext$memoryContext';
 
         final response = await _gateway.send(
           conversationId: _conversationId!,
