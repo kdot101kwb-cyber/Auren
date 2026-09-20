@@ -41,4 +41,40 @@ class PostRepository {
 
   Stream<bool> watchLiked(String postId, String uid) =>
       _posts.doc(postId).collection('likes').doc(uid).snapshots().map((d) => d.exists);
+
+  CollectionReference<Map<String, dynamic>> _saved(String uid) =>
+      _db.collection('users').doc(uid).collection('savedPosts');
+
+  Stream<bool> watchSaved(String postId, String uid) =>
+      _saved(uid).doc(postId).snapshots().map((d) => d.exists);
+
+  Future<void> toggleSaved(String postId, String uid, bool saved) async {
+    final ref = _saved(uid).doc(postId);
+    if (saved) {
+      await ref.delete();
+    } else {
+      await ref.set({
+        'postId': postId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  CollectionReference<Map<String, dynamic>> _reactions(String postId) =>
+      _posts.doc(postId).collection('reactions');
+
+  Stream<String?> watchReaction(String postId, String uid) =>
+      _reactions(postId).doc(uid).snapshots().map((d) => d.data()?['type'] as String?);
+
+  Future<void> setReaction(String postId, String uid, String? type) async {
+    final ref = _reactions(postId).doc(uid);
+    if (type == null) {
+      await ref.delete();
+      return;
+    }
+    await ref.set({
+      'type': type,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }
