@@ -26,7 +26,7 @@ class MessengerScreen extends StatefulWidget {
 
 class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingObserver {
   final _auth = FirebaseAurenAuthService();
-  final _gateway = const ResilientAurenAiGateway();
+  final _gateway = ResilientAurenAiGateway();
   final _messagesRepository = FirestoreMessageRepository();
   final _conversationRepository = ConversationRepository();
   final _actionRepository = ActionRepository();
