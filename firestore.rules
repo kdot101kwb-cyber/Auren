@@ -444,7 +444,10 @@ service cloud.firestore {
           )
         );
       allow delete: if request.auth != null
-        && request.auth.uid in resource.data.memberIds;
+        && (
+          (resource.data.type == 'group' && resource.data.ownerId == request.auth.uid)
+          || (resource.data.type != 'group' && request.auth.uid in resource.data.memberIds)
+        );
 
       match /reads/{userId} {
         allow read: if request.auth != null && request.auth.uid == userId;
