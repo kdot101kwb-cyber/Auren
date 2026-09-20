@@ -52,6 +52,15 @@ class AurenActionRegistry {
       requiresApproval: true,
       allowedPayloadKeys: {'text'},
     ),
+    'memory.save': AurenActionDefinition(
+      type: 'memory.save',
+      title: 'Save AI memory',
+      riskLevel: AurenRiskLevel.low,
+      permission: AurenPermission.userApproval,
+      approvalLevel: 1,
+      requiresApproval: true,
+      allowedPayloadKeys: {'key', 'value'},
+    ),
   };
 
   static AurenActionDefinition? get(String type) => definitions[type];
