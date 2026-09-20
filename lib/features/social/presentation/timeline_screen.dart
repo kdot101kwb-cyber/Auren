@@ -277,6 +277,18 @@ class _PulseCard extends StatelessWidget {
                   label: Text(typeLabel),
                   visualDensity: VisualDensity.compact,
                 ),
+                if (post.authorId == uid)
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'delete') _confirmDelete(context, repo);
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete post'),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -373,6 +385,32 @@ class _PulseCard extends StatelessWidget {
         ],
       ),
     );
+  }
+  Future<void> _confirmDelete(BuildContext context, PostRepository repo) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete this post?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await repo.delete(post.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post deleted.')),
+      );
+    }
   }
   void _showReactionPicker(BuildContext context, PostRepository repo, String? current) {
     showModalBottomSheet(
