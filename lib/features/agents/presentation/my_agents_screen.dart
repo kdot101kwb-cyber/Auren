@@ -1,0 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import '../../../services/agents/agent_registry_repository.dart';
+class MyAgentsScreen extends StatefulWidget{const MyAgentsScreen({super.key});@override State<MyAgentsScreen> createState()=>_MyAgentsScreenState();}
+class _MyAgentsScreenState extends State<MyAgentsScreen>{
+ final id=TextEditingController(),name=TextEditingController(),version=TextEditingController(text:'1.0.0');
+ @override void dispose(){id.dispose();name.dispose();version.dispose();super.dispose();}
+ Future<void> _save()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;if(id.text.trim().isEmpty||name.text.trim().isEmpty)return;await AurenAgentRegistryRepository().save(uid:uid,agentId:id.text.trim(),name:name.text,version:version.text,status:'active');if(mounted){id.clear();name.clear();ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حفظ الـAgent.')));}}
+ @override Widget build(BuildContext context){final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return const Scaffold(body:Center(child:Text('يجب تسجيل الدخول.')));return Scaffold(appBar:AppBar(title:const Text('My Agents')),body:ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:id,decoration:const InputDecoration(labelText:'Agent ID')),TextField(controller:name,decoration:const InputDecoration(labelText:'Name')),TextField(controller:version,decoration:const InputDecoration(labelText:'Version')),const SizedBox(height:12),FilledButton.icon(onPressed:_save,icon:const Icon(Icons.save_outlined),label:const Text('حفظ Agent')),const SizedBox(height:20),StreamBuilder(stream:AurenAgentRegistryRepository().watchMine(uid),builder:(context,s){final xs=s.data??const [];return Column(children:xs.map<Widget>((x)=>ListTile(leading:const Icon(Icons.smart_toy_outlined),title:Text(x['name']?.toString()??''),subtitle:Text((x['id']?.toString()??'')+' • '+(x['version']?.toString()??''))).toList());})]));}
+}
