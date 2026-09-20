@@ -63,6 +63,31 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
     });
   }
 
+  Future<void> _transferOwnership(String memberUid) async {
+    if (_auth.currentUserId != _current.ownerId) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Transfer ownership?'),
+        content: Text('Make $memberUid the new group owner?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Transfer')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await _run(() async {
+      await _repo.transferGroupOwnership(
+        conversationId: _current.id,
+        ownerUid: _current.ownerId!,
+        newOwnerUid: memberUid,
+      );
+      final updated = await _repo.findById(_current.id);
+      if (mounted && updated != null) setState(() => _current = updated);
+    });
+  }
+
   Future<void> _leave() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -115,7 +140,19 @@ class _AurenGroupDetailsScreenState extends State<AurenGroupDetailsScreen> {
             title: Text(id),
             trailing: id == _current.ownerId
                 ? const Chip(label: Text('Owner'))
-                : isOwner ? IconButton(onPressed: _busy ? null : () => _removeMember(id), icon: const Icon(Icons.person_remove_outlined)) : null,
+                : isOwner
+                    ? PopupMenuButton<String>(
+                        enabled: !_busy,
+                        onSelected: (value) {
+                          if (value == 'transfer') _transferOwnership(id);
+                          if (value == 'remove') _removeMember(id);
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(value: 'transfer', child: Text('Transfer ownership')),
+                          PopupMenuItem(value: 'remove', child: Text('Remove member')),
+                        ],
+                      )
+                    : null,
           )),
           const SizedBox(height: 12),
           if (isOwner)
