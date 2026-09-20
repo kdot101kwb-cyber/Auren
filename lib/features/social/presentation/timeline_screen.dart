@@ -64,17 +64,18 @@ class AurenTimelineScreen extends StatelessWidget {
                 }
 
                 final posts = snapshot.data!;
+                final opportunities = posts.where((p) => p.contentType == 'opportunity').length;
+                final projects = posts.where((p) => p.contentType == 'project').length;
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
-                  itemCount: posts.length + 2,
+                  itemCount: posts.length + 3,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
                     if (i == 0) return const _NextMoveCard();
                     if (i == 1) return const _MomentsStrip();
-                    if (posts.isEmpty) {
-                      return const _EmptyPulse();
-                    }
-                    return _PulseCard(post: posts[i - 2], uid: uid);
+                    if (i == 2) return _PulseSignals(opportunities: opportunities, projects: projects);
+                    if (posts.isEmpty) return const _EmptyPulse();
+                    return _PulseCard(post: posts[i - 3], uid: uid);
                   },
                 );
               },
@@ -199,6 +200,10 @@ class _MomentsStrip extends StatelessWidget {
     }
   }
 }
+
+class _PulseSignals extends StatelessWidget { final int opportunities; final int projects; const _PulseSignals({required this.opportunities, required this.projects}); @override Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [Expanded(child: _Signal(icon: Icons.work_outline, value: opportunities, label: 'Opportunities')), Expanded(child: _Signal(icon: Icons.rocket_launch_outlined, value: projects, label: 'Projects')), Expanded(child: _Signal(icon: Icons.auto_awesome, value: opportunities + projects, label: 'Signals'))]))); }
+
+class _Signal extends StatelessWidget { final IconData icon; final int value; final String label; const _Signal({required this.icon, required this.value, required this.label}); @override Widget build(BuildContext context) => Column(children: [Icon(icon, size: 20), const SizedBox(height: 4), Text('$value', style: const TextStyle(fontWeight: FontWeight.w900)), Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall)]); }
 
 class _PulseCard extends StatelessWidget {
   final AurenPost post;
