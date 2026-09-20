@@ -280,9 +280,14 @@ class _PulseCard extends StatelessWidget {
                 if (post.authorId == uid)
                   PopupMenuButton<String>(
                     onSelected: (value) {
+                      if (value == 'edit') _showEditHint(context);
                       if (value == 'delete') _confirmDelete(context, repo);
                     },
                     itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Text('Edit post'),
+                      ),
                       PopupMenuItem(
                         value: 'delete',
                         child: Text('Delete post'),
@@ -383,6 +388,13 @@ class _PulseCard extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+  void _showEditHint(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Edit is coming next. Your original post remains unchanged.'),
       ),
     );
   }
