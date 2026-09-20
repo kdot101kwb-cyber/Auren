@@ -45,4 +45,15 @@ class BusinessRepository {
   });
 
   Future<void> delete(String id) => _c.doc(id).delete();
+
+  DocumentReference<Map<String,dynamic>> _saved(String uid,String id)=>_db.collection('users').doc(uid).collection('savedBusinesses').doc(id);
+  Stream<bool> watchSaved(String uid,String id)=>_saved(uid,id).snapshots().map((d)=>d.exists);
+  Future<void> toggleSaved(String uid,String id)async{final r=_saved(uid,id);final s=await r.get();if(s.exists){await r.delete();}else{await r.set({'businessId':id,'createdAt':FieldValue.serverTimestamp()});}}
+  Stream<List<String>> watchSavedIds(String uid)=>_db.collection('users').doc(uid).collection('savedBusinesses').orderBy('createdAt',descending:true).snapshots().map((s)=>s.docs.map((d)=>d.id).toList());
+  Future<DocumentSnapshot<Map<String,dynamic>>> getById(String id)=>_c.doc(id).get();
+
+  CollectionReference<Map<String,dynamic>> _reviews(String id)=>_c.doc(id).collection('reviews');
+  Stream<List<AurenBusinessReview>> watchReviews(String id)=>_reviews(id).orderBy('createdAt',descending:true).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenBusinessReview.fromMap(d.id,d.data())).toList());
+  Future<void> upsertReview({required String businessId,required String userId,required int rating,required String text})=>_reviews(businessId).doc(userId).set({'businessId':businessId,'userId':userId,'rating':rating,'text':text.trim(),'createdAt':FieldValue.serverTimestamp()});
+  Future<void> report({required String businessId,required String reporterUid,required String reason})=>_db.collection('business_reports').add({'businessId':businessId,'reporterUid':reporterUid,'reason':reason.trim(),'createdAt':FieldValue.serverTimestamp()});
 }
