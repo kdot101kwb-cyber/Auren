@@ -17,7 +17,7 @@ class AurenMyMarketplaceScreen extends StatelessWidget{
         return ListView.separated(padding:const EdgeInsets.all(16),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:8),
           itemBuilder:(context,i){final p=s.data![i];return Card(child:ListTile(
             leading:const Icon(Icons.inventory_2_outlined),title:Text(p.name),subtitle:Text((p.priceMinor/100).toStringAsFixed(2)+' '+p.currency+' • '+p.businessId),
-            trailing:IconButton(icon:const Icon(Icons.delete_outline),onPressed:()async{await repo.delete(p.id);}),
+            trailing:PopupMenuButton<String>(onSelected:(v)async{if(v=='delete'){await repo.delete(p.id);}},itemBuilder:(_)=>const [PopupMenuItem(value:'delete',child:Text('حذف'))]),
           ));});
       }));
   }
