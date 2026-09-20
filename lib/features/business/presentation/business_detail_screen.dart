@@ -13,6 +13,7 @@ class AurenBusinessDetailScreen extends StatefulWidget {
 
 class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
   bool saving = false;
+  final _repo = BusinessRepository();
   Future<void> edit() async {
     final n=TextEditingController(text:widget.business.name);
     final d=TextEditingController(text:widget.business.description);
@@ -66,6 +67,42 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
         if(b.phone.isNotEmpty)ListTile(leading:const Icon(Icons.phone_outlined),title:const Text('الهاتف'),subtitle:Text(b.phone)),
         if(b.website.isNotEmpty)ListTile(leading:const Icon(Icons.language),title:const Text('الموقع الإلكتروني'),subtitle:Text(b.website)),
         const SizedBox(height:16),
+        if (!own) StreamBuilder<bool>(
+          stream:_repo.watchSaved(FirebaseAuth.instance.currentUser?.uid ?? '',b.id),
+          builder:(context,s)=>IconButton(
+            onPressed:FirebaseAuth.instance.currentUser?.uid==null?null:()async{
+              await _repo.toggleSaved(FirebaseAuth.instance.currentUser!.uid,b.id);
+              if(mounted)setState((){});
+            },
+            icon:Icon(s.data==true?Icons.bookmark:Icons.bookmark_border),
+          ),
+        ),
+        StreamBuilder<List<AurenBusinessReview>>(
+          stream:_repo.watchReviews(b.id),
+          builder:(context,s){
+            final reviews=s.data??const <AurenBusinessReview>[];
+            final avg=reviews.isEmpty?0.0:reviews.map((r)=>r.rating).reduce((a,b)=>a+b)/reviews.length;
+            return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              Text('⭐ '+avg.toStringAsFixed(1)+'  ('+reviews.length.toString()+')'),
+              if(!own)TextButton(onPressed:()async{
+                final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;
+                int rating=5;final ctl=TextEditingController();
+                final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
+                  title:const Text('تقييم Business'),
+                  content:Column(mainAxisSize:MainAxisSize.min,children:[
+                    DropdownButtonFormField<int>(value:rating,items:[1,2,3,4,5].map((x)=>DropdownMenuItem(value:x,child:Text('$x نجوم'))).toList(),onChanged:(v)=>setD(()=>rating=v!)),
+                    TextField(controller:ctl,maxLines:3,decoration:const InputDecoration(labelText:'تعليق')),
+                  ]),
+                  actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))],
+                )));
+                if(ok==true)await _repo.upsertReview(businessId:b.id,userId:uid,rating:rating,text:ctl.text);
+                ctl.dispose();
+              },child:const Text('أضف تقييمك')),
+              ...reviews.take(5).map((r)=>ListTile(contentPadding:EdgeInsets.zero,title:Text('★'*r.rating),subtitle:Text(r.text.isEmpty?'بدون تعليق':r.text))),
+            ])));
+          },
+        ),
+        const SizedBox(height:8),
         FilledButton.icon(onPressed:own?null:()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null||b.ownerId.isEmpty)return;try{final conversation=await ConversationRepository().getOrCreateDirectConversation(uid:uid,otherUid:b.ownerId,otherTitle:b.name);if(!context.mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(conversationId:conversation.id,initialPrompt:'مرحباً '+b.name+'، أريد الاستفسار عن خدماتكم.')));}catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر فتح المحادثة: $e')));}},icon:const Icon(Icons.chat_bubble_outline),label:const Text('تواصل مع Business'))
       ])
     );
