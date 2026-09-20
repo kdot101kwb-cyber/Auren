@@ -8,6 +8,7 @@ import '../../../services/social/post_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
 import 'edit_post_screen.dart';
+import 'saved_pulse_screen.dart';
 import 'user_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -35,6 +36,11 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
             tooltip: 'Find people',
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen())),
             icon: const Icon(Icons.search),
+          ),
+          IconButton(
+            tooltip: 'Saved Pulse',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedPulseScreen())),
+            icon: const Icon(Icons.bookmarks_outlined),
           ),
           IconButton(
             tooltip: 'Create',
