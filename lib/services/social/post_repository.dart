@@ -41,6 +41,14 @@ class PostRepository {
 
   Future<void> delete(String postId) => _posts.doc(postId).delete();
 
+  Future<void> updateContent(String postId, {required String text, required String mediaUrl}) =>
+      _posts.doc(postId).update({
+        'text': text,
+        'mediaUrl': mediaUrl,
+        'mediaType': mediaUrl.isEmpty ? 'none' : 'image',
+        'searchText': text.toLowerCase(),
+      });
+
   Stream<bool> watchLiked(String postId, String uid) =>
       _posts.doc(postId).collection('likes').doc(uid).snapshots().map((d) => d.exists);
 
