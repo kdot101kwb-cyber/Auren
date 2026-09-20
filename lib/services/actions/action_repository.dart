@@ -29,6 +29,18 @@ class ActionRepository {
           .where((a) => a.status == 'pending' || a.status == 'approved')
           .toList());
 
+  /// Recent terminal actions are kept visible for transparency and auditing.
+  Stream<List<AurenActionRequest>> watchHistory(String uid, {int limit = 30}) =>
+      _actions(uid)
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => AurenActionRequest.fromMap(d.id, d.data()))
+              .where((a) =>
+                  a.status != 'pending' && a.status != 'approved')
+              .toList());
+
   Future<AurenActionRequest?> get(String uid, String id) async {
     final snapshot = await _actions(uid).doc(id).get();
     if (!snapshot.exists || snapshot.data() == null) return null;
