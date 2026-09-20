@@ -59,3 +59,42 @@ export async function createMessageNotifications(db, {
   })));
   return recipients.length;
 }
+
+
+export async function createGroupNotifications(db, {
+  actorUid,
+  conversationId,
+  groupTitle,
+  memberIds,
+  type,
+  targetUid = null,
+}) {
+  const recipients = [...new Set((Array.isArray(memberIds) ? memberIds : [])
+    .filter((uid) => typeof uid === 'string' && uid && uid !== actorUid))];
+  const titles = {
+    group_member_added: 'أضيفت إلى مجموعة',
+    group_member_removed: 'تمت إزالتك من مجموعة',
+    group_owner_changed: 'تم تغيير مالك المجموعة',
+  };
+  const bodies = {
+    group_member_added: `تمت إضافتك إلى مجموعة «${clean(groupTitle, 120)}» في AUREN.`,
+    group_member_removed: `تمت إزالتك من مجموعة «${clean(groupTitle, 120)}» في AUREN.`,
+    group_owner_changed: `أصبحت مالك مجموعة «${clean(groupTitle, 120)}» في AUREN.`,
+  };
+  if (!titles[type] || !bodies[type]) throw new Error('Unsupported group notification type.');
+
+  const finalRecipients = targetUid
+    ? recipients.filter((uid) => uid === targetUid)
+    : recipients;
+
+  await Promise.all(finalRecipients.map((uid) => createUserNotification(db, uid, {
+    type: 'group',
+    title: titles[type],
+    body: bodies[type],
+    actorUid,
+    targetId: targetUid,
+    conversationId,
+    dedupeId: `${type}_${conversationId}_${uid}_${Date.now()}`,
+  })));
+  return finalRecipients.length;
+}
