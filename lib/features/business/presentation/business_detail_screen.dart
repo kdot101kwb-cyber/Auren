@@ -15,6 +15,7 @@ class AurenBusinessDetailScreen extends StatefulWidget {
 class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
   bool saving = false;
   final _repo = BusinessRepository();
+  @override void initState(){super.initState();final uid=FirebaseAuth.instance.currentUser?.uid;if(uid!=null&&!widget.business.ownerId.isEmpty){_repo.recordEvent(business:widget.business,viewerUid:uid,type:'view');}}
   Future<void> edit() async {
     final n=TextEditingController(text:widget.business.name);
     final d=TextEditingController(text:widget.business.description);
@@ -106,7 +107,7 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
           },
         ),
         const SizedBox(height:8),
-        FilledButton.icon(onPressed:own?null:()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null||b.ownerId.isEmpty)return;try{final conversation=await ConversationRepository().getOrCreateDirectConversation(uid:uid,otherUid:b.ownerId,otherTitle:b.name);if(!context.mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(conversationId:conversation.id,initialPrompt:'مرحباً '+b.name+'، أريد الاستفسار عن خدماتكم.')));}catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر فتح المحادثة: $e')));}},icon:const Icon(Icons.chat_bubble_outline),label:const Text('تواصل مع Business'))
+        FilledButton.icon(onPressed:own?null:()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null||b.ownerId.isEmpty)return;try{await _repo.recordEvent(business:b,viewerUid:uid,type:'lead');await _repo.recordEvent(business:b,viewerUid:uid,type:'message');final conversation=await ConversationRepository().getOrCreateDirectConversation(uid:uid,otherUid:b.ownerId,otherTitle:b.name);if(!context.mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(conversationId:conversation.id,initialPrompt:'مرحباً '+b.name+'، أريد الاستفسار عن خدماتكم.')));}catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر فتح المحادثة: $e')));}},icon:const Icon(Icons.chat_bubble_outline),label:const Text('تواصل مع Business'))
       ])
     );
   }
