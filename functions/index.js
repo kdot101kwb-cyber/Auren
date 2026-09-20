@@ -63,6 +63,22 @@ function assertAurenActionPermission(ledger, action) {
   }
 }
 
+async function writeAurenActionAudit(uid, action, status, extra = {}) {
+  const ref = db.collection('users').doc(uid).collection('action_audit').doc();
+  await ref.set({
+    actionId: action.id || null,
+    actionType: action.actionType || null,
+    agentId: action.agentId || 'primary',
+    permission: action.permission || null,
+    riskLevel: action.riskLevel || null,
+    approvalLevel: action.approvalLevel ?? null,
+    requiresApproval: action.requiresApproval === true,
+    status,
+    createdAt: FieldValue.serverTimestamp(),
+    ...extra,
+  });
+}
+
 async function notify(uid, data) {
   if (!uid || !data) return;
   await db.collection('users').doc(uid).collection('notifications').add({
@@ -248,6 +264,8 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       }, {merge: true});
     });
 
+    await writeAurenActionAudit(uid, { ...action, id: actionId }, 'executing', { source: 'executeAurenAction' });
+
     try {
       let executionResult;
       if (action.actionType === 'demo.echo') {
@@ -284,6 +302,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         completedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
 
+      await writeAurenActionAudit(uid, { ...action, id: actionId }, 'completed', { result: executionResult, source: 'executeAurenAction' });
       return {status: 'completed', result: executionResult};
     } catch (e) {
       const message = e?.message || 'Action execution failed.';
@@ -297,6 +316,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         result: message,
         completedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
+      await writeAurenActionAudit(uid, { ...action, id: actionId }, 'failed', { result: message, source: 'executeAurenAction' });
       throw new Error(message);
     }
   },
