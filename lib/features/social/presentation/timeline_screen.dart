@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/models/post.dart';
+import '../../../core/models/user_profile.dart';
+import '../../profile/presentation/public_profile_screen.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
 import 'comments_screen.dart';
@@ -314,7 +316,7 @@ class _PulseCard extends StatelessWidget {
                 const Spacer(),
                 if (post.actionLabel.isNotEmpty)
                   FilledButton.icon(
-                    onPressed: () {},
+                    onPressed: () => _openAuthor(context),
                     icon: const Icon(Icons.arrow_forward, size: 18),
                     label: Text(post.actionLabel),
                   ),
@@ -336,7 +338,7 @@ class _PulseCard extends StatelessWidget {
                   const Icon(Icons.people_alt_outlined, size: 18),
                   const SizedBox(width: 6),
                   const Expanded(child: Text('AUREN can match people with the right skills for this.')),
-                  OutlinedButton(onPressed: () {}, child: const Text('Match')),
+                  OutlinedButton(onPressed: () => _openMatch(context), child: const Text('Match')),
                 ],
               ),
             ),
@@ -383,6 +385,28 @@ class _PulseCard extends StatelessWidget {
       case 'wow': return Icons.auto_awesome;
       default: return Icons.thumb_up;
     }
+  }
+
+  void _openAuthor(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AurenPublicProfileScreen(
+          profile: AurenUserProfile(
+            uid: post.authorId,
+            displayName: post.authorId,
+            createdAt: DateTime.now(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openMatch(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AurenUserSearchScreen()),
+    );
   }
 
   void _sharePost(BuildContext context) {
