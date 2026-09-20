@@ -15,15 +15,15 @@ class AurenTimelineScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AUREN Social'),
+        title: const Text('AUREN Pulse'),
         actions: [
           IconButton(
-            tooltip: 'Create post',
+            tooltip: 'Create',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AurenCreatePostScreen()),
             ),
-            icon: const Icon(Icons.add_box_outlined),
+            icon: const Icon(Icons.add_circle_outline),
           ),
         ],
       ),
@@ -32,8 +32,8 @@ class AurenTimelineScreen extends StatelessWidget {
           context,
           MaterialPageRoute(builder: (_) => const AurenCreatePostScreen()),
         ),
-        icon: const Icon(Icons.add),
-        label: const Text('Post'),
+        icon: const Icon(Icons.auto_awesome),
+        label: const Text('Create'),
       ),
       body: uid == null
           ? const Center(child: Text('Sign in required'))
@@ -44,7 +44,7 @@ class AurenTimelineScreen extends StatelessWidget {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
-                      child: Text('Could not load AUREN Social: ${snapshot.error}'),
+                      child: Text('Could not load AUREN Pulse: ${snapshot.error}'),
                     ),
                   );
                 }
@@ -53,17 +53,17 @@ class AurenTimelineScreen extends StatelessWidget {
                 }
 
                 final posts = snapshot.data!;
-                if (posts.isEmpty) {
-                  return const Center(child: Text('ابدأ أول منشور في AUREN'));
-                }
-
                 return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
-                  itemCount: posts.length + 1,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
+                  itemCount: posts.length + 2,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
-                    if (i == 0) return const _StoriesStrip();
-                    return _PostCard(post: posts[i - 1], uid: uid);
+                    if (i == 0) return const _NextMoveCard();
+                    if (i == 1) return const _MomentsStrip();
+                    if (posts.isEmpty) {
+                      return const _EmptyPulse();
+                    }
+                    return _PulseCard(post: posts[i - 2], uid: uid);
                   },
                 );
               },
@@ -72,76 +72,180 @@ class AurenTimelineScreen extends StatelessWidget {
   }
 }
 
-class _StoriesStrip extends StatelessWidget {
-  const _StoriesStrip();
+class _NextMoveCard extends StatelessWidget {
+  const _NextMoveCard();
 
   @override
-  Widget build(BuildContext context) {
-    final stories = ['Your story', 'AUREN AI', 'Creators', 'Nearby', 'Friends'];
-    return SizedBox(
-      height: 96,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: stories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (_, i) => Column(
-          children: [
-            Container(
-              width: 62,
-              height: 62,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(width: 2),
-              ),
-              child: CircleAvatar(
-                child: Icon(i == 0 ? Icons.add : Icons.person_outline),
-              ),
+  Widget build(BuildContext context) => Card(
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primaryContainer,
+                Theme.of(context).colorScheme.secondaryContainer,
+              ],
             ),
-            const SizedBox(height: 6),
-            SizedBox(
-              width: 74,
-              child: Text(
-                stories[i],
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+          ),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 25,
+                child: Icon(Icons.auto_awesome),
               ),
-            ),
-          ],
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Your next move',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                    SizedBox(height: 4),
+                    Text('People, ideas and opportunities selected for your goals.'),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'See why',
+                onPressed: () => _showWhy(context),
+                icon: const Icon(Icons.info_outline),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  static void _showWhy(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'AUREN Pulse can personalize what you see using your interests, follows, activity, goals and nearby context.',
         ),
       ),
     );
   }
 }
 
-class _PostCard extends StatelessWidget {
+class _MomentsStrip extends StatelessWidget {
+  const _MomentsStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      ('Create', Icons.add),
+      ('Now', Icons.bolt),
+      ('Nearby', Icons.location_on_outlined),
+      ('Projects', Icons.rocket_launch_outlined),
+      ('People', Icons.people_outline),
+    ];
+    return SizedBox(
+      height: 86,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) => Container(
+          width: 92,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Theme.of(context).dividerColor),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(items[i].$2, size: 24),
+              const SizedBox(height: 6),
+              Text(items[i].$1, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PulseCard extends StatelessWidget {
   final AurenPost post;
   final String uid;
 
-  const _PostCard({required this.post, required this.uid});
+  const _PulseCard({required this.post, required this.uid});
+
+  String get typeLabel {
+    switch (post.contentType) {
+      case 'opportunity':
+        return 'Opportunity';
+      case 'project':
+        return 'Project';
+      case 'question':
+        return 'Question';
+      case 'idea':
+        return 'Idea';
+      default:
+        return 'Moment';
+    }
+  }
+
+  IconData get typeIcon {
+    switch (post.contentType) {
+      case 'opportunity':
+        return Icons.work_outline;
+      case 'project':
+        return Icons.rocket_launch_outlined;
+      case 'question':
+        return Icons.help_outline;
+      case 'idea':
+        return Icons.lightbulb_outline;
+      default:
+        return Icons.bolt;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final repo = PostRepository();
-
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-            title: Text(
-              post.authorId,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w700),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 10, 6),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 20,
+                  child: Icon(Icons.person_outline, size: 20),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(post.authorId,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                      if (post.contextLabel.isNotEmpty)
+                        Text(post.contextLabel,
+                            style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+                Chip(
+                  avatar: Icon(typeIcon, size: 16),
+                  label: Text(typeLabel),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
             ),
-            trailing: const Icon(Icons.more_horiz),
           ),
           if (post.mediaUrl.isNotEmpty)
             AspectRatio(
-              aspectRatio: 1,
+              aspectRatio: 16 / 10,
               child: Image.network(
                 post.mediaUrl,
                 fit: BoxFit.cover,
@@ -149,14 +253,17 @@ class _PostCard extends StatelessWidget {
                   color: Colors.black26,
                   child: Center(child: Icon(Icons.broken_image_outlined, size: 42)),
                 ),
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const Center(child: CircularProgressIndicator());
-                },
+                loadingBuilder: (context, child, progress) =>
+                    progress == null ? child : const Center(child: CircularProgressIndicator()),
               ),
             ),
+          if (post.text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Text(post.text),
+            ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
             child: Row(
               children: [
                 StreamBuilder<bool>(
@@ -164,47 +271,70 @@ class _PostCard extends StatelessWidget {
                   builder: (context, s) {
                     final liked = s.data ?? false;
                     return IconButton(
+                      tooltip: 'React',
                       onPressed: s.connectionState == ConnectionState.waiting
                           ? null
                           : () => repo.toggleLike(post.id, uid, liked),
-                      icon: Icon(
-                        liked ? Icons.favorite : Icons.favorite_border,
-                        size: 28,
-                      ),
+                      icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
                     );
                   },
                 ),
                 IconButton(
+                  tooltip: 'Discuss',
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => AurenCommentsScreen(postId: post.id),
                     ),
                   ),
-                  icon: const Icon(Icons.chat_bubble_outline),
+                  icon: const Icon(Icons.forum_outlined),
                 ),
                 const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.bookmark_border),
-                ),
+                if (post.actionLabel.isNotEmpty)
+                  FilledButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.arrow_forward, size: 18),
+                    label: Text(post.actionLabel),
+                  ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
             child: Text(
-              '${post.likes} likes',
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              '${post.likes} reactions • ${post.comments} discussions',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
-          if (post.text.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
-              child: Text(post.text),
-            ),
         ],
       ),
     );
   }
+}
+
+class _EmptyPulse extends StatelessWidget {
+  const _EmptyPulse();
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const Icon(Icons.auto_awesome, size: 44),
+              const SizedBox(height: 10),
+              const Text('Your Pulse starts here',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              const Text('Create an idea, project, question or opportunity.'),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.add),
+                label: const Text('Create your first'),
+              ),
+            ],
+          ),
+        ),
+      );
 }
