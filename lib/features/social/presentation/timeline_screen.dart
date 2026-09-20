@@ -307,22 +307,23 @@ class _PulseCard extends StatelessWidget {
                   label: Text(typeLabel),
                   visualDensity: VisualDensity.compact,
                 ),
-                if (post.authorId == uid)
-                  PopupMenuButton<String>(
+                PopupMenuButton<String>(
                     onSelected: (value) {
                       if (value == 'edit') _openEdit(context);
                       if (value == 'delete') _confirmDelete(context, repo);
                       if (value == 'report') _reportPost(context, repo);
                     },
                     itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Edit post'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Delete post'),
-                      ),
+                      if (post.authorId == uid) ...[
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Edit post'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete post'),
+                        ),
+                      ],
                       if (post.authorId != uid)
                         const PopupMenuItem(
                           value: 'report',
