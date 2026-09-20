@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/agent_listing.dart';
 import '../../../services/agents/agent_protocol_repository.dart';
+import '../../../services/agents/agent_installation_repository.dart';
 import '../../../core/models/agent_message.dart';
 
 class AgentDetailScreen extends StatefulWidget {
@@ -12,6 +14,45 @@ class AgentDetailScreen extends StatefulWidget {
 class _AgentDetailScreenState extends State<AgentDetailScreen> {
   final _message = TextEditingController();
   bool _sending = false;
+  bool _installing = false;
+  bool _installed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInstallation();
+  }
+
+  Future<void> _loadInstallation() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final installed = await AurenAgentInstallationRepository().isInstalled(uid, widget.agent.agentId);
+    if (mounted) setState(() => _installed = installed);
+  }
+
+  Future<void> _toggleInstallation() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || _installing) return;
+    setState(() => _installing = true);
+    try {
+      final repo = AurenAgentInstallationRepository();
+      if (_installed) {
+        await repo.uninstall(uid, widget.agent.agentId);
+      } else {
+        await repo.install(
+          uid: uid,
+          agentId: widget.agent.agentId,
+          name: widget.agent.name,
+          version: widget.agent.version,
+        );
+      }
+      if (mounted) setState(() => _installed = !_installed);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحديث الـAgent: ' + e.toString())));
+    } finally {
+      if (mounted) setState(() => _installing = false);
+    }
+  }
 
   @override void dispose() { _message.dispose(); super.dispose(); }
 
@@ -51,6 +92,14 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
         Card(child: ListTile(leading: const Icon(Icons.verified_user_outlined), title: const Text('Trust & Reputation'), subtitle: Text('★ ' + a.reputationScore.toStringAsFixed(1) + ' • ' + a.reviewCount.toString() + ' مراجعة'))),
         Card(child: ListTile(leading: const Icon(Icons.payments_outlined), title: const Text('Pricing'), subtitle: Text(a.pricingModel + ' • ' + (a.amountMinor == 0 ? 'مجاني' : (a.amountMinor / 100).toStringAsFixed(2) + ' ' + a.currency)))),
         const SizedBox(height: 10),
+        FilledButton.icon(
+          onPressed: _installing ? null : _toggleInstallation,
+          icon: _installing
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : Icon(_installed ? Icons.check_circle_outline : Icons.add_circle_outline),
+          label: Text(_installed ? 'Agent مثبت — إزالة التثبيت' : 'تثبيت Agent'),
+        ),
+        const SizedBox(height: 18),
         const Text('تواصل مع الـAgent', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextField(controller: _message, minLines: 2, maxLines: 5, decoration: const InputDecoration(hintText: 'اكتب المهمة أو الطلب...', border: OutlineInputBorder())),
