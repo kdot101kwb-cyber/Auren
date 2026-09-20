@@ -194,7 +194,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     let payload = {};
     let requiresApproval = false;
     try {
-      const candidate = JSON.parse(text.replace(/^\`\`\`json\\s*/i, '').replace(/\`\`\`$/i, '').trim());
+      const candidate = JSON.parse(text.replace(/^\`\`\`json\s*/i, '').replace(/\`\`\`$/i, '').trim());
       if (candidate && typeof candidate === 'object') {
         const allowedActions = new Set(['demo.echo', 'demo.create_note']);
         const candidateAction = typeof candidate.action === 'string' ? candidate.action : null;
