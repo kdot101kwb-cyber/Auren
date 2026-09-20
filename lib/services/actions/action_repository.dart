@@ -30,6 +30,11 @@ class ActionRepository {
           .toList());
 
   /// Recent terminal actions are kept visible for transparency and auditing.
+  Stream<List<Map<String, dynamic>>> watchAudit(String uid, {int limit = 20}) =>
+      _db.collection('users').doc(uid).collection('action_audit')
+          .orderBy('createdAt', descending: true).limit(limit).snapshots()
+          .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+
   Stream<List<AurenActionRequest>> watchHistory(String uid, {int limit = 30}) =>
       _actions(uid)
           .orderBy('createdAt', descending: true)
