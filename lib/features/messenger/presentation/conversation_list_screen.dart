@@ -37,10 +37,10 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
       ),
     );
     title.dispose(); member.dispose();
-    if (result == null || uid == null) return;
+    if (result == null || _uid == null) return;
     try {
       final members = result[1].split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-      final c = await _repo.createGroup(uid: uid!, title: result[0], memberIds: members);
+      final c = await _repo.createGroup(uid: _uid!, title: result[0], memberIds: members);
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: c.id)));
     } catch (e) {
