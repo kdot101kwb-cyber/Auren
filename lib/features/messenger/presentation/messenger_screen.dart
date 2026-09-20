@@ -9,6 +9,7 @@ import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
 import '../../../services/messaging/message_safety_repository.dart';
 import 'group_details_screen.dart';
+import 'message_safety_screen.dart';
 import '../../../services/users/presence_service.dart';
 
 class MessengerScreen extends StatefulWidget {
@@ -207,6 +208,17 @@ class _MessengerScreenState extends State<MessengerScreen> {
       appBar: AppBar(
         title: Text(_conversationTitle),
         actions: [
+          if (!_isAi)
+            IconButton(
+              tooltip: 'Message safety',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AurenMessageSafetyScreen()),
+                );
+              },
+              icon: const Icon(Icons.shield_outlined),
+            ),
           if (!_isAi)
             IconButton(
               tooltip: 'Conversation details',
