@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/models/agent_listing.dart';
 import '../../../services/agents/agent_marketplace_repository.dart';
 import 'agent_detail_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../services/agents/agent_installation_repository.dart';
 
 class AgentMarketplaceScreen extends StatelessWidget {
   const AgentMarketplaceScreen({super.key});
@@ -39,6 +41,7 @@ class AgentMarketplaceScreen extends StatelessWidget {
                     Text(_price(agent)),
                   ]),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AgentDetailScreen(agent: agent))),
+                  );
                 ),
               );
             },
