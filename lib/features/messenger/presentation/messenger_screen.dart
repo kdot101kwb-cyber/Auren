@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/models/message.dart';
 import '../../../services/auth/auth_service.dart';
@@ -108,48 +109,48 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           }
         }
       }
+
       final now = DateTime.now();
+      final messageId = 'msg_${now.microsecondsSinceEpoch}';
       await _messagesRepository.send(AurenMessage(
-      id: 'msg_${now.microsecondsSinceEpoch}',
-      conversationId: _conversationId!,
-      senderId: _uid!,
-      text: text,
+        id: messageId,
+        conversationId: _conversationId!,
+        senderId: _uid!,
+        text: text,
         createdAt: now,
       ));
+
       if (!_isAi) {
         try {
           await _notificationApi.notifyMessage(
             conversationId: _conversationId!,
-            messageId: 'msg_${now.microsecondsSinceEpoch}',
+            messageId: messageId,
             text: text,
           );
-        } catch (_) {
-          // Notification delivery must never block message delivery.
-        }
+        } catch (_) {}
       }
 
       if (_isAi) {
-        // Only enabled personal memories are shared with the AI gateway.
-        // Keep the context bounded so normal chat remains fast and predictable.
         final memories = await _memoryRepository.watch(_uid!).first;
         final recentMessages = await _messagesRepository.recent(_conversationId!, limit: 20);
         final historyContext = recentMessages.isEmpty
             ? ''
-            : '\\n\\nسجل المحادثة الأخير (للسياق فقط):\\n' +
+            : '\n\nسجل المحادثة الأخير (للسياق فقط):\n' +
                 recentMessages.map((m) {
-                  final speaker = m.isAi ? 'AUREN AI' : (m.senderId == _uid ? 'المستخدم' : 'مستخدم آخر');
-                  return '- $speaker: ${m.text}';
-                }).join('\\n');
+                  final speaker = m.isAi
+                      ? 'AUREN AI'
+                      : (m.senderId == _uid ? 'المستخدم' : 'مستخدم آخر');
+                  return '- ' + speaker + ': ' + m.text;
+                }).join('\n');
         final enabledMemories = memories.where((m) => m.enabled).take(20).toList();
         final memoryContext = enabledMemories.isEmpty
             ? ''
-            : '\\n\\nسياق شخصي محفوظ ومفعّل:\\n' +
-                enabledMemories.map((m) => '- ${m.key}: ${m.value}').join('\\n');
-        final gatewayMessage = '$text$historyContext$memoryContext';
+            : '\n\nسياق شخصي محفوظ ومفعّل:\n' +
+                enabledMemories.map((m) => '- ' + m.key + ': ' + m.value).join('\n');
 
         final response = await _gateway.send(
           conversationId: _conversationId!,
-          message: gatewayMessage,
+          message: text + historyContext + memoryContext,
         );
 
         final aiNow = DateTime.now();
@@ -162,7 +163,8 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           isAi: true,
         ));
 
-        if (response.action != null && response.action!.trim().isNotEmpty &&
+        if (response.action != null &&
+            response.action!.trim().isNotEmpty &&
             response.requiresApproval) {
           final actionNow = DateTime.now();
           final actionType = response.action!.trim();
@@ -175,7 +177,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                 conversationId: _conversationId!,
                 actionType: actionType,
                 title: definition.title,
-                description: 'طلب تنفيذ: ${definition.title}',
+                description: 'طلب تنفيذ: ' + definition.title,
                 payload: response.payload,
                 createdAt: actionNow,
               ),
@@ -183,13 +185,11 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           }
         }
       }
-
-      // MessageRepository updates conversation metadata transactionally.
     } catch (e) {
       if (mounted) {
         setState(() => _error = 'فشل الطلب: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الطلب — يمكنك المحاولة مرة ثانية.')),
+          const SnackBar(content: Text('فشل الطلب — يمكنك المحاولة مرة ثانية.')),
         );
       }
     } finally {
@@ -197,18 +197,68 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     }
   }
 
+  Future<void> _messageMenu(AurenMessage message) async {
+    if (_uid == null) return;
+    final canModerate = !message.isAi && message.senderId != _uid;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: const Text('Copy message'),
+              onTap: () => Navigator.pop(context, 'copy'),
+            ),
+            if (canModerate)
+              ListTile(
+                leading: const Icon(Icons.flag_outlined),
+                title: const Text('Report message'),
+                onTap: () => Navigator.pop(context, 'report'),
+              ),
+            if (canModerate)
+              ListTile(
+                leading: const Icon(Icons.block_outlined),
+                title: const Text('Block user'),
+                onTap: () => Navigator.pop(context, 'block'),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || choice == null) return;
+    if (choice == 'copy') {
+      await Clipboard.setData(ClipboardData(text: message.text));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message copied.')),
+        );
+      }
+    } else if (choice == 'report') {
+      await _safetyRepository.report(
+        reporterUid: _uid!,
+        conversationId: _conversationId!,
+        messageId: message.id,
+        reason: 'User reported message',
+      );
+    } else if (choice == 'block') {
+      await _safetyRepository.block(_uid!, message.senderId);
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     final uid = _uid;
-    if (uid != null) {
-      _presence.stop(uid);
-    }
+    if (uid != null) _presence.stop(uid);
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  @override
   Widget build(BuildContext context) {
     if (!_initialPromptSent && !_loading && widget.initialPrompt != null) {
       _initialPromptSent = true;
@@ -218,16 +268,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     if (_loading || _conversationId == null) {
       if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
       return Scaffold(
-        appBar: AppBar(
-        title: const Text('AUREN Messenger'),
-        actions: [
-          IconButton(
-            tooltip: 'Conversation details',
-            onPressed: () => setState(() => _showDetails = !_showDetails),
-            icon: Icon(_showDetails ? Icons.info : Icons.info_outline),
-          ),
-        ],
-      ),
+        appBar: AppBar(title: const Text('AUREN Messenger')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -238,7 +279,10 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: () {
-                  setState(() { _loading = true; _error = null; });
+                  setState(() {
+                    _loading = true;
+                    _error = null;
+                  });
                   _bootstrap();
                 },
                 icon: const Icon(Icons.refresh),
@@ -257,12 +301,10 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           if (!_isAi)
             IconButton(
               tooltip: 'Message safety',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AurenMessageSafetyScreen()),
-                );
-              },
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenMessageSafetyScreen()),
+              ),
               icon: const Icon(Icons.shield_outlined),
             ),
           if (!_isAi)
@@ -272,9 +314,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                 final conversation = await _conversationRepository.findById(_conversationId!);
                 if (!mounted || conversation == null) return;
                 if (conversation.type == 'group') {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => AurenGroupDetailsScreen(conversation: conversation),
-                  ));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AurenGroupDetailsScreen(conversation: conversation),
+                    ),
+                  );
                 } else {
                   setState(() => _showDetails = !_showDetails);
                 }
@@ -300,7 +345,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                   padding: const EdgeInsets.only(right: 8),
                   child: ActionChip(
                     label: Text(prompt),
-                    onPressed: () { _controller.text = prompt; _controller.selection = TextSelection.collapsed(offset: prompt.length); setState(() {}); },
+                    onPressed: () {
+                      _controller.text = prompt;
+                      _controller.selection =
+                          TextSelection.collapsed(offset: prompt.length);
+                      setState(() {});
+                    },
                   ),
                 )).toList(),
               ),
@@ -310,17 +360,28 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Text('Conversation: $_conversationId\nAI actions require your approval before execution.'),
+              child: Text(
+                'Conversation: ' + _conversationId! +
+                    '\nAI actions require your approval before execution.',
+              ),
             ),
           Expanded(
             child: StreamBuilder<List<AurenMessage>>(
               stream: _messagesRepository.watchConversation(_conversationId!),
               builder: (context, snapshot) {
-                if (snapshot.hasError) return Center(child: Text('Could not load messages: ${snapshot.error}'));
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                if (snapshot.hasError) {
+                  return Center(child: Text('Could not load messages: ' + snapshot.error.toString()));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
                 final messages = snapshot.data!;
-                if (messages.isEmpty) return Center(child: Text(_isAi ? 'ابدأ محادثتك مع AUREN AI' : 'ابدأ المحادثة'));
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Text(_isAi ? 'ابدأ محادثتك مع AUREN AI' : 'ابدأ المحادثة'),
+                  );
+                }
 
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
@@ -351,35 +412,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                               : Theme.of(context).colorScheme.surfaceContainerHighest,
                         ),
                         child: GestureDetector(
-                          onLongPress: () async {
-                            if (message.isAi || message.senderId == _uid) return;
-                            final reason = await showDialog<String>(
-                              context: context,
-                              builder: (dialogContext) => SimpleDialog(
-                                title: const Text('Message safety'),
-                                children: [
-                                  SimpleDialogOption(
-                                    onPressed: () => Navigator.pop(dialogContext, 'Report'),
-                                    child: const Text('Report message'),
-                                  ),
-                                  SimpleDialogOption(
-                                    onPressed: () => Navigator.pop(dialogContext, 'Block'),
-                                    child: const Text('Block user'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (reason == 'Report') {
-                              await _safetyRepository.report(
-                                reporterUid: _uid!,
-                                conversationId: _conversationId!,
-                                messageId: message.id,
-                                reason: 'User reported message',
-                              );
-                            } else if (reason == 'Block') {
-                              await _safetyRepository.block(_uid!, message.senderId);
-                            }
-                          },
+                          onLongPress: () => _messageMenu(message),
                           child: Text(message.text),
                         ),
                       ),
@@ -399,6 +432,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                     child: TextField(
                       controller: _controller,
                       textInputAction: TextInputAction.send,
+                      onChanged: (_) => setState(() {}),
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: _isAi ? 'اكتب لـ AUREN AI…' : 'اكتب رسالة…',
@@ -419,5 +453,4 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       ),
     );
   }
-
 }
