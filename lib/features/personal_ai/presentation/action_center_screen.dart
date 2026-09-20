@@ -213,7 +213,8 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 ],
               );
             },
-          )        },
+          );
+        },
       ),
     );
   }
