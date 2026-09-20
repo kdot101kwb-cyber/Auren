@@ -281,7 +281,7 @@ service cloud.firestore {
         && (
           (resource.data.authorId == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-              'authorId', 'text', 'createdAt', 'searchText'
+              'authorId', 'text', 'mediaUrl', 'mediaType', 'createdAt', 'searchText'
             ])
             && request.resource.data.authorId == resource.data.authorId)
           || (
