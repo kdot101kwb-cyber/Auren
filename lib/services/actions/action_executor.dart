@@ -1,7 +1,4 @@
-import 'dart:convert';
-
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../core/models/action_request.dart';
 
@@ -22,56 +19,31 @@ abstract interface class AurenActionExecutor {
   });
 }
 
-class HttpsAurenActionExecutor implements AurenActionExecutor {
-  static const String endpoint =
-      String.fromEnvironment('AUREN_ACTION_EXECUTOR_URL');
+/// Executes user-approved actions through Firebase, so the client never gets
+/// direct authority to perform a privileged action.
+class FirebaseAurenActionExecutor implements AurenActionExecutor {
+  final FirebaseFunctions _functions;
 
-  final FirebaseAuth _auth;
-
-  HttpsAurenActionExecutor({FirebaseAuth? auth})
-      : _auth = auth ?? FirebaseAuth.instance;
+  FirebaseAurenActionExecutor({FirebaseFunctions? functions})
+      : _functions = functions ??
+            FirebaseFunctions.instanceFor(region: 'us-central1');
 
   @override
   Future<AurenActionExecutionResult> execute({
     required String uid,
     required AurenActionRequest action,
   }) async {
-    if (endpoint.isEmpty) {
-      throw StateError('AUREN_ACTION_EXECUTOR_URL is not configured.');
+    if (action.status != 'approved') {
+      throw StateError('Action must be approved before execution.');
     }
 
-    final user = _auth.currentUser;
-    if (user == null || user.uid != uid) {
-      throw StateError(
-        'Authenticated user is missing or does not match action owner.',
-      );
-    }
-
-    final token = await user.getIdToken();
-    if (token == null || token.isEmpty) {
-      throw StateError('Could not obtain Firebase authentication token.');
-    }
-
-    final response = await http.post(
-      Uri.parse(endpoint),
-      headers: {
-        'content-type': 'application/json',
-        'authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'actionId': action.id,
-      }),
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError(
-        'AUREN action executor returned ${response.statusCode}.',
-      );
-    }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final callable = _functions.httpsCallable('executeAurenAction');
+    final response = await callable.call(<String, dynamic>{
+      'actionId': action.id,
+    });
+    final data = Map<String, dynamic>.from(response.data as Map);
     return AurenActionExecutionResult(
-      result: data['result'] as String? ?? 'Action completed.',
+      result: data['result'] as String? ?? 'تم تنفيذ الأمر.',
       status: data['status'] as String? ?? 'completed',
     );
   }
