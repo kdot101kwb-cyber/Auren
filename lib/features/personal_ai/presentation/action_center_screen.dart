@@ -94,6 +94,57 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     }
   }
 
+  Widget _actionCard(AurenActionRequest action, {bool history = false}) {
+    final statusLabel = switch (action.status) {
+      'completed' => 'اكتمل',
+      'failed' => 'فشل التنفيذ',
+      'rejected' => 'مرفوض',
+      'approved' => 'تمت الموافقة — جاهز للتنفيذ',
+      _ => 'بانتظار موافقتك',
+    };
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          history
+              ? (action.status == 'completed'
+                  ? Icons.check_circle_outline
+                  : Icons.history)
+              : Icons.shield_outlined,
+        ),
+        title: Text(action.title),
+        subtitle: Text(
+          '${action.description}\n$statusLabel'
+          '${action.result == null ? '' : '\n${action.result}'}',
+        ),
+        isThreeLine: action.result != null || !history,
+        trailing: history
+            ? null
+            : _busyActionId == action.id
+                ? const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Wrap(
+                    children: [
+                      IconButton(
+                        tooltip: 'Reject',
+                        onPressed: () => _reject(action),
+                        icon: const Icon(Icons.close),
+                      ),
+                      IconButton(
+                        tooltip: action.status == 'approved'
+                            ? 'Execute'
+                            : 'Approve & execute',
+                        onPressed: () => _approve(action),
+                        icon: const Icon(Icons.check),
+                      ),
+                    ],
+                  ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = _uid;
@@ -118,48 +169,51 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
           }
 
           final actions = snapshot.data!;
-          if (actions.isEmpty) {
-            return const Center(child: Text('ما عندك أوامر معلّقة.'));
-          }
+          return StreamBuilder<List<AurenActionRequest>>(
+            stream: _repo.watchHistory(uid),
+            builder: (context, historySnapshot) {
+              if (historySnapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Could not load action history: ${historySnapshot.error}',
+                  ),
+                );
+              }
+              final history =
+                  historySnapshot.data ?? const <AurenActionRequest>[];
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: actions.length,
-            itemBuilder: (_, i) {
-              final action = actions[i];
-              final busy = _busyActionId == action.id;
-
-              return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.shield_outlined),
-                  title: Text(action.title),
-                  subtitle: Text('${action.description}\n${action.status == 'approved' ? 'تمت الموافقة — جاري/جاهز للتنفيذ' : 'بانتظار موافقتك'}'),
-                  isThreeLine: true,
-                  trailing: busy
-                      ? const SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Wrap(
-                          children: [
-                            IconButton(
-                              tooltip: 'Reject',
-                              onPressed: () => _reject(action),
-                              icon: const Icon(Icons.close),
-                            ),
-                            IconButton(
-                              tooltip: action.status == 'approved' ? 'Execute' : 'Approve & execute',
-                              onPressed: () => _approve(action),
-                              icon: const Icon(Icons.check),
-                            ),
-                          ],
-                        ),
-                ),
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text(
+                    'Needs your attention',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  if (actions.isEmpty)
+                    const Card(
+                      child: ListTile(
+                        leading: Icon(Icons.check_circle_outline),
+                        title: Text('ما عندك أوامر معلّقة.'),
+                      ),
+                    )
+                  else
+                    ...actions.map(_actionCard),
+                  if (history.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      'Recent activity',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    ...history.map(
+                      (action) => _actionCard(action, history: true),
+                    ),
+                  ],
+                ],
               );
             },
-          );
-        },
+          )        },
       ),
     );
   }
