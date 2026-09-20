@@ -2,26 +2,10 @@
 
 Trusted server boundary for user-approved AI actions.
 
-## Run
-
-Requires Firebase Application Default Credentials.
-
-```bash
-npm install
-npm start
-```
-
-Set:
-
-```text
-PORT=8080
-```
-
-The Flutter app points to:
-
-```text
---dart-define=AUREN_ACTION_EXECUTOR_URL=https://your-backend.example/api/actions/execute
-```
+The production Flutter path currently uses the Firebase callable function
+`executeAurenAction` in `functions/index.js`. The standalone Node executor
+in this directory remains the hardened backend boundary for future external
+deployments and expanded action capabilities.
 
 ## Security contract
 
@@ -29,10 +13,11 @@ The Flutter app points to:
 2. Derive the UID from the verified token.
 3. Load the action from `users/{uid}/actions/{actionId}`.
 4. Require `status == approved`.
-5. Validate the action type against an allowlist.
+5. Validate the action type and payload against an allowlist.
 6. Atomically mark it `executing`.
 7. Execute only server-side.
 8. Write `completed` or `failed`.
-9. Write an audit event.
+9. Write an execution record and audit event.
 
-Never trust a client-supplied UID, action description, completion status, or authorization decision.
+Never trust a client-supplied UID, action description, completion status, or
+authorization decision.
