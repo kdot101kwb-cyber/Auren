@@ -22,7 +22,7 @@ import { recoverStaleExecution } from './execution-recovery.js';
 import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
 import { submitReview } from './agent-reputation.js';
 import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
-import { createMessageNotifications } from './notification-store.js';
+import { createMessageNotifications, createGroupNotifications } from './notification-store.js';
 import { validatePackageMetadata, validateDependencyList, verifyPackageSignature, packageSha256, scanPluginArtifact, validateArtifactId, artifactObjectPath, createArtifactId } from './plugin-security.js';
 
 if (getApps().length === 0) {
@@ -97,6 +97,46 @@ app.post('/api/notifications/message', requireUser, async (req, res) => {
     return res.status(201).json({ status: 'created', recipients: count });
   } catch (e) {
     return error(res, 500, e.message || 'Unable to create message notifications.');
+  }
+});
+
+
+app.post('/api/notifications/group', requireUser, async (req, res) => {
+  try {
+    const conversationId = typeof req.body?.conversationId === 'string' ? req.body.conversationId.trim() : '';
+    const type = typeof req.body?.type === 'string' ? req.body.type.trim() : '';
+    const targetUid = typeof req.body?.targetUid === 'string' ? req.body.targetUid.trim() : null;
+    if (!conversationId || !['group_member_added', 'group_member_removed', 'group_owner_changed'].includes(type)) {
+      return error(res, 400, 'conversationId and a valid group notification type are required.');
+    }
+
+    const ref = db.collection('conversations').doc(conversationId);
+    const snap = await ref.get();
+    if (!snap.exists) return error(res, 404, 'Conversation not found.');
+    const conversation = snap.data();
+    const members = Array.isArray(conversation?.memberIds) ? conversation.memberIds : [];
+    if (conversation?.type !== 'group') return error(res, 400, 'Conversation is not a group.');
+    if (conversation?.ownerId !== req.uid) return error(res, 403, 'Only the group owner can create group notifications.');
+
+    if (type === 'group_member_added' && (!targetUid || !members.includes(targetUid))) {
+      return error(res, 400, 'The added member must belong to the group.');
+    }
+
+    const recipients = type === 'group_member_added' || type === 'group_member_removed'
+      ? [targetUid]
+      : members;
+
+    const count = await createGroupNotifications(db, {
+      actorUid: req.uid,
+      conversationId,
+      groupTitle: typeof conversation?.title === 'string' ? conversation.title : 'AUREN Group',
+      memberIds: recipients,
+      type,
+      targetUid: type === 'group_member_removed' ? targetUid : null,
+    });
+    return res.status(201).json({status: 'created', recipients: count});
+  } catch (e) {
+    return error(res, 500, e.message || 'Unable to create group notifications.');
   }
 });
 
