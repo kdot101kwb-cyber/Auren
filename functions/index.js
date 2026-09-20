@@ -148,7 +148,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
     if (!actionSnapshot.exists) throw new Error('Action not found.');
     const action = actionSnapshot.data();
 
-    const allowedActions = new Set(['demo.echo', 'demo.create_note']);
+    const allowedActions = new Set(['demo.echo', 'demo.create_note', 'memory.save']);
     if (!allowedActions.has(action?.actionType) || action?.permission !== 'userApproval' ||
         action?.riskLevel !== 'low' || action?.approvalLevel !== 1 ||
         action?.requiresApproval !== true || action?.status !== 'approved') {
@@ -159,7 +159,14 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       ? action.payload
       : {};
     const keys = Object.keys(payload);
-    if (keys.some((key) => key !== 'text') || typeof payload.text !== 'string' ||
+    if (action.actionType === 'memory.save') {
+      if (keys.some((key) => !['key', 'value'].includes(key)) ||
+          typeof payload.key !== 'string' || typeof payload.value !== 'string' ||
+          payload.key.trim().length === 0 || payload.key.length > 120 ||
+          payload.value.trim().length === 0 || payload.value.length > 2000) {
+        throw new Error('Invalid memory payload.');
+      }
+    } else if (keys.some((key) => key !== 'text') || typeof payload.text !== 'string' ||
         payload.text.trim().length === 0 || payload.text.length > 2000) {
       throw new Error('Invalid action payload.');
     }
@@ -186,6 +193,17 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       let executionResult;
       if (action.actionType === 'demo.echo') {
         executionResult = payload.text.trim();
+      } else if (action.actionType === 'memory.save') {
+        const memoryId = 'memory_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        await db.collection('users').doc(uid).collection('memory').doc(memoryId).set({
+          key: payload.key.trim(),
+          value: payload.value.trim(),
+          enabled: true,
+          updatedAt: new Date().toISOString(),
+          source: 'auren-ai',
+          actionId,
+        });
+        executionResult = 'تم حفظ المعلومة في ذاكرة AUREN.';
       } else {
         await db.collection('users').doc(uid).collection('notes').add({
           text: payload.text.trim(),
@@ -272,7 +290,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: 'You are AUREN AI. Be helpful, concise, safe, and action-oriented. Never execute external actions without explicit user approval. For a request to create a note or echo text, you may return ONLY a JSON object with keys text, action, payload, using action demo.create_note or demo.echo and payload {text}; otherwise answer normally.' },
+          { role: 'system', content: 'You are AUREN AI. Be helpful, concise, safe, and action-oriented. Never execute external actions without explicit user approval. For a request to create a note or echo text, you may return ONLY a JSON object with keys text, action, payload, using action demo.create_note or demo.echo with payload {text}, or memory.save with payload {key,value}; otherwise answer normally.' },
           { role: 'user', content: message },
         ],
         temperature: 0.4,
