@@ -11,6 +11,7 @@ class AurenBusinessProductsScreen extends StatefulWidget {
 }
 class _AurenBusinessProductsScreenState extends State<AurenBusinessProductsScreen>{
   final repo=MarketplaceRepository();
+  bool get _owner => FirebaseAuth.instance.currentUser?.uid != null;
   Future<void> add() async {
     final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;
     final n=TextEditingController(),d=TextEditingController(),price=TextEditingController(),img=TextEditingController();
@@ -35,7 +36,7 @@ class _AurenBusinessProductsScreenState extends State<AurenBusinessProductsScree
   }
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('Products & Services')),
-    floatingActionButton:FloatingActionButton.extended(onPressed:add,icon:const Icon(Icons.add),label:const Text('إضافة')),
+    floatingActionButton:FirebaseAuth.instance.currentUser?.uid==null?null:FloatingActionButton.extended(onPressed:add,icon:const Icon(Icons.add),label:const Text('إضافة')),
     body:StreamBuilder<List<AurenProduct>>(stream:repo.watchBusiness(widget.businessId),builder:(context,s){
       if(s.hasError)return Center(child:Text('حدث خطأ: '+s.error.toString()));
       if(!s.hasData)return const Center(child:CircularProgressIndicator());
