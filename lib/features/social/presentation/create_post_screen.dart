@@ -14,6 +14,15 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
   final textController = TextEditingController();
   final mediaController = TextEditingController();
   bool saving = false;
+  String contentType = 'moment';
+
+  final types = const {
+    'moment': 'Moment',
+    'idea': 'Idea',
+    'question': 'Question',
+    'project': 'Project',
+    'opportunity': 'Opportunity',
+  };
 
   Future<void> save() async {
     final text = textController.text.trim();
@@ -30,6 +39,21 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
           text: text,
           mediaUrl: mediaUrl,
           mediaType: mediaUrl.isEmpty ? 'none' : 'image',
+          contentType: contentType,
+          contextLabel: contentType == 'opportunity'
+              ? 'Open for collaboration'
+              : contentType == 'project'
+                  ? 'Building now'
+                  : 'Shared with AUREN',
+          actionLabel: contentType == 'opportunity'
+              ? 'Connect'
+              : contentType == 'project'
+                  ? 'Join'
+                  : contentType == 'question'
+                      ? 'Answer'
+                      : contentType == 'idea'
+                          ? 'Build'
+                          : '',
           createdAt: DateTime.now(),
         ),
       );
@@ -42,7 +66,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('Create Pulse'),
+          title: const Text('Create in Pulse'),
           actions: [
             TextButton(
               onPressed: saving ? null : save,
@@ -53,12 +77,28 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const Text('What do you want to move forward?',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: types.entries.map((e) {
+                final selected = contentType == e.key;
+                return ChoiceChip(
+                  selected: selected,
+                  label: Text(e.value),
+                  onSelected: (_) => setState(() => contentType = e.key),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
             TextField(
               controller: textController,
               maxLines: 7,
               maxLength: 2200,
               decoration: const InputDecoration(
-                hintText: 'Share something with AUREN…',
+                hintText: 'Share the idea, ask the question, show the project…',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -67,22 +107,17 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
               controller: mediaController,
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(
-                labelText: 'Media URL',
+                labelText: 'Media URL (optional)',
                 hintText: 'https://…',
                 prefixIcon: Icon(Icons.link),
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Paste a public image URL for now. Native camera/gallery upload will plug into Firebase Storage next.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: saving ? null : save,
-              icon: const Icon(Icons.send),
-              label: Text(saving ? 'Publishing…' : 'Publish to Pulse'),
+              icon: const Icon(Icons.rocket_launch_outlined),
+              label: Text(saving ? 'Publishing…' : 'Put it in Pulse'),
             ),
           ],
         ),
