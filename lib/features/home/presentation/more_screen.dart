@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
+import '../../business/presentation/business_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../social/presentation/saved_pulse_screen.dart';
@@ -50,7 +51,7 @@ class AurenMoreScreen extends StatelessWidget {
           title: Text(item.title),
           subtitle: Text(item.subtitle),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => _open(context, item),
+          onTap: () => item.title == 'Business' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())) : _open(context, item),
         ))),
         Card(child: ListTile(
           leading: const Icon(Icons.smart_toy_outlined),
