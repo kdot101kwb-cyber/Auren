@@ -10,13 +10,5 @@ class AurenAURENCreatorStudioScreen extends StatelessWidget {
   ];
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('AUREN Creator Studio')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
-      Card(child:Padding(padding:const EdgeInsets.all(20),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        const Icon(Icons.auto_awesome,size:36),const SizedBox(height:12),
-        Text('AUREN adapts to you',style:Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight:FontWeight.bold)),
-        const SizedBox(height:6),const Text('ابدأ بما تريد، وخلّي AUREN يساعدك في الخطوة التالية.')
-      ]))),
-      const SizedBox(height:12),
-      ...items.map((x)=>Card(child:ListTile(leading:const Icon(Icons.arrow_forward_ios),title:Text(x['t']!),subtitle:Text(x['s']!),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:x['p'])))))),
-    ]));
+    body:ListView(padding:const EdgeInsets.all(16),children:[const ListTile(leading:Icon(Icons.add_circle),title:Text('Create'),subtitle:Text('Posts • Reels • Stories • Live')),const ListTile(leading:Icon(Icons.auto_awesome),title:Text('AI Studio'),subtitle:Text('Hooks • Scripts • Captions • Ideas')),const ListTile(leading:Icon(Icons.people),title:Text('Audience'),subtitle:Text('جمهور ومتابعة وتفاعل')),const ListTile(leading:Icon(Icons.analytics),title:Text('Analytics'),subtitle:Text('نمو وأداء المحتوى')),const ListTile(leading:Icon(Icons.monetization_on),title:Text('Monetization'),subtitle:Text('طرق تحقيق الدخل')),const SizedBox(height:12),Text('Quick start'),Card(child:ListTile(title:const Text('Create your first idea'),trailing:const Icon(Icons.arrow_forward_ios),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أعطني فكرة محتوى قوية وابدأ معي في تنفيذها.')))))]));
 }
