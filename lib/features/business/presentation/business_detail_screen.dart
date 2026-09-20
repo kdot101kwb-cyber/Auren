@@ -23,7 +23,8 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
     final phone=TextEditingController(text:widget.business.phone);
     final web=TextEditingController(text:widget.business.website);
     final img=TextEditingController(text:widget.business.imageUrl);
-    String cat=widget.business.category;
+    String cat=widget.business.category; String type=widget.business.businessType; String status=widget.business.status;
+    const types=['Company','Store','Restaurant','Freelancer','Service Provider','Factory','Farm','Creator Business','NGO/Organization']; const statuses=['active','temporarily_closed','permanently_closed','suspended'];
     final cats=['Retail','Food','Services','Technology','Manufacturing','Education','Travel','Creative','Agriculture','Other'];
     final ok=await showModalBottomSheet<bool>(context:context,isScrollControlled:true,builder:(ctx)=>StatefulBuilder(builder:(ctx,setModal)=>Padding(
       padding:EdgeInsets.fromLTRB(20,20,20,MediaQuery.of(ctx).viewInsets.bottom+20),
@@ -31,7 +32,7 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
         const Text('تعديل Business',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
         TextField(controller:n,decoration:const InputDecoration(labelText:'اسم النشاط')),
         TextField(controller:d,maxLines:3,decoration:const InputDecoration(labelText:'الوصف')),
-        DropdownButtonFormField<String>(value:cat,items:cats.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>cat=v!),decoration:const InputDecoration(labelText:'التصنيف')),
+        DropdownButtonFormField<String>(value:cat,items:cats.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>cat=v!),decoration:const InputDecoration(labelText:'التصنيف')),DropdownButtonFormField<String>(value:types.contains(type)?type:types.first,items:types.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>type=v!),decoration:const InputDecoration(labelText:'نوع النشاط')),DropdownButtonFormField<String>(value:statuses.contains(status)?status:statuses.first,items:statuses.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>status=v!),decoration:const InputDecoration(labelText:'الحالة')),
         TextField(controller:city,decoration:const InputDecoration(labelText:'المدينة')),
         TextField(controller:country,decoration:const InputDecoration(labelText:'الدولة')),
         TextField(controller:phone,decoration:const InputDecoration(labelText:'الهاتف')),
@@ -45,7 +46,7 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
     if(ok!=true)return;
     setState(()=>saving=true);
     try {
-      await BusinessRepository().update(id:widget.business.id,name:n.text,description:d.text,category:cat,city:city.text,country:country.text,phone:phone.text,website:web.text,imageUrl:img.text);
+      await BusinessRepository().update(id:widget.business.id,name:n.text,description:d.text,category:cat,city:city.text,country:country.text,phone:phone.text,website:web.text,imageUrl:img.text,businessType:type,status:status);
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم تحديث Business')));
     } catch(e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر التحديث: $e'))); }
     finally { if(mounted)setState(()=>saving=false); }
@@ -63,13 +64,13 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
         if(b.imageUrl.isNotEmpty)ClipRRect(borderRadius:BorderRadius.circular(20),child:Image.network(b.imageUrl,height:220,fit:BoxFit.cover)),
         const SizedBox(height:16),
         Row(children:[Expanded(child:Text(b.name,style:Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight:FontWeight.bold))),if(b.verified)const Icon(Icons.verified)]),
-        const SizedBox(height:8),Chip(label:Text(b.category)),
+        const SizedBox(height:8),Wrap(spacing:8,children:[Chip(label:Text(b.category)),Chip(label:Text(b.businessType)),if(b.status!='active')Chip(label:Text(b.status))]),
         if(b.description.isNotEmpty)Padding(padding:const EdgeInsets.only(top:16),child:Text(b.description)),
         if(b.city.isNotEmpty||b.country.isNotEmpty)ListTile(leading:const Icon(Icons.location_on_outlined),title:const Text('الموقع'),subtitle:Text([b.city,b.country].where((x)=>x.isNotEmpty).join(' • '))),
         if(b.phone.isNotEmpty)ListTile(leading:const Icon(Icons.phone_outlined),title:const Text('الهاتف'),subtitle:Text(b.phone)),
         if(b.website.isNotEmpty)ListTile(leading:const Icon(Icons.language),title:const Text('الموقع الإلكتروني'),subtitle:Text(b.website)),
         const SizedBox(height:16),
-        if (!own) StreamBuilder<bool>(
+        if (own) Padding(padding:const EdgeInsets.only(top:12),child:OutlinedButton.icon(onPressed:()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;final ctl=TextEditingController();final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('طلب توثيق'),content:TextField(controller:ctl,maxLines:4,decoration:const InputDecoration(labelText:'معلومات التحقق')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('إرسال'))]));if(ok==true){await _repo.requestVerification(businessId:b.id,ownerId:uid,note:ctl.text);if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إرسال طلب التوثيق')));}},icon:const Icon(Icons.verified_outlined),label:const Text('طلب توثيق'))),if (!own) StreamBuilder<bool>(
           stream:_repo.watchSaved(FirebaseAuth.instance.currentUser?.uid ?? '',b.id),
           builder:(context,s)=>IconButton(
             onPressed:FirebaseAuth.instance.currentUser?.uid==null?null:()async{
