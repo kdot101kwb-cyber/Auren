@@ -7,6 +7,62 @@ initializeApp();
 const db = getFirestore();
 const AUREN_AI_API_KEY = defineSecret('AUREN_AI_API_KEY');
 
+async function loadAurenPermissionLedger(uid) {
+  const ref = db.collection('users').doc(uid)
+    .collection('agent_permissions').doc('primary');
+  const snap = await ref.get();
+  if (!snap.exists) {
+    return {
+      enabled: true,
+      allowedActions: new Set(),
+      dailySpendingLimitMinor: null,
+      spentTodayMinor: 0,
+      currency: 'USD',
+    };
+  }
+  const data = snap.data() || {};
+  return {
+    enabled: data.enabled === true,
+    allowedActions: new Set(
+      Array.isArray(data.allowedActions) ? data.allowedActions : [],
+    ),
+    dailySpendingLimitMinor:
+      Number.isInteger(data.dailySpendingLimitMinor)
+        ? data.dailySpendingLimitMinor
+        : null,
+    spentTodayMinor: Number.isInteger(data.spentTodayMinor)
+      ? data.spentTodayMinor
+      : 0,
+    currency: typeof data.currency === 'string' ? data.currency : 'USD',
+  };
+}
+
+function assertAurenActionPermission(ledger, action) {
+  if (!ledger.enabled) {
+    throw new Error('AUREN agent permissions are disabled.');
+  }
+  if (ledger.allowedActions.size > 0 &&
+      !ledger.allowedActions.has(action.actionType)) {
+    throw new Error('Action is not granted by the permission ledger.');
+  }
+
+  const amount = Number.isInteger(action.payload?.amountMinor)
+    ? action.payload.amountMinor
+    : 0;
+  if (amount < 0 || !Number.isSafeInteger(amount)) {
+    throw new Error('Invalid spending amount.');
+  }
+  if (Number.isInteger(action.spendingLimitMinor) &&
+      action.spendingLimitMinor >= 0 &&
+      amount > action.spendingLimitMinor) {
+    throw new Error('Action amount exceeds its approved spending limit.');
+  }
+  if (ledger.dailySpendingLimitMinor !== null &&
+      ledger.spentTodayMinor + amount > ledger.dailySpendingLimitMinor) {
+    throw new Error('Daily AUREN spending limit exceeded.');
+  }
+}
+
 async function notify(uid, data) {
   if (!uid || !data) return;
   await db.collection('users').doc(uid).collection('notifications').add({
@@ -154,6 +210,9 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         action?.requiresApproval !== true || action?.status !== 'approved') {
       throw new Error('Action is not authorized for execution.');
     }
+
+    const permissionLedger = await loadAurenPermissionLedger(uid);
+    assertAurenActionPermission(permissionLedger, action);
 
     const payload = action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload)
       ? action.payload
