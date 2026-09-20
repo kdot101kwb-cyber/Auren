@@ -26,10 +26,11 @@ class ResilientAurenAiGateway implements AurenAiGateway {
   final AurenAiGateway remote;
   final AurenAiGateway fallback;
 
-  const ResilientAurenAiGateway({
-    this.remote = FirebaseAurenAiGateway(),
-    this.fallback = const LocalAiGateway(),
-  });
+  ResilientAurenAiGateway({
+    AurenAiGateway? remote,
+    AurenAiGateway? fallback,
+  })  : remote = remote ?? FirebaseAurenAiGateway(),
+        fallback = fallback ?? LocalAiGateway();
 
   @override
   Future<AurenAiResponse> send({
