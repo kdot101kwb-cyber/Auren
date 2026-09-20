@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
+import '../../social/presentation/user_search_screen.dart';
 
 class AurenDiscoverScreen extends StatelessWidget {
   const AurenDiscoverScreen({super.key});
@@ -16,6 +17,10 @@ class AurenDiscoverScreen extends StatelessWidget {
   ];
 
   void _open(BuildContext context, _DiscoverItem item) {
+    if (item.title == 'People') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen()));
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -77,6 +82,14 @@ class AurenDiscoverScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
+            Card(child: ListTile(
+              leading: const Icon(Icons.bolt),
+              title: const Text('Trending now'),
+              subtitle: const Text('شوف المواضيع والأفكار التي تتحرك الآن في AUREN.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ما الأشياء الرائجة الآن في AUREN؟ اعرضها كمواضيع وأفكار قابلة للاستكشاف.'))),
+            )),
+            const SizedBox(height: 6),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
