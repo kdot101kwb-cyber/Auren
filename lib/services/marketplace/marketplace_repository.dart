@@ -12,4 +12,6 @@ class MarketplaceRepository{
  }
  Future<void> update(String id,Map<String,dynamic> data)=>_c.doc(id).update(data);
  Future<void> delete(String id)=>_c.doc(id).delete();
+  Stream<List<AurenProduct>> watchBusiness(String businessId)=>_c.where('businessId',isEqualTo:businessId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).toList());
+  Stream<List<AurenProduct>> watchOwner(String ownerId)=>_c.where('ownerId',isEqualTo:ownerId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).toList());
 }
