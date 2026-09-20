@@ -3,8 +3,6 @@ import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
-import '../../social/presentation/timeline_screen.dart';
-import '../../agents/presentation/agent_hub_screen.dart';
 import 'more_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
