@@ -19,8 +19,6 @@ class ActionRepository {
       .snapshots()
       .map((s) => s.docs.map((d) => AurenActionRequest.fromMap(d.id, d.data())).toList());
 
-  /// Includes approved actions so a temporary network/backend failure does not
-  /// strand a user-approved action outside the Action Center.
   Stream<List<AurenActionRequest>> watchOutstanding(String uid) => _actions(uid)
       .orderBy('createdAt')
       .snapshots()
@@ -29,7 +27,6 @@ class ActionRepository {
           .where((a) => a.status == 'pending' || a.status == 'approved')
           .toList());
 
-  /// Recent terminal actions are kept visible for transparency and auditing.
   Stream<List<Map<String, dynamic>>> watchAudit(String uid, {int limit = 20}) =>
       _db.collection('users').doc(uid).collection('action_audit')
           .orderBy('createdAt', descending: true).limit(limit).snapshots()
@@ -42,8 +39,7 @@ class ActionRepository {
           .snapshots()
           .map((s) => s.docs
               .map((d) => AurenActionRequest.fromMap(d.id, d.data()))
-              .where((a) =>
-                  a.status != 'pending' && a.status != 'approved')
+              .where((a) => a.status != 'pending' && a.status != 'approved')
               .toList());
 
   Stream<Map<String, dynamic>?> watchPermissionLedger(String uid) =>
@@ -56,15 +52,37 @@ class ActionRepository {
     int? dailySpendingLimitMinor,
     String currency = 'USD',
   }) async {
-    await _db.collection('users').doc(uid).collection('agent_permissions').doc('primary').set({
-      'agentId': 'primary',
-      'enabled': enabled,
-      'allowedActions': allowedActions,
-      'dailySpendingLimitMinor': dailySpendingLimitMinor,
-      'spentTodayMinor': 0,
-      'currency': currency,
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
-    }, SetOptions(merge: true));
+    final ref = _db.collection('users').doc(uid).collection('agent_permissions').doc('primary');
+    await _db.runTransaction((tx) async {
+      final snapshot = await tx.get(ref);
+      final current = snapshot.data();
+      final spentTodayMinor = current?['spentTodayMinor'] is int
+          ? current!['spentTodayMinor'] as int
+          : 0;
+      final existingCurrency = current?['currency']?.toString() ?? currency;
+
+      if (snapshot.exists) {
+        tx.update(ref, {
+          'agentId': 'primary',
+          'enabled': enabled,
+          'allowedActions': allowedActions,
+          'dailySpendingLimitMinor': dailySpendingLimitMinor,
+          'spentTodayMinor': spentTodayMinor,
+          'currency': existingCurrency,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        });
+      } else {
+        tx.set(ref, {
+          'agentId': 'primary',
+          'enabled': enabled,
+          'allowedActions': allowedActions,
+          'dailySpendingLimitMinor': dailySpendingLimitMinor,
+          'spentTodayMinor': 0,
+          'currency': currency,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        });
+      }
+    });
   }
 
   Stream<Map<String, dynamic>?> watchTrust(String uid) =>
@@ -77,12 +95,7 @@ class ActionRepository {
     return AurenActionRequest.fromMap(snapshot.id, snapshot.data()!);
   }
 
-  Future<void> setStatus(
-    String uid,
-    String id,
-    String status, {
-    String? result,
-  }) =>
+  Future<void> setStatus(String uid, String id, String status, {String? result}) =>
       _actions(uid).doc(id).update({
         'status': status,
         if (result != null) 'result': result,
