@@ -81,6 +81,12 @@ app.post('/api/notifications/message', requireUser, async (req, res) => {
     const members = Array.isArray(conversation?.memberIds) ? conversation.memberIds : [];
     if (!members.includes(req.uid)) return error(res, 403, 'You are not a member of this conversation.');
     if (conversation?.isAi === true) return error(res, 400, 'AI conversations do not create user notifications.');
+    const messageSnap = await db.collection('conversations').doc(conversationId).collection('messages').doc(messageId).get();
+    if (!messageSnap.exists) return error(res, 404, 'Message not found.');
+    const message = messageSnap.data();
+    if (message?.isAi === true || message?.senderId !== req.uid) {
+      return error(res, 403, 'Only the sender can create message notifications.');
+    }
     const count = await createMessageNotifications(db, {
       senderUid: req.uid,
       conversationId,
