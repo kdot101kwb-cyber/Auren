@@ -49,6 +49,14 @@ class PostRepository {
         'searchText': text.toLowerCase(),
       });
 
+  Future<void> report(String postId, String uid, String reason) =>
+      _db.collection('post_reports').add({
+        'postId': postId,
+        'reporterUid': uid,
+        'reason': reason,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
   Stream<bool> watchLiked(String postId, String uid) =>
       _posts.doc(postId).collection('likes').doc(uid).snapshots().map((d) => d.exists);
 
