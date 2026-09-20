@@ -78,6 +78,9 @@ class PostRepository {
     }
   }
 
+  Future<void> removeSaved(String postId, String uid) =>
+      _saved(uid).doc(postId).delete();
+
   CollectionReference<Map<String, dynamic>> _reactions(String postId) =>
       _posts.doc(postId).collection('reactions');
 
@@ -128,4 +131,3 @@ class PostRepository {
     });
   }
 }
-
