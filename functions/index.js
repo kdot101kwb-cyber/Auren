@@ -134,6 +134,97 @@ exports.onConversationMembershipChanged = onDocumentUpdated(
 );
 
 
+exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+
+    const actionId = typeof request.data?.actionId === 'string' ? request.data.actionId.trim() : '';
+    if (!actionId) throw new Error('Invalid actionId.');
+
+    const actionRef = db.collection('users').doc(uid).collection('actions').doc(actionId);
+    const actionSnapshot = await actionRef.get();
+    if (!actionSnapshot.exists) throw new Error('Action not found.');
+    const action = actionSnapshot.data();
+
+    const allowedActions = new Set(['demo.echo', 'demo.create_note']);
+    if (!allowedActions.has(action?.actionType) || action?.permission !== 'userApproval' ||
+        action?.riskLevel !== 'low' || action?.approvalLevel !== 1 ||
+        action?.requiresApproval !== true || action?.status !== 'approved') {
+      throw new Error('Action is not authorized for execution.');
+    }
+
+    const payload = action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload)
+      ? action.payload
+      : {};
+    const keys = Object.keys(payload);
+    if (keys.some((key) => key !== 'text') || typeof payload.text !== 'string' ||
+        payload.text.trim().length === 0 || payload.text.length > 2000) {
+      throw new Error('Invalid action payload.');
+    }
+
+    const executionRef = db.collection('users').doc(uid).collection('action_executions').doc(actionId);
+    await db.runTransaction(async (tx) => {
+      const current = await tx.get(actionRef);
+      if (!current.exists || current.data()?.status !== 'approved') {
+        throw new Error('Action is no longer approved for execution.');
+      }
+      tx.update(actionRef, {
+        status: 'executing',
+        executionStartedAt: FieldValue.serverTimestamp(),
+      });
+      tx.set(executionRef, {
+        actionId,
+        actionType: action.actionType,
+        status: 'executing',
+        startedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+    });
+
+    try {
+      let executionResult;
+      if (action.actionType === 'demo.echo') {
+        executionResult = payload.text.trim();
+      } else {
+        await db.collection('users').doc(uid).collection('notes').add({
+          text: payload.text.trim(),
+          source: 'auren-ai-action',
+          actionId,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+        executionResult = 'تم إنشاء الملاحظة بنجاح.';
+      }
+
+      await actionRef.update({
+        status: 'completed',
+        result: executionResult,
+        executionCompletedAt: FieldValue.serverTimestamp(),
+      });
+      await executionRef.set({
+        status: 'completed',
+        result: executionResult,
+        completedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+
+      return {status: 'completed', result: executionResult};
+    } catch (e) {
+      const message = e?.message || 'Action execution failed.';
+      await actionRef.update({
+        status: 'failed',
+        result: message,
+        executionCompletedAt: FieldValue.serverTimestamp(),
+      });
+      await executionRef.set({
+        status: 'failed',
+        result: message,
+        completedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      throw new Error(message);
+    }
+  },
+);
+
 exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 60, memory: '256MiB', secrets: [AUREN_AI_API_KEY] },
   async (request) => {
