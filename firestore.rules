@@ -384,6 +384,29 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    match /products/{productId} {
+      allow read: if request.auth != null && resource.data.status == 'active';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.businessId is string
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.description is string && request.resource.data.description.size() <= 3000
+        && request.resource.data.category is string && request.resource.data.category.size() <= 60
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0
+        && request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 1000
+        && request.resource.data.service is bool
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly(['ownerId','businessId','name','description','category','currency','priceMinor','imageUrl','service','status','createdAt']);
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.businessId == resource.data.businessId
+        && request.resource.data.keys().hasOnly(['ownerId','businessId','name','description','category','currency','priceMinor','imageUrl','service','status','createdAt']);
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
     match /businesses/{businessId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
       allow create: if request.auth != null
