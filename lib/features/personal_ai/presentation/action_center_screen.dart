@@ -16,7 +16,7 @@ class AurenActionCenterScreen extends StatefulWidget {
 class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
   final _auth = FirebaseAurenAuthService();
   final _repo = ActionRepository();
-  final _executor = HttpsAurenActionExecutor();
+  final _executor = FirebaseAurenActionExecutor();
 
   String? _uid;
   String? _busyActionId;
@@ -67,13 +67,15 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     try {
       // The client only records explicit user approval.
       // The trusted backend is responsible for execution and final status.
+      var approvedAction = action;
       if (action.status == 'pending') {
         await _repo.setStatus(uid, action.id, 'approved');
+        approvedAction = await _repo.get(uid, action.id) ?? action;
       }
 
       final execution = await _executor.execute(
         uid: uid,
-        action: action,
+        action: approvedAction,
       );
 
       if (mounted) {
