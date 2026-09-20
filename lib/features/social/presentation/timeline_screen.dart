@@ -76,7 +76,8 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                     ? allPosts
                     : allPosts.where((p) => p.contentType == selectedType).toList();
                 final opportunities = allPosts.where((p) => p.contentType == 'opportunity').length;
-                final projects = posts.where((p) => p.contentType == 'project').length;
+                final projects = allPosts.where((p) => p.contentType == 'project').length;
+                final types = const [('all', 'All'), ('moment', 'Moments'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
                   itemCount: posts.length + 4,
@@ -84,8 +85,6 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                   itemBuilder: (context, i) {
                     if (i == 0) return const _NextMoveCard();
                     if (i == 1) return const _MomentsStrip();
-                    if (i == 2) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
-                    if (i == 3) return _PulseSignals(opportunities: opportunities, projects: projects);
                     if (i == 2) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
                     if (i == 3) return _PulseSignals(opportunities: opportunities, projects: projects);
                     if (posts.isEmpty) return const _EmptyPulse();
