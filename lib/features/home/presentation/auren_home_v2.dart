@@ -67,7 +67,7 @@ class AurenHomeV2 extends StatelessWidget {
         const SizedBox(height: 16),
         _card(context, Icons.auto_awesome, 'AUREN AI', 'اسأل، خطط، وأنجز.', const MessengerScreen()),
         _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.', const AurenDiscoverScreen()),
-        _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', null),
+        _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
         _card(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل الهدف إلى خطوات.', const PersonalAiScreen()),
         const SizedBox(height: 12),
         Card(child: ListTile(
