@@ -3,6 +3,7 @@ import '../../../core/models/user_profile.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/follow_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
+import '../../../services/users/presence_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenPublicProfileScreen extends StatefulWidget {
@@ -70,6 +71,21 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
           const CircleAvatar(radius: 48, child: Icon(Icons.person, size: 48)),
           const SizedBox(height: 16),
           Text(widget.profile.displayName, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          StreamBuilder<Map<String, dynamic>?>(
+            stream: AurenPresenceService().watch(widget.profile.uid),
+            builder: (_, snapshot) {
+              final data = snapshot.data;
+              final online = data?['online'] == true;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.circle, size: 10, color: online ? Colors.green : Colors.grey),
+                  const SizedBox(width: 6),
+                  Text(online ? 'Online' : 'Offline'),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 16),
           Row(children: [
             Expanded(child: StreamBuilder<int>(
