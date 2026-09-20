@@ -443,7 +443,7 @@ service cloud.firestore {
             resource.data.type == 'group'
             && request.auth.uid == resource.data.ownerId
             && request.resource.data.memberIds is list
-            && request.resource.data.memberIds.size() >= 3
+            && request.resource.data.memberIds.size() >= 2
             && request.resource.data.memberIds.size() <= 50
             && request.resource.data.memberIds.hasAll([resource.data.ownerId])
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
