@@ -67,14 +67,46 @@ class PostRepository {
       _reactions(postId).doc(uid).snapshots().map((d) => d.data()?['type'] as String?);
 
   Future<void> setReaction(String postId, String uid, String? type) async {
-    final ref = _reactions(postId).doc(uid);
-    if (type == null) {
-      await ref.delete();
-      return;
-    }
-    await ref.set({
-      'type': type,
-      'updatedAt': FieldValue.serverTimestamp(),
+    final postRef = _posts.doc(postId);
+    final reactionRef = postRef.collection('reactions').doc(uid);
+    final likeRef = postRef.collection('likes').doc(uid);
+
+    await _db.runTransaction((tx) async {
+      final postSnap = await tx.get(postRef);
+      if (!postSnap.exists) throw StateError('Post not found.');
+
+      final reactionSnap = await tx.get(reactionRef);
+      final oldType = reactionSnap.data()?['type'] as String?;
+      final data = postSnap.data() ?? {};
+      final count = (data['likes'] as num?)?.toInt() ?? 0;
+      var nextCount = count;
+
+      if (oldType != 'like' && type == 'like') {
+        final likeSnap = await tx.get(likeRef);
+        if (!likeSnap.exists) {
+          tx.set(likeRef, {'createdAt': FieldValue.serverTimestamp()});
+          nextCount++;
+        }
+      } else if (oldType == 'like' && type != 'like') {
+        final likeSnap = await tx.get(likeRef);
+        if (likeSnap.exists) {
+          tx.delete(likeRef);
+          nextCount = nextCount > 0 ? nextCount - 1 : 0;
+        }
+      }
+
+      if (type == null) {
+        tx.delete(reactionRef);
+      } else {
+        tx.set(reactionRef, {
+          'type': type,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (nextCount != count) {
+        tx.update(postRef, {'likes': nextCount});
+      }
     });
   }
 }
