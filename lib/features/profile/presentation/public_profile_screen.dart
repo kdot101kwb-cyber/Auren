@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/follow_repository.dart';
@@ -64,7 +65,20 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
     final me = FirebaseAurenAuthService().currentUserId;
     final own = me == widget.profile.uid;
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          IconButton(
+            tooltip: 'Share profile',
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () async {
+              final link = 'https://auren.app/u/${widget.profile.uid}';
+              await Clipboard.setData(ClipboardData(text: link));
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile link copied.')));
+            },
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
