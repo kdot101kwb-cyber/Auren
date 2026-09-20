@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
+import '../../agents/presentation/agent_hub_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -35,6 +36,13 @@ class AurenMoreScreen extends StatelessWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => _open(context, item),
         ))),
+        Card(child: ListTile(
+          leading: const Icon(Icons.smart_toy_outlined),
+          title: const Text('Agents & Automations'),
+          subtitle: const Text('وكلاء، صلاحيات، Wallet، A2A وMarketplace.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAgentHubScreen())),
+        )),
         Card(child: ListTile(
           leading: const Icon(Icons.auto_awesome),
           title: const Text('Personal AI'),
