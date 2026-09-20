@@ -645,3 +645,20 @@ exports.invokeAurenPlugin = require('firebase-functions/v2/https').onCall(
     return {status:'accepted',invocationId:invocationRef.id,quotaRemaining:99};
   },
 );
+
+exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;if(!uid)throw new Error('Unauthenticated');
+    const agentId=typeof request.data?.agentId==='string'?request.data.agentId.trim():'';
+    const action=typeof request.data?.action==='string'?request.data.action.trim():'';
+    const payload=request.data?.payload && typeof request.data.payload==='object' && !Array.isArray(request.data.payload)?request.data.payload:{};
+    if(!agentId||!action||agentId.length>120||action.length>120||Object.keys(payload).length>20)throw new Error('Invalid simulation request.');
+    const install=await db.collection('users').doc(uid).collection('agent_installations').doc(agentId).get();
+    if(!install.exists||install.data()?.status!=='active')throw new Error('Agent is not installed or active.');
+    const simulationRef=db.collection('users').doc(uid).collection('agent_simulations').doc();
+    const result={mode:'simulation',wouldExecute:true,externalSideEffects:false,spendingMinor:0,network:'denied',secrets:'denied',message:'Simulation completed. No external action was executed.'};
+    await simulationRef.set({agentId,action,payload,result,status:'completed',createdAt:FieldValue.serverTimestamp()});
+    return {status:'completed',simulationId:simulationRef.id,result};
+  },
+);
