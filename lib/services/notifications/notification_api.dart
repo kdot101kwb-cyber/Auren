@@ -41,4 +41,32 @@ class AurenNotificationApi {
       throw StateError('Notification service returned ${response.statusCode}.');
     }
   }
+  Future<void> notifyGroupChange({
+    required String conversationId,
+    required String type,
+    String? targetUid,
+  }) async {
+    if (_baseUrl.isEmpty) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) return;
+
+    final response = await http.post(
+      Uri.parse('$_baseUrl/api/notifications/group'),
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'conversationId': conversationId,
+        'type': type,
+        if (targetUid != null) 'targetUid': targetUid,
+      }),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError('Group notification service returned ${response.statusCode}.');
+    }
+  }
+
 }
