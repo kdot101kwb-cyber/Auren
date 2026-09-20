@@ -138,7 +138,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
         }
       }
 
-      await _conversationRepository.touch(_conversationId!);
+      // MessageRepository updates conversation metadata transactionally.
     } catch (e) {
       if (mounted) {
         setState(() => _error = 'فشل الطلب: $e');
@@ -151,7 +151,6 @@ class _MessengerScreenState extends State<MessengerScreen> {
     }
   }
 
-  @override
   @override
   void dispose() {
     final uid = _uid;
