@@ -63,6 +63,28 @@ function assertAurenActionPermission(ledger, action) {
   }
 }
 
+async function updateAurenAgentTrust(uid, status) {
+  const ref = db.collection('users').doc(uid).collection('agent_trust').doc('primary');
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.exists ? snap.data() : {};
+    const completed = Number(data.completedExecutions || 0);
+    const failed = Number(data.failedExecutions || 0);
+    const nextCompleted = completed + (status === 'completed' ? 1 : 0);
+    const nextFailed = failed + (status === 'failed' ? 1 : 0);
+    const total = nextCompleted + nextFailed;
+    const score = total === 0 ? 50 : Math.max(0, Math.min(100, Math.round((nextCompleted / total) * 100)));
+    tx.set(ref, {
+      agentId: 'primary',
+      status: 'active',
+      score,
+      completedExecutions: nextCompleted,
+      failedExecutions: nextFailed,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+  });
+}
+
 async function writeAurenActionAudit(uid, action, status, extra = {}) {
   const ref = db.collection('users').doc(uid).collection('action_audit').doc();
   await ref.set({
@@ -206,6 +228,20 @@ exports.onConversationMembershipChanged = onDocumentUpdated(
 );
 
 
+exports.onAurenActionStatusChanged = onDocumentUpdated(
+  'users/{userId}/actions/{actionId}',
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after || before.status === after.status) return;
+    if (!['approved', 'rejected'].includes(after.status)) return;
+    await writeAurenActionAudit(event.params.userId, {
+      ...after,
+      id: event.params.actionId,
+    }, after.status, { source: 'action-status-change' });
+  },
+);
+
 exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB' },
   async (request) => {
@@ -303,6 +339,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       }, {merge: true});
 
       await writeAurenActionAudit(uid, { ...action, id: actionId }, 'completed', { result: executionResult, source: 'executeAurenAction' });
+      await updateAurenAgentTrust(uid, 'completed');
       return {status: 'completed', result: executionResult};
     } catch (e) {
       const message = e?.message || 'Action execution failed.';
@@ -317,6 +354,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         completedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
       await writeAurenActionAudit(uid, { ...action, id: actionId }, 'failed', { result: message, source: 'executeAurenAction' });
+      await updateAurenAgentTrust(uid, 'failed');
       throw new Error(message);
     }
   },
