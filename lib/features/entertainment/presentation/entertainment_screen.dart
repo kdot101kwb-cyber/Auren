@@ -10,13 +10,5 @@ class AurenAURENEntertainmentScreen extends StatelessWidget {
   ];
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('AUREN Entertainment')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
-      Card(child:Padding(padding:const EdgeInsets.all(20),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        const Icon(Icons.auto_awesome,size:36),const SizedBox(height:12),
-        Text('AUREN adapts to you',style:Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight:FontWeight.bold)),
-        const SizedBox(height:6),const Text('ابدأ بما تريد، وخلّي AUREN يساعدك في الخطوة التالية.')
-      ]))),
-      const SizedBox(height:12),
-      ...items.map((x)=>Card(child:ListTile(leading:const Icon(Icons.arrow_forward_ios),title:Text(x['t']!),subtitle:Text(x['s']!),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:x['p'])))))),
-    ]));
+    body:ListView(padding:const EdgeInsets.all(16),children:[const ListTile(leading:Icon(Icons.tv),title:Text('Global Series'),subtitle:Text('مسلسلات عالمية — Turkish داخل Global Series')),const ListTile(leading:Icon(Icons.animation),title:Text('Anime World'),subtitle:Text('أنمي وعوالم وشخصيات')),const ListTile(leading:Icon(Icons.people),title:Text('Watch Together'),subtitle:Text('شاهد مع أصدقائك')),const ListTile(leading:Icon(Icons.public),title:Text('Live Planet'),subtitle:Text('ثقافة وأحداث وتجارب')),const ListTile(leading:Icon(Icons.podcasts),title:Text('Music & Podcasts'),subtitle:Text('استمع واكتشف')),const ListTile(leading:Icon(Icons.menu_book),title:Text('Books & Manga'),subtitle:Text('كتب ومانجا ومكتبة')),const ListTile(leading:Icon(Icons.videogame_asset),title:Text('AUREN World'),subtitle:Text('عالم تفاعلي')),]));
 }
