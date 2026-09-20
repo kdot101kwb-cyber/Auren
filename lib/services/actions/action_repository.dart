@@ -46,6 +46,31 @@ class ActionRepository {
                   a.status != 'pending' && a.status != 'approved')
               .toList());
 
+  Stream<Map<String, dynamic>?> watchPermissionLedger(String uid) =>
+      _db.collection('users').doc(uid).collection('agent_permissions').doc('primary')
+          .snapshots().map((s) => s.exists ? s.data() : null);
+
+  Future<void> setPermissionLedger(String uid, {
+    required bool enabled,
+    required List<String> allowedActions,
+    int? dailySpendingLimitMinor,
+    String currency = 'USD',
+  }) async {
+    await _db.collection('users').doc(uid).collection('agent_permissions').doc('primary').set({
+      'agentId': 'primary',
+      'enabled': enabled,
+      'allowedActions': allowedActions,
+      'dailySpendingLimitMinor': dailySpendingLimitMinor,
+      'spentTodayMinor': 0,
+      'currency': currency,
+      'updatedAt': DateTime.now().toUtc().toIso8601String(),
+    }, SetOptions(merge: true));
+  }
+
+  Stream<Map<String, dynamic>?> watchTrust(String uid) =>
+      _db.collection('users').doc(uid).collection('agent_trust').doc('primary')
+          .snapshots().map((s) => s.exists ? s.data() : null);
+
   Future<AurenActionRequest?> get(String uid, String id) async {
     final snapshot = await _actions(uid).doc(id).get();
     if (!snapshot.exists || snapshot.data() == null) return null;
