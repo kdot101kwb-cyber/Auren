@@ -168,7 +168,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: 'You are AUREN AI. Be helpful, concise, safe, and action-oriented. Never execute external actions without explicit user approval.' },
+          { role: 'system', content: 'You are AUREN AI. Be helpful, concise, safe, and action-oriented. Never execute external actions without explicit user approval. For a request to create a note or echo text, you may return ONLY a JSON object with keys text, action, payload, using action demo.create_note or demo.echo and payload {text}; otherwise answer normally.' },
           { role: 'user', content: message },
         ],
         temperature: 0.4,
@@ -182,16 +182,48 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     }
 
     const result = await response.json();
-    const text = result?.choices?.[0]?.message?.content;
-    if (typeof text !== 'string' || !text.trim()) {
+    const rawText = result?.choices?.[0]?.message?.content;
+    if (typeof rawText !== 'string' || !rawText.trim()) {
       throw new Error('AI provider returned an empty response.');
     }
 
+    // The model may return a small JSON action envelope. Never trust it blindly:
+    // only the allow-listed low-risk demo actions are exposed to the client.
+    let text = rawText.trim();
+    let action = null;
+    let payload = {};
+    let requiresApproval = false;
+    try {
+      const candidate = JSON.parse(text.replace(/^\`\`\`json\\s*/i, '').replace(/\`\`\`$/i, '').trim());
+      if (candidate && typeof candidate === 'object') {
+        const allowedActions = new Set(['demo.echo', 'demo.create_note']);
+        const candidateAction = typeof candidate.action === 'string' ? candidate.action : null;
+        const candidatePayload = candidate.payload && typeof candidate.payload === 'object'
+          ? candidate.payload
+          : {};
+        if (candidateAction && allowedActions.has(candidateAction)) {
+          const keys = Object.keys(candidatePayload);
+          if (keys.every((key) => key === 'text') &&
+              typeof candidatePayload.text === 'string' &&
+              candidatePayload.text.length <= 2000) {
+            action = candidateAction;
+            payload = { text: candidatePayload.text };
+            requiresApproval = true;
+            text = typeof candidate.text === 'string' && candidate.text.trim()
+              ? candidate.text.trim()
+              : 'لدي طلب تنفيذ يحتاج موافقتك قبل التنفيذ.';
+          }
+        }
+      }
+    } catch (_) {
+      // Normal natural-language responses are valid and need no action envelope.
+    }
+
     return {
-      text: text.trim(),
-      action: null,
-      payload: {},
-      requiresApproval: false,
+      text,
+      action,
+      payload,
+      requiresApproval,
     };
   },
 );
