@@ -1,0 +1,17 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import '../../../core/models/product.dart';
+import '../../../services/marketplace/marketplace_repository.dart';
+
+class AurenMarketplaceScreen extends StatefulWidget{const AurenMarketplaceScreen({super.key});@override State<AurenMarketplaceScreen> createState()=>_AurenMarketplaceScreenState();}
+class _AurenMarketplaceScreenState extends State<AurenMarketplaceScreen>{
+ final repo=MarketplaceRepository(); final search=TextEditingController(); String cat='All';
+ static const cats=['All','General','Fashion','Food','Electronics','Services','Home','Agriculture','Other'];
+ @override void dispose(){search.dispose();super.dispose();}
+ @override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('Marketplace')),body:Column(children:[
+  Padding(padding:const EdgeInsets.fromLTRB(16,12,16,8),child:TextField(controller:search,onChanged:(_)=>setState((){}),decoration:InputDecoration(hintText:'ابحث عن منتج أو خدمة...',prefixIcon:const Icon(Icons.search),border:OutlineInputBorder(borderRadius:BorderRadius.circular(16))))),
+  SizedBox(height:48,child:ListView.separated(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:16),itemCount:cats.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i)=>ChoiceChip(label:Text(cats[i]),selected:cat==cats[i],onSelected:(_)=>setState(()=>cat=cats[i])))),
+  Expanded(child:StreamBuilder<List<AurenProduct>>(stream:repo.watchPublic(query:search.text,category:cat),builder:(c,s){if(s.hasError)return Center(child:Text('حدث خطأ: '+s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('لا توجد منتجات أو خدمات بعد.'));return GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:12,mainAxisSpacing:12,childAspectRatio:.72),itemCount:s.data!.length,itemBuilder:(c,i){final p=s.data![i];return Card(clipBehavior:Clip.antiAlias,child:InkWell(onTap:()=>_detail(c,p),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Expanded(child:p.imageUrl.isEmpty?const Center(child:Icon(Icons.inventory_2_outlined,size:44)):Image.network(p.imageUrl,fit:BoxFit.cover,width:double.infinity,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined)))),Padding(padding:const EdgeInsets.all(10),child:Text(p.name,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold))),Padding(padding:const EdgeInsets.fromLTRB(10,0,10,10),child:Text((p.priceMinor/100).toStringAsFixed(2)+' '+p.currency))])));}})),
+ ]));
+ void _detail(BuildContext c,AurenProduct p)=>showModalBottomSheet(context:c,showDragHandle:true,builder:(_)=>Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[Text(p.name,style:const TextStyle(fontSize:22,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text(p.description),const SizedBox(height:8),Text((p.priceMinor/100).toStringAsFixed(2)+' '+p.currency,style:const TextStyle(fontWeight:FontWeight.bold)),const SizedBox(height:16),FilledButton.icon(onPressed:FirebaseAuth.instance.currentUser==null?null:()=>Navigator.pop(c),icon:const Icon(Icons.chat_outlined),label:const Text('تواصل مع البائع'))])));
+}
