@@ -9,9 +9,28 @@ class AurenGoalsScreen extends StatefulWidget {
   @override State<AurenGoalsScreen> createState() => _AurenGoalsScreenState();
 }
 
+class _EmptyGoals extends StatelessWidget {
+  final VoidCallback? onAdd;
+  const _EmptyGoals({required this.onAdd});
+  @override
+  Widget build(BuildContext context) => Center(child: Padding(
+    padding: const EdgeInsets.all(24),
+    child: Column(mainAxisSize: MainAxisSize.min, children: [
+      const Icon(Icons.flag_outlined, size: 52),
+      const SizedBox(height: 12),
+      const Text('أضف أول هدف', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 6),
+      const Text('AUREN يساعدك تحوّل الهدف إلى خطوات قابلة للتنفيذ.', textAlign: TextAlign.center),
+      const SizedBox(height: 16),
+      FilledButton.icon(onPressed: onAdd, icon: const Icon(Icons.add), label: const Text('إنشاء هدف')),
+    ]),
+  ));
+}
+
 class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
   final _auth = FirebaseAurenAuthService();
   final _repo = GoalRepository();
+  bool _creating = false;
 
   Future<void> _add(String uid) async {
     final controller = TextEditingController();
@@ -31,8 +50,10 @@ class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
       ),
     );
     if (ok != true) return;
+    setState(() => _creating = true);
     final now = DateTime.now();
-    await _repo.upsert(uid, AurenGoal(
+    try {
+      await _repo.upsert(uid, AurenGoal(
       id: 'goal_${now.microsecondsSinceEpoch}',
       title: controller.text.trim(),
       description: description.text.trim().isEmpty ? null : description.text.trim(),
@@ -40,7 +61,10 @@ class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
       status: 'active',
       createdAt: now,
       updatedAt: now,
-    ));
+      ));
+    } finally {
+      if (mounted) setState(() => _creating = false);
+    }
   }
 
   @override
@@ -49,7 +73,7 @@ class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
     if (uid == null) return const Scaffold(body: Center(child: Text('Sign in required.')));
     return Scaffold(
       appBar: AppBar(title: const Text('Goal → Reality'), actions: [
-        IconButton(onPressed: () => _add(uid), icon: const Icon(Icons.add)),
+        IconButton(onPressed: _creating ? null : () => _add(uid), icon: const Icon(Icons.add)),
       ]),
       body: StreamBuilder<List<AurenGoal>>(
         stream: _repo.watch(uid),
@@ -57,7 +81,7 @@ class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
           if (snapshot.hasError) return Center(child: Text('Could not load goals: ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final goals = snapshot.data!;
-          if (goals.isEmpty) return const Center(child: Text('أضف أول هدف، وخلّي AUREN يحوّله لخطة.'));
+          if (goals.isEmpty) return _EmptyGoals(onAdd: _creating ? null : () => _add(uid));
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: goals.length,
