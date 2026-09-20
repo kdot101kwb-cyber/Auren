@@ -17,6 +17,15 @@ export const ACTION_REGISTRY = Object.freeze({
     maxAmountMinor: null,
     allowedPayloadKeys: new Set(['text']),
   }),
+  'memory.save': Object.freeze({
+    type: 'memory.save',
+    riskLevel: 'low',
+    permission: 'userApproval',
+    approvalLevel: 1,
+    requiresApproval: true,
+    maxAmountMinor: null,
+    allowedPayloadKeys: new Set(['key', 'value']),
+  }),
 });
 
 export function getActionDefinition(type) {
