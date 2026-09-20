@@ -387,9 +387,43 @@ service cloud.firestore {
     match /businesses/{businessId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
       allow create: if request.auth != null
-        && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 2000
+        && request.resource.data.category is string
+        && request.resource.data.category.size() > 0
+        && request.resource.data.category.size() <= 40
+        && request.resource.data.city is string
+        && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string
+        && request.resource.data.country.size() <= 100
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.website is string
+        && request.resource.data.website.size() <= 300
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.size() <= 1000
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.verified == false
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly([
+          'ownerId','name','description','category','city','country',
+          'phone','website','imageUrl','visibility','verified','createdAt'
+        ]);
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.verified == resource.data.verified
+        && request.resource.data.visibility == resource.data.visibility
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.keys().hasOnly([
+          'ownerId','name','description','category','city','country',
+          'phone','website','imageUrl','visibility','verified','createdAt'
+        ]);
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
     match /places/{placeId} {
