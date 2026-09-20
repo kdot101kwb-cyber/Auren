@@ -4,8 +4,14 @@ import '../../messenger/presentation/messenger_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
 
-class AurenDiscoverScreen extends StatelessWidget {
+class AurenDiscoverScreen extends StatefulWidget {
   const AurenDiscoverScreen({super.key});
+  @override
+  State<AurenDiscoverScreen> createState() => _AurenDiscoverScreenState();
+}
+
+class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
+  String query = '';
 
   static const _items = <_DiscoverItem>[
     _DiscoverItem('People', 'اكتشف أشخاصًا واهتمامات جديدة', Icons.people_outline),
@@ -63,7 +69,15 @@ class AurenDiscoverScreen extends StatelessWidget {
               'AUREN يتكيف مع ما يهمك — أشخاص، أماكن، محتوى وفرص.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
-            const SizedBox(height: 18),
+            TextField(
+              onChanged: (value) => setState(() => query = value.trim().toLowerCase()),
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.tune),
+                hintText: 'Filter Discover…',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),            const SizedBox(height: 18),
             Card(
               child: ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
@@ -93,7 +107,7 @@ class AurenDiscoverScreen extends StatelessWidget {
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _items.length,
+              itemCount: _items.where((item) => query.isEmpty || ('${item.title} ${item.subtitle}').toLowerCase().contains(query)).length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
@@ -101,7 +115,7 @@ class AurenDiscoverScreen extends StatelessWidget {
                 childAspectRatio: 1.15,
               ),
               itemBuilder: (context, index) {
-                final item = _items[index];
+                final item = _items.where((item) => query.isEmpty || ('${item.title} ${item.subtitle}').toLowerCase().contains(query)).toList()[index];
                 return Card(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
