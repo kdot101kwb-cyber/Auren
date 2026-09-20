@@ -476,3 +476,35 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     };
   },
 );
+
+exports.submitAurenAgentReview = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+    const agentId = typeof request.data?.agentId === 'string' ? request.data.agentId.trim() : '';
+    const rating = Number(request.data?.rating);
+    const text = typeof request.data?.text === 'string' ? request.data.text.trim() : '';
+    if (!agentId || agentId.length > 120 || !Number.isInteger(rating) || rating < 1 || rating > 5 || !text || text.length > 1000) {
+      throw new Error('Invalid review.');
+    }
+    const listing = await db.collection('agent_listings').doc(agentId).get();
+    if (!listing.exists || listing.data()?.state !== 'published') throw new Error('Agent is not published.');
+    const existing = await db.collection('agent_reviews').where('agentId','==',agentId).where('reviewerUid','==',uid).limit(1).get();
+    if (!existing.empty) throw new Error('You already reviewed this Agent.');
+    const reviewRef = db.collection('agent_reviews').doc();
+    await reviewRef.set({
+      agentId, reviewerUid: uid, rating, text,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    const reviews = await db.collection('agent_reviews').where('agentId','==',agentId).get();
+    const total = reviews.docs.reduce((sum,d)=>sum+Number(d.data().rating||0),0);
+    const count = reviews.size;
+    await db.collection('agent_reputation').doc(agentId).set({
+      agentId, score: count ? Math.round((total/count)*10)/10 : 0,
+      reviewCount: count, updatedAt: FieldValue.serverTimestamp(),
+    }, {merge:true});
+    return {status:'created', reviewId:reviewRef.id};
+  },
+);
+
