@@ -1,5 +1,5 @@
 import '../../core/models/ai_response.dart';
-import 'https_ai_gateway.dart';
+import 'firebase_ai_gateway.dart';
 
 abstract interface class AurenAiGateway {
   Future<AurenAiResponse> send({
@@ -27,7 +27,7 @@ class ResilientAurenAiGateway implements AurenAiGateway {
   final AurenAiGateway fallback;
 
   const ResilientAurenAiGateway({
-    this.remote = const HttpsAurenAiGateway(),
+    this.remote = FirebaseAurenAiGateway(),
     this.fallback = const LocalAiGateway(),
   });
 
