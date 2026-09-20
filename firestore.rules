@@ -406,12 +406,16 @@ service cloud.firestore {
         && request.resource.data.website.size() <= 300
         && request.resource.data.imageUrl is string
         && request.resource.data.imageUrl.size() <= 1000
+        && request.resource.data.businessType is string
+        && request.resource.data.businessType.size() > 0
+        && request.resource.data.businessType.size() <= 60
+        && request.resource.data.status == 'active'
         && request.resource.data.visibility == 'public'
         && request.resource.data.verified == false
         && request.resource.data.createdAt is timestamp
         && request.resource.data.keys().hasOnly([
           'ownerId','name','description','category','city','country',
-          'phone','website','imageUrl','visibility','verified','createdAt'
+          'phone','website','imageUrl','businessType','status','visibility','verified','createdAt'
         ]);
       allow update: if request.auth != null
         && resource.data.ownerId == request.auth.uid
@@ -424,6 +428,19 @@ service cloud.firestore {
           'phone','website','imageUrl','visibility','verified','createdAt'
         ]);
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /businesses/{businessId}/events/{eventId} {
+      allow create: if request.auth != null
+        && request.resource.data.businessId == businessId
+        && request.resource.data.ownerId == get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId
+        && request.resource.data.viewerUid == request.auth.uid
+        && request.resource.data.type in ['view','message','save','lead']
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly(['businessId','ownerId','viewerUid','type','createdAt']);
+      allow read: if request.auth != null
+        && get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     match /businesses/{businessId}/reviews/{reviewId} {
@@ -443,6 +460,19 @@ service cloud.firestore {
     match /users/{userId}/savedBusinesses/{businessId} {
       allow read, create, delete: if isOwner(userId);
       allow update: if false;
+    }
+
+    match /business_verification_requests/{businessId} {
+      allow create: if request.auth != null
+        && request.resource.data.businessId == businessId
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 2000
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly(['businessId','ownerId','note','status','createdAt']);
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow update, delete: if false;
     }
 
     match /business_reports/{reportId} {
