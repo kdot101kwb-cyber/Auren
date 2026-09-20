@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/business.dart';
 import '../../../services/business/business_repository.dart';
+import '../../../services/messaging/conversation_repository.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenBusinessDetailScreen extends StatefulWidget {
   final AurenBusiness business;
@@ -64,7 +66,7 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
         if(b.phone.isNotEmpty)ListTile(leading:const Icon(Icons.phone_outlined),title:const Text('الهاتف'),subtitle:Text(b.phone)),
         if(b.website.isNotEmpty)ListTile(leading:const Icon(Icons.language),title:const Text('الموقع الإلكتروني'),subtitle:Text(b.website)),
         const SizedBox(height:16),
-        FilledButton.icon(onPressed:own?null:()=>ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('التواصل المباشر بالـ Messenger سنوصله في دفعة Messenger/Business التالية.'))),icon:const Icon(Icons.chat_bubble_outline),label:const Text('تواصل مع Business'))
+        FilledButton.icon(onPressed:own?null:()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null||b.ownerId.isEmpty)return;try{final conversation=await ConversationRepository().getOrCreateDirectConversation(uid:uid,otherUid:b.ownerId,otherTitle:b.name);if(!context.mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(conversationId:conversation.id,initialPrompt:'مرحباً '+b.name+'، أريد الاستفسار عن خدماتكم.')));}catch(e){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر فتح المحادثة: $e')));}},icon:const Icon(Icons.chat_bubble_outline),label:const Text('تواصل مع Business'))
       ])
     );
   }
