@@ -87,11 +87,13 @@ app.post('/api/notifications/message', requireUser, async (req, res) => {
     if (message?.isAi === true || message?.senderId !== req.uid) {
       return error(res, 403, 'Only the sender can create message notifications.');
     }
+    const storedText = typeof message?.text === 'string' ? message.text : '';
+    if (!storedText) return error(res, 400, 'Message text is empty.');
     const count = await createMessageNotifications(db, {
       senderUid: req.uid,
       conversationId,
       messageId,
-      text,
+      text: storedText,
       memberIds: members,
     });
     return res.status(201).json({ status: 'created', recipients: count });
