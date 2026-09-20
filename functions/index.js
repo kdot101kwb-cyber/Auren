@@ -524,3 +524,23 @@ exports.openAurenAgentDispute = require('firebase-functions/v2/https').onCall(
   await writeAurenActionAudit(uid,{...action.data(),id:actionId},'dispute_opened',{agentId,source:'openAurenAgentDispute'});
   return {status:'open',disputeId:disputeRef.id};
  });
+
+exports.publishAurenAgent = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+ async (request)=>{
+  const uid=request.auth?.uid;if(!uid)throw new Error('Unauthenticated');
+  const agentId=typeof request.data?.agentId==='string'?request.data.agentId.trim():'';
+  const name=typeof request.data?.name==='string'?request.data.name.trim():'';
+  const description=typeof request.data?.description==='string'?request.data.description.trim():'';
+  const version=typeof request.data?.version==='string'?request.data.version.trim():'';
+  const capabilities=Array.isArray(request.data?.capabilities)?request.data.capabilities.filter(x=>typeof x==='string').slice(0,30):[];
+  if(!agentId||!name||!version||name.length>120||description.length>1000||agentId.length>120)throw new Error('Invalid Agent listing.');
+  const owned=await db.collection('users').doc(uid).collection('agents').doc(agentId).get();
+  if(!owned.exists||owned.data()?.status!=='active')throw new Error('Agent is not active or owned.');
+  await db.collection('agent_listings').doc(agentId).set({
+    agentId,name,description,version,capabilities,state:'published',
+    pricing:{model:'free',currency:'USD',amountMinor:0},
+    reputationScore:0,reviewCount:0,ownerUid:uid,updatedAt:FieldValue.serverTimestamp(),
+  },{merge:true});
+  return {status:'published',agentId};
+ });
