@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
+import '../../education/presentation/education_screen.dart';
+import '../../travel/presentation/travel_screen.dart';
+import '../../entertainment/presentation/entertainment_screen.dart';
+import '../../creator/presentation/creator_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
@@ -52,7 +56,7 @@ class AurenMoreScreen extends StatelessWidget {
           title: Text(item.title),
           subtitle: Text(item.subtitle),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => item.title == 'Business' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())) : item.title == 'Marketplace' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())) : _open(context, item),
+          onTap: () => item.title == 'Business' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())) : item.title == 'Marketplace' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())) : item.title == 'Education' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEducationScreen())) : item.title == 'Travel' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen())) : item.title == 'Entertainment' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen())) : _open(context, item),
         ))),
         Card(child: ListTile(
           leading: const Icon(Icons.smart_toy_outlined),
