@@ -229,6 +229,11 @@ service cloud.firestore {
       }
     }
 
+    match /agent_simulations/{simulationId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
     match /plugin_quotas/{quotaId} {
       allow read, write: if false;
     }
