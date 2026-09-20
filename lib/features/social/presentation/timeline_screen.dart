@@ -280,6 +280,11 @@ class _PulseCard extends StatelessWidget {
                   },
                 ),
                 IconButton(
+                  tooltip: 'React',
+                  onPressed: () {},
+                  icon: const Icon(Icons.emoji_emotions_outlined),
+                ),
+                IconButton(
                   tooltip: 'Discuss',
                   onPressed: () => Navigator.push(
                     context,
@@ -288,6 +293,16 @@ class _PulseCard extends StatelessWidget {
                     ),
                   ),
                   icon: const Icon(Icons.forum_outlined),
+                ),
+                IconButton(
+                  tooltip: 'Save',
+                  onPressed: () {},
+                  icon: const Icon(Icons.bookmark_border),
+                ),
+                IconButton(
+                  tooltip: 'Share',
+                  onPressed: () {},
+                  icon: const Icon(Icons.ios_share_outlined),
                 ),
                 const Spacer(),
                 if (post.actionLabel.isNotEmpty)
@@ -300,12 +315,24 @@ class _PulseCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
             child: Text(
               '${post.likes} reactions • ${post.comments} discussions',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
+          if (post.contentType == 'project' || post.contentType == 'opportunity')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.people_alt_outlined, size: 18),
+                  const SizedBox(width: 6),
+                  const Expanded(child: Text('AUREN can match people with the right skills for this.')),
+                  OutlinedButton(onPressed: () {}, child: const Text('Match')),
+                ],
+              ),
+            ),
         ],
       ),
     );
