@@ -525,6 +525,44 @@ exports.openAurenAgentDispute = require('firebase-functions/v2/https').onCall(
   return {status:'open',disputeId:disputeRef.id};
  });
 
+
+exports.fundAurenAgentWallet = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+    const amountMinor = Number(request.data?.amountMinor);
+    const currency = typeof request.data?.currency === 'string' ? request.data.currency.trim().toUpperCase() : '';
+    if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0 || amountMinor > 1000000 || !/^[A-Z]{3}$/.test(currency)) {
+      throw new Error('Invalid wallet funding request.');
+    }
+    const walletRef = db.collection('users').doc(uid).collection('wallet').doc('primary');
+    const txRef = db.collection('users').doc(uid).collection('wallet_transactions').doc();
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(walletRef);
+      const current = snap.exists ? snap.data() : {};
+      const existingCurrency = typeof current.currency === 'string' ? current.currency : currency;
+      if (existingCurrency !== currency && snap.exists) throw new Error('Wallet currency mismatch.');
+      tx.set(walletRef, {
+        currency,
+        balanceMinor: Number(current.balanceMinor || 0) + amountMinor,
+        reservedMinor: Number(current.reservedMinor || 0),
+        dailyLimitMinor: Number(current.dailyLimitMinor || 0),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge:true});
+      tx.set(txRef, {
+        type:'demo_funding',
+        amountMinor,
+        currency,
+        status:'completed',
+        source:'auren-demo',
+        createdAt:FieldValue.serverTimestamp(),
+      });
+    });
+    return {status:'completed', amountMinor, currency};
+  },
+);
+
 exports.publishAurenAgent = require('firebase-functions/v2/https').onCall(
  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
  async (request)=>{
