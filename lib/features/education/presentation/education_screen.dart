@@ -10,13 +10,5 @@ class AurenAURENEducationScreen extends StatelessWidget {
   ];
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('AUREN Education')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
-      Card(child:Padding(padding:const EdgeInsets.all(20),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        const Icon(Icons.auto_awesome,size:36),const SizedBox(height:12),
-        Text('AUREN adapts to you',style:Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight:FontWeight.bold)),
-        const SizedBox(height:6),const Text('ابدأ بما تريد، وخلّي AUREN يساعدك في الخطوة التالية.')
-      ]))),
-      const SizedBox(height:12),
-      ...items.map((x)=>Card(child:ListTile(leading:const Icon(Icons.arrow_forward_ios),title:Text(x['t']!),subtitle:Text(x['s']!),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:x['p'])))))),
-    ]));
+    body:ListView(padding:const EdgeInsets.all(16),children:[const ListTile(leading:Icon(Icons.school),title:Text('Courses'),subtitle:Text('تعلم من دورات ومسارات منظمة')),const ListTile(leading:Icon(Icons.play_lesson),title:Text('Lessons'),subtitle:Text('دروس قصيرة مع تطبيق عملي')),const ListTile(leading:Icon(Icons.quiz),title:Text('AI Quiz'),subtitle:Text('اختبارات ذكية حسب الدرس')),const ListTile(leading:Icon(Icons.person),title:Text('AI Tutor'),subtitle:Text('مدرس شخصي داخل AUREN')),const ListTile(leading:Icon(Icons.workspace_premium),title:Text('Certificates'),subtitle:Text('تقدم ومشاريع وشهادات')),const SizedBox(height:12),Text('My Learning'),Card(child:ListTile(title:const Text('Flutter & Dart'),subtitle:const Text('12 lessons • 25% progress'),trailing:Icon(Icons.play_arrow),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'ساعدني أكمل دورة Flutter & Dart.')))),Card(child:ListTile(title:const Text('English'),subtitle:const Text('24 lessons'),trailing:Icon(Icons.play_arrow),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'ابدأ معي درس English الآن.'))))]));
 }
