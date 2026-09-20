@@ -3,6 +3,7 @@ import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
+import '../../social/presentation/saved_pulse_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -36,6 +37,13 @@ class AurenMoreScreen extends StatelessWidget {
           subtitle: const Text('شارك، تفاعل واكتشف ما يحدث الآن.'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTimelineScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.bookmarks_outlined),
+          title: const Text('Saved Pulse'),
+          subtitle: const Text('ارجع للمحتوى الذي حفظته.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedPulseScreen())),
         )),
         ..._items.map((item) => Card(child: ListTile(
           leading: Icon(item.icon),
