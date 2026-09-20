@@ -8,6 +8,8 @@ import '../../../services/social/post_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
 import 'user_search_screen.dart';
+import '../../discover/presentation/discover_screen.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenTimelineScreen extends StatelessWidget {
   const AurenTimelineScreen({super.key});
@@ -156,7 +158,10 @@ class _MomentsStrip extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) => Container(
+        itemBuilder: (context, i) => InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => _openMoment(context, items[i].$1),
+          child: Container(
           width: 92,
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
@@ -174,6 +179,24 @@ class _MomentsStrip extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static void _openMoment(BuildContext context, String item) {
+    switch (item) {
+      case 'Create':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCreatePostScreen()));
+        break;
+      case 'People':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen()));
+        break;
+      case 'Nearby':
+      case 'Now':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenDiscoverScreen()));
+        break;
+      case 'Projects':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'أرني المشاريع والفرص التي يمكنني المساعدة فيها.')));
+        break;
+    }
   }
 }
 
