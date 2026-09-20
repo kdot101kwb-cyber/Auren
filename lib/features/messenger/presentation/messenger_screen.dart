@@ -380,10 +380,4 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     );
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
 }
