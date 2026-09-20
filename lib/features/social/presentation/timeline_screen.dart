@@ -12,8 +12,15 @@ import 'user_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
-class AurenTimelineScreen extends StatelessWidget {
+class AurenTimelineScreen extends StatefulWidget {
   const AurenTimelineScreen({super.key});
+
+  @override
+  State<AurenTimelineScreen> createState() => _AurenTimelineScreenState();
+}
+
+class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
+  String selectedType = 'all';
 
   @override
   Widget build(BuildContext context) {
@@ -64,19 +71,25 @@ class AurenTimelineScreen extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final posts = snapshot.data!;
-                final opportunities = posts.where((p) => p.contentType == 'opportunity').length;
+                final allPosts = snapshot.data!;
+                final posts = selectedType == 'all'
+                    ? allPosts
+                    : allPosts.where((p) => p.contentType == selectedType).toList();
+                final opportunities = allPosts.where((p) => p.contentType == 'opportunity').length;
                 final projects = posts.where((p) => p.contentType == 'project').length;
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
-                  itemCount: posts.length + 3,
+                  itemCount: posts.length + 4,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
                     if (i == 0) return const _NextMoveCard();
                     if (i == 1) return const _MomentsStrip();
-                    if (i == 2) return _PulseSignals(opportunities: opportunities, projects: projects);
+                    if (i == 2) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
+                    if (i == 3) return _PulseSignals(opportunities: opportunities, projects: projects);
+                    if (i == 2) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
+                    if (i == 3) return _PulseSignals(opportunities: opportunities, projects: projects);
                     if (posts.isEmpty) return const _EmptyPulse();
-                    return _PulseCard(post: posts[i - 3], uid: uid);
+                    return _PulseCard(post: posts[i - 4], uid: uid);
                   },
                 );
               },
@@ -200,6 +213,23 @@ class _MomentsStrip extends StatelessWidget {
         break;
     }
   }
+}
+
+class _PulseFilterBar extends StatelessWidget {
+  final List<(String, String)> types;
+  final String selected;
+  final ValueChanged<String> onChanged;
+  const _PulseFilterBar({required this.types, required this.selected, required this.onChanged});
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: types.map((type) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(label: Text(type.$2), selected: selected == type.$1, onSelected: (_) => onChanged(type.$1)),
+          )).toList(),
+        ),
+      );
 }
 
 class _PulseSignals extends StatelessWidget { final int opportunities; final int projects; const _PulseSignals({required this.opportunities, required this.projects}); @override Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(14), child: Row(children: [Expanded(child: _Signal(icon: Icons.work_outline, value: opportunities, label: 'Opportunities')), Expanded(child: _Signal(icon: Icons.rocket_launch_outlined, value: projects, label: 'Projects')), Expanded(child: _Signal(icon: Icons.auto_awesome, value: opportunities + projects, label: 'Signals'))]))); }
