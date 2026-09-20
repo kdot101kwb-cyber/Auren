@@ -444,11 +444,15 @@ service cloud.firestore {
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.verified == resource.data.verified
+        && request.resource.data.businessType is string
+        && request.resource.data.businessType.size() > 0
+        && request.resource.data.businessType.size() <= 60
+        && request.resource.data.status in ['active','temporarily_closed','permanently_closed','suspended']
         && request.resource.data.visibility == resource.data.visibility
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.keys().hasOnly([
           'ownerId','name','description','category','city','country',
-          'phone','website','imageUrl','visibility','verified','createdAt'
+          'phone','website','imageUrl','businessType','status','visibility','verified','createdAt'
         ]);
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
