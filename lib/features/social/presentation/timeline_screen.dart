@@ -5,6 +5,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
+import 'user_search_screen.dart';
 
 class AurenTimelineScreen extends StatelessWidget {
   const AurenTimelineScreen({super.key});
@@ -18,6 +19,11 @@ class AurenTimelineScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('AUREN Pulse'),
         actions: [
+          IconButton(
+            tooltip: 'Find people',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen())),
+            icon: const Icon(Icons.search),
+          ),
           IconButton(
             tooltip: 'Create',
             onPressed: () => Navigator.push(
