@@ -148,6 +148,17 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       throw new Error('Invalid AI request.');
     }
 
+    // Never trust a client-supplied conversation ID alone. Verify membership
+    // server-side before sending any conversation context to the provider.
+    const conversationSnapshot = await db.collection('conversations').doc(conversationId).get();
+    const conversationData = conversationSnapshot.data();
+    if (!conversationSnapshot.exists || !conversationData ||
+        !Array.isArray(conversationData.memberIds) ||
+        !conversationData.memberIds.includes(request.auth.uid) ||
+        conversationData.isAi !== true) {
+      throw new Error('Conversation access denied.');
+    }
+
     const apiKey = AUREN_AI_API_KEY.value();
     const model = process.env.AUREN_AI_MODEL || 'gpt-4o-mini';
     const baseUrl = (process.env.AUREN_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/$/, '');
