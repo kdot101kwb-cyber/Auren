@@ -7,6 +7,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
+import 'edit_post_screen.dart';
 import 'user_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -280,7 +281,7 @@ class _PulseCard extends StatelessWidget {
                 if (post.authorId == uid)
                   PopupMenuButton<String>(
                     onSelected: (value) {
-                      if (value == 'edit') _showEditHint(context);
+                      if (value == 'edit') _openEdit(context);
                       if (value == 'delete') _confirmDelete(context, repo);
                     },
                     itemBuilder: (_) => const [
@@ -391,6 +392,10 @@ class _PulseCard extends StatelessWidget {
       ),
     );
   }
+  void _openEdit(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEditPostScreen(post: post)));
+  }
+
   void _showEditHint(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
