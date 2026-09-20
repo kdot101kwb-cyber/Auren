@@ -22,6 +22,7 @@ import { recoverStaleExecution } from './execution-recovery.js';
 import { normalizeListing, validateListingForPublish } from './agent-marketplace.js';
 import { submitReview } from './agent-reputation.js';
 import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
+import { createMessageNotifications } from './notification-store.js';
 import { validatePackageMetadata, validateDependencyList, verifyPackageSignature, packageSha256, scanPluginArtifact, validateArtifactId, artifactObjectPath, createArtifactId } from './plugin-security.js';
 
 if (getApps().length === 0) {
@@ -65,6 +66,33 @@ async function requireUser(req, res, next) {
   }
 }
 
+
+app.post('/api/notifications/message', requireUser, async (req, res) => {
+  try {
+    const conversationId = typeof req.body?.conversationId === 'string' ? req.body.conversationId.trim() : '';
+    const messageId = typeof req.body?.messageId === 'string' ? req.body.messageId.trim() : '';
+    const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+    if (!conversationId || !messageId || !text || text.length > 12000) {
+      return error(res, 400, 'conversationId, messageId and text are required.');
+    }
+    const conversationSnap = await db.collection('conversations').doc(conversationId).get();
+    if (!conversationSnap.exists) return error(res, 404, 'Conversation not found.');
+    const conversation = conversationSnap.data();
+    const members = Array.isArray(conversation?.memberIds) ? conversation.memberIds : [];
+    if (!members.includes(req.uid)) return error(res, 403, 'You are not a member of this conversation.');
+    if (conversation?.isAi === true) return error(res, 400, 'AI conversations do not create user notifications.');
+    const count = await createMessageNotifications(db, {
+      senderUid: req.uid,
+      conversationId,
+      messageId,
+      text,
+      memberIds: members,
+    });
+    return res.status(201).json({ status: 'created', recipients: count });
+  } catch (e) {
+    return error(res, 500, e.message || 'Unable to create message notifications.');
+  }
+});
 
 app.post('/api/a2a/send', requireUser, async (req, res) => {
   const envelope = req.body?.envelope;
