@@ -582,3 +582,66 @@ exports.publishAurenAgent = require('firebase-functions/v2/https').onCall(
   },{merge:true});
   return {status:'published',agentId};
  });
+
+
+function validateAurenPluginManifest(manifest) {
+  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) throw new Error('Invalid plugin manifest.');
+  const pluginId = typeof manifest.pluginId === 'string' ? manifest.pluginId.trim() : '';
+  const name = typeof manifest.name === 'string' ? manifest.name.trim() : '';
+  const version = typeof manifest.version === 'string' ? manifest.version.trim() : '';
+  const entrypoint = typeof manifest.entrypoint === 'string' ? manifest.entrypoint.trim() : '';
+  const capabilities = Array.isArray(manifest.capabilities) ? manifest.capabilities.filter((x) => typeof x === 'string').map((x) => x.trim()).filter(Boolean) : [];
+  if (!/^[a-z0-9][a-z0-9._-]{2,119}$/.test(pluginId) || !name || name.length > 120 || !version || version.length > 40 || !entrypoint || entrypoint.length > 500 || capabilities.length > 30) {
+    throw new Error('Plugin manifest failed validation.');
+  }
+  if (capabilities.some((x) => x.length > 80 || !/^[a-z0-9][a-z0-9._:-]*$/i.test(x))) throw new Error('Invalid plugin capability.');
+  return {pluginId, name, version, entrypoint, capabilities};
+}
+
+exports.validateAurenPlugin = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    if (!request.auth?.uid) throw new Error('Unauthenticated');
+    const manifest = validateAurenPluginManifest(request.data?.manifest);
+    return {
+      valid: true,
+      manifest,
+      policy: {sandbox:'auren-isolated-v1', network:'deny-by-default', secrets:'deny', executionTimeoutMs:10000},
+    };
+  },
+);
+
+exports.installAurenPlugin = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;if(!uid)throw new Error('Unauthenticated');
+    const manifest=validateAurenPluginManifest(request.data?.manifest);
+    const ref=db.collection('users').doc(uid).collection('agent_installations').doc(manifest.pluginId);
+    await ref.set({agentId:manifest.pluginId,name:manifest.name,version:manifest.version,status:'active',installedAt:new Date().toISOString(),source:'plugin',capabilities:manifest.capabilities},{merge:true});
+    return {status:'installed',pluginId:manifest.pluginId};
+  },
+);
+
+exports.invokeAurenPlugin = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;if(!uid)throw new Error('Unauthenticated');
+    const pluginId=typeof request.data?.pluginId==='string'?request.data.pluginId.trim():'';
+    const action=typeof request.data?.action==='string'?request.data.action.trim():'';
+    const payload=request.data?.payload && typeof request.data.payload==='object' && !Array.isArray(request.data.payload)?request.data.payload:{};
+    if(!pluginId||pluginId.length>120||!action||action.length>120||Object.keys(payload).length>20)throw new Error('Invalid plugin invocation.');
+    const install=await db.collection('users').doc(uid).collection('agent_installations').doc(pluginId).get();
+    if(!install.exists||install.data()?.status!=='active')throw new Error('Plugin is not installed or active.');
+    const quotaRef=db.collection('plugin_quotas').doc(uid+'_'+pluginId);
+    const invocationRef=db.collection('plugin_invocations').doc();
+    const now=new Date(); const day=now.toISOString().slice(0,10);
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(quotaRef);const data=snap.exists?snap.data():{};
+      const used=data.day===day?Number(data.used||0):0;
+      if(used>=100)throw new Error('Daily plugin invocation quota exceeded.');
+      tx.set(quotaRef,{uid,pluginId,day,used:used+1,limit:100,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      tx.set(invocationRef,{uid,pluginId,action,payload,status:'accepted',createdAt:FieldValue.serverTimestamp()});
+    });
+    return {status:'accepted',invocationId:invocationRef.id,quotaRemaining:99};
+  },
+);
