@@ -4,6 +4,7 @@ import '../../../core/models/business.dart';
 import '../../../services/business/business_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'business_dashboard_screen.dart';
 
 class AurenBusinessDetailScreen extends StatefulWidget {
   final AurenBusiness business;
@@ -54,6 +55,7 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
     final b=widget.business; final own=FirebaseAuth.instance.currentUser?.uid==b.ownerId;
     return Scaffold(
       appBar:AppBar(title:const Text('Business'),actions:[
+        if(own) IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenBusinessDashboardScreen(business:b))),icon:const Icon(Icons.analytics_outlined)),
         if(own) IconButton(onPressed:saving?null:edit,icon:const Icon(Icons.edit_outlined)),
         if(own) IconButton(onPressed:()async{final ok=await showDialog<bool>(context:context,builder:(_)=>AlertDialog(title:const Text('حذف النشاط؟'),content:const Text('لا يمكن التراجع عن هذا الإجراء.'),actions:[TextButton(onPressed:()=>Navigator.pop(context,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(context,true),child:const Text('حذف'))]));if(ok==true){await BusinessRepository().delete(b.id);if(context.mounted)Navigator.pop(context);}},icon:const Icon(Icons.delete_outline))
       ]),
