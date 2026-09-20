@@ -5,6 +5,7 @@ import 'agent_reviews_sheet.dart';
 import '../../../services/agents/agent_protocol_repository.dart';
 import '../../../services/agents/agent_installation_repository.dart';
 import '../../../core/models/agent_message.dart';
+import '../../../services/agents/agent_plugin_repository.dart';
 
 class AgentDetailScreen extends StatefulWidget {
   final AurenAgentListing agent;
@@ -17,6 +18,7 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
   bool _sending = false;
   bool _installing = false;
   bool _installed = false;
+  bool _simulating = false;
 
   @override
   void initState() {
@@ -53,6 +55,31 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
     } finally {
       if (mounted) setState(() => _installing = false);
     }
+  }
+
+
+  Future<void> _simulate() async {
+    if (_simulating) return;
+    setState(() => _simulating = true);
+    try {
+      final result = await AurenAgentPluginRepository().simulateAction(
+        agentId: widget.agent.agentId,
+        action: 'preview.request',
+        payload: {'text': 'تجربة آمنة قبل التنفيذ'},
+      );
+      if (!mounted) return;
+      final data = Map<String, dynamic>.from(result['result'] as Map? ?? const {});
+      showDialog(context: context, builder: (_) => AlertDialog(
+        title: const Text('Simulation / Sandbox'),
+        content: Text((data['message'] ?? 'Simulation completed').toString() +
+            '\\n\\nNetwork: ' + (data['network'] ?? 'denied').toString() +
+            '\\nSecrets: ' + (data['secrets'] ?? 'denied').toString() +
+            '\\nExternal side effects: ' + (data['externalSideEffects'] ?? false).toString()),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق'))],
+      ));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تشغيل المحاكاة: $e')));
+    } finally { if (mounted) setState(() => _simulating = false); }
   }
 
   @override void dispose() { _message.dispose(); super.dispose(); }
@@ -100,6 +127,12 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : Icon(_installed ? Icons.check_circle_outline : Icons.add_circle_outline),
           label: Text(_installed ? 'Agent مثبت — إزالة التثبيت' : 'تثبيت Agent'),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _simulating ? null : _simulate,
+          icon: _simulating ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.science_outlined),
+          label: const Text('جرّب في Simulation قبل التنفيذ'),
         ),
         const SizedBox(height: 18),
         const Text('تواصل مع الـAgent', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
