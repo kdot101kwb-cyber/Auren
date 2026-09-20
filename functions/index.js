@@ -508,3 +508,19 @@ exports.submitAurenAgentReview = require('firebase-functions/v2/https').onCall(
   },
 );
 
+
+exports.openAurenAgentDispute = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+ async (request)=>{
+  const uid=request.auth?.uid;if(!uid)throw new Error('Unauthenticated');
+  const agentId=typeof request.data?.agentId==='string'?request.data.agentId.trim():'';
+  const actionId=typeof request.data?.actionId==='string'?request.data.actionId.trim():'';
+  const reason=typeof request.data?.reason==='string'?request.data.reason.trim():'';
+  if(!agentId||!actionId||!reason||reason.length>1000)throw new Error('Invalid dispute.');
+  const action=await db.collection('users').doc(uid).collection('actions').doc(actionId).get();
+  if(!action.exists)throw new Error('Action not found.');
+  const disputeRef=db.collection('users').doc(uid).collection('disputes').doc();
+  await disputeRef.set({agentId,actionId,reason,status:'open',createdAt:FieldValue.serverTimestamp()});
+  await writeAurenActionAudit(uid,{...action.data(),id:actionId},'dispute_opened',{agentId,source:'openAurenAgentDispute'});
+  return {status:'open',disputeId:disputeRef.id};
+ });
