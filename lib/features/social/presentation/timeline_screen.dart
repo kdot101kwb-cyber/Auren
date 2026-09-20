@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/models/post.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
@@ -266,24 +267,18 @@ class _PulseCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
             child: Row(
               children: [
-                StreamBuilder<bool>(
-                  stream: repo.watchLiked(post.id, uid),
+                StreamBuilder<String?>(
+                  stream: repo.watchReaction(post.id, uid),
                   builder: (context, s) {
-                    final liked = s.data ?? false;
+                    final reaction = s.data;
                     return IconButton(
                       tooltip: 'React',
-                      onPressed: s.connectionState == ConnectionState.waiting
-                          ? null
-                          : () => repo.toggleLike(post.id, uid, liked),
-                      icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
+                      onPressed: () => _showReactionPicker(context, repo, reaction),
+                      icon: Icon(reaction == null ? Icons.emoji_emotions_outlined : _reactionIcon(reaction)),
                     );
                   },
                 ),
-                IconButton(
-                  tooltip: 'React',
-                  onPressed: () {},
-                  icon: const Icon(Icons.emoji_emotions_outlined),
-                ),
+                
                 IconButton(
                   tooltip: 'Discuss',
                   onPressed: () => Navigator.push(
@@ -294,14 +289,20 @@ class _PulseCard extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.forum_outlined),
                 ),
-                IconButton(
-                  tooltip: 'Save',
-                  onPressed: () {},
-                  icon: const Icon(Icons.bookmark_border),
+                StreamBuilder<bool>(
+                  stream: repo.watchSaved(post.id, uid),
+                  builder: (context, s) {
+                    final saved = s.data ?? false;
+                    return IconButton(
+                      tooltip: saved ? 'Saved' : 'Save',
+                      onPressed: () => repo.toggleSaved(post.id, uid, saved),
+                      icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
+                    );
+                  },
                 ),
                 IconButton(
                   tooltip: 'Share',
-                  onPressed: () {},
+                  onPressed: () => _sharePost(context),
                   icon: const Icon(Icons.ios_share_outlined),
                 ),
                 const Spacer(),
@@ -337,6 +338,54 @@ class _PulseCard extends StatelessWidget {
       ),
     );
   }
+  void _showReactionPicker(BuildContext context, PostRepository repo, String? current) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          children: [
+            for (final item in const [('like','👍'),('love','❤️'),('fire','🔥'),('support','🙌'),('idea','💡'),('wow','✨')])
+              IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  repo.setReaction(post.id, uid, item.$1);
+                },
+                icon: Text(item.$2, style: const TextStyle(fontSize: 28)),
+              ),
+            if (current != null)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  repo.setReaction(post.id, uid, null);
+                },
+                child: const Text('Remove'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static IconData _reactionIcon(String reaction) {
+    switch (reaction) {
+      case 'love': return Icons.favorite;
+      case 'fire': return Icons.local_fire_department;
+      case 'support': return Icons.volunteer_activism;
+      case 'idea': return Icons.lightbulb;
+      case 'wow': return Icons.auto_awesome;
+      default: return Icons.thumb_up;
+    }
+  }
+
+  void _sharePost(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: 'https://auren.app/pulse/${post.id}'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('AUREN Pulse link copied.')),
+    );
+  }
+
 }
 
 class _EmptyPulse extends StatelessWidget {
