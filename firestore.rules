@@ -430,14 +430,22 @@ service cloud.firestore {
         && request.auth.uid in resource.data.memberIds
         && request.resource.data.isAi == resource.data.isAi
         && request.resource.data.type == resource.data.type
-        && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.title == resource.data.title
         && (
           (
-            request.resource.data.memberIds == resource.data.memberIds
+            request.resource.data.ownerId == resource.data.ownerId
+            && request.resource.data.memberIds == resource.data.memberIds
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'updatedAt', 'lastMessage', 'lastMessageAt'
             ])
+          )
+          || (
+            resource.data.type == 'group'
+            && request.auth.uid == resource.data.ownerId
+            && request.resource.data.ownerId is string
+            && request.resource.data.ownerId in resource.data.memberIds
+            && request.resource.data.memberIds == resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerId'])
           )
           || (
             resource.data.type == 'group'
