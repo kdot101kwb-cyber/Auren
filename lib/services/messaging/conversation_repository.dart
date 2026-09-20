@@ -123,6 +123,29 @@ class ConversationRepository {
     });
   }
 
+  Future<void> transferGroupOwnership({
+    required String conversationId,
+    required String ownerUid,
+    required String newOwnerUid,
+  }) async {
+    if (conversationId.isEmpty || ownerUid.isEmpty || newOwnerUid.isEmpty || ownerUid == newOwnerUid) {
+      throw ArgumentError('Invalid ownership transfer.');
+    }
+    final ref = _conversations.doc(conversationId);
+    await _firestore.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data();
+      if (!snap.exists || data == null || data['type'] != 'group' || data['ownerId'] != ownerUid) {
+        throw StateError('Only the group owner can transfer ownership.');
+      }
+      final members = List<String>.from(data['memberIds'] as List? ?? const []);
+      if (!members.contains(newOwnerUid)) {
+        throw StateError('The new owner must already be a group member.');
+      }
+      tx.update(ref, {'ownerId': newOwnerUid});
+    });
+  }
+
   Future<void> removeGroupMember({required String conversationId, required String uid, required String memberUid}) async {
     if (conversationId.isEmpty || uid.isEmpty || memberUid.isEmpty) throw ArgumentError('Invalid member.');
     final ref = _conversations.doc(conversationId);
