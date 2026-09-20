@@ -92,6 +92,37 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /agent_installations/{agentId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && agentId == request.resource.data.agentId
+          && request.resource.data.agentId is string
+          && request.resource.data.agentId.size() > 0
+          && request.resource.data.agentId.size() <= 120
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.version is string
+          && request.resource.data.version.size() > 0
+          && request.resource.data.version.size() <= 40
+          && request.resource.data.status == 'active'
+          && request.resource.data.installedAt is string
+          && request.resource.data.keys().hasOnly([
+            'agentId', 'name', 'version', 'status', 'installedAt'
+          ]);
+        allow update: if isOwner(userId)
+          && agentId == resource.data.agentId
+          && request.resource.data.agentId == resource.data.agentId
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.version == resource.data.version
+          && request.resource.data.installedAt == resource.data.installedAt
+          && request.resource.data.status in ['active', 'paused']
+          && request.resource.data.keys().hasOnly([
+            'agentId', 'name', 'version', 'status', 'installedAt'
+          ]);
+        allow delete: if isOwner(userId);
+      }
+
       match /agent_permissions/{permissionId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId)
