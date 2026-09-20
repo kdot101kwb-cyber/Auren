@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'agent_marketplace_screen.dart';
 import '../../../services/actions/action_repository.dart';
 import '../../../services/agents/agent_plugin_repository.dart';
+import '../../../services/agents/agent_installation_repository.dart';
 
 class AurenAgentHubScreen extends StatefulWidget {
   const AurenAgentHubScreen({super.key});
@@ -174,6 +175,47 @@ class _AurenAgentHubScreenState extends State<AurenAgentHubScreen> {
       Card(child: ListTile(leading: const Icon(Icons.storefront_outlined), title: const Text('Agent Marketplace'),
         subtitle: const Text('اكتشف الوكلاء والقدرات المتاحة'), trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentMarketplaceScreen())))),
+      if (uid != null)
+        StreamBuilder(
+          stream: AurenAgentInstallationRepository().watch(uid),
+          builder: (context, snapshot) {
+            final agents = snapshot.data ?? const [];
+            return Card(
+              child: ListTile(
+                leading: const Icon(Icons.apps_outlined),
+                title: const Text('Installed Agents'),
+                subtitle: Text(agents.isEmpty
+                    ? 'لا توجد Agents مثبتة'
+                    : 'Agents نشطة: ${agents.length}'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => SafeArea(
+                    child: SizedBox(
+                      height: MediaQuery.sizeOf(context).height * .65,
+                      child: agents.isEmpty
+                          ? const Center(child: Text('ثبّت Agent من الـMarketplace أولاً.'))
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: agents.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (_, index) {
+                                final agent = agents[index];
+                                return ListTile(
+                                  leading: const CircleAvatar(child: Icon(Icons.smart_toy_outlined)),
+                                  title: Text(agent.name),
+                                  subtitle: Text('v${agent.version} • ${agent.status}'),
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       Card(child: ListTile(leading: const Icon(Icons.extension_outlined), title: const Text('Developer / Plugins'),
         subtitle: const Text('تحقق من Plugin Manifest قبل النشر'), trailing: busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator()) : const Icon(Icons.verified_outlined),
         onTap: busy ? null : validatePlugin)),
