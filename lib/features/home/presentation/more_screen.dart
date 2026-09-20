@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
+import '../../social/presentation/timeline_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -29,6 +30,13 @@ class AurenMoreScreen extends StatelessWidget {
         const SizedBox(height: 6),
         const Text('كل مسارات AUREN في مكان واحد — واختر كيف تريد أن تبدأ.'),
         const SizedBox(height: 18),
+        Card(child: ListTile(
+          leading: const Icon(Icons.dynamic_feed_outlined),
+          title: const Text('Pulse'),
+          subtitle: const Text('شارك، تفاعل واكتشف ما يحدث الآن.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTimelineScreen())),
+        )),
         ..._items.map((item) => Card(child: ListTile(
           leading: Icon(item.icon),
           title: Text(item.title),
