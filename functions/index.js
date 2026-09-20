@@ -130,3 +130,68 @@ exports.onConversationMembershipChanged = onDocumentUpdated(
     ]);
   },
 );
+
+
+exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1', timeoutSeconds: 60, memory: '256MiB' },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new Error('Unauthenticated');
+    }
+
+    const data = request.data || {};
+    const conversationId = typeof data.conversationId === 'string' ? data.conversationId.trim() : '';
+    const message = typeof data.message === 'string' ? data.message.trim() : '';
+    if (!conversationId || !message || message.length > 12000) {
+      throw new Error('Invalid AI request.');
+    }
+
+    const apiKey = process.env.AUREN_AI_API_KEY;
+    const model = process.env.AUREN_AI_MODEL || 'gpt-4o-mini';
+    const baseUrl = (process.env.AUREN_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/$/, '');
+
+    if (!apiKey) {
+      return {
+        text: 'AUREN AI Gateway متصل، لكن مزود الذكاء الاصطناعي لم يتم تفعيل مفتاحه بعد. أرسل سؤالك مرة أخرى بعد إعداد AUREN_AI_API_KEY.',
+        action: null,
+        payload: {},
+        requiresApproval: false,
+      };
+    }
+
+    const response = await fetch(baseUrl + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: 'Bearer ' + apiKey,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: 'You are AUREN AI. Be helpful, concise, safe, and action-oriented. Never execute external actions without explicit user approval.' },
+          { role: 'user', content: message },
+        ],
+        temperature: 0.4,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      console.error('AI provider error', response.status, body.slice(0, 1000));
+      throw new Error('AI provider request failed.');
+    }
+
+    const result = await response.json();
+    const text = result?.choices?.[0]?.message?.content;
+    if (typeof text !== 'string' || !text.trim()) {
+      throw new Error('AI provider returned an empty response.');
+    }
+
+    return {
+      text: text.trim(),
+      action: null,
+      payload: {},
+      requiresApproval: false,
+    };
+  },
+);
