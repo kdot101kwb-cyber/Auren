@@ -5,6 +5,7 @@ import '../../../services/business/business_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'business_dashboard_screen.dart';
+import 'business_products_screen.dart';
 
 class AurenBusinessDetailScreen extends StatefulWidget {
   final AurenBusiness business;
@@ -70,6 +71,8 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
         if(b.city.isNotEmpty||b.country.isNotEmpty)ListTile(leading:const Icon(Icons.location_on_outlined),title:const Text('الموقع'),subtitle:Text([b.city,b.country].where((x)=>x.isNotEmpty).join(' • '))),
         if(b.phone.isNotEmpty)ListTile(leading:const Icon(Icons.phone_outlined),title:const Text('الهاتف'),subtitle:Text(b.phone)),
         if(b.website.isNotEmpty)ListTile(leading:const Icon(Icons.language),title:const Text('الموقع الإلكتروني'),subtitle:Text(b.website)),
+        const SizedBox(height:12),
+        OutlinedButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenBusinessProductsScreen(businessId:b.id,businessName:b.name))),icon:const Icon(Icons.inventory_2_outlined),label:const Text('المنتجات والخدمات')),
         const SizedBox(height:16),
         if (own) Padding(padding:const EdgeInsets.only(top:12),child:OutlinedButton.icon(onPressed:()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;final ctl=TextEditingController();final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('طلب توثيق'),content:TextField(controller:ctl,maxLines:4,decoration:const InputDecoration(labelText:'معلومات التحقق')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('إرسال'))]));if(ok==true){await _repo.requestVerification(businessId:b.id,ownerId:uid,note:ctl.text);if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إرسال طلب التوثيق')));}},icon:const Icon(Icons.verified_outlined),label:const Text('طلب توثيق'))),if (!own) StreamBuilder<bool>(
           stream:_repo.watchSaved(FirebaseAuth.instance.currentUser?.uid ?? '',b.id),
