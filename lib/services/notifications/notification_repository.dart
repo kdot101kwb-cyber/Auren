@@ -19,6 +19,7 @@ class AurenNotification {
     required this.read,
     required this.createdAt,
     this.type = 'general',
+    this.actorUid,
     this.entityId,
     this.conversationId,
   });
@@ -64,10 +65,13 @@ class NotificationRepository {
 
   Future<void> markAllRead(String uid) async {
     final snap = await _items(uid).where('read', isEqualTo: false).get();
-    final batch = _db.batch();
-    for (final doc in snap.docs) {
-      batch.update(doc.reference, {'read': true});
+    for (var i = 0; i < snap.docs.length; i += 450) {
+      final batch = _db.batch();
+      final end = (i + 450 < snap.docs.length) ? i + 450 : snap.docs.length;
+      for (final doc in snap.docs.sublist(i, end)) {
+        batch.update(doc.reference, {'read': true});
+      }
+      await batch.commit();
     }
-    await batch.commit();
   }
 }
