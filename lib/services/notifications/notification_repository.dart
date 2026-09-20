@@ -6,7 +6,6 @@ class AurenNotification {
   final String body;
   final bool read;
   final DateTime createdAt;
-  final String type;
   final String? actorUid;
   final String? targetId;
   final String type;
@@ -35,7 +34,6 @@ class AurenNotification {
       type: map['type'] as String? ?? 'system',
       actorUid: map['actorUid'] as String?,
       targetId: map['targetId'] as String?,
-      type: map['type'] as String? ?? 'general',
       entityId: map['entityId'] as String?,
       conversationId: map['conversationId'] as String?,
     );
