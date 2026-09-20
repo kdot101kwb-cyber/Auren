@@ -7,6 +7,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 import 'user_search_screen.dart';
 
 class AurenTimelineScreen extends StatelessWidget {
@@ -435,7 +436,10 @@ class _EmptyPulse extends StatelessWidget {
               const Text('Create an idea, project, question or opportunity.'),
               const SizedBox(height: 14),
               FilledButton.icon(
-                onPressed: () {},
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AurenCreatePostScreen()),
+                ),
                 icon: const Icon(Icons.add),
                 label: const Text('Create your first'),
               ),
