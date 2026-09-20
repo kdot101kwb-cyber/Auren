@@ -25,6 +25,11 @@ class AurenAgentPluginRepository {
     await _functions.httpsCallable('installAurenPlugin').call({'manifest': {'pluginId': pluginId, 'name': name, 'version': version, 'entrypoint': 'auren://plugin', 'capabilities': capabilities}});
   }
 
+  Future<Map<String, dynamic>> simulateAction({required String agentId, required String action, Map<String, dynamic> payload = const {}}) async {
+    final result = await _functions.httpsCallable('simulateAurenAgentAction').call({'agentId': agentId, 'action': action, 'payload': payload});
+    return Map<String, dynamic>.from(result.data as Map);
+  }
+
   Future<Map<String, dynamic>> recordInvocation({required String pluginId, required String action, Map<String, dynamic> payload = const {}}) async {
     final result = await _functions.httpsCallable('invokeAurenPlugin').call({'pluginId': pluginId, 'action': action, 'payload': payload});
     return Map<String, dynamic>.from(result.data as Map);
