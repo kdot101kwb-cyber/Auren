@@ -285,6 +285,26 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       ),
       body: Column(
         children: [
+          if (_isAi && !_sending && _controller.text.isEmpty)
+            SizedBox(
+              height: 52,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                children: [
+                  'خطط لي يومي',
+                  'ساعدني في هدفي',
+                  'ابحث عن فرصة',
+                  'اكتشف شيئًا جديدًا',
+                ].map((prompt) => Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                    label: Text(prompt),
+                    onPressed: () { _controller.text = prompt; _controller.selection = TextSelection.collapsed(offset: prompt.length); setState(() {}); },
+                  ),
+                )).toList(),
+              ),
+            ),
           if (_showDetails)
             Container(
               width: double.infinity,
