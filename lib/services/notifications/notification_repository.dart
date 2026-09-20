@@ -20,6 +20,7 @@ class AurenNotification {
     required this.createdAt,
     this.type = 'general',
     this.actorUid,
+    this.targetId,
     this.entityId,
     this.conversationId,
   });
