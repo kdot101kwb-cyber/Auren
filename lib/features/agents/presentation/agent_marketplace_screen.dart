@@ -41,7 +41,6 @@ class AgentMarketplaceScreen extends StatelessWidget {
                     Text(_price(agent)),
                   ]),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AgentDetailScreen(agent: agent))),
-                  );
                 ),
               );
             },
