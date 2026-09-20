@@ -10,6 +10,7 @@ import '../../../services/messaging/message_repository.dart';
 import '../../../services/messaging/message_safety_repository.dart';
 import 'group_details_screen.dart';
 import 'message_safety_screen.dart';
+import '../../../services/notifications/notification_api.dart';
 import '../../../services/users/presence_service.dart';
 
 class MessengerScreen extends StatefulWidget {
@@ -29,6 +30,7 @@ class _MessengerScreenState extends State<MessengerScreen> {
   final _conversationRepository = ConversationRepository();
   final _actionRepository = ActionRepository();
   final _safetyRepository = MessageSafetyRepository();
+  final _notificationApi = AurenNotificationApi();
   final _presence = AurenPresenceHeartbeat(AurenPresenceService());
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
@@ -100,6 +102,17 @@ class _MessengerScreenState extends State<MessengerScreen> {
       text: text,
         createdAt: now,
       ));
+      if (!_isAi) {
+        try {
+          await _notificationApi.notifyMessage(
+            conversationId: _conversationId!,
+            messageId: 'msg_${now.microsecondsSinceEpoch}',
+            text: text,
+          );
+        } catch (_) {
+          // Notification delivery must never block message delivery.
+        }
+      }
 
       if (_isAi) {
         final response = await _gateway.send(
