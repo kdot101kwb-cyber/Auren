@@ -22,6 +22,15 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Opportunities', 'عمل • مواهب • مشاريع • تعلم', Icons.work_outline),
   ];
 
+  List<_DiscoverItem> get _filteredItems {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return _items;
+    return _items.where((item) {
+      final haystack = (item.title + ' ' + item.subtitle).toLowerCase();
+      return haystack.contains(q);
+    }).toList();
+  }
+
   void _open(BuildContext context, _DiscoverItem item) {
     if (item.title == 'People') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen()));
@@ -31,83 +40,122 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => MessengerScreen(
-          initialPrompt:
-              'استكشف لي ' + item.title + ' في AUREN، واعرض لي اقتراحات مناسبة مع سبب ترشيح كل واحد.',
+          initialPrompt: 'استكشف لي ' + item.title +
+              ' في AUREN، واعرض لي اقتراحات مناسبة مع سبب ترشيح كل واحد.',
         ),
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Discover'),
-          actions: [
-            IconButton(
-              tooltip: 'Global Search',
-              icon: const Icon(Icons.search),
-              onPressed: () => Navigator.push(
+  Widget build(BuildContext context) {
+    final items = _filteredItems;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Discover'),
+        actions: [
+          IconButton(
+            tooltip: 'Global Search',
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AurenGlobalSearchScreen()),
+            ),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+        children: [
+          Text(
+            'اكتشف عالمك',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'AUREN يتكيف مع ما يهمك — أشخاص، أماكن، محتوى وفرص.',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            onChanged: (value) => setState(() => query = value),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              hintText: 'Filter Discover…',
+              border: const OutlineInputBorder(),
+              suffixIcon: query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear',
+                      onPressed: () => setState(() => query = ''),
+                      icon: const Icon(Icons.clear),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
+              title: const Text('اسأل AUREN'),
+              subtitle: const Text('قل ما تريد اكتشافه وسأقترح لك الخطوة التالية.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const AurenGlobalSearchScreen(),
-                ),
-              ),
-            ),
-          ],
-        ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-          children: [
-            Text(
-              'اكتشف عالمك',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'AUREN يتكيف مع ما يهمك — أشخاص، أماكن، محتوى وفرص.',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            TextField(
-              onChanged: (value) => setState(() => query = value.trim().toLowerCase()),
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.tune),
-                hintText: 'Filter Discover…',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),            const SizedBox(height: 18),
-            Card(
-              child: ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
-                title: const Text('اسأل AUREN'),
-                subtitle: const Text('قل ما تريد اكتشافه وسأقترح لك الخطوة التالية.'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const MessengerScreen(
-                      initialPrompt:
-                          'ساعدني أكتشف شيئًا جديدًا يناسب اهتماماتي وأهدافي اليوم.',
-                    ),
+                  builder: (_) => const MessengerScreen(
+                    initialPrompt: 'ساعدني أكتشف شيئًا جديدًا يناسب اهتماماتي وأهدافي اليوم.',
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            Card(child: ListTile(
+          ),
+          const SizedBox(height: 10),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.bolt),
               title: const Text('Trending now'),
               subtitle: const Text('شوف المواضيع والأفكار التي تتحرك الآن في AUREN.'),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ما الأشياء الرائجة الآن في AUREN؟ اعرضها كمواضيع وأفكار قابلة للاستكشاف.'))),
-            )),
-            const SizedBox(height: 6),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MessengerScreen(
+                    initialPrompt: 'ما الأشياء الرائجة الآن في AUREN؟ اعرضها كمواضيع وأفكار قابلة للاستكشاف.',
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (items.isEmpty)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const Icon(Icons.search_off, size: 42),
+                    const SizedBox(height: 10),
+                    const Text('ما لقينا قسم مطابق.', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'جرّب People أو Places أو Business أو Opportunities.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => setState(() => query = ''),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('عرض الكل'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _items.where((item) => query.isEmpty || ('${item.title} ${item.subtitle}').toLowerCase().contains(query)).length,
+              itemCount: items.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
@@ -115,7 +163,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
                 childAspectRatio: 1.15,
               ),
               itemBuilder: (context, index) {
-                final item = _items.where((item) => query.isEmpty || ('${item.title} ${item.subtitle}').toLowerCase().contains(query)).toList()[index];
+                final item = items[index];
                 return Card(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -128,19 +176,9 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
                         children: [
                           Icon(item.icon, size: 32),
                           const SizedBox(height: 12),
-                          Text(
-                            item.title,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text(item.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 5),
-                          Text(
-                            item.subtitle,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          Text(item.subtitle, maxLines: 3, overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),
@@ -148,9 +186,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
                 );
               },
             ),
-          ],
-        ),
-      );
+        ],
+      ),
+    );
+  }
 }
 
 class _DiscoverItem {
