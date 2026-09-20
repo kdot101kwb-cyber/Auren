@@ -39,6 +39,8 @@ class PostRepository {
     });
   }
 
+  Future<void> delete(String postId) => _posts.doc(postId).delete();
+
   Stream<bool> watchLiked(String postId, String uid) =>
       _posts.doc(postId).collection('likes').doc(uid).snapshots().map((d) => d.exists);
 
@@ -110,3 +112,4 @@ class PostRepository {
     });
   }
 }
+
