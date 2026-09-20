@@ -318,18 +318,28 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     try {
       const candidate = JSON.parse(text.replace(/^\`\`\`json\s*/i, '').replace(/\`\`\`$/i, '').trim());
       if (candidate && typeof candidate === 'object') {
-        const allowedActions = new Set(['demo.echo', 'demo.create_note']);
+        const allowedActions = new Set(['demo.echo', 'demo.create_note', 'memory.save']);
         const candidateAction = typeof candidate.action === 'string' ? candidate.action : null;
         const candidatePayload = candidate.payload && typeof candidate.payload === 'object'
           ? candidate.payload
           : {};
         if (candidateAction && allowedActions.has(candidateAction)) {
           const keys = Object.keys(candidatePayload);
-          if (keys.every((key) => key === 'text') &&
-              typeof candidatePayload.text === 'string' &&
-              candidatePayload.text.length <= 2000) {
+          const validTextAction = keys.every((key) => key === 'text') &&
+            typeof candidatePayload.text === 'string' &&
+            candidatePayload.text.length <= 2000;
+          const validMemoryAction = keys.every((key) => key === 'key' || key === 'value') &&
+            typeof candidatePayload.key === 'string' &&
+            typeof candidatePayload.value === 'string' &&
+            candidatePayload.key.trim().length > 0 &&
+            candidatePayload.key.length <= 120 &&
+            candidatePayload.value.trim().length > 0 &&
+            candidatePayload.value.length <= 2000;
+          if (validTextAction || validMemoryAction) {
             action = candidateAction;
-            payload = { text: candidatePayload.text };
+            payload = validMemoryAction
+              ? { key: candidatePayload.key.trim(), value: candidatePayload.value.trim() }
+              : { text: candidatePayload.text };
             requiresApproval = true;
             text = typeof candidate.text === 'string' && candidate.text.trim()
               ? candidate.text.trim()
