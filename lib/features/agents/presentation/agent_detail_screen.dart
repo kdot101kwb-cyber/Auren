@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/agent_listing.dart';
+import 'agent_reviews_sheet.dart';
 import '../../../services/agents/agent_protocol_repository.dart';
 import '../../../services/agents/agent_installation_repository.dart';
 import '../../../core/models/agent_message.dart';
@@ -90,6 +91,7 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
           Wrap(spacing: 8, runSpacing: 8, children: a.capabilities.map((x) => Chip(label: Text(x))).toList()),
         ]))),
         Card(child: ListTile(leading: const Icon(Icons.verified_user_outlined), title: const Text('Trust & Reputation'), subtitle: Text('★ ' + a.reputationScore.toStringAsFixed(1) + ' • ' + a.reviewCount.toString() + ' مراجعة'))),
+        Card(child: ListTile(leading: const Icon(Icons.reviews_outlined), title: const Text('Reviews'), subtitle: const Text('شوف تقييمات وتجارب المستخدمين'), onTap: () => showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => SizedBox(height: MediaQuery.sizeOf(context).height * .75, child: AgentReviewsSheet(agent: a))))),
         Card(child: ListTile(leading: const Icon(Icons.payments_outlined), title: const Text('Pricing'), subtitle: Text(a.pricingModel + ' • ' + (a.amountMinor == 0 ? 'مجاني' : (a.amountMinor / 100).toStringAsFixed(2) + ' ' + a.currency)))),
         const SizedBox(height: 10),
         FilledButton.icon(
