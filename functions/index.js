@@ -1,9 +1,11 @@
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { defineSecret } = require('firebase-functions/params');
 
 initializeApp();
 const db = getFirestore();
+const AUREN_AI_API_KEY = defineSecret('AUREN_AI_API_KEY');
 
 async function notify(uid, data) {
   if (!uid || !data) return;
@@ -133,7 +135,7 @@ exports.onConversationMembershipChanged = onDocumentUpdated(
 
 
 exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
-  { region: 'us-central1', timeoutSeconds: 60, memory: '256MiB' },
+  { region: 'us-central1', timeoutSeconds: 60, memory: '256MiB', secrets: [AUREN_AI_API_KEY] },
   async (request) => {
     if (!request.auth?.uid) {
       throw new Error('Unauthenticated');
@@ -146,7 +148,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       throw new Error('Invalid AI request.');
     }
 
-    const apiKey = process.env.AUREN_AI_API_KEY;
+    const apiKey = AUREN_AI_API_KEY.value();
     const model = process.env.AUREN_AI_MODEL || 'gpt-4o-mini';
     const baseUrl = (process.env.AUREN_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/$/, '');
 
