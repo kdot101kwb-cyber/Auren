@@ -312,16 +312,22 @@ class _PulseCard extends StatelessWidget {
                     onSelected: (value) {
                       if (value == 'edit') _openEdit(context);
                       if (value == 'delete') _confirmDelete(context, repo);
+                      if (value == 'report') _reportPost(context, repo);
                     },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
                         value: 'edit',
                         child: Text('Edit post'),
                       ),
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: 'delete',
                         child: Text('Delete post'),
                       ),
+                      if (post.authorId != uid)
+                        const PopupMenuItem(
+                          value: 'report',
+                          child: Text('Report post'),
+                        ),
                     ],
                   ),
               ],
@@ -431,6 +437,19 @@ class _PulseCard extends StatelessWidget {
         content: Text('Edit is coming next. Your original post remains unchanged.'),
       ),
     );
+  }
+  Future<void> _reportPost(BuildContext context, PostRepository repo) async {
+    final reasons = ['Spam', 'Harassment', 'Scam or fraud', 'Unsafe content', 'Other'];
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('Report post'),
+        children: reasons.map((r) => SimpleDialogOption(onPressed: () => Navigator.pop(context, r), child: Text(r))).toList(),
+      ),
+    );
+    if (reason == null) return;
+    await repo.report(post.id, uid, reason);
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report submitted.')));
   }
   Future<void> _confirmDelete(BuildContext context, PostRepository repo) async {
     final confirmed = await showDialog<bool>(
