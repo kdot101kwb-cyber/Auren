@@ -7,6 +7,7 @@ import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import 'more_screen.dart';
+import 'core_five_screen.dart';
 import '../../saved/presentation/saved_center_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
@@ -89,6 +90,13 @@ class AurenHomeV2 extends StatelessWidget {
         _card(context, Icons.bookmark_outline, 'Saved', 'كل المحتوى الذي حفظته في AUREN.', const AurenSavedCenterScreen()),
         const SizedBox(height: 12),
         Card(child: ListTile(
+          leading: const Icon(Icons.layers_outlined),
+          title: const Text('AUREN Core 5'),
+          subtitle: const Text('AI • Social • Business • Marketplace • Creator'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCoreFiveScreen())),
+        )),
+        Card(child: ListTile(
           leading: const Icon(Icons.more_horiz),
           title: const Text('More'),
           subtitle: const Text('Pulse • Business • Marketplace • Education • Travel • Entertainment • Agents'),
@@ -98,6 +106,7 @@ class AurenHomeV2 extends StatelessWidget {
       ],
     ),
   );
+  }
 
   Widget _goalEmpty(BuildContext context) => Card(
         child: ListTile(
