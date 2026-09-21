@@ -529,6 +529,17 @@ service cloud.firestore {
       allow delete: if request.auth != null && reviewId == request.auth.uid;
     }
 
+    match /marketplace_reports/{reportId} {
+      allow create: if request.auth != null
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.productId is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0
+        && request.resource.data.reason.size() <= 500
+        && request.resource.data.keys().hasOnly(['productId','reporterUid','reason','createdAt']);
+      allow read, update, delete: if false;
+    }
+
     match /users/{userId}/savedProducts/{productId} {
       allow read, create, delete: if isOwner(userId);
       allow update: if false;
