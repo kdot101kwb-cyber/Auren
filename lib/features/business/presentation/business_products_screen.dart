@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/product.dart';
 import '../../../services/marketplace/marketplace_repository.dart';
@@ -14,6 +15,11 @@ class _AurenBusinessProductsScreenState extends State<AurenBusinessProductsScree
   bool get _owner => FirebaseAuth.instance.currentUser?.uid != null;
   Future<void> add() async {
     final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;
+    final business=await FirebaseFirestore.instance.collection('businesses').doc(widget.businessId).get();
+    if(!business.exists || business.data()?['ownerId'] != uid){
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('فقط مالك النشاط يمكنه إضافة منتجات.')));
+      return;
+    }
     final n=TextEditingController(),d=TextEditingController(),price=TextEditingController(),img=TextEditingController();
     String cat='General',currency='USD';bool service=false;
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
