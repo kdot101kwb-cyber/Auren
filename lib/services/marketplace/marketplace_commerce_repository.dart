@@ -11,6 +11,7 @@ class MarketplaceCommerceRepository {
     if(deliveryPhone.trim().isEmpty||deliveryPhone.trim().length>40) throw ArgumentError('رقم هاتف غير صالح');
     if(deliveryProviderId.trim().isEmpty||deliveryProviderId.trim().length>60) throw ArgumentError('شركة توصيل غير صالحة');
     if(deliveryFeeMinor<0) throw ArgumentError('رسوم توصيل غير صالحة');
+    if(unitPriceMinor<0) throw ArgumentError('سعر غير صالح');
     final ref=orders.doc();
     await ref.set({'buyerId':buyerId,'sellerId':sellerId,'productId':productId,'quantity':quantity,'unitPriceMinor':unitPriceMinor,'deliveryFeeMinor':deliveryFeeMinor,'totalMinor':unitPriceMinor*quantity+deliveryFeeMinor,'currency':currency,'paymentMethod':paymentMethod,'paymentStatus':paymentMethod=='cash_on_delivery'?'unpaid':'pending','deliveryProviderId':deliveryProviderId,'shipmentId':null,'trackingNumber':null,'trackingUrl':null,'deliveryStatus':'pending','productName':productName ?? '','productImageUrl':productImageUrl ?? '','deliveryAddress':deliveryAddress.trim(),'deliveryPhone':deliveryPhone.trim(),'status':'pending','estimatedDeliveryAt':Timestamp.fromDate(DateTime.now().add(const Duration(days:3))),'createdAt':FieldValue.serverTimestamp()});
     await db.collection('marketplace_notifications').add({'recipientUid':sellerId,'actorUid':buyerId,'orderId':ref.id,'type':'order_created','title':'طلب جديد','body':'لديك طلب جديد في Marketplace','createdAt':FieldValue.serverTimestamp(),'read':false});
@@ -78,6 +79,10 @@ class MarketplaceCommerceRepository {
   }
   Future<void> addToCartWithSnapshot({required String uid,required String productId,required int quantity}) async { final p=await products.doc(productId).get(); if(!p.exists||p.data()==null) throw StateError('المنتج غير موجود'); final d=p.data()!; await db.collection('users').doc(uid).collection('cart').doc(productId).set({'productId':productId,'name':d['name'],'sellerId':d['ownerId'],'unitPriceMinor':d['priceMinor'],'currency':d['currency'],'quantity':quantity.clamp(1,100),'addedAt':FieldValue.serverTimestamp()}); }
   Future<String> checkoutCart({required String uid,required String paymentMethod,required String deliveryAddress,required String deliveryPhone,String deliveryProviderId='manual',int deliveryFeeMinor=0}) async {
+    if(!{'cash_on_delivery','pending_gateway'}.contains(paymentMethod)) throw ArgumentError('طريقة دفع غير صالحة');
+    if(deliveryAddress.trim().isEmpty||deliveryAddress.trim().length>500) throw ArgumentError('عنوان توصيل غير صالح');
+    if(deliveryPhone.trim().isEmpty||deliveryPhone.trim().length>40) throw ArgumentError('رقم هاتف غير صالح');
+    if(deliveryFeeMinor<0) throw ArgumentError('رسوم توصيل غير صالحة');
     final snap=await db.collection('users').doc(uid).collection('cart').get();
     if(snap.docs.isEmpty) throw StateError('السلة فارغة');
     String firstOrder='';
