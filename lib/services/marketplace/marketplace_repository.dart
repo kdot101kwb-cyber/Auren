@@ -12,8 +12,19 @@ class MarketplaceRepository{
  }
  Future<void> update(String id,Map<String,dynamic> data)=>_c.doc(id).update(data);
  Future<void> delete(String id)=>_c.doc(id).delete();
+ Future<void> recordEvent({required String productId, required String viewerUid, required String type}) async {
+  if (!['view','message','save'].contains(type)) return;
+  final product = await _c.doc(productId).get();
+  if (!product.exists || product.data() == null) return;
+  final ownerId = product.data()!['ownerId'];
+  if (ownerId is! String || ownerId.isEmpty) return;
+  await _c.doc(productId).collection('events').add({
+    'productId': productId, 'ownerId': ownerId, 'viewerUid': viewerUid,
+    'type': type, 'createdAt': FieldValue.serverTimestamp(),
+  });
+ }
  Future<void> report({required String productId,required String reporterUid,required String reason})=>_db.collection('marketplace_reports').add({'productId':productId,'reporterUid':reporterUid,'reason':reason.trim(),'createdAt':FieldValue.serverTimestamp()});
- Future<void> toggleSaved(String uid,String productId,bool saved)async{final ref=_db.collection('users').doc(uid).collection('savedProducts').doc(productId);if(saved){await ref.set({'productId':productId,'savedAt':FieldValue.serverTimestamp()});}else{await ref.delete();}}
+ Future<void> toggleSaved(String uid,String productId,bool saved)async{final ref=_db.collection('users').doc(uid).collection('savedProducts').doc(productId);if(saved){await ref.set({'productId':productId,'savedAt':FieldValue.serverTimestamp()});await recordEvent(productId:productId,viewerUid:uid,type:'save');}else{await ref.delete();}}
  Stream<Set<String>> watchSavedIds(String uid)=>_db.collection('users').doc(uid).collection('savedProducts').snapshots().map((s)=>s.docs.map((d)=>d.id).toSet());
  Stream<List<AurenProduct>> watchSavedProducts(String uid) {
   return _db.collection('users').doc(uid).collection('savedProducts').orderBy('savedAt', descending: true).snapshots().asyncMap((saved) async {
