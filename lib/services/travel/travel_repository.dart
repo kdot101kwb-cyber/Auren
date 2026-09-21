@@ -9,4 +9,6 @@ class TravelRepository {
   Future<String> createTrip({required String uid, required String title, required String destination, List<String> placeIds = const []}) async { final r = db.collection('trips').doc(); await r.set({'ownerId': uid, 'title': title.trim(), 'destination': destination.trim(), 'placeIds': placeIds, 'createdAt': FieldValue.serverTimestamp()}); return r.id; }
   Stream<List<AurenTrip>> watchMyTrips(String uid) => db.collection('trips').where('ownerId', isEqualTo: uid).snapshots().map((s) => s.docs.map((d) => AurenTrip.fromMap(d.id, d.data())).toList());
   Future<void> toggleSaved(String uid, String placeId, bool saved) => saved ? db.collection('users').doc(uid).collection('savedPlaces').doc(placeId).set({'placeId': placeId, 'createdAt': FieldValue.serverTimestamp()}) : db.collection('users').doc(uid).collection('savedPlaces').doc(placeId).delete();
+  Stream<List<AurenPlace>> watchSavedPlaces(String uid) => db.collection('users').doc(uid).collection('savedPlaces').snapshots().asyncMap((s) async { final out=<AurenPlace>[]; for(final d in s.docs){ final p=await db.collection('places').doc(d.id).get(); if(p.exists && (p.data()?['visibility']=='public')) out.add(AurenPlace.fromMap(p.id,p.data()!)); } return out; });
+  Future<void> deleteTrip(String uid,String tripId) => db.collection('trips').doc(tripId).delete();
 }
