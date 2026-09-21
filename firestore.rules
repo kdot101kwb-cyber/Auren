@@ -392,17 +392,22 @@ service cloud.firestore {
         && request.resource.data.quantity is int && request.resource.data.quantity > 0 && request.resource.data.quantity <= 1000
         && request.resource.data.unitPriceMinor == get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.priceMinor
         && request.resource.data.unitPriceMinor >= 0
-        && request.resource.data.totalMinor == request.resource.data.unitPriceMinor * request.resource.data.quantity
+        && request.resource.data.deliveryFeeMinor is int && request.resource.data.deliveryFeeMinor >= 0
+        && request.resource.data.totalMinor == request.resource.data.unitPriceMinor * request.resource.data.quantity + request.resource.data.deliveryFeeMinor
         && request.resource.data.currency is string
         && request.resource.data.currency == get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.currency
         && request.resource.data.paymentMethod in ['cash_on_delivery','pending_gateway']
+        && request.resource.data.paymentStatus in ['unpaid','pending','paid','failed','refunded']
+        && request.resource.data.deliveryProviderId is string
+        && request.resource.data.deliveryProviderId.size() > 0 && request.resource.data.deliveryProviderId.size() <= 60
+        && request.resource.data.deliveryStatus in ['pending','confirmed','processing','shipped','delivered','cancelled']
         && get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.status == 'active'
         && request.resource.data.status == 'pending'
         && request.resource.data.deliveryAddress is string && request.resource.data.deliveryAddress.size() > 0 && request.resource.data.deliveryAddress.size() <= 500
         && request.resource.data.deliveryPhone is string && request.resource.data.deliveryPhone.size() > 0 && request.resource.data.deliveryPhone.size() <= 40
         && request.resource.data.estimatedDeliveryAt is timestamp
         && request.resource.data.createdAt is timestamp
-        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt']);
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','deliveryFeeMinor','totalMinor','currency','paymentMethod','paymentStatus','deliveryProviderId','shipmentId','trackingNumber','trackingUrl','deliveryStatus','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt']);
       allow read: if request.auth != null && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
       allow update: if request.auth != null && resource.data.sellerId == request.auth.uid
         && request.resource.data.buyerId == resource.data.buyerId
@@ -410,21 +415,50 @@ service cloud.firestore {
         && request.resource.data.productId == resource.data.productId
         && request.resource.data.quantity == resource.data.quantity
         && request.resource.data.unitPriceMinor == resource.data.unitPriceMinor
+        && request.resource.data.deliveryFeeMinor == resource.data.deliveryFeeMinor
         && request.resource.data.totalMinor == resource.data.totalMinor
         && request.resource.data.currency == resource.data.currency
         && request.resource.data.paymentMethod == resource.data.paymentMethod
+        && request.resource.data.paymentStatus == resource.data.paymentStatus
+        && request.resource.data.deliveryProviderId == resource.data.deliveryProviderId
         && request.resource.data.productName == resource.data.productName
         && request.resource.data.productImageUrl == resource.data.productImageUrl
         && request.resource.data.deliveryAddress == resource.data.deliveryAddress
         && request.resource.data.deliveryPhone == resource.data.deliveryPhone
+        && request.resource.data.estimatedDeliveryAt is timestamp
         && request.resource.data.estimatedDeliveryAt == resource.data.estimatedDeliveryAt
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.status in ['pending','confirmed','processing','shipped','delivered','cancelled']
         && request.resource.data.statusUpdatedAt is timestamp
         && request.resource.data.updatedAt is timestamp
-        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt','updatedAt','statusUpdatedAt']);
+        && (request.resource.data.shipmentId is string || request.resource.data.shipmentId == null)
+        && (request.resource.data.trackingNumber is string || request.resource.data.trackingNumber == null)
+        && (request.resource.data.trackingUrl is string || request.resource.data.trackingUrl == null)
+        && request.resource.data.deliveryStatus in ['pending','confirmed','processing','shipped','delivered','cancelled']
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','deliveryFeeMinor','totalMinor','currency','paymentMethod','paymentStatus','deliveryProviderId','shipmentId','trackingNumber','trackingUrl','deliveryStatus','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt','updatedAt','statusUpdatedAt']);
       allow delete: if false;
     }
+    match /marketplace_notifications/{notificationId} {
+      allow read: if request.auth != null && resource.data.recipientUid == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.recipientUid is string
+        && request.resource.data.orderId is string
+        && request.resource.data.type in ['order_created','order_status','shipment_created']
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.body is string
+        && request.resource.data.body.size() <= 1000
+        && request.resource.data.read == false
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly(['recipientUid','actorUid','orderId','type','title','body','createdAt','read']);
+      allow update: if request.auth != null
+        && resource.data.recipientUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        && request.resource.data.read is bool;
+      allow delete: if false;
+    }
+
     match /users/{userId}/cart/{productId} {
       allow read, create, update, delete: if isOwner(userId);
     }
