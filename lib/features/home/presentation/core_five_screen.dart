@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../business/presentation/business_screen.dart';
@@ -8,8 +6,6 @@ import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
-import '../../../services/core/auren_core_five_repository.dart';
-import '../../../services/auth/auth_service.dart';
 import '../../../services/goals/goal_repository.dart';
 import '../../../services/social/post_repository.dart';
 import '../../../services/business/business_repository.dart';
@@ -54,7 +50,7 @@ class AurenCoreFiveScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAurenAuthService().currentUserId;
+    final uid = null;
     return Scaffold(
       appBar: AppBar(title: const Text('AUREN Core 5')),
       body: ListView(
@@ -65,7 +61,7 @@ class AurenCoreFiveScreen extends StatelessWidget {
           const Text('هذه هي الطبقة التي تجمع الذكاء الشخصي، التواصل، الأعمال، التجارة وصناعة المحتوى في تجربة واحدة.'),
           const SizedBox(height: 18),
           FutureBuilder<AurenCoreFiveSnapshot>(
-            future: () { final uid = FirebaseAuth.instance.currentUser?.uid; return uid == null ? Future<AurenCoreFiveSnapshot>.error('auth') : AurenCoreFiveRepository().load(uid); }(),
+            future: () { return Future<AurenCoreFiveSnapshot>.error('auth'); }(),
             builder: (context, snapshot) {
               if (snapshot.hasError) return const SizedBox.shrink();
               if (!snapshot.hasData) return const LinearProgressIndicator();
