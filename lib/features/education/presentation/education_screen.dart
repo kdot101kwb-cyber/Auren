@@ -13,10 +13,10 @@ class _EducationState extends State<AurenAURENEducationScreen>{
   @override Widget build(BuildContext context){
     final uid=FirebaseAuth.instance.currentUser?.uid;
     if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول عشان تستخدم التعلم.')));
-    return Scaffold(appBar:AppBar(title:const Text('AUREN Education'),actions:[IconButton(icon:const Icon(Icons.auto_awesome),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ابني لي خطة تعلم شخصية بناءً على أهدافي ومهاراتي.'))))]),body:StreamBuilder<List<AurenCourse>>(stream:repo.watchCourses(),builder:(context,s){
+    return Scaffold(appBar:AppBar(title:const Text('AUREN Education'),actions:[IconButton(icon:Icon(savedOnly?Icons.bookmark:Icons.bookmark_border),onPressed:()=>setState(()=>savedOnly=!savedOnly)),IconButton(icon:const Icon(Icons.auto_awesome),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ابني لي خطة تعلم شخصية بناءً على أهدافي ومهاراتي.'))))]),body:StreamBuilder<List<AurenCourse>>(stream:repo.watchCourses(),builder:(context,s){
       if(s.hasError)return Center(child:Text('تعذر تحميل التعليم: '+s.error.toString())); if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator());
       final all=s.data??const <AurenCourse>[]; final cats=all.map((e)=>e.category).where((e)=>e.isNotEmpty).toSet().toList()..sort();
-      final q=query.toLowerCase(); final courses=all.where((c)=>(!savedOnly)&&(q.isEmpty||(c.title+' '+c.description+' '+c.category).toLowerCase().contains(q))&&(category==null||c.category==category)).toList();
+      final q=query.toLowerCase(); final courses=all.where((c)=>(q.isEmpty||(c.title+' '+c.description+' '+c.category).toLowerCase().contains(q))&&(category==null||c.category==category)).toList();
       return ListView(padding:const EdgeInsets.all(16),children:[
         const ListTile(contentPadding:EdgeInsets.zero,leading:Icon(Icons.school,size:34),title:Text('Learn with AUREN',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold)),subtitle:Text('دورات، تقدم، ومدرس شخصي بالذكاء الاصطناعي.')),
         TextField(decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن دورة أو مهارة'),onChanged:(v)=>setState(()=>query=v)),
