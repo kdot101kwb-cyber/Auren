@@ -5,6 +5,12 @@ import '../../social/presentation/timeline_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
+import '../../../services/auth/auth_service.dart';
+import '../../../services/goals/goal_repository.dart';
+import '../../../services/social/post_repository.dart';
+import '../../../services/business/business_repository.dart';
+import '../../../services/marketplace/marketplace_repository.dart';
+import '../../../services/creator/creator_repository.dart';
 
 class AurenCoreFiveScreen extends StatelessWidget {
   const AurenCoreFiveScreen({super.key});
@@ -30,6 +36,7 @@ class AurenCoreFiveScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAurenAuthService().currentUserId;
     return Scaffold(
       appBar: AppBar(title: const Text('AUREN Core 5')),
       body: ListView(
@@ -39,6 +46,8 @@ class AurenCoreFiveScreen extends StatelessWidget {
           const SizedBox(height: 6),
           const Text('هذه هي الطبقة التي تجمع الذكاء الشخصي، التواصل، الأعمال، التجارة وصناعة المحتوى في تجربة واحدة.'),
           const SizedBox(height: 18),
+          if (uid != null) _liveOverview(context, uid),
+          if (uid != null) const SizedBox(height: 14),
           ...modules.asMap().entries.map((entry) => Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
@@ -58,6 +67,38 @@ class AurenCoreFiveScreen extends StatelessWidget {
       ),
     );
   }
+  Widget _liveOverview(BuildContext context, String uid) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Live Core Signals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                StreamBuilder(stream: GoalRepository().watch(uid), builder: (_, s) => _signal(Icons.flag_outlined, 'Goals', s.data?.where((g) => g.status == 'active').length.toString() ?? '…')),
+                StreamBuilder(stream: PostRepository().watchFeed(), builder: (_, s) => _signal(Icons.dynamic_feed_outlined, 'Pulse', s.data?.length.toString() ?? '…')),
+                StreamBuilder(stream: BusinessRepository().watchPublic(), builder: (_, s) => _signal(Icons.storefront_outlined, 'Business', s.data?.length.toString() ?? '…')),
+                StreamBuilder(stream: MarketplaceRepository().watchPublic(), builder: (_, s) => _signal(Icons.shopping_bag_outlined, 'Market', s.data?.length.toString() ?? '…')),
+                StreamBuilder(stream: CreatorRepository().watchDrafts(uid), builder: (_, s) => _signal(Icons.video_camera_back_outlined, 'Drafts', s.data?.length.toString() ?? '…')),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text('الوحدات الخمسة الآن مرتبطة ببياناتها الحقيقية، ويمكن تطويرها فوق نفس السياق بدل أن تعمل كجزر منفصلة.'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _signal(IconData icon, String label, String value) => Chip(
+        avatar: Icon(icon, size: 18),
+        label: Text('$label: $value'),
+      );
 }
 
 class _CoreModule {
