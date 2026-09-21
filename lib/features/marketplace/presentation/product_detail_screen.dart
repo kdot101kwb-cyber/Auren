@@ -16,6 +16,7 @@ class AurenProductDetailScreen extends StatefulWidget {
 class _AurenProductDetailScreenState extends State<AurenProductDetailScreen> {
   final repo = MarketplaceRepository();
   final businessRepo = BusinessRepository();
+  @override void initState() { super.initState(); final uid = FirebaseAuth.instance.currentUser?.uid; if (uid != null) { repo.recordEvent(productId: widget.product.id, viewerUid: uid, type: 'view'); } }
   Future<void> _report() async {
     final reason = await showDialog<String>(context: context, builder: (d) => SimpleDialog(
       title: const Text('الإبلاغ عن الإعلان'),
@@ -31,6 +32,7 @@ class _AurenProductDetailScreenState extends State<AurenProductDetailScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || widget.product.ownerId.isEmpty) return;
     try {
+      await repo.recordEvent(productId: widget.product.id, viewerUid: uid, type: 'message');
       final conv = await ConversationRepository().getOrCreateDirectConversation(uid: uid, otherUid: widget.product.ownerId, otherTitle: widget.product.name);
       if (!mounted) return;
       Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: conv.id, initialPrompt: 'مرحباً، أريد الاستفسار عن ${widget.product.name}.')));
