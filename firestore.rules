@@ -397,7 +397,7 @@ service cloud.firestore {
         && request.resource.data.currency is string
         && request.resource.data.currency == get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.currency
         && request.resource.data.paymentMethod in ['cash_on_delivery','pending_gateway']
-        && request.resource.data.paymentStatus in ['unpaid','pending','paid','failed','refunded']
+        && ((request.resource.data.paymentMethod == 'cash_on_delivery' && request.resource.data.paymentStatus == 'unpaid') || (request.resource.data.paymentMethod == 'pending_gateway' && request.resource.data.paymentStatus == 'pending'))
         && request.resource.data.deliveryProviderId is string
         && request.resource.data.deliveryProviderId in ['manual','sa3i','link_express','afrimex','twseel','wdee']
         && request.resource.data.deliveryStatus == 'pending'
