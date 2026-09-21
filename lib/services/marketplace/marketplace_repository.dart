@@ -51,6 +51,10 @@ class MarketplaceRepository{
     }
     return {'products':products.docs.length,'views':views,'messages':messages,'saves':saves};
   }
+  Stream<List<AurenProduct>> watchByOwnerIds(List<String> ownerIds) {
+    if(ownerIds.isEmpty) return const Stream.empty();
+    return _c.where('status',isEqualTo:'active').limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).where((p)=>ownerIds.contains(p.ownerId)).toList());
+  }
   Stream<List<AurenProduct>> watchBusiness(String businessId)=>_c.where('businessId',isEqualTo:businessId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).toList());
   Stream<List<AurenProduct>> watchOwner(String ownerId)=>_c.where('ownerId',isEqualTo:ownerId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).toList());
 }
