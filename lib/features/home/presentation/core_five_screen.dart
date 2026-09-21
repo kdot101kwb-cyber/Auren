@@ -5,6 +5,7 @@ import '../../social/presentation/timeline_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/goals/goal_repository.dart';
 import '../../../services/social/post_repository.dart';
