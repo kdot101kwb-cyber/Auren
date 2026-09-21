@@ -77,6 +77,8 @@ class AurenDeliveryGateway {
 
 /// Manual provider is the safe fallback until a courier API contract is connected.
 class AurenManualDeliveryProvider implements AurenDeliveryProvider {
+  const AurenManualDeliveryProvider();
+
   @override
   String get id => AurenDeliveryProviders.manual;
 
