@@ -415,7 +415,14 @@ service cloud.firestore {
         && request.resource.data.buyerId == resource.data.buyerId
         && request.resource.data.sellerId == resource.data.sellerId
         && request.resource.data.productId == resource.data.productId
-        && request.resource.data.status in ['pending','confirmed','processing','shipped','delivered','cancelled'];
+        && request.resource.data.quantity == resource.data.quantity
+        && request.resource.data.unitPriceMinor == resource.data.unitPriceMinor
+        && request.resource.data.totalMinor == resource.data.totalMinor
+        && request.resource.data.currency == resource.data.currency
+        && request.resource.data.paymentMethod == resource.data.paymentMethod
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.status in ['pending','confirmed','processing','shipped','delivered','cancelled']
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','status','createdAt','updatedAt']);
       allow delete: if false;
     }
     match /users/{userId}/cart/{productId} {
