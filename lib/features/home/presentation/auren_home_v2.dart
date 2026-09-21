@@ -4,6 +4,7 @@ import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import 'more_screen.dart';
+import '../../saved/presentation/saved_center_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -67,6 +68,7 @@ class AurenHomeV2 extends StatelessWidget {
         _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.', const AurenDiscoverScreen()),
         _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
         _card(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل الهدف إلى خطوات.', const PersonalAiScreen()),
+        _card(context, Icons.bookmark_outline, 'Saved', 'كل المحتوى الذي حفظته في AUREN.', const AurenSavedCenterScreen()),
         const SizedBox(height: 12),
         Card(child: ListTile(
           leading: const Icon(Icons.more_horiz),
