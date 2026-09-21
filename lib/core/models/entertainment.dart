@@ -1,0 +1,2 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+class AurenEntertainmentItem{final String id,title,type,description,imageUrl;const AurenEntertainmentItem({required this.id,required this.title,required this.type,required this.description,required this.imageUrl});factory AurenEntertainmentItem.fromMap(String id,Map<String,dynamic> d)=>AurenEntertainmentItem(id:id,title:d['title']??'',type:d['type']??'Global Series',description:d['description']??'',imageUrl:d['imageUrl']??'');}
