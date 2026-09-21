@@ -102,11 +102,38 @@ class MarketplaceCommerceRepository {
         if(quantity<1||quantity>1000) throw StateError('كمية غير صالحة: $productId');
         validated.add({'cart':cart,'productId':productId,'sellerId':sellerId,'quantity':quantity,'price':price,'currency':currency,'name':d['name']?.toString() ?? '','imageUrl':d['imageUrl']?.toString() ?? ''});
     }
+    if(validated.length>450) throw StateError('السلة تحتوي على عناصر كثيرة جداً للمعاملة الواحدة');
+    final batch=db.batch();
+    final createdOrders=<Map<String,dynamic>>[];
     for(final v in validated){
-      final id=await createOrder(buyerId:uid,productId:v['productId'],sellerId:v['sellerId'],quantity:v['quantity'],unitPriceMinor:v['price'],currency:v['currency'],paymentMethod:paymentMethod,deliveryAddress:deliveryAddress,deliveryPhone:deliveryPhone,productName:v['name'],productImageUrl:v['imageUrl'],deliveryProviderId:deliveryProviderId,deliveryFeeMinor:deliveryFeeMinor);
-      firstOrder=firstOrder.isEmpty?id:firstOrder;
+      final ref=orders.doc();
+      final orderData=<String,dynamic>{
+        'buyerId':uid,'sellerId':v['sellerId'],'productId':v['productId'],'quantity':v['quantity'],
+        'unitPriceMinor':v['price'],'deliveryFeeMinor':deliveryFeeMinor,
+        'totalMinor':v['price']*v['quantity']+deliveryFeeMinor,'currency':v['currency'],
+        'paymentMethod':paymentMethod,'paymentStatus':paymentMethod=='cash_on_delivery'?'unpaid':'pending',
+        'deliveryProviderId':deliveryProviderId,'shipmentId':null,'trackingNumber':null,'trackingUrl':null,
+        'deliveryStatus':'pending','productName':v['name'],'productImageUrl':v['imageUrl'],
+        'deliveryAddress':deliveryAddress.trim(),'deliveryPhone':deliveryPhone.trim(),'status':'pending',
+        'estimatedDeliveryAt':Timestamp.fromDate(DateTime.now().add(const Duration(days:3))),
+        'createdAt':FieldValue.serverTimestamp(),
+      };
+      batch.set(ref,orderData);
+      createdOrders.add({'id':ref.id,'sellerId':v['sellerId']});
+      if(firstOrder.isEmpty) firstOrder=ref.id;
     }
-    for(final cart in snap.docs) await cart.reference.delete();
+    for(final cart in snap.docs) batch.delete(cart.reference);
+    await batch.commit();
+    final notificationBatch=db.batch();
+    for(final order in createdOrders){
+      final notificationRef=db.collection('marketplace_notifications').doc();
+      notificationBatch.set(notificationRef,{
+        'recipientUid':order['sellerId'],'actorUid':uid,'orderId':order['id'],
+        'type':'order_created','title':'طلب جديد','body':'لديك طلب جديد في Marketplace',
+        'createdAt':FieldValue.serverTimestamp(),'read':false,
+      });
+    }
+    await notificationBatch.commit();
     return firstOrder;
   }
   Stream<List<Map<String,dynamic>>> watchCart(String uid)=>db.collection('users').doc(uid).collection('cart').orderBy('addedAt',descending:true).snapshots().map((s)=>s.docs.map((d)=>{'id':d.id,...d.data()}).toList());
