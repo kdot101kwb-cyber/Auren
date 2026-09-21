@@ -399,8 +399,8 @@ service cloud.firestore {
         && request.resource.data.paymentMethod in ['cash_on_delivery','pending_gateway']
         && request.resource.data.paymentStatus in ['unpaid','pending','paid','failed','refunded']
         && request.resource.data.deliveryProviderId is string
-        && request.resource.data.deliveryProviderId.size() > 0 && request.resource.data.deliveryProviderId.size() <= 60
-        && request.resource.data.deliveryStatus in ['pending','confirmed','processing','shipped','delivered','cancelled']
+        && request.resource.data.deliveryProviderId in ['manual','sa3i','link_express','afrimex','twseel','wdee']
+        && request.resource.data.deliveryStatus == 'pending'
         && get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.status == 'active'
         && request.resource.data.status == 'pending'
         && request.resource.data.deliveryAddress is string && request.resource.data.deliveryAddress.size() > 0 && request.resource.data.deliveryAddress.size() <= 500
@@ -426,13 +426,20 @@ service cloud.firestore {
         && request.resource.data.deliveryPhone == resource.data.deliveryPhone
         && request.resource.data.estimatedDeliveryAt is timestamp
         && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.status in ['pending','confirmed','processing','shipped','delivered','cancelled']
+        && (
+          (resource.data.status == 'pending' && request.resource.data.status in ['pending','confirmed','cancelled'])
+          || (resource.data.status == 'confirmed' && request.resource.data.status in ['confirmed','processing','cancelled'])
+          || (resource.data.status == 'processing' && request.resource.data.status in ['processing','shipped','cancelled'])
+          || (resource.data.status == 'shipped' && request.resource.data.status in ['shipped','delivered'])
+          || (resource.data.status in ['delivered','cancelled'] && request.resource.data.status == resource.data.status)
+        )
         && request.resource.data.statusUpdatedAt is timestamp
         && request.resource.data.updatedAt is timestamp
         && (request.resource.data.shipmentId is string || request.resource.data.shipmentId == null)
         && (request.resource.data.trackingNumber is string || request.resource.data.trackingNumber == null)
         && (request.resource.data.trackingUrl is string || request.resource.data.trackingUrl == null)
-        && request.resource.data.deliveryStatus in ['pending','confirmed','processing','shipped','delivered','cancelled']
+        && request.resource.data.deliveryProviderId in ['manual','sa3i','link_express','afrimex','twseel','wdee']
+        && request.resource.data.deliveryStatus == request.resource.data.status
         && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','deliveryFeeMinor','totalMinor','currency','paymentMethod','paymentStatus','deliveryProviderId','shipmentId','trackingNumber','trackingUrl','deliveryStatus','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt','updatedAt','statusUpdatedAt']);
       allow delete: if false;
     }
