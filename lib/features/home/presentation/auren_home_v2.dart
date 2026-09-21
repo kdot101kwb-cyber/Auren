@@ -8,6 +8,7 @@ import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import 'more_screen.dart';
 import 'core_five_screen.dart';
+import 'core_five_screen.dart';
 import '../../saved/presentation/saved_center_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
