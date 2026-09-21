@@ -73,6 +73,22 @@ class AurenPendingOnlinePaymentProvider implements AurenPaymentProvider {
   }
 }
 
+class AurenPaymentStateMachine {
+  static const states = {'unpaid', 'pending', 'paid', 'failed', 'refunded'};
+  static bool canTransition(String from, String to) {
+    if (!states.contains(from) || !states.contains(to)) return false;
+    if (from == to) return true;
+    const transitions = <String, Set<String>>{
+      'unpaid': {'pending', 'paid', 'failed'},
+      'pending': {'paid', 'failed'},
+      'paid': {'refunded'},
+      'failed': {'pending'},
+      'refunded': <String>{},
+    };
+    return transitions[from]?.contains(to) ?? false;
+  }
+}
+
 class AurenPaymentGateway {
   final List<AurenPaymentProvider> providers;
 
