@@ -399,7 +399,7 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.status == 'active'
         && request.resource.data.status == 'pending'
         && request.resource.data.createdAt is timestamp
-        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','status','createdAt']);
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','productName','productImageUrl','status','createdAt']);
       allow read: if request.auth != null && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
       allow update: if request.auth != null && resource.data.sellerId == request.auth.uid
         && request.resource.data.buyerId == resource.data.buyerId
@@ -410,9 +410,11 @@ service cloud.firestore {
         && request.resource.data.totalMinor == resource.data.totalMinor
         && request.resource.data.currency == resource.data.currency
         && request.resource.data.paymentMethod == resource.data.paymentMethod
+        && request.resource.data.productName == resource.data.productName
+        && request.resource.data.productImageUrl == resource.data.productImageUrl
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.status in ['pending','confirmed','processing','shipped','delivered','cancelled']
-        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','status','createdAt','updatedAt']);
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','productName','productImageUrl','status','createdAt','updatedAt']);
       allow delete: if false;
     }
     match /users/{userId}/cart/{productId} {
