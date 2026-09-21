@@ -48,6 +48,8 @@ class AurenCoreFiveScreen extends StatelessWidget {
           const SizedBox(height: 18),
           if (uid != null) _liveOverview(context, uid),
           if (uid != null) const SizedBox(height: 14),
+          _crossModuleFlow(context),
+          const SizedBox(height: 14),
           ...modules.asMap().entries.map((entry) => Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
@@ -94,6 +96,56 @@ class AurenCoreFiveScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _crossModuleFlow(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(children: [
+                Icon(Icons.hub_outlined),
+                SizedBox(width: 8),
+                Expanded(child: Text('Cross-module flows', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+              ]),
+              const SizedBox(height: 6),
+              const Text('الوحدات الخمسة ما بتشتغل كجزر منفصلة. ابدأ من أي نقطة وخلي AUREN يربط الخطوة التالية.'),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.flag_outlined, size: 18),
+                    label: const Text('Goal → Pulse'),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTimelineScreen())),
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.lightbulb_outline, size: 18),
+                    label: const Text('Idea → Business'),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())),
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.storefront_outlined, size: 18),
+                    label: const Text('Business → Market'),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())),
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.shopping_bag_outlined, size: 18),
+                    label: const Text('Market → Creator'),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENCreatorStudioScreen())),
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('Ask AUREN'),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'اربط لي أهدافي مع Pulse وBusiness وMarketplace وCreator Studio، واقترح لي مسارًا عمليًا واحدًا للخطوة التالية.'))),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
 
   static Widget _signal(IconData icon, String label, String value) => Chip(
         avatar: Icon(icon, size: 18),
