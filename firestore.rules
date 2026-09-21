@@ -444,7 +444,9 @@ service cloud.firestore {
         && request.resource.data.actorUid == request.auth.uid
         && request.resource.data.recipientUid is string
         && request.resource.data.orderId is string
-        && request.resource.data.type in ['order_created','order_status','shipment_created']
+        && get(/databases/$(database)/documents/marketplace_orders/$(request.resource.data.orderId)).data.buyerId == request.resource.data.actorUid
+        && ((request.resource.data.type == 'order_created' && get(/databases/$(database)/documents/marketplace_orders/$(request.resource.data.orderId)).data.sellerId == request.resource.data.recipientUid)
+          || (request.resource.data.type in ['order_status','shipment_created'] && get(/databases/$(database)/documents/marketplace_orders/$(request.resource.data.orderId)).data.sellerId == request.resource.data.actorUid && get(/databases/$(database)/documents/marketplace_orders/$(request.resource.data.orderId)).data.buyerId == request.resource.data.recipientUid))
         && request.resource.data.title is string
         && request.resource.data.title.size() <= 120
         && request.resource.data.body is string
