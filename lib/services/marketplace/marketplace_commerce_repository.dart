@@ -145,6 +145,7 @@ class MarketplaceCommerceRepository {
     if(!providers.contains(deliveryProviderId.trim())) throw ArgumentError('شركة توصيل غير صالحة');
     final snap=await db.collection('users').doc(uid).collection('cart').get();
     if(snap.docs.isEmpty) throw StateError('السلة فارغة');
+    String? checkoutCurrency;
     String firstOrder='';
     final validated=<Map<String,dynamic>>[];
     for(final cart in snap.docs){
@@ -160,7 +161,12 @@ class MarketplaceCommerceRepository {
         final price=(d['priceMinor'] as num?)?.toInt() ?? 0;
         final currency=d['currency']?.toString() ?? 'USD';
         if(sellerId.isEmpty) throw StateError('المنتج لا يملك بائعاً صالحاً: $productId');
-        if(quantity<1||quantity>1000) throw StateError('كمية غير صالحة: $productId');
+        if(quantity<1||quantity>100) throw StateError('كمية غير صالحة: $productId');
+        if(checkoutCurrency == null) {
+          checkoutCurrency = currency;
+        } else if(checkoutCurrency != currency) {
+          throw StateError('السلة تحتوي على عملات مختلفة؛ افصل الطلبات حسب العملة.');
+        }
         if(price<0||price>1000000000) throw StateError('سعر المنتج غير صالح: $productId');
         validated.add({'cart':cart,'productId':productId,'sellerId':sellerId,'quantity':quantity,'price':price,'currency':currency,'name':d['name']?.toString() ?? '','imageUrl':d['imageUrl']?.toString() ?? ''});
     }
