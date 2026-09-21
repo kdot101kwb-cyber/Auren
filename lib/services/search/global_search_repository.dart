@@ -10,13 +10,21 @@ class AurenGlobalSearchRepository {
     final q = text.trim().toLowerCase();
     if (q.isEmpty) return [];
     final results = await Future.wait([
-      _searchPeople(q),
-      _searchPosts(q),
-      _searchCollection(q, 'businesses', AurenSearchType.businesses, const ['name', 'title'], const ['category', 'description', 'location']),
-      _searchCollection(q, 'places', AurenSearchType.places, const ['name', 'title'], const ['city', 'country', 'description']),
-      _searchCollection(q, 'opportunities', AurenSearchType.opportunities, const ['title', 'name'], const ['company', 'category', 'location']),
+      _safe(() => _searchPeople(q)),
+      _safe(() => _searchPosts(q)),
+      _safe(() => _searchCollection(q, 'businesses', AurenSearchType.businesses, const ['name', 'title'], const ['category', 'description', 'location'])),
+      _safe(() => _searchCollection(q, 'places', AurenSearchType.places, const ['name', 'title'], const ['city', 'country', 'description'])),
+      _safe(() => _searchCollection(q, 'opportunities', AurenSearchType.opportunities, const ['title', 'name'], const ['company', 'category', 'location'])),
     ]);
     return results.expand<AurenSearchResult>((x) => x).toList();
+  }
+
+  Future<List<AurenSearchResult>> _safe(Future<List<AurenSearchResult>> Function() task) async {
+    try {
+      return await task();
+    } catch (_) {
+      return const <AurenSearchResult>[];
+    }
   }
 
   Future<List<AurenSearchResult>> _searchPeople(String q) async {
