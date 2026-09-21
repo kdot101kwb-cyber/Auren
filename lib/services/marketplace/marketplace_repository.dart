@@ -12,6 +12,7 @@ class MarketplaceRepository{
  }
  Future<void> update(String id,Map<String,dynamic> data)=>_c.doc(id).update(data);
  Future<void> delete(String id)=>_c.doc(id).delete();
+ Future<void> report({required String productId,required String reporterUid,required String reason})=>_db.collection('marketplace_reports').add({'productId':productId,'reporterUid':reporterUid,'reason':reason.trim(),'createdAt':FieldValue.serverTimestamp()});
  Future<void> toggleSaved(String uid,String productId,bool saved)async{final ref=_db.collection('users').doc(uid).collection('savedProducts').doc(productId);if(saved){await ref.set({'productId':productId,'savedAt':FieldValue.serverTimestamp()});}else{await ref.delete();}}
  Stream<Set<String>> watchSavedIds(String uid)=>_db.collection('users').doc(uid).collection('savedProducts').snapshots().map((s)=>s.docs.map((d)=>d.id).toSet());
  Stream<List<AurenProduct>> watchSavedProducts(String uid) {
