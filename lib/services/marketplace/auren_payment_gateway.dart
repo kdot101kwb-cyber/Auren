@@ -72,3 +72,40 @@ class AurenPendingOnlinePaymentProvider implements AurenPaymentProvider {
     );
   }
 }
+
+class AurenPaymentGateway {
+  final List<AurenPaymentProvider> providers;
+
+  const AurenPaymentGateway({
+    this.providers = const [
+      AurenCashOnDeliveryProvider(),
+      AurenPendingOnlinePaymentProvider(),
+    ],
+  });
+
+  AurenPaymentProvider? providerFor(String method) {
+    for (final provider in providers) {
+      if (provider.id == method) return provider;
+    }
+    return null;
+  }
+
+  Future<AurenPaymentIntent> createIntent({
+    required String method,
+    required String orderId,
+    required int amountMinor,
+    required String currency,
+  }) async {
+    if (amountMinor < 0) throw ArgumentError('مبلغ دفع غير صالح');
+    if (!RegExp(r'^[A-Z]{3}$').hasMatch(currency)) {
+      throw ArgumentError('عملة غير صالحة');
+    }
+    final provider = providerFor(method);
+    if (provider == null) throw ArgumentError('طريقة دفع غير مدعومة');
+    return provider.createIntent(
+      orderId: orderId,
+      amountMinor: amountMinor,
+      currency: currency,
+    );
+  }
+}
