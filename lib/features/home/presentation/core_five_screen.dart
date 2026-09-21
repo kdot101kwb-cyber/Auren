@@ -5,6 +5,9 @@ import '../../social/presentation/timeline_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+import '../../../services/core/auren_core_five_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/goals/goal_repository.dart';
@@ -35,6 +38,20 @@ class AurenCoreFiveScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _askAuren(BuildContext context) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(content: Text('AUREN يجمع وضعك من الوحدات الخمس...')));
+    try {
+      final snapshot = await AurenCoreFiveRepository().load(uid);
+      if (!context.mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: snapshot.toPrompt())));
+    } catch (e) {
+      if (context.mounted) messenger.showSnackBar(SnackBar(content: Text('تعذر جمع بيانات الوحدات: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAurenAuthService().currentUserId;
@@ -47,6 +64,13 @@ class AurenCoreFiveScreen extends StatelessWidget {
           const SizedBox(height: 6),
           const Text('هذه هي الطبقة التي تجمع الذكاء الشخصي، التواصل، الأعمال، التجارة وصناعة المحتوى في تجربة واحدة.'),
           const SizedBox(height: 18),
+          Card(child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
+            title: const Text('AUREN يربط الوحدات الخمس'),
+            subtitle: const Text('حلّل أهدافك + Social + Business + Marketplace + Creator معًا.'),
+            trailing: const Icon(Icons.arrow_forward),
+            onTap: () => _askAuren(context),
+          )),
           if (uid != null) _liveOverview(context, uid),
           if (uid != null) const SizedBox(height: 14),
           _crossModuleFlow(context),
