@@ -27,7 +27,7 @@ class _EducationState extends State<AurenAURENEducationScreen>{
   }
   Widget _card(BuildContext context,AurenCourse c,String uid)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
     title:Text(c.title),subtitle:Text(c.category+' • '+c.lessonCount.toString()+' lessons'),leading:const CircleAvatar(child:Icon(Icons.school)),
-    trailing:FilledButton(onPressed:()=>repo.enroll(uid,c.id),child:const Text('Enroll')),
+    trailing:StreamBuilder<Set<String>>(stream:repo.watchSavedIds(uid),builder:(context,s)=>IconButton(icon:Icon((s.data??{}).contains(c.id)?Icons.bookmark:Icons.bookmark_border),onPressed:()=>repo.toggleSaved(uid,c.id,!((s.data??{}).contains(c.id))))),
     onTap:()=>showModalBottomSheet(context:context,builder:(_)=>Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
       Text(c.title,style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text(c.description),const SizedBox(height:12),
       FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'ساعدني أدرس دورة '+c.title+' واصنع لي اختباراً بعد كل درس.'))),icon:const Icon(Icons.auto_awesome),label:const Text('AI Tutor'))
