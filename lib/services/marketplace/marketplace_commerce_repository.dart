@@ -13,8 +13,11 @@ class MarketplaceCommerceRepository {
     if(deliveryFeeMinor<0) throw ArgumentError('رسوم توصيل غير صالحة');
     if(unitPriceMinor<0) throw ArgumentError('سعر غير صالح');
     final ref=orders.doc();
-    await ref.set({'buyerId':buyerId,'sellerId':sellerId,'productId':productId,'quantity':quantity,'unitPriceMinor':unitPriceMinor,'deliveryFeeMinor':deliveryFeeMinor,'totalMinor':unitPriceMinor*quantity+deliveryFeeMinor,'currency':currency,'paymentMethod':paymentMethod,'paymentStatus':paymentMethod=='cash_on_delivery'?'unpaid':'pending','deliveryProviderId':deliveryProviderId,'shipmentId':null,'trackingNumber':null,'trackingUrl':null,'deliveryStatus':'pending','productName':productName ?? '','productImageUrl':productImageUrl ?? '','deliveryAddress':deliveryAddress.trim(),'deliveryPhone':deliveryPhone.trim(),'status':'pending','estimatedDeliveryAt':Timestamp.fromDate(DateTime.now().add(const Duration(days:3))),'createdAt':FieldValue.serverTimestamp()});
-    await db.collection('marketplace_notifications').add({'recipientUid':sellerId,'actorUid':buyerId,'orderId':ref.id,'type':'order_created','title':'طلب جديد','body':'لديك طلب جديد في Marketplace','createdAt':FieldValue.serverTimestamp(),'read':false});
+    final notificationRef=db.collection('marketplace_notifications').doc();
+    final batch=db.batch();
+    batch.set(ref,{'buyerId':buyerId,'sellerId':sellerId,'productId':productId,'quantity':quantity,'unitPriceMinor':unitPriceMinor,'deliveryFeeMinor':deliveryFeeMinor,'totalMinor':unitPriceMinor*quantity+deliveryFeeMinor,'currency':currency,'paymentMethod':paymentMethod,'paymentStatus':paymentMethod=='cash_on_delivery'?'unpaid':'pending','deliveryProviderId':deliveryProviderId,'shipmentId':null,'trackingNumber':null,'trackingUrl':null,'deliveryStatus':'pending','productName':productName ?? '','productImageUrl':productImageUrl ?? '','deliveryAddress':deliveryAddress.trim(),'deliveryPhone':deliveryPhone.trim(),'status':'pending','estimatedDeliveryAt':Timestamp.fromDate(DateTime.now().add(const Duration(days:3))),'createdAt':FieldValue.serverTimestamp(),'updatedAt':FieldValue.serverTimestamp(),'statusUpdatedAt':FieldValue.serverTimestamp()});
+    batch.set(notificationRef,{'recipientUid':sellerId,'actorUid':buyerId,'orderId':ref.id,'type':'order_created','title':'طلب جديد','body':'لديك طلب جديد في Marketplace','createdAt':FieldValue.serverTimestamp(),'read':false});
+    await batch.commit();
     return ref.id;
   }
   Stream<List<Map<String,dynamic>>> watchBuyerOrders(String uid)=>orders.where('buyerId',isEqualTo:uid).limit(100).snapshots().map((s)=>s.docs.map((d)=>{'id':d.id,...d.data()}).toList());
