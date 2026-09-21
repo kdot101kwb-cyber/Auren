@@ -384,19 +384,6 @@ service cloud.firestore {
       allow update: if false;
     }
 
-    match /users/{userId}/cart/{productId} {
-      allow read, create, update, delete: if isOwner(userId)
-        && request.resource.data.productId == productId
-        && request.resource.data.quantity is int
-        && request.resource.data.quantity >= 1
-        && request.resource.data.quantity <= 100
-        && request.resource.data.sellerId is string
-        && request.resource.data.unitPriceMinor is int
-        && request.resource.data.unitPriceMinor >= 0
-        && request.resource.data.currency is string
-        && request.resource.data.currency.size() == 3;
-    }
-
     match /marketplace_orders/{orderId} {
       allow create: if request.auth != null
         && request.resource.data.buyerId == request.auth.uid
@@ -407,7 +394,9 @@ service cloud.firestore {
         && request.resource.data.unitPriceMinor >= 0
         && request.resource.data.totalMinor == request.resource.data.unitPriceMinor * request.resource.data.quantity
         && request.resource.data.currency is string
-        && request.resource.data.paymentMethod is string
+        && request.resource.data.currency == get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.currency
+        && request.resource.data.paymentMethod in ['cash_on_delivery','pending_gateway']
+        && get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.status == 'active'
         && request.resource.data.status == 'pending'
         && request.resource.data.createdAt is timestamp
         && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','status','createdAt']);
