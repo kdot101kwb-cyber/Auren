@@ -1,0 +1,2 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+class AurenCreatorDraft{final String id,ownerId,title,body,status;final DateTime? createdAt;const AurenCreatorDraft({required this.id,required this.ownerId,required this.title,required this.body,required this.status,this.createdAt});factory AurenCreatorDraft.fromMap(String id,Map<String,dynamic> d)=>AurenCreatorDraft(id:id,ownerId:d['ownerId']??'',title:d['title']??'',body:d['body']??'',status:d['status']??'draft',createdAt:(d['createdAt'] as Timestamp?)?.toDate());}
