@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/goals/goal_repository.dart';
+import '../../core/models/goal.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
@@ -21,8 +24,9 @@ class AurenHomeV2 extends StatelessWidget {
         ),
       ],
     ),
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     body: ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       children: [
         Text(_greeting(), style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
@@ -64,6 +68,19 @@ class AurenHomeV2 extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
+        if (uid != null)
+          StreamBuilder<List<AurenGoal>>(
+            stream: GoalRepository().watch(uid),
+            builder: (context, snapshot) {
+              final goals = (snapshot.data ?? const <AurenGoal>[]).where((g) => g.status == 'active').take(3).toList();
+              if (goals.isEmpty) return _goalEmpty(context);
+              final average = goals.fold<int>(0, (sum, g) => sum + g.progress) ~/ goals.length;
+              return _goalProgress(context, goals, average);
+            },
+          )
+        else
+          _goalEmpty(context),
+        const SizedBox(height: 12),
         _card(context, Icons.auto_awesome, 'AUREN AI', 'اسأل، خطط، وأنجز.', const MessengerScreen()),
         _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.', const AurenDiscoverScreen()),
         _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
@@ -80,6 +97,39 @@ class AurenHomeV2 extends StatelessWidget {
       ],
     ),
   );
+
+  Widget _goalEmpty(BuildContext context) => Card(
+        child: ListTile(
+          leading: const Icon(Icons.flag_outlined),
+          title: const Text('ابدأ هدفك الأول'),
+          subtitle: const Text('حوّل فكرة واحدة إلى خطة قابلة للتنفيذ مع AUREN.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalAiScreen())),
+        ),
+      );
+
+  Widget _goalProgress(BuildContext context, List<AurenGoal> goals, int average) => Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [const Icon(Icons.track_changes), const SizedBox(width: 8), const Expanded(child: Text('Goal progress', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))), Text('$average%')]),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: average.clamp(0, 100) / 100),
+              const SizedBox(height: 6),
+              ...goals.map((goal) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(goal.progress.clamp(0, 100).toString() + '%'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalAiScreen())),
+              )),
+            ],
+          ),
+        ),
+      );
 
   static String _greeting() {
     final hour = DateTime.now().hour;
