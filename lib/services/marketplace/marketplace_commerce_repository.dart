@@ -10,7 +10,7 @@ class MarketplaceCommerceRepository {
     if(deliveryAddress.trim().isEmpty||deliveryAddress.trim().length>500) throw ArgumentError('عنوان توصيل غير صالح');
     if(deliveryPhone.trim().isEmpty||deliveryPhone.trim().length>40) throw ArgumentError('رقم هاتف غير صالح');
     final ref=orders.doc();
-    await ref.set({'buyerId':buyerId,'sellerId':sellerId,'productId':productId,'quantity':quantity,'unitPriceMinor':unitPriceMinor,'totalMinor':unitPriceMinor*quantity,'currency':currency,'paymentMethod':paymentMethod,'productName':productName ?? '','productImageUrl':productImageUrl ?? '','deliveryAddress':deliveryAddress.trim(),'deliveryPhone':deliveryPhone.trim(),'status':'pending','createdAt':FieldValue.serverTimestamp()});
+    await ref.set({'buyerId':buyerId,'sellerId':sellerId,'productId':productId,'quantity':quantity,'unitPriceMinor':unitPriceMinor,'totalMinor':unitPriceMinor*quantity,'currency':currency,'paymentMethod':paymentMethod,'productName':productName ?? '','productImageUrl':productImageUrl ?? '','deliveryAddress':deliveryAddress.trim(),'deliveryPhone':deliveryPhone.trim(),'status':'pending','estimatedDeliveryAt':Timestamp.fromDate(DateTime.now().add(const Duration(days:3))),'createdAt':FieldValue.serverTimestamp()});
     return ref.id;
   }
   Stream<List<Map<String,dynamic>>> watchBuyerOrders(String uid)=>orders.where('buyerId',isEqualTo:uid).limit(100).snapshots().map((s)=>s.docs.map((d)=>{'id':d.id,...d.data()}).toList());
