@@ -31,7 +31,7 @@ class _AurenMyMarketplaceScreenState extends State<AurenMyMarketplaceScreen>{
         return ListView.separated(padding:const EdgeInsets.all(16),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:8),
           itemBuilder:(context,i){final p=s.data![i];return Card(child:ListTile(
             leading:const Icon(Icons.inventory_2_outlined),title:Text(p.name),subtitle:Text((p.priceMinor/100).toStringAsFixed(2)+' '+p.currency+' • '+p.businessId),
-            trailing:PopupMenuButton<String>(onSelected:(v)async{if(v=='edit'){await _edit(context,p);}else if(v=='delete'){await repo.delete(p.id);}},itemBuilder:(_)=>const [PopupMenuItem(value:'edit',child:Text('تعديل')),PopupMenuItem(value:'delete',child:Text('حذف'))]),
+            trailing:PopupMenuButton<String>(onSelected:(v)async{if(v=='edit'){await _edit(context,p);}else if(v=='delete'){final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(title:const Text('حذف الإعلان؟'),content:Text('سيتم حذف «${p.name}» نهائياً.'),actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('حذف'))]));if(ok==true){await repo.delete(p.id);if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حذف الإعلان')));}}},itemBuilder:(_)=>const [PopupMenuItem(value:'edit',child:Text('تعديل')),PopupMenuItem(value:'delete',child:Text('حذف'))]),
           ));});
       }));
   }
