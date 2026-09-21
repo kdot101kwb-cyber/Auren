@@ -4,42 +4,32 @@ import '../../../services/education/education_repository.dart';
 import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
-class AurenAURENEducationScreen extends StatelessWidget {
+class AurenAURENEducationScreen extends StatefulWidget {
   const AurenAURENEducationScreen({super.key});
-  @override Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return _authRequired();
-    final repo = EducationRepository();
-    return Scaffold(appBar: AppBar(title: const Text('AUREN Education')), body: StreamBuilder<List<AurenCourse>>(
-      stream: repo.watchCourses(), builder: (context, snapshot) {
-        if (snapshot.hasError) return _error(snapshot.error);
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-        final courses = snapshot.data ?? const <AurenCourse>[];
-        return ListView(padding: const EdgeInsets.all(16), children: [
-          const ListTile(contentPadding: EdgeInsets.zero, leading: Icon(Icons.school, size: 34), title: Text('Learn with AUREN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)), subtitle: Text('دورات، تقدم، ومدرس شخصي بالذكاء الاصطناعي.')),
-          const Text('My Learning', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          StreamBuilder<List<AurenLearningProgress>>(stream: repo.watchMyLearning(uid), builder: (context, ps) {
-            final progress = {for (final p in ps.data ?? const <AurenLearningProgress>[]) p.courseId: p};
-            final mine = courses.where((c) => progress.containsKey(c.id)).toList();
-            if (mine.isEmpty) return const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Text('لسه ما سجلت في أي دورة.'));
-            return Column(children: mine.map((c) => _courseCard(context, c, repo, uid, progress[c.id])).toList());
-          }),
-          const SizedBox(height: 8), const Text('Courses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          if (courses.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('لا توجد دورات منشورة حالياً.'))),
-          ...courses.map((c) => _courseCard(context, c, repo, uid)),
-        ]);
-      },
-    ));
-  }
-  Widget _courseCard(BuildContext context, AurenCourse c, EducationRepository repo, String uid, [AurenLearningProgress? progress]) {
-    final enrolled = progress != null; final done = progress?.completedLessons ?? 0; final total = c.lessonCount <= 0 ? 1 : c.lessonCount; final ratio = (done / total).clamp(0.0, 1.0);
-    return Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(
-      leading: CircleAvatar(child: Icon(enrolled ? Icons.play_arrow : Icons.school)), title: Text(c.title),
-      subtitle: Text('${c.category} • ${c.lessonCount} lessons${enrolled ? ' • ${(ratio * 100).round()}%' : ''}'),
-      trailing: enrolled ? SizedBox(width: 72, child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [LinearProgressIndicator(value: ratio), const SizedBox(height: 4), Text('${done}/${c.lessonCount}')])) : FilledButton(onPressed: () async { await repo.enroll(uid, c.id); }, child: const Text('Enroll')),
-      onTap: enrolled ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'ساعدني أكمل دورة ${c.title}، أنا وصلت ${done} من ${c.lessonCount} درس.'))) : null,
-    ));
-  }
+  @override State<AurenAURENEducationScreen> createState()=>_EducationState();
 }
-Widget _authRequired() => const Scaffold(appBar: AppBar(title: Text('AUREN Education')), body: Center(child: Padding(padding: EdgeInsets.all(24), child: Text('سجّل الدخول عشان تستخدم التعلم.'))));
-Widget _error(Object? e) => Center(child: Padding(padding: EdgeInsets.all(24), child: Text('تعذر تحميل بيانات التعليم. $e')));
+class _EducationState extends State<AurenAURENEducationScreen>{
+  final repo=EducationRepository(); String query=''; String? category;
+  @override Widget build(BuildContext context){
+    final uid=FirebaseAuth.instance.currentUser?.uid;
+    if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول عشان تستخدم التعلم.')));
+    return Scaffold(appBar:AppBar(title:const Text('AUREN Education'),actions:[IconButton(icon:const Icon(Icons.auto_awesome),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ابني لي خطة تعلم شخصية بناءً على أهدافي ومهاراتي.'))))]),body:StreamBuilder<List<AurenCourse>>(stream:repo.watchCourses(),builder:(context,s){
+      if(s.hasError)return Center(child:Text('تعذر تحميل التعليم: '+s.error.toString())); if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator());
+      final all=s.data??const <AurenCourse>[]; final cats=all.map((e)=>e.category).where((e)=>e.isNotEmpty).toSet().toList()..sort();
+      final q=query.toLowerCase(); final courses=all.where((c)=>(q.isEmpty||(c.title+' '+c.description+' '+c.category).toLowerCase().contains(q))&&(category==null||c.category==category)).toList();
+      return ListView(padding:const EdgeInsets.all(16),children:[
+        const ListTile(contentPadding:EdgeInsets.zero,leading:Icon(Icons.school,size:34),title:Text('Learn with AUREN',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold)),subtitle:Text('دورات، تقدم، ومدرس شخصي بالذكاء الاصطناعي.')),
+        TextField(decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن دورة أو مهارة'),onChanged:(v)=>setState(()=>query=v)),
+        const SizedBox(height:8),SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[null,...cats].map((c)=>Padding(padding:const EdgeInsets.only(right:8),child:ChoiceChip(label:Text(c??'All'),selected:category==c,onSelected:(_)=>setState(()=>category=c))).toList()))),
+        const SizedBox(height:12),...courses.map((c)=>_card(context,c,uid)),
+      ]);
+    }));
+  }
+  Widget _card(BuildContext context,AurenCourse c,String uid)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
+    title:Text(c.title),subtitle:Text(c.category+' • '+c.lessonCount.toString()+' lessons'),leading:const CircleAvatar(child:Icon(Icons.school)),
+    trailing:FilledButton(onPressed:()=>repo.enroll(uid,c.id),child:const Text('Enroll')),
+    onTap:()=>showModalBottomSheet(context:context,builder:(_)=>Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Text(c.title,style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text(c.description),const SizedBox(height:12),
+      FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'ساعدني أدرس دورة '+c.title+' واصنع لي اختباراً بعد كل درس.'))),icon:const Icon(Icons.auto_awesome),label:const Text('AI Tutor'))
+    ]))));
+}
