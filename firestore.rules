@@ -400,8 +400,9 @@ service cloud.firestore {
         && request.resource.data.status == 'pending'
         && request.resource.data.deliveryAddress is string && request.resource.data.deliveryAddress.size() > 0 && request.resource.data.deliveryAddress.size() <= 500
         && request.resource.data.deliveryPhone is string && request.resource.data.deliveryPhone.size() > 0 && request.resource.data.deliveryPhone.size() <= 40
+        && request.resource.data.estimatedDeliveryAt is timestamp
         && request.resource.data.createdAt is timestamp
-        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','productName','productImageUrl','deliveryAddress','deliveryPhone','status','createdAt']);
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt']);
       allow read: if request.auth != null && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
       allow update: if request.auth != null && resource.data.sellerId == request.auth.uid
         && request.resource.data.buyerId == resource.data.buyerId
@@ -416,11 +417,12 @@ service cloud.firestore {
         && request.resource.data.productImageUrl == resource.data.productImageUrl
         && request.resource.data.deliveryAddress == resource.data.deliveryAddress
         && request.resource.data.deliveryPhone == resource.data.deliveryPhone
+        && request.resource.data.estimatedDeliveryAt == resource.data.estimatedDeliveryAt
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.status in ['pending','confirmed','processing','shipped','delivered','cancelled']
         && request.resource.data.statusUpdatedAt is timestamp
         && request.resource.data.updatedAt is timestamp
-        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','productName','productImageUrl','deliveryAddress','deliveryPhone','status','createdAt','updatedAt','statusUpdatedAt']);
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt','updatedAt','statusUpdatedAt']);
       allow delete: if false;
     }
     match /users/{userId}/cart/{productId} {
