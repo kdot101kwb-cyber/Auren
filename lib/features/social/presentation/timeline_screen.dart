@@ -138,6 +138,18 @@ class _NextMoveCard extends StatelessWidget {
                 ),
               ),
               IconButton(
+                tooltip: 'Ask AUREN',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MessengerScreen(
+                      initialPrompt: 'حلّل ما يحدث في AUREN Pulse الآن، واربط الأفكار والمشاريع والفرص بما يمكنني فعله كخطوة تالية.',
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.auto_awesome),
+              ),
+              IconButton(
                 tooltip: 'See why',
                 onPressed: () => _showWhy(context),
                 icon: const Icon(Icons.info_outline),
