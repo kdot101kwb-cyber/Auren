@@ -27,7 +27,7 @@ abstract class AurenDeliveryProvider {
 class AurenDeliveryGateway {
   final List<AurenDeliveryProvider> providers;
 
-  const AurenDeliveryGateway({this.providers = const []});
+  const AurenDeliveryGateway({this.providers = const [AurenManualDeliveryProvider()]});
 
   Future<List<AurenDeliveryQuote>> getQuotes({
     required String pickupAddress,
