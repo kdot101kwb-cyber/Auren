@@ -3,8 +3,22 @@ import 'package:flutter/material.dart';
 import '../../../core/models/product.dart';
 import '../../../services/marketplace/marketplace_repository.dart';
 
-class AurenMyMarketplaceScreen extends StatelessWidget{
+class AurenMyMarketplaceScreen extends StatefulWidget{
   const AurenMyMarketplaceScreen({super.key});
+  @override State<AurenMyMarketplaceScreen> createState()=>_AurenMyMarketplaceScreenState();
+}
+
+class _AurenMyMarketplaceScreenState extends State<AurenMyMarketplaceScreen>{
+  final repo=MarketplaceRepository();
+  Future<void> _edit(BuildContext context,AurenProduct p) async {
+    final n=TextEditingController(text:p.name), d=TextEditingController(text:p.description), price=TextEditingController(text:(p.priceMinor/100).toStringAsFixed(2)), img=TextEditingController(text:p.imageUrl);
+    String cat=p.category, currency=p.currency; bool service=p.service;
+    const cats=['General','Fashion','Food','Electronics','Services','Home','Agriculture','Other'];
+    final ok=await showModalBottomSheet<bool>(context:context,isScrollControlled:true,builder:(ctx)=>StatefulBuilder(builder:(ctx,setM)=>Padding(padding:EdgeInsets.fromLTRB(20,20,20,MediaQuery.of(ctx).viewInsets.bottom+20),child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      const Text('تعديل المنتج / الخدمة',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),TextField(controller:n,decoration:const InputDecoration(labelText:'الاسم')),TextField(controller:d,maxLines:3,decoration:const InputDecoration(labelText:'الوصف')),TextField(controller:price,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'السعر')),TextField(controller:img,decoration:const InputDecoration(labelText:'رابط الصورة')),DropdownButtonFormField<String>(value:cats.contains(cat)?cat:cats.first,items:cats.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setM(()=>cat=v!),decoration:const InputDecoration(labelText:'التصنيف')),TextField(controller:TextEditingController(text:currency),onChanged:(v)=>currency=v.trim().toUpperCase(),decoration:const InputDecoration(labelText:'العملة')),SwitchListTile(value:service,onChanged:(v)=>setM(()=>service=v),title:const Text('خدمة بدل منتج')),const SizedBox(height:12),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))]))));
+    if(ok==true){final minor=((double.tryParse(price.text.replaceAll(',','.'))??0)*100).round();await repo.update(p.id,{'name':n.text.trim(),'description':d.text.trim(),'category':cat,'currency':currency,'priceMinor':minor,'imageUrl':img.text.trim(),'service':service});if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم تحديث المنتج')));}
+    for(final x in [n,d,price,img])x.dispose();
+  }
   @override Widget build(BuildContext context){
     final uid=FirebaseAuth.instance.currentUser?.uid;
     if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول أولاً.')));
