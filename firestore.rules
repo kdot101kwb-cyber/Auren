@@ -420,6 +420,19 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
+    match /products/{productId}/events/{eventId} {
+      allow create: if request.auth != null
+        && request.resource.data.productId == productId
+        && request.resource.data.viewerUid == request.auth.uid
+        && request.resource.data.ownerId == get(/databases/$(database)/documents/products/$(productId)).data.ownerId
+        && request.resource.data.type in ['view','message','save']
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly(['productId','ownerId','viewerUid','type','createdAt']);
+      allow read: if request.auth != null
+        && get(/databases/$(database)/documents/products/$(productId)).data.ownerId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     match /courses/{courseId} {
       allow read: if request.auth != null && resource.data.status == 'published';
       allow create, update, delete: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
