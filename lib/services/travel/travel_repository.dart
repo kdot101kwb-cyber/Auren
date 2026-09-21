@@ -1,2 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';import '../../core/models/travel.dart';
-class TravelRepository{final FirebaseFirestore db;TravelRepository({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;Stream<List<AurenPlace>> watchPlaces()=>db.collection('places').where('visibility',isEqualTo:'public').limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenPlace.fromMap(d.id,d.data())).toList());Future<String> createTrip({required String uid,required String title,required String destination,List<String> placeIds=const []})async{final r=db.collection('trips').doc();await r.set({'ownerId':uid,'title':title,'destination':destination,'placeIds':placeIds,'createdAt':FieldValue.serverTimestamp()});return r.id;}Stream<List<AurenTrip>> watchMyTrips(String uid)=>db.collection('trips').where('ownerId',isEqualTo:uid).snapshots().map((s)=>s.docs.map((d)=>AurenTrip.fromMap(d.id,d.data())).toList());Future<void> savePlace(String uid,String placeId)=>db.collection('users').doc(uid).collection('savedPlaces').doc(placeId).set({'placeId':placeId,'createdAt':FieldValue.serverTimestamp()});}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/models/travel.dart';
+
+class TravelRepository {
+  final FirebaseFirestore db;
+  TravelRepository({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
+  Stream<List<AurenPlace>> watchPlaces() => db.collection('places').where('visibility', isEqualTo: 'public').limit(100).snapshots().map((s) => s.docs.map((d) => AurenPlace.fromMap(d.id, d.data())).toList());
+  Stream<Set<String>> watchSavedIds(String uid) => db.collection('users').doc(uid).collection('savedPlaces').snapshots().map((s) => s.docs.map((d) => d.id).toSet());
+  Future<String> createTrip({required String uid, required String title, required String destination, List<String> placeIds = const []}) async { final r = db.collection('trips').doc(); await r.set({'ownerId': uid, 'title': title.trim(), 'destination': destination.trim(), 'placeIds': placeIds, 'createdAt': FieldValue.serverTimestamp()}); return r.id; }
+  Stream<List<AurenTrip>> watchMyTrips(String uid) => db.collection('trips').where('ownerId', isEqualTo: uid).snapshots().map((s) => s.docs.map((d) => AurenTrip.fromMap(d.id, d.data())).toList());
+  Future<void> toggleSaved(String uid, String placeId, bool saved) => saved ? db.collection('users').doc(uid).collection('savedPlaces').doc(placeId).set({'placeId': placeId, 'createdAt': FieldValue.serverTimestamp()}) : db.collection('users').doc(uid).collection('savedPlaces').doc(placeId).delete();
+}
