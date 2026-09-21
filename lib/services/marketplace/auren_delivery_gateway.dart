@@ -24,6 +24,24 @@ abstract class AurenDeliveryProvider {
   Future<AurenDeliveryShipment?> track(String trackingNumber);
 }
 
+class AurenDeliveryStateMachine {
+  static const states = {'pending', 'assigned', 'picked_up', 'shipped', 'delivered', 'failed', 'returned'};
+  static bool canTransition(String from, String to) {
+    if (!states.contains(from) || !states.contains(to)) return false;
+    if (from == to) return true;
+    const transitions = <String, Set<String>>{
+      'pending': {'assigned', 'failed'},
+      'assigned': {'picked_up', 'failed'},
+      'picked_up': {'shipped', 'failed'},
+      'shipped': {'delivered', 'failed', 'returned'},
+      'delivered': <String>{},
+      'failed': {'assigned', 'returned'},
+      'returned': <String>{},
+    };
+    return transitions[from]?.contains(to) ?? false;
+  }
+}
+
 class AurenDeliveryGateway {
   final List<AurenDeliveryProvider> providers;
 
