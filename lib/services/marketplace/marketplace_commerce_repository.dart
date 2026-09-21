@@ -101,6 +101,34 @@ class MarketplaceCommerceRepository {
     });
     await batch.commit();
   }
+  Future<void> updateDeliveryStatus(String id,String status) async {
+    const allowed={'pending','assigned','picked_up','shipped','delivered','failed','returned'};
+    if(!allowed.contains(status)) throw ArgumentError('حالة توصيل غير صالحة');
+    final ref=orders.doc(id);
+    final snap=await ref.get();
+    if(!snap.exists||snap.data()==null) throw StateError('الطلب غير موجود');
+    final order=snap.data()!;
+    final current=order['deliveryStatus']?.toString() ?? 'pending';
+    const transitions={
+      'pending': {'assigned','failed'},
+      'assigned': {'picked_up','failed'},
+      'picked_up': {'shipped','failed'},
+      'shipped': {'delivered','failed','returned'},
+      'delivered': <String>{},
+      'failed': {'assigned','returned'},
+      'returned': <String>{},
+    };
+    if(status!=current && !(transitions[current] ?? const <String>{}).contains(status)) throw StateError('انتقال حالة التوصيل غير مسموح');
+    final batch=db.batch();
+    final notificationRef=db.collection('marketplace_notifications').doc();
+    batch.update(ref,{'deliveryStatus':status,'updatedAt':FieldValue.serverTimestamp()});
+    batch.set(notificationRef,{
+      'recipientUid':order['buyerId'],'actorUid':order['sellerId'],'orderId':id,
+      'type':'order_status','title':'تحديث التوصيل','body':'تم تحديث حالة التوصيل إلى $status',
+      'createdAt':FieldValue.serverTimestamp(),'read':false,
+    });
+    await batch.commit();
+  }
   Future<void> updateCartQuantity({required String uid,required String productId,required int quantity}) async {
     if(quantity<1){await removeFromCart(uid,productId);return;}
     if(quantity>100) throw ArgumentError('الكمية القصوى 100');
