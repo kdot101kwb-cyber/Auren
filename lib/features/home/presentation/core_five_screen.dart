@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
+import '../../../services/core/auren_core_five_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
 import '../../../services/auth/auth_service.dart';
@@ -62,6 +64,25 @@ class AurenCoreFiveScreen extends StatelessWidget {
           const SizedBox(height: 6),
           const Text('هذه هي الطبقة التي تجمع الذكاء الشخصي، التواصل، الأعمال، التجارة وصناعة المحتوى في تجربة واحدة.'),
           const SizedBox(height: 18),
+          FutureBuilder<AurenCoreFiveSnapshot>(
+            future: () { final uid = FirebaseAuth.instance.currentUser?.uid; return uid == null ? Future<AurenCoreFiveSnapshot>.error('auth') : AurenCoreFiveRepository().load(uid); }(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) return const SizedBox.shrink();
+              if (!snapshot.hasData) return const LinearProgressIndicator();
+              final s = snapshot.data!;
+              return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Connected activity', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                const SizedBox(height: 10),
+                Wrap(spacing: 10, runSpacing: 10, children: [
+                  Chip(label: Text('Goals ${s.activeGoals}')),
+                  Chip(label: Text('Pulse ${s.posts}')),
+                  Chip(label: Text('Business ${s.businesses}')),
+                  Chip(label: Text('Products ${s.products}')),
+                  Chip(label: Text('Drafts ${s.creatorDrafts}')),
+                ]),
+              ])));
+            },
+          ),
           Card(child: ListTile(
             leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
             title: const Text('AUREN يربط الوحدات الخمس'),
