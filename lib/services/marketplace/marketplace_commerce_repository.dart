@@ -10,8 +10,9 @@ class MarketplaceCommerceRepository {
     if(deliveryAddress.trim().isEmpty||deliveryAddress.trim().length>500) throw ArgumentError('عنوان توصيل غير صالح');
     if(deliveryPhone.trim().isEmpty||deliveryPhone.trim().length>40) throw ArgumentError('رقم هاتف غير صالح');
     if(deliveryProviderId.trim().isEmpty||deliveryProviderId.trim().length>60) throw ArgumentError('شركة توصيل غير صالحة');
-    if(deliveryFeeMinor<0) throw ArgumentError('رسوم توصيل غير صالحة');
-    if(unitPriceMinor<0) throw ArgumentError('سعر غير صالح');
+    if(deliveryFeeMinor<0||deliveryFeeMinor>1000000000) throw ArgumentError('رسوم توصيل غير صالحة');
+    if(unitPriceMinor<0||unitPriceMinor>1000000000) throw ArgumentError('سعر غير صالح');
+    if(currency.trim().length!=3||currency.trim()!=currency.trim().toUpperCase()) throw ArgumentError('عملة غير صالحة');
     final ref=orders.doc();
     final notificationRef=db.collection('marketplace_notifications').doc();
     final batch=db.batch();
@@ -35,8 +36,20 @@ class MarketplaceCommerceRepository {
     final snap=await ref.get();
     if(!snap.exists||snap.data()==null) throw StateError('الطلب غير موجود');
     final order=snap.data()!;
-    await ref.update({'status':status,'deliveryStatus':status,'updatedAt':FieldValue.serverTimestamp(),'statusUpdatedAt':FieldValue.serverTimestamp()});
-    await db.collection('marketplace_notifications').add({
+    final currentStatus=order['status']?.toString() ?? 'pending';
+    const transitions={
+      'pending': {'confirmed','cancelled'},
+      'confirmed': {'processing','cancelled'},
+      'processing': {'shipped','cancelled'},
+      'shipped': {'delivered'},
+      'delivered': <String>{},
+      'cancelled': <String>{},
+    };
+    if(status!=currentStatus && !(transitions[currentStatus] ?? const <String>{}).contains(status)) throw StateError('انتقال حالة الطلب غير مسموح');
+    final notificationRef=db.collection('marketplace_notifications').doc();
+    final batch=db.batch();
+    batch.update(ref,{'status':status,'deliveryStatus':status,'updatedAt':FieldValue.serverTimestamp(),'statusUpdatedAt':FieldValue.serverTimestamp()});
+    batch.set(notificationRef,{
       'recipientUid':order['buyerId'],
       'actorUid':order['sellerId'],
       'orderId':id,
@@ -46,12 +59,20 @@ class MarketplaceCommerceRepository {
       'createdAt':FieldValue.serverTimestamp(),
       'read':false,
     });
+    await batch.commit();
   }
   Future<void> attachShipment({required String orderId,required String providerId,String? shipmentId,String? trackingNumber,String? trackingUrl,DateTime? estimatedDeliveryAt}) async {
     final ref=orders.doc(orderId);
     final snap=await ref.get();
     if(!snap.exists||snap.data()==null) throw StateError('الطلب غير موجود');
     final order=snap.data()!;
+    const providers={'manual','sa3i','link_express','afrimex','twseel','wdee'};
+    if(!providers.contains(providerId)) throw ArgumentError('شركة توصيل غير صالحة');
+    if(shipmentId!=null && shipmentId.length>120) throw ArgumentError('معرّف شحنة غير صالح');
+    if(trackingNumber!=null && trackingNumber.length>120) throw ArgumentError('رقم تتبع غير صالح');
+    if(trackingUrl!=null && trackingUrl.length>1000) throw ArgumentError('رابط تتبع غير صالح');
+    final currentStatus=order['status']?.toString() ?? 'pending';
+    if(!{'pending','confirmed','processing'}.contains(currentStatus)) throw StateError('لا يمكن شحن الطلب من حالته الحالية');
     final data=<String,dynamic>{
       'deliveryProviderId':providerId,
       'shipmentId':shipmentId,
@@ -63,8 +84,10 @@ class MarketplaceCommerceRepository {
       'updatedAt':FieldValue.serverTimestamp(),
       'statusUpdatedAt':FieldValue.serverTimestamp(),
     };
-    await ref.update(data);
-    await db.collection('marketplace_notifications').add({
+    final notificationRef=db.collection('marketplace_notifications').doc();
+    final batch=db.batch();
+    batch.update(ref,data);
+    batch.set(notificationRef,{
       'recipientUid':order['buyerId'],
       'actorUid':order['sellerId'],
       'orderId':orderId,
@@ -74,6 +97,7 @@ class MarketplaceCommerceRepository {
       'createdAt':FieldValue.serverTimestamp(),
       'read':false,
     });
+    await batch.commit();
   }
   Future<void> updateCartQuantity({required String uid,required String productId,required int quantity}) async {
     if(quantity<1){await removeFromCart(uid,productId);return;}
@@ -85,7 +109,8 @@ class MarketplaceCommerceRepository {
     if(!{'cash_on_delivery','pending_gateway'}.contains(paymentMethod)) throw ArgumentError('طريقة دفع غير صالحة');
     if(deliveryAddress.trim().isEmpty||deliveryAddress.trim().length>500) throw ArgumentError('عنوان توصيل غير صالح');
     if(deliveryPhone.trim().isEmpty||deliveryPhone.trim().length>40) throw ArgumentError('رقم هاتف غير صالح');
-    if(deliveryFeeMinor<0) throw ArgumentError('رسوم توصيل غير صالحة');
+    if(deliveryFeeMinor<0||deliveryFeeMinor>1000000000) throw ArgumentError('رسوم توصيل غير صالحة');
+    if(deliveryProviderId.trim().isEmpty||deliveryProviderId.trim().length>60) throw ArgumentError('شركة توصيل غير صالحة');
     final snap=await db.collection('users').doc(uid).collection('cart').get();
     if(snap.docs.isEmpty) throw StateError('السلة فارغة');
     String firstOrder='';
@@ -98,11 +123,13 @@ class MarketplaceCommerceRepository {
         if(!product.exists||product.data()==null) throw StateError('المنتج لم يعد متاحاً: $productId');
         final d=product.data()!;
         if((d['status']?.toString() ?? 'active')!='active') throw StateError('المنتج غير متاح حالياً: ${d['name'] ?? productId}');
+        if((d['currency']?.toString() ?? '').length!=3||d['currency'].toString()!=d['currency'].toString().toUpperCase()) throw StateError('عملة المنتج غير صالحة: $productId');
         final sellerId=d['ownerId']?.toString() ?? '';
         final price=(d['priceMinor'] as num?)?.toInt() ?? 0;
         final currency=d['currency']?.toString() ?? 'USD';
         if(sellerId.isEmpty) throw StateError('المنتج لا يملك بائعاً صالحاً: $productId');
         if(quantity<1||quantity>1000) throw StateError('كمية غير صالحة: $productId');
+        if(price<0||price>1000000000) throw StateError('سعر المنتج غير صالح: $productId');
         validated.add({'cart':cart,'productId':productId,'sellerId':sellerId,'quantity':quantity,'price':price,'currency':currency,'name':d['name']?.toString() ?? '','imageUrl':d['imageUrl']?.toString() ?? ''});
     }
     if(validated.length>450) throw StateError('السلة تحتوي على عناصر كثيرة جداً للمعاملة الواحدة');
@@ -120,6 +147,8 @@ class MarketplaceCommerceRepository {
         'deliveryAddress':deliveryAddress.trim(),'deliveryPhone':deliveryPhone.trim(),'status':'pending',
         'estimatedDeliveryAt':Timestamp.fromDate(DateTime.now().add(const Duration(days:3))),
         'createdAt':FieldValue.serverTimestamp(),
+        'updatedAt':FieldValue.serverTimestamp(),
+        'statusUpdatedAt':FieldValue.serverTimestamp(),
       };
       batch.set(ref,orderData);
       createdOrders.add({'id':ref.id,'sellerId':v['sellerId']});
