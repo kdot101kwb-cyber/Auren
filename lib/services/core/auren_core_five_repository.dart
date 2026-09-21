@@ -18,15 +18,15 @@ class AurenCoreFiveRepository {
   final FirebaseFirestore db;
   AurenCoreFiveRepository({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
   Future<AurenCoreFiveSnapshot> load(String uid) async {
-    final r = await Future.wait<QuerySnapshot<Map<String, dynamic>>>([
+    Future<QuerySnapshot<Map<String, dynamic>>?> safe(Future<QuerySnapshot<Map<String, dynamic>>> request) async {\n      try { return await request; } catch (_) { return null; }\n    }\n\n    final r = await Future.wait<QuerySnapshot<Map<String, dynamic>>?>([
       db.collection('users').doc(uid).collection('goals').limit(50).get(),
       db.collection('businesses').where('ownerId', isEqualTo: uid).limit(50).get(),
       db.collection('products').where('ownerId', isEqualTo: uid).limit(100).get(),
       db.collection('creator_drafts').where('ownerId', isEqualTo: uid).limit(50).get(),
       db.collection('posts').where('authorId', isEqualTo: uid).limit(100).get(),
     ]);
-    final goals = r[0].docs.where((d) => (d.data()['status']?.toString() ?? 'active') == 'active').toList();
-    List<String> names(QuerySnapshot<Map<String, dynamic>> s, String key) => s.docs.map((d) => d.data()[key]?.toString().trim() ?? '').where((v) => v.isNotEmpty).take(5).toList();
-    return AurenCoreFiveSnapshot(activeGoals: goals.length, businesses: r[1].docs.length, products: r[2].docs.length, creatorDrafts: r[3].docs.length, posts: r[4].docs.length, goalTitles: goals.map((d) => d.data()['title']?.toString().trim() ?? '').where((v) => v.isNotEmpty).take(5).toList(), businessNames: names(r[1], 'name'), productNames: names(r[2], 'name'), draftTitles: names(r[3], 'title'));
+    final goals = (r[0]?.docs ?? const []).where((d) => (d.data()['status']?.toString() ?? 'active') == 'active').toList();
+    List<String> names(QuerySnapshot<Map<String, dynamic>>? s, String key) => (s?.docs ?? const []).map((d) => d.data()[key]?.toString().trim() ?? '').where((v) => v.isNotEmpty).take(5).toList();
+    return AurenCoreFiveSnapshot(activeGoals: goals.length, businesses: r[1]?.docs.length ?? 0, products: r[2]?.docs.length ?? 0, creatorDrafts: r[3]?.docs.length ?? 0, posts: r[4]?.docs.length ?? 0, goalTitles: goals.map((d) => d.data()['title']?.toString().trim() ?? '').where((v) => v.isNotEmpty).take(5).toList(), businessNames: names(r[1], 'name'), productNames: names(r[2], 'name'), draftTitles: names(r[3], 'title'));
   }
 }
