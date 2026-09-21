@@ -1,16 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../../../services/core/auren_core_five_repository.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
-import '../../../services/core/auren_core_five_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
-import '../../../services/goals/goal_repository.dart';
-import '../../../services/social/post_repository.dart';
-import '../../../services/business/business_repository.dart';
-import '../../../services/marketplace/marketplace_repository.dart';
-import '../../../services/creator/creator_repository.dart';
 
 class AurenCoreFiveScreen extends StatelessWidget {
   const AurenCoreFiveScreen({super.key});
@@ -34,163 +31,101 @@ class AurenCoreFiveScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _askAuren(BuildContext context) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(const SnackBar(content: Text('AUREN يجمع وضعك من الوحدات الخمس...')));
-    try {
-      final snapshot = await AurenCoreFiveRepository().load(uid);
-      if (!context.mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: snapshot.toPrompt())));
-    } catch (e) {
-      if (context.mounted) messenger.showSnackBar(SnackBar(content: Text('تعذر جمع بيانات الوحدات: $e')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final uid = null;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('AUREN Core 5')),
+        body: const Center(child: Text('سجّل الدخول لاستخدام Core 5.')),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('AUREN Core 5')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-        children: [
-          Text('أول 5 وحدات أساسية',style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          const Text('هذه هي الطبقة التي تجمع الذكاء الشخصي، التواصل، الأعمال، التجارة وصناعة المحتوى في تجربة واحدة.'),
-          const SizedBox(height: 18),
-          FutureBuilder<AurenCoreFiveSnapshot>(
-            future: () { return Future<AurenCoreFiveSnapshot>.error('auth'); }(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) return const SizedBox.shrink();
-              if (!snapshot.hasData) return const LinearProgressIndicator();
-              final s = snapshot.data!;
-              return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Connected activity', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                const SizedBox(height: 10),
-                Wrap(spacing: 10, runSpacing: 10, children: [
-                  Chip(label: Text('Goals ${s.activeGoals}')),
-                  Chip(label: Text('Pulse ${s.posts}')),
-                  Chip(label: Text('Business ${s.businesses}')),
-                  Chip(label: Text('Products ${s.products}')),
-                  Chip(label: Text('Drafts ${s.creatorDrafts}')),
-                ]),
-              ])));
-            },
-          ),
-          Card(child: ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
-            title: const Text('AUREN يربط الوحدات الخمس'),
-            subtitle: const Text('حلّل أهدافك + Social + Business + Marketplace + Creator معًا.'),
-            trailing: const Icon(Icons.arrow_forward),
-            onTap: () => _askAuren(context),
-          )),
-          if (uid != null) _liveOverview(context, uid),
-          if (uid != null) const SizedBox(height: 14),
-          _crossModuleFlow(context),
-          const SizedBox(height: 14),
-          ...modules.asMap().entries.map((entry) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: CircleAvatar(child: Text('${entry.key + 1}')),
-              title: Row(children: [
-                Icon(entry.value.icon, size: 20),
-                const SizedBox(width: 8),
-                Expanded(child: Text(entry.value.title, style: const TextStyle(fontWeight: FontWeight.bold))),
-              ]),
-              subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text(entry.value.description)),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _page(entry.value.title))),
-            ),
-          )),
-        ],
-      ),
-    );
-  }
-  Widget _liveOverview(BuildContext context, String uid) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Live Core Signals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                StreamBuilder(stream: GoalRepository().watch(uid), builder: (_, s) => _signal(Icons.flag_outlined, 'Goals', s.data?.where((g) => g.status == 'active').length.toString() ?? '…')),
-                StreamBuilder(stream: PostRepository().watchFeed(), builder: (_, s) => _signal(Icons.dynamic_feed_outlined, 'Pulse', s.data?.length.toString() ?? '…')),
-                StreamBuilder(stream: BusinessRepository().watchPublic(), builder: (_, s) => _signal(Icons.storefront_outlined, 'Business', s.data?.length.toString() ?? '…')),
-                StreamBuilder(stream: MarketplaceRepository().watchPublic(), builder: (_, s) => _signal(Icons.shopping_bag_outlined, 'Market', s.data?.length.toString() ?? '…')),
-                StreamBuilder(stream: CreatorRepository().watchDrafts(uid), builder: (_, s) => _signal(Icons.video_camera_back_outlined, 'Drafts', s.data?.length.toString() ?? '…')),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Text('الوحدات الخمسة الآن مرتبطة ببياناتها الحقيقية، ويمكن تطويرها فوق نفس السياق بدل أن تعمل كجزر منفصلة.'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _crossModuleFlow(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: FutureBuilder<AurenCoreFiveSnapshot>(
+        future: AurenCoreFiveRepository().load(uid),
+        builder: (context, snapshot) {
+          final data = snapshot.data;
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
-              const Row(children: [
-                Icon(Icons.hub_outlined),
-                SizedBox(width: 8),
-                Expanded(child: Text('Cross-module flows', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-              ]),
+              Text('أول 5 وحدات أساسية',style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
-              const Text('الوحدات الخمسة ما بتشتغل كجزر منفصلة. ابدأ من أي نقطة وخلي AUREN يربط الخطوة التالية.'),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ActionChip(
-                    avatar: const Icon(Icons.flag_outlined, size: 18),
-                    label: const Text('Goal → Pulse'),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTimelineScreen())),
+              const Text('طبقة واحدة تربط الذكاء الشخصي، التواصل، الأعمال، التجارة وصناعة المحتوى.'),
+              const SizedBox(height: 16),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const LinearProgressIndicator(),
+              if (data != null) ...[
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _stat('Goals', data.activeGoals),
+                        _stat('Pulse', data.posts),
+                        _stat('Business', data.businesses),
+                        _stat('Products', data.products),
+                        _stat('Drafts', data.creatorDrafts),
+                      ],
+                    ),
                   ),
-                  ActionChip(
-                    avatar: const Icon(Icons.lightbulb_outline, size: 18),
-                    label: const Text('Idea → Business'),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())),
+                ),
+                const SizedBox(height: 10),
+                Card(
+                  child: ListTile(
+                    leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
+                    title: const Text('AUREN Core 5 AI'),
+                    subtitle: const Text('اربط بيانات الوحدات الخمس واقترح لي خطوة واحدة قابلة للتنفيذ.'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MessengerScreen(
+                          initialPrompt: data.toPrompt(),
+                        ),
+                      ),
+                    ),
                   ),
-                  ActionChip(
-                    avatar: const Icon(Icons.storefront_outlined, size: 18),
-                    label: const Text('Business → Market'),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())),
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (snapshot.hasError)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: const Text('بعض بيانات الوحدات غير متاحة الآن'),
+                    subtitle: const Text('يمكنك فتح الوحدات مباشرة والاستمرار بشكل طبيعي.'),
                   ),
-                  ActionChip(
-                    avatar: const Icon(Icons.shopping_bag_outlined, size: 18),
-                    label: const Text('Market → Creator'),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENCreatorStudioScreen())),
-                  ),
-                  ActionChip(
-                    avatar: const Icon(Icons.auto_awesome, size: 18),
-                    label: const Text('Ask AUREN'),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'اربط لي أهدافي مع Pulse وBusiness وMarketplace وCreator Studio، واقترح لي مسارًا عمليًا واحدًا للخطوة التالية.'))),
-                  ),
-                ],
-              ),
+                ),
+              ...modules.asMap().entries.map((entry) => Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(child: Text('${entry.key + 1}')),
+                  title: Row(children: [
+                    Icon(entry.value.icon, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(entry.value.title, style: const TextStyle(fontWeight: FontWeight.bold))),
+                  ]),
+                  subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text(entry.value.description)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _page(entry.value.title))),
+                ),
+              )),
             ],
-          ),
-        ),
-      );
+          );
+        },
+      ),
+    );
+  }
 
-  static Widget _signal(IconData icon, String label, String value) => Chip(
-        avatar: Icon(icon, size: 18),
-        label: Text('$label: $value'),
-      );
+  static Widget _stat(String label, int value) => Chip(
+    avatar: const Icon(Icons.circle, size: 10),
+    label: Text('$label: $value'),
+  );
 }
 
 class _CoreModule {
