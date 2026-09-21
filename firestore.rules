@@ -384,6 +384,19 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    match /users/{userId}/cart/{productId} {
+      allow read, create, update, delete: if isOwner(userId)
+        && request.resource.data.productId == productId
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity >= 1
+        && request.resource.data.quantity <= 100
+        && request.resource.data.sellerId is string
+        && request.resource.data.unitPriceMinor is int
+        && request.resource.data.unitPriceMinor >= 0
+        && request.resource.data.currency is string
+        && request.resource.data.currency.size() == 3;
+    }
+
     match /marketplace_orders/{orderId} {
       allow create: if request.auth != null
         && request.resource.data.buyerId == request.auth.uid
