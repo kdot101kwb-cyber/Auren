@@ -13,7 +13,9 @@ class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return Scaffold(
     appBar: AppBar(
       title: const Text('AUREN'),
       actions: [
@@ -24,7 +26,6 @@ class AurenHomeV2 extends StatelessWidget {
         ),
       ],
     ),
-    final uid = FirebaseAuth.instance.currentUser?.uid;
     body: ListView(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       children: [
