@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/models/product.dart';
 import '../../../core/models/business.dart';
 import '../../../services/business/business_repository.dart';
@@ -43,7 +44,7 @@ class _AurenProductDetailScreenState extends State<AurenProductDetailScreen> {
   @override Widget build(BuildContext context) {
     final p = widget.product; final uid = FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
-      appBar: AppBar(title: Text(p.service ? 'Service' : 'Product'), actions: [if (uid != null) IconButton(onPressed: _report, icon: const Icon(Icons.flag_outlined))]),
+      appBar: AppBar(title: Text(p.service ? 'Service' : 'Product'), actions: [if (uid != null) IconButton(onPressed: () async { await Clipboard.setData(ClipboardData(text: 'https://auren.app/marketplace/product/${p.id}')); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ رابط المنتج'))); }, icon: const Icon(Icons.share_outlined)), if (uid != null) IconButton(onPressed: _report, icon: const Icon(Icons.flag_outlined))]),
       body: ListView(children: [
         if (p.imageUrl.isNotEmpty) AspectRatio(aspectRatio: 1.15, child: Image.network(p.imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image_outlined, size: 48)))),
         Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
