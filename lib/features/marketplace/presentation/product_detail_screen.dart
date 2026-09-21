@@ -4,6 +4,7 @@ import '../../../core/models/product.dart';
 import '../../../core/models/business.dart';
 import '../../../services/business/business_repository.dart';
 import '../../../services/marketplace/marketplace_repository.dart';
+import '../../../services/marketplace/marketplace_commerce_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../business/presentation/business_detail_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -16,6 +17,7 @@ class AurenProductDetailScreen extends StatefulWidget {
 class _AurenProductDetailScreenState extends State<AurenProductDetailScreen> {
   final repo = MarketplaceRepository();
   final businessRepo = BusinessRepository();
+  final commerce = MarketplaceCommerceRepository();
   @override void initState() { super.initState(); final uid = FirebaseAuth.instance.currentUser?.uid; if (uid != null) { repo.recordEvent(productId: widget.product.id, viewerUid: uid, type: 'view'); } }
   Future<void> _report() async {
     final reason = await showDialog<String>(context: context, builder: (d) => SimpleDialog(
@@ -56,11 +58,17 @@ class _AurenProductDetailScreenState extends State<AurenProductDetailScreen> {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenBusinessDetailScreen(business: b)))));
           }),
           const SizedBox(height: 20),
-          Row(children: [
-            Expanded(child: FilledButton.icon(onPressed: uid == null ? null : _contact, icon: const Icon(Icons.chat_outlined), label: const Text('تواصل مع البائع'))),
+          Column(children: [
+            Row(children: [
+              Expanded(child: FilledButton.icon(onPressed: uid == null ? null : _contact, icon: const Icon(Icons.chat_outlined), label: const Text('تواصل مع البائع'))),
+              const SizedBox(width: 10),
+              IconButton(onPressed: uid == null ? null : () async { await commerce.addToCart(uid: uid!, productId: p.id, quantity: 1); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت الإضافة للسلة'))); }, icon: const Icon(Icons.add_shopping_cart_outlined)),
+            ]),
             const SizedBox(width: 10),
             IconButton(onPressed: uid == null ? null : () async { await repo.toggleSaved(uid!, p.id, true); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الحفظ'))); }, icon: const Icon(Icons.bookmark_add_outlined)),
           ]),
+          const SizedBox(height: 20),
+          StreamBuilder<List<Map<String,dynamic>>>(stream: commerce.watchReviews(p.id), builder: (context,s) { final rs=s.data??[]; final avg=rs.isEmpty?0.0:rs.map((x)=>(x['rating'] as num?)?.toDouble()??0).reduce((a,b)=>a+b)/rs.length; return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('⭐ ${avg.toStringAsFixed(1)}  (${rs.length})'),if(uid!=null) TextButton(onPressed:() async { int rating=5; final ctl=TextEditingController(); final ok=await showDialog<bool>(context:context,builder:(d)=>StatefulBuilder(builder:(d,setD)=>AlertDialog(title:const Text('تقييم المنتج'),content:Column(mainAxisSize:MainAxisSize.min,children:[DropdownButtonFormField<int>(value:rating,items:[1,2,3,4,5].map((x)=>DropdownMenuItem(value:x,child:Text('$x نجوم'))).toList(),onChanged:(v)=>setD(()=>rating=v!)),TextField(controller:ctl,maxLines:3,decoration:const InputDecoration(labelText:'تعليق'))]),actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('حفظ'))])));if(ok==true)await commerce.review(productId:p.id,userId:uid!,rating:rating,text:ctl.text);ctl.dispose();},child:const Text('أضف تقييمك')), ...rs.take(5).map((x)=>ListTile(contentPadding:EdgeInsets.zero,title:Text('★'*((x['rating'] as num?)?.toInt()??0)),subtitle:Text(x['text']?.toString()??'')))])));}),
         ])),
       ]),
     );
