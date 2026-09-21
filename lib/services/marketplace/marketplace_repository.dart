@@ -39,6 +39,18 @@ class MarketplaceRepository{
    return products;
   });
  }
+  Future<Map<String,int>> analytics(String ownerId) async {
+    final products = await _c.where('ownerId',isEqualTo:ownerId).limit(100).get();
+    int views=0,messages=0,saves=0;
+    for(final product in products.docs){
+      final events=await product.reference.collection('events').get();
+      for(final e in events.docs){
+        final t=e.data()['type'];
+        if(t=='view') views++; else if(t=='message') messages++; else if(t=='save') saves++;
+      }
+    }
+    return {'products':products.docs.length,'views':views,'messages':messages,'saves':saves};
+  }
   Stream<List<AurenProduct>> watchBusiness(String businessId)=>_c.where('businessId',isEqualTo:businessId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).toList());
   Stream<List<AurenProduct>> watchOwner(String ownerId)=>_c.where('ownerId',isEqualTo:ownerId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).toList());
 }
