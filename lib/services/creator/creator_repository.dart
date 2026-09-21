@@ -8,7 +8,9 @@ class CreatorRepository {
   Stream<List<AurenCreatorDraft>> watchDrafts(String uid) => db.collection('creator_drafts').where('ownerId', isEqualTo: uid).snapshots().map((s) { final list = s.docs.map((d) => AurenCreatorDraft.fromMap(d.id, d.data())).toList(); list.sort((a, b) => (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0)).compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))); return list; });
   Future<String> createDraft({required String uid, required String title, required String body}) async { final r = db.collection('creator_drafts').doc(); await r.set({'ownerId': uid, 'title': title.trim(), 'body': body.trim(), 'status': 'draft', 'createdAt': FieldValue.serverTimestamp()}); return r.id; }
   Future<void> updateDraft(String id, String title, String body) => db.collection('creator_drafts').doc(id).update({'title': title.trim(), 'body': body.trim(), 'updatedAt': FieldValue.serverTimestamp()});
-  Future<void> publish(String id) async {
+  Future<void> publish(String id, {String contentType = 'moment'}) async {
+    const allowed = {'moment', 'idea', 'question', 'project', 'opportunity'};
+    if (!allowed.contains(contentType)) throw ArgumentError('نوع النشر غير مدعوم.');
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('يجب تسجيل الدخول للنشر.');
     final draftRef = db.collection('creator_drafts').doc(id);
@@ -28,7 +30,7 @@ class CreatorRepository {
       'text': text,
       'mediaUrl': '',
       'mediaType': 'none',
-      'contentType': 'moment',
+      'contentType': contentType,
       'contextLabel': 'Creator Studio',
       'actionLabel': 'تواصل',
       'createdAt': DateTime.now().toUtc().toIso8601String(),
