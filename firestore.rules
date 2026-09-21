@@ -420,13 +420,11 @@ service cloud.firestore {
         && request.resource.data.currency == resource.data.currency
         && request.resource.data.paymentMethod == resource.data.paymentMethod
         && request.resource.data.paymentStatus == resource.data.paymentStatus
-        && request.resource.data.deliveryProviderId == resource.data.deliveryProviderId
         && request.resource.data.productName == resource.data.productName
         && request.resource.data.productImageUrl == resource.data.productImageUrl
         && request.resource.data.deliveryAddress == resource.data.deliveryAddress
         && request.resource.data.deliveryPhone == resource.data.deliveryPhone
         && request.resource.data.estimatedDeliveryAt is timestamp
-        && request.resource.data.estimatedDeliveryAt == resource.data.estimatedDeliveryAt
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.status in ['pending','confirmed','processing','shipped','delivered','cancelled']
         && request.resource.data.statusUpdatedAt is timestamp
