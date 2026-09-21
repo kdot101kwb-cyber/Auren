@@ -2,6 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/product.dart';
 import '../../../services/marketplace/marketplace_repository.dart';
+import '../../../services/business/business_repository.dart';
+import '../../../core/models/business.dart';
+import '../../business/presentation/business_detail_screen.dart';
 
 class AurenMyMarketplaceScreen extends StatefulWidget{
   const AurenMyMarketplaceScreen({super.key});
@@ -10,6 +13,7 @@ class AurenMyMarketplaceScreen extends StatefulWidget{
 
 class _AurenMyMarketplaceScreenState extends State<AurenMyMarketplaceScreen>{
   final repo=MarketplaceRepository();
+  final businessRepo=BusinessRepository();
   Future<void> _edit(BuildContext context,AurenProduct p) async {
     final n=TextEditingController(text:p.name), d=TextEditingController(text:p.description), price=TextEditingController(text:(p.priceMinor/100).toStringAsFixed(2)), img=TextEditingController(text:p.imageUrl);
     String cat=p.category, currency=p.currency; bool service=p.service;
@@ -30,7 +34,7 @@ class _AurenMyMarketplaceScreenState extends State<AurenMyMarketplaceScreen>{
         if(s.data!.isEmpty)return const Center(child:Text('لا توجد منتجات أو خدمات منشورة.'));
         return ListView.separated(padding:const EdgeInsets.all(16),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:8),
           itemBuilder:(context,i){final p=s.data![i];return Card(child:ListTile(
-            leading:const Icon(Icons.inventory_2_outlined),title:Text(p.name),subtitle:Text((p.priceMinor/100).toStringAsFixed(2)+' '+p.currency+' • '+p.businessId),
+            leading:const Icon(Icons.inventory_2_outlined),title:Text(p.name),subtitle:StreamBuilder<AurenBusiness?>(stream:businessRepo.watchById(p.businessId),builder:(context,b){final name=b.data?.name ?? p.businessId;return Text((p.priceMinor/100).toStringAsFixed(2)+' '+p.currency+' • '+name);}),
             trailing:PopupMenuButton<String>(onSelected:(v)async{if(v=='edit'){await _edit(context,p);}else if(v=='delete'){final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(title:const Text('حذف الإعلان؟'),content:Text('سيتم حذف «${p.name}» نهائياً.'),actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('حذف'))]));if(ok==true){await repo.delete(p.id);if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حذف الإعلان')));}}},itemBuilder:(_)=>const [PopupMenuItem(value:'edit',child:Text('تعديل')),PopupMenuItem(value:'delete',child:Text('حذف'))]),
           ));});
       }));
