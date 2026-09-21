@@ -407,6 +407,40 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
+    match /courses/{courseId} {
+      allow read: if request.auth != null && resource.data.status == 'published';
+      allow create, update, delete: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
+    }
+    match /users/{userId}/enrollments/{courseId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+    match /users/{userId}/savedCourses/{courseId} {
+      allow read, create, delete: if isOwner(userId);
+      allow update: if false;
+    }
+    match /trips/{tripId} {
+      allow read: if request.auth != null && (resource.data.ownerId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+    match /users/{userId}/savedPlaces/{placeId} {
+      allow read, create, delete: if isOwner(userId);
+      allow update: if false;
+    }
+    match /entertainment_items/{itemId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow write: if false;
+    }
+    match /users/{userId}/savedEntertainment/{itemId} {
+      allow read, create, delete: if isOwner(userId);
+      allow update: if false;
+    }
+    match /creator_drafts/{draftId} {
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
     match /businesses/{businessId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
       allow create: if request.auth != null
