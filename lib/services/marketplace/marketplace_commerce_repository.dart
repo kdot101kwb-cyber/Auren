@@ -10,6 +10,8 @@ class MarketplaceCommerceRepository {
     if(deliveryAddress.trim().isEmpty||deliveryAddress.trim().length>500) throw ArgumentError('عنوان توصيل غير صالح');
     if(deliveryPhone.trim().isEmpty||deliveryPhone.trim().length>40) throw ArgumentError('رقم هاتف غير صالح');
     if(deliveryProviderId.trim().isEmpty||deliveryProviderId.trim().length>60) throw ArgumentError('شركة توصيل غير صالحة');
+    const providers={'manual','sa3i','link_express','afrimex','twseel','wdee'};
+    if(!providers.contains(deliveryProviderId.trim())) throw ArgumentError('شركة توصيل غير صالحة');
     if(deliveryFeeMinor<0||deliveryFeeMinor>1000000000) throw ArgumentError('رسوم توصيل غير صالحة');
     if(unitPriceMinor<0||unitPriceMinor>1000000000) throw ArgumentError('سعر غير صالح');
     if(currency.trim().length!=3||currency.trim()!=currency.trim().toUpperCase()) throw ArgumentError('عملة غير صالحة');
@@ -111,6 +113,8 @@ class MarketplaceCommerceRepository {
     if(deliveryPhone.trim().isEmpty||deliveryPhone.trim().length>40) throw ArgumentError('رقم هاتف غير صالح');
     if(deliveryFeeMinor<0||deliveryFeeMinor>1000000000) throw ArgumentError('رسوم توصيل غير صالحة');
     if(deliveryProviderId.trim().isEmpty||deliveryProviderId.trim().length>60) throw ArgumentError('شركة توصيل غير صالحة');
+    const providers={'manual','sa3i','link_express','afrimex','twseel','wdee'};
+    if(!providers.contains(deliveryProviderId.trim())) throw ArgumentError('شركة توصيل غير صالحة');
     final snap=await db.collection('users').doc(uid).collection('cart').get();
     if(snap.docs.isEmpty) throw StateError('السلة فارغة');
     String firstOrder='';
