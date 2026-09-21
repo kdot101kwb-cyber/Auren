@@ -75,6 +75,54 @@ class AurenDeliveryGateway {
   }
 }
 
+/// Manual provider is the safe fallback until a courier API contract is connected.
+class AurenManualDeliveryProvider implements AurenDeliveryProvider {
+  @override
+  String get id => AurenDeliveryProviders.manual;
+
+  @override
+  String get displayName => 'توصيل يدوي';
+
+  @override
+  Future<AurenDeliveryQuote?> quote({
+    required String pickupAddress,
+    required String deliveryAddress,
+    required int packageWeightGrams,
+    required String currency,
+  }) async {
+    return const AurenDeliveryQuote(
+      providerId: AurenDeliveryProviders.manual,
+      providerName: 'توصيل يدوي',
+      currency: 'USD',
+      priceMinor: 0,
+      etaMinutes: null,
+      available: true,
+    );
+  }
+
+  @override
+  Future<AurenDeliveryShipment> createShipment({
+    required String orderId,
+    required String pickupAddress,
+    required String deliveryAddress,
+    required String recipientName,
+    required String recipientPhone,
+    required int packageWeightGrams,
+    required String currency,
+  }) async {
+    return AurenDeliveryShipment(
+      providerId: id,
+      shipmentId: 'manual-$orderId',
+      status: 'pending',
+      estimatedDeliveryAt: null,
+      trackingUrl: null,
+    );
+  }
+
+  @override
+  Future<AurenDeliveryShipment?> track(String trackingNumber) async => null;
+}
+
 /// Providers saved for partnership/integration work after AUREN launch.
 class AurenDeliveryProviders {
   static const sa3i = 'sa3i';
@@ -82,4 +130,16 @@ class AurenDeliveryProviders {
   static const afrimex = 'afrimex';
   static const twseel = 'twseel';
   static const wdee = 'wdee';
+  static const manual = 'manual';
+
+  static String displayName(String id) {
+    switch (id) {
+      case sa3i: return 'Sa3i';
+      case linkExpress: return 'Link Express';
+      case afrimex: return 'Afrimex';
+      case twseel: return 'Twseel';
+      case wdee: return 'Wdee';
+      default: return 'توصيل يدوي';
+    }
+  }
 }
