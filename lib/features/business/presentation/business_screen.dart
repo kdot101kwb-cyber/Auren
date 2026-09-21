@@ -4,13 +4,14 @@ import '../../../core/models/business.dart';
 import '../../../services/business/business_repository.dart';
 import 'business_detail_screen.dart';
 import 'saved_businesses_screen.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 class AurenBusinessScreen extends StatefulWidget{const AurenBusinessScreen({super.key});@override State<AurenBusinessScreen> createState()=>_AurenBusinessScreenState();}
 class _AurenBusinessScreenState extends State<AurenBusinessScreen>{
  final _repo=BusinessRepository(); final _search=TextEditingController(); String _category='All';
  static const cats=['All','Retail','Food','Services','Technology','Manufacturing','Education','Travel','Creative','Agriculture','Other'];
  @override void dispose(){_search.dispose();super.dispose();}
  void _create(){if(FirebaseAuth.instance.currentUser==null)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenBusinessCreateScreen()));}
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Business'),actions:[IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenSavedBusinessesScreen())),icon:const Icon(Icons.bookmarks_outlined)),IconButton(onPressed:_create,icon:const Icon(Icons.add_business_outlined))]),body:Column(children:[
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Business'),actions:[IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ساعدني أجد شركات ومتاجر وخدمات مناسبة لاحتياجي.'))),icon:const Icon(Icons.auto_awesome)),IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenSavedBusinessesScreen())),icon:const Icon(Icons.bookmarks_outlined)),IconButton(onPressed:_create,icon:const Icon(Icons.add_business_outlined))]),body:Column(children:[
  Padding(padding:const EdgeInsets.fromLTRB(16,12,16,8),child:TextField(controller:_search,onChanged:(_)=>setState((){}),decoration:InputDecoration(hintText:'ابحث عن شركة، متجر أو خدمة...',prefixIcon:const Icon(Icons.search),border:OutlineInputBorder(borderRadius:BorderRadius.circular(16))))),
  SizedBox(height:48,child:ListView.separated(padding:const EdgeInsets.symmetric(horizontal:16),scrollDirection:Axis.horizontal,itemCount:cats.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i)=>ChoiceChip(label:Text(cats[i]),selected:_category==cats[i],onSelected:(_)=>setState(()=>_category=cats[i])))),
  Expanded(child:StreamBuilder<List<AurenBusiness>>(stream:_repo.watchPublic(query:_search.text,category:_category),builder:(context,s){if(s.hasError)return Center(child:Text('حدث خطأ: $s'));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('لا توجد نتائج بعد.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:10),itemBuilder:(_,i)=>_Card(b:s.data![i]);})),
