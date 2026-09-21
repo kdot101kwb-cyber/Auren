@@ -3,8 +3,8 @@ import '../../core/models/product.dart';
 class MarketplaceRepository{
  final FirebaseFirestore _db; MarketplaceRepository({FirebaseFirestore? firestore}):_db=firestore??FirebaseFirestore.instance;
  CollectionReference<Map<String,dynamic>> get _c=>_db.collection('products');
- Stream<List<AurenProduct>> watchPublic({String query='',String category='All'})=>_c.where('status',isEqualTo:'active').limit(100).snapshots().map((s){
-  final q=query.trim().toLowerCase(); final items=s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).where((p)=>category=='All'||p.category==category).where((p)=>q.isEmpty||[p.name,p.description,p.category].join(' ').toLowerCase().contains(q)).toList();
+ Stream<List<AurenProduct>> watchPublic({String query='',String category='All',String currency='',int? maxPriceMinor})=>_c.where('status',isEqualTo:'active').limit(100).snapshots().map((s){
+  final q=query.trim().toLowerCase(); final cur=currency.trim().toUpperCase(); final items=s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).where((p)=>category=='All'||p.category==category).where((p)=>q.isEmpty||[p.name,p.description,p.category].join(' ').toLowerCase().contains(q)).where((p)=>cur.isEmpty||p.currency==cur).where((p)=>maxPriceMinor==null||p.priceMinor<=maxPriceMinor).toList();
   items.sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase())); return items;
  });
  Future<String> create({required String ownerId,required String businessId,required String name,required String description,required String category,required String currency,required int priceMinor,required String imageUrl,required bool service})async{
