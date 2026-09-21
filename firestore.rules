@@ -384,6 +384,53 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    match /marketplace_orders/{orderId} {
+      allow create: if request.auth != null
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.sellerId is string
+        && request.resource.data.productId is string
+        && request.resource.data.quantity is int && request.resource.data.quantity > 0 && request.resource.data.quantity <= 1000
+        && request.resource.data.unitPriceMinor is int && request.resource.data.unitPriceMinor >= 0
+        && request.resource.data.totalMinor == request.resource.data.unitPriceMinor * request.resource.data.quantity
+        && request.resource.data.currency is string
+        && request.resource.data.paymentMethod is string
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','totalMinor','currency','paymentMethod','status','createdAt']);
+      allow read: if request.auth != null && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+      allow update: if request.auth != null && resource.data.sellerId == request.auth.uid
+        && request.resource.data.buyerId == resource.data.buyerId
+        && request.resource.data.sellerId == resource.data.sellerId
+        && request.resource.data.productId == resource.data.productId
+        && request.resource.data.status in ['pending','confirmed','processing','shipped','delivered','cancelled'];
+      allow delete: if false;
+    }
+    match /users/{userId}/cart/{productId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+    match /products/{productId}/reviews/{reviewId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && reviewId == request.auth.uid
+        && request.resource.data.productId == productId
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.rating is int && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && request.resource.data.text is string && request.resource.data.text.size() <= 2000
+        && request.resource.data.createdAt is timestamp;
+      allow delete: if request.auth != null && reviewId == request.auth.uid;
+    }
+    match /products/{productId}/offers/{offerId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.ownerId == get(/databases/$(database)/documents/products/$(productId)).data.ownerId
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.productId == productId
+        && request.resource.data.percent is int && request.resource.data.percent >= 0 && request.resource.data.percent <= 100
+        && request.resource.data.title is string && request.resource.data.title.size() <= 200
+        && request.resource.data.active is bool;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
     match /products/{productId} {
       allow read: if request.auth != null && resource.data.status == 'active';
       allow create: if request.auth != null
