@@ -4,11 +4,13 @@ class MarketplaceCommerceRepository {
   MarketplaceCommerceRepository({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
   CollectionReference<Map<String,dynamic>> get products=>db.collection('products');
   CollectionReference<Map<String,dynamic>> get orders=>db.collection('marketplace_orders');
-  Future<String> createOrder({required String buyerId,required String productId,required String sellerId,required int quantity,required int unitPriceMinor,required String currency,required String paymentMethod,String? productName,String? productImageUrl}) async {
+  Future<String> createOrder({required String buyerId,required String productId,required String sellerId,required int quantity,required int unitPriceMinor,required String currency,required String paymentMethod,required String deliveryAddress,required String deliveryPhone,String? productName,String? productImageUrl}) async {
     if(!{'cash_on_delivery','pending_gateway'}.contains(paymentMethod)) throw ArgumentError('طريقة دفع غير صالحة');
     if(quantity<1||quantity>1000) throw ArgumentError('كمية غير صالحة');
+    if(deliveryAddress.trim().isEmpty||deliveryAddress.trim().length>500) throw ArgumentError('عنوان توصيل غير صالح');
+    if(deliveryPhone.trim().isEmpty||deliveryPhone.trim().length>40) throw ArgumentError('رقم هاتف غير صالح');
     final ref=orders.doc();
-    await ref.set({'buyerId':buyerId,'sellerId':sellerId,'productId':productId,'quantity':quantity,'unitPriceMinor':unitPriceMinor,'totalMinor':unitPriceMinor*quantity,'currency':currency,'paymentMethod':paymentMethod,'productName':productName ?? '','productImageUrl':productImageUrl ?? '','status':'pending','createdAt':FieldValue.serverTimestamp()});
+    await ref.set({'buyerId':buyerId,'sellerId':sellerId,'productId':productId,'quantity':quantity,'unitPriceMinor':unitPriceMinor,'totalMinor':unitPriceMinor*quantity,'currency':currency,'paymentMethod':paymentMethod,'productName':productName ?? '','productImageUrl':productImageUrl ?? '','deliveryAddress':deliveryAddress.trim(),'deliveryPhone':deliveryPhone.trim(),'status':'pending','createdAt':FieldValue.serverTimestamp()});
     return ref.id;
   }
   Stream<List<Map<String,dynamic>>> watchBuyerOrders(String uid)=>orders.where('buyerId',isEqualTo:uid).limit(100).snapshots().map((s)=>s.docs.map((d)=>{'id':d.id,...d.data()}).toList());
@@ -22,7 +24,7 @@ class MarketplaceCommerceRepository {
   Future<void> updateOrderStatus(String id,String status) async {
     const allowed={'pending','confirmed','processing','shipped','delivered','cancelled'};
     if(!allowed.contains(status)) throw ArgumentError('حالة طلب غير صالحة');
-    await orders.doc(id).update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
+    await orders.doc(id).update({'status':status,'updatedAt':FieldValue.serverTimestamp(),'statusUpdatedAt':FieldValue.serverTimestamp()});
   }
   Future<void> updateCartQuantity({required String uid,required String productId,required int quantity}) async {
     if(quantity<1){await removeFromCart(uid,productId);return;}
@@ -30,7 +32,7 @@ class MarketplaceCommerceRepository {
     await db.collection('users').doc(uid).collection('cart').doc(productId).update({'quantity':quantity});
   }
   Future<void> addToCartWithSnapshot({required String uid,required String productId,required int quantity}) async { final p=await products.doc(productId).get(); if(!p.exists||p.data()==null) throw StateError('المنتج غير موجود'); final d=p.data()!; await db.collection('users').doc(uid).collection('cart').doc(productId).set({'productId':productId,'name':d['name'],'sellerId':d['ownerId'],'unitPriceMinor':d['priceMinor'],'currency':d['currency'],'quantity':quantity.clamp(1,100),'addedAt':FieldValue.serverTimestamp()}); }
-  Future<String> checkoutCart({required String uid,required String paymentMethod}) async {
+  Future<String> checkoutCart({required String uid,required String paymentMethod,required String deliveryAddress,required String deliveryPhone}) async {
     final snap=await db.collection('users').doc(uid).collection('cart').get();
     if(snap.docs.isEmpty) throw StateError('السلة فارغة');
     String firstOrder='';
@@ -51,7 +53,7 @@ class MarketplaceCommerceRepository {
         validated.add({'cart':cart,'productId':productId,'sellerId':sellerId,'quantity':quantity,'price':price,'currency':currency,'name':d['name']?.toString() ?? '','imageUrl':d['imageUrl']?.toString() ?? ''});
     }
     for(final v in validated){
-      final id=await createOrder(buyerId:uid,productId:v['productId'],sellerId:v['sellerId'],quantity:v['quantity'],unitPriceMinor:v['price'],currency:v['currency'],paymentMethod:paymentMethod,productName:v['name'],productImageUrl:v['imageUrl']);
+      final id=await createOrder(buyerId:uid,productId:v['productId'],sellerId:v['sellerId'],quantity:v['quantity'],unitPriceMinor:v['price'],currency:v['currency'],paymentMethod:paymentMethod,deliveryAddress:deliveryAddress,deliveryPhone:deliveryPhone,productName:v['name'],productImageUrl:v['imageUrl']);
       firstOrder=firstOrder.isEmpty?id:firstOrder;
     }
     for(final cart in snap.docs) await cart.reference.delete();
