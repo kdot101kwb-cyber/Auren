@@ -407,7 +407,9 @@ service cloud.firestore {
         && request.resource.data.deliveryPhone is string && request.resource.data.deliveryPhone.size() > 0 && request.resource.data.deliveryPhone.size() <= 40
         && request.resource.data.estimatedDeliveryAt is timestamp
         && request.resource.data.createdAt is timestamp
-        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','deliveryFeeMinor','totalMinor','currency','paymentMethod','paymentStatus','deliveryProviderId','shipmentId','trackingNumber','trackingUrl','deliveryStatus','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt']);
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.statusUpdatedAt is timestamp
+        && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','deliveryFeeMinor','totalMinor','currency','paymentMethod','paymentStatus','deliveryProviderId','shipmentId','trackingNumber','trackingUrl','deliveryStatus','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt','updatedAt','statusUpdatedAt']);
       allow read: if request.auth != null && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
       allow update: if request.auth != null && resource.data.sellerId == request.auth.uid
         && request.resource.data.buyerId == resource.data.buyerId
@@ -439,7 +441,15 @@ service cloud.firestore {
         && (request.resource.data.trackingNumber is string || request.resource.data.trackingNumber == null)
         && (request.resource.data.trackingUrl is string || request.resource.data.trackingUrl == null)
         && request.resource.data.deliveryProviderId in ['manual','sa3i','link_express','afrimex','twseel','wdee']
-        && request.resource.data.deliveryStatus == request.resource.data.status
+        && request.resource.data.deliveryStatus in ['pending','assigned','picked_up','shipped','delivered','failed','returned']
+        && (
+          request.resource.data.deliveryStatus == resource.data.deliveryStatus
+          || (resource.data.deliveryStatus == 'pending' && request.resource.data.deliveryStatus in ['assigned','failed'])
+          || (resource.data.deliveryStatus == 'assigned' && request.resource.data.deliveryStatus in ['picked_up','failed'])
+          || (resource.data.deliveryStatus == 'picked_up' && request.resource.data.deliveryStatus in ['shipped','failed'])
+          || (resource.data.deliveryStatus == 'shipped' && request.resource.data.deliveryStatus in ['delivered','failed','returned'])
+          || (resource.data.deliveryStatus == 'failed' && request.resource.data.deliveryStatus in ['assigned','returned'])
+        )
         && request.resource.data.keys().hasOnly(['buyerId','sellerId','productId','quantity','unitPriceMinor','deliveryFeeMinor','totalMinor','currency','paymentMethod','paymentStatus','deliveryProviderId','shipmentId','trackingNumber','trackingUrl','deliveryStatus','productName','productImageUrl','deliveryAddress','deliveryPhone','status','estimatedDeliveryAt','createdAt','updatedAt','statusUpdatedAt']);
       allow delete: if false;
     }
