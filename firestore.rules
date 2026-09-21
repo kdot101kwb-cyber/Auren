@@ -400,10 +400,11 @@ service cloud.firestore {
     match /marketplace_orders/{orderId} {
       allow create: if request.auth != null
         && request.resource.data.buyerId == request.auth.uid
-        && request.resource.data.sellerId is string
+        && request.resource.data.sellerId == get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.ownerId
         && request.resource.data.productId is string
         && request.resource.data.quantity is int && request.resource.data.quantity > 0 && request.resource.data.quantity <= 1000
-        && request.resource.data.unitPriceMinor is int && request.resource.data.unitPriceMinor >= 0
+        && request.resource.data.unitPriceMinor == get(/databases/$(database)/documents/products/$(request.resource.data.productId)).data.priceMinor
+        && request.resource.data.unitPriceMinor >= 0
         && request.resource.data.totalMinor == request.resource.data.unitPriceMinor * request.resource.data.quantity
         && request.resource.data.currency is string
         && request.resource.data.paymentMethod is string
