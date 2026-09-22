@@ -34,6 +34,8 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
           const SizedBox(height: 8),
         ],
         if (uid != null) ...[
+          _coreFiveNextCard(context, uid),
+          const SizedBox(height: 12),
           _todayCard(context, uid),
           const SizedBox(height: 12),
         ],
@@ -53,6 +55,26 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
     ),
   );
   }
+
+  Widget _coreFiveNextCard(BuildContext context, String uid) => FutureBuilder<AurenCoreFiveSnapshot>(
+    future: AurenCoreFiveRepository().load(uid),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) return const SizedBox.shrink();
+      final core = snapshot.data!;
+      return Card(
+        child: ListTile(
+          leading: const CircleAvatar(child: Icon(Icons.route_outlined)),
+          title: Text(core.actionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text(core.nextMove),
+          trailing: const Icon(Icons.arrow_forward),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: core.toPrompt())),
+          ),
+        ),
+      );
+    },
+  );
 
   Widget _todayCard(BuildContext context, String uid) => StreamBuilder(
     stream: _goals.watch(uid),
