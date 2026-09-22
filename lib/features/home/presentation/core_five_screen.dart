@@ -1,8 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../messenger/presentation/messenger_screen.dart';
-import '../../../services/core/auren_core_five_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
