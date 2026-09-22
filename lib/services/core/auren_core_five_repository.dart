@@ -28,13 +28,15 @@ class AurenCoreFiveSnapshot {
 
   String get recommendedModule =>
       activeGoals == 0 ? 'Personal AI' :
-      (products == 0 && businesses > 0) ? 'Marketplace' :
+      businesses == 0 ? 'Business' :
+      products == 0 ? 'Marketplace' :
       creatorDrafts == 0 ? 'Creator Studio' :
       posts == 0 ? 'Social / Pulse' : 'Business';
 
   String get nextMove {
     if (activeGoals == 0) return 'ابدأ هدفًا واحدًا في Personal AI ثم حوّله إلى خطوة عملية.';
-    if (products == 0 && businesses > 0) return 'أضف أول منتج أو خدمة إلى Marketplace من Business.';
+    if (businesses == 0) return 'أنشئ أول Business أو خدمة، ثم اربطها بباقي AUREN.';
+    if (products == 0) return 'أضف أول منتج أو خدمة إلى Marketplace من Business.';
     if (creatorDrafts == 0) return 'حوّل هدفك أو خبرتك إلى أول مسودة محتوى في Creator Studio.';
     if (posts == 0) return 'انشر أول فكرة أو فرصة في Pulse وابنِ اتصالًا حولها.';
     if (averageGoalProgress < 50) return 'ارجع للهدف النشط ونفّذ خطوة صغيرة ترفع تقدمه اليوم.';
