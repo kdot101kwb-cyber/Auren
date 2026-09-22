@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/product.dart';
 import '../../../services/marketplace/marketplace_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/core/auren_core_five_repository.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+import '../../marketplace/presentation/product_detail_screen.dart';
 
 class AurenBusinessProductsScreen extends StatefulWidget {
   final String businessId;
@@ -41,7 +44,7 @@ class _AurenBusinessProductsScreenState extends State<AurenBusinessProductsScree
     for(final c in [n,d,price,img])c.dispose();
   }
   @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('Products & Services')),
+    appBar:AppBar(title:const Text('Products & Services'),actions:[IconButton(tooltip:'Core 5 AI',icon:const Icon(Icons.auto_awesome),onPressed:()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;final snapshot=await AurenCoreFiveRepository().load(uid);if(!context.mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:snapshot.toPrompt()+'\nركّز على كيف أطور منتجات وخدمات هذا النشاط وأربطها بأهدافي وفرصي.')));})]),
     floatingActionButton:FirebaseAuth.instance.currentUser?.uid==null?null:FloatingActionButton.extended(onPressed:add,icon:const Icon(Icons.add),label:const Text('إضافة')),
     body:StreamBuilder<List<AurenProduct>>(stream:repo.watchBusiness(widget.businessId),builder:(context,s){
       if(s.hasError)return Center(child:Text('حدث خطأ: '+s.error.toString()));
@@ -49,6 +52,7 @@ class _AurenBusinessProductsScreenState extends State<AurenBusinessProductsScree
       if(s.data!.isEmpty)return const Center(child:Text('لا توجد منتجات أو خدمات بعد.'));
       return ListView.separated(padding:const EdgeInsets.all(16),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:8),
         itemBuilder:(context,i){final p=s.data![i];return Card(child:ListTile(
+          onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenProductDetailScreen(product:p))),
           leading:p.imageUrl.isEmpty?const Icon(Icons.inventory_2_outlined):Image.network(p.imageUrl,width:48,height:48,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.broken_image_outlined)),
           title:Text(p.name),subtitle:Text((p.priceMinor/100).toStringAsFixed(2)+' '+p.currency+(p.service?' • خدمة':'')),
           trailing:IconButton(icon:const Icon(Icons.delete_outline),onPressed:FirebaseAuth.instance.currentUser?.uid==p.ownerId?()async{await repo.delete(p.id);setState((){});} : null),
