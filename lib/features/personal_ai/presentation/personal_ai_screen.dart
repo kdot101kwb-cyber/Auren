@@ -52,6 +52,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.', const AurenOpportunityAiScreen()),
         _tile(context, Icons.gavel_outlined, 'Legal AI', 'افهم المستندات والعقود وأسئلة المراجعة القانونية.', const AurenLegalAiScreen()),
         _tile(context, Icons.hub_outlined, 'Core 5 Context', 'خلّي AUREN يربط أهدافك وPulse وBusiness وMarketplace وCreator.', null, onTap: () => _openCoreFive(context, uid)),
+        if (uid != null) _coreFiveBuildCard(context, uid),
         _tile(context, Icons.alt_route_outlined, 'Goal → Content → Opportunity', 'حوّل هدفك إلى محتوى أو منتج أو فرصة Business عبر الوحدات الخمس.', null, onTap: () => _openCoreFive(context, uid)),
         _tile(context, Icons.smart_toy_outlined, 'AUREN Agents', 'Marketplace + A2A + Trust + Wallet.', const AurenAgentHubScreen()),
       ],
@@ -109,6 +110,30 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         ),
       );
     },
+  );
+
+  Widget _coreFiveBuildCard(BuildContext context, String uid) => Card(
+    child: ListTile(
+      leading: const CircleAvatar(child: Icon(Icons.rocket_launch_outlined)),
+      title: const Text('Build My Core 5 Loop', style: TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: const Text('حوّل هدفك الحالي إلى مسودة Creator ومنشور Pulse في خطوة واحدة.'),
+      trailing: const Icon(Icons.play_arrow),
+      onTap: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(const SnackBar(content: Text('AUREN يبني الحلقة من هدفك الحالي...')));
+        try {
+          final result = await AurenCoreFiveRepository().runCoreFiveBatch(uid);
+          if (!context.mounted) return;
+          messenger.showSnackBar(SnackBar(
+            content: Text(result.draftId == null
+                ? 'أضف هدفًا نشطًا أولًا من Goal → Reality.'
+                : 'تم ربط هدفك بـ Creator Studio وPulse.'),
+          ));
+        } catch (e) {
+          if (context.mounted) messenger.showSnackBar(SnackBar(content: Text('تعذر تنفيذ الحلقة: $e')));
+        }
+      },
+    ),
   );
 
   static Widget _summaryTile(BuildContext context, IconData icon, String title, String subtitle, Widget page) => Card(child: ListTile(
