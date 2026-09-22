@@ -72,6 +72,12 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
               const SizedBox(height:10),
               Text(snapshot.nextMove,style:const TextStyle(fontWeight:FontWeight.w600)),
               const SizedBox(height:12),
+              FilledButton.tonalIcon(
+                onPressed: () => _runCoreFiveBatch(context),
+                icon: const Icon(Icons.rocket_launch_outlined),
+                label: const Text('شغّل دفعة Core 5'),
+              ),
+              const SizedBox(height:10),
               Wrap(spacing:8,runSpacing:8,children:[
                 _metric(Icons.flag_outlined,snapshot.activeGoals,'Goals'),
                 _metric(Icons.dynamic_feed_outlined,snapshot.posts,'Pulse'),
@@ -156,6 +162,61 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
       },
     ),
   );
+
+  Future<void> _runCoreFiveBatch(BuildContext context) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تشغيل دفعة Core 5؟'),
+        content: const Text(
+          'سيحوّل هدفك النشط إلى مسودة Creator وينشر نسخة منه في Pulse. '
+          'لن يتم شراء أو دفع أو تنفيذ إجراء حساس.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('تشغيل'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('جاري تشغيل دفعة Core 5...')),
+    );
+    try {
+      final repo = AurenCoreFiveRepository();
+      final draftId = await repo.createCreatorDraftFromTopGoal(uid);
+      final postId = await repo.createPulseFromTopGoal(uid);
+      if (!context.mounted) return;
+      final created = [
+        if (draftId != null) 'Creator Draft',
+        if (postId != null) 'Pulse',
+      ];
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            created.isEmpty
+                ? 'أنشئ هدفًا نشطًا أولاً.'
+                : 'اكتملت الدفعة: ${created.join(' + ')}',
+          ),
+        ),
+      );
+      setState(_load);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تشغيل الدفعة: $e')),
+        );
+      }
+    }
+  }
 
   Widget _metric(IconData icon,int value,String label)=>Chip(avatar:Icon(icon,size:18),label:Text(value.toString() + ' ' + label));
 
