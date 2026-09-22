@@ -5,6 +5,7 @@ import '../social/post_repository.dart';
 class AurenCoreFiveSnapshot {
   final int activeGoals, businesses, products, creatorDrafts, posts;
   final List<String> goalTitles, businessNames, productNames, draftTitles;
+  final String? firstBusinessId, firstProductId;
   final int averageGoalProgress;
   final int totalSignals;
   final bool hasGoal, hasBusiness, hasProduct, hasCreatorDraft, hasPulse;
@@ -19,6 +20,8 @@ class AurenCoreFiveSnapshot {
     required this.businessNames,
     required this.productNames,
     required this.draftTitles,
+    required this.firstBusinessId,
+    required this.firstProductId,
     required this.averageGoalProgress,
     required this.totalSignals,
     required this.hasGoal,
@@ -178,6 +181,8 @@ class AurenCoreFiveRepository {
       businessNames: names(r[1], 'name'),
       productNames: names(r[2], 'name'),
       draftTitles: names(r[3], 'title'),
+      firstBusinessId: r[1]?.docs.isNotEmpty == true ? r[1]!.docs.first.id : null,
+      firstProductId: r[2]?.docs.isNotEmpty == true ? r[2]!.docs.first.id : null,
       averageGoalProgress: goals.isEmpty ? 0 : goals.fold<int>(0, (sum, d) => sum + ((d.data()['progress'] as num?)?.toInt() ?? 0)) ~/ goals.length,
       totalSignals: goals.length + (r[1]?.docs.length ?? 0) + (r[2]?.docs.length ?? 0) + (r[3]?.docs.length ?? 0) + (r[4]?.docs.length ?? 0),
     );
