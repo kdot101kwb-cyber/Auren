@@ -64,6 +64,7 @@ class AurenCoreFiveScreen extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
+                        _stat('Goal progress', data.averageGoalProgress),
                         _stat('Goals', data.activeGoals),
                         _stat('Pulse', data.posts),
                         _stat('Business', data.businesses),
@@ -79,6 +80,8 @@ class AurenCoreFiveScreen extends StatelessWidget {
                     leading: const Icon(Icons.trending_up),
                     title: const Text('Next move'),
                     subtitle: Text(data.nextMove),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'نفّذ معي هذه الخطوة التالية في AUREN: ${data.nextMove}'))),
                   ),
                 ),
                 const SizedBox(height: 10),
