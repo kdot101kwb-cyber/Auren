@@ -106,7 +106,21 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
                   ),
                   ActionChip(
                     avatar:const Icon(Icons.dynamic_feed_outlined,size:18),
-                    label:const Text('محتوى → Pulse'),
+                    label:const Text('هدف → Pulse'),
+                    onPressed:() async {
+                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                      if (uid == null) return;
+                      final id = await AurenCoreFiveRepository().createPulseFromTopGoal(uid);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(id == null ? 'أنشئ هدفًا نشطًا أولاً.' : 'تم نشر هدفك في Pulse.')),
+                      );
+                      if (id != null) Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTimelineScreen()));
+                    },
+                  ),
+                  ActionChip(
+                    avatar:const Icon(Icons.play_arrow_outlined,size:18),
+                    label:const Text('افتح Pulse'),
                     onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenTimelineScreen())),
                   ),
                 ],
