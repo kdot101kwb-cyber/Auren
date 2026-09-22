@@ -4,6 +4,7 @@ class AurenCoreFiveSnapshot {
   final int activeGoals, businesses, products, creatorDrafts, posts;
   final List<String> goalTitles, businessNames, productNames, draftTitles;
   final int averageGoalProgress;
+  final bool hasGoal, hasBusiness, hasProduct, hasCreatorDraft, hasPulse;
 
   const AurenCoreFiveSnapshot({
     required this.activeGoals,
@@ -16,6 +17,11 @@ class AurenCoreFiveSnapshot {
     required this.productNames,
     required this.draftTitles,
     required this.averageGoalProgress,
+    required this.hasGoal,
+    required this.hasBusiness,
+    required this.hasProduct,
+    required this.hasCreatorDraft,
+    required this.hasPulse,
   });
 
   String get nextMove {
@@ -74,6 +80,11 @@ class AurenCoreFiveRepository {
             .toList();
 
     return AurenCoreFiveSnapshot(
+      hasGoal: goals.isNotEmpty,
+      hasBusiness: (r[1]?.docs.isNotEmpty ?? false),
+      hasProduct: (r[2]?.docs.isNotEmpty ?? false),
+      hasCreatorDraft: (r[3]?.docs.isNotEmpty ?? false),
+      hasPulse: (r[4]?.docs.isNotEmpty ?? false),
       activeGoals: goals.length,
       businesses: r[1]?.docs.length ?? 0,
       products: r[2]?.docs.length ?? 0,
