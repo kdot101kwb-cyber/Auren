@@ -12,6 +12,7 @@ import '../../social/presentation/timeline_screen.dart';
 import '../../social/presentation/saved_pulse_screen.dart';
 import '../../saved/presentation/saved_center_screen.dart';
 import 'core_five_screen.dart';
+import 'core_ten_screen.dart';
 import 'core_five_next_screen.dart';
 import 'systems_47_screen.dart';
 
