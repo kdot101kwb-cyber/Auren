@@ -5,6 +5,7 @@ import '../../../services/core/auren_core_five_repository.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../business/presentation/business_screen.dart';
+import '../../business/presentation/business_products_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
 import 'remaining_modules_screen.dart';
@@ -29,7 +30,7 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     _snapshot = uid == null ? Future.value(const AurenCoreFiveSnapshot(
       activeGoals:0,businesses:0,products:0,creatorDrafts:0,posts:0,
-      goalTitles:[],businessNames:[],productNames:[],draftTitles:[],averageGoalProgress:0,hasGoal:false,hasBusiness:false,hasProduct:false,hasCreatorDraft:false,hasPulse:false,
+      goalTitles:[],businessNames:[],productNames:[],draftTitles:[],firstBusinessId:null,firstProductId:null,averageGoalProgress:0,hasGoal:false,hasBusiness:false,hasProduct:false,hasCreatorDraft:false,hasPulse:false,
     )) : AurenCoreFiveRepository().load(uid);
   }
 
@@ -111,7 +112,14 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
                   ActionChip(
                     avatar:const Icon(Icons.storefront_outlined,size:18),
                     label:const Text('Business → منتج'),
-                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenMarketplaceScreen())),
+                    onPressed:() {
+                      final id = snapshot.firstBusinessId;
+                      if (id == null) {
+                        Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenBusinessScreen()));
+                        return;
+                      }
+                      Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenBusinessProductsScreen(businessId:id,businessName:snapshot.businessNames.isEmpty?'Business':snapshot.businessNames.first)));
+                    },
                   ),
                   ActionChip(
                     avatar:const Icon(Icons.dynamic_feed_outlined,size:18),
@@ -224,7 +232,7 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
     final title=s.actionTitle;
     VoidCallback? action;
     if (s.activeGoals == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const PersonalAiScreen()));
-    else if (s.products == 0 && s.businesses > 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenMarketplaceScreen()));
+    else if (s.products == 0 && s.businesses > 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenBusinessProductsScreen(businessId:s.firstBusinessId!,businessName:s.businessNames.isEmpty?'Business':s.businessNames.first));
     else if (s.creatorDrafts == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenAURENCreatorStudioScreen()));
     else if (s.posts == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenTimelineScreen()));
     else action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenBusinessScreen()));
