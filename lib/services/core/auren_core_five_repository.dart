@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/models/post.dart';
+import '../social/post_repository.dart';
 
 class AurenCoreFiveSnapshot {
   final int activeGoals, businesses, products, creatorDrafts, posts;
@@ -94,6 +96,34 @@ class AurenCoreFiveRepository {
       'createdAt': FieldValue.serverTimestamp(),
     });
     return draft.id;
+  }
+
+  Future<String?> createPulseFromTopGoal(String uid) async {
+    final goals = await db.collection('users').doc(uid).collection('goals').limit(50).get();
+    final active = goals.docs.where((d) => (d.data()['status']?.toString() ?? 'active') == 'active').toList();
+    if (active.isEmpty) return null;
+    active.sort((a, b) => (b.data()['updatedAt']?.toString() ?? '').compareTo(a.data()['updatedAt']?.toString() ?? ''));
+    final data = active.first.data();
+    final title = data['title']?.toString().trim() ?? '';
+    if (title.isEmpty) return null;
+    final description = data['description']?.toString().trim() ?? '';
+    final id = 'post_${DateTime.now().microsecondsSinceEpoch}';
+    await PostRepository().create(
+      AurenPost(
+        id: id,
+        authorId: uid,
+        text: description.isEmpty
+            ? 'هدفي الحالي: $title\\n\\nأشارك تقدمي والخطوة التالية التي أعمل عليها مع مجتمع AUREN.'
+            : 'هدفي الحالي: $title\\n\\n$description\\n\\nالخطوة التالية: أشارك تقدمي وما سأفعله بعد ذلك.',
+        mediaUrl: '',
+        mediaType: 'none',
+        contentType: 'project',
+        contextLabel: 'Building now',
+        actionLabel: 'Join',
+        createdAt: DateTime.now(),
+      ),
+    );
+    return id;
   }
 
   Future<AurenCoreFiveSnapshot> load(String uid) async {
