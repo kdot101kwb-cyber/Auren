@@ -90,7 +90,20 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
   ));
 
-  Future<void> _openCoreFive(BuildContext context, String? uid) async {\n    if (uid == null) return;\n    final messenger = ScaffoldMessenger.of(context);\n    messenger.showSnackBar(const SnackBar(content: Text('جاري جمع سياق الوحدات الخمس...')));\n    try {\n      final snapshot = await AurenCoreFiveRepository().load(uid);\n      if (!context.mounted) return;\n      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: snapshot.toPrompt())));\n    } catch (e) {\n      if (context.mounted) messenger.showSnackBar(SnackBar(content: Text('تعذر جمع السياق: $e')));\n    }\n  }\n\n  static Widget _tile(BuildContext context, IconData icon, String title, String subtitle, [Widget? page, VoidCallback? onTap]) =>
+  Future<void> _openCoreFive(BuildContext context, String? uid) async {
+    if (uid == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(content: Text('جاري جمع سياق الوحدات الخمس...')));
+    try {
+      final snapshot = await AurenCoreFiveRepository().load(uid);
+      if (!context.mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: snapshot.toPrompt())));
+    } catch (e) {
+      if (context.mounted) messenger.showSnackBar(SnackBar(content: Text('تعذر جمع السياق: $e')));
+    }
+  }
+
+  static Widget _tile(BuildContext context, IconData icon, String title, String subtitle, [Widget? page, VoidCallback? onTap]) =>
       Card(child: ListTile(
         leading: Icon(icon),
         title: Text(title),
