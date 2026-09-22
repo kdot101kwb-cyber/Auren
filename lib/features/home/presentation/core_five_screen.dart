@@ -90,7 +90,14 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
                   ActionChip(
                     avatar:const Icon(Icons.flag_outlined,size:18),
                     label:const Text('هدف → محتوى'),
-                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenAURENCreatorStudioScreen())),
+                    onPressed:() async {
+                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                      if (uid == null) return;
+                      final id = await AurenCoreFiveRepository().createCreatorDraftFromTopGoal(uid);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(id == null ? 'أنشئ هدفًا نشطًا أولاً.' : 'تم إنشاء مسودة من هدفك.')));
+                      if (id != null) Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENCreatorStudioScreen()));
+                    },
                   ),
                   ActionChip(
                     avatar:const Icon(Icons.storefront_outlined,size:18),
