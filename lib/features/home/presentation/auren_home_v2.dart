@@ -8,6 +8,7 @@ import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import 'more_screen.dart';
 import 'core_five_screen.dart';
+import '../../services/core/auren_core_five_repository.dart';
 import '../../saved/presentation/saved_center_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
@@ -82,6 +83,30 @@ class AurenHomeV2 extends StatelessWidget {
           )
         else
           _goalEmpty(context),
+        const SizedBox(height: 12),
+        if (uid != null)
+          FutureBuilder<AurenCoreFiveSnapshot>(
+            future: AurenCoreFiveRepository().load(uid),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const SizedBox.shrink();
+              final core = snapshot.data!;
+              return Card(
+                child: ListTile(
+                  leading: const Icon(Icons.hub_outlined),
+                  title: Text('Next move: ${core.nextMove}'),
+                  subtitle: Text(
+                    '${core.activeGoals} أهداف • ${core.businesses} Business • ${core.products} منتجات • ${core.posts} Pulse • ${core.creatorDrafts} مسودات',
+                  ),
+                  isThreeLine: true,
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AurenCoreFiveScreen()),
+                  ),
+                ),
+              );
+            },
+          ),
         const SizedBox(height: 12),
         _card(context, Icons.auto_awesome, 'AUREN AI', 'اسأل، خطط، وأنجز.', const MessengerScreen()),
         _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.', const AurenDiscoverScreen()),
