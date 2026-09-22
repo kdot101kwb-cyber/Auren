@@ -7,6 +7,7 @@ import '../../agents/presentation/agent_hub_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import 'next_five_screen.dart';
+import 'next_five_systems_screen.dart';
 
 class AurenRemainingModulesScreen extends StatelessWidget {
   const AurenRemainingModulesScreen({super.key});
@@ -51,6 +52,13 @@ class AurenRemainingModulesScreen extends StatelessWidget {
         const SizedBox(height:6),
         const Text('الوحدات الأساسية المتبقية مجمعة هنا حتى نكملها فوق الـCore 5 بدون إعادة بناء ما تم إنجازه.'),
         const SizedBox(height:16),
+        Card(child: ListTile(
+          leading: const Icon(Icons.rocket_launch_outlined),
+          title: const Text('AUREN Next 5 Systems'),
+          subtitle: const Text('Entertainment • Agents • Local Intelligence • Money • Trust'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenNextFiveSystemsScreen())),
+        )),
         Card(child: ListTile(
           leading: const Icon(Icons.route_outlined),
           title: const Text('AUREN Next 5'),
