@@ -32,6 +32,37 @@ class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
   final _repo = GoalRepository();
   bool _creating = false;
 
+  Future<void> _updateProgress(String uid, AurenGoal goal) async {
+    var progress = goal.progress.clamp(0, 100);
+    final result = await showDialog<int>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('تحديث: ${goal.title}'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('$progress%'),
+            Slider(value: progress.toDouble(), min: 0, max: 100, divisions: 20, label: '$progress%', onChanged: (v) => setDialogState(() => progress = v.round())),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+            FilledButton(onPressed: () => Navigator.pop(context, progress), child: const Text('حفظ')),
+          ],
+        ),
+      ),
+    );
+    if (result == null) return;
+    final now = DateTime.now();
+    await _repo.upsert(uid, AurenGoal(
+      id: goal.id,
+      title: goal.title,
+      description: goal.description,
+      progress: result,
+      status: result >= 100 ? 'completed' : goal.status,
+      createdAt: goal.createdAt,
+      updatedAt: now,
+    ));
+  }
+
   Future<void> _add(String uid) async {
     final controller = TextEditingController();
     final description = TextEditingController();
@@ -100,7 +131,9 @@ class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
                   isThreeLine: true,
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) async {
-                      if (value == 'ask') {
+                      if (value == 'progress') {
+                        await _updateProgress(uid, goal);
+                      } else if (value == 'ask') {
                         await Navigator.push(context, MaterialPageRoute(
                           builder: (_) => MessengerScreen(
                             initialPrompt: 'هذا هدفي: "${goal.title}". ${goal.description ?? ''}\\nحوّله إلى خطة عملية، وحدد أول 3 خطوات ومؤشرات التقدم.',
@@ -111,6 +144,7 @@ class _AurenGoalsScreenState extends State<AurenGoalsScreen> {
                       }
                     },
                     itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'progress', child: Text('تحديث التقدم')),
                       PopupMenuItem(value: 'ask', child: Text('خلّي AUREN يخطط له')),
                       PopupMenuItem(value: 'delete', child: Text('حذف')),
                     ],
