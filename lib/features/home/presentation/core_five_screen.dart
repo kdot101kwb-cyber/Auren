@@ -29,7 +29,7 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     _snapshot = uid == null ? Future.value(const AurenCoreFiveSnapshot(
       activeGoals:0,businesses:0,products:0,creatorDrafts:0,posts:0,
-      goalTitles:[],businessNames:[],productNames:[],draftTitles:[],averageGoalProgress:0,
+      goalTitles:[],businessNames:[],productNames:[],draftTitles:[],averageGoalProgress:0,hasGoal:false,hasBusiness:false,hasProduct:false,hasCreatorDraft:false,hasPulse:false,
     )) : AurenCoreFiveRepository().load(uid);
   }
 
@@ -53,6 +53,7 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
       builder:(context,state) {
         if(state.connectionState==ConnectionState.waiting) return const Center(child:CircularProgressIndicator());
         final snapshot=state.data;
+        if(state.hasError) return Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.cloud_off_outlined,size:42),const SizedBox(height:10),const Text('تعذر تحميل حالة الوحدات الخمس.'),const SizedBox(height:10),OutlinedButton.icon(onPressed:()=>setState(_load),icon:const Icon(Icons.refresh),label:const Text('حاول مرة أخرى'))])));
         if(snapshot==null) return const Center(child:Text('تعذر تحميل حالة الوحدات الخمس.'));
         return ListView(
           padding:const EdgeInsets.fromLTRB(16,12,16,28),
