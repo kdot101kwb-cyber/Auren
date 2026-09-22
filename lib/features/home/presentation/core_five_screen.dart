@@ -76,6 +76,14 @@ class AurenCoreFiveScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 Card(
                   child: ListTile(
+                    leading: const Icon(Icons.trending_up),
+                    title: const Text('Next move'),
+                    subtitle: Text(data.nextMove),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Card(
+                  child: ListTile(
                     leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
                     title: const Text('AUREN Core 5 AI'),
                     subtitle: const Text('اربط بيانات الوحدات الخمس واقترح لي خطوة واحدة قابلة للتنفيذ.'),
