@@ -12,6 +12,7 @@ import '../../social/presentation/timeline_screen.dart';
 import '../../social/presentation/saved_pulse_screen.dart';
 import '../../saved/presentation/saved_center_screen.dart';
 import 'core_five_screen.dart';
+import 'systems_47_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -41,11 +42,11 @@ class AurenMoreScreen extends StatelessWidget {
         const Text('كل مسارات AUREN في مكان واحد — واختر كيف تريد أن تبدأ.'),
         const SizedBox(height: 18),
         Card(child: ListTile(
-          leading: const Icon(Icons.layers_outlined),
-          title: const Text('AUREN Core 5'),
-          subtitle: const Text('Personal AI • Social • Business • Marketplace • Creator Studio'),
+          leading: const Icon(Icons.hub_outlined),
+          title: const Text('AUREN — 47 Systems'),
+          subtitle: const Text('ربط أنظمة AUREN الـ47 في مسار واحد'),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCoreFiveScreen())),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSystems47Screen())),
         )),
         Card(child: ListTile(
           leading: const Icon(Icons.dynamic_feed_outlined),
