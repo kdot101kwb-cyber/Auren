@@ -7,6 +7,7 @@ import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../business/presentation/business_create_screen.dart';
 import 'remaining_modules_screen.dart';
 
 class AurenCoreFiveScreen extends StatefulWidget {
@@ -84,6 +85,8 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
               ),
             ]))),
             const SizedBox(height:12),
+            _nextAction(context, snapshot),
+            const SizedBox(height:12),
             Card(child: ListTile(
               leading: const Icon(Icons.apps_outlined),
               title: const Text('باقي وحدات AUREN'),
@@ -110,6 +113,16 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
   );
 
   Widget _metric(IconData icon,int value,String label)=>Chip(avatar:Icon(icon,size:18),label:Text(value.toString() + ' ' + label));
+
+  Widget _nextAction(BuildContext context, AurenCoreFiveSnapshot s) {
+    final title=s.actionTitle;
+    VoidCallback? action;
+    if (s.activeGoals == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const PersonalAiScreen()));
+    else if (s.products == 0 && s.businesses > 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenMarketplaceScreen()));
+    else if (s.creatorDrafts == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenAURENCreatorStudioScreen()));
+    else if (s.posts == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenTimelineScreen()));
+    return Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.bolt)),title:Text(title,style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text(s.nextMove),trailing:action==null?null:const Icon(Icons.arrow_forward),onTap:action));
+  }
 }
 
 class _CoreModule {
