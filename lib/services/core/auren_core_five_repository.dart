@@ -112,6 +112,58 @@ class AurenCoreFiveRepository {
     return draft.id;
   }
 
+  Future<({String? draftId, String? postId})> runCoreFiveBatch(String uid) async {
+    final goals = await db.collection('users').doc(uid).collection('goals').limit(50).get();
+    final active = goals.docs.where((d) => (d.data()['status']?.toString() ?? 'active') == 'active').toList();
+    if (active.isEmpty) return (draftId: null, postId: null);
+    active.sort((a, b) => (b.data()['updatedAt']?.toString() ?? '').compareTo(a.data()['updatedAt']?.toString() ?? ''));
+    final data = active.first.data();
+    final title = data['title']?.toString().trim() ?? '';
+    if (title.isEmpty) return (draftId: null, postId: null);
+    final description = data['description']?.toString().trim() ?? '';
+    final draftId = 'core5_${uid}_${active.first.id}';
+    final postId = draftId;
+    final draftRef = db.collection('creator_drafts').doc(draftId);
+    final postRef = db.collection('posts').doc(postId);
+    final existingDraft = await draftRef.get();
+    final existingPost = await postRef.get();
+    final batch = db.batch();
+
+    if (!existingDraft.exists) {
+      batch.set(draftRef, {
+        'ownerId': uid,
+        'title': title,
+        'body': description.isEmpty
+            ? 'فكرة محتوى مرتبطة بهذا الهدف: $title\n\nشارك لماذا هذا الهدف مهم، ما الذي تتعلمه منه، وما الخطوة التالية التي تعمل عليها.'
+            : 'هدفي: $title\n\n$description\n\nالخطوة التالية: شارك تقدمك، ما تعلمته، وما الذي ستفعله بعد ذلك.',
+        'status': 'draft',
+        'source': 'core_five_goal_bridge',
+        'sourceGoalId': active.first.id,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    if (!existingPost.exists) {
+      final text = description.isEmpty
+          ? 'هدفي الحالي: $title\n\nأشارك تقدمي والخطوة التالية التي أعمل عليها مع مجتمع AUREN.'
+          : 'هدفي الحالي: $title\n\n$description\n\nالخطوة التالية: أشارك تقدمي وما سأفعله بعد ذلك.';
+      batch.set(postRef, {
+        'authorId': uid,
+        'text': text,
+        'mediaUrl': '',
+        'mediaType': 'none',
+        'contentType': 'project',
+        'contextLabel': 'Building now',
+        'actionLabel': 'Join',
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+        'likes': 0,
+        'comments': 0,
+        'searchText': text.trim().toLowerCase(),
+      });
+    }
+    if (!existingDraft.exists || !existingPost.exists) await batch.commit();
+    return (draftId: draftId, postId: postId);
+  }
+
   Future<String?> createPulseFromTopGoal(String uid) async {
     final goals = await db.collection('users').doc(uid).collection('goals').limit(50).get();
     final active = goals.docs.where((d) => (d.data()['status']?.toString() ?? 'active') == 'active').toList();
