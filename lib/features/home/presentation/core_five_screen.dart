@@ -7,6 +7,7 @@ import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'remaining_modules_screen.dart';
 
 class AurenCoreFiveScreen extends StatefulWidget {
   const AurenCoreFiveScreen({super.key});
@@ -81,6 +82,14 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
                 label:const Text('اسأل AUREN عن الخطوة التالية'),
               ),
             ]))),
+            const SizedBox(height:12),
+            Card(child: ListTile(
+              leading: const Icon(Icons.apps_outlined),
+              title: const Text('باقي وحدات AUREN'),
+              subtitle: const Text('Messenger • Search • Discover • Education • Travel • Entertainment • Agents وغيرها'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRemainingModulesScreen())),
+            )),
             const SizedBox(height:12),
             ...modules.asMap().entries.map((entry)=>Card(
               margin:const EdgeInsets.only(bottom:12),
