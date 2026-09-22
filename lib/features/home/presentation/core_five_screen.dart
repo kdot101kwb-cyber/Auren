@@ -199,9 +199,9 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
       const SnackBar(content: Text('جاري تشغيل دفعة Core 5...')),
     );
     try {
-      final repo = AurenCoreFiveRepository();
-      final draftId = await repo.createCreatorDraftFromTopGoal(uid);
-      final postId = await repo.createPulseFromTopGoal(uid);
+      final result = await AurenCoreFiveRepository().runCoreFiveBatch(uid);
+      final draftId = result.draftId;
+      final postId = result.postId;
       if (!context.mounted) return;
       final created = [
         if (draftId != null) 'Creator Draft',
