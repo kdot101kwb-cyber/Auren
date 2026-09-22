@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../services/core/auren_core_five_repository.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
@@ -112,6 +113,78 @@ class AurenCoreFiveScreen extends StatelessWidget {
                   ),
                 ),
               ...modules.asMap().entries.map((entry) => Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: CircleAvatar(child: Text('${entry.key + 1}')),
+                  title: Row(children: [
+                    Icon(entry.value.icon, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(entry.value.title, style: const TextStyle(fontWeight: FontWeight.bold))),
+                  ]),
+                  subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text(entry.value.description)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _page(entry.value.title))),
+                ),
+              )),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  static Widget _stat(String label, int value) => Chip(
+    avatar: const Icon(Icons.circle, size: 10),
+    label: Text('$label: $value'),
+  );
+}
+
+class _CoreModule {
+  final String title;
+  final String description;
+  final IconData icon;
+  const _CoreModule(this.title, this.description, this.icon);
+}          FutureBuilder<AurenCoreFiveSnapshot>(
+            future: _load(context),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Card(child: Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator())));
+              }
+              if (snapshot.hasError || !snapshot.hasData) return const SizedBox.shrink();
+              final s = snapshot.data!;
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Row(children: [Icon(Icons.hub_outlined), SizedBox(width: 8), Text('Live Core Context', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))]),
+                    const SizedBox(height: 12),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      _Stat('${s.activeGoals}', 'Goals'),
+                      _Stat('${s.posts}', 'Pulse'),
+                      _Stat('${s.businesses}', 'Business'),
+                      _Stat('${s.products}', 'Products'),
+                      _Stat('${s.creatorDrafts}', 'Drafts'),
+                    ]),
+                    const SizedBox(height: 12),
+                    LinearProgressIndicator(value: s.averageGoalProgress.clamp(0, 100) / 100),
+                    const SizedBox(height: 8),
+                    Text('متوسط تقدم الأهداف: ${s.averageGoalProgress}%'),
+                    const SizedBox(height: 8),
+                    Text(s.nextMove, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: s.toPrompt()))),
+                      icon: const Icon(Icons.auto_awesome),
+                      label: const Text('اسأل AUREN عن الخطوة التالية'),
+                    ),
+                  ]),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          ...modules.asMap().entries.map((entry) => Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
