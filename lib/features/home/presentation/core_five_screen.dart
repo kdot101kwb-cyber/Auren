@@ -232,7 +232,7 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
     final title=s.actionTitle;
     VoidCallback? action;
     if (s.activeGoals == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const PersonalAiScreen()));
-    else if (s.products == 0 && s.businesses > 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenBusinessProductsScreen(businessId:s.firstBusinessId!,businessName:s.businessNames.isEmpty?'Business':s.businessNames.first));
+    else if (s.products == 0 && s.businesses > 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenBusinessProductsScreen(businessId:s.firstBusinessId!,businessName:s.businessNames.isEmpty?'Business':s.businessNames.first)));
     else if (s.creatorDrafts == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenAURENCreatorStudioScreen()));
     else if (s.posts == 0) action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenTimelineScreen()));
     else action=()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenBusinessScreen()));
