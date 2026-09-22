@@ -47,6 +47,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.', const MessengerScreen(initialPrompt: 'حوّل هذا الهدف إلى خطوات عملية ونفّذ ما يحتاج موافقتي.')),
         _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.', const MessengerScreen(initialPrompt: 'ابحث لي عن فرص مناسبة لأهدافي ومهاراتي، ورتّبها حسب مدى التطابق.')),
         _tile(context, Icons.hub_outlined, 'Core 5 Context', 'خلّي AUREN يربط أهدافك وPulse وBusiness وMarketplace وCreator.', null, onTap: () => _openCoreFive(context, uid)),
+        _tile(context, Icons.alt_route_outlined, 'Goal → Content → Opportunity', 'حوّل هدفك إلى محتوى أو منتج أو فرصة Business عبر الوحدات الخمس.', null, onTap: () => _openCoreFive(context, uid)),
         _tile(context, Icons.smart_toy_outlined, 'AUREN Agents', 'Marketplace + A2A + Trust + Wallet.', const AurenAgentHubScreen()),
       ],
     ),
