@@ -8,6 +8,8 @@ import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
 import 'goals_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../opportunities/presentation/opportunity_ai_screen.dart';
+import '../../legal/presentation/legal_ai_screen.dart';
 
 class PersonalAiScreen extends StatefulWidget {
   const PersonalAiScreen({super.key});
@@ -47,7 +49,8 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.check_circle_outline, 'Action Center', 'الأوامر الحساسة تحتاج موافقتك.', const AurenActionCenterScreen()),
         _tile(context, Icons.psychology_outlined, 'AI Memory', 'ذاكرة شخصية تحت تحكمك.', const AurenMemoryScreen()),
         _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.', const MessengerScreen(initialPrompt: 'حوّل هذا الهدف إلى خطوات عملية ونفّذ ما يحتاج موافقتي.')),
-        _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.', const MessengerScreen(initialPrompt: 'ابحث لي عن فرص مناسبة لأهدافي ومهاراتي، ورتّبها حسب مدى التطابق.')),
+        _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.', const AurenOpportunityAiScreen()),
+        _tile(context, Icons.gavel_outlined, 'Legal AI', 'افهم المستندات والعقود وأسئلة المراجعة القانونية.', const AurenLegalAiScreen()),
         _tile(context, Icons.hub_outlined, 'Core 5 Context', 'خلّي AUREN يربط أهدافك وPulse وBusiness وMarketplace وCreator.', null, onTap: () => _openCoreFive(context, uid)),
         _tile(context, Icons.alt_route_outlined, 'Goal → Content → Opportunity', 'حوّل هدفك إلى محتوى أو منتج أو فرصة Business عبر الوحدات الخمس.', null, onTap: () => _openCoreFive(context, uid)),
         _tile(context, Icons.smart_toy_outlined, 'AUREN Agents', 'Marketplace + A2A + Trust + Wallet.', const AurenAgentHubScreen()),
