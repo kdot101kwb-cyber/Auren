@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AurenCoreFiveSnapshot {
   final int activeGoals, businesses, products, creatorDrafts, posts;
   final List<String> goalTitles, businessNames, productNames, draftTitles;
+  final int averageGoalProgress;
 
   const AurenCoreFiveSnapshot({
     required this.activeGoals,
@@ -14,14 +15,24 @@ class AurenCoreFiveSnapshot {
     required this.businessNames,
     required this.productNames,
     required this.draftTitles,
+    required this.averageGoalProgress,
   });
 
-  String toPrompt() => 'أنت AUREN AI. حلّل وضعي عبر الوحدات الخمس الأساسية واصنع لي خطوة عملية واحدة الآن.\\n'
-      'Personal AI: $activeGoals أهداف نشطة${goalTitles.isEmpty ? '' : ' — ${goalTitles.join('، ')}'}.\\n'
-      'Social / Pulse: $posts منشورًا.\\n'
-      'Business: $businesses أنشطة${businessNames.isEmpty ? '' : ' — ${businessNames.join('، ')}'}.\\n'
-      'Marketplace: $products منتجات/خدمات${productNames.isEmpty ? '' : ' — ${productNames.join('، ')}'}.\\n'
-      'Creator Studio: $creatorDrafts مسودات${draftTitles.isEmpty ? '' : ' — ${draftTitles.join('، ')}'}.\\n'
+  String get nextMove {
+    if (activeGoals == 0) return 'ابدأ هدفًا واحدًا في Personal AI ثم حوّله إلى خطوة عملية.';
+    if (products == 0 && businesses > 0) return 'أضف أول منتج أو خدمة إلى Marketplace من Business.';
+    if (creatorDrafts == 0) return 'حوّل هدفك أو خبرتك إلى أول مسودة محتوى في Creator Studio.';
+    if (posts == 0) return 'انشر أول فكرة أو فرصة في Pulse وابنِ اتصالًا حولها.';
+    if (averageGoalProgress < 50) return 'ارجع للهدف النشط ونفّذ خطوة صغيرة ترفع تقدمه اليوم.';
+    return 'اربط ما أنشأته بفرصة جديدة: محتوى، عميل، منتج أو شراكة.';
+  }
+
+  String toPrompt() => 'أنت AUREN AI. حلّل وضعي عبر الوحدات الخمس الأساسية واصنع لي خطوة عملية واحدة الآن.\n'
+      'Personal AI: $activeGoals أهداف نشطة (متوسط التقدم $averageGoalProgress%)${goalTitles.isEmpty ? '' : ' — ${goalTitles.join('، ')}'}.\n'
+      'Social / Pulse: $posts منشورًا.\n'
+      'Business: $businesses أنشطة${businessNames.isEmpty ? '' : ' — ${businessNames.join('، ')}'}.\n'
+      'Marketplace: $products منتجات/خدمات${productNames.isEmpty ? '' : ' — ${productNames.join('، ')}'}.\n'
+      'Creator Studio: $creatorDrafts مسودات${draftTitles.isEmpty ? '' : ' — ${draftTitles.join('، ')}'}.\n'
       'اربط الوحدات ببعضها، وحوّل هدفي إلى محتوى أو فرصة أو منتج أو خطوة Business. أعطني الخطوة التالية القابلة للتنفيذ.';
 
 }
@@ -76,6 +87,7 @@ class AurenCoreFiveRepository {
       businessNames: names(r[1], 'name'),
       productNames: names(r[2], 'name'),
       draftTitles: names(r[3], 'title'),
+      averageGoalProgress: goals.isEmpty ? 0 : goals.fold<int>(0, (sum, d) => sum + ((d.data()['progress'] as num?)?.toInt() ?? 0)) ~/ goals.length,
     );
   }
 }
