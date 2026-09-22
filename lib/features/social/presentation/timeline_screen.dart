@@ -12,6 +12,7 @@ import 'saved_pulse_screen.dart';
 import 'user_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../../services/core/auren_core_five_repository.dart';
 
 class AurenTimelineScreen extends StatefulWidget {
   const AurenTimelineScreen({super.key});
@@ -41,6 +42,16 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
             tooltip: 'Saved Pulse',
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedPulseScreen())),
             icon: const Icon(Icons.bookmarks_outlined),
+          ),
+          IconButton(
+            tooltip: 'Core 5 AI',
+            onPressed: () async {
+              if (uid == null) return;
+              final snapshot = await AurenCoreFiveRepository().load(uid);
+              if (!context.mounted) return;
+              Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: snapshot.toPrompt())));
+            },
+            icon: const Icon(Icons.hub_outlined),
           ),
           IconButton(
             tooltip: 'Create',
