@@ -45,6 +45,15 @@ class AurenCoreFiveSnapshot {
     return 'اربط ما أنشأته بفرصة جديدة: محتوى، عميل، منتج أو شراكة.';
   }
 
+  int get readinessPercent => [hasGoal, hasPulse, hasBusiness, hasProduct, hasCreatorDraft].where((v) => v).length * 20;
+
+  String get readinessLabel {
+    if (readinessPercent == 0) return 'البداية';
+    if (readinessPercent < 60) return 'قيد البناء';
+    if (readinessPercent < 100) return 'يتوسع';
+    return 'Core 5 متصل';
+  }
+
   String get actionTitle => 'الخطوة التالية: $recommendedModule';
 
   String toPrompt() => 'أنت AUREN AI. حلّل وضعي عبر الوحدات الخمس الأساسية واصنع لي خطوة عملية واحدة الآن.\n'
