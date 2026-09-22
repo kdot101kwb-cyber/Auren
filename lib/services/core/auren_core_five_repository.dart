@@ -72,6 +72,30 @@ class AurenCoreFiveRepository {
     }
   }
 
+  Future<String?> createCreatorDraftFromTopGoal(String uid) async {
+    final goals = await db.collection('users').doc(uid).collection('goals').limit(50).get();
+    final active = goals.docs.where((d) => (d.data()['status']?.toString() ?? 'active') == 'active').toList();
+    if (active.isEmpty) return null;
+    active.sort((a, b) => (b.data()['updatedAt']?.toString() ?? '').compareTo(a.data()['updatedAt']?.toString() ?? ''));
+    final data = active.first.data();
+    final title = data['title']?.toString().trim() ?? '';
+    if (title.isEmpty) return null;
+    final description = data['description']?.toString().trim() ?? '';
+    final draft = db.collection('creator_drafts').doc();
+    await draft.set({
+      'ownerId': uid,
+      'title': title,
+      'body': description.isEmpty
+          ? 'فكرة محتوى مرتبطة بهذا الهدف: $title\\n\\nشارك لماذا هذا الهدف مهم، ما الذي تتعلمه منه، وما الخطوة التالية التي تعمل عليها.'
+          : 'هدفي: $title\\n\\n$description\\n\\nالخطوة التالية: شارك تقدمك، ما تعلمته، وما الذي ستفعله بعد ذلك.',
+      'status': 'draft',
+      'source': 'core_five_goal_bridge',
+      'sourceGoalId': active.first.id,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return draft.id;
+  }
+
   Future<AurenCoreFiveSnapshot> load(String uid) async {
     final r = await Future.wait<QuerySnapshot<Map<String, dynamic>>?>([
       _safe(db.collection('users').doc(uid).collection('goals').limit(50).get()),
