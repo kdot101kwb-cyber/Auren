@@ -7,7 +7,6 @@ import '../../social/presentation/timeline_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../creator/presentation/creator_screen.dart';
-import '../../messenger/presentation/messenger_screen.dart';
 import 'remaining_modules_screen.dart';
 
 class AurenCoreFiveScreen extends StatefulWidget {
