@@ -92,7 +92,7 @@ class AurenCoreFiveRepository {
     final title = data['title']?.toString().trim() ?? '';
     if (title.isEmpty) return null;
     final description = data['description']?.toString().trim() ?? '';
-    final draftId = 'core5_${active.first.id}';
+    final draftId = 'core5_${uid}_${active.first.id}';
     final draft = db.collection('creator_drafts').doc(draftId);
     if ((await draft.get()).exists) return draft.id;
     await draft.set({
@@ -118,7 +118,7 @@ class AurenCoreFiveRepository {
     final title = data['title']?.toString().trim() ?? '';
     if (title.isEmpty) return null;
     final description = data['description']?.toString().trim() ?? '';
-    final id = 'core5_${active.first.id}';
+    final id = 'core5_${uid}_${active.first.id}';
     final existing = await db.collection('posts').doc(id).get();
     if (existing.exists) return id;
     await PostRepository().create(
