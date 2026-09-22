@@ -6,9 +6,17 @@ import '../../discover/presentation/discover_screen.dart';
 import '../../education/presentation/education_screen.dart';
 import '../../travel/presentation/travel_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
+import '../../../services/core/auren_next_five_repository.dart';
 
-class AurenNextFiveScreen extends StatelessWidget {
+class AurenNextFiveScreen extends StatefulWidget {
   const AurenNextFiveScreen({super.key});
+  @override State<AurenNextFiveScreen> createState() => _AurenNextFiveScreenState();
+}
+
+class _AurenNextFiveScreenState extends State<AurenNextFiveScreen> {
+  late Future<AurenNextFiveSnapshot> _snapshot;
+  @override void initState() { super.initState(); _load(); }
+  void _load() { final uid = FirebaseAuth.instance.currentUser?.uid; _snapshot = uid == null ? Future.value(const AurenNextFiveSnapshot(learningTracks:0,trips:0,hasAiConversation:false,completedLessons:null,tripNames:[])) : AurenNextFiveRepository().load(uid); }
   static const modules = <_NextModule>[
     _NextModule('Messenger','تواصل + AUREN AI + تنفيذ بإذن المستخدم.',Icons.chat_bubble_outline),
     _NextModule('Universal Search','بحث واحد عبر People وPulse وBusiness وPlaces والفرص.',Icons.search),
@@ -56,15 +64,24 @@ class AurenNextFiveScreen extends StatelessWidget {
     appBar: AppBar(
       title: const Text('AUREN Next 5'),
       actions: [
+        IconButton(tooltip: 'Refresh', onPressed: () => setState(_load), icon: const Icon(Icons.refresh)),
         IconButton(tooltip: 'Core context', onPressed: () => _askCore(context), icon: const Icon(Icons.hub_outlined)),
       ],
     ),
-    body: ListView(
+    body: FutureBuilder<AurenNextFiveSnapshot>(
+      future: _snapshot,
+      builder: (context, state) {
+        if (state.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (state.hasError || state.data == null) return Center(child: OutlinedButton.icon(onPressed: () => setState(_load), icon: const Icon(Icons.refresh), label: const Text('حاول مرة أخرى')));
+        final s = state.data!;
+        return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
         Text('الخمس التالية', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         const Text('بعد Core 5، نربط التواصل والبحث والاكتشاف والتعلم والسفر في مسار واحد.'),
+        const SizedBox(height: 14),
+        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [const Icon(Icons.hub_outlined), const SizedBox(width: 8), const Expanded(child: Text('Next 5 Context', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))), Text((s.learningTracks + s.trips).toString())]), const SizedBox(height: 10), Wrap(spacing: 8, runSpacing: 8, children: [Chip(avatar: const Icon(Icons.chat_bubble_outline, size: 18), label: Text(s.hasAiConversation ? 'AI متصل' : 'AI جديد')), Chip(avatar: const Icon(Icons.school_outlined, size: 18), label: Text(s.learningTracks.toString() + ' Learning')), Chip(avatar: const Icon(Icons.flight_takeoff_outlined, size: 18), label: Text(s.trips.toString() + ' Trips')), if (s.completedLessons != null) Chip(label: Text(s.completedLessons.toString() + ' lessons'))]), const SizedBox(height: 10), Text(s.nextMove, style: const TextStyle(fontWeight: FontWeight.w600)), const SizedBox(height: 10), FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: s.toPrompt()))), icon: const Icon(Icons.auto_awesome), label: const Text('اسأل AUREN عن الربط التالي'))])),
         const SizedBox(height: 14),
         FilledButton.icon(onPressed: () => _askCore(context), icon: const Icon(Icons.auto_awesome), label: const Text('اربطها لي مع Core 5')),
         const SizedBox(height: 12),
@@ -83,6 +100,8 @@ class AurenNextFiveScreen extends StatelessWidget {
           ),
         )),
       ],
+        );
+      },
     ),
   );
 }
