@@ -26,6 +26,12 @@ class AurenCoreFiveSnapshot {
     required this.hasPulse,
   });
 
+  String get recommendedModule =>
+      activeGoals == 0 ? 'Personal AI' :
+      (products == 0 && businesses > 0) ? 'Marketplace' :
+      creatorDrafts == 0 ? 'Creator Studio' :
+      posts == 0 ? 'Social / Pulse' : 'Business';
+
   String get nextMove {
     if (activeGoals == 0) return 'ابدأ هدفًا واحدًا في Personal AI ثم حوّله إلى خطوة عملية.';
     if (products == 0 && businesses > 0) return 'أضف أول منتج أو خدمة إلى Marketplace من Business.';
@@ -34,6 +40,8 @@ class AurenCoreFiveSnapshot {
     if (averageGoalProgress < 50) return 'ارجع للهدف النشط ونفّذ خطوة صغيرة ترفع تقدمه اليوم.';
     return 'اربط ما أنشأته بفرصة جديدة: محتوى، عميل، منتج أو شراكة.';
   }
+
+  String get actionTitle => 'الخطوة التالية: $recommendedModule';
 
   String toPrompt() => 'أنت AUREN AI. حلّل وضعي عبر الوحدات الخمس الأساسية واصنع لي خطوة عملية واحدة الآن.\n'
       'Personal AI: $activeGoals أهداف نشطة (متوسط التقدم $averageGoalProgress%)${goalTitles.isEmpty ? '' : ' — ${goalTitles.join('، ')}'}.\n'
