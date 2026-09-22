@@ -100,7 +100,7 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                   itemCount: posts.length + 4,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
-                    if (i == 0) return const _NextMoveCard();
+                    if (i == 0) return _PulseCoreFiveCard(uid: uid);
                     if (i == 1) return const _MomentsStrip();
                     if (i == 2) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
                     if (i == 3) return _PulseSignals(opportunities: opportunities, projects: projects);
@@ -577,6 +577,34 @@ class _PulseCard extends StatelessWidget {
     );
   }
 
+}
+
+class _PulseCoreFiveCard extends StatelessWidget {
+  final String uid;
+  const _PulseCoreFiveCard({required this.uid});
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<AurenCoreFiveSnapshot>(
+    future: AurenCoreFiveRepository().load(uid),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) return const _NextMoveCard();
+      final core = snapshot.data!;
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.hub_outlined),
+          title: const Text('Pulse مرتبط بحياتك'),
+          subtitle: Text(core.nextMove),
+          trailing: const Icon(Icons.auto_awesome),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MessengerScreen(initialPrompt: core.toPrompt()),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _EmptyPulse extends StatelessWidget {
