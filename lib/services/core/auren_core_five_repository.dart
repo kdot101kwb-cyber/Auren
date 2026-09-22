@@ -4,6 +4,7 @@ class AurenCoreFiveSnapshot {
   final int activeGoals, businesses, products, creatorDrafts, posts;
   final List<String> goalTitles, businessNames, productNames, draftTitles;
   final int averageGoalProgress;
+  final int totalSignals;
   final bool hasGoal, hasBusiness, hasProduct, hasCreatorDraft, hasPulse;
 
   const AurenCoreFiveSnapshot({
@@ -17,6 +18,7 @@ class AurenCoreFiveSnapshot {
     required this.productNames,
     required this.draftTitles,
     required this.averageGoalProgress,
+    required this.totalSignals,
     required this.hasGoal,
     required this.hasBusiness,
     required this.hasProduct,
@@ -39,6 +41,7 @@ class AurenCoreFiveSnapshot {
       'Business: $businesses أنشطة${businessNames.isEmpty ? '' : ' — ${businessNames.join('، ')}'}.\n'
       'Marketplace: $products منتجات/خدمات${productNames.isEmpty ? '' : ' — ${productNames.join('، ')}'}.\n'
       'Creator Studio: $creatorDrafts مسودات${draftTitles.isEmpty ? '' : ' — ${draftTitles.join('، ')}'}.\n'
+      'إجمالي الإشارات القابلة للتحويل: $totalSignals.\n'
       'اربط الوحدات ببعضها، وحوّل هدفي إلى محتوى أو فرصة أو منتج أو خطوة Business. أعطني الخطوة التالية القابلة للتنفيذ.';
 
 }
@@ -99,6 +102,7 @@ class AurenCoreFiveRepository {
       productNames: names(r[2], 'name'),
       draftTitles: names(r[3], 'title'),
       averageGoalProgress: goals.isEmpty ? 0 : goals.fold<int>(0, (sum, d) => sum + ((d.data()['progress'] as num?)?.toInt() ?? 0)) ~/ goals.length,
+      totalSignals: goals.length + (r[1]?.docs.length ?? 0) + (r[2]?.docs.length ?? 0) + (r[3]?.docs.length ?? 0) + (r[4]?.docs.length ?? 0),
     );
   }
 }
