@@ -549,6 +549,79 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+
+    const actionId = typeof request.data?.actionId === 'string' ? request.data.actionId.trim() : '';
+    if (!actionId || actionId.length > 120) throw new Error('Invalid action.');
+
+    const actionRef = db.collection('users').doc(uid).collection('actions').doc(actionId);
+    const actionSnap = await actionRef.get();
+    if (!actionSnap.exists) throw new Error('Action not found.');
+
+    const action = actionSnap.data() || {};
+    if (action.status !== 'approved') throw new Error('Action must be approved before execution.');
+    if (action.requiresApproval !== true) throw new Error('Invalid approval policy.');
+
+    const conversationId = typeof action.conversationId === 'string' ? action.conversationId : '';
+    const conversationRef = conversationId
+      ? db.collection('conversations').doc(conversationId)
+      : null;
+    if (!conversationRef) throw new Error('Invalid conversation.');
+
+    const conversationSnap = await conversationRef.get();
+    const members = conversationSnap.exists ? conversationSnap.data()?.memberIds : null;
+    if (!Array.isArray(members) || !members.includes(uid)) throw new Error('Not a conversation member.');
+
+    const payload = action.payload && typeof action.payload === 'object' ? action.payload : {};
+    let result;
+
+    if (action.actionType === 'demo.echo') {
+      result = { type: 'echo', text: String(payload.text || '').slice(0, 2000) };
+    } else if (action.actionType === 'demo.create_note') {
+      const noteRef = db.collection('users').doc(uid).collection('notes').doc();
+      const noteText = String(payload.text || '').trim().slice(0, 2000);
+      if (!noteText) throw new Error('Note text is required.');
+      await noteRef.set({
+        text: noteText,
+        ownerId: uid,
+        source: 'auren-action',
+        actionId,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      result = { type: 'note_created', noteId: noteRef.id };
+    } else if (action.actionType === 'memory.save') {
+      const key = String(payload.key || '').trim().slice(0, 120);
+      const value = String(payload.value || '').trim().slice(0, 2000);
+      if (!key || !value) throw new Error('Memory key and value are required.');
+      const memoryRef = db.collection('users').doc(uid).collection('memory').doc();
+      await memoryRef.set({
+        key,
+        value,
+        enabled: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        source: 'auren-action',
+        actionId,
+      });
+      result = { type: 'memory_saved', memoryId: memoryRef.id };
+    } else {
+      throw new Error('Unsupported action type.');
+    }
+
+    await actionRef.update({
+      status: 'executed',
+      result,
+      executedAt: FieldValue.serverTimestamp(),
+    });
+    await writeAurenActionAudit(uid, { ...action, id: actionId }, 'executed', { result });
+    return { status: 'executed', actionId, result };
+  },
+);
+
 exports.submitAurenAgentReview = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB' },
   async (request) => {
