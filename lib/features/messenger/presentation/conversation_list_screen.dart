@@ -4,8 +4,11 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/users/user_repository.dart';
 import '../../../services/users/presence_service.dart';
+import '../../../core/models/user_profile.dart';
+import '../../../services/users/user_search_repository.dart';
 import 'messenger_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
+import '../../social/presentation/user_search_screen.dart';
 import '../../../services/notifications/notification_repository.dart';
 import '../../safety/presentation/blocked_users_screen.dart';
 
@@ -19,35 +22,123 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
   final _notifications = NotificationRepository();
   final _users = UserRepository();
   final _presence = AurenPresenceService();
+  final _userSearch = UserSearchRepository();
   String? _uid;
   @override void initState() { super.initState(); _bootstrap(); }
   Future<void> _bootstrap() async { try { final uid = _auth.currentUserId; if (mounted) setState(() => _uid = uid); } catch (_) {} }
+  Future<void> _startDirectMessage(AurenUserProfile profile) async {
+    final uid = _uid;
+    if (uid == null || profile.uid == uid) return;
+    try {
+      final conversation = await _repo.getOrCreateDirectConversation(
+        uid: uid,
+        otherUid: profile.uid,
+        otherTitle: profile.displayName,
+      );
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: conversation.id)),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر بدء المحادثة: $e')));
+    }
+  }
+
   Future<void> _createGroup() async {
+    final uid = _uid;
+    if (uid == null) return;
     final title = TextEditingController();
-    final member = TextEditingController();
-    final result = await showDialog<List<String>>(
+    final search = TextEditingController();
+    final selected = <AurenUserProfile>[];
+    final result = await showDialog<List<dynamic>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create group'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: title, decoration: const InputDecoration(labelText: 'Group name')),
-          TextField(controller: member, decoration: const InputDecoration(labelText: 'Member UIDs (comma separated)')),
-          const SizedBox(height: 8),
-          const Text('Add members by UID. You can add more later from the group screen.'),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, [title.text, member.text]), child: const Text('Create')),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Future<List<AurenUserProfile>> findUsers() => _userSearch.search(search.text);
+          return AlertDialog(
+            title: const Text('Create group'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(controller: title, decoration: const InputDecoration(labelText: 'Group name')),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: search,
+                  decoration: const InputDecoration(
+                    labelText: 'Add people',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: (_) => setDialogState(() {}),
+                ),
+                if (selected.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 6,
+                      children: selected.map((p) => Chip(
+                        label: Text(p.displayName),
+                        onDeleted: () => setDialogState(() => selected.remove(p)),
+                      )).toList(),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                FutureBuilder<List<AurenUserProfile>>(
+                  future: search.text.trim().isEmpty ? Future.value(const []) : findUsers(),
+                  builder: (_, snapshot) {
+                    final users = (snapshot.data ?? const <AurenUserProfile>[])
+                        .where((p) => p.uid != uid && !selected.any((s) => s.uid == p.uid))
+                        .take(5)
+                        .toList();
+                    if (users.isEmpty) return const SizedBox.shrink();
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 220),
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: users.map((p) => ListTile(
+                          leading: const CircleAvatar(child: Icon(Icons.person)),
+                          title: Text(p.displayName),
+                          onTap: () => setDialogState(() {
+                            if (selected.length < 49) selected.add(p);
+                            search.clear();
+                          }),
+                        )).toList(),
+                      ),
+                    );
+                  },
+                ),
+                if (selected.length < 2)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text('اختر شخصين على الأقل، وستتم إضافتك تلقائياً.'),
+                  ),
+              ]),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: title.text.trim().isEmpty || selected.length < 2
+                    ? null
+                    : () => Navigator.pop(context, [title.text.trim(), selected.map((p) => p.uid).toList()]),
+                child: const Text('Create'),
+              ),
+            ],
+          );
+        },
       ),
     );
-    title.dispose(); member.dispose();
-    if (result == null || _uid == null) return;
+    title.dispose();
+    search.dispose();
+    if (result == null) return;
     try {
-      final members = result[1].split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-      final c = await _repo.createGroup(uid: _uid!, title: result[0], memberIds: members);
+      final members = List<String>.from(result[1] as List);
+      final conversation = await _repo.createGroup(
+        uid: uid,
+        title: result[0] as String,
+        memberIds: members,
+      );
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: c.id)));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: conversation.id)));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إنشاء المجموعة: $e')));
     }
@@ -62,7 +153,8 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBlockedUsersScreen())),
           icon: const Icon(Icons.shield_outlined),
         ),
-        IconButton(onPressed: _createGroup, icon: const Icon(Icons.group_add)),
+        IconButton(tooltip: 'New chat', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen())), icon: const Icon(Icons.edit_outlined)),
+        IconButton(tooltip: 'New group', onPressed: _createGroup, icon: const Icon(Icons.group_add)),
         if (uid != null)
           StreamBuilder<int>(
             stream: _notifications.watchUnreadCount(uid),
