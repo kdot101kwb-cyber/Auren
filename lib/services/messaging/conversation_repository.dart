@@ -12,7 +12,7 @@ class ConversationRepository {
       _firestore.collection('conversations');
 
   DocumentReference<Map<String, dynamic>> _aiRef(String uid) =>
-      _conversations.doc('ai_$uid');
+      _conversations.doc(ConversationId.ai(uid));
 
   Future<AurenConversation> createAiConversation(String uid) async {
     final ref = _aiRef(uid);
@@ -64,7 +64,11 @@ class ConversationRepository {
       updatedAt: DateTime.now(),
       type: 'direct',
     );
-    await ref.set(conversation.toMap());
+    await ref.set({...conversation.toMap(),
+      'lastMessage': '',
+      'lastMessageAt': FieldValue.serverTimestamp(),
+      'lastMessageSenderId': uid,
+    });
     return conversation;
   }
 
@@ -192,6 +196,37 @@ class ConversationRepository {
     await _conversations.doc(conversationId).collection('reads').doc(uid).set({
       'readAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  Future<void> updateLastMessage({
+    required String conversationId,
+    required String senderId,
+    required String text,
+    DateTime? sentAt,
+  }) async {
+    final clean = text.trim();
+    if (conversationId.isEmpty || senderId.isEmpty || clean.isEmpty) return;
+    await _conversations.doc(conversationId).set({
+      'lastMessage': clean.length > 200 ? clean.substring(0, 200) : clean,
+      'lastMessageSenderId': senderId,
+      'lastMessageAt': sentAt == null
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(sentAt),
+      'updatedAt': sentAt == null
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(sentAt),
+    }, SetOptions(merge: true));
+  }
+
+  Stream<int> watchTotalUnread(String uid) {
+    if (uid.isEmpty) return const Stream.empty();
+    return watchForUser(uid).asyncMap((conversations) async {
+      var total = 0;
+      for (final conversation in conversations) {
+        total += await watchUnreadCount(conversation.id, uid).first;
+      }
+      return total;
+    });
   }
 
   Stream<DateTime?> watchReadAt(String conversationId, String uid) {
