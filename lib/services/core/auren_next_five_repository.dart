@@ -37,28 +37,48 @@ class AurenNextFiveRepository {
   AurenNextFiveRepository({FirebaseFirestore? firestore})
       : db = firestore ?? FirebaseFirestore.instance;
 
+  Future<QuerySnapshot<Map<String, dynamic>>?> _safeQuery(
+    Future<QuerySnapshot<Map<String, dynamic>>> request,
+  ) async {
+    try {
+      return await request;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>?> _safeDoc(
+    Future<DocumentSnapshot<Map<String, dynamic>>> request,
+  ) async {
+    try {
+      return await request;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<AurenNextFiveSnapshot> load(String uid) async {
     final results = await Future.wait([
-      db.collection('users').doc(uid).collection('enrollments').limit(100).get(),
-      db.collection('trips').where('ownerId', isEqualTo: uid).limit(50).get(),
-      db.collection('conversations').doc('ai_$uid').get(),
+      _safeQuery(db.collection('users').doc(uid).collection('enrollments').limit(100).get()),
+      _safeQuery(db.collection('trips').where('ownerId', isEqualTo: uid).limit(50).get()),
+      _safeDoc(db.collection('conversations').doc('ai_$uid').get()),
     ]);
 
-    final enrollments = results[0] as QuerySnapshot<Map<String, dynamic>>;
-    final trips = results[1] as QuerySnapshot<Map<String, dynamic>>;
-    final ai = results[2] as DocumentSnapshot<Map<String, dynamic>>;
+    final enrollments = results[0] as QuerySnapshot<Map<String, dynamic>>?;
+    final trips = results[1] as QuerySnapshot<Map<String, dynamic>>?;
+    final ai = results[2] as DocumentSnapshot<Map<String, dynamic>>?;
 
-    final completed = enrollments.docs.fold<int>(
+    final completed = (enrollments?.docs ?? const []).fold<int>(
       0,
       (sum, d) => sum + ((d.data()['completedLessons'] as num?)?.toInt() ?? 0),
     );
 
     return AurenNextFiveSnapshot(
-      learningTracks: enrollments.docs.length,
-      trips: trips.docs.length,
-      hasAiConversation: ai.exists,
-      completedLessons: enrollments.docs.isEmpty ? null : completed,
-      tripNames: trips.docs
+      learningTracks: enrollments?.docs.length ?? 0,
+      trips: trips?.docs.length ?? 0,
+      hasAiConversation: ai?.exists ?? false,
+      completedLessons: enrollments?.docs.isEmpty == true ? null : completed,
+      tripNames: (trips?.docs ?? const [])
           .map((d) => d.data()['title']?.toString().trim() ?? '')
           .where((v) => v.isNotEmpty)
           .take(5)
