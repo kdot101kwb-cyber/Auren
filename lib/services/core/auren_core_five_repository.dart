@@ -102,8 +102,8 @@ class AurenCoreFiveRepository {
       'ownerId': uid,
       'title': title,
       'body': description.isEmpty
-          ? 'فكرة محتوى مرتبطة بهذا الهدف: $title\\n\\nشارك لماذا هذا الهدف مهم، ما الذي تتعلمه منه، وما الخطوة التالية التي تعمل عليها.'
-          : 'هدفي: $title\\n\\n$description\\n\\nالخطوة التالية: شارك تقدمك، ما تعلمته، وما الذي ستفعله بعد ذلك.',
+          ? 'فكرة محتوى مرتبطة بهذا الهدف: $title\n\nشارك لماذا هذا الهدف مهم، ما الذي تتعلمه منه، وما الخطوة التالية التي تعمل عليها.'
+          : 'هدفي: $title\n\n$description\n\nالخطوة التالية: شارك تقدمك، ما تعلمته، وما الذي ستفعله بعد ذلك.',
       'status': 'draft',
       'source': 'core_five_goal_bridge',
       'sourceGoalId': active.first.id,
@@ -181,8 +181,8 @@ class AurenCoreFiveRepository {
         id: id,
         authorId: uid,
         text: description.isEmpty
-            ? 'هدفي الحالي: $title\\n\\nأشارك تقدمي والخطوة التالية التي أعمل عليها مع مجتمع AUREN.'
-            : 'هدفي الحالي: $title\\n\\n$description\\n\\nالخطوة التالية: أشارك تقدمي وما سأفعله بعد ذلك.',
+            ? 'هدفي الحالي: $title\n\nأشارك تقدمي والخطوة التالية التي أعمل عليها مع مجتمع AUREN.'
+            : 'هدفي الحالي: $title\n\n$description\n\nالخطوة التالية: أشارك تقدمي وما سأفعله بعد ذلك.',
         mediaUrl: '',
         mediaType: 'none',
         contentType: 'project',
