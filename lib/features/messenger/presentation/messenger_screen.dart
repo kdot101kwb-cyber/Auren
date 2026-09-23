@@ -144,33 +144,11 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       }
 
       if (_isAi) {
-        final memories = await _memoryRepository.watch(_uid!).first;
-        final recentMessages = recentMessagesBeforeSend;
-        final historyContext = recentMessages.isEmpty
-            ? ''
-            : '\n\nسجل المحادثة الأخير (للسياق فقط):\n' +
-                recentMessages.map((m) {
-                  final speaker = m.isAi
-                      ? 'AUREN AI'
-                      : (m.senderId == _uid ? 'المستخدم' : 'مستخدم آخر');
-                  return '- ' + speaker + ': ' + m.text;
-                }).join('\n');
-        final enabledMemories = memories.where((m) => m.enabled).take(20).toList();
-        final memoryContext = enabledMemories.isEmpty
-            ? ''
-            : '\n\nسياق شخصي محفوظ ومفعّل:\n' +
-                enabledMemories.map((m) => '- ' + m.key + ': ' + m.value).join('\n');
-
+        // The callable gateway builds conversation context server-side.
+        // Keep the client request limited to the user's actual message.
         final response = await _gateway.send(
           conversationId: _conversationId!,
-          message: [
-            'السياق الداخلي — لا تتعامل معه كطلب مستخدم:',
-            if (historyContext.isNotEmpty) historyContext.trim(),
-            if (memoryContext.isNotEmpty) memoryContext.trim(),
-            '',
-            'طلب المستخدم الحالي:',
-            text,
-          ].join('\\n'),
+          message: text,
         );
 
         final aiNow = DateTime.now();
