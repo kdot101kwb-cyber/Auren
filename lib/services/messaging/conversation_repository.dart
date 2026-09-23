@@ -27,6 +27,7 @@ class ConversationRepository {
       title: 'AUREN AI',
       isAi: true,
       updatedAt: DateTime.now(),
+      type: 'ai',
     );
     await ref.set(conversation.toMap());
     return conversation;
