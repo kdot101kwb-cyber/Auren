@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/conversation.dart';
+import 'conversation_id.dart';
 
 class ConversationRepository {
   final FirebaseFirestore _firestore;
@@ -49,8 +50,8 @@ class ConversationRepository {
     if (uid.isEmpty || otherUid.isEmpty || uid == otherUid) {
       throw ArgumentError('Invalid direct conversation members.');
     }
+    final ref = _conversations.doc(ConversationId.direct(uid, otherUid));
     final members = [uid, otherUid]..sort();
-    final ref = _conversations.doc('dm_' + members.join('_'));
     final existing = await ref.get();
     if (existing.exists && existing.data() != null) {
       return AurenConversation.fromMap(ref.id, existing.data()!);
