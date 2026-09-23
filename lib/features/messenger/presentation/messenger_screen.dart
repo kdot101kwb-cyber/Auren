@@ -236,13 +236,17 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   }
 
   Widget _pendingActionsPanel() {
+
     if (!_isAi || _uid == null) return const SizedBox.shrink();
     return StreamBuilder<List<AurenActionRequest>>(
       stream: _actionRepository.watchOutstandingForConversation(_uid!, _conversationId!),
       builder: (context, snapshot) {
         final actions = snapshot.data ?? const <AurenActionRequest>[];
         if (actions.isEmpty) return const SizedBox.shrink();
-        return Padding(
+        return Column(
+          children: [
+            _actionHistoryPanel(),
+            Padding(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
           child: Column(
             children: actions.take(3).map((action) {
@@ -335,6 +339,67 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                 ),
               );
             }).toList(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _actionHistoryPanel() {
+    if (!_isAi || _uid == null || _conversationId == null) return const SizedBox.shrink();
+    return StreamBuilder<List<AurenActionRequest>>(
+      stream: _actionRepository.watchHistory(_uid!, limit: 20),
+      builder: (context, snapshot) {
+        final history = (snapshot.data ?? const <AurenActionRequest>[])
+            .where((action) => action.conversationId == _conversationId)
+            .take(5)
+            .toList();
+        if (history.isEmpty) return const SizedBox.shrink();
+        String statusLabel(String status) {
+          switch (status) {
+            case 'completed': return 'تم التنفيذ';
+            case 'failed': return 'فشل التنفيذ';
+            case 'rejected': return 'تم الرفض';
+            case 'executing': return 'جارٍ التنفيذ';
+            default: return status;
+          }
+        }
+        IconData statusIcon(String status) {
+          switch (status) {
+            case 'completed': return Icons.check_circle_outline;
+            case 'failed': return Icons.error_outline;
+            case 'rejected': return Icons.cancel_outlined;
+            case 'executing': return Icons.sync;
+            default: return Icons.history;
+          }
+        }
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Card(
+            child: ExpansionTile(
+              leading: const Icon(Icons.history),
+              title: const Text('سجل AUREN Actions'),
+              subtitle: Text(history.length.toString() + ' عمليات سابقة'),
+              children: history.map((action) {
+                final result = action.result;
+                final resultText = result == null || result.toString().trim().isEmpty
+                    ? null
+                    : result.toString();
+                return ListTile(
+                  dense: true,
+                  leading: Icon(statusIcon(action.status)),
+                  title: Text(action.title),
+                  subtitle: Text(
+                    resultText == null
+                        ? statusLabel(action.status)
+                        : statusLabel(action.status) + ' • ' + resultText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         );
       },
