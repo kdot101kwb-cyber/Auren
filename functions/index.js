@@ -472,6 +472,56 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.decideAurenAction = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+
+    const actionId = typeof request.data?.actionId === 'string' ? request.data.actionId.trim() : '';
+    const decision = typeof request.data?.decision === 'string' ? request.data.decision.trim() : '';
+    if (!actionId || actionId.length > 120 || !['approved', 'rejected'].includes(decision)) {
+      throw new Error('Invalid action decision.');
+    }
+
+    const actionRef = db.collection('users').doc(uid).collection('actions').doc(actionId);
+    const snapshot = await actionRef.get();
+    if (!snapshot.exists) throw new Error('Action not found.');
+    const action = snapshot.data() || {};
+
+    if (action.status !== 'pending' || action.requiresApproval !== true ||
+        action.permission !== 'userApproval' || action.riskLevel !== 'low' ||
+        action.approvalLevel !== 1) {
+      throw new Error('Action is not awaiting approval.');
+    }
+
+    const conversationId = typeof action.conversationId === 'string' ? action.conversationId.trim() : '';
+    if (!conversationId) throw new Error('Action conversation is missing.');
+    const conversation = await db.collection('conversations').doc(conversationId).get();
+    if (!conversation.exists || !Array.isArray(conversation.data()?.memberIds) ||
+        !conversation.data().memberIds.includes(uid)) {
+      throw new Error('Conversation access denied.');
+    }
+
+    await db.runTransaction(async (tx) => {
+      const current = await tx.get(actionRef);
+      if (!current.exists || current.data()?.status !== 'pending') {
+        throw new Error('Action decision is no longer available.');
+      }
+      tx.update(actionRef, {status: decision, decisionAt: FieldValue.serverTimestamp()});
+    });
+
+    await writeAurenActionAudit(
+      uid,
+      {...action, id: actionId},
+      decision,
+      {source: 'decideAurenAction'},
+    );
+
+    return {status: decision, actionId};
+  },
+);
+
 exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB' },
   async (request) => {
