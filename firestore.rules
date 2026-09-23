@@ -106,19 +106,8 @@ service cloud.firestore {
             'currency', 'requiresApproval', 'status', 'result', 'createdAt'
           ]);
 
-        allow update: if isOwner(userId)
-          && resource.data.status == 'pending'
-          && request.resource.data.status in ['approved', 'rejected']
-          && request.resource.data.requiresApproval == resource.data.requiresApproval
-          && request.resource.data.conversationId == resource.data.conversationId
-          && request.resource.data.actionType == resource.data.actionType
-          && request.resource.data.title == resource.data.title
-          && request.resource.data.description == resource.data.description
-          && request.resource.data.payload == resource.data.payload
-          && request.resource.data.permission == resource.data.permission
-          && request.resource.data.riskLevel == resource.data.riskLevel
-          && request.resource.data.approvalLevel == resource.data.approvalLevel
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+        // Approval/rejection is server-audited through decideAurenAction.
+        allow update: if false;
 
         allow delete: if isOwner(userId);
       }
