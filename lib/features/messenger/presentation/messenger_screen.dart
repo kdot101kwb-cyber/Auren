@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -271,7 +272,6 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     super.dispose();
   }
 
-  @override
   Widget _presenceHeader() {
     if (_isAi || _otherUid == null) return const SizedBox.shrink();
     return StreamBuilder<Map<String, dynamic>?>(
