@@ -136,6 +136,20 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
                     },
                   ),
                   ActionChip(
+                    avatar:const Icon(Icons.business_center_outlined,size:18),
+                    label:const Text('هدف → Business'),
+                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(
+                      initialPrompt:snapshot.toPrompt()+'\\nحوّل هدفي الحالي إلى Business brief: اسم مقترح، العميل المستهدف، المشكلة، الحل، الخدمة/المنتج الأول، وطريقة الوصول لأول عميل. لا تنشئ أي شيء أو تنفذ دفعًا؛ أعطني الخطة فقط.',
+                    ))),
+                  ),
+                  ActionChip(
+                    avatar:const Icon(Icons.campaign_outlined,size:18),
+                    label:const Text('منتج → محتوى'),
+                    onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(
+                      initialPrompt:snapshot.toPrompt()+'\\nاستخدم معلومات منتجاتي الحالية لصناعة فكرة محتوى واحدة قابلة للنشر، مع Hook وعنوان وCTA مناسب. لا تنشر تلقائيًا.',
+                    ))),
+                  ),
+                  ActionChip(
                     avatar:const Icon(Icons.play_arrow_outlined,size:18),
                     label:const Text('افتح Pulse'),
                     onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenTimelineScreen())),
