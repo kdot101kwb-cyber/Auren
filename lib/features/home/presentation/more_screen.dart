@@ -44,6 +44,13 @@ class AurenMoreScreen extends StatelessWidget {
         const Text('كل مسارات AUREN في مكان واحد — واختر كيف تريد أن تبدأ.'),
         const SizedBox(height: 18),
         Card(child: ListTile(
+          leading: const Icon(Icons.hub_outlined),
+          title: const Text('AUREN Core 10'),
+          subtitle: const Text('أول 10 أنظمة أساسية متصلة.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCoreTenScreen())),
+        )),
+        Card(child: ListTile(
           leading: const Icon(Icons.layers_outlined),
           title: const Text('AUREN Core 5 — Next'),
           subtitle: const Text('Discover • Messenger • Education • Travel • Entertainment'),
