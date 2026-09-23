@@ -385,11 +385,25 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     // This prevents a client from impersonating "auren-ai".
     const aiMessageRef = db.collection('conversations').doc(conversationId)
       .collection('messages').doc();
-    await aiMessageRef.set({
-      senderId: 'auren-ai',
-      text: text.slice(0, 12000),
-      createdAt: FieldValue.serverTimestamp(),
-      isAi: true,
+    const aiPreview = text.length > 120 ? text.substring(0, 120) + '…' : text;
+    const aiSentAt = FieldValue.serverTimestamp();
+    await db.runTransaction(async (tx) => {
+      tx.set(aiMessageRef, {
+        senderId: 'auren-ai',
+        text: text.slice(0, 12000),
+        createdAt: aiSentAt,
+        isAi: true,
+      });
+      tx.set(
+        db.collection('conversations').doc(conversationId),
+        {
+          lastMessage: aiPreview,
+          lastMessageAt: aiSentAt,
+          lastMessageSenderId: 'auren-ai',
+          updatedAt: aiSentAt,
+        },
+        {merge: true},
+      );
     });
 
     let actionId = null;
