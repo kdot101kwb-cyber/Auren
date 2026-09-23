@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -190,6 +191,120 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     }
   }
 
+  Future<void> _approveAction(AurenActionRequest action) async {
+    if (_uid == null) return;
+    try {
+      await _actionRepository.setStatus(_uid!, action.id, 'approved');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تمت الموافقة: ${action.title}')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذرت الموافقة على الطلب.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _executeAction(AurenActionRequest action) async {
+    if (_uid == null || action.status != 'approved') return;
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('executeAurenAction');
+      final response = await callable.call(<String, dynamic>{
+        'actionId': action.id,
+      });
+      final data = Map<String, dynamic>.from(response.data as Map);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['result']?.toString() ?? 'تم التنفيذ.')),
+        );
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'تعذر تنفيذ الطلب.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تنفيذ الطلب.')),
+        );
+      }
+    }
+  }
+
+  Widget _pendingActionsPanel() {
+    if (!_isAi || _uid == null) return const SizedBox.shrink();
+    return StreamBuilder<List<AurenActionRequest>>(
+      stream: _actionRepository.watchOutstanding(_uid!),
+      builder: (context, snapshot) {
+        final actions = snapshot.data ?? const <AurenActionRequest>[];
+        if (actions.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          child: Column(
+            children: actions.take(3).map((action) {
+              final approved = action.status == 'approved';
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.shield_outlined, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              action.title,
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(action.description),
+                      const SizedBox(height: 8),
+                      Text(
+                        approved ? 'تمت الموافقة — جاهز للتنفيذ' : 'يحتاج موافقتك',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (!approved)
+                            OutlinedButton.icon(
+                              onPressed: () => _approveAction(action),
+                              icon: const Icon(Icons.check),
+                              label: const Text('موافقة'),
+                            ),
+                          if (approved) ...[
+                            FilledButton.icon(
+                              onPressed: () => _executeAction(action),
+                              icon: const Icon(Icons.play_arrow),
+                              label: const Text('تنفيذ'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _messageMenu(AurenMessage message) async {
     if (_uid == null) return;
     final canModerate = !message.isAi && message.senderId != _uid;
@@ -368,6 +483,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       body: Column(
         children: [
           _presenceHeader(),
+          _pendingActionsPanel(),
           if (_isAi && !_sending && _controller.text.isEmpty)
             SizedBox(
               height: 52,
