@@ -215,9 +215,24 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
         'actionId': action.id,
       });
       final data = Map<String, dynamic>.from(response.data as Map);
+      final result = data['result'];
+      String message = 'تم تنفيذ العملية بنجاح.';
+      if (result is Map) {
+        switch (result['type']?.toString()) {
+          case 'note_created':
+            message = 'تم إنشاء الملاحظة بنجاح.';
+            break;
+          case 'memory_saved':
+            message = 'تم حفظ المعلومة في ذاكرة AUREN.';
+            break;
+          case 'echo':
+            message = 'تم تنفيذ الطلب بنجاح.';
+            break;
+        }
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['result']?.toString() ?? 'تم التنفيذ.')),
+          SnackBar(content: Text(message)),
         );
       }
     } on FirebaseFunctionsException catch (e) {
