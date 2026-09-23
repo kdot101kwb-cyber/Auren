@@ -8,6 +8,7 @@ import '../../search/presentation/global_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import 'next_five_screen.dart';
 import 'next_five_systems_screen.dart';
+import 'expansion_five_screen.dart';
 
 class AurenRemainingModulesScreen extends StatelessWidget {
   const AurenRemainingModulesScreen({super.key});
@@ -52,6 +53,13 @@ class AurenRemainingModulesScreen extends StatelessWidget {
         const SizedBox(height:6),
         const Text('الوحدات الأساسية المتبقية مجمعة هنا حتى نكملها فوق الـCore 5 بدون إعادة بناء ما تم إنجازه.'),
         const SizedBox(height:16),
+        Card(child: ListTile(
+          leading: const Icon(Icons.layers_outlined),
+          title: const Text('AUREN Expansion 5'),
+          subtitle: const Text('Files • Health • Culture • Family • AUREN World'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenExpansionFiveScreen())),
+        )),
         Card(child: ListTile(
           leading: const Icon(Icons.rocket_launch_outlined),
           title: const Text('AUREN Next 5 Systems'),
