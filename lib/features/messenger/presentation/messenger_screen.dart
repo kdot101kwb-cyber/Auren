@@ -485,17 +485,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     );
   }
 
-  Widget _messageStatus(AurenMessage message) {
+  Widget _messageStatus(AurenMessage message, DateTime? readAt) {
     if (_isAi || _uid == null || message.senderId != _uid) return const SizedBox.shrink();
-    return StreamBuilder<DateTime?>(
-      stream: _conversationRepository.watchReadAt(_conversationId!, _otherUid ?? ''),
-      builder: (_, snapshot) {
-        final read = snapshot.data != null && !snapshot.data!.isBefore(message.createdAt);
-        return Padding(
-          padding: const EdgeInsets.only(left: 6),
-          child: Icon(Icons.done_all, size: 14, color: read ? Theme.of(context).colorScheme.primary : null),
-        );
-      },
+    final read = readAt != null && !readAt.isBefore(message.createdAt);
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Icon(Icons.done_all, size: 14, color: read ? Theme.of(context).colorScheme.primary : null),
     );
   }
 
@@ -621,9 +616,18 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
               ),
             ),
           Expanded(
-            child: StreamBuilder<List<AurenMessage>>(
+            child: StreamBuilder<DateTime?>(
+              stream: _isAi || _otherUid == null
+                  ? null
+                  : _conversationRepository.watchReadAt(_conversationId!, _otherUid!),
+              builder: (context, readSnapshot) {
+                final readAt = readSnapshot.data;
+                return StreamBuilder<List<AurenMessage>>(
               stream: _messagesRepository.watchConversation(_conversationId!),
               builder: (context, snapshot) {
+                if (readSnapshot.hasError) {
+                  return Center(child: Text('Could not load read status: ' + readSnapshot.error.toString()));
+                }
                 if (snapshot.hasError) {
                   return Center(child: Text('Could not load messages: ' + snapshot.error.toString()));
                 }
@@ -683,15 +687,16 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                           onLongPress: () => _messageMenu(message),
                           child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
                             Flexible(child: Text(message.text)),
-                            _messageStatus(message),
+                            _messageStatus(message, readAt),
                           ]),
                         ),
                       ),
                     );
                   },
                 );
-              },
-            ),
+                },
+              );
+            },
           ),
           if (_sending) const LinearProgressIndicator(minHeight: 2),
           SafeArea(
