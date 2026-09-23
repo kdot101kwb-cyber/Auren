@@ -236,110 +236,74 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   }
 
   Widget _pendingActionsPanel() {
-
-    if (!_isAi || _uid == null) return const SizedBox.shrink();
+    if (!_isAi || _uid == null || _conversationId == null) return const SizedBox.shrink();
     return StreamBuilder<List<AurenActionRequest>>(
       stream: _actionRepository.watchOutstandingForConversation(_uid!, _conversationId!),
       builder: (context, snapshot) {
         final actions = snapshot.data ?? const <AurenActionRequest>[];
-        if (actions.isEmpty) return const SizedBox.shrink();
         return Column(
           children: [
-            _actionHistoryPanel(),
-            Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-          child: Column(
-            children: actions.take(3).map((action) {
-              final pending = action.status == 'pending';
-              final approved = action.status == 'approved';
-              final busy = !pending && !approved;
-              return Card(
-                clipBehavior: Clip.antiAlias,
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Theme.of(context).colorScheme.primaryContainer,
-                            ),
-                            child: Icon(
-                              approved ? Icons.verified_outlined : Icons.auto_awesome,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+            if (actions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Column(
+                  children: actions.take(3).map((action) {
+                    final pending = action.status == 'pending';
+                    final approved = action.status == 'approved';
+                    return Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                Text('AUREN Action', style: Theme.of(context).textTheme.labelSmall),
-                                const SizedBox(height: 2),
-                                Text(action.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                Icon(approved ? Icons.verified_outlined : Icons.auto_awesome),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(action.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                ),
+                                Icon(pending ? Icons.lock_outline : Icons.check_circle_outline, size: 20),
                               ],
                             ),
-                          ),
-                          Icon(pending ? Icons.lock_outline : Icons.check_circle_outline, size: 20),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(action.description),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        ),
-                        child: Text(
-                          pending
-                              ? 'سيطلب AUREN موافقتك قبل أي تنفيذ.'
-                              : approved
-                                  ? 'تمت الموافقة. التنفيذ لم يبدأ بعد.'
-                                  : 'حالة الطلب: '+action.status,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      if (pending || approved) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            if (pending)
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => _rejectAction(action),
-                                  icon: const Icon(Icons.close),
-                                  label: const Text('رفض'),
+                            const SizedBox(height: 10),
+                            Text(action.description),
+                            const SizedBox(height: 8),
+                            Text(
+                              pending ? 'سيطلب AUREN موافقتك قبل التنفيذ.' : 'تمت الموافقة — جاهز للتنفيذ.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                if (pending) ...[
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => _rejectAction(action),
+                                      icon: const Icon(Icons.close),
+                                      label: const Text('رفض'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                Expanded(
+                                  child: FilledButton.icon(
+                                    onPressed: pending ? () => _approveAction(action) : () => _executeAction(action),
+                                    icon: Icon(pending ? Icons.check : Icons.play_arrow),
+                                    label: Text(pending ? 'موافقة' : 'تنفيذ'),
+                                  ),
                                 ),
-                              ),
-                            if (pending) const SizedBox(width: 8),
-                            Expanded(
-                              child: FilledButton.icon(
-                                onPressed: pending ? () => _approveAction(action) : () => _executeAction(action),
-                                icon: Icon(pending ? Icons.check : Icons.play_arrow),
-                                label: Text(pending ? 'موافقة' : 'تنفيذ'),
-                              ),
+                              ],
                             ),
                           ],
                         ),
-                      ] else if (busy) ...[
-                        const SizedBox(height: 10),
-                        const LinearProgressIndicator(),
-                      ],
-                    ],
-                  ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
-            ),
+              ),
+            _actionHistoryPanel(),
           ],
         );
       },
@@ -356,24 +320,38 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
             .take(5)
             .toList();
         if (history.isEmpty) return const SizedBox.shrink();
+
         String statusLabel(String status) {
           switch (status) {
-            case 'completed': return 'تم التنفيذ';
-            case 'failed': return 'فشل التنفيذ';
-            case 'rejected': return 'تم الرفض';
+            case 'completed': return 'تم التنفيذ بنجاح';
+            case 'failed': return 'تعذر تنفيذ العملية';
+            case 'rejected': return 'تم رفض العملية';
             case 'executing': return 'جارٍ التنفيذ';
             default: return status;
           }
         }
+
         IconData statusIcon(String status) {
           switch (status) {
             case 'completed': return Icons.check_circle_outline;
             case 'failed': return Icons.error_outline;
             case 'rejected': return Icons.cancel_outlined;
-            case 'executing': return Icons.sync;
             default: return Icons.history;
           }
         }
+
+        String friendlyResult(AurenActionRequest action) {
+          final result = action.result;
+          if (result is Map) {
+            final type = result['type']?.toString();
+            if (type == 'note_created') return 'تم إنشاء الملاحظة بنجاح.';
+            if (type == 'memory_saved') return 'تم حفظ المعلومة في ذاكرة AUREN.';
+            if (type == 'echo') return 'تم تنفيذ الطلب بنجاح.';
+          }
+          if (result == null || result.toString().trim().isEmpty) return statusLabel(action.status);
+          return result.toString();
+        }
+
         return Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
           child: Card(
@@ -382,18 +360,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
               title: const Text('سجل AUREN Actions'),
               subtitle: Text(history.length.toString() + ' عمليات سابقة'),
               children: history.map((action) {
-                final result = action.result;
-                final resultText = result == null || result.toString().trim().isEmpty
-                    ? null
-                    : result.toString();
                 return ListTile(
                   dense: true,
                   leading: Icon(statusIcon(action.status)),
                   title: Text(action.title),
                   subtitle: Text(
-                    resultText == null
-                        ? statusLabel(action.status)
-                        : statusLabel(action.status) + ' • ' + resultText,
+                    friendlyResult(action),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
