@@ -9,6 +9,7 @@ import '../../../services/actions/action_registry.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
 import '../../../services/messaging/message_safety_repository.dart';
+import '../../../services/messaging/typing_service.dart';
 import 'group_details_screen.dart';
 import 'message_safety_screen.dart';
 import '../../../services/notifications/notification_api.dart';
@@ -35,6 +36,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   final _notificationApi = AurenNotificationApi();
   final _presence = AurenPresenceHeartbeat(AurenPresenceService());
   final _memoryRepository = MemoryRepository();
+  final _typing = AurenTypingService();
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -47,6 +49,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   String? _error;
   bool _isAi = true;
   String _conversationTitle = 'AUREN Messenger';
+  String? _otherUid;
 
   @override
   void initState() {
@@ -68,7 +71,8 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
 
   Future<void> _bootstrap() async {
     try {
-      _uid = _auth.currentUserId ?? await _auth.signInAnonymously();
+      _uid = _auth.currentUserId;
+      if (_uid == null) throw StateError('Please sign in first.');
       final conversation = widget.conversationId != null
           ? await _conversationRepository.findById(widget.conversationId!)
           : await _conversationRepository.getOrCreateAiConversation(_uid!);
@@ -79,6 +83,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       _presence.start(_uid!);
       _isAi = conversation.isAi;
       _conversationTitle = conversation.title;
+      _otherUid = _isAi ? null : conversation.memberIds.where((id) => id != _uid).firstOrNull;
       await _conversationRepository.markRead(_conversationId!, _uid!);
       if (widget.initialPrompt != null && widget.initialPrompt!.trim().isNotEmpty) {
         _controller.text = widget.initialPrompt!.trim();
@@ -95,6 +100,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     if (text.isEmpty || _sending || _uid == null || _conversationId == null) return;
 
     _controller.clear();
+    if (_conversationId != null && _uid != null) await _typing.setTyping(_conversationId!, _uid!, false);
     setState(() => _sending = true);
 
     try {
@@ -255,7 +261,11 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     final uid = _uid;
-    if (uid != null) _presence.stop(uid);
+    if (uid != null) {
+      _presence.stop(uid);
+      if (_conversationId != null) _typing.setTyping(_conversationId!, uid, false);
+    }
+    _typing.dispose();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -358,6 +368,19 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                 )).toList(),
               ),
             ),
+          if (!_isAi && _otherUid != null)
+            StreamBuilder<bool>(
+              stream: _typing.watchTyping(_conversationId!, _otherUid!),
+              builder: (_, snapshot) => snapshot.data == true
+                  ? const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('يكتب الآن…'),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           if (_showDetails)
             Container(
               width: double.infinity,
@@ -435,7 +458,13 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                     child: TextField(
                       controller: _controller,
                       textInputAction: TextInputAction.send,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (value) {
+                        setState(() {});
+                        if (!_isAi && _uid != null && _conversationId != null) {
+                          _typing.setTyping(_conversationId!, _uid!, value.trim().isNotEmpty);
+                          if (value.trim().isNotEmpty) _typing.scheduleStop(_conversationId!, _uid!);
+                        }
+                      },
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
                         hintText: _isAi ? 'اكتب لـ AUREN AI…' : 'اكتب رسالة…',
