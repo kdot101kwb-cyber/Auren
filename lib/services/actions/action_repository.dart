@@ -27,6 +27,16 @@ class ActionRepository {
           .where((a) => a.status == 'pending' || a.status == 'approved')
           .toList());
 
+  Stream<List<AurenActionRequest>> watchOutstandingForConversation(
+    String uid,
+    String conversationId,
+  ) =>
+      watchOutstanding(uid).map(
+        (actions) => actions
+            .where((action) => action.conversationId == conversationId)
+            .toList(),
+      );
+
   Stream<List<Map<String, dynamic>>> watchAudit(String uid, {int limit = 20}) =>
       _db.collection('users').doc(uid).collection('action_audit')
           .orderBy('createdAt', descending: true).limit(limit).snapshots()
