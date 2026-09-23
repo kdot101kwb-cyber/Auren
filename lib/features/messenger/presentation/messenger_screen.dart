@@ -246,57 +246,90 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
           child: Column(
             children: actions.take(3).map((action) {
+              final pending = action.status == 'pending';
               final approved = action.status == 'approved';
+              final busy = !pending && !approved;
               return Card(
+                clipBehavior: Clip.antiAlias,
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.shield_outlined, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              action.title,
-                              style: const TextStyle(fontWeight: FontWeight.w700),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                            ),
+                            child: Icon(
+                              approved ? Icons.verified_outlined : Icons.auto_awesome,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
                             ),
                           ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('AUREN Action', style: Theme.of(context).textTheme.labelSmall),
+                                const SizedBox(height: 2),
+                                Text(action.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                              ],
+                            ),
+                          ),
+                          Icon(pending ? Icons.lock_outline : Icons.check_circle_outline, size: 20),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 10),
                       Text(action.description),
                       const SizedBox(height: 8),
-                      Text(
-                        approved ? 'تمت الموافقة — جاهز للتنفيذ' : 'يحتاج موافقتك',
-                        style: Theme.of(context).textTheme.labelMedium,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        ),
+                        child: Text(
+                          pending
+                              ? 'سيطلب AUREN موافقتك قبل أي تنفيذ.'
+                              : approved
+                                  ? 'تمت الموافقة. التنفيذ لم يبدأ بعد.'
+                                  : 'حالة الطلب: '+action.status,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (!approved) ...[
-                            OutlinedButton.icon(
-                              onPressed: () => _rejectAction(action),
-                              icon: const Icon(Icons.close),
-                              label: const Text('رفض'),
-                            ),
-                            const SizedBox(width: 8),
-                            FilledButton.icon(
-                              onPressed: () => _approveAction(action),
-                              icon: const Icon(Icons.check),
-                              label: const Text('موافقة'),
-                            ),
-                          ] else ...[
-                            FilledButton.icon(
-                              onPressed: () => _executeAction(action),
-                              icon: const Icon(Icons.play_arrow),
-                              label: const Text('تنفيذ'),
+                      if (pending || approved) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            if (pending)
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _rejectAction(action),
+                                  icon: const Icon(Icons.close),
+                                  label: const Text('رفض'),
+                                ),
+                              ),
+                            if (pending) const SizedBox(width: 8),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: pending ? () => _approveAction(action) : () => _executeAction(action),
+                                icon: Icon(pending ? Icons.check : Icons.play_arrow),
+                                label: Text(pending ? 'موافقة' : 'تنفيذ'),
+                              ),
                             ),
                           ],
-                        ],
-                      ),
+                        ),
+                      ] else if (busy) ...[
+                        const SizedBox(height: 10),
+                        const LinearProgressIndicator(),
+                      ],
                     ],
                   ),
                 ),
