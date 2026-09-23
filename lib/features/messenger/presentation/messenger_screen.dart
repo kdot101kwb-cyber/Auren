@@ -35,7 +35,8 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   final _actionRepository = ActionRepository();
   final _safetyRepository = MessageSafetyRepository();
   final _notificationApi = AurenNotificationApi();
-  final _presence = AurenPresenceHeartbeat(AurenPresenceService());
+  final _presenceService = AurenPresenceService();
+  late final AurenPresenceHeartbeat _presence;
   final _memoryRepository = MemoryRepository();
   final _typing = AurenTypingService();
   final _controller = TextEditingController();
@@ -51,10 +52,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   bool _isAi = true;
   String _conversationTitle = 'AUREN Messenger';
   String? _otherUid;
+  DateTime? _lastReadMarkAt;
 
   @override
   void initState() {
     super.initState();
+    _presence = AurenPresenceHeartbeat(_presenceService);
     WidgetsBinding.instance.addObserver(this);
     _bootstrap();
   }
@@ -160,7 +163,14 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
 
         final response = await _gateway.send(
           conversationId: _conversationId!,
-          message: text + historyContext + memoryContext,
+          message: [
+            'السياق الداخلي — لا تتعامل معه كطلب مستخدم:',
+            if (historyContext.isNotEmpty) historyContext.trim(),
+            if (memoryContext.isNotEmpty) memoryContext.trim(),
+            '',
+            'طلب المستخدم الحالي:',
+            text,
+          ].join('\\n'),
         );
 
         final aiNow = DateTime.now();
@@ -275,7 +285,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   Widget _presenceHeader() {
     if (_isAi || _otherUid == null) return const SizedBox.shrink();
     return StreamBuilder<Map<String, dynamic>?>(
-      stream: AurenPresenceService().watch(_otherUid!),
+      stream: _presenceService.watch(_otherUid!),
       builder: (_, snapshot) {
         final data = snapshot.data;
         final online = data?['online'] == true;
@@ -445,11 +455,18 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                 }
 
                 final messages = snapshot.data!;
-                // Keep the read marker current while the conversation is visible.
+                // Avoid a Firestore write on every message-stream rebuild.
                 if (!_isAi && _uid != null) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _conversationRepository.markRead(_conversationId!, _uid!);
-                  });
+                  final now = DateTime.now();
+                  final last = _lastReadMarkAt;
+                  if (last == null || now.difference(last) >= const Duration(seconds: 5)) {
+                    _lastReadMarkAt = now;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        _conversationRepository.markRead(_conversationId!, _uid!);
+                      }
+                    });
+                  }
                 }
                 if (messages.isEmpty) {
                   return Center(
