@@ -867,6 +867,20 @@ service cloud.firestore {
           || (resource.data.type != 'group' && request.auth.uid in resource.data.memberIds)
         );
 
+      match /typing/{userId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.memberIds;
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.memberIds
+          && request.resource.data.keys().hasOnly(['typing', 'updatedAt'])
+          && request.resource.data.typing is bool
+          && request.resource.data.updatedAt is timestamp;
+        allow delete: if request.auth != null
+          && request.auth.uid == userId
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.memberIds;
+      }
+
       match /reads/{userId} {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow create, update: if request.auth != null
