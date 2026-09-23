@@ -199,6 +199,14 @@ class ConversationRepository {
     }, SetOptions(merge: true));
   }
 
+  Stream<int> watchStoredUnreadCount(String conversationId, String uid) {
+    if (conversationId.isEmpty || uid.isEmpty) return const Stream.empty();
+    return _conversations.doc(conversationId)
+        .collection('unreadCounts').doc(uid)
+        .snapshots()
+        .map((doc) => (doc.data()?['count'] as num?)?.toInt() ?? 0);
+  }
+
   Future<void> updateLastMessage({
     required String conversationId,
     required String senderId,
@@ -240,15 +248,7 @@ class ConversationRepository {
   }
 
   Stream<int> watchUnreadCount(String conversationId, String uid) {
-    return watchReadAt(conversationId, uid).asyncExpand((readAt) {
-      var query = _conversations.doc(conversationId).collection('messages')
-          .where('isAi', isEqualTo: false);
-      if (readAt != null) {
-        query = query.where('createdAt', isGreaterThan: Timestamp.fromDate(readAt));
-      }
-      return query.snapshots().map((s) =>
-          s.docs.where((d) => d.data()['senderId'] != uid).length);
-    });
+    return watchStoredUnreadCount(conversationId, uid);
   }
 
   Stream<List<AurenConversation>> watchForUser(String uid) => _conversations
