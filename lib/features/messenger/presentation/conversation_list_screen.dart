@@ -16,7 +16,7 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
   final _notifications = NotificationRepository();
   String? _uid;
   @override void initState() { super.initState(); _bootstrap(); }
-  Future<void> _bootstrap() async { try { final uid = _auth.currentUserId ?? await _auth.signInAnonymously(); if (mounted) setState(() => _uid = uid); } catch (_) {} }
+  Future<void> _bootstrap() async { try { final uid = _auth.currentUserId; if (mounted) setState(() => _uid = uid); } catch (_) {} }
   Future<void> _createGroup() async {
     final title = TextEditingController();
     final member = TextEditingController();
@@ -76,7 +76,7 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen())),
         icon: const Icon(Icons.auto_awesome), label: const Text('AUREN AI'),
       ),
-      body: uid == null ? const Center(child: CircularProgressIndicator()) : RefreshIndicator(
+      body: uid == null ? const Center(child: Text('سجّل الدخول أولاً لفتح Messenger.')) : RefreshIndicator(
         onRefresh: () async { if (mounted) setState(() {}); },
         child: StreamBuilder(
         stream: _repo.watchForUser(uid),
