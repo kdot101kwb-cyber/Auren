@@ -144,6 +144,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
         final response = await _gateway.send(
           conversationId: _conversationId!,
           message: text,
+          requestId: messageId,
         );
 
         // The gateway persists the AI-authored message server-side.
