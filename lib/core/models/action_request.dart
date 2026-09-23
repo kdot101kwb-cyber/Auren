@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class AurenActionRequest {
   final String id;
   final String conversationId;
@@ -12,7 +14,7 @@ class AurenActionRequest {
   final String? currency;
   final bool requiresApproval;
   final String status;
-  final String? result;
+  final dynamic result;
   final DateTime createdAt;
 
   const AurenActionRequest({
@@ -50,6 +52,12 @@ class AurenActionRequest {
         'createdAt': createdAt.toUtc().toIso8601String(),
       };
 
+  static DateTime _parseDate(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+  }
+
   factory AurenActionRequest.fromMap(String id, Map<String, dynamic> m) =>
       AurenActionRequest(
         id: id,
@@ -67,8 +75,7 @@ class AurenActionRequest {
         currency: m['currency'] as String?,
         requiresApproval: m['requiresApproval'] as bool? ?? true,
         status: m['status'] as String? ?? 'pending',
-        result: m['result'] as String?,
-        createdAt: DateTime.tryParse(m['createdAt'] as String? ?? '') ??
-            DateTime.now(),
+        result: m['result'],
+        createdAt: _parseDate(m['createdAt']),
       );
 }
