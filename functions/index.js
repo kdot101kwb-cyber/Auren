@@ -381,6 +381,17 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       }
     } catch (_) {}
 
+    // The server is the only writer of AI-authored messages.
+    // This prevents a client from impersonating "auren-ai".
+    const aiMessageRef = db.collection('conversations').doc(conversationId)
+      .collection('messages').doc();
+    await aiMessageRef.set({
+      senderId: 'auren-ai',
+      text: text.slice(0, 12000),
+      createdAt: FieldValue.serverTimestamp(),
+      isAi: true,
+    });
+
     let actionId = null;
     if (action && requiresApproval) {
       const actionRef = db.collection('users').doc(uid).collection('actions').doc();
