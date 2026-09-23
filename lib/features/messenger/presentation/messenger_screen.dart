@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/models/message.dart';
+import '../../../core/models/action_request.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/ai/ai_gateway.dart';
 import '../../../services/actions/action_repository.dart';
@@ -190,7 +192,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     }
   }
 
-  Future<void> _messageMenu(AurenMessage message) async {
+  Future<void> _updateAction(String actionId, String status) async {\n    if (_uid == null || actionId.isEmpty) return;\n    try {\n      await _actionRepository.setStatus(_uid!, actionId, status);\n      if (mounted) {\n        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(status == 'approved' ? 'تمت الموافقة على الإجراء.' : 'تم رفض الإجراء.')));\n      }\n    } catch (_) {\n      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر تحديث الإجراء. حاول مرة أخرى.')));\n    }\n  }\n\n  Future<void> _executeAction(String actionId) async {\n    if (actionId.isEmpty) return;\n    try {\n      final callable = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('executeAurenAction');\n      final result = await callable.call(<String, dynamic>{'actionId': actionId});\n      final data = Map<String, dynamic>.from(result.data as Map);\n      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['result']?.toString() ?? 'تم تنفيذ الإجراء.')));\n    } on FirebaseFunctionsException catch (e) {\n      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'تعذر تنفيذ الإجراء.')));\n    } catch (_) {\n      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر تنفيذ الإجراء.')));\n    }\n  }\n\n  Widget _pendingActionsPanel() {\n    if (_uid == null || !_isAi) return const SizedBox.shrink();\n    return StreamBuilder<List<AurenActionRequest>>(\n      stream: _actionRepository.watchOutstanding(_uid!),\n      builder: (context, snapshot) {\n        final actions = (snapshot.data ?? const <AurenActionRequest>[]).where((a) => a.conversationId == _conversationId).toList();\n        if (actions.isEmpty) return const SizedBox.shrink();\n        return Column(children: actions.map((action) {\n          final pending = action.status == 'pending';\n          final approved = action.status == 'approved';\n          return Card(margin: const EdgeInsets.fromLTRB(12, 4, 12, 4), child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [\n            Row(children: [const Icon(Icons.auto_awesome, size: 20), const SizedBox(width: 8), Expanded(child: Text(action.title, style: const TextStyle(fontWeight: FontWeight.bold))), Chip(label: Text(action.status))]),\n            const SizedBox(height: 4), Text(action.description),\n            if (action.payload.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(action.payload.entries.map((e) => e.key + ': ' + e.value.toString()).join(' • '))),\n            const SizedBox(height: 8), Wrap(spacing: 8, children: [\n              if (pending) FilledButton.icon(onPressed: () => _updateAction(action.id, 'approved'), icon: const Icon(Icons.check), label: const Text('موافقة')),\n              if (pending) OutlinedButton.icon(onPressed: () => _updateAction(action.id, 'rejected'), icon: const Icon(Icons.close), label: const Text('رفض')),\n              if (approved) FilledButton.icon(onPressed: () => _executeAction(action.id), icon: const Icon(Icons.play_arrow), label: const Text('تنفيذ')),\n            ])\n          ])));\n        }).toList());\n      },\n    );\n  }\n\n  Future<void> _messageMenu(AurenMessage message) async {
     if (_uid == null) return;
     final canModerate = !message.isAi && message.senderId != _uid;
     final choice = await showModalBottomSheet<String>(
@@ -368,6 +370,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       body: Column(
         children: [
           _presenceHeader(),
+          _pendingActionsPanel(),
           if (_isAi && !_sending && _controller.text.isEmpty)
             SizedBox(
               height: 52,
