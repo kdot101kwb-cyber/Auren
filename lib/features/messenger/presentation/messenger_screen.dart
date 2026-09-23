@@ -156,7 +156,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           isAi: true,
         ));
 
-        // Approval-gated actions are created and validated by the server.\n        }
+        // Approval-gated actions are created and validated by the server.
       }
     } catch (e) {
       if (mounted) {
