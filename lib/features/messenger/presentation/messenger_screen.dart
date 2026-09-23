@@ -238,7 +238,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   Widget _pendingActionsPanel() {
     if (!_isAi || _uid == null) return const SizedBox.shrink();
     return StreamBuilder<List<AurenActionRequest>>(
-      stream: _actionRepository.watchOutstanding(_uid!),
+      stream: _actionRepository.watchOutstandingForConversation(_uid!, _conversationId!),
       builder: (context, snapshot) {
         final actions = snapshot.data ?? const <AurenActionRequest>[];
         if (actions.isEmpty) return const SizedBox.shrink();
