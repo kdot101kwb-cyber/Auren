@@ -436,11 +436,16 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     const memorySnapshot = await db.collection('users').doc(request.auth.uid)
       .collection('memory').where('enabled', '==', true).limit(50).get();
     const memoryItems = memorySnapshot.docs.map((doc) => doc.data() || {});
-    memoryItems.sort((a, b) => {
-      const aTime = typeof a.updatedAt === 'string' ? Date.parse(a.updatedAt) : 0;
-      const bTime = typeof b.updatedAt === 'string' ? Date.parse(b.updatedAt) : 0;
-      return bTime - aTime;
-    });
+    const toMillis = (value) => {
+      if (typeof value === 'string') return Date.parse(value) || 0;
+      if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+      if (value && typeof value.toMillis === 'function') return value.toMillis();
+      if (value && typeof value._seconds === 'number') {
+        return value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1000000);
+      }
+      return 0;
+    };
+    memoryItems.sort((a, b) => toMillis(b.updatedAt) - toMillis(a.updatedAt));
     const memoryLines = memoryItems.slice(0, 20).map((item) => {
       const key = typeof item.key === 'string' ? item.key.slice(0, 120) : '';
       const value = typeof item.value === 'string' ? item.value.slice(0, 2000) : '';
