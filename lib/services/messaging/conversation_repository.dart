@@ -261,7 +261,7 @@ class ConversationRepository {
 
   Future<void> touch(String conversationId) {
     return _conversations.doc(conversationId).update({
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 }
