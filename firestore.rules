@@ -805,7 +805,7 @@ service cloud.firestore {
         && request.resource.data.title.size() <= 120
         && request.resource.data.isAi is bool
         && request.resource.data.keys().hasOnly([
-          'memberIds', 'title', 'isAi', 'updatedAt', 'lastMessage', 'lastMessageAt', 'type', 'ownerId'
+          'memberIds', 'title', 'isAi', 'updatedAt', 'lastMessage', 'lastMessageAt', 'lastMessageSenderId', 'lastMessageSenderId', 'type', 'ownerId'
         ])
         && request.resource.data.type in ['direct', 'group', 'ai']
         && (
