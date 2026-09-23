@@ -7,7 +7,6 @@ import '../../../core/models/message.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/ai/ai_gateway.dart';
 import '../../../services/actions/action_repository.dart';
-import '../../../services/actions/action_registry.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/message_repository.dart';
 import '../../../services/messaging/message_safety_repository.dart';
@@ -157,27 +156,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           isAi: true,
         ));
 
-        if (response.action != null &&
-            response.action!.trim().isNotEmpty &&
-            response.requiresApproval) {
-          final actionNow = DateTime.now();
-          final actionType = response.action!.trim();
-          final definition = AurenActionRegistry.get(actionType);
-          if (definition != null) {
-            await _actionRepository.create(
-              _uid!,
-              AurenActionRegistry.fromAi(
-                id: 'action_${actionNow.microsecondsSinceEpoch}',
-                conversationId: _conversationId!,
-                actionType: actionType,
-                title: definition.title,
-                description: 'طلب تنفيذ: ' + definition.title,
-                payload: response.payload,
-                createdAt: actionNow,
-              ),
-            );
-          }
-        }
+        // Approval-gated actions are created and validated by the server.\n        }
       }
     } catch (e) {
       if (mounted) {
