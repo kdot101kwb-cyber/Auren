@@ -146,16 +146,8 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           message: text,
         );
 
-        final aiNow = DateTime.now();
-        await _messagesRepository.send(AurenMessage(
-          id: 'ai_${aiNow.microsecondsSinceEpoch}',
-          conversationId: _conversationId!,
-          senderId: 'auren-ai',
-          text: response.text,
-          createdAt: aiNow,
-          isAi: true,
-        ));
-
+        // The gateway persists the AI-authored message server-side.
+        // The client must never be allowed to impersonate "auren-ai".
         // Approval-gated actions are created and validated by the server.
       }
     } catch (e) {
