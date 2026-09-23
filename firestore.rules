@@ -254,6 +254,7 @@ service cloud.firestore {
         allow create, delete: if false;
       }
 
+
       match /notes/{noteId} {
         allow read: if isOwner(userId);
         allow write: if false;
@@ -889,6 +890,13 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['readAt'])
           && request.resource.data.readAt is timestamp;
         allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /unreadCounts/{userId} {
+        allow read: if request.auth != null
+          && request.auth.uid == userId
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.memberIds;
+        allow write: if false;
       }
 
       match /messages/{messageId} {
