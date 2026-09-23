@@ -272,6 +272,47 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   }
 
   @override
+  Widget _presenceHeader() {
+    if (_isAi || _otherUid == null) return const SizedBox.shrink();
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: AurenPresenceService().watch(_otherUid!),
+      builder: (_, snapshot) {
+        final data = snapshot.data;
+        final online = data?['online'] == true;
+        final lastSeen = data?['lastSeen'];
+        String label = online ? 'Online' : 'Offline';
+        if (!online && lastSeen is Timestamp) {
+          final d = DateTime.now().difference(lastSeen.toDate());
+          if (d.inMinutes < 1) label = 'Last seen just now';
+          else if (d.inMinutes < 60) label = 'Last seen ${d.inMinutes}m ago';
+          else if (d.inHours < 24) label = 'Last seen ${d.inHours}h ago';
+        }
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.circle, size: 8, color: online ? Colors.green : Colors.grey),
+            const SizedBox(width: 6),
+            Text(label, style: Theme.of(context).textTheme.labelSmall),
+          ]),
+        );
+      },
+    );
+  }
+
+  Widget _messageStatus(AurenMessage message) {
+    if (_isAi || _uid == null || message.senderId != _uid) return const SizedBox.shrink();
+    return StreamBuilder<DateTime?>(
+      stream: _conversationRepository.watchReadAt(_conversationId!, _otherUid ?? ''),
+      builder: (_, snapshot) {
+        final read = snapshot.data != null && !snapshot.data!.isBefore(message.createdAt);
+        return Padding(
+          padding: const EdgeInsets.only(left: 6),
+          child: Icon(Icons.done_all, size: 14, color: read ? Theme.of(context).colorScheme.primary : null),
+        );
+      },
+    );
+  }
+
   Widget build(BuildContext context) {
     if (!_initialPromptSent && !_loading && widget.initialPrompt != null) {
       _initialPromptSent = true;
@@ -343,6 +384,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       ),
       body: Column(
         children: [
+          _presenceHeader(),
           if (_isAi && !_sending && _controller.text.isEmpty)
             SizedBox(
               height: 52,
@@ -439,7 +481,10 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                         ),
                         child: GestureDetector(
                           onLongPress: () => _messageMenu(message),
-                          child: Text(message.text),
+                          child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+                            Flexible(child: Text(message.text)),
+                            _messageStatus(message),
+                          ]),
                         ),
                       ),
                     );
