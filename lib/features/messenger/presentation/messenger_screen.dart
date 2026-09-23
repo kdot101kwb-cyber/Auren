@@ -209,6 +209,24 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     }
   }
 
+  Future<void> _rejectAction(AurenActionRequest action) async {
+    if (_uid == null || action.status != 'pending') return;
+    try {
+      await _actionRepository.setStatus(_uid!, action.id, 'rejected');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تم رفض الطلب: ${action.title}')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر رفض الطلب.')),
+        );
+      }
+    }
+  }
+
   Future<void> _executeAction(AurenActionRequest action) async {
     if (_uid == null || action.status != 'approved') return;
     try {
@@ -279,13 +297,19 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          if (!approved)
+                          if (!approved) ...[
                             OutlinedButton.icon(
+                              onPressed: () => _rejectAction(action),
+                              icon: const Icon(Icons.close),
+                              label: const Text('رفض'),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton.icon(
                               onPressed: () => _approveAction(action),
                               icon: const Icon(Icons.check),
                               label: const Text('موافقة'),
                             ),
-                          if (approved) ...[
+                          ] else ...[
                             FilledButton.icon(
                               onPressed: () => _executeAction(action),
                               icon: const Icon(Icons.play_arrow),
