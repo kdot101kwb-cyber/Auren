@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/auth/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/notifications/notification_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
@@ -17,18 +17,20 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
     if (type == 'action') return read ? Icons.task_alt : Icons.pending_actions;
     return read ? Icons.notifications_none : Icons.notifications_active;
   }
-  final _auth = FirebaseAurenAuthService();
   final _repo = NotificationRepository();
   String? _uid;
   @override void initState() { super.initState(); _bootstrap(); }
-  Future<void> _bootstrap() async { try { final uid = _auth.currentUserId ?? await _auth.signInAnonymously(); if (mounted) setState(() => _uid = uid); } catch (_) {} }
+  Future<void> _bootstrap() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (mounted) setState(() => _uid = user?.uid);
+  }
   @override Widget build(BuildContext context) {
     final uid = _uid;
     return Scaffold(
       appBar: AppBar(title: const Text('Notifications'), actions: [
         if (uid != null) TextButton(onPressed: () => _repo.markAllRead(uid), child: const Text('Mark all read')),
       ]),
-      body: uid == null ? const Center(child: CircularProgressIndicator()) : StreamBuilder<List<AurenNotification>>(
+      body: uid == null ? const Center(child: Text('يجب تسجيل الدخول لعرض الإشعارات')) : StreamBuilder<List<AurenNotification>>(
         stream: _repo.watch(uid),
         builder: (context, snapshot) {
           if (snapshot.hasError) return const Center(child: Text('تعذر تحميل الإشعارات'));
