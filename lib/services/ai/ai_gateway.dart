@@ -5,6 +5,7 @@ abstract interface class AurenAiGateway {
   Future<AurenAiResponse> send({
     required String conversationId,
     required String message,
+    String? requestId,
   });
 }
 
@@ -13,6 +14,7 @@ class LocalAiGateway implements AurenAiGateway {
   Future<AurenAiResponse> send({
     required String conversationId,
     required String message,
+    String? requestId,
   }) async {
     return AurenAiResponse(
       text: 'وصلتني رسالتك: "$message". أنا AUREN AI، وجاهز أساعدك خطوة بخطوة.',
@@ -36,11 +38,13 @@ class ResilientAurenAiGateway implements AurenAiGateway {
   Future<AurenAiResponse> send({
     required String conversationId,
     required String message,
+    String? requestId,
   }) async {
     try {
       return await remote.send(
         conversationId: conversationId,
         message: message,
+        requestId: requestId,
       );
     } on StateError {
       return fallback.send(
