@@ -116,6 +116,31 @@ async function notify(uid, data) {
   });
 }
 
+async function incrementUnread(uid, conversationId) {
+  if (!uid || !conversationId) return;
+  const ref = db.collection('conversations').doc(conversationId)
+    .collection('unreadCounts').doc(uid);
+  await ref.set({
+    count: FieldValue.increment(1),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+}
+
+exports.onConversationReadChanged = onDocumentCreated(
+  'conversations/{conversationId}/reads/{userId}',
+  async (event) => {
+    const uid = event.params.userId;
+    const conversationId = event.params.conversationId;
+    if (!uid || !conversationId) return;
+    await db.collection('conversations').doc(conversationId)
+      .collection('unreadCounts').doc(uid)
+      .set({
+        count: 0,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+  },
+);
+
 exports.onFollowCreated = onDocumentCreated('follows/{followId}', async (event) => {
   const follow = event.data?.data();
   if (!follow) return;
@@ -179,15 +204,18 @@ exports.onConversationMessageCreated = onDocumentCreated(
 
     const actorUid = message.senderId;
     const recipients = data.memberIds.filter((uid) => uid && uid !== actorUid);
-    await Promise.all(recipients.map((uid) => notify(uid, {
-      title: data.type === 'group' ? data.title || 'Group message' : 'New message',
-      body: String(message.text || '').slice(0, 140),
-      type: data.type === 'group' ? 'group' : 'message',
-      actorUid,
-      targetId: uid,
-      entityId: event.params.conversationId,
-      conversationId: event.params.conversationId,
-    })));
+    await Promise.all(recipients.map(async (uid) => {
+      await notify(uid, {
+        title: data.type === 'group' ? data.title || 'Group message' : 'New message',
+        body: String(message.text || '').slice(0, 140),
+        type: data.type === 'group' ? 'group' : 'message',
+        actorUid,
+        targetId: uid,
+        entityId: event.params.conversationId,
+        conversationId: event.params.conversationId,
+      });
+      await incrementUnread(uid, event.params.conversationId);
+    }));
   },
 );
 
