@@ -571,30 +571,35 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
           text: payload.text.trim(),
         };
       } else if (action.actionType === 'demo.create_note') {
-        const noteRef = db.collection('users').doc(uid).collection('notes').doc();
-        await noteRef.set({
-          text: payload.text.trim(),
-          ownerId: uid,
-          source: 'auren-action',
-          actionId,
-          createdAt: FieldValue.serverTimestamp(),
-        });
+        // actionId is the idempotency key: retries reuse the same note.
+        const noteRef = db.collection('users').doc(uid).collection('notes').doc(actionId);
+        const existingNote = await noteRef.get();
+        if (!existingNote.exists) {
+          await noteRef.set({
+            text: payload.text.trim(),
+            ownerId: uid,
+            source: 'auren-action',
+            actionId,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        }
         executionResult = {
           type: 'note_created',
           noteId: noteRef.id,
         };
       } else {
-        const memoryRef = db.collection('users').doc(uid).collection('memory').doc();
+        const memoryRef = db.collection('users').doc(uid).collection('memory').doc('mem_' + actionId);
+        const existingMemory = await memoryRef.get();
         const now = new Date().toISOString();
         await memoryRef.set({
           key: payload.key.trim(),
           value: payload.value.trim(),
           enabled: true,
-          createdAt: now,
+          ...(existingMemory.exists ? {} : {createdAt: now}),
           updatedAt: now,
           source: 'auren-action',
           actionId,
-        });
+        }, {merge: true});
         executionResult = {
           type: 'memory_saved',
           memoryId: memoryRef.id,
