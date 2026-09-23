@@ -107,7 +107,49 @@ class AurenHomeV2 extends StatelessWidget {
               );
             },
           ),
-        const SizedBox(height: 12),
+          if (uid != null)
+            FutureBuilder<AurenCoreFiveSnapshot>(
+              future: AurenCoreFiveRepository().load(uid),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox.shrink();
+                final core = snapshot.data!;
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          const Icon(Icons.bolt),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(core.actionTitle, style: const TextStyle(fontWeight: FontWeight.bold))),
+                          Text('${core.readinessPercent}%'),
+                        ]),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(value: core.readinessPercent / 100),
+                        const SizedBox(height: 8),
+                        Text(core.nextMove),
+                        const SizedBox(height: 10),
+                        FilledButton.icon(
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            try {
+                              await AurenCoreFiveRepository().runCoreFiveBatch(uid);
+                              messenger.showSnackBar(const SnackBar(content: Text('تم ربط الهدف بالـCore 5.')));
+                            } catch (e) {
+                              messenger.showSnackBar(SnackBar(content: Text('تعذر تنفيذ الربط: $e')));
+                            }
+                          },
+                          icon: const Icon(Icons.link),
+                          label: const Text('اربط الهدف الآن'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          const SizedBox(height: 12),
         _card(context, Icons.auto_awesome, 'AUREN AI', 'اسأل، خطط، وأنجز.', const MessengerScreen()),
         _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.', const AurenDiscoverScreen()),
         _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
