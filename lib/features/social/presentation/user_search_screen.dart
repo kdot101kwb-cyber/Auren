@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../services/auth/auth_service.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../services/users/user_search_repository.dart';
+import '../../../services/messaging/conversation_repository.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 import '../../profile/presentation/public_profile_screen.dart';
 
 class AurenUserSearchScreen extends StatefulWidget {
@@ -14,6 +17,7 @@ class _AurenUserSearchScreenState extends State<AurenUserSearchScreen> {
   final c = TextEditingController();
   List<AurenUserProfile> results = [];
   bool loading = false;
+  final _conversations = ConversationRepository();
 
   Future<void> search() async {
     final query = c.text.trim();
@@ -47,9 +51,29 @@ class _AurenUserSearchScreenState extends State<AurenUserSearchScreen> {
             itemBuilder: (context, i) {
               final p = results[i];
               return ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.person)),
+                leading: CircleAvatar(
+                  backgroundImage: p.photoUrl != null && p.photoUrl!.isNotEmpty ? NetworkImage(p.photoUrl!) : null,
+                  child: p.photoUrl == null || p.photoUrl!.isEmpty ? const Icon(Icons.person) : null,
+                ),
                 title: Text(p.displayName),
-                subtitle: Text(p.uid),
+                subtitle: const Text('Open profile or message'),
+                trailing: IconButton(
+                  tooltip: 'Message',
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  onPressed: () async {
+                    final uid = FirebaseAurenAuthService().currentUserId;
+                    if (uid == null || uid == p.uid) return;
+                    try {
+                      final conversation = await _conversations.getOrCreateDirectConversation(
+                        uid: uid, otherUid: p.uid, otherTitle: p.displayName,
+                      );
+                      if (!mounted) return;
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: conversation.id)));
+                    } catch (e) {
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر بدء المحادثة: $e')));
+                    }
+                  },
+                ),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => AurenPublicProfileScreen(profile: p)),
