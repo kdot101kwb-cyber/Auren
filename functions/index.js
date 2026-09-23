@@ -239,6 +239,14 @@ exports.onAurenActionStatusChanged = onDocumentUpdated(
       ...after,
       id: event.params.actionId,
     }, after.status, { source: 'action-status-change' });
+
+    await notify(event.params.userId, {
+      title: after.status === 'approved' ? 'Action approved' : 'Action rejected',
+      body: after.title || 'Your AUREN action request was updated.',
+      type: 'action',
+      targetId: event.params.userId,
+      entityId: event.params.actionId,
+    });
   },
 );
 
