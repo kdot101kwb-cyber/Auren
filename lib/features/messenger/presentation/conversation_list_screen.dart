@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/messaging/conversation_repository.dart';
+import '../../../services/users/user_repository.dart';
+import '../../../services/users/presence_service.dart';
 import 'messenger_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../../services/notifications/notification_repository.dart';
@@ -14,6 +17,8 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
   final _auth = FirebaseAurenAuthService();
   final _repo = ConversationRepository();
   final _notifications = NotificationRepository();
+  final _users = UserRepository();
+  final _presence = AurenPresenceService();
   String? _uid;
   @override void initState() { super.initState(); _bootstrap(); }
   Future<void> _bootstrap() async { try { final uid = _auth.currentUserId; if (mounted) setState(() => _uid = uid); } catch (_) {} }
@@ -87,20 +92,92 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
           if (conversations.isEmpty) return const Center(child: Text('ابدأ أول محادثة مع AUREN AI.'));
           return ListView.separated(
             padding: const EdgeInsets.all(12), itemCount: conversations.length, separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, i) { final c = conversations[i]; return ListTile(
-              leading: CircleAvatar(child: Icon(c.isAi ? Icons.auto_awesome : Icons.chat_bubble_outline)),
-              title: Text(c.title), subtitle: Text(c.lastMessage?.isNotEmpty == true ? c.lastMessage! : (c.isAi ? 'AUREN AI' : 'محادثة')),
-              trailing: StreamBuilder<int>(
-                stream: _repo.watchUnreadCount(c.id, uid),
-                builder: (_, unread) {
-                  final count = unread.data ?? 0;
-                  return count > 0
-                      ? CircleAvatar(radius: 14, child: Text(count > 99 ? '99+' : '$count'))
-                      : Text('${c.updatedAt.hour.toString().padLeft(2, '0')}:${c.updatedAt.minute.toString().padLeft(2, '0')}');
+            itemBuilder: (_, i) {
+              final c = conversations[i];
+              final otherUid = !c.isAi && c.type == 'direct'
+                  ? c.memberIds.where((id) => id != uid).firstOrNull
+                  : null;
+              return StreamBuilder<AurenUserProfile?>(
+                stream: otherUid == null ? const Stream.empty() : _users.watch(otherUid),
+                builder: (_, profile) {
+                  final name = c.isAi ? 'AUREN AI' : (profile.data?.displayName ?? c.title);
+                  final photoUrl = profile.data?.photoUrl;
+                  return StreamBuilder<Map<String, dynamic>?>(
+                    stream: otherUid == null ? const Stream.empty() : _presence.watch(otherUid),
+                    builder: (_, presence) {
+                      final online = presence.data?['online'] == true;
+                      final at = c.lastMessageAt ?? c.updatedAt;
+                      final time = at.hour.toString().padLeft(2, '0') + ':' + at.minute.toString().padLeft(2, '0');
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        leading: Stack(children: [
+                          CircleAvatar(
+                            radius: 27,
+                            backgroundImage: photoUrl != null && photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                            child: photoUrl == null || photoUrl.isEmpty
+                                ? Icon(c.isAi ? Icons.auto_awesome : c.type == 'group' ? Icons.groups : Icons.person)
+                                : null,
+                          ),
+                          if (otherUid != null)
+                            Positioned(
+                              right: 0, bottom: 0,
+                              child: Container(
+                                width: 13, height: 13,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: online ? Colors.green : Colors.grey,
+                                  border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                                ),
+                              ),
+                            ),
+                        ]),
+                        title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Row(children: [
+                          if (c.lastMessageSenderId == uid && c.lastMessage?.isNotEmpty == true)
+                            const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.done_all, size: 14)),
+                          Expanded(child: Text(
+                            c.lastMessage?.isNotEmpty == true ? c.lastMessage! : (c.isAi ? 'AUREN AI' : c.type == 'group' ? 'Group conversation' : 'محادثة'),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                          )),
+                        ]),
+                        trailing: StreamBuilder<int>(
+                          stream: _repo.watchUnreadCount(c.id, uid),
+                          builder: (_, unread) {
+                            final count = unread.data ?? 0;
+                            return Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(time, style: Theme.of(context).textTheme.labelSmall),
+                                const SizedBox(height: 5),
+                                if (count > 0)
+                                  Container(
+                                    constraints: const BoxConstraints(minWidth: 22),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      count > 99 ? '99+' : count.toString(),
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: c.id)),
+                        ),
+                      );
+                    },
+                  );
                 },
-              ),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: c.id))),
-            ); },
+              );
+            },
           );
         },
       ),
