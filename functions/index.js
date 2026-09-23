@@ -432,10 +432,16 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       };
     }).filter((item) => item.content);
 
+    // Keep this query single-field so the AI gateway does not depend on a Firestore composite index.
     const memorySnapshot = await db.collection('users').doc(request.auth.uid)
-      .collection('memory').where('enabled', '==', true).orderBy('updatedAt', 'desc').limit(20).get();
-    const memoryLines = memorySnapshot.docs.map((doc) => {
-      const item = doc.data() || {};
+      .collection('memory').where('enabled', '==', true).limit(50).get();
+    const memoryItems = memorySnapshot.docs.map((doc) => doc.data() || {});
+    memoryItems.sort((a, b) => {
+      const aTime = typeof a.updatedAt === 'string' ? Date.parse(a.updatedAt) : 0;
+      const bTime = typeof b.updatedAt === 'string' ? Date.parse(b.updatedAt) : 0;
+      return bTime - aTime;
+    });
+    const memoryLines = memoryItems.slice(0, 20).map((item) => {
       const key = typeof item.key === 'string' ? item.key.slice(0, 120) : '';
       const value = typeof item.value === 'string' ? item.value.slice(0, 2000) : '';
       return key && value ? '- ' + key + ': ' + value : '';
