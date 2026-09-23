@@ -508,7 +508,11 @@ exports.decideAurenAction = require('firebase-functions/v2/https').onCall(
       if (!current.exists || current.data()?.status !== 'pending') {
         throw new Error('Action decision is no longer available.');
       }
-      tx.update(actionRef, {status: decision, decisionAt: FieldValue.serverTimestamp(), decidedBy: uid});
+      tx.update(actionRef, {
+        status: decision,
+        decisionAt: FieldValue.serverTimestamp(),
+        decidedBy: uid,
+      });
     });
 
     await writeAurenActionAudit(
