@@ -13,11 +13,13 @@ class FirebaseAurenAiGateway implements AurenAiGateway {
   Future<AurenAiResponse> send({
     required String conversationId,
     required String message,
+    String? requestId,
   }) async {
     final callable = _functions.httpsCallable('aurenAiGateway');
     final result = await callable.call(<String, dynamic>{
       'conversationId': conversationId,
       'message': message,
+      'requestId': requestId,
     });
     final data = Map<String, dynamic>.from(result.data as Map);
     final rawPayload = data['payload'];
