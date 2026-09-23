@@ -288,9 +288,37 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       ? request.data.conversationId.trim() : '';
     const message = typeof request.data?.message === 'string'
       ? request.data.message.trim() : '';
-    if (!conversationId || !message || message.length > 12000) {
+    const requestId = typeof request.data?.requestId === 'string'
+      ? request.data.requestId.trim() : '';
+    if (!conversationId || !message || message.length > 12000 ||
+        !requestId || requestId.length > 120 ||
+        !/^[A-Za-z0-9._-]+$/.test(requestId)) {
       throw new Error('Invalid AI request.');
     }
+
+    // Idempotency guard: a client retry must not create another AI reply.
+    const requestRef = db.collection('users').doc(uid)
+      .collection('ai_requests').doc(requestId);
+    const existingRequest = await requestRef.get();
+    if (existingRequest.exists) {
+      const existing = existingRequest.data() || {};
+      if (existing.status === 'completed' && existing.response &&
+          typeof existing.response === 'object') {
+        return existing.response;
+      }
+      if (existing.status === 'processing') {
+        const startedAt = existing.startedAt?.toDate?.();
+        if (startedAt && Date.now() - startedAt.getTime() < 2 * 60 * 1000) {
+          throw new Error('AI request is already processing.');
+        }
+      }
+    }
+    await requestRef.set({
+      conversationId,
+      status: 'processing',
+      startedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
 
     const conversationSnap = await db.collection('conversations').doc(conversationId).get();
     const conversation = conversationSnap.data() || {};
@@ -419,7 +447,21 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       actionId = actionRef.id;
     }
 
-    return {text, action, actionId, payload, requiresApproval};
+    const responsePayload = {
+      text,
+      action,
+      actionId,
+      payload,
+      requiresApproval,
+    };
+    await requestRef.set({
+      status: 'completed',
+      response: responsePayload,
+      completedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+
+    return responsePayload;
   },
 );
 
