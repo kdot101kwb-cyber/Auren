@@ -445,6 +445,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                 }
 
                 final messages = snapshot.data!;
+                // Keep the read marker current while the conversation is visible.
+                if (!_isAi && _uid != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _conversationRepository.markRead(_conversationId!, _uid!);
+                  });
+                }
                 if (messages.isEmpty) {
                   return Center(
                     child: Text(_isAi ? 'ابدأ محادثتك مع AUREN AI' : 'ابدأ المحادثة'),
