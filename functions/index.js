@@ -415,8 +415,9 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
 
     // The server is the only writer of AI-authored messages.
     // This prevents a client from impersonating "auren-ai".
+    // Deterministic AI message id makes the provider/retry path idempotent.
     const aiMessageRef = db.collection('conversations').doc(conversationId)
-      .collection('messages').doc();
+      .collection('messages').doc('ai_' + requestId);
     const aiPreview = text.length > 120 ? text.substring(0, 120) + '…' : text;
     const aiSentAt = FieldValue.serverTimestamp();
     await db.runTransaction(async (tx) => {
@@ -440,7 +441,9 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
 
     let actionId = null;
     if (action && requiresApproval) {
-      const actionRef = db.collection('users').doc(uid).collection('actions').doc();
+      // Deterministic action id prevents duplicate approval requests on recovery.
+      const actionRef = db.collection('users').doc(uid).collection('actions')
+        .doc('act_' + requestId);
       const titles = {'demo.echo': 'Echo', 'demo.create_note': 'Create note', 'memory.save': 'Save AI memory'};
       await actionRef.set({
         conversationId, actionType: action, title: titles[action],
