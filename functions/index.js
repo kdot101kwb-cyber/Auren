@@ -1,4 +1,4 @@
-const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { defineSecret } = require('firebase-functions/params');
@@ -126,7 +126,7 @@ async function incrementUnread(uid, conversationId) {
   }, {merge: true});
 }
 
-exports.onConversationReadChanged = onDocumentCreated(
+exports.onConversationReadChanged = onDocumentWritten(
   'conversations/{conversationId}/reads/{userId}',
   async (event) => {
     const uid = event.params.userId;
