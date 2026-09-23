@@ -548,7 +548,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         action.riskLevel !== 'low' ||
         action.approvalLevel !== 1 ||
         action.requiresApproval !== true ||
-        action.status !== 'approved') {
+        !['approved', 'executing'].includes(action.status)) {
       throw new Error('Action is not authorized for execution.');
     }
 
@@ -594,7 +594,14 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
     // the same approved action at the same time.
     await db.runTransaction(async (tx) => {
       const current = await tx.get(actionRef);
-      if (!current.exists || current.data()?.status !== 'approved') {
+      if (!current.exists) {
+        throw new Error('Action is no longer available.');
+      }
+      const currentData = current.data() || {};
+      if (currentData.status === 'executing') {
+        return;
+      }
+      if (currentData.status !== 'approved') {
         throw new Error('Action is no longer approved for execution.');
       }
       tx.update(actionRef, {
