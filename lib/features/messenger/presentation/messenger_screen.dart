@@ -166,7 +166,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   Future<void> _approveAction(AurenActionRequest action) async {
     if (_uid == null) return;
     try {
-      await _actionRepository.setStatus(_uid!, action.id, 'approved');
+      await FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('decideAurenAction').call({'actionId': action.id, 'decision': 'approved'});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('تمت الموافقة: ${action.title}')),
@@ -184,7 +184,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   Future<void> _rejectAction(AurenActionRequest action) async {
     if (_uid == null || action.status != 'pending') return;
     try {
-      await _actionRepository.setStatus(_uid!, action.id, 'rejected');
+      await FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('decideAurenAction').call({'actionId': action.id, 'decision': 'rejected'});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('تم رفض الطلب: ${action.title}')),
