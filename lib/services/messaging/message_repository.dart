@@ -9,7 +9,6 @@ abstract interface class MessageRepository {
 
 class FirestoreMessageRepository implements MessageRepository {
   final FirebaseFirestore _firestore;
-
   FirestoreMessageRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
@@ -17,34 +16,27 @@ class FirestoreMessageRepository implements MessageRepository {
       _firestore.collection('conversations').doc(conversationId).collection('messages');
 
   @override
-  Stream<List<AurenMessage>> watchConversation(String conversationId) {
-    return _messages(conversationId)
-        .orderBy('createdAt')
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data();
-              return AurenMessage(
-                id: doc.id,
-                conversationId: conversationId,
-                senderId: data['senderId'] as String? ?? '',
-                text: data['text'] as String? ?? '',
-                createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-                isAi: data['isAi'] as bool? ?? false,
-              );
-            }).toList());
-  }
+  Stream<List<AurenMessage>> watchConversation(String conversationId) =>
+      _messages(conversationId).orderBy('createdAt').snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) {
+          final data = doc.data();
+          return AurenMessage(
+            id: doc.id, conversationId: conversationId,
+            senderId: data['senderId'] as String? ?? '',
+            text: data['text'] as String? ?? '',
+            createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+            isAi: data['isAi'] as bool? ?? false,
+          );
+        }).toList());
 
   @override
   Future<List<AurenMessage>> recent(String conversationId, {int limit = 20}) async {
     final snapshot = await _messages(conversationId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .get();
+        .orderBy('createdAt', descending: true).limit(limit).get();
     return snapshot.docs.map((doc) {
       final data = doc.data();
       return AurenMessage(
-        id: doc.id,
-        conversationId: conversationId,
+        id: doc.id, conversationId: conversationId,
         senderId: data['senderId'] as String? ?? '',
         text: data['text'] as String? ?? '',
         createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -57,18 +49,16 @@ class FirestoreMessageRepository implements MessageRepository {
   Future<void> send(AurenMessage message) async {
     final messageRef = _messages(message.conversationId).doc(message.id);
     final conversationRef = _firestore.collection('conversations').doc(message.conversationId);
+    final preview = message.text.length > 120 ? message.text.substring(0, 120) + '…' : message.text;
     await _firestore.runTransaction((tx) async {
       tx.set(messageRef, {
-        'senderId': message.senderId,
-        'text': message.text,
-        'createdAt': Timestamp.fromDate(message.createdAt),
-        'isAi': message.isAi,
+        'senderId': message.senderId, 'text': message.text,
+        'createdAt': Timestamp.fromDate(message.createdAt.toUtc()), 'isAi': message.isAi,
       });
-      tx.update(conversationRef, {
-        'lastMessage': message.text.length > 120 ? message.text.substring(0, 120) + '…' : message.text,
-        'lastMessageAt': Timestamp.fromDate(message.createdAt),
-        'updatedAt': message.createdAt.toUtc().toIso8601String(),
-      });
+      tx.set(conversationRef, {
+        'lastMessage': preview, 'lastMessageAt': Timestamp.fromDate(message.createdAt.toUtc()),
+        'lastMessageSenderId': message.senderId, 'updatedAt': Timestamp.fromDate(message.createdAt.toUtc()),
+      }, SetOptions(merge: true));
     });
   }
 }
