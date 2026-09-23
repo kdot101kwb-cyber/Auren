@@ -121,9 +121,6 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       }
 
       final now = DateTime.now();
-      final recentMessagesBeforeSend = _isAi
-          ? await _messagesRepository.recent(_conversationId!, limit: 20)
-          : const <AurenMessage>[];
       final messageId = 'msg_${now.microsecondsSinceEpoch}';
       await _messagesRepository.send(AurenMessage(
         id: messageId,
