@@ -15,7 +15,6 @@ import 'group_details_screen.dart';
 import 'message_safety_screen.dart';
 import '../../../services/notifications/notification_api.dart';
 import '../../../services/users/presence_service.dart';
-import '../../../services/memory/memory_repository.dart';
 
 class MessengerScreen extends StatefulWidget {
   final String? conversationId;
@@ -37,7 +36,6 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   final _notificationApi = AurenNotificationApi();
   final _presenceService = AurenPresenceService();
   late final AurenPresenceHeartbeat _presence;
-  final _memoryRepository = MemoryRepository();
   final _typing = AurenTypingService();
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
