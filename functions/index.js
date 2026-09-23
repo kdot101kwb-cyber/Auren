@@ -296,15 +296,18 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       throw new Error('Invalid AI request.');
     }
 
-    // Idempotency guard: a client retry must not create another AI reply.
+    // Idempotency guard: atomically claim this request so concurrent retries
+    // cannot create multiple AI replies.
     const requestRef = db.collection('users').doc(uid)
       .collection('ai_requests').doc(requestId);
-    const existingRequest = await requestRef.get();
-    if (existingRequest.exists) {
-      const existing = existingRequest.data() || {};
+    let existingResponse = null;
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(requestRef);
+      const existing = snap.exists ? snap.data() || {} : {};
       if (existing.status === 'completed' && existing.response &&
           typeof existing.response === 'object') {
-        return existing.response;
+        existingResponse = existing.response;
+        return;
       }
       if (existing.status === 'processing') {
         const startedAt = existing.startedAt?.toDate?.();
@@ -312,13 +315,14 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
           throw new Error('AI request is already processing.');
         }
       }
-    }
-    await requestRef.set({
-      conversationId,
-      status: 'processing',
-      startedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, {merge: true});
+      tx.set(requestRef, {
+        conversationId,
+        status: 'processing',
+        startedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+    });
+    if (existingResponse) return existingResponse;
 
     const conversationSnap = await db.collection('conversations').doc(conversationId).get();
     const conversation = conversationSnap.data() || {};
