@@ -1257,6 +1257,23 @@ exports.executeAurenAgentTask = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.getAurenAgentExecution = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const taskId=typeof request.data?.taskId==='string'?request.data.taskId.trim():'';
+    if(!taskId || taskId.length>120) throw new Error('Invalid collaboration task id.');
+    const taskRef=db.collection('users').doc(uid).collection('agent_collaboration').doc(taskId);
+    const executionRef=db.collection('users').doc(uid).collection('agent_task_executions').doc(taskId);
+    const [taskSnap,executionSnap]=await Promise.all([taskRef.get(),executionRef.get()]);
+    if(!taskSnap.exists) throw new Error('Collaboration task not found.');
+    const task=taskSnap.data()||{};
+    if(executionSnap.exists) return {status:'ok',taskId,taskStatus:task.status,execution:executionSnap.data()||{}};
+    return {status:'ok',taskId,taskStatus:task.status,execution:null};
+  },
+);
+
 exports.orchestrateAurenTalentWorkflow = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
