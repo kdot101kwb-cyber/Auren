@@ -45,6 +45,18 @@ class AurenAgentPluginRepository {
   }
 
   Future<Map<String, dynamic>> recordInvocation({required String pluginId, required String action, Map<String, dynamic> payload = const {}}) async {
+    final id = pluginId.trim();
+    final normalizedAction = action.trim();
+    if (id.isEmpty || normalizedAction.isEmpty) throw ArgumentError('Plugin id and action are required.');
+    if (normalizedAction.length > 120 || !RegExp(r'^[a-zA-Z0-9._:-]+
+    final result = await _functions.httpsCallable('invokeAurenPlugin').call({'pluginId': id, 'action': normalizedAction, 'payload': payload});
+    return Map<String, dynamic>.from(result.data as Map);
+  }
+}
+).hasMatch(normalizedAction)) {
+      throw ArgumentError('Invalid plugin action.');
+    }
+    if (payload.length > 20) throw ArgumentError('Plugin payload has too many fields.');
     final result = await _functions.httpsCallable('invokeAurenPlugin').call({'pluginId': pluginId, 'action': action, 'payload': payload});
     return Map<String, dynamic>.from(result.data as Map);
   }
