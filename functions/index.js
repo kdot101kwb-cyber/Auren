@@ -219,6 +219,16 @@ exports.onConversationMessageCreated = onDocumentCreated(
     if (!data || !Array.isArray(data.memberIds)) return;
 
     const actorUid = message.senderId;
+
+    // The server owns conversation preview/order metadata.
+    const createdAt = message.createdAt || FieldValue.serverTimestamp();
+    await db.collection('conversations').doc(event.params.conversationId).set({
+      lastMessage: String(message.text || '').slice(0, 120),
+      lastMessageAt: createdAt,
+      lastMessageSenderId: actorUid,
+      updatedAt: createdAt,
+    }, {merge: true});
+
     const recipients = data.memberIds.filter((uid) => uid && uid !== actorUid);
     await Promise.all(recipients.map(async (uid) => {
       await notify(uid, {
