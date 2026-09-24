@@ -309,7 +309,9 @@ app.post('/api/agents/plugins/runtime/execute', requireUser, async(req,res)=>{
     const startedAt=Date.now();
     let result;
     try {
-      result=await executePluginThroughWorker({prepared,workerUrl,workerSecret});
+      const action=typeof req.body?.action==='string'?req.body.action.trim():'';
+      if(!action||action.length>120||!/^[a-zA-Z0-9._:-]+$/.test(action))return error(res,400,'Plugin action is invalid.');
+      result=await executePluginThroughWorker({prepared,workerUrl,workerSecret,action});
     } catch(e) {
       await db.collection('plugin_invocations').add({agentId:agent.agentId,ownerUid:req.uid,pluginId:prepared.manifest.pluginId,version:prepared.manifest.version,status:'failed',errorCode:Number.isInteger(e?.code)?e.code:null,durationMs:Date.now()-startedAt,payloadBytes:Buffer.byteLength(JSON.stringify(prepared.payload||{}),'utf8'),quotaInvocation:prepared.quota.invocations,createdAt:FieldValue.serverTimestamp()});
       throw e;
