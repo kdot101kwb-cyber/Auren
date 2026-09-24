@@ -104,7 +104,7 @@ class ActionRepository {
         'allowedActions': normalizedActions,
         'dailySpendingLimitMinor': dailySpendingLimitMinor,
         'spentTodayMinor': effectiveSpentToday,
-        'spendingDay': currentSpendingDay ?? today,
+        'spendingDay': today,
         'currency': existingCurrency ?? normalizedCurrency,
         'updatedAt': DateTime.now().toUtc().toIso8601String(),
       };
