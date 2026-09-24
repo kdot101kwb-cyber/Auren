@@ -22,7 +22,21 @@ class AurenAgentPluginRepository {
   }
 
   Future<void> installValidated({required String pluginId, required String name, required String version, required List<String> capabilities}) async {
-    await _functions.httpsCallable('installAurenPlugin').call({'manifest': {'pluginId': pluginId, 'name': name, 'version': version, 'entrypoint': 'auren://plugin', 'capabilities': capabilities}});
+    await _functions.httpsCallable('installAurenPlugin').call({'manifest': {
+      'pluginId': pluginId,
+      'name': name,
+      'version': version,
+      'entrypoint': 'auren://plugin',
+      'capabilities': capabilities,
+    }});
+  }
+
+  Future<String> uninstall(String pluginId) async {
+    final id = pluginId.trim();
+    if (id.isEmpty) throw ArgumentError('Plugin id is required.');
+    final result = await _functions.httpsCallable('uninstallAurenPlugin').call({'pluginId': id});
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return data['status']?.toString() ?? 'uninstalled';
   }
 
   Future<Map<String, dynamic>> simulateAction({required String agentId, required String action, Map<String, dynamic> payload = const {}}) async {
