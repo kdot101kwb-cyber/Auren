@@ -702,6 +702,37 @@ exports.recoverAurenAction = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+    const actionId = typeof request.data?.actionId === 'string' ? request.data.actionId.trim() : '';
+    if (!actionId || actionId.length > 120) throw new Error('Invalid action id.');
+
+    const actionRef = db.collection('users').doc(uid).collection('actions').doc(actionId);
+    const snapshot = await actionRef.get();
+    if (!snapshot.exists) throw new Error('Action not found.');
+    const action = snapshot.data() || {};
+    if (!['pending', 'approved'].includes(action.status)) {
+      throw new Error('Only pending or approved actions can be cancelled.');
+    }
+    if (action.requiresApproval !== true || action.permission !== 'userApproval' || action.riskLevel !== 'low') {
+      throw new Error('Action is not cancellable.');
+    }
+
+    await actionRef.update({
+      status: 'cancelled',
+      cancelledAt: FieldValue.serverTimestamp(),
+      cancelledBy: uid,
+    });
+    await writeAurenActionAudit(uid, {...action, id: actionId}, 'cancelled', {
+      source: 'cancelAurenAction',
+    });
+    return {status: 'cancelled', actionId};
+  },
+);
+
 exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB' },
   async (request) => {
