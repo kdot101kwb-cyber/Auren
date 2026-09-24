@@ -45,8 +45,18 @@ export async function executePluginThroughWorker({prepared,workerUrl,workerSecre
     const requestBody=JSON.stringify({authorization:workerSecret,manifest:{...prepared.manifest,action:normalizedAction},action:normalizedAction,expectedSha256:prepared.package.sha256,artifactBase64:prepared.artifactBase64,payload:prepared.payload||{}});
     if(Buffer.byteLength(requestBody,'utf8')>7*1024*1024)throw Object.assign(new Error('Plugin worker request exceeds the bounded runtime payload.'),{code:413});
     const response=await fetchImpl(workerUrl,{method:'POST',headers:{'content-type':'application/json','x-auren-runtime-version':'1'},body:requestBody,signal:controller.signal});
-    const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw Object.assign(new Error(data.error||'Plugin worker failed.'),{code:response.status});
+    const data=await response.json().catch(()=>null);
+    if(!response.ok)throw Object.assign(new Error(data?.error||'Plugin worker failed.'),{code:response.status});
+    if(!data||typeof data!=='object'||data.status!=='completed') {
+      throw Object.assign(new Error('Plugin worker returned an invalid execution result.'),{code:502});
+    }
+    if(!Object.prototype.hasOwnProperty.call(data,'result')) {
+      throw Object.assign(new Error('Plugin worker result is missing.'),{code:502});
+    }
+    const resultBytes=Buffer.byteLength(JSON.stringify(data.result),'utf8');
+    if(resultBytes>32768) {
+      throw Object.assign(new Error('Plugin worker result exceeds the runtime limit.'),{code:413});
+    }
     return data;
   }catch(e){
     if(e?.name==='AbortError')throw Object.assign(new Error('Plugin worker timed out.'),{code:408});
