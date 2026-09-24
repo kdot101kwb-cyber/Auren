@@ -109,6 +109,40 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     }
   }
 
+  Widget _securityPanel(String uid) {
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: _repo.watchPermissionLedger(uid),
+      builder: (context, permissionSnapshot) {
+        final permission = permissionSnapshot.data;
+        final enabled = permission?['enabled'] == true;
+        final allowed = (permission?['allowedActions'] is List)
+            ? List<String>.from(permission!['allowedActions'])
+            : <String>[];
+        final currency = permission?['currency']?.toString() ?? 'USD';
+        final dailyLimit = permission?['dailySpendingLimitMinor'];
+        return StreamBuilder<Map<String, dynamic>?>(
+          stream: _repo.watchTrust(uid),
+          builder: (context, trustSnapshot) {
+            final trust = trustSnapshot.data;
+            final score = trust?['score'] ?? 50;
+            final completed = trust?['completedExecutions'] ?? 0;
+            final failed = trust?['failedExecutions'] ?? 0;
+            return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [const Icon(Icons.shield_outlined), const SizedBox(width: 10), Expanded(child: Text('AUREN Security', style: Theme.of(context).textTheme.titleMedium)), Switch(value: enabled, onChanged: (value) async {
+                try { await _repo.setPermissionLedger(uid, enabled: value, allowedActions: allowed, dailySpendingLimitMinor: dailyLimit is num ? dailyLimit.toInt() : null, currency: currency); }
+                catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحديث الصلاحيات: $e'))); }
+              })]),
+              Text(enabled ? 'صلاحيات AUREN مفعّلة' : 'صلاحيات AUREN متوقفة'),
+              const SizedBox(height: 10),
+              Text('Trust: $score/100  •  نجاح $completed  •  فشل $failed'),
+              const SizedBox(height: 10),
+              Text('العمليات الجديدة تحتاج موافقتك الصريحة قبل التنفيذ.', style: Theme.of(context).textTheme.bodySmall),
+            ])));
+          },
+        );
+      },
+    );
+  }
   Widget _actionCard(AurenActionRequest action, {bool history = false}) {
     final statusLabel = switch (action.status) {
       'completed' => 'اكتمل',
@@ -208,6 +242,8 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  _securityPanel(uid),
+                  const SizedBox(height: 16),
                   Text(
                     'Needs your attention',
                     style: Theme.of(context).textTheme.titleLarge,
