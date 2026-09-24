@@ -19,6 +19,7 @@ import 'rescue_mode_screen.dart';
 import 'handoff_screen.dart';
 import 'continuity_screen.dart';
 import 'daily_review_screen.dart';
+import 'weekly_review_screen.dart';
 import 'opportunity_inbox_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
@@ -81,6 +82,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.forward_outlined, 'Handoff', 'سلّم المهمة مع سياقها بدون إعادة الشرح.', const AurenHandoffScreen()),
         _tile(context, Icons.play_circle_outline, 'Continuity', 'كمّل من حيث توقفت باستخدام آخر سياق متاح.', const AurenContinuityScreen()),
         _tile(context, Icons.today_outlined, 'Daily Review', 'راجع أهدافك وذاكرتك واختر تركيزك التالي.', const AurenDailyReviewScreen()),
+        _tile(context, Icons.date_range, 'Weekly Review', 'راجع أسبوعك وحدد نقطة التركيز التالية.', const AurenWeeklyReviewScreen()),
         _tile(context, Icons.inbox_outlined, 'Opportunity Inbox', 'اجمع الفرص العامة في مكان واحد وحللها مع AUREN.', const AurenOpportunityInboxScreen()),
         _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.', const MessengerScreen(initialPrompt: 'حوّل هذا الهدف إلى خطوات عملية ونفّذ ما يحتاج موافقتي.')),
         _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.', const AurenOpportunityAiScreen()),
