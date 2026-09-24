@@ -142,8 +142,9 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
       builder: (context, permissionSnapshot) {
         final permission = permissionSnapshot.data;
         final enabled = permission?['enabled'] == true;
-        final allowed = (permission?['allowedActions'] is List)
-            ? List<String>.from(permission!['allowedActions'])
+        final rawAllowed = permission?['allowedActions'];
+        final allowed = rawAllowed is List
+            ? rawAllowed.whereType<String>().toSet().toList()
             : <String>[];
         final currency = permission?['currency']?.toString() ?? 'USD';
         final dailyLimit = permission?['dailySpendingLimitMinor'];
