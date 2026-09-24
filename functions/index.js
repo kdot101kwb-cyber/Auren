@@ -1437,6 +1437,7 @@ function buildAurenWorkActionProposals(executionId, agentId, prompt, result) {
     status: 'proposed',
     requiresApproval: true,
     externalSideEffects: false,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   });
 
   switch (agentId) {
@@ -1647,6 +1648,7 @@ exports.decideAurenWorkAction = require('firebase-functions/v2/https').onCall(
       if(!snap.exists) throw new Error('Work action not found.');
       const data=snap.data()||{};
       if(data.status!=='proposed') throw new Error('Work action is not awaiting approval.');
+      if(data.expiresAt && new Date(data.expiresAt).getTime() <= Date.now()) throw new Error('Work action approval window expired.');
       tx.update(ref,{status:decision,decidedBy:uid,decidedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     });
     return {status:decision,actionId};
@@ -1665,6 +1667,7 @@ exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
     if(!snap.exists) throw new Error('Work action not found.');
     const action=snap.data()||{};
     if(action.status==='completed') return {status:'completed',actionId,result:action.result||null,deduplicated:true};
+    if(action.expiresAt && new Date(action.expiresAt).getTime() <= Date.now()) throw new Error('Work action approval window expired.');
     if(action.status!=='approved' || action.requiresApproval!==true || action.externalSideEffects!==false) {
       throw new Error('Work action requires explicit approval.');
     }
