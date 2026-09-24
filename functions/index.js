@@ -1653,13 +1653,22 @@ exports.executeAurenWorkAgent = require('firebase-functions/v2/https').onCall(
     const executionId=typeof request.data?.executionId==='string'?request.data.executionId.trim():'';
     if(!executionId || executionId.length>120) throw new Error('Invalid work-agent execution id.');
     const ref=db.collection('users').doc(uid).collection('agent_work_executions').doc(executionId);
-    const snap=await ref.get();
-    if(!snap.exists) throw new Error('Work-agent execution not found.');
-    const data=snap.data()||{};
-    if(data.status==='completed') return {status:'completed',executionId,result:data.result||null,deduplicated:true};
-    if(data.status!=='approved') throw new Error('Work-agent execution requires explicit approval.');
-    if(!AUREN_WORK_AGENT_SET.has(data.agentId)) throw new Error('Invalid work agent.');
-    await ref.update({status:'executing',startedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    let data;
+    let alreadyCompleted=null;
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw new Error('Work-agent execution not found.');
+      data=snap.data()||{};
+      if(data.status==='completed'){
+        alreadyCompleted={status:'completed',executionId,result:data.result||null,deduplicated:true};
+        return;
+      }
+      if(data.status==='executing') throw new Error('Work-agent execution is already running.');
+      if(data.status!=='approved') throw new Error('Work-agent execution requires explicit approval.');
+      if(!AUREN_WORK_AGENT_SET.has(data.agentId)) throw new Error('Invalid work agent.');
+      tx.update(ref,{status:'executing',startedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    });
+    if(alreadyCompleted) return alreadyCompleted;
     try {
       const result=await buildAurenWorkAgentResult(uid,data.agentId,String(data.prompt||''));
       const proposedActions=await createAurenWorkActionProposals(uid,executionId,data.agentId,String(data.prompt||''),result);
@@ -1719,14 +1728,24 @@ exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
     const actionId=typeof request.data?.actionId==='string'?request.data.actionId.trim():'';
     if(!actionId || actionId.length>180) throw new Error('Invalid work action id.');
     const ref=db.collection('users').doc(uid).collection('agent_work_actions').doc(actionId);
-    const snap=await ref.get();
-    if(!snap.exists) throw new Error('Work action not found.');
-    const action={...snap.data(),id:actionId};
-    if(action.status==='completed') return {status:'completed',actionId,result:action.result||null,deduplicated:true};
-    if(action.expiresAt && new Date(action.expiresAt).getTime() <= Date.now()) throw new Error('Work action approval window expired.');
-    if(action.status!=='approved' || action.requiresApproval!==true || action.externalSideEffects!==false) {
-      throw new Error('Work action requires explicit approval.');
-    }
+    let action;
+    let alreadyCompleted=null;
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw new Error('Work action not found.');
+      action={...snap.data(),id:actionId};
+      if(action.status==='completed'){
+        alreadyCompleted={status:'completed',actionId,result:action.result||null,deduplicated:true};
+        return;
+      }
+      if(action.status==='executing') throw new Error('Work action is already running.');
+      if(action.expiresAt && new Date(action.expiresAt).getTime() <= Date.now()) throw new Error('Work action approval window expired.');
+      if(action.status!=='approved' || action.requiresApproval!==true || action.externalSideEffects!==false) {
+        throw new Error('Work action requires explicit approval.');
+      }
+      tx.update(ref,{status:'executing',startedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    });
+    if(alreadyCompleted) return alreadyCompleted;
     const executionId=typeof action.executionId==='string'?action.executionId:'';
     if(!executionId) throw new Error('Work action execution context is missing.');
     if(!AUREN_WORK_AGENT_SET.has(action.agentId)) throw new Error('Invalid work action agent.');
@@ -1739,14 +1758,6 @@ exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
     const executionRef=db.collection('users').doc(uid).collection('agent_work_executions').doc(executionId);
     const executionSnap=await executionRef.get();
     if(!executionSnap.exists || executionSnap.data()?.status!=='completed') throw new Error('Parent work-agent execution is not completed.');
-    await db.runTransaction(async(tx)=>{
-      const current=await tx.get(ref);
-      if(!current.exists) throw new Error('Work action not found.');
-      const data=current.data()||{};
-      if(data.status==='completed') return;
-      if(data.status!=='approved') throw new Error('Work action is no longer approved.');
-      tx.update(ref,{status:'executing',startedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
-    });
     try {
       const result=await executeAurenWorkActionSideEffect(uid,{...action,id:actionId},executionId);
       await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
