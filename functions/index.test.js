@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+const rules = fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
 
 test('action lifecycle endpoints are present', () => {
   assert.match(source, /exports\.decideAurenAction\s*=\s*require\('firebase-functions\/v2\/https'\)/);
@@ -120,10 +121,10 @@ test('plugin invocation quota is transactionally day-scoped and reports remainin
 });
 
 
-test('plugin invocation validates plugin id and action formats',()=>{
-  const source=String.raw\`\`;
-  const indexSource=String.raw\`exports.invokeAurenPlugin\`;
-  assert.equal(indexSource,'exports.invokeAurenPlugin');
+test('plugin invocation validates plugin id and action formats', () => {
+  assert.match(source, /exports\.invokeAurenPlugin/);
+  assert.match(source, /pluginId\.length>120/);
+  assert.match(source, /\^\[a-zA-Z0-9\._:-\]\+\$/);
 });
 
 
