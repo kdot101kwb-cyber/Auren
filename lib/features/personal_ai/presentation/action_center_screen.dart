@@ -149,7 +149,40 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 }).toList(),
               ),
               const SizedBox(height: 10),
-              Text('الحد اليومي: \${dailyLimit is num ? dailyLimit.toInt() : 'غير محدد'} $currency'),
+              Text('الحد اليومي', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 6),
+              TextFormField(
+                initialValue: dailyLimit is num ? dailyLimit.toInt().toString() : '',
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'مثال: 5000',
+                  suffixText: currency,
+                  border: const OutlineInputBorder(),
+                ),
+                onFieldSubmitted: (value) async {
+                  final parsed = value.trim().isEmpty ? null : int.tryParse(value.trim());
+                  if (value.trim().isNotEmpty && parsed == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('أدخل رقمًا صحيحًا للحد اليومي.')),
+                    );
+                    return;
+                  }
+                  try {
+                    await _repo.setPermissionLedger(
+                      uid,
+                      enabled: enabled,
+                      allowedActions: allowed,
+                      dailySpendingLimitMinor: parsed,
+                      currency: currency,
+                    );
+                  } catch (e) {
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('تعذر تحديث الحد اليومي: $e')),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 6),
               const SizedBox(height: 6),
               Text('Trust: $score/100  •  نجاح $completed  •  فشل $failed'),
               const SizedBox(height: 10),
