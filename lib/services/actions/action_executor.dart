@@ -12,15 +12,7 @@ class AurenActionExecutionResult {
   });
 }
 
-abstract interface class AurenActionExecutor {
-  Future<AurenActionExecutionResult> execute({
-    required String uid,
-    required AurenActionRequest action,
-  });
-}
-
-/// Executes user-approved actions through Firebase, so the client never gets
-/// direct authority to perform a privileged action.
+/// Executes user-approved actions through the trusted Firebase backend.
 class FirebaseAurenActionExecutor implements AurenActionExecutor {
   final FirebaseFunctions _functions;
 
@@ -37,14 +29,39 @@ class FirebaseAurenActionExecutor implements AurenActionExecutor {
       throw StateError('Action must be approved before execution.');
     }
 
-    final callable = _functions.httpsCallable('executeAurenAction');
-    final response = await callable.call(<String, dynamic>{
-      'actionId': action.id,
-    });
+    final response = await _functions
+        .httpsCallable('executeAurenAction')
+        .call(<String, dynamic>{'actionId': action.id});
+
     final data = Map<String, dynamic>.from(response.data as Map);
     return AurenActionExecutionResult(
-      result: data['result'] as String? ?? 'تم تنفيذ الأمر.',
+      result: _friendlyResult(data['result']),
       status: data['status'] as String? ?? 'completed',
     );
   }
+
+  String _friendlyResult(dynamic result) {
+    if (result is String) return result;
+    if (result is Map) {
+      final type = result['type'];
+      switch (type) {
+        case 'note_created':
+          return 'تم إنشاء الملاحظة بنجاح.';
+        case 'memory_saved':
+          return 'تم حفظ المعلومة في ذاكرة AUREN.';
+        case 'echo':
+          return (result['text'] as String?)?.trim().isNotEmpty == true
+              ? result['text'] as String
+              : 'تم تنفيذ الطلب بنجاح.';
+      }
+    }
+    return 'تم تنفيذ الأمر بنجاح.';
+  }
+}
+
+abstract interface class AurenActionExecutor {
+  Future<AurenActionExecutionResult> execute({
+    required String uid,
+    required AurenActionRequest action,
+  });
 }
