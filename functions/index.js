@@ -1495,7 +1495,7 @@ function buildAurenWorkActionProposals(executionId, agentId, prompt, result) {
 }
 
 async function createAurenWorkActionProposals(uid, executionId, agentId, prompt, result) {
-  const proposals = buildAurenWorkActionProposals(executionId, agentId, prompt, result);
+  const proposals = buildAurenWorkActionProposals(executionId, agentId, prompt, result).map((proposal) => ({...proposal, approvalRequiredReason:'Internal AUREN mutation; explicit user approval required.', externalSideEffects:false}));
   const batch = db.batch();
   for (const proposal of proposals) {
     const ref = db.collection('users').doc(uid).collection('agent_work_actions').doc(proposal.id);
@@ -1508,8 +1508,36 @@ async function createAurenWorkActionProposals(uid, executionId, agentId, prompt,
   return proposals;
 }
 
+function validateAurenWorkActionContract(action) {
+  const allowed = new Set([
+    'work.create_goal','work.create_task','work.create_content_draft',
+    'work.create_campaign_draft','work.create_partnership_draft',
+    'work.create_supplier_task','work.create_research_note',
+    'work.create_learning_plan','work.create_itinerary_draft',
+    'work.save_opportunity_match',
+  ]);
+  if (!action || !allowed.has(action.actionType)) throw new Error('Work action is not allow-listed.');
+  if (action.requiresApproval !== true || action.externalSideEffects !== false) {
+    throw new Error('Work action must be internal and approval-gated.');
+  }
+  const payload = action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload)
+    ? action.payload : {};
+  if (Object.keys(payload).length > 12 || Buffer.byteLength(JSON.stringify(payload), 'utf8') > 16384) {
+    throw new Error('Work action payload is too large.');
+  }
+  for (const key of Object.keys(payload)) {
+    if (!/^[A-Za-z0-9_]{1,60}$/.test(key)) throw new Error('Invalid work action payload key.');
+  }
+  const requiredTitle = typeof payload.title === 'string' ? payload.title.trim() : '';
+  if (!requiredTitle && !String(action.title || '').trim()) throw new Error('Work action title is required.');
+  if (String(action.agentId || '').length > 120 || !AUREN_WORK_AGENT_SET.has(action.agentId)) {
+    throw new Error('Invalid work action agent.');
+  }
+  return payload;
+}
+
 async function executeAurenWorkActionSideEffect(uid, action, executionId) {
-  const payload = action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload) ? action.payload : {};
+  const payload = validateAurenWorkActionContract(action);
   const now = new Date().toISOString();
   const safeTitle = String(payload.title || action.title || 'AUREN task').trim().slice(0, 200);
   const safeBody = String(payload.body || payload.description || '').trim().slice(0, 4000);
@@ -1649,8 +1677,10 @@ exports.decideAurenWorkAction = require('firebase-functions/v2/https').onCall(
       const data=snap.data()||{};
       if(data.status!=='proposed') throw new Error('Work action is not awaiting approval.');
       if(data.expiresAt && new Date(data.expiresAt).getTime() <= Date.now()) throw new Error('Work action approval window expired.');
+      validateAurenWorkActionContract({...data,id:actionId});
       tx.update(ref,{status:decision,decidedBy:uid,decidedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     });
+    await writeAurenActionAudit(uid,{id:actionId,actionType:'work.approval',agentId:'primary',permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true},decision,{source:'decideAurenWorkAction',workActionId:actionId});
     return {status:decision,actionId};
   },
 );
@@ -1665,7 +1695,7 @@ exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
     const ref=db.collection('users').doc(uid).collection('agent_work_actions').doc(actionId);
     const snap=await ref.get();
     if(!snap.exists) throw new Error('Work action not found.');
-    const action=snap.data()||{};
+    const action={...snap.data(),id:actionId};
     if(action.status==='completed') return {status:'completed',actionId,result:action.result||null,deduplicated:true};
     if(action.expiresAt && new Date(action.expiresAt).getTime() <= Date.now()) throw new Error('Work action approval window expired.');
     if(action.status!=='approved' || action.requiresApproval!==true || action.externalSideEffects!==false) {
@@ -1673,6 +1703,13 @@ exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
     }
     const executionId=typeof action.executionId==='string'?action.executionId:'';
     if(!executionId) throw new Error('Work action execution context is missing.');
+    if(!AUREN_WORK_AGENT_SET.has(action.agentId)) throw new Error('Invalid work action agent.');
+    const ledger=await loadAurenPermissionLedger(uid);
+    assertAurenActionPermission(ledger,{
+      actionType:action.actionType,
+      payload:{},
+      spendingLimitMinor:null,
+    });
     const executionRef=db.collection('users').doc(uid).collection('agent_work_executions').doc(executionId);
     const executionSnap=await executionRef.get();
     if(!executionSnap.exists || executionSnap.data()?.status!=='completed') throw new Error('Parent work-agent execution is not completed.');
