@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AurenWorkArtifact {
   final String id;
   final String type;
+  final String domain;
   final String title;
   final String body;
   final String status;
@@ -14,6 +15,7 @@ class AurenWorkArtifact {
   const AurenWorkArtifact({
     required this.id,
     required this.type,
+    required this.domain,
     required this.title,
     required this.body,
     required this.status,
@@ -27,6 +29,7 @@ class AurenWorkArtifact {
     return AurenWorkArtifact(
       id:id,
       type:(data['type']??'').toString(),
+      domain:(data['domain']??'general').toString(),
       title:(data['title']??'').toString(),
       body:(data['body']??'').toString(),
       status:(data['status']??'draft').toString(),
