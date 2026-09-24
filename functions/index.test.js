@@ -189,3 +189,13 @@ test('plugin invocation enforces installed capability grants and bounded payload
   assert.match(source, /Plugin payload exceeds the 32 KB limit/);
   assert.match(source, /!\/\^\[a-zA-Z0-9\._:-\]\+\$\//);
 });
+
+test('plugin installation requires a published listing and matching version/capabilities', () => {
+  assert.match(source, /Plugin must be published before installation/);
+  assert.match(source, /Published plugin version mismatch/);
+  assert.match(source, /Published plugin capabilities do not match/);
+});
+
+test('permission ledger update rules preserve spending day', () => {
+  assert.match(rules, /'spentTodayMinor', 'spendingDay', 'currency', 'updatedAt'/);
+});
