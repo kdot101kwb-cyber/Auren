@@ -4,6 +4,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/goals/goal_repository.dart';
 import '../../../services/memory/memory_repository.dart';
 import 'memory_screen.dart';
+import 'memory_timeline_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
 import 'goals_screen.dart';
