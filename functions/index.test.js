@@ -79,3 +79,11 @@ test('permission ledger parsing filters malformed actions and currency', () => {
   assert.match(source, /\.slice\(0, 100\)/);
   assert.match(source, /\/\^\[A-Z\]\{3\}\$\/\.test\(data\.currency\)/);
 });
+
+
+test('action rules include execution metadata and keep action updates server-only', () => {
+  const rules = fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+  assert.match(rules, /'executionStartedAt', 'executionSpendingDay'/);
+  assert.match(rules, /match \/actions\/\\{actionId\\}/);
+  assert.match(rules, /allow update: if false;/);
+});
