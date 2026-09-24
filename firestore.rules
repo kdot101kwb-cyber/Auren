@@ -288,6 +288,32 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    match /users/{userId}/talent_scout_findings/{findingId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.ownerId == userId
+        && request.resource.data.scoutId is string
+        && request.resource.data.scoutId.size() > 0
+        && request.resource.data.type in ['opportunity','market','talent','brand','learning']
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 3000
+        && request.resource.data.sourceType is string
+        && request.resource.data.sourceId is string
+        && request.resource.data.status in ['new','seen','dismissed']
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0 && request.resource.data.score <= 100
+        && request.resource.data.matchedSkills is list
+        && request.resource.data.matchedSkills.size() <= 30
+        && request.resource.data.missingSkills is list
+        && request.resource.data.missingSkills.size() <= 30
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.keys().hasOnly(['ownerId','scoutId','type','title','description','sourceType','sourceId','status','score','matchedSkills','missingSkills','createdAt','expiresAt']);
+      allow delete: if isOwner(userId);
+    }
+
     match /talents/{talentId} {
       allow read: if request.auth != null && resource.data.status == 'active';
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid
