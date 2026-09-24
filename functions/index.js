@@ -362,6 +362,14 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     });
     if (existingResponse) return existingResponse;
 
+    const userMessageRef = db.collection('conversations').doc(conversationId).collection('messages').doc(requestId);
+    const userMessageSnap = await userMessageRef.get();
+    if (!userMessageSnap.exists) throw new Error('User message not found.');
+    const userMessage = userMessageSnap.data() || {};
+    if (userMessage.senderId !== uid || userMessage.isAi === true || userMessage.text !== message) {
+      throw new Error('AI request does not match the authenticated user message.');
+    }
+
     const conversationSnap = await db.collection('conversations').doc(conversationId).get();
     const conversation = conversationSnap.data() || {};
     if (!conversationSnap.exists || conversation.isAi !== true ||
