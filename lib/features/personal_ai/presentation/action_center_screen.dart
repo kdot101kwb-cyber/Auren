@@ -190,6 +190,29 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
               ),
               const SizedBox(height: 6),
               const SizedBox(height: 6),
+              if (dailyLimit is num) ...[
+                Builder(
+                  builder: (context) {
+                    final spent = permission?['spentTodayMinor'] is num
+                        ? (permission!['spentTodayMinor'] as num).toInt()
+                        : 0;
+                    final limit = dailyLimit.toInt();
+                    final ratio = limit <= 0 ? 0.0 : (spent / limit).clamp(0.0, 1.0);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('استخدام الإنفاق اليومي: $spent / $limit $currency'),
+                        const SizedBox(height: 6),
+                        LinearProgressIndicator(value: ratio),
+                        const SizedBox(height: 4),
+                        if (spent >= limit && limit > 0)
+                          const Text('تم الوصول إلى الحد اليومي.'),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+              ],
               Text('Trust: $score/100  •  نجاح $completed  •  فشل $failed'),
               const SizedBox(height: 10),
               Text('العمليات الجديدة تحتاج موافقتك الصريحة قبل التنفيذ.', style: Theme.of(context).textTheme.bodySmall),
