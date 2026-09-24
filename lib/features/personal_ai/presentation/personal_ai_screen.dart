@@ -22,6 +22,7 @@ import 'daily_review_screen.dart';
 import 'weekly_review_screen.dart';
 import 'focus_mode_screen.dart';
 import 'daily_plan_screen.dart';
+import 'business_growth_screen.dart';
 import 'opportunity_inbox_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
@@ -71,6 +72,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.psychology_outlined, 'AI Memory', 'ذاكرة شخصية تحت تحكمك.', const AurenMemoryScreen()),
         _tile(context, Icons.history_outlined, 'Memory Timeline', 'شوف كيف تغيّرت ذاكرتك عبر الزمن.', const AurenMemoryTimelineScreen()),
         _tile(context, Icons.article_outlined, 'Personal Brief', 'ملخص شخصي سريع عن أهدافك وأولوياتك الآن.', const AurenPersonalBriefScreen()),
+        _tile(context, Icons.storefront_outlined, 'Business Growth AI', 'حوّل نشاطك التجاري إلى خطة نمو قابلة للقياس.', const AurenBusinessGrowthScreen()),
         _tile(context, Icons.next_plan_outlined, 'Next Move', 'يحدد لك AUREN خطوة عملية تالية بناءً على وضعك الحالي.', const AurenNextMoveScreen()),
         _tile(context, Icons.dashboard_outlined, 'Life Dashboard', 'نظرة موحدة على أهدافك وذاكرتك وBusiness وMarketplace وPulse والفرص.', const AurenLifeDashboardScreen()),
         _tile(context, Icons.flag_circle_outlined, 'Mission Mode', 'حوّل هدفك الحالي إلى مهمة مركزة وخطوة أولى.', const AurenMissionModeScreen()),
