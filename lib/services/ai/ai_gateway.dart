@@ -1,4 +1,5 @@
 import '../../core/models/ai_response.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'firebase_ai_gateway.dart';
 
 abstract interface class AurenAiGateway {
@@ -47,6 +48,20 @@ class ResilientAurenAiGateway implements AurenAiGateway {
         requestId: requestId,
       );
     } on StateError {
+      return fallback.send(
+        conversationId: conversationId,
+        message: message,
+      );
+    } on FirebaseFunctionsException catch (e) {
+      // Use the local response only for infrastructure/offline failures.
+      // Do not hide authentication, permission, validation, or provider errors.
+      const transientCodes = {
+        'unavailable',
+        'deadline-exceeded',
+        'internal',
+        'unknown',
+      };
+      if (!transientCodes.contains(e.code)) rethrow;
       return fallback.send(
         conversationId: conversationId,
         message: message,
