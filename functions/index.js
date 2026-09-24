@@ -407,7 +407,15 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     }
     const result = await response.json();
     const rawText = result?.choices?.[0]?.message?.content;
-    if (typeof rawText !== 'string' || !rawText.trim()) throw new Error('AI provider returned an empty response.');
+    if (typeof rawText !== 'string' || !rawText.trim()) {
+      await requestRef.set({
+        status: 'failed',
+        failedAt: FieldValue.serverTimestamp(),
+        errorCode: 'empty_provider_response',
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      throw new Error('AI provider returned an empty response.');
+    }
 
     let text = rawText.trim();
     let action = null;
