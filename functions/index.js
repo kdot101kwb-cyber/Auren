@@ -625,6 +625,77 @@ exports.recoverAurenAction = require('firebase-functions/v2/https').onCall(
   },
 );
 
+async function recoverAurenActionExecution(uid, actionId, action) {
+  const executionRef = db.collection('users').doc(uid)
+    .collection('action_executions').doc(actionId);
+  const executionSnapshot = await executionRef.get();
+  if (!executionSnapshot.exists) return null;
+
+  const execution = executionSnapshot.data() || {};
+  if (execution.status === 'completed' && execution.result) {
+    await db.collection('users').doc(uid).collection('actions').doc(actionId).set({
+      status: 'completed',
+      result: execution.result,
+      recoveredAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    return execution.result;
+  }
+
+  if (execution.status !== 'executing' ||
+      !execution.startedAt ||
+      typeof execution.startedAt.toDate !== 'function') {
+    return null;
+  }
+
+  const ageMs = Date.now() - execution.startedAt.toDate().getTime();
+  if (ageMs < 2 * 60 * 1000) return null;
+
+  const payload = action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload)
+    ? action.payload
+    : {};
+
+  let result = null;
+  if (action.actionType === 'demo.create_note') {
+    const noteRef = db.collection('users').doc(uid).collection('notes').doc(actionId);
+    const noteSnapshot = await noteRef.get();
+    if (!noteSnapshot.exists) return null;
+    result = {type: 'note_created', noteId: noteRef.id};
+  } else if (action.actionType === 'memory.save') {
+    const memoryRef = db.collection('users').doc(uid).collection('memory').doc('mem_' + actionId);
+    const memorySnapshot = await memoryRef.get();
+    if (!memorySnapshot.exists) return null;
+    result = {type: 'memory_saved', memoryId: memoryRef.id};
+  } else if (action.actionType === 'demo.echo') {
+    return null;
+  }
+
+  if (!result) return null;
+
+  await actionRefForAurenRecovery(uid, actionId).set({
+    status: 'completed',
+    result,
+    executionCompletedAt: FieldValue.serverTimestamp(),
+    recoveredAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+  await executionRef.set({
+    status: 'completed',
+    result,
+    recoveredAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+  await writeAurenActionAudit(
+    uid,
+    {...action, id: actionId},
+    'completed',
+    {result, source: 'recoverAurenActionExecution'},
+  );
+  await updateAurenAgentTrust(uid, 'completed');
+  return result;
+}
+
+function actionRefForAurenRecovery(uid, actionId) {
+  return db.collection('users').doc(uid).collection('actions').doc(actionId);
+}
+
 exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB' },
   async (request) => {
@@ -640,6 +711,11 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
     const actionSnapshot = await actionRef.get();
     if (!actionSnapshot.exists) throw new Error('Action not found.');
     const action = actionSnapshot.data() || {};
+
+    if (action.status === 'executing') {
+      const recovered = await recoverAurenActionExecution(uid, actionId, action);
+      if (recovered) return {status: 'completed', actionId, result: recovered};
+    }
 
     const allowedActions = new Set(['demo.echo', 'demo.create_note', 'memory.save']);
     if (!allowedActions.has(action.actionType) ||
