@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart';import 'package:firebase_auth/firebase_auth.dart';import '../../../services/personal_ai/reflection_service.dart';class AurenReflectionScreen extends StatelessWidget{const AurenReflectionScreen({super.key});@override Widget build(BuildContext c)=>const Scaffold(body:Center(child:Text('Reflection')));}
