@@ -27,6 +27,21 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /auto_organize/{planId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && planId == 'current'
+          && request.resource.data.keys().hasOnly(['items','memoryCount','activeGoalCount','updatedAt'])
+          && request.resource.data.items is list
+          && request.resource.data.items.size() <= 120
+          && request.resource.data.memoryCount is int
+          && request.resource.data.memoryCount >= 0
+          && request.resource.data.activeGoalCount is int
+          && request.resource.data.activeGoalCount >= 0
+          && request.resource.data.updatedAt is timestamp;
+        allow delete: if isOwner(userId);
+      }
+
       match /autopilot/{planId} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
