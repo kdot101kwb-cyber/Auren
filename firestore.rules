@@ -277,6 +277,32 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
+    match /users/{userId}/talent_agents/{agentId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.ownerId == userId
+        && request.resource.data.talentId is string
+        && request.resource.data.talentId.size() > 0
+        && request.resource.data.talentId.size() <= 120
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.role in ['career', 'discovery', 'portfolio', 'brand', 'negotiation']
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 1000
+        && request.resource.data.enabled is bool
+        && request.resource.data.capabilities is list
+        && request.resource.data.capabilities.size() <= 20
+        && request.resource.data.keys().hasOnly(['ownerId','talentId','name','role','description','enabled','capabilities','updatedAt']);
+      allow update: if isOwner(userId)
+        && resource.data.ownerId == userId
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.talentId == resource.data.talentId
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.keys().hasOnly(['ownerId','talentId','name','role','description','enabled','capabilities','updatedAt']);
+      allow delete: if isOwner(userId);
+    }
+
     match /posts/{postId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
