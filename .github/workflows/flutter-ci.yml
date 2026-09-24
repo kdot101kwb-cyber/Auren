@@ -21,12 +21,10 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Android platform
-        run: flutter create --platforms=android --project-name=auren .
-
-      - name: Install dependencies
+      - name: Verify Flutter project
         run: flutter pub get
 
+      - name: Analyze
       - name: Analyze
         run: flutter analyze
 
