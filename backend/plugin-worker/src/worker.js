@@ -68,10 +68,10 @@ const server=http.createServer(async(req,res)=>{
   req.on('end',async()=>{
     try{
       if(!SHARED_SECRET)return json(res,503,{error:'Worker secret is not configured.'});
-      if(activeExecutions>=MAX_CONCURRENT_EXECUTIONS)return json(res,429,{error:'Plugin worker concurrency limit reached.'});
-      activeExecutions++;
       const body=JSON.parse(raw||'{}');
       if(!safeEqual(body.authorization,SHARED_SECRET))return json(res,403,{error:'Unauthorized worker request.'});
+      if(activeExecutions>=MAX_CONCURRENT_EXECUTIONS)return json(res,429,{error:'Plugin worker concurrency limit reached.'});
+      activeExecutions++;
       const payloadBytes=Buffer.byteLength(JSON.stringify(body.payload||{}),'utf8');
       if(payloadBytes>MAX_PAYLOAD_BYTES)return json(res,413,{error:'Plugin payload exceeds the worker limit.'});
       const manifest={...(body.manifest||{}),action:body.action};
