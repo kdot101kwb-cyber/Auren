@@ -71,3 +71,11 @@ test('failed execution refunds only the current-day reservation', () => {
   assert.match(source, /if (ledgerData.spendingDay !== today) return/);
   assert.match(source, /spentTodayMinor: Math.max(0, spentToday - requestedAmount)/);
 });
+
+
+test('permission ledger parsing filters malformed actions and currency', () => {
+  assert.match(source, /\.filter\(\(action\) => typeof action === 'string'\)/);
+  assert.match(source, /\.map\(\(action\) => action\.trim\(\)\)/);
+  assert.match(source, /\.slice\(0, 100\)/);
+  assert.match(source, /\/\^\[A-Z\]\{3\}\$\/\.test\(data\.currency\)/);
+});
