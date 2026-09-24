@@ -17,7 +17,7 @@ class AurenWorkAction {
 
   const AurenWorkAction({
     required this.id, required this.executionId, required this.agentId,
-    required this.actionType, required this.title, required this.preview,
+    required this.actionType, required this.domain, required this.title, required this.preview,
     required this.status, this.payload=const {}, required this.requiresApproval,
     required this.externalSideEffects, this.result, this.error,
   });
