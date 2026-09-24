@@ -87,3 +87,10 @@ test('action rules include execution metadata and keep action updates server-onl
   assert.match(rules, /match \/actions\/\\{actionId\\}/);
   assert.match(rules, /allow update: if false;/);
 });
+
+
+test('AI gateway finalizes missing-key and provider-failure idempotency states', () => {
+  const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  assert.match(source, /status: 'completed',[\s\S]*response: unavailable/);
+  assert.match(source, /status: 'failed',[\s\S]*failedAt: FieldValue\.serverTimestamp\(\)/);
+});
