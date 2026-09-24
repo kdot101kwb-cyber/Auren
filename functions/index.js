@@ -526,6 +526,105 @@ exports.decideAurenAction = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.recoverAurenAction = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1', timeoutSeconds: 15, memory: '256MiB' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+
+    const actionId = typeof request.data?.actionId === 'string'
+      ? request.data.actionId.trim()
+      : '';
+    if (!actionId || actionId.length > 120) throw new Error('Invalid actionId.');
+
+    const actionRef = db.collection('users').doc(uid).collection('actions').doc(actionId);
+    const snapshot = await actionRef.get();
+    if (!snapshot.exists) throw new Error('Action not found.');
+    const action = snapshot.data() || {};
+
+    if (action.status !== 'executing') {
+      if (action.status === 'completed') {
+        return {status: 'completed', actionId, result: action.result ?? null};
+      }
+      throw new Error('Action is not recoverable.');
+    }
+
+    const startedAt = action.executionStartedAt?.toDate
+      ? action.executionStartedAt.toDate()
+      : (typeof action.executionStartedAt === 'string' ? new Date(action.executionStartedAt) : null);
+    if (!startedAt || Number.isNaN(startedAt.getTime())) {
+      throw new Error('Action execution timestamp is missing.');
+    }
+    if (Date.now() - startedAt.getTime() < 2 * 60 * 1000) {
+      throw new Error('Action execution is still within its recovery window.');
+    }
+
+    const executionRef = db.collection('users').doc(uid)
+      .collection('action_executions').doc(actionId);
+    const executionSnapshot = await executionRef.get();
+    const execution = executionSnapshot.data() || {};
+    if (execution.status === 'completed' && execution.result) {
+      await actionRef.update({
+        status: 'completed',
+        result: execution.result,
+        executionRecoveredAt: FieldValue.serverTimestamp(),
+      });
+      return {status: 'completed', actionId, result: execution.result};
+    }
+
+    const payload = action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload)
+      ? action.payload
+      : {};
+
+    let result = null;
+    if (action.actionType === 'demo.create_note') {
+      const noteRef = db.collection('users').doc(uid).collection('notes').doc(actionId);
+      const note = await noteRef.get();
+      if (!note.exists) throw new Error('No deterministic note side effect found.');
+      result = {type: 'note_created', noteId: noteRef.id};
+    } else if (action.actionType === 'memory.save') {
+      const memoryRef = db.collection('users').doc(uid).collection('memory').doc('mem_' + actionId);
+      const memory = await memoryRef.get();
+      if (!memory.exists) throw new Error('No deterministic memory side effect found.');
+      result = {type: 'memory_saved', memoryId: memoryRef.id};
+    } else if (action.actionType === 'demo.echo' &&
+        typeof payload.text === 'string' && payload.text.trim()) {
+      result = {type: 'echo', text: payload.text.trim()};
+    } else {
+      throw new Error('Action cannot be safely recovered.');
+    }
+
+    await db.runTransaction(async (tx) => {
+      const current = await tx.get(actionRef);
+      if (!current.exists) throw new Error('Action not found.');
+      const currentData = current.data() || {};
+      if (currentData.status === 'completed') return;
+      if (currentData.status !== 'executing') {
+        throw new Error('Action changed during recovery.');
+      }
+      tx.update(actionRef, {
+        status: 'completed',
+        result,
+        executionRecoveredAt: FieldValue.serverTimestamp(),
+      });
+      tx.set(executionRef, {
+        status: 'completed',
+        result,
+        recoveredAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+    });
+
+    await writeAurenActionAudit(
+      uid,
+      {...action, id: actionId},
+      'completed',
+      {result, source: 'recoverAurenAction'},
+    );
+
+    return {status: 'completed', actionId, result};
+  },
+);
+
 exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB' },
   async (request) => {
@@ -613,6 +712,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         actionType: action.actionType,
         status: 'executing',
         startedAt: FieldValue.serverTimestamp(),
+        recoveryAfterSeconds: 120,
       }, {merge: true});
     });
 
