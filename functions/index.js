@@ -1191,7 +1191,7 @@ exports.proposeAurenAgentTask = require('firebase-functions/v2/https').onCall(
     const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
     const data=validateAurenCollaborationInput(request.data || {});
     const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc();
-    await ref.set({...data, ownerId:uid,status:'proposed',requiresApproval:false,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    await ref.set({...data, ownerId:uid,status:'proposed',requiresApproval:true,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     return {status:'proposed',taskId:ref.id};
   },
 );
