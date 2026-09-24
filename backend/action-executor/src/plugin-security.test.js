@@ -31,3 +31,12 @@ test('dependency paths cannot escape package scope',()=>{
   assert.throws(()=>validateDependencyList(['pkg/../escape']),/invalid/);
   assert.throws(()=>validateDependencyList(['pkg/./nested']),/invalid/);
 });
+
+
+test('package metadata enforces safe plugin ids and versions',()=>{
+  const base={pluginId:'auren.demo.plugin',version:'1.0.0',sha256:'a'.repeat(64),sizeBytes:100};
+  assert.equal(validatePackageMetadata(base).pluginId,'auren.demo.plugin');
+  assert.throws(()=>validatePackageMetadata({...base,pluginId:'../escape'}),/package metadata|hash|Invalid/);
+  assert.throws(()=>validatePackageMetadata({...base,pluginId:'AUREN.PLUGIN'}),/package metadata|hash|Invalid/);
+  assert.throws(()=>validatePackageMetadata({...base,version:'../escape'}),/package metadata|hash|Invalid/);
+});
