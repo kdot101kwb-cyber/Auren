@@ -13,7 +13,6 @@ import '../../../services/messaging/message_safety_repository.dart';
 import '../../../services/messaging/typing_service.dart';
 import 'group_details_screen.dart';
 import 'message_safety_screen.dart';
-import '../../../services/notifications/notification_api.dart';
 import '../../../services/users/presence_service.dart';
 
 class MessengerScreen extends StatefulWidget {
@@ -34,7 +33,6 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   final _conversationRepository = ConversationRepository();
   final _actionRepository = ActionRepository();
   final _safetyRepository = MessageSafetyRepository();
-  final _notificationApi = AurenNotificationApi();
   final _presenceService = AurenPresenceService();
   late final AurenPresenceHeartbeat _presence;
   final _typing = AurenTypingService();
@@ -129,15 +127,6 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
         createdAt: now,
       ));
 
-      if (!_isAi) {
-        try {
-          await _notificationApi.notifyMessage(
-            conversationId: _conversationId!,
-            messageId: messageId,
-            text: text,
-          );
-        } catch (_) {}
-      }
 
       if (_isAi) {
         // The callable gateway builds conversation context server-side.
