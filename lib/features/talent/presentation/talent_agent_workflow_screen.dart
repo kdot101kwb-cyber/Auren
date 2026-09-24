@@ -14,7 +14,7 @@ class TalentAgentWorkflowScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final opportunity = match.opportunity;
-    final steps = const AurenTalentAgentOrchestrator().buildWorkflow(talent: talent, opportunity: null as dynamic, match: null as dynamic);
+    final steps = const AurenTalentAgentOrchestrator().buildWorkflow(talent: talent, opportunity: opportunity, match: match);
     return Scaffold(
       appBar: AppBar(title: const Text('Talent Agent Workflow')),
       body: ListView(
