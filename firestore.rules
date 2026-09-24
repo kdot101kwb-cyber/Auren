@@ -27,6 +27,21 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /context_switch/{contextId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && contextId == 'current'
+          && request.resource.data.keys().hasOnly(['mode','label','description','updatedAt'])
+          && request.resource.data.mode is string
+          && request.resource.data.mode.size() <= 40
+          && request.resource.data.label is string
+          && request.resource.data.label.size() <= 120
+          && request.resource.data.description is string
+          && request.resource.data.description.size() <= 500
+          && request.resource.data.updatedAt is timestamp;
+        allow delete: if isOwner(userId);
+      }
+
       match /auto_organize/{planId} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
