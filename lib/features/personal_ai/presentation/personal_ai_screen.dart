@@ -27,6 +27,7 @@ import 'supplier_finder_screen.dart';
 import 'reverse_marketplace_screen.dart';
 import 'campaign_ai_screen.dart';
 import 'partnership_matcher_screen.dart';
+import 'institution_connect_screen.dart';
 import 'opportunity_inbox_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
@@ -81,6 +82,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.swap_horiz_outlined, 'Reverse Marketplace', 'انشر احتياجك ودع الموردين يقدمون عروضهم.', const AurenReverseMarketplaceScreen()),
         _tile(context, Icons.campaign_outlined, 'Campaign AI', 'حوّل هدفك التجاري إلى حملة قابلة للاختبار والقياس.', const AurenCampaignAiScreen()),
         _tile(context, Icons.handshake_outlined, 'Partnership Matcher', 'اعثر على أنشطة عامة قد توجد بينها فرص تعاون.', const AurenPartnershipMatcherScreen()),
+        _tile(context, Icons.account_balance_outlined, 'Institution Connect', 'اعثر على جهات ومؤسسات عامة مرتبطة بمجالك أو هدفك.', const AurenInstitutionConnectScreen()),
         _tile(context, Icons.next_plan_outlined, 'Next Move', 'يحدد لك AUREN خطوة عملية تالية بناءً على وضعك الحالي.', const AurenNextMoveScreen()),
         _tile(context, Icons.dashboard_outlined, 'Life Dashboard', 'نظرة موحدة على أهدافك وذاكرتك وBusiness وMarketplace وPulse والفرص.', const AurenLifeDashboardScreen()),
         _tile(context, Icons.flag_circle_outlined, 'Mission Mode', 'حوّل هدفك الحالي إلى مهمة مركزة وخطوة أولى.', const AurenMissionModeScreen()),
