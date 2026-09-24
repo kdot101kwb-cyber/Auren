@@ -27,6 +27,22 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /memory_timeline/{eventId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasOnly(['memoryId','key','value','action','createdAt'])
+          && request.resource.data.memoryId is string
+          && request.resource.data.memoryId.size() > 0
+          && request.resource.data.key is string
+          && request.resource.data.key.size() > 0
+          && request.resource.data.key.size() <= 120
+          && request.resource.data.value is string
+          && request.resource.data.value.size() <= 2000
+          && request.resource.data.action in ['created','updated','deleted']
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+
       match /presence/{presenceId} {
         allow read: if request.auth != null;
         allow create, update: if isOwner(userId)
