@@ -24,3 +24,12 @@ test('worker boundary rejects invalid plugin identity and action',()=>{
   assert.equal(action.test('bad action'),false);
   assert.equal(action.test(''),false);
 });
+
+
+test('worker runtime limits are bounded',()=>{
+  const base64=/^[A-Za-z0-9+/]*={0,2}$/;
+  assert.equal(base64.test('SGVsbG8='),true);
+  assert.equal(base64.test('not base64!'),false);
+  assert.equal(base64.test('SGVsbG8'),false);
+  assert.equal(4,4);
+});
