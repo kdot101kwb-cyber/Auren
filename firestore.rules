@@ -264,6 +264,30 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /users/{userId}/talent_scouts/{scoutId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.ownerId == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.role in ['opportunity','market','talent','brand','learning']
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 1000
+        && request.resource.data.enabled is bool
+        && request.resource.data.interests is list
+        && request.resource.data.interests.size() <= 20
+        && request.resource.data.skills is list
+        && request.resource.data.skills.size() <= 30
+        && request.resource.data.keys().hasOnly(['ownerId','name','role','description','enabled','interests','skills','updatedAt']);
+      allow update: if isOwner(userId)
+        && resource.data.ownerId == userId
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.keys().hasOnly(['ownerId','name','role','description','enabled','interests','skills','updatedAt']);
+      allow delete: if isOwner(userId);
+    }
+
     match /talents/{talentId} {
       allow read: if request.auth != null && resource.data.status == 'active';
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid
