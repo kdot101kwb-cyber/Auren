@@ -18,6 +18,7 @@ async function loadAurenPermissionLedger(uid) {
       dailySpendingLimitMinor: null,
       spentTodayMinor: 0,
       currency: 'USD',
+      spendingDay: null,
     };
   }
   const data = snap.data() || {};
@@ -34,6 +35,7 @@ async function loadAurenPermissionLedger(uid) {
       ? data.spentTodayMinor
       : 0,
     currency: typeof data.currency === 'string' ? data.currency : 'USD',
+    spendingDay: typeof data.spendingDay === 'string' ? data.spendingDay : null,
   };
 }
 
@@ -714,7 +716,11 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         const dailyLimit = Number.isInteger(ledgerData.dailySpendingLimitMinor)
           ? ledgerData.dailySpendingLimitMinor
           : null;
-        const spentToday = Number.isInteger(ledgerData.spentTodayMinor)
+        const today = new Date().toISOString().slice(0, 10);
+        const ledgerDay = typeof ledgerData.spendingDay === 'string'
+          ? ledgerData.spendingDay
+          : null;
+        const spentToday = ledgerDay === today && Number.isInteger(ledgerData.spentTodayMinor)
           ? ledgerData.spentTodayMinor
           : 0;
         if (dailyLimit !== null && spentToday + requestedAmount > dailyLimit) {
@@ -723,6 +729,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         if (ledgerSnapshot.exists) {
           tx.update(ledgerRef, {
             spentTodayMinor: spentToday + requestedAmount,
+            spendingDay: today,
             updatedAt: FieldValue.serverTimestamp(),
           });
         }
@@ -731,6 +738,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       tx.update(actionRef, {
         status: 'executing',
         executionStartedAt: FieldValue.serverTimestamp(),
+        executionSpendingDay: requestedAmount > 0 ? new Date().toISOString().slice(0, 10) : null,
       });
       tx.set(executionRef, {
         actionId,
@@ -840,6 +848,8 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
           const ledgerSnapshot = await tx.get(ledgerRef);
           if (!ledgerSnapshot.exists) return;
           const ledgerData = ledgerSnapshot.data() || {};
+          const today = new Date().toISOString().slice(0, 10);
+          if (ledgerData.spendingDay !== today) return;
           const spentToday = Number.isInteger(ledgerData.spentTodayMinor)
             ? ledgerData.spentTodayMinor
             : 0;
