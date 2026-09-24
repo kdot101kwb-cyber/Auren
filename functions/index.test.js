@@ -94,3 +94,9 @@ test('AI gateway finalizes missing-key and provider-failure idempotency states',
   assert.match(source, /status: 'completed',[\s\S]*response: unavailable/);
   assert.match(source, /status: 'failed',[\s\S]*failedAt: FieldValue\.serverTimestamp\(\)/);
 });
+
+
+test('AI gateway marks empty provider content as failed', () => {
+  const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  assert.match(source, /errorCode: 'empty_provider_response'/);
+});
