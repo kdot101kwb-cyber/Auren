@@ -243,6 +243,98 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     }
   }
 
+  Future<void> _showActionDetails(AurenActionRequest action) async {
+    final payload = action.payload;
+    final payloadText = payload.entries
+        .map((entry) => entry.key + ': ' + entry.value.toString())
+        .join('\n');
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        final pending = action.status == 'pending';
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.auto_awesome),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(action.title, style: Theme.of(context).textTheme.titleLarge)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(action.description),
+                const SizedBox(height: 12),
+                Text('نوع العملية: ' + action.actionType),
+                Text('مستوى الخطورة: ' + action.riskLevel),
+                Text('الموافقة مطلوبة: ' + (action.requiresApproval ? 'نعم' : 'لا')),
+                if (payloadText.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text('ما سيُرسل للتنفيذ:', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  SelectableText(payloadText),
+                ],
+                const SizedBox(height: 18),
+                Text(
+                  pending
+                      ? 'لم يتم تنفيذ أي شيء. راجع التفاصيل ثم اختر موافقة أو رفض.'
+                      : 'تمت الموافقة. التنفيذ لا يبدأ إلا بعد تأكيدك.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                if (pending)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _rejectAction(action);
+                          },
+                          icon: const Icon(Icons.close),
+                          label: const Text('رفض'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _approveAction(action);
+                          },
+                          icon: const Icon(Icons.check),
+                          label: const Text('موافقة'),
+                        ),
+                      ),
+                    ],
+                  )
+                else if (action.status == 'approved')
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _executeAction(action);
+                      },
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('تأكيد التنفيذ'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _pendingActionsPanel() {
     if (!_isAi || _uid == null || _conversationId == null) return const SizedBox.shrink();
     return StreamBuilder<List<AurenActionRequest>>(
@@ -257,54 +349,58 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                 child: Column(
                   children: actions.take(3).map((action) {
                     final pending = action.status == 'pending';
-                    final approved = action.status == 'approved';
                     return Card(
                       clipBehavior: Clip.antiAlias,
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(approved ? Icons.verified_outlined : Icons.auto_awesome),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(action.title, style: const TextStyle(fontWeight: FontWeight.w700)),
-                                ),
-                                Icon(pending ? Icons.lock_outline : Icons.check_circle_outline, size: 20),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Text(action.description),
-                            const SizedBox(height: 8),
-                            Text(
-                              pending ? 'سيطلب AUREN موافقتك قبل التنفيذ.' : 'تمت الموافقة — جاهز للتنفيذ.',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                if (pending) ...[
+                      child: InkWell(
+                        onTap: () => _showActionDetails(action),
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(pending ? Icons.lock_outline : Icons.verified_outlined),
+                                  const SizedBox(width: 10),
                                   Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () => _rejectAction(action),
-                                      icon: const Icon(Icons.close),
-                                      label: const Text('رفض'),
+                                    child: Text(action.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                  ),
+                                  const Icon(Icons.auto_awesome, size: 20),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(action.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 8),
+                              Text(
+                                pending
+                                    ? 'مقترح من AUREN • لم يُنفذ بعد'
+                                    : 'تمت الموافقة • راجع ثم أكد التنفيذ',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  if (pending) ...[
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () => _rejectAction(action),
+                                        icon: const Icon(Icons.close),
+                                        label: const Text('رفض'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Expanded(
+                                    child: FilledButton.icon(
+                                      onPressed: () => _showActionDetails(action),
+                                      icon: Icon(pending ? Icons.visibility_outlined : Icons.play_arrow),
+                                      label: Text(pending ? 'مراجعة' : 'تنفيذ'),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
                                 ],
-                                Expanded(
-                                  child: FilledButton.icon(
-                                    onPressed: pending ? () => _approveAction(action) : () => _executeAction(action),
-                                    icon: Icon(pending ? Icons.check : Icons.play_arrow),
-                                    label: Text(pending ? 'موافقة' : 'تنفيذ'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
