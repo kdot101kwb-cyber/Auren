@@ -40,6 +40,23 @@ class FirebaseAurenActionExecutor implements AurenActionExecutor {
     );
   }
 
+  Future<AurenActionExecutionResult> recover({
+    required String uid,
+    required AurenActionRequest action,
+  }) async {
+    if (action.status != 'executing') {
+      throw StateError('Only an executing action can be recovered.');
+    }
+    final response = await _functions
+        .httpsCallable('recoverAurenAction')
+        .call(<String, dynamic>{'actionId': action.id});
+    final data = Map<String, dynamic>.from(response.data as Map);
+    return AurenActionExecutionResult(
+      result: _friendlyResult(data['result']),
+      status: data['status'] as String? ?? 'completed',
+    );
+  }
+
   String _friendlyResult(dynamic result) {
     if (result is String) return result;
     if (result is Map) {
