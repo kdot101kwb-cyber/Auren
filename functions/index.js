@@ -1345,7 +1345,7 @@ async function buildAurenWorkAgentResult(uid, agentId, prompt) {
   const [goalsSnap,talentsSnap,oppsSnap,bizSnap,productsSnap,draftsSnap,tripsSnap,placesSnap] =
     await Promise.all(['goals','talents','opportunities','businesses','products','creator_drafts','trips','places'].map(ownerQuery));
   const counts={goals:goalsSnap.size,talents:talentsSnap.size,opportunities:oppsSnap.size,businesses:bizSnap.size,products:productsSnap.size,drafts:draftsSnap.size,trips:tripsSnap.size,places:placesSnap.size};
-  const first=(snap)=>snap.docs[0]?.data()||null;
+  const first=(snap)=>{ const doc=snap.docs[0]; return doc ? {id:doc.id,...(doc.data()||{})} : null; };
   const actions=[];
   let summary='';
   switch(agentId){
