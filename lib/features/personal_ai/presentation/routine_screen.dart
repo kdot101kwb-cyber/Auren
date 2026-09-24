@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart';import 'package:firebase_auth/firebase_auth.dart';import '../../../services/personal_ai/routine_service.dart';class AurenRoutineScreen extends StatelessWidget{const AurenRoutineScreen({super.key});@override Widget build(BuildContext c)=>const Scaffold(body:Center(child:Text('Routine')));}
