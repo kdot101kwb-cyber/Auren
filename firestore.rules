@@ -376,6 +376,16 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /reverse_marketplace_requests/{requestId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 160 && request.resource.data.description is string && request.resource.data.description.size() <= 3000 && request.resource.data.category is string && request.resource.data.category.size() <= 60 && request.resource.data.currency is string && request.resource.data.currency.size() <= 8 && request.resource.data.status == 'open' && request.resource.data.keys().hasOnly(['ownerId','title','description','category','currency','maxPriceMinor','status','createdAt']);
+        allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+        match /offers/{offerId} {
+          allow read: if request.auth != null;
+          allow create: if request.auth != null && request.resource.data.supplierUid == request.auth.uid && request.resource.data.requestId == requestId && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0 && request.resource.data.message is string && request.resource.data.message.size() <= 2000 && request.resource.data.status == 'pending' && request.resource.data.keys().hasOnly(['supplierUid','requestId','priceMinor','message','status','createdAt']);
+          allow update, delete: if false;
+        }
+      }
     match /plugin_quotas/{quotaId} {
       allow read, write: if false;
     }
