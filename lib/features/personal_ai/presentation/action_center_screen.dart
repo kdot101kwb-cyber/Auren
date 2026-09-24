@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/action_request.dart';
@@ -40,17 +41,19 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     }
   }
 
-  Future<void> _reject(AurenActionRequest action) async {
+  Future<void> _decide(AurenActionRequest action, String decision) async {
     final uid = _uid;
     if (uid == null || _busyActionId != null) return;
 
     setState(() => _busyActionId = action.id);
     try {
-      await _repo.setStatus(uid, action.id, 'rejected');
+      await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('decideAurenAction')
+          .call({'actionId': action.id, 'decision': decision});
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر رفض الأمر: $e')),
+          SnackBar(content: Text(decision == 'approved' ? 'تعذرت الموافقة على الأمر: $e' : 'تعذر رفض الأمر: $e')),
         );
       }
     } finally {
@@ -69,8 +72,24 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
       // The trusted backend is responsible for execution and final status.
       var approvedAction = action;
       if (action.status == 'pending') {
-        await _repo.setStatus(uid, action.id, 'approved');
-        approvedAction = await _repo.get(uid, action.id) ?? action;
+        await _decide(action, 'approved');
+        approvedAction = AurenActionRequest(
+          id: action.id,
+          conversationId: action.conversationId,
+          actionType: action.actionType,
+          title: action.title,
+          description: action.description,
+          payload: action.payload,
+          permission: action.permission,
+          riskLevel: action.riskLevel,
+          approvalLevel: action.approvalLevel,
+          spendingLimitMinor: action.spendingLimitMinor,
+          currency: action.currency,
+          requiresApproval: action.requiresApproval,
+          status: 'approved',
+          result: action.result,
+          createdAt: action.createdAt,
+        );
       }
 
       final execution = await _executor.execute(
@@ -129,7 +148,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                     children: [
                       IconButton(
                         tooltip: 'Reject',
-                        onPressed: () => _reject(action),
+                        onPressed: () => _decide(action, 'rejected'),
                         icon: const Icon(Icons.close),
                       ),
                       IconButton(
