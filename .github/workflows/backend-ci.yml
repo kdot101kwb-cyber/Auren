@@ -22,10 +22,10 @@ jobs:
           node-version: 20
       - name: Install service dependencies
         working-directory: ${{ matrix.service }}
-        run: npm install
+        run: npm install --no-audit --no-fund --no-audit --no-fund
       - name: Syntax check
         working-directory: ${{ matrix.service }}
-        run: node --check src/server.js || node --check src/worker.js
+        run: |\n          if [ -f src/server.js ]; then node --check src/server.js; else node --check src/worker.js; fi
       - name: Run tests
         working-directory: ${{ matrix.service }}
         run: npm test
