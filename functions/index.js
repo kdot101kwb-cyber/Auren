@@ -1189,9 +1189,9 @@ exports.proposeAurenAgentTask = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
     const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
-    const data=validateAurenCollaborationInput(request.data || {});
+    const data=validateAurenCollaborationInput(request.data || {});\n    const workflowId = typeof request.data?.workflowId === 'string' ? request.data.workflowId.trim() : '';\n    const step = Number.isSafeInteger(request.data?.step) ? request.data.step : null;\n    if (workflowId && (workflowId.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(workflowId))) throw new Error('Invalid workflow id.');\n    if (step !== null && (step < 0 || step >= AUREN_AGENT_FLOW.length)) throw new Error('Invalid workflow step.');
     const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc();
-    await ref.set({...data, ownerId:uid,status:'proposed',requiresApproval:true,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    await ref.set({...data, ownerId:uid, workflowId:workflowId || ref.id, step:step ?? AUREN_AGENT_FLOW.indexOf(data.targetAgent), status:'proposed',requiresApproval:true,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     return {status:'proposed',taskId:ref.id};
   },
 );
