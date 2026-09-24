@@ -112,6 +112,8 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
             : <String>[];
         final currency = permission?['currency']?.toString() ?? 'USD';
         final dailyLimit = permission?['dailySpendingLimitMinor'];
+        final rawSpent = permission?['spentTodayMinor'];
+        final spentToday = rawSpent is num ? rawSpent.toInt() : 0;
         return StreamBuilder<Map<String, dynamic>?>(
           stream: _repo.watchTrust(uid),
           builder: (context, trustSnapshot) {
@@ -151,9 +153,8 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
               const SizedBox(height: 10),
               Text('الحد اليومي', style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 6),
-              if (dailyLimit is num)
-                Text(
-                  'المستخدم اليوم: ${permission?['spentTodayMinor'] ?? 0} $currency',
+              Text(
+                  'المستخدم اليوم: $spentToday $currency',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               const SizedBox(height: 6),
@@ -189,7 +190,6 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                   }
                 },
               ),
-              const SizedBox(height: 6),
               const SizedBox(height: 6),
               Builder(
                 builder: (context) {
