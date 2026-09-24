@@ -14,8 +14,8 @@ class TalentAgentWorkflowScreen extends StatefulWidget {
 }
 class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
   late final AurenTalentPlan plan; late final AurenAgentCollaborationRepository repo;
-  List<AurenAgentTask> tasks=[]; int currentStep=0; bool loading=false; String previousOutput=''; late final String workflowId;
-  @override void initState(){super.initState();plan=const AurenTalentAgentOrchestrator().buildPlan(talent:widget.talent,opportunity:widget.match.opportunity,match:widget.match);repo=AurenAgentCollaborationRepository(); workflowId='talent_${widget.talent.id}_${widget.match.opportunity.id}';}
+  List<AurenAgentTask> tasks=[]; int currentStep=0; bool loading=false; String previousOutput=''; late final String workflowId; bool restored=false;
+  @override void initState(){super.initState();plan=const AurenTalentAgentOrchestrator().buildPlan(talent:widget.talent,opportunity:widget.match.opportunity,match:widget.match);repo=AurenAgentCollaborationRepository(); workflowId='talent_${widget.talent.id}_${widget.match.opportunity.id}'; _restoreWorkflow();}
   List<AurenAgentTask> _workflowTasks(List<AurenAgentTask> value)=>value.where((t)=>t.input['opportunityId']==plan.opportunity.id&&t.input['talentId']==widget.talent.id).toList();
   void _syncTasks(List<AurenAgentTask> value){
     final next=_workflowTasks(value);
@@ -28,6 +28,20 @@ class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
   }
   AurenAgentTask? _incomingForStep(int i){for(final t in tasks){if(t.status=='approved'&&t.input['step']==i)return t;}return null;}
   String _previousOutput(int i){final incoming=_incomingForStep(i);if(incoming!=null)return incoming.input['previousOutput']?.toString()??'';return '';}
+  Future<void> _restoreWorkflow() async {
+    final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null)return;
+    try {
+      final tasks=(await repo.watch(uid).first).where((t)=>t.input['workflowId']==workflowId || t.input['opportunityId']==plan.opportunity.id).toList();
+      if(tasks.isEmpty||!mounted)return;
+      tasks.sort((a,b)=>(a.input['step'] is int ? a.input['step'] as int : -1).compareTo(b.input['step'] is int ? b.input['step'] as int : -1));
+      final latest=tasks.last;
+      final step=latest.input['step'] is int ? latest.input['step'] as int : 0;
+      final previous=latest.input['previousOutput']?.toString()??'';
+      final completed=latest.status=='completed';
+      setState(() { currentStep=(completed ? step+1 : step).clamp(0,plan.steps.length-1); previousOutput=previous; restored=true; });
+    } catch (_) {}
+  }
+
   Future<void> _runStep(int i) async {
     if(loading||i<0||i>=plan.steps.length)return; setState(()=>loading=true);
     final step=plan.steps[i]; final contextOutput=previousOutput.trim().isEmpty?'لا توجد مخرجات سابقة.':previousOutput; final previous=_previousOutput(i); final incoming=_incomingForStep(i);
@@ -47,7 +61,7 @@ class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر حفظ مخرجات الوكيل: $e')));}
   }
   Future<void> _resumeFromTask(AurenAgentTask task) async { if(task.status!='approved'||loading)return; final step=plan.steps.indexWhere((s)=>s.agent==task.targetAgent); if(step<0)return; setState(()=>previousOutput=task.input['previousOutput']?.toString()??''); await _runStep(step); }\n  Future<void> _decide(AurenAgentTask task,String decision) async {try{await repo.decide(task.id,decision);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(decision=='approved'?'تمت الموافقة. يمكنك تشغيل الوكيل التالي.':'تم إلغاء التسليم.')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحديث المهمة: $e')));}}
-  @override Widget build(BuildContext context){final uid=FirebaseAuth.instance.currentUser?.uid;return Scaffold(appBar:AppBar(title:const Text('AUREN Talent Workflow')),body:ListView(padding:const EdgeInsets.all(16),children:[
+  @override Widget build(BuildContext context){final uid=FirebaseAuth.instance.currentUser?.uid;return Scaffold(appBar:AppBar(title:Text(restored?'AUREN Talent Workflow • مستأنف':'AUREN Talent Workflow')),body:ListView(padding:const EdgeInsets.all(16),children:[
     Card(child:ListTile(title:Text(plan.opportunity.title),subtitle:Text('مطابقة المهارات: ${plan.matchScore}%\nالمرحلة الحالية: ${currentStep+1} / ${plan.steps.length}'))),
     if(uid!=null)StreamBuilder<List<AurenAgentTask>>(stream:repo.watch(uid),builder:(c,s){final all=s.data??const <AurenAgentTask>[];WidgetsBinding.instance.addPostFrameCallback((_)=>_syncTasks(all));final mine=_workflowTasks(all);if(mine.isEmpty)return const SizedBox.shrink();return Column(children:mine.map((t)=>Card(child:ListTile(title:Text('${t.sourceAgent} → ${t.targetAgent}'),subtitle:Text('${t.title}\nالحالة: ${t.status}${t.input['previousOutput']!=null?'\nمخرجات سابقة محفوظة ✓':''}'),isThreeLine:true,trailing:t.status=='proposed'?Wrap(children:[IconButton(onPressed:()=>_decide(t,'cancelled'),icon:const Icon(Icons.close)),IconButton(onPressed:()=>_decide(t,'approved'),icon:const Icon(Icons.check))]):t.status=='approved'?const Icon(Icons.lock_open):const Icon(Icons.check_circle_outline)))).toList());}),
     const SizedBox(height:12),
