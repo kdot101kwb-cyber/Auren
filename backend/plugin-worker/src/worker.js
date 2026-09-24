@@ -14,6 +14,8 @@ const MAX_OUTPUT_BYTES=32768;
 const MAX_PLUGIN_ID=120;
 const MAX_ACTION=120;
 const SHARED_SECRET=process.env.WORKER_SHARED_SECRET||'';
+const MAX_CONCURRENT_EXECUTIONS=4;
+let activeExecutions=0;
 
 function json(res,status,body){res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(body));}
 function packageSha256(bytes){return crypto.createHash('sha256').update(bytes).digest('hex');}
@@ -31,6 +33,7 @@ function runIsolated(manifest,payload,expectedSha256,artifactBase64){
     if(!/^[a-f0-9]{64}$/.test(expectedSha256||''))return reject(Object.assign(new Error('Trusted artifact hash is required.'),{code:400}));
     if(typeof artifactBase64!=='string'||artifactBase64.length>7*1024*1024)return reject(Object.assign(new Error('Plugin artifact payload is invalid.'),{code:413}));
     let bytes;
+    if(!/^[A-Za-z0-9+/]*={0,2}$/.test(artifactBase64)||artifactBase64.length%4!==0)return reject(Object.assign(new Error('Plugin artifact encoding is invalid.'),{code:400}));
     try{bytes=Buffer.from(artifactBase64,'base64');}catch{return reject(Object.assign(new Error('Plugin artifact encoding is invalid.'),{code:400}));}
     if(!bytes.length||bytes.length>MAX_ARTIFACT_BYTES)return reject(Object.assign(new Error('Plugin artifact exceeds the 5 MB limit.'),{code:413}));
     const actualSha256=packageSha256(bytes);
@@ -48,7 +51,8 @@ function runIsolated(manifest,payload,expectedSha256,artifactBase64){
     },(error,stdout,stderr)=>{
       cleanup();
       if(error)return reject(Object.assign(new Error((stderr||error.message).slice(0,2000)),{code:error.killed?408:500}));
-      resolve(stdout.slice(0,MAX_OUTPUT_BYTES));
+      if(Buffer.byteLength(stdout,'utf8')>MAX_OUTPUT_BYTES)return reject(Object.assign(new Error('Plugin output exceeds the worker limit.'),{code:413}));
+      resolve(stdout);
     });
   });
 }
@@ -64,6 +68,8 @@ const server=http.createServer(async(req,res)=>{
   req.on('end',async()=>{
     try{
       if(!SHARED_SECRET)return json(res,503,{error:'Worker secret is not configured.'});
+      if(activeExecutions>=MAX_CONCURRENT_EXECUTIONS)return json(res,429,{error:'Plugin worker concurrency limit reached.'});
+      activeExecutions++;
       const body=JSON.parse(raw||'{}');
       if(!safeEqual(body.authorization,SHARED_SECRET))return json(res,403,{error:'Unauthorized worker request.'});
       const payloadBytes=Buffer.byteLength(JSON.stringify(body.payload||{}),'utf8');
@@ -72,6 +78,7 @@ const server=http.createServer(async(req,res)=>{
       const result=await runIsolated(manifest,body.payload||{},body.expectedSha256,body.artifactBase64);
       return json(res,200,{status:'completed',result});
     }catch(e){return json(res,Number.isInteger(e?.code)?e.code:500,{error:e.message||'Plugin execution failed.'});}
+    finally{activeExecutions=Math.max(0,activeExecutions-1);}
   });
 });
 server.listen(PORT,()=>console.log('AUREN plugin worker listening on '+PORT));
