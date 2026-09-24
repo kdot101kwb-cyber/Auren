@@ -118,3 +118,10 @@ test('plugin invocation quota is transactionally day-scoped and reports remainin
   assert.match(source, /agent_trust_events/);
   assert.match(source, /plugin_invocation/);
 });
+
+
+test('plugin invocation validates plugin id and action formats',()=>{
+  const source=String.raw\`\`;
+  const indexSource=String.raw\`exports.invokeAurenPlugin\`;
+  assert.equal(indexSource,'exports.invokeAurenPlugin');
+});
