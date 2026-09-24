@@ -22,13 +22,15 @@ jobs:
           node-version: 20
       - name: Install service dependencies
         working-directory: ${{ matrix.service }}
-        run: npm install --no-audit --no-fund --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Syntax check
         working-directory: ${{ matrix.service }}
-        run: |\n          if [ -f src/server.js ]; then node --check src/server.js; else node --check src/worker.js; fi
+        run: |
+          if [ -f src/server.js ]; then node --check src/server.js; else node --check src/worker.js; fi
       - name: Run tests
         working-directory: ${{ matrix.service }}
         run: npm test
+
   functions-tests:
     runs-on: ubuntu-latest
     steps:
@@ -38,10 +40,11 @@ jobs:
           node-version: 20
       - name: Install Functions dependencies
         working-directory: functions
-        run: npm install
+        run: npm install --no-audit --no-fund
       - name: Run Functions tests
         working-directory: functions
         run: npm test
+
   plugin-worker-image:
     runs-on: ubuntu-latest
     steps:
