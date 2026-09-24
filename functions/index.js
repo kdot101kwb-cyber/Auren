@@ -1546,6 +1546,9 @@ function validateAurenWorkActionContract(action) {
   }
   for (const key of Object.keys(payload)) {
     if (!/^[A-Za-z0-9_]{1,60}$/.test(key)) throw new Error('Invalid work action payload key.');
+    const value = payload[key];
+    if (typeof value === 'string' && value.length > 4000) throw new Error('Work action payload string is too long.');
+    if (Array.isArray(value) && value.length > 50) throw new Error('Work action payload list is too large.');
   }
   const requiredTitle = typeof payload.title === 'string' ? payload.title.trim() : '';
   if (!requiredTitle && !String(action.title || '').trim()) throw new Error('Work action title is required.');
@@ -1750,6 +1753,8 @@ exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
     const executionId=typeof action.executionId==='string'?action.executionId:'';
     if(!executionId) throw new Error('Work action execution context is missing.');
     if(!AUREN_WORK_AGENT_SET.has(action.agentId)) throw new Error('Invalid work action agent.');
+    // Re-validate the immutable proposal before touching any domain data.
+    validateAurenWorkActionContract(action);
     const ledger=await loadAurenPermissionLedger(uid);
     assertAurenActionPermission(ledger,{
       actionType:action.actionType,
@@ -1758,7 +1763,10 @@ exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
     });
     const executionRef=db.collection('users').doc(uid).collection('agent_work_executions').doc(executionId);
     const executionSnap=await executionRef.get();
-    if(!executionSnap.exists || executionSnap.data()?.status!=='completed') throw new Error('Parent work-agent execution is not completed.');
+    if(!executionSnap.exists || executionSnap.data()?.status!=='completed') {
+      await ref.update({status:'failed',error:'Parent work-agent execution is not completed.',updatedAt:FieldValue.serverTimestamp()});
+      throw new Error('Parent work-agent execution is not completed.');
+    }
     try {
       const result=await executeAurenWorkActionSideEffect(uid,{...action,id:actionId},executionId);
       await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
