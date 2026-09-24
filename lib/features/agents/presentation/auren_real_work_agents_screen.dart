@@ -4,6 +4,7 @@ import '../../../core/models/auren_work_execution.dart';
 import '../../../core/models/auren_work_action.dart';
 import '../../../services/agents/auren_work_agent_repository.dart';
 import 'auren_work_artifacts_screen.dart';
+import 'auren_work_audit_screen.dart';
 
 class AurenRealWorkAgentsScreen extends StatelessWidget {
   const AurenRealWorkAgentsScreen({super.key});
@@ -29,7 +30,10 @@ class AurenRealWorkAgentsScreen extends StatelessWidget {
     if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول أولاً.')));
     final repo=AurenWorkAgentRepository();
     return Scaffold(
-      appBar:AppBar(title:const Text('AUREN Real Work Agents'),actions:[IconButton(tooltip:'Work Center',icon:const Icon(Icons.folder_special_outlined),onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const AurenWorkArtifactsScreen())))]),
+      appBar:AppBar(title:const Text('AUREN Real Work Agents'),actions:[
+        IconButton(tooltip:'Audit Log',icon:const Icon(Icons.history),onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const AurenWorkAuditScreen()))),
+        IconButton(tooltip:'Work Center',icon:const Icon(Icons.folder_special_outlined),onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const AurenWorkArtifactsScreen()))),
+      ]),
       body:StreamBuilder<List<AurenWorkExecution>>(
         stream:repo.watch(uid),
         builder:(context,snapshot){
