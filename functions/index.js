@@ -263,6 +263,28 @@ exports.onConversationMembershipChanged = onDocumentUpdated(
 );
 
 
+exports.onAurenActionCreated = onDocumentCreated(
+  'users/{userId}/actions/{actionId}',
+  async (event) => {
+    const action = event.data?.data();
+    if (!action || action.status !== 'pending' || action.requiresApproval !== true) return;
+
+    await writeAurenActionAudit(event.params.userId, {
+      ...action,
+      id: event.params.actionId,
+    }, 'pending', { source: 'action-created' });
+
+    await notify(event.params.userId, {
+      title: 'AUREN يحتاج موافقتك',
+      body: String(action.title || 'هناك إجراء مقترح للمراجعة.').slice(0, 240),
+      type: 'action',
+      targetId: event.params.userId,
+      entityId: event.params.actionId,
+      conversationId: action.conversationId || null,
+    });
+  },
+);
+
 exports.onAurenActionStatusChanged = onDocumentUpdated(
   'users/{userId}/actions/{actionId}',
   async (event) => {
