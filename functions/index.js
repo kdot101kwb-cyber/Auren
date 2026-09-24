@@ -1058,6 +1058,24 @@ exports.installAurenPlugin = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.uninstallAurenPlugin = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+    const pluginId = typeof request.data?.pluginId === 'string' ? request.data.pluginId.trim() : '';
+    if (!pluginId || !/^[a-z0-9][a-z0-9._-]{2,119}$/.test(pluginId)) {
+      throw new Error('Invalid plugin id.');
+    }
+    const ref = db.collection('users').doc(uid).collection('agent_installations').doc(pluginId);
+    const snap = await ref.get();
+    if (!snap.exists) return {status:'not_installed', pluginId};
+    await ref.delete();
+    return {status:'uninstalled', pluginId};
+  },
+);
+
+
 exports.invokeAurenPlugin = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
