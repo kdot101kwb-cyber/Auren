@@ -43,6 +43,9 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
   }
 
   Future<void> _decide(AurenActionRequest action, String decision, {bool manageBusy = true}) async {
+    if (decision != 'approved' && decision != 'rejected') {
+      throw ArgumentError('Invalid action decision.');
+    }
     final uid = _uid;
     if (uid == null || (_busyActionId != null && _busyActionId != action.id)) return;
 
