@@ -8,6 +8,7 @@ import '../../creator/presentation/creator_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
+import '../../personal_ai/presentation/local_intelligence_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../social/presentation/saved_pulse_screen.dart';
 import '../../saved/presentation/saved_center_screen.dart';
@@ -85,6 +86,13 @@ class AurenMoreScreen extends StatelessWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => item.title == 'Business' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())) : item.title == 'Marketplace' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())) : item.title == 'Education' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEducationScreen())) : item.title == 'Travel' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen())) : item.title == 'Entertainment' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen())) : item.title == 'Creator Studio' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENCreatorStudioScreen())) : _open(context, item),
         ))),
+        Card(child: ListTile(
+          leading: const Icon(Icons.location_on_outlined),
+          title: const Text('Local Intelligence'),
+          subtitle: const Text('Business وخدمات وفرص محلية حسب المدينة والدولة.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenLocalIntelligenceScreen())),
+        )),
         Card(child: ListTile(
           leading: const Icon(Icons.bookmark_outline),
           title: const Text('AUREN Saved'),
