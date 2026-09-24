@@ -47,6 +47,12 @@ async function loadAurenPermissionLedger(uid) {
 
 const { normalizeAurenActionIntent, assertAurenActionPayload } = require('./action_intent');
 
+const AUREN_ACTION_TITLES = Object.freeze({
+  'demo.echo': 'تنفيذ طلب AUREN',
+  'demo.create_note': 'إنشاء ملاحظة',
+  'memory.save': 'حفظ معلومة في ذاكرة AUREN',
+});
+
 function assertAurenActionPermission(ledger, action) {
   if (!ledger.enabled) {
     throw new Error('AUREN agent permissions are disabled.');
@@ -482,13 +488,8 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
           action = candidate.action;
           payload = normalizedPayload;
           requiresApproval = true;
-          const titles = {
-            'demo.echo': 'تنفيذ طلب AUREN',
-            'demo.create_note': 'إنشاء ملاحظة',
-            'memory.save': 'حفظ معلومة في ذاكرة AUREN',
-          };
           const payloadSummary = action === 'memory.save' ? payload.key : payload.text;
-          actionDescription = 'طلب تنفيذ: ' + titles[action] +
+          actionDescription = 'طلب تنفيذ: ' + AUREN_ACTION_TITLES[action] +
             (payloadSummary ? ' — ' + String(payloadSummary).slice(0, 240) : '');
           const candidateText = typeof candidate.text === 'string' ? candidate.text.trim() : '';
           text = candidateText && candidateText.length <= 12000
@@ -531,7 +532,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         .doc('act_' + requestId);
 
       await actionRef.set({
-        conversationId, actionType: action, title: titles[action],
+        conversationId, actionType: action, title: AUREN_ACTION_TITLES[action],
         description: actionDescription || 'طلب تنفيذ يحتاج موافقتك قبل التنفيذ.', payload,
         permission: 'userApproval', riskLevel: 'low', approvalLevel: 1,
         requiresApproval: true, status: 'pending', createdAt: FieldValue.serverTimestamp(),
