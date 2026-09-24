@@ -58,41 +58,32 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
   }
 
   Future<void> _approve(AurenActionRequest action) async {
-    final uid = _uid;
-    if (uid == null || _busyActionId != null) return;
-
+    if (_uid == null || _busyActionId != null || action.status != 'pending') return;
     setState(() => _busyActionId = action.id);
-
     try {
-      // The client only records explicit user approval.
-      // The trusted backend is responsible for execution and final status.
-      var approvedAction = action;
-      if (action.status == 'pending') {
-        await _decide(action, 'approved', manageBusy: false);
-        approvedAction = AurenActionRequest(
-          id: action.id,
-          conversationId: action.conversationId,
-          actionType: action.actionType,
-          title: action.title,
-          description: action.description,
-          payload: action.payload,
-          permission: action.permission,
-          riskLevel: action.riskLevel,
-          approvalLevel: action.approvalLevel,
-          spendingLimitMinor: action.spendingLimitMinor,
-          currency: action.currency,
-          requiresApproval: action.requiresApproval,
-          status: 'approved',
-          result: action.result,
-          createdAt: action.createdAt,
+      await _decide(action, 'approved', manageBusy: false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تمت الموافقة. اضغط تنفيذ عند استعدادك.')),
         );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تسجيل الموافقة: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyActionId = null);
+    }
+  }
 
-      final execution = await _executor.execute(
-        uid: uid,
-        action: approvedAction,
-      );
-
+  Future<void> _execute(AurenActionRequest action) async {
+    final uid = _uid;
+    if (uid == null || _busyActionId != null || action.status != 'approved') return;
+    setState(() => _busyActionId = action.id);
+    try {
+      final execution = await _executor.execute(uid: uid, action: action);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(execution.result)),
@@ -101,7 +92,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل إرسال الأمر للتنفيذ: $e')),
+          SnackBar(content: Text('فشل تنفيذ الأمر: $e')),
         );
       }
     } finally {
@@ -189,13 +180,18 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                         },
                         icon: const Icon(Icons.close),
                       ),
-                      IconButton(
-                        tooltip: action.status == 'approved'
-                            ? 'Execute'
-                            : 'Approve & execute',
-                        onPressed: () => _approve(action),
-                        icon: const Icon(Icons.check),
-                      ),
+                      if (action.status == 'pending')
+                        IconButton(
+                          tooltip: 'Approve',
+                          onPressed: () => _approve(action),
+                          icon: const Icon(Icons.check),
+                        )
+                      else if (action.status == 'approved')
+                        IconButton(
+                          tooltip: 'Execute',
+                          onPressed: () => _execute(action),
+                          icon: const Icon(Icons.play_arrow),
+                        ),
                     ],
                   ),
       ),
