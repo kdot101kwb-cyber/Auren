@@ -125,3 +125,36 @@ test('plugin invocation validates plugin id and action formats',()=>{
   const indexSource=String.raw\`exports.invokeAurenPlugin\`;
   assert.equal(indexSource,'exports.invokeAurenPlugin');
 });
+
+
+test('natural language action intent parser maps Arabic and English note requests', async () => {
+  const { normalizeAurenActionIntent, assertAurenActionPayload } = await import('./action_intent.js');
+  const note = normalizeAurenActionIntent('أنشئ لي ملاحظة: الاتصال بالمورد غداً');
+  assert.deepEqual(note, {
+    action: 'demo.create_note',
+    payload: {text: 'الاتصال بالمورد غداً'},
+    text: 'سأنشئ الملاحظة بعد موافقتك.',
+  });
+  const english = normalizeAurenActionIntent('create a note: Follow up with supplier');
+  assert.equal(english.action, 'demo.create_note');
+  assert.equal(english.payload.text, 'Follow up with supplier');
+  assert.deepEqual(assertAurenActionPayload(note.action, note.payload), note.payload);
+});
+
+test('natural language memory requests require explicit key and value', async () => {
+  const { normalizeAurenActionIntent, assertAurenActionPayload } = await import('./action_intent.js');
+  const memory = normalizeAurenActionIntent('احفظ في الذاكرة: الاسم: خالد');
+  assert.equal(memory.action, 'memory.save');
+  assert.deepEqual(memory.payload, {key: 'الاسم', value: 'خالد'});
+  assert.deepEqual(assertAurenActionPayload('memory.save', memory.payload), memory.payload);
+  assert.equal(normalizeAurenActionIntent('تذكر أنني أحب القهوة'), null);
+});
+
+test('natural language echo requests are allow-listed and bounded', async () => {
+  const { normalizeAurenActionIntent, assertAurenActionPayload } = await import('./action_intent.js');
+  const echo = normalizeAurenActionIntent('كرر: مرحباً');
+  assert.equal(echo.action, 'demo.echo');
+  assert.deepEqual(assertAurenActionPayload(echo.action, echo.payload), {text: 'مرحباً'});
+  assert.equal(normalizeAurenActionIntent('كرر: '), null);
+  assert.throws(() => assertAurenActionPayload('demo.echo', {text: 'ok', extra: 'no'}), /Invalid text action payload/);
+});
