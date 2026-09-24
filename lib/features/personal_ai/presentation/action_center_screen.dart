@@ -82,6 +82,41 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
   Future<void> _execute(AurenActionRequest action) async {
     final uid = _uid;
     if (uid == null || _busyActionId != null || action.status != 'approved') return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد تنفيذ AUREN'),
+        content: SingleChildScrollView(
+          child: ListBody(
+            children: [
+              Text(action.title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Text(action.description),
+              const SizedBox(height: 12),
+              Text('الأمر: ' + action.actionType),
+              if (action.spendingLimitMinor != null)
+                Text('حد العملية: ' + action.spendingLimitMinor.toString() + ' ' + action.currency),
+              const SizedBox(height: 12),
+              const Text('سيتم التنفيذ الآن بعد موافقتك السابقة.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('تنفيذ'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
     setState(() => _busyActionId = action.id);
     try {
       final execution = await _executor.execute(uid: uid, action: action);
@@ -93,7 +128,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل تنفيذ الأمر: $e')),
+          SnackBar(content: Text('فشل تنفيذ الأمر: ' + e.toString())),
         );
       }
     } finally {
