@@ -65,7 +65,7 @@ class _WorkflowDetails extends StatelessWidget {
   final AurenAgentCollaborationRepository repo;
   const _WorkflowDetails({required this.workflow, required this.repo});
 
-  Future<void> _command(BuildContext context, String command) async {
+  Future<void> _execute(BuildContext context, AurenAgentTask task) async {\n    try {\n      await repo.execute(task.id, output: {'source': task.sourceAgent, 'target': task.targetAgent, 'workflowId': workflow.workflowId, 'step': (task.input['step'] as num?)?.toInt() ?? 0, 'message': 'تم تنفيذ المرحلة بعد موافقة المستخدم.'});\n      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تنفيذ المرحلة وتحديث الـWorkflow.')));\n    } catch (e) {\n      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تنفيذ المهمة: $e')));\n    }\n  }\n\n  Future<void> _command(BuildContext context, String command) async {
     try {
       await repo.orchestrate(workflow.workflowId, command: command);
       if (context.mounted) Navigator.pop(context);
@@ -117,7 +117,7 @@ class _WorkflowDetails extends StatelessWidget {
                         IconButton(onPressed: () => repo.decide(t.id, 'cancelled'), icon: const Icon(Icons.close)),
                         IconButton(onPressed: () => repo.decide(t.id, 'approved'), icon: const Icon(Icons.check)),
                       ])
-                    : Icon(t.status == 'completed' ? Icons.check_circle : Icons.hourglass_top),
+                    : t.status == 'approved'\n                        ? IconButton(onPressed: () => _execute(context, t), icon: const Icon(Icons.play_arrow))\n                        : Icon(t.status == 'completed' ? Icons.check_circle : Icons.hourglass_top),
               ))),
             ],
           );
