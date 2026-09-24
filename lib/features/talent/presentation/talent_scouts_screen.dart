@@ -1,6 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/talent_scout.dart';
+import '../../../core/models/talent.dart';
+import '../../../core/models/opportunity.dart';
+import '../../../services/talent/talent_scout_service.dart';
+import 'talent_scout_results_screen.dart';
 import '../../../services/talent/talent_scout_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
@@ -23,7 +28,7 @@ class AurenTalentScoutsScreen extends StatelessWidget {
         Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('كشافو المواهب',style:Theme.of(context).textTheme.titleLarge),const SizedBox(height:8),const Text('مساعدون لاكتشاف الفرص والمهارات والظهور ومسارات التعلم. لا ينفذون إجراءات حساسة تلقائياً.')] ))),
         ...scouts.map((d){final enabled=saved[d['id']]?.enabled??false;return Card(child:SwitchListTile(value:enabled,onChanged:(v)=>repo.upsert(uid:uid,id:d['id']!,name:d['name']!,role:d['role']!,description:d['desc']!,enabled:v),title:Text(d['name']!),subtitle:Text(d['desc']!),secondary:Icon(enabled?Icons.radar:Icons.radar_outlined)));}),
         const SizedBox(height:8),
-        FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'أنت نظام كشافين للمواهب في AUREN. حلّل مهاراتي وأهدافي واقترح فرصاً مناسبة، مهارات مطلوبة، طرق ظهور، ومسارات تعلم. رتّب النتائج حسب الصلة ولا تنفذ أي إجراء حساس دون موافقتي.'))),icon:const Icon(Icons.auto_awesome),label:const Text('شغّل تحليل الكشافين مع AUREN')),
+        FilledButton.icon(onPressed:() async { final enabled=saved.values.where((s)=>s.enabled).toList(); if(enabled.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('فعّل كشافاً واحداً على الأقل أولاً.')));return;} final talentSnap=await FirebaseFirestore.instance.collection('talents').where('ownerId',isEqualTo:uid).limit(1).get(); if(talentSnap.docs.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أنشئ ملف موهبة أولاً حتى يستطيع الكشافون المطابقة.')));return;} final talent=AurenTalent.fromMap(talentSnap.docs.first.id,talentSnap.docs.first.data()); final oppSnap=await FirebaseFirestore.instance.collection('opportunities').where('status',isEqualTo:'open').limit(100).get(); final opportunities=oppSnap.docs.map((d)=>AurenOpportunity.fromMap(d.id,d.data())).toList(); await TalentScoutService().runNow(uid:uid,scouts:enabled,talent:talent,opportunities:opportunities); if(context.mounted) Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenTalentScoutResultsScreen(talent:talent,scouts:enabled))); },icon:const Icon(Icons.radar),label:const Text('شغّل الكشافين الآن')),
       ]);
     }));
   }
