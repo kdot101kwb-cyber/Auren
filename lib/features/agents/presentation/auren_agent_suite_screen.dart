@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
+import 'auren_execution_center_screen.dart';
+import 'auren_workflow_dashboard_screen.dart';
 
 class AurenAgentSuiteScreen extends StatelessWidget {
   const AurenAgentSuiteScreen({super.key});
@@ -46,6 +48,22 @@ class AurenAgentSuiteScreen extends StatelessWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentAgentsScreen())),
         )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.play_circle_outline),
+          title: const Text('Execution Center'),
+          subtitle: const Text('كل مهام الوكلاء: موافقة، تنفيذ، نتائج وحالة التنفيذ'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenExecutionCenterScreen())),
+        )),
+        const SizedBox(height: 8),
+        Card(child: ListTile(
+          leading: const Icon(Icons.account_tree_outlined),
+          title: const Text('Workflow Dashboard'),
+          subtitle: const Text('متابعة خطط الوكلاء متعددة المراحل'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWorkflowDashboardScreen())),
+        )),
+        const SizedBox(height: 8),
         const SizedBox(height: 8),
         ...agents.map((a) => Card(child: ListTile(
           leading: CircleAvatar(child: Text(a['category']!.substring(0, 1))),
