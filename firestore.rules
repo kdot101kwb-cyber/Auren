@@ -986,5 +986,17 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Real Work action proposals are server-created and server-executed.
+    match /users/{userId}/agent_work_actions/{actionId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
+    }
+
+    // Internal artifacts produced by approved Real Work actions are server-owned.
+    match /users/{userId}/agent_artifacts/{artifactId} {
+      allow read: if isOwner(userId);
+      allow create, update, delete: if false;
+    }
+
   }
 }
