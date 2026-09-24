@@ -27,6 +27,22 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /autopilot/{planId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && planId == 'current'
+          && request.resource.data.keys().hasOnly(['goal','summary','steps','updatedAt','paused'])
+          && request.resource.data.goal is string
+          && request.resource.data.goal.size() <= 300
+          && request.resource.data.summary is string
+          && request.resource.data.summary.size() <= 2000
+          && request.resource.data.steps is list
+          && request.resource.data.steps.size() <= 10
+          && request.resource.data.updatedAt is timestamp
+          && (!request.resource.data.keys().hasAny(['paused']) || request.resource.data.paused is bool);
+        allow delete: if isOwner(userId);
+      }
+
       match /memory_timeline/{eventId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId)
