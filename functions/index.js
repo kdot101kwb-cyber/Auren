@@ -689,16 +689,16 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
     const executionRef = db.collection('users').doc(uid)
       .collection('action_executions').doc(actionId);
 
-    // Claim the action atomically. This prevents two clients from executing
-    // the same approved action at the same time.
-    await db.runTransaction(async (tx) => {
+    // Claim the action atomically. A retry that finds an already executing
+    // action must stop before any side effect is attempted.
+    const claimed = await db.runTransaction(async (tx) => {
       const current = await tx.get(actionRef);
       if (!current.exists) {
         throw new Error('Action is no longer available.');
       }
       const currentData = current.data() || {};
       if (currentData.status === 'executing') {
-        return;
+        return false;
       }
       if (currentData.status !== 'approved') {
         throw new Error('Action is no longer approved for execution.');
@@ -714,7 +714,22 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         startedAt: FieldValue.serverTimestamp(),
         recoveryAfterSeconds: 120,
       }, {merge: true});
+      return true;
     });
+
+    if (!claimed) {
+      const latestSnapshot = await actionRef.get();
+      const latest = latestSnapshot.data() || {};
+      if (latest.status === 'completed') {
+        return {
+          status: 'completed',
+          actionId,
+          result: latest.result ?? null,
+          deduplicated: true,
+        };
+      }
+      throw new Error('Action is already executing.');
+    }
 
     await writeAurenActionAudit(
       uid,
