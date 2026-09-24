@@ -98,7 +98,7 @@ class ConversationRepository {
 
   Future<void> updateGroupMembers({required String conversationId, required String ownerUid, required List<String> memberIds}) async {
     final clean = memberIds.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
-    if (ownerUid.isEmpty || !clean.contains(ownerUid) || clean.length < 2 || clean.length > 50) {
+    if (ownerUid.isEmpty || !clean.contains(ownerUid) || clean.length < 3 || clean.length > 50) {
       throw ArgumentError('Groups must contain the owner and 3-50 members.');
     }
     final ref = _conversations.doc(conversationId);
@@ -164,7 +164,7 @@ class ConversationRepository {
       final members = List<String>.from(data['memberIds'] as List? ?? const []);
       if (memberUid == uid) throw StateError('The owner cannot be removed.');
       if (!members.contains(memberUid)) return;
-      if (members.length <= 2) throw StateError('A group must keep at least 2 members.');
+      if (members.length <= 3) throw StateError('A group must keep at least 3 members.');
       members.remove(memberUid);
       tx.update(ref, {'memberIds': members});
     });
