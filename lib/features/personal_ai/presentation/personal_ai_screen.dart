@@ -29,6 +29,7 @@ import 'campaign_ai_screen.dart';
 import 'partnership_matcher_screen.dart';
 import 'institution_connect_screen.dart';
 import 'export_ai_screen.dart';
+import 'impact_score_screen.dart';
 import 'opportunity_inbox_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
@@ -85,6 +86,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.handshake_outlined, 'Partnership Matcher', 'اعثر على أنشطة عامة قد توجد بينها فرص تعاون.', const AurenPartnershipMatcherScreen()),
         _tile(context, Icons.account_balance_outlined, 'Institution Connect', 'اعثر على جهات ومؤسسات عامة مرتبطة بمجالك أو هدفك.', const AurenInstitutionConnectScreen()),
         _tile(context, Icons.public, 'Export AI', 'حوّل فكرة التصدير إلى خطة عمل أولية.', const AurenExportAiScreen()),
+        _tile(context, Icons.insights, 'Impact Score', 'مؤشر شخصي للتقدم والإنجاز والخطوات التالية.', const AurenImpactScoreScreen()),
         _tile(context, Icons.next_plan_outlined, 'Next Move', 'يحدد لك AUREN خطوة عملية تالية بناءً على وضعك الحالي.', const AurenNextMoveScreen()),
         _tile(context, Icons.dashboard_outlined, 'Life Dashboard', 'نظرة موحدة على أهدافك وذاكرتك وBusiness وMarketplace وPulse والفرص.', const AurenLifeDashboardScreen()),
         _tile(context, Icons.flag_circle_outlined, 'Mission Mode', 'حوّل هدفك الحالي إلى مهمة مركزة وخطوة أولى.', const AurenMissionModeScreen()),
