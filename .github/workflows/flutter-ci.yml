@@ -10,17 +10,28 @@ on:
 jobs:
   flutter:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
+      - name: Generate Android platform
+        run: flutter create --platforms=android --project-name=auren .
+
       - name: Install dependencies
         run: flutter pub get
+
       - name: Analyze
         run: flutter analyze
+
       - name: Test
         run: flutter test
+
       - name: Build Android debug APK
         run: flutter build apk --debug
