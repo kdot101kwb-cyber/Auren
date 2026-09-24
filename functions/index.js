@@ -1341,82 +1341,70 @@ async function countOwnedAurenDocs(collection, uid, limit = 50) {
 }
 
 async function buildAurenWorkAgentResult(uid, agentId, prompt) {
-  const [goals, talents, opportunities, businesses, products, drafts, trips, savedPlaces] = await Promise.all([
-    countOwnedAurenDocs('goals', uid),
-    countOwnedAurenDocs('talents', uid),
-    countOwnedAurenDocs('opportunities', uid),
-    countOwnedAurenDocs('businesses', uid),
-    countOwnedAurenDocs('products', uid),
-    countOwnedAurenDocs('creator_drafts', uid),
-    countOwnedAurenDocs('trips', uid),
-    countOwnedAurenDocs('places', uid),
-  ]);
-
-  const context = {goals, talents, opportunities, businesses, products, drafts, trips, savedPlaces};
-  let actions = [];
-  let summary = '';
-
-  switch (agentId) {
+  const ownerQuery = (collection) => db.collection(collection).where('ownerId','==',uid).limit(50).get();
+  const [goalsSnap,talentsSnap,oppsSnap,bizSnap,productsSnap,draftsSnap,tripsSnap,placesSnap] =
+    await Promise.all(['goals','talents','opportunities','businesses','products','creator_drafts','trips','places'].map(ownerQuery));
+  const counts={goals:goalsSnap.size,talents:talentsSnap.size,opportunities:oppsSnap.size,businesses:bizSnap.size,products:productsSnap.size,drafts:draftsSnap.size,trips:tripsSnap.size,places:placesSnap.size};
+  const first=(snap)=>snap.docs[0]?.data()||null;
+  const actions=[];
+  let summary='';
+  switch(agentId){
     case 'Personal AI Agent':
-      summary = 'تم تحليل أهدافك وملفك الحالي لبناء خطوة تالية قابلة للتنفيذ.';
-      actions = ['راجع أهدافك النشطة', 'حدد خطوة واحدة لهذا اليوم', 'اربط الخطوة بفرصة أو مهارة عند الحاجة'];
+      summary='تم تحليل أهدافك وملفك الحالي وبناء خطوة تالية داخل AUREN.';
+      actions.push('اختر هدفاً نشطاً','حدد خطوة اليوم','اربطها بفرصة أو مهارة');
       break;
     case 'Talent Discovery Agent':
-      summary = 'تم تجهيز مسار لاكتشاف الفرص المناسبة بناءً على وجود ملف موهبة وفرص داخل AUREN.';
-      actions = ['تحقق من ملف الموهبة', 'راجع الفرص المفتوحة', 'شغّل المطابقة عند توفر المهارات'];
+      summary='تم تحليل ملف الموهبة والفرص الحالية لاختيار مسارات اكتشاف.';
+      actions.push('راجع ملف الموهبة','راجع الفرص المفتوحة','شغّل المطابقة');
       break;
     case 'Opportunity Match Agent':
-      summary = 'تم تجهيز مطابقة داخلية بين ملف الموهبة والفرص المتاحة في AUREN.';
-      actions = ['قارن المهارات', 'راجع الفجوات', 'اختر الفرص التي تريد متابعة التقديم عليها'];
+      summary='تم تجهيز مطابقة عملية بين ملف الموهبة والفرص المفتوحة.';
+      actions.push('قارن المهارات','راجع الفجوات','اختر الفرص للمتابعة');
       break;
     case 'Skill Coach Agent':
-      summary = 'تم بناء نقطة بداية لخطة المهارات وربطها بالأهداف والفرص الموجودة.';
-      actions = ['حدد مهارة واحدة ذات أولوية', 'اربطها بهدف', 'طبّقها في مشروع أو فرصة حقيقية'];
+      summary='تم تجهيز مسار مهارات مرتبط بالأهداف والفرص الموجودة.';
+      actions.push('حدد مهارة أولوية','اربطها بهدف','طبّقها في مشروع');
       break;
     case 'Business Growth Agent':
-      summary = 'تم تحليل الأصول التجارية الحالية لبناء خطة نمو عملية.';
-      actions = ['حسّن صفحة النشاط', 'حوّل المشاهدات إلى Leads', 'اربط المنتجات بالعملاء والشراكات'];
+      summary='تم تحليل أصول النشاط التجاري لبناء مسار نمو داخل AUREN.';
+      actions.push('حسّن صفحة النشاط','راجع المنتجات','تابع إشارات العملاء والـLeads');
       break;
     case 'Supplier & Export Agent':
-      summary = 'تم تجهيز تقييم أولي لجاهزية التجارة والتصدير داخل AUREN.';
-      actions = ['حدد المنتجات القابلة للتصدير', 'حدد السوق والعملة', 'اجمع بيانات المورد والشحن قبل أي التزام'];
+      summary='تم تجهيز تقييم أولي للمنتجات والتجارة والتصدير من بياناتك الحالية.';
+      actions.push('حدد المنتجات','حدد السوق والعملة','اجمع بيانات المورد والشحن','راجع قبل أي التزام');
       break;
     case 'Creator Studio Agent':
-      summary = 'تم تحليل أصول Creator Studio وتجهيز خطة محتوى أولية.';
-      actions = ['اختر فكرة محتوى', 'حوّلها إلى مسودة', 'حدد جمهوراً وقناة نشر'];
+      summary='تم تحليل مسودات Creator Studio وبناء خطة محتوى أولية.';
+      actions.push('اختر فكرة','طوّر المسودة','حدد الجمهور','راجع قبل النشر');
       break;
     case 'Campaign Agent':
-      summary = 'تم تجهيز هيكل حملة يعتمد على الأصول الحالية بدلاً من إطلاق أي حملة تلقائياً.';
-      actions = ['حدد الهدف', 'حدد الجمهور', 'أنشئ الرسائل والمحتوى', 'راجع النتائج قبل أي إنفاق'];
+      summary='تم تجهيز هيكل حملة من أصول AUREN بدون إطلاق أو إنفاق تلقائي.';
+      actions.push('حدد الهدف','حدد الجمهور','أنشئ الرسائل','راجع قبل الإطلاق');
       break;
     case 'Partnership Agent':
-      summary = 'تم تجهيز خريطة شراكات أولية تربط النشاط والفرص والموهبة.';
-      actions = ['حدد نوع الشريك', 'جهز عرض القيمة', 'أنشئ قائمة تواصل', 'راجع أي رسالة قبل إرسالها'];
+      summary='تم بناء مسار شراكة يربط النشاط والفرص والمواهب.';
+      actions.push('حدد نوع الشريك','جهز عرض القيمة','أنشئ قائمة تواصل','راجع الرسالة قبل الإرسال');
       break;
     case 'Market Intelligence Agent':
-      summary = 'تم تجهيز ملخص بحث داخلي من بيانات AUREN المتاحة دون ادعاء بيانات خارجية.';
-      actions = ['حدد سؤال البحث', 'قارن الخيارات', 'سجل الأدلة ومصدر كل معلومة قبل القرار'];
+      summary='تم تنظيم بحث داخلي من بيانات AUREN المتاحة دون ادعاء مصادر خارجية.';
+      actions.push('حدد سؤال البحث','قارن الخيارات','سجل الأدلة والمصادر');
       break;
     case 'Travel Agent':
-      summary = 'تم تحليل أصول السفر المحفوظة وتجهيز قالب رحلة قابل للتخصيص.';
-      actions = ['حدد الوجهة', 'حدد الميزانية والمدة', 'راجع الأماكن والرحلات المحفوظة'];
+      summary='تم تحليل بيانات السفر المحفوظة وتجهيز قالب رحلة.';
+      actions.push('حدد الوجهة','حدد الميزانية والمدة','راجع الأماكن والرحلات');
       break;
     case 'Home & Life Agent':
-      summary = 'تم تجهيز خطة تنظيم يومية مرتبطة بأهدافك وبياناتك داخل AUREN.';
-      actions = ['رتب المهام', 'حدد الأولويات', 'حوّل المهمة المهمة إلى هدف قابل للمتابعة'];
+      summary='تم تنظيم خطة يومية مرتبطة بالأهداف والمهام داخل AUREN.';
+      actions.push('رتب المهام','حدد الأولويات','حوّل المهمة المهمة إلى هدف');
       break;
+    default: throw new Error('Unsupported work agent.');
   }
-
   return {
-    kind: 'auren_work_agent_result',
-    agentId,
-    prompt: prompt.slice(0, 1000),
-    summary,
-    actions: actions.slice(0, 10),
-    context,
-    approvalRequired: true,
-    externalActionsExecuted: false,
-    nextStep: 'راجع النتيجة ثم نفّذ أي إجراء حساس بموافقة صريحة.',
+    kind:'auren_real_work_result',agentId,prompt:prompt.slice(0,1000),summary,
+    actions:actions.slice(0,10),context:{counts,firstBusiness:first(bizSnap),firstProduct:first(productsSnap),firstTalent:first(talentsSnap),firstOpportunity:first(oppsSnap),firstDraft:first(draftsSnap)},
+    capabilities:{readAurenData:true,writeExternal:false,sendMessages:false,spendMoney:false,publish:false},
+    approvalRequired:true,externalActionsExecuted:false,
+    nextStep:'النتيجة جاهزة. أي إنشاء أو إرسال أو نشر أو دفع أو إجراء خارجي يحتاج موافقة صريحة.';
   };
 }
 
