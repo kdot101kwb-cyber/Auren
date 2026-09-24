@@ -14,8 +14,8 @@ class TalentAgentWorkflowScreen extends StatefulWidget {
 }
 class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
   late final AurenTalentPlan plan; late final AurenAgentCollaborationRepository repo;
-  List<AurenAgentTask> tasks=[]; int currentStep=0; bool loading=false; String previousOutput='';
-  @override void initState(){super.initState();plan=const AurenTalentAgentOrchestrator().buildPlan(talent:widget.talent,opportunity:widget.match.opportunity,match:widget.match);repo=AurenAgentCollaborationRepository();}
+  List<AurenAgentTask> tasks=[]; int currentStep=0; bool loading=false; String previousOutput=''; late final String workflowId;
+  @override void initState(){super.initState();plan=const AurenTalentAgentOrchestrator().buildPlan(talent:widget.talent,opportunity:widget.match.opportunity,match:widget.match);repo=AurenAgentCollaborationRepository(); workflowId='talent_${widget.talent.id}_${widget.match.opportunity.id}';}
   List<AurenAgentTask> _workflowTasks(List<AurenAgentTask> value)=>value.where((t)=>t.input['opportunityId']==plan.opportunity.id&&t.input['talentId']==widget.talent.id).toList();
   void _syncTasks(List<AurenAgentTask> value){
     final next=_workflowTasks(value);
@@ -41,7 +41,7 @@ class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
       if(incoming!=null&&incoming.status=='approved'){await repo.execute(incoming.id,output:{'agent':plan.steps[i].agent,'agentOutput':output,'step':i,'opportunityId':plan.opportunity.id});}
       if(i>=plan.steps.length-1){if(mounted)setState(()=>currentStep=i);return;}
       final next=plan.steps[i+1];
-      final id=await repo.propose(sourceAgent:plan.steps[i].agent,targetAgent:next.agent,title:'${next.title}: ${plan.opportunity.title}',input:{'workflowType':'talent_opportunity','opportunityId':plan.opportunity.id,'talentId':widget.talent.id,'step':i+1,'previousAgent':plan.steps[i].agent,'previousOutput':output});
+      final id=await repo.propose(sourceAgent:plan.steps[i].agent,targetAgent:next.agent,title:'${next.title}: ${plan.opportunity.title}',workflowId:workflowId,step:i+1,input:{'workflowType':'talent_opportunity','opportunityId':plan.opportunity.id,'talentId':widget.talent.id,'step':i+1,'previousAgent':plan.steps[i].agent,'previousOutput':output});
       if(mounted){setState(()=>currentStep=i+1);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم حفظ مخرجات ${plan.steps[i].agent} وتسليمها إلى ${next.agent}. يحتاج موافقتك.')));}
       debugPrint('AUREN collaboration task created: $id');
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر حفظ مخرجات الوكيل: $e')));}
