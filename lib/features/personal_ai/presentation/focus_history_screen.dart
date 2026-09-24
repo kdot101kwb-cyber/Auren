@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart';import 'package:firebase_auth/firebase_auth.dart';import '../../../services/personal_ai/focus_history_service.dart';class AurenFocusHistoryScreen extends StatelessWidget{const AurenFocusHistoryScreen({super.key});@override Widget build(BuildContext c)=>const Scaffold(body:Center(child:Text('Focus History')));}
