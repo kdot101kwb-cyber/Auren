@@ -16,6 +16,8 @@ class AurenActionRequest {
   final String status;
   final dynamic result;
   final DateTime createdAt;
+  final DateTime? executionStartedAt;
+  final String? executionSpendingDay;
 
   const AurenActionRequest({
     required this.id,
@@ -33,6 +35,8 @@ class AurenActionRequest {
     required this.status,
     this.result,
     required this.createdAt,
+    this.executionStartedAt,
+    this.executionSpendingDay,
   });
 
   Map<String, dynamic> toMap() => {
@@ -50,6 +54,8 @@ class AurenActionRequest {
         'status': status,
         'result': result,
         'createdAt': createdAt.toUtc().toIso8601String(),
+        'executionStartedAt': executionStartedAt?.toUtc().toIso8601String(),
+        'executionSpendingDay': executionSpendingDay,
       };
 
   static DateTime _parseDate(dynamic value) {
@@ -77,5 +83,7 @@ class AurenActionRequest {
         status: m['status'] as String? ?? 'pending',
         result: m['result'],
         createdAt: _parseDate(m['createdAt']),
+        executionStartedAt: m['executionStartedAt'] == null ? null : _parseDate(m['executionStartedAt']),
+        executionSpendingDay: m['executionSpendingDay'] as String?,
       );
 }
