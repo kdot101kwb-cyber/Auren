@@ -6,7 +6,8 @@ const MAX_DAILY_INVOCATIONS = 10000;
 const MAX_DEPENDENCIES = 50;
 const SAFE_DEPENDENCY = /^[a-z0-9][a-z0-9@._/-]{0,119}$/;
 const UNSAFE_DEPENDENCY_PATH = /(^|\/)\.\.(\/|$)|(^|\/)\.(\/|$)/;
-const SAFE_ID = /^[a-z0-9._-]{3,64}$/;
+const SAFE_ID = /^[a-z0-9][a-z0-9._-]{2,63}$/;
+const SAFE_VERSION = /^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$/;
 
 const SUSPICIOUS_PATTERNS = Object.freeze([
   { name: 'child_process', pattern: /\b(?:require\(|from\s+|import\s*\(|import\s+)\s*['"](?:node:)?child_process['"]/ },
@@ -76,6 +77,8 @@ export function validatePackageMetadata(meta) {
   if (
     typeof meta.pluginId !== 'string' ||
     typeof meta.version !== 'string' ||
+    !SAFE_ID.test(meta.pluginId) ||
+    !SAFE_VERSION.test(meta.version) ||
     typeof meta.sha256 !== 'string' ||
     !/^[a-f0-9]{64}$/.test(meta.sha256)
   ) {
