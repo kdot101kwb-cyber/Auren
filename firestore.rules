@@ -212,7 +212,37 @@ service cloud.firestore {
       }
 
       match /memory/{memoryId} {
-        allow read, write: if isOwner(userId);
+        allow read: if isOwner(userId);
+
+        // Client memory edits are limited to the user-facing fields.
+        // Server-side AUREN Actions can still write provenance fields via Admin SDK.
+        allow create: if isOwner(userId)
+          && request.resource.data.key is string
+          && request.resource.data.key.size() > 0
+          && request.resource.data.key.size() <= 120
+          && request.resource.data.value is string
+          && request.resource.data.value.size() > 0
+          && request.resource.data.value.size() <= 2000
+          && request.resource.data.enabled is bool
+          && request.resource.data.updatedAt is string
+          && request.resource.data.keys().hasOnly([
+            'key', 'value', 'enabled', 'updatedAt'
+          ]);
+
+        allow update: if isOwner(userId)
+          && request.resource.data.key is string
+          && request.resource.data.key.size() > 0
+          && request.resource.data.key.size() <= 120
+          && request.resource.data.value is string
+          && request.resource.data.value.size() > 0
+          && request.resource.data.value.size() <= 2000
+          && request.resource.data.enabled is bool
+          && request.resource.data.updatedAt is string
+          && request.resource.data.keys().hasOnly([
+            'key', 'value', 'enabled', 'updatedAt'
+          ]);
+
+        allow delete: if isOwner(userId);
       }
 
       match /notifications/{notificationId} {
