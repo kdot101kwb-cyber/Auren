@@ -39,6 +39,8 @@ import 'focus_history_screen.dart';
 import 'calendar_screen.dart';
 import 'learn_by_doing_screen.dart';
 import 'opportunity_graph_screen.dart';
+import 'universal_conversation_screen.dart';
+import 'opportunity_chain_screen.dart';
 import 'opportunity_inbox_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
@@ -119,6 +121,8 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.date_range, 'Weekly Review', 'راجع أسبوعك وحدد نقطة التركيز التالية.', const AurenWeeklyReviewScreen()),
         _tile(context, Icons.center_focus_strong, 'Focus Mode', 'جلسة تركيز مؤقتة مرتبطة بهدفك الحالي.', const AurenFocusModeScreen()),
         _tile(context, Icons.view_timeline_outlined, 'Daily Plan', 'ابنِ خطة يوم صغيرة من هدفك الحالي.', const AurenDailyPlanScreen()),
+        _tile(context, Icons.forum_outlined, 'Universal Conversation', 'محادثة واحدة تحمل سياقك إلى AUREN AI.', const AurenUniversalConversationScreen()),
+        _tile(context, Icons.alt_route_outlined, 'Opportunity Chain', 'حوّل إشارة الفرصة إلى خطوات من التحقق حتى النتيجة.', const AurenOpportunityChainScreen()),
         _tile(context, Icons.hub_outlined, 'Personal Opportunity Graph', 'اربط أهدافك وسياقك وأعمالك بإشارات فرص عامة.', const AurenOpportunityGraphScreen()),
         _tile(context, Icons.school_outlined, 'Learn by Doing', 'تعلّم مهارة من خلال التطبيق داخل هدفك الحالي.', const AurenLearnByDoingScreen()),
         _tile(context, Icons.inbox_outlined, 'Opportunity Inbox', 'اجمع الفرص العامة في مكان واحد وحللها مع AUREN.', const AurenOpportunityInboxScreen()),
