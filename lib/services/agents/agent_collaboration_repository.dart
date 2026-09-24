@@ -6,8 +6,8 @@ class AurenAgentCollaborationRepository {
   final FirebaseFirestore db; final FirebaseFunctions functions;
   AurenAgentCollaborationRepository({FirebaseFirestore? firestore,FirebaseFunctions? cloudFunctions}) : db=firestore??FirebaseFirestore.instance, functions=cloudFunctions??FirebaseFunctions.instanceFor(region:'us-central1');
   Stream<List<AurenAgentTask>> watch(String uid) => db.collection('users').doc(uid).collection('agent_collaboration').orderBy('createdAt',descending:true).limit(50).snapshots().map((s)=>s.docs.map((d)=>AurenAgentTask.fromMap(d.id,d.data())).toList());
-  Future<String> propose({required String sourceAgent,required String targetAgent,required String title,Map<String,dynamic> input=const {},String taskType='handoff'}) async {
-    final r=await functions.httpsCallable('proposeAurenAgentTask').call({'sourceAgent':sourceAgent,'targetAgent':targetAgent,'taskType':taskType,'title':title,'input':input});
+  Future<String> propose({required String sourceAgent,required String targetAgent,required String title,Map<String,dynamic> input=const {},String taskType='handoff',String? workflowId,int? step}) async {
+    final r=await functions.httpsCallable('proposeAurenAgentTask').call({'sourceAgent':sourceAgent,'targetAgent':targetAgent,'taskType':taskType,'title':title,'input':input,'workflowId':workflowId,'step':step});
     return Map<String,dynamic>.from(r.data as Map)['taskId'].toString();
   }
   Future<void> decide(String taskId,String decision) async { await functions.httpsCallable('decideAurenAgentTask').call({'taskId':taskId,'decision':decision}); }
