@@ -19,8 +19,9 @@ import '../../../services/users/presence_service.dart';
 class MessengerScreen extends StatefulWidget {
   final String? conversationId;
   final String? initialPrompt;
+  final ValueChanged<String>? onAiResponse;
 
-  const MessengerScreen({super.key, this.conversationId, this.initialPrompt});
+  const MessengerScreen({super.key, this.conversationId, this.initialPrompt, this.onAiResponse});
 
   @override
   State<MessengerScreen> createState() => _MessengerScreenState();
@@ -146,6 +147,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           message: text,
           requestId: messageId,
         );
+        widget.onAiResponse?.call(response.text);
 
         // The gateway persists the AI-authored message server-side.
         // The client must never be allowed to impersonate "auren-ai".
