@@ -19,6 +19,8 @@ class AurenActionDefinition {
   final bool requiresApproval;
   final int? maxAmountMinor;
   final Set<String> allowedPayloadKeys;
+  final Set<String> requiredPayloadKeys;
+  final int maxPayloadEntries;
 
   const AurenActionDefinition({
     required this.type,
@@ -29,6 +31,8 @@ class AurenActionDefinition {
     required this.requiresApproval,
     this.maxAmountMinor,
     this.allowedPayloadKeys = const {},
+    this.requiredPayloadKeys = const {},
+    this.maxPayloadEntries = 10,
   });
 }
 
@@ -42,6 +46,8 @@ class AurenActionRegistry {
       approvalLevel: 1,
       requiresApproval: true,
       allowedPayloadKeys: {'text'},
+      requiredPayloadKeys: {'text'},
+      maxPayloadEntries: 1,
     ),
     'demo.create_note': AurenActionDefinition(
       type: 'demo.create_note',
@@ -60,6 +66,8 @@ class AurenActionRegistry {
       approvalLevel: 1,
       requiresApproval: true,
       allowedPayloadKeys: {'key', 'value'},
+      requiredPayloadKeys: {'key', 'value'},
+      maxPayloadEntries: 2,
     ),
   };
 
@@ -68,7 +76,9 @@ class AurenActionRegistry {
     if (normalizedType != type) return false;
     final definition = get(normalizedType);
     if (definition == null) return false;
-    return payload.keys.every(definition.allowedPayloadKeys.contains);
+    if (payload.length > definition.maxPayloadEntries) return false;
+    if (!payload.keys.every(definition.allowedPayloadKeys.contains)) return false;
+    return definition.requiredPayloadKeys.every(payload.containsKey);
   }
 
   static AurenActionDefinition? get(String type) => definitions[type];
@@ -94,6 +104,10 @@ class AurenActionRegistry {
     final normalizedDescription = description.trim();
     if (normalizedDescription.length > 2000) {
       throw StateError('Action description is too long.');
+    }
+    if (payload.length > definition.maxPayloadEntries ||
+        !definition.requiredPayloadKeys.every(payload.containsKey)) {
+      throw StateError('Incomplete action payload.');
     }
     final invalidKeys = payload.keys
         .where((key) => !definition.allowedPayloadKeys.contains(key));
