@@ -1108,10 +1108,14 @@ exports.publishAurenAgent = require('firebase-functions/v2/https').onCall(
   const description=typeof request.data?.description==='string'?request.data.description.trim():'';
   const version=typeof request.data?.version==='string'?request.data.version.trim():'';
   const capabilities=Array.isArray(request.data?.capabilities)?request.data.capabilities.filter(x=>typeof x==='string').slice(0,30):[];
-  if(!agentId||!name||!version||name.length>120||description.length>1000||agentId.length>120)throw new Error('Invalid Agent listing.');
+  if(!/^[a-z0-9][a-z0-9._-]{2,63}$/.test(agentId)||!name||!version||name.length>120||description.length>1000)throw new Error('Invalid Agent listing.');
+  if(capabilities.some(x=>x.trim().length===0||x.trim().length>80||!/^[a-z0-9][a-z0-9._:-]*$/i.test(x.trim())))throw new Error('Invalid Agent capability.');
   const owned=await db.collection('users').doc(uid).collection('agents').doc(agentId).get();
   if(!owned.exists||owned.data()?.status!=='active')throw new Error('Agent is not active or owned.');
-  await db.collection('agent_listings').doc(agentId).set({
+  const listingRef=db.collection('agent_listings').doc(agentId);
+  const existingListing=await listingRef.get();
+  if(existingListing.exists && existingListing.data()?.ownerUid && existingListing.data()?.ownerUid!==uid)throw new Error('Agent id is already published by another owner.');
+  await listingRef.set({
     agentId,name,description,version,capabilities,state:'published',
     pricing:{model:'free',currency:'USD',amountMinor:0},
     reputationScore:0,reviewCount:0,ownerUid:uid,updatedAt:FieldValue.serverTimestamp(),
