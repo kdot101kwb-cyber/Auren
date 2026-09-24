@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
+import '../../talent/presentation/talent_screen.dart';
+import '../../talent/presentation/talent_agents_screen.dart';
 
 class AurenDiscoverScreen extends StatefulWidget {
   const AurenDiscoverScreen({super.key});
@@ -20,6 +22,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
     _DiscoverItem('Entertainment', 'Series • Music • Gaming • Live', Icons.play_circle_outline),
     _DiscoverItem('Opportunities', 'عمل • مواهب • مشاريع • تعلم', Icons.work_outline),
+    _DiscoverItem('Talent', 'مواهب ووكلاء AI للمسار المهني', Icons.psychology_outlined),
   ];
 
   List<_DiscoverItem> get _filteredItems {
@@ -32,6 +35,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
   }
 
   void _open(BuildContext context, _DiscoverItem item) {
+    if (item.title == 'Talent') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
+      return;
+    }
     if (item.title == 'People') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen()));
       return;
@@ -106,6 +113,19 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
                     initialPrompt: 'ساعدني أكتشف شيئًا جديدًا يناسب اهتماماتي وأهدافي اليوم.',
                   ),
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.psychology_outlined),
+              title: const Text('Talent Agents'),
+              subtitle: const Text('وكلاء AI متخصصون للمواهب: Career • Discovery • Portfolio • Brand • Negotiation'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenTalentAgentsScreen()),
               ),
             ),
           ),
