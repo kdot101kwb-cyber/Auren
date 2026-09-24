@@ -1331,68 +1331,110 @@ exports.orchestrateAurenTalentWorkflow = require('firebase-functions/v2/https').
 
 
 
-async function runAurenTalentScoutForOpportunity(opportunitySnap) {
-  const opportunity = opportunitySnap.data() || {};
-  if (opportunity.status !== 'open') return 0;
-  const skills = Array.isArray(opportunity.skills) ? opportunity.skills.map((x) => String(x).trim().toLowerCase()).filter(Boolean) : [];
-  const skillSet = new Set(skills);
-  const scoutsSnap = await db.collectionGroup('talent_scouts').where('enabled', '==', true).limit(300).get();
-  let created = 0;
-  for (const scoutDoc of scoutsSnap.docs) {
-    const scout = scoutDoc.data() || {};
-    if (scout.role !== 'opportunity') continue;
-    const ownerId = scout.ownerId;
-    if (typeof ownerId !== 'string' || !ownerId) continue;
-    const talentSnap = await db.collection('talents').where('ownerId', '==', ownerId).where('status', '==', 'active').limit(1).get();
-    if (talentSnap.empty) continue;
-    const talent = talentSnap.docs[0].data() || {};
-    const talentSkills = Array.isArray(talent.skills) ? talent.skills.map((x) => String(x).trim().toLowerCase()).filter(Boolean) : [];
-    const matched = skills.filter((s) => talentSkills.includes(s));
-    const missing = skills.filter((s) => !talentSkills.includes(s));
-    const score = skills.length ? Math.round((matched.length / skills.length) * 100) : 35;
-    if (score < 25) continue;
-    const findingId = `opp_${opportunitySnap.id}_${scoutDoc.id.split('/').pop()}`;
-    const ref = db.collection('users').doc(ownerId).collection('talent_scout_findings').doc(findingId);
-    const existing = await ref.get();
-    await ref.set({
-      ownerId, scoutId: scoutDoc.id.split('/').pop(), type: 'opportunity',
-      title: String(opportunity.title || 'فرصة جديدة').slice(0, 200),
-      description: String(opportunity.description || 'فرصة جديدة اكتشفها كشاف AUREN.').slice(0, 3000),
-      sourceType: 'opportunity', sourceId: opportunitySnap.id, status: 'new',
-      score, matchedSkills: matched.slice(0, 30), missingSkills: missing.slice(0, 30),
-      createdAt: existing.exists ? existing.data()?.createdAt : FieldValue.serverTimestamp(),
-      expiresAt: Timestamp.fromDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)),
-    }, {merge: true});
-    if (!existing.exists) {
-      await notify(ownerId, {
-        title: 'AUREN Scout وجد فرصة جديدة',
-        body: `مطابقة بنسبة ${score}%: ${String(opportunity.title || 'فرصة جديدة').slice(0, 100)}`,
-        type: 'talent_scout', targetId: ownerId, entityId: findingId,
-      });
-      created++;
-    }
-  }
-  return created;
+function normalizeScoutText(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9\\u0600-\\u06ff ]+/g, ' ').replace(/\\s+/g, ' ');
 }
 
-exports.onAurenOpportunityCreatedScout = onDocumentCreated(
-  {document: 'opportunities/{opportunityId}', region: 'us-central1'},
-  async (event) => runAurenTalentScoutForOpportunity(event.data),
-);
+async function loadAurenTalentForOwner(ownerId) {
+  const snap = await db.collection('talents').where('ownerId', '==', ownerId).where('status', '==', 'active').limit(1).get();
+  return snap.empty ? null : (snap.docs[0].data() || {});
+}
+
+function buildScoutFindingId(scoutId, sourceType, sourceId) {
+  return sourceType + '_' + sourceId + '_' + scoutId;
+}
+
+async function writeAurenScoutFinding(ownerId, findingId, data) {
+  const ref = db.collection('users').doc(ownerId).collection('talent_scout_findings').doc(findingId);
+  const existing = await ref.get();
+  await ref.set({
+    ownerId, ...data,
+    createdAt: existing.exists ? existing.data()?.createdAt : FieldValue.serverTimestamp(),
+    expiresAt: Timestamp.fromDate(new Date(Date.now() + (data.type === 'opportunity' ? 14 : 7) * 24 * 60 * 60 * 1000)),
+  }, {merge: true});
+  return !existing.exists;
+}
+
+async function runAurenTalentScoutForOpportunity(opportunitySnap, scouts = null) {
+  const opportunity = opportunitySnap.data() || {};
+  if (opportunity.status !== 'open') return 0;
+  const enabledScouts = scouts || (await db.collectionGroup('talent_scouts').where('enabled', '==', true).limit(300).get()).docs;
+  const skills = Array.isArray(opportunity.skills) ? opportunity.skills.map(normalizeScoutText).filter(Boolean) : [];
+  const created = [];
+  for (const scoutDoc of enabledScouts) {
+    const scout = scoutDoc.data() || {};
+    if (scout.role !== 'opportunity') continue;
+    const ownerId = typeof scout.ownerId === 'string' ? scout.ownerId : '';
+    if (!ownerId) continue;
+    const talent = await loadAurenTalentForOwner(ownerId);
+    if (!talent) continue;
+    const talentSkills = Array.isArray(talent.skills) ? talent.skills.map(normalizeScoutText).filter(Boolean) : [];
+    const matched = skills.filter((skill) => talentSkills.includes(skill));
+    const missing = skills.filter((skill) => !talentSkills.includes(skill));
+    const score = skills.length ? Math.round((matched.length / skills.length) * 100) : 35;
+    if (score < 25) continue;
+    const scoutId = scoutDoc.id;
+    const findingId = buildScoutFindingId(scoutId, 'opp', opportunitySnap.id);
+    const isNew = await writeAurenScoutFinding(ownerId, findingId, {
+      scoutId, type: 'opportunity', title: String(opportunity.title || 'فرصة جديدة').slice(0, 200),
+      description: String(opportunity.description || 'فرصة جديدة اكتشفها كشاف AUREN.').slice(0, 3000),
+      sourceType: 'opportunity', sourceId: opportunitySnap.id, status: 'new', score,
+      matchedSkills: matched.slice(0, 30), missingSkills: missing.slice(0, 30),
+    });
+    if (isNew) created.push({ownerId, findingId, score, title: opportunity.title || 'فرصة جديدة'});
+  }
+  await Promise.all(created.map((item) => notify(item.ownerId, {
+    title: 'AUREN Scout وجد فرصة جديدة',
+    body: 'مطابقة بنسبة ' + item.score + '%: ' + String(item.title).slice(0, 100),
+    type: 'talent_scout', targetId: item.ownerId, entityId: item.findingId,
+  })));
+  return created.length;
+}
+
+async function runAurenTalentScoutForOwner(scoutDoc, talent) {
+  const scout = scoutDoc.data() || {};
+  const ownerId = typeof scout.ownerId === 'string' ? scout.ownerId : '';
+  if (!ownerId || !talent || scout.role === 'opportunity') return 0;
+  const keywords = new Set([...(Array.isArray(scout.skills) ? scout.skills : []), ...(Array.isArray(scout.interests) ? scout.interests : [])].map(normalizeScoutText).filter(Boolean));
+  const haystack = normalizeScoutText([talent.bio, talent.category, talent.city, talent.country, ...(Array.isArray(talent.skills) ? talent.skills : [])].join(' '));
+  const matched = [...keywords].filter((keyword) => haystack.includes(keyword));
+  const score = keywords.size ? Math.round((matched.length / keywords.size) * 100) : 50;
+  if (keywords.size && score < 20) return 0;
+  const descriptions = {
+    market: 'إشارات سوق مرتبطة بمهاراتك: ' + (matched.length ? matched.join(' • ') : 'راجع اتجاهات السوق والمهارات المطلوبة.'),
+    talent: 'إشارات لاكتشاف مواهب أو فرق مرتبطة بمجالك: ' + (talent.category || 'مجالك الحالي') + '.',
+    brand: 'فرص وأفكار لبناء علامتك الشخصية حول: ' + (Array.isArray(talent.skills) ? talent.skills : []).slice(0, 5).join(' • ') + '.',
+    learning: 'مسار تعلم عملي لسد فجوات المهارات حول: ' + (Array.isArray(talent.skills) ? talent.skills : []).slice(0, 5).join(' • ') + '.',
+  };
+  const role = ['market', 'talent', 'brand', 'learning'].includes(scout.role) ? scout.role : 'market';
+  const findingId = buildScoutFindingId(scoutDoc.id, 'talent', ownerId);
+  const isNew = await writeAurenScoutFinding(ownerId, findingId, {
+    scoutId: scoutDoc.id, type: role, title: String(scout.name || 'AUREN Scout').slice(0, 200),
+    description: descriptions[role].slice(0, 3000), sourceType: 'talent', sourceId: ownerId, status: 'new',
+    score, matchedSkills: matched.slice(0, 30), missingSkills: [],
+  });
+  if (!isNew) return 0;
+  await notify(ownerId, {title: 'AUREN Scout حدّث لك اكتشافاً', body: descriptions[role].slice(0, 180), type: 'talent_scout', targetId: ownerId, entityId: findingId});
+  return 1;
+}
+
+exports.onAurenOpportunityCreatedScout = onDocumentCreated({document: 'opportunities/{opportunityId}', region: 'us-central1'}, async (event) => runAurenTalentScoutForOpportunity(event.data));
 
 exports.runAurenTalentScoutsDaily = onSchedule(
   {schedule: 'every 24 hours', timeZone: 'Africa/Khartoum', region: 'us-central1', timeoutSeconds: 540, memory: '512MiB'},
   async () => {
     const scoutsSnap = await db.collectionGroup('talent_scouts').where('enabled', '==', true).limit(300).get();
-    let created = 0;
+    const scouts = scoutsSnap.docs;
+    const owners = [...new Set(scouts.map((doc) => doc.data()?.ownerId).filter((ownerId) => typeof ownerId === 'string' && ownerId))];
+    const talentEntries = await Promise.all(owners.map(async (ownerId) => [ownerId, await loadAurenTalentForOwner(ownerId)]));
+    const talentByOwner = new Map(talentEntries.filter(([, talent]) => talent));
     const opportunitiesSnap = await db.collection('opportunities').where('status', '==', 'open').limit(300).get();
-    for (const opportunityDoc of opportunitiesSnap.docs) {
-      created += await runAurenTalentScoutForOpportunity(opportunityDoc);
-    }
-    return {scouts: scoutsSnap.size, opportunities: opportunitiesSnap.size, created};
+    let created = 0;
+    for (const opportunityDoc of opportunitiesSnap.docs) created += await runAurenTalentScoutForOpportunity(opportunityDoc, scouts);
+    for (const scoutDoc of scouts) { const talent = talentByOwner.get(scoutDoc.data()?.ownerId); if (talent) created += await runAurenTalentScoutForOwner(scoutDoc, talent); }
+    return {scouts: scouts.length, owners: owners.length, opportunities: opportunitiesSnap.size, created};
   },
 );
-
 exports.validateAurenPlugin = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
