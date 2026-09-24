@@ -4,6 +4,7 @@ import '../../../core/models/talent.dart';
 import '../../../services/talent/talent_repository.dart';
 import '../../../services/talent/talent_discovery_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'talent_agent_workflow_screen.dart';
 
 class TalentOpportunityMatchesScreen extends StatefulWidget {
   final AurenTalent talent;
@@ -31,11 +32,14 @@ class _TalentOpportunityMatchesScreenState extends State<TalentOpportunityMatche
               const SizedBox(height:10),Text('المهارات المتطابقة: '+(m.matchedSkills.isEmpty?'لا توجد':m.matchedSkills.join(' • '))),
               if(m.missingSkills.isNotEmpty)Text('مهارات مطلوبة إضافية: '+m.missingSkills.join(' • ')),
               const SizedBox(height:10),
-              Align(alignment:Alignment.centerRight,child:FilledButton.icon(
-                icon:const Icon(Icons.auto_awesome),label:const Text('حللها مع AUREN'),
+              Wrap(alignment:WrapAlignment.end,spacing:8,runSpacing:8,children:[FilledButton.icon(
+                icon:const Icon(Icons.auto_awesome),label:const Text('ابدأ خطة الوكلاء'),
+                onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>TalentAgentWorkflowScreen(talent:widget.talent,match:m))),
+              ),FilledButton.icon(
+                icon:const Icon(Icons.chat_outlined),label:const Text('حللها مع AUREN'),
                 onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:
                   'حلل هذه الفرصة للموهبة: ${m.opportunity.title}. المهارات المتطابقة: ${m.matchedSkills.join(', ')}. المهارات الناقصة: ${m.missingSkills.join(', ')}. اقترح خطوات عملية للتقديم والتطوير، ولا تنفذ أي إجراء حساس بدون موافقتي.'))),
-              )),
+              )]),
             ])));
           });
       }),
