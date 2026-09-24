@@ -13,6 +13,7 @@ import 'watchtower_screen.dart';
 import 'decision_room_screen.dart';
 import 'autopilot_screen.dart';
 import 'auto_organize_screen.dart';
+import 'context_switch_screen.dart';
 import 'opportunity_inbox_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
@@ -69,6 +70,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.gavel_outlined, 'Decision Room', 'قارن الخيارات قبل اتخاذ قرار مهم.', const AurenDecisionRoomScreen()),
         _tile(context, Icons.smart_toy_outlined, 'AUREN Autopilot', 'حوّل السياق الحالي إلى مسار خطوات تحت سيطرتك.', const AurenAutopilotScreen()),
         _tile(context, Icons.auto_awesome_mosaic_outlined, 'Auto-Organize', 'رتّب الذاكرة والأهداف إلى مجموعات مفهومة بدون حذف تلقائي.', const AurenAutoOrganizeScreen()),
+        _tile(context, Icons.swap_horiz_outlined, 'Context Switch', 'بدّل بين سياقات العمل والتعلّم والسفر والشخصي بدون فقدان السياق.', const AurenContextSwitchScreen()),
         _tile(context, Icons.inbox_outlined, 'Opportunity Inbox', 'اجمع الفرص العامة في مكان واحد وحللها مع AUREN.', const AurenOpportunityInboxScreen()),
         _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.', const MessengerScreen(initialPrompt: 'حوّل هذا الهدف إلى خطوات عملية ونفّذ ما يحتاج موافقتي.')),
         _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.', const AurenOpportunityAiScreen()),
