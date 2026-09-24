@@ -158,6 +158,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 ),
               const SizedBox(height: 6),
               TextFormField(
+                key: ValueKey('daily-limit-\${dailyLimit ?? 'none'}'),
                 initialValue: dailyLimit is num ? dailyLimit.toInt().toString() : '',
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
