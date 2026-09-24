@@ -1162,6 +1162,75 @@ function validateAurenPluginManifest(manifest) {
   return {pluginId, name, version, entrypoint, capabilities};
 }
 
+const AUREN_AGENT_FLOW = [
+  'Talent Discovery Agent',
+  'Opportunity Match Agent',
+  'Skill Coach Agent',
+  'Career Agent',
+  'Portfolio Agent',
+  'Negotiation Agent',
+];
+const AUREN_AGENT_FLOW_SET = new Set(AUREN_AGENT_FLOW);
+
+function validateAurenCollaborationInput(data) {
+  const sourceAgent = typeof data?.sourceAgent === 'string' ? data.sourceAgent.trim() : '';
+  const targetAgent = typeof data?.targetAgent === 'string' ? data.targetAgent.trim() : '';
+  const taskType = typeof data?.taskType === 'string' ? data.taskType.trim() : 'handoff';
+  const title = typeof data?.title === 'string' ? data.title.trim() : '';
+  const input = data?.input && typeof data.input === 'object' && !Array.isArray(data.input) ? data.input : {};
+  if (!AUREN_AGENT_FLOW_SET.has(sourceAgent) || !AUREN_AGENT_FLOW_SET.has(targetAgent) || !title || title.length > 200 || !/^[a-z0-9._:-]{2,80}$/i.test(taskType) || Object.keys(input).length > 30 || Buffer.byteLength(JSON.stringify(input), 'utf8') > 32768) throw new Error('Invalid agent collaboration task.');
+  const sourceIndex = AUREN_AGENT_FLOW.indexOf(sourceAgent);
+  const targetIndex = AUREN_AGENT_FLOW.indexOf(targetAgent);
+  if (targetIndex !== sourceIndex + 1) throw new Error('Agent transition is not allowed.');
+  return {sourceAgent, targetAgent, taskType, title, input};
+}
+
+exports.proposeAurenAgentTask = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
+    const data=validateAurenCollaborationInput(request.data || {});
+    const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc();
+    await ref.set({...data, ownerId:uid,status:'proposed',requiresApproval:false,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    return {status:'proposed',taskId:ref.id};
+  },
+);
+
+exports.decideAurenAgentTask = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
+    const taskId=typeof request.data?.taskId==='string'?request.data.taskId.trim():'';
+    const decision=request.data?.decision;
+    if(!taskId || taskId.length>120 || !['approved','cancelled'].includes(decision)) throw new Error('Invalid collaboration decision.');
+    const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc(taskId);
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref); if(!snap.exists) throw new Error('Collaboration task not found.');
+      const data=snap.data()||{}; if(data.status!=='proposed') throw new Error('Collaboration task is not awaiting a decision.');
+      tx.update(ref,{status:decision,decidedAt:FieldValue.serverTimestamp(),decidedBy:uid,updatedAt:FieldValue.serverTimestamp()});
+    });
+    return {status:decision,taskId};
+  },
+);
+
+exports.executeAurenAgentTask = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
+    const taskId=typeof request.data?.taskId==='string'?request.data.taskId.trim():'';
+    const output=request.data?.output && typeof request.data.output==='object' && !Array.isArray(request.data.output)?request.data.output:{};
+    if(!taskId || taskId.length>120 || Object.keys(output).length>30 || Buffer.byteLength(JSON.stringify(output),'utf8')>32768) throw new Error('Invalid collaboration output.');
+    const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc(taskId);
+    let target='';
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref); if(!snap.exists) throw new Error('Collaboration task not found.');
+      const data=snap.data()||{}; if(data.status!=='approved') throw new Error('Collaboration task requires approval before execution.');
+      target=data.targetAgent||''; if(!AUREN_AGENT_FLOW_SET.has(target)) throw new Error('Invalid target agent.');
+      tx.update(ref,{status:'completed',output,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    });
+    return {status:'completed',taskId,targetAgent:target};
+  },
+);
 exports.validateAurenPlugin = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
