@@ -34,6 +34,8 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
           StreamBuilder(stream: _goals.watch(uid), builder: (_, s) => _summaryTile(context, Icons.flag_outlined, 'Goals', s.hasData ? '${s.data!.length} أهداف محفوظة' : 'جاري التحميل…', const AurenGoalsScreen())),
           StreamBuilder(stream: _memory.watch(uid), builder: (_, s) => _summaryTile(context, Icons.psychology_outlined, 'Memory', s.hasData ? '${s.data!.where((m) => m.enabled).length} ذكريات مفعّلة' : 'جاري التحميل…', const AurenMemoryScreen())),
           const SizedBox(height: 8),
+          _personalContextCard(context, uid),
+          const SizedBox(height: 12),
         ],
         if (uid != null) ...[
           _coreFiveNextCard(context, uid),
@@ -59,6 +61,44 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
     ),
   );
   }
+
+
+  Widget _personalContextCard(BuildContext context, String uid) => FutureBuilder<AurenPersonalContext>(
+    future: PersonalContextRepository().load(uid),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) return const SizedBox.shrink();
+      final data = snapshot.data!;
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                const Icon(Icons.auto_awesome),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('Personal AI Context', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                Text('${data.goals.length} أهداف • ${data.memories.length} ذاكرة'),
+              ]),
+              const SizedBox(height: 8),
+              Text(data.goals.isEmpty
+                  ? 'ابدأ بهدف، وAUREN سيستخدمه مع الذاكرة لبناء السياق.'
+                  : 'متوسط تقدم أهدافك: ${data.averageProgress}%'),
+              const SizedBox(height: 10),
+              FilledButton.tonalIcon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: data.toPrompt())),
+                ),
+                icon: const Icon(Icons.chat_outlined),
+                label: const Text('اسأل AUREN باستخدام سياقي'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 
   Widget _coreFiveNextCard(BuildContext context, String uid) => FutureBuilder<AurenCoreFiveSnapshot>(
     future: AurenCoreFiveRepository().load(uid),
