@@ -27,6 +27,18 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /handoffs/{handoffId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasOnly(['title','summary','destination','context','createdAt'])
+          && request.resource.data.title is string
+          && request.resource.data.summary is string
+          && request.resource.data.destination is string
+          && request.resource.data.context is list
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if isOwner(userId);
+      }
+
       match /rescue_mode/{planId} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
