@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/agent_listing.dart';
 import 'agent_reviews_sheet.dart';
 import '../../../services/agents/agent_protocol_repository.dart';
-import '../../../services/agents/agent_installation_repository.dart';
+import '../../../services/agents/agent_plugin_repository.dart';
 import '../../../core/models/agent_message.dart';
 import '../../../services/agents/agent_plugin_repository.dart';
 
@@ -38,15 +38,15 @@ class _AgentDetailScreenState extends State<AgentDetailScreen> {
     if (uid == null || _installing) return;
     setState(() => _installing = true);
     try {
-      final repo = AurenAgentInstallationRepository();
+      final repo = AurenAgentPluginRepository();
       if (_installed) {
-        await repo.uninstall(uid, widget.agent.agentId);
+        await repo.uninstall(widget.agent.agentId);
       } else {
-        await repo.install(
-          uid: uid,
-          agentId: widget.agent.agentId,
+        await repo.installValidated(
+          pluginId: widget.agent.agentId,
           name: widget.agent.name,
           version: widget.agent.version,
+          capabilities: widget.agent.capabilities,
         );
       }
       if (mounted) setState(() => _installed = !_installed);
