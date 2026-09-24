@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart';import 'package:firebase_auth/firebase_auth.dart';import '../../../services/personal_ai/checkin_service.dart';class AurenCheckInScreen extends StatelessWidget{const AurenCheckInScreen({super.key});@override Widget build(BuildContext c)=>const Scaffold(body:Center(child:Text('Daily Check-in')));}
