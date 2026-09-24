@@ -103,7 +103,8 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly([
             'conversationId', 'actionType', 'title', 'description', 'payload',
             'permission', 'riskLevel', 'approvalLevel', 'spendingLimitMinor',
-            'currency', 'requiresApproval', 'status', 'result', 'createdAt'
+            'currency', 'requiresApproval', 'status', 'result', 'createdAt',
+            'executionStartedAt', 'executionSpendingDay'
           ]);
 
         // Approval/rejection is server-audited through decideAurenAction.
@@ -174,6 +175,8 @@ service cloud.firestore {
               && request.resource.data.dailySpendingLimitMinor >= 0))
           && request.resource.data.spentTodayMinor is int
           && request.resource.data.spendingDay is string
+          && request.resource.data.spentTodayMinor >= 0
+          && request.resource.data.spentTodayMinor >= resource.data.spentTodayMinor
           && request.resource.data.currency == resource.data.currency
           && request.resource.data.keys().hasOnly([
             'agentId', 'enabled', 'allowedActions', 'dailySpendingLimitMinor',
