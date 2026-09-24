@@ -134,6 +134,28 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
       },
     );
   }
+  Future<void> _recover(AurenActionRequest action) async {
+    final uid = _uid;
+    if (uid == null || _busyActionId != null || action.status != 'executing') return;
+    setState(() => _busyActionId = action.id);
+    try {
+      final execution = await _executor.recover(uid: uid, action: action);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(execution.result)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر استرجاع العملية: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busyActionId = null);
+    }
+  }
+
   Widget _auditPanel(String uid) {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _repo.watchAudit(uid, limit: 10),
@@ -199,7 +221,13 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
         ),
         isThreeLine: action.result != null || !history,
         trailing: history
-            ? null
+            ? (action.status == 'executing'
+                ? IconButton(
+                    tooltip: 'Recover',
+                    onPressed: _busyActionId == null ? () => _recover(action) : null,
+                    icon: const Icon(Icons.restart_alt),
+                  )
+                : null)
             : _busyActionId == action.id
                 ? const SizedBox(
                     width: 28,
