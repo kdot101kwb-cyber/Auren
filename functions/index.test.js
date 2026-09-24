@@ -41,3 +41,18 @@ test('execution claim must stop retries before side effects', () => {
   assert.match(source, /Action is already executing/);
   assert.match(source, /deduplicated: true/);
 });
+
+
+test('approval, execution and recovery remain explicit server endpoints', () => {
+  assert.match(source, /exports\.decideAurenAction/);
+  assert.match(source, /exports\.executeAurenAction/);
+  assert.match(source, /exports\.recoverAurenAction/);
+  assert.match(source, /action\.status !== 'pending'/);
+  assert.match(source, /!\['approved', 'executing'\]\.includes\(action\.status\)/);
+});
+
+test('permission ledger enforces disabled state and daily spending limits', () => {
+  assert.match(source, /AUREN agent permissions are disabled/);
+  assert.match(source, /Daily AUREN spending limit exceeded/);
+  assert.match(source, /Action is not granted by the permission ledger/);
+});
