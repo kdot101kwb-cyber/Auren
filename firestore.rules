@@ -110,7 +110,8 @@ service cloud.firestore {
         // Approval/rejection is server-audited through decideAurenAction.
         allow update: if false;
 
-        allow delete: if isOwner(userId);
+        // Action lifecycle is server-controlled; cancellation uses cancelAurenAction.
+        allow delete: if false;
       }
 
       match /agent_installations/{agentId} {
