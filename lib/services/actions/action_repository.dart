@@ -62,6 +62,69 @@ class ActionRepository {
     int? dailySpendingLimitMinor,
     String currency = 'USD',
   }) async {
+    final normalizedActions = allowedActions
+        .map((action) => action.trim())
+        .where((action) => action.isNotEmpty)
+        .toSet()
+        .take(100)
+        .toList();
+    final normalizedCurrency = currency.trim().toUpperCase();
+    if (!RegExp(r'^[A-Z]{3}
+    final ref = _db.collection('users').doc(uid).collection('agent_permissions').doc('primary');
+    await _db.runTransaction((tx) async {
+      final snapshot = await tx.get(ref);
+      final current = snapshot.data();
+      final spentTodayMinor = current?['spentTodayMinor'] is int
+          ? current!['spentTodayMinor'] as int
+          : 0;
+      final existingCurrency = current?['currency']?.toString() ?? currency;
+
+      if (snapshot.exists) {
+        tx.update(ref, {
+          'agentId': 'primary',
+          'enabled': enabled,
+          'allowedActions': normalizedActions,
+          'dailySpendingLimitMinor': dailySpendingLimitMinor,
+          'spentTodayMinor': spentTodayMinor,
+          'currency': existingCurrency,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        });
+      } else {
+        tx.set(ref, {
+          'agentId': 'primary',
+          'enabled': enabled,
+          'allowedActions': allowedActions,
+          'dailySpendingLimitMinor': dailySpendingLimitMinor,
+          'spentTodayMinor': 0,
+          'currency': normalizedCurrency,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        });
+      }
+    });
+  }
+
+  Stream<Map<String, dynamic>?> watchTrust(String uid) =>
+      _db.collection('users').doc(uid).collection('agent_trust').doc('primary')
+          .snapshots().map((s) => s.exists ? s.data() : null);
+
+  Future<AurenActionRequest?> get(String uid, String id) async {
+    final snapshot = await _actions(uid).doc(id).get();
+    if (!snapshot.exists || snapshot.data() == null) return null;
+    return AurenActionRequest.fromMap(snapshot.id, snapshot.data()!);
+  }
+
+  Future<void> setStatus(String uid, String id, String status, {String? result}) =>
+      _actions(uid).doc(id).update({
+        'status': status,
+        if (result != null) 'result': result,
+      });
+}
+).hasMatch(normalizedCurrency)) {
+      throw ArgumentError('Currency must be a 3-letter ISO code.');
+    }
+    if (dailySpendingLimitMinor != null && dailySpendingLimitMinor < 0) {
+      throw ArgumentError('Daily spending limit cannot be negative.');
+    }
     final ref = _db.collection('users').doc(uid).collection('agent_permissions').doc('primary');
     await _db.runTransaction((tx) async {
       final snapshot = await tx.get(ref);
