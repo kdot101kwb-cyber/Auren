@@ -25,12 +25,15 @@ class ActionRepository {
       });
 
   Stream<List<AurenActionRequest>> watchOutstanding(String uid) => _actions(uid)
-      .orderBy('createdAt')
       .snapshots()
-      .map((s) => s.docs
-          .map((d) => AurenActionRequest.fromMap(d.id, d.data()))
-          .where((a) => a.status == 'pending' || a.status == 'approved')
-          .toList());
+      .map((s) {
+        final actions = s.docs
+            .map((d) => AurenActionRequest.fromMap(d.id, d.data()))
+            .where((a) => a.status == 'pending' || a.status == 'approved')
+            .toList();
+        actions.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        return actions;
+      });
 
   Stream<List<AurenActionRequest>> watchOutstandingForConversation(
     String uid,
