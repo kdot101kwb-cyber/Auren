@@ -1224,42 +1224,95 @@ function validateAurenAgentOutput(output) {
   return output;
 }
 
+async function buildAurenAgentExecutionResult(uid, task) {
+  const input = task.input || {};
+  if (task.taskType === 'scout.opportunity_match' && input.opportunityId) {
+    const opportunitySnap = await db.collection('opportunities').doc(String(input.opportunityId)).get();
+    if (!opportunitySnap.exists) throw new Error('Opportunity no longer exists.');
+    const opportunity = opportunitySnap.data() || {};
+    if (opportunity.status !== 'open') throw new Error('Opportunity is no longer open.');
+    const talentSnap = await db.collection('talents').where('ownerId','==',uid).where('status','==','active').limit(1).get();
+    if (talentSnap.empty) throw new Error('Active talent profile not found.');
+    const talent = talentSnap.docs[0].data() || {};
+    const skills = Array.isArray(opportunity.skills) ? opportunity.skills.map(normalizeScoutText).filter(Boolean) : [];
+    const talentSkills = Array.isArray(talent.skills) ? talent.skills.map(normalizeScoutText).filter(Boolean) : [];
+    const matchedSkills = skills.filter((skill) => talentSkills.includes(skill));
+    const missingSkills = skills.filter((skill) => !talentSkills.includes(skill));
+    const score = skills.length ? Math.round((matchedSkills.length / skills.length) * 100) : Number(input.score || 0);
+    return {
+      kind:'opportunity_match',
+      opportunityId:String(input.opportunityId),
+      opportunityTitle:String(opportunity.title || 'فرصة'),
+      score,
+      matchedSkills:matchedSkills.slice(0,30),
+      missingSkills:missingSkills.slice(0,30),
+      recommendation: score >= 70 ? 'high_match' : score >= 40 ? 'partial_match' : 'low_match',
+      nextAction: missingSkills.length ? 'Skill Coach Agent should create a practical skill-gap plan.' : 'Career Agent can prepare the next application step.',
+    };
+  }
+  return {
+    kind:'agent_handoff',
+    agent:task.targetAgent,
+    message:'تم تنفيذ المرحلة وتحويل سياقها للوكيل التالي.',
+    receivedInputKeys:Object.keys(input).slice(0,30),
+  };
+}
+
 exports.executeAurenAgentTask = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB'},
   async (request) => {
     const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
     const taskId=typeof request.data?.taskId==='string'?request.data.taskId.trim():'';
-    const output=validateAurenAgentOutput(request.data?.output || {});
     if(!taskId || taskId.length>120) throw new Error('Invalid collaboration task id.');
     const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc(taskId);
     const executionRef=db.collection('users').doc(uid).collection('agent_task_executions').doc(taskId);
+    let taskData;
     let target='';
     let workflowId='';
+    let nextTaskId=null;
+    let finalResult;
     await db.runTransaction(async(tx)=>{
       const snap=await tx.get(ref); if(!snap.exists) throw new Error('Collaboration task not found.');
-      const data=snap.data()||{};
-      if(data.status!=='approved') throw new Error('Collaboration task requires approval before execution.');
-      target=data.targetAgent||''; if(!AUREN_AGENT_FLOW_SET.has(target)) throw new Error('Invalid target agent.');
-      workflowId=typeof data.workflowId==='string'?data.workflowId:'';
+      taskData=snap.data()||{};
+      if(taskData.status!=='approved') throw new Error('Collaboration task requires approval before execution.');
+      target=taskData.targetAgent||''; if(!AUREN_AGENT_FLOW_SET.has(target)) throw new Error('Invalid target agent.');
+      workflowId=typeof taskData.workflowId==='string'?taskData.workflowId:'';
       const workflowRef=workflowId ? db.collection('users').doc(uid).collection('agent_workflows').doc(workflowId) : null;
       if(workflowRef){
         const workflowSnap=await tx.get(workflowRef);
         if(workflowSnap.exists && workflowSnap.data()?.state==='paused') throw new Error('Workflow is paused.');
       }
+      finalResult = await buildAurenAgentExecutionResult(uid, taskData);
+      const step=Number(taskData.step ?? 0);
+      const isFinal=step >= AUREN_AGENT_FLOW.length - 1;
       tx.set(executionRef,{
         ownerId:uid, taskId, workflowId, targetAgent:target, status:'completed',
-        output, completedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+        output:finalResult, completedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
       },{merge:true});
-      tx.update(ref,{status:'completed',output,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
-      if (workflowRef) {
-        const step=Number(data.step ?? 0);
+      tx.update(ref,{status:'completed',output:finalResult,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      if(workflowRef){
         const nextStep=Math.min(step+1,AUREN_AGENT_FLOW.length-1);
-        tx.set(workflowRef,{ownerId:uid,workflowId,type:'talent_opportunity',state:'active',currentStep:nextStep,totalSteps:AUREN_AGENT_FLOW.length,currentAgent:AUREN_AGENT_FLOW[nextStep],pendingTaskId:null,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+        if(isFinal){
+          tx.set(workflowRef,{ownerId:uid,workflowId,type:'talent_opportunity',state:'completed',currentStep:step,totalSteps:AUREN_AGENT_FLOW.length,currentAgent:target,pendingTaskId:null,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+        } else {
+          const nextSource=target;
+          const nextTarget=AUREN_AGENT_FLOW[nextStep];
+          nextTaskId=taskId+'_next_'+nextStep;
+          const nextRef=db.collection('users').doc(uid).collection('agent_collaboration').doc(nextTaskId);
+          tx.set(nextRef,{
+            ownerId:uid,workflowId,step:nextStep,sourceAgent:nextSource,targetAgent:nextTarget,
+            taskType:'workflow.handoff',title:'متابعة خطة AUREN مع '+nextTarget,
+            input:{workflowId,step:nextStep,previousTaskId:taskId,previousResult:finalResult},
+            status:'proposed',requiresApproval:true,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp(),
+          });
+          tx.set(workflowRef,{ownerId:uid,workflowId,type:'talent_opportunity',state:'active',currentStep:nextStep,totalSteps:AUREN_AGENT_FLOW.length,currentAgent:nextTarget,pendingTaskId:nextTaskId,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+        }
       }
     });
     await writeAurenActionAudit(uid,{id:taskId,actionType:'agent.task',agentId:target,permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true},'completed',{source:'agent-task-execution',workflowId});
     await notify(uid,{title:'AUREN Agent completed',body:target+' أكمل المرحلة المطلوبة.',type:'agent',targetId:uid,entityId:taskId});
-    return {status:'completed',taskId,targetAgent:target,workflowId};
+    if(nextTaskId) await notify(uid,{title:'المرحلة التالية جاهزة للمراجعة',body:'اقترح AUREN تسليم النتيجة إلى '+AUREN_AGENT_FLOW[Number(taskData.step ?? 0)+1]+' بعد موافقتك.',type:'agent_workflow',targetId:uid,entityId:nextTaskId});
+    return {status:'completed',taskId,targetAgent:target,workflowId,result:finalResult,nextTaskId};
   },
 );
 
