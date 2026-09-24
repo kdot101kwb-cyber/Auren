@@ -41,23 +41,19 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     }
   }
 
-  Future<void> _decide(AurenActionRequest action, String decision) async {
+  Future<void> _decide(AurenActionRequest action, String decision, {bool manageBusy = true}) async {
     final uid = _uid;
-    if (uid == null || _busyActionId != null) return;
+    if (uid == null || (_busyActionId != null && _busyActionId != action.id)) return;
 
-    setState(() => _busyActionId = action.id);
+    if (manageBusy) setState(() => _busyActionId = action.id);
     try {
       await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('decideAurenAction')
           .call({'actionId': action.id, 'decision': decision});
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(decision == 'approved' ? 'تعذرت الموافقة على الأمر: $e' : 'تعذر رفض الأمر: $e')),
-        );
-      }
+      rethrow;
     } finally {
-      if (mounted) setState(() => _busyActionId = null);
+      if (manageBusy && mounted) setState(() => _busyActionId = null);
     }
   }
 
@@ -72,7 +68,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
       // The trusted backend is responsible for execution and final status.
       var approvedAction = action;
       if (action.status == 'pending') {
-        await _decide(action, 'approved');
+        await _decide(action, 'approved', manageBusy: false);
         approvedAction = AurenActionRequest(
           id: action.id,
           conversationId: action.conversationId,
@@ -148,7 +144,15 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                     children: [
                       IconButton(
                         tooltip: 'Reject',
-                        onPressed: () => _decide(action, 'rejected'),
+                        onPressed: () async {
+                          try {
+                            await _decide(action, 'rejected');
+                          } catch (e) {
+                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('تعذر رفض الأمر: $e')),
+                            );
+                          }
+                        },
                         icon: const Icon(Icons.close),
                       ),
                       IconButton(
