@@ -5,6 +5,7 @@ class AurenWorkAction {
   final String executionId;
   final String agentId;
   final String actionType;
+  final String domain;
   final String title;
   final String preview;
   final String status;
@@ -30,6 +31,7 @@ class AurenWorkAction {
         executionId:(data['executionId']??'').toString(),
         agentId:(data['agentId']??'').toString(),
         actionType:(data['actionType']??'').toString(),
+        domain:(data['domain']??'general').toString(),
         title:(data['title']??'').toString(),
         preview:(data['preview']??'').toString(),
         status:(data['status']??'proposed').toString(),
