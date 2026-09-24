@@ -247,3 +247,27 @@ test('security boundaries use backend-controlled permission lifecycle and unifie
   const pluginFn = source.slice(pluginStart, pluginEnd);
   assert.match(pluginFn, /const limit=10000/);
 });
+
+test('agent collaboration enforces ordered workflow transitions and approval', () => {
+  assert.match(source, /exports\.proposeAurenAgentTask/);
+  assert.match(source, /exports\.decideAurenAgentTask/);
+  assert.match(source, /exports\.executeAurenAgentTask/);
+  assert.match(source, /targetIndex !== sourceIndex \+ 1/);
+  assert.match(source, /requiresApproval:true/);
+  assert.match(source, /status:'proposed'/);
+  assert.match(source, /data\.status!=='approved'/);
+});
+
+test('agent collaboration persists workflow identity and step metadata', () => {
+  assert.match(source, /workflowId/);
+  assert.match(source, /step:step \?\? AUREN_AGENT_FLOW\.indexOf\(data\.targetAgent\)/);
+  assert.match(source, /previousOutput/);
+});
+
+test('agent collaboration output is bounded before persistence', () => {
+  const start=source.indexOf('exports.executeAurenAgentTask');
+  const end=source.indexOf('exports.validateAurenPlugin',start);
+  const fn=source.slice(start,end);
+  assert.match(fn,/Object\.keys\(output\)\.length>30/);
+  assert.match(fn,/Buffer\.byteLength\(JSON\.stringify\(output\),'utf8'\)>32768/);
+});
