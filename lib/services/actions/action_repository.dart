@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../core/models/action_request.dart';
 
 class ActionRepository {
@@ -119,6 +120,16 @@ class ActionRepository {
   Stream<Map<String, dynamic>?> watchTrust(String uid) =>
       _db.collection('users').doc(uid).collection('agent_trust').doc('primary')
           .snapshots().map((s) => s.exists ? s.data() : null);
+
+  Future<String> cancel(String actionId) async {
+    final id = actionId.trim();
+    if (id.isEmpty) throw ArgumentError('Action id is required.');
+    final result = await FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('cancelAurenAction')
+        .call({'actionId': id});
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return data['status']?.toString() ?? 'cancelled';
+  }
 
   Future<AurenActionRequest?> get(String uid, String id) async {
     final snapshot = await _actions(uid).doc(id).get();
