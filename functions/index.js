@@ -357,7 +357,20 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
 
     const apiKey = AUREN_AI_API_KEY.value();
     if (!apiKey) {
-      return {text: 'AUREN AI Gateway متصل، لكن مفتاح مزود الذكاء الاصطناعي غير مفعّل بعد.', action: null, actionId: null, payload: {}, requiresApproval: false};
+      const unavailable = {
+        text: 'AUREN AI Gateway متصل، لكن مفتاح مزود الذكاء الاصطناعي غير مفعّل بعد.',
+        action: null,
+        actionId: null,
+        payload: {},
+        requiresApproval: false,
+      };
+      await requestRef.set({
+        status: 'completed',
+        response: unavailable,
+        completedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      return unavailable;
     }
 
     const baseUrl = (process.env.AUREN_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
@@ -385,6 +398,11 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
 
     if (!response.ok) {
       console.error('AI provider error', response.status, (await response.text()).slice(0, 1000));
+      await requestRef.set({
+        status: 'failed',
+        failedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
       throw new Error('AI provider request failed.');
     }
     const result = await response.json();
