@@ -23,23 +23,7 @@ class AurenAgentInstallationRepository {
     return snap.exists;
   }
 
-  Future<void> install({
-    required String uid,
-    required String agentId,
-    required String name,
-    required String version,
-  }) =>
-      _installations(uid).doc(agentId).set({
-        'agentId': agentId,
-        'name': name,
-        'version': version,
-        'status': 'active',
-        'installedAt': DateTime.now().toIso8601String(),
-      });
-
-  Future<void> uninstall(String uid, String agentId) =>
-      _installations(uid).doc(agentId).delete();
-
-  Future<void> setStatus(String uid, String agentId, String status) =>
-      _installations(uid).doc(agentId).update({'status': status});
+  // Installation lifecycle is server-controlled through Cloud Functions.
+  // This repository intentionally exposes read-only access to avoid bypassing
+  // validation, permissions, quotas, and audit logging.
 }
