@@ -155,7 +155,7 @@ service cloud.firestore {
           && request.resource.data.currency == resource.data.currency
           && request.resource.data.keys().hasOnly([
             'agentId', 'enabled', 'allowedActions', 'dailySpendingLimitMinor',
-            'spentTodayMinor', 'currency', 'updatedAt'
+            'spentTodayMinor', 'spendingDay', 'currency', 'updatedAt'
           ]);
 
         allow delete: if isOwner(userId);
