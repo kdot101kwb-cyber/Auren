@@ -27,6 +27,19 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /continuity/{contextId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && contextId == 'current'
+          && request.resource.data.keys().hasOnly(['status','summary','activeGoals','enabledMemories','focus','updatedAt'])
+          && request.resource.data.status is string
+          && request.resource.data.summary is string
+          && request.resource.data.activeGoals is int
+          && request.resource.data.enabledMemories is int
+          && request.resource.data.updatedAt is timestamp;
+        allow delete: if isOwner(userId);
+      }
+
       match /handoffs/{handoffId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId)
