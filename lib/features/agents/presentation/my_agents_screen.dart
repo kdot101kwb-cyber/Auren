@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../../services/agents/agent_registry_repository.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 
 class MyAgentsScreen extends StatefulWidget {
   const MyAgentsScreen({super.key});
