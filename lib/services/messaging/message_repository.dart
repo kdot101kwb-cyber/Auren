@@ -48,17 +48,11 @@ class FirestoreMessageRepository implements MessageRepository {
   @override
   Future<void> send(AurenMessage message) async {
     final messageRef = _messages(message.conversationId).doc(message.id);
-    final conversationRef = _firestore.collection('conversations').doc(message.conversationId);
-    final preview = message.text.length > 120 ? message.text.substring(0, 120) + '…' : message.text;
-    await _firestore.runTransaction((tx) async {
-      tx.set(messageRef, {
-        'senderId': message.senderId, 'text': message.text,
-        'createdAt': Timestamp.fromDate(message.createdAt.toUtc()), 'isAi': message.isAi,
-      });
-      tx.set(conversationRef, {
-        'lastMessage': preview, 'lastMessageAt': Timestamp.fromDate(message.createdAt.toUtc()),
-        'lastMessageSenderId': message.senderId, 'updatedAt': Timestamp.fromDate(message.createdAt.toUtc()),
-      }, SetOptions(merge: true));
+    await messageRef.set({
+      'senderId': message.senderId,
+      'text': message.text,
+      'createdAt': Timestamp.fromDate(message.createdAt.toUtc()),
+      'isAi': message.isAi,
     });
   }
 }
