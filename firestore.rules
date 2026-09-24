@@ -987,14 +987,10 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly([
             'senderId', 'text', 'createdAt', 'isAi'
           ])
-          && (
-            (!request.resource.data.isAi && request.resource.data.senderId == request.auth.uid)
-            || (
-              request.resource.data.isAi
-              && request.resource.data.senderId == 'auren-ai'
-              && get(/databases/$(database)/documents/conversations/$(conversationId)).data.isAi == true
-            )
-          );
+          // AI-authored messages are written only by trusted Cloud Functions.
+          // Admin SDK writes bypass these client rules.
+          && request.resource.data.isAi == false
+          && request.resource.data.senderId == request.auth.uid;
         allow update, delete: if false;
       }
     }
