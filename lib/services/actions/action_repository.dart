@@ -71,52 +71,28 @@ class ActionRepository {
     int? dailySpendingLimitMinor,
     String currency = 'USD',
   }) async {
-    final normalizedActions = allowedActions
-        .map((action) => action.trim())
-        .where((action) => action.isNotEmpty)
-        .toSet()
-        .take(100)
-        .toList();
-    final normalizedCurrency = currency.trim().toUpperCase();
-
-    if (!RegExp(r'^[A-Z]{3}$').hasMatch(normalizedCurrency)) {
-      throw ArgumentError('Currency must be a 3-letter ISO code.');
+    if (uid.trim().isEmpty) throw ArgumentError('User id is required.');
+    final normalizedActions = allowedActions.map((a) => a.trim()).where((a) => a.isNotEmpty).toSet().take(100).toList();
+    if (normalizedActions.any((a) => a.length > 80 || !RegExp(r'^[a-z0-9._:-]+$', caseSensitive: false).hasMatch(a))) {
+      throw ArgumentError('Invalid agent action.');
     }
     if (dailySpendingLimitMinor != null && dailySpendingLimitMinor < 0) {
       throw ArgumentError('Daily spending limit cannot be negative.');
     }
-
-    final ref = _db.collection('users').doc(uid).collection('agent_permissions').doc('primary');
-    await _db.runTransaction((tx) async {
-      final snapshot = await tx.get(ref);
-      final current = snapshot.data();
-      final spentTodayMinor = current?['spentTodayMinor'] is num
-          ? (current!['spentTodayMinor'] as num).toInt()
-          : 0;
-      final existingCurrency = current?['currency']?.toString().trim().toUpperCase();
-      final currentSpendingDay = current?['spendingDay']?.toString();
-      final today = DateTime.now().toUtc().toIso8601String().substring(0, 10);
-      final effectiveSpentToday = currentSpendingDay == null || currentSpendingDay == today ? spentTodayMinor : 0;
-
-      final data = <String, dynamic>{
-        'agentId': 'primary',
-        'enabled': enabled,
-        'allowedActions': normalizedActions,
-        'dailySpendingLimitMinor': dailySpendingLimitMinor,
-        'spentTodayMinor': effectiveSpentToday,
-        'spendingDay': today,
-        'currency': existingCurrency ?? normalizedCurrency,
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      };
-
-      if (snapshot.exists) {
-        tx.update(ref, data);
-      } else {
-        tx.set(ref, data);
-      }
-    });
+    final normalizedCurrency = currency.trim().toUpperCase();
+    if (!RegExp(r'^[A-Z]{3}$').hasMatch(normalizedCurrency)) {
+      throw ArgumentError('Currency must be a 3-letter ISO code.');
+    }
+    await FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('setAurenAgentPermissions')
+        .call({
+          'enabled': enabled,
+          'allowedActions': normalizedActions,
+          'dailySpendingLimitMinor': dailySpendingLimitMinor,
+          'currency': normalizedCurrency,
+        });
   }
- 
+
   Stream<Map<String, dynamic>?> watchTrust(String uid) =>
       _db.collection('users').doc(uid).collection('agent_trust').doc('primary')
           .snapshots().map((s) => s.exists ? s.data() : null);
