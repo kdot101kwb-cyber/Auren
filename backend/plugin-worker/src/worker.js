@@ -11,12 +11,18 @@ const MAX_ARTIFACT_BYTES=5*1024*1024;
 const MAX_REQUEST_BODY=7*1024*1024;
 const MAX_PAYLOAD_BYTES=32768;
 const MAX_OUTPUT_BYTES=32768;
+const MAX_PLUGIN_ID=120;
+const MAX_ACTION=120;
 const SHARED_SECRET=process.env.WORKER_SHARED_SECRET||'';
 
 function json(res,status,body){res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify(body));}
 function packageSha256(bytes){return crypto.createHash('sha256').update(bytes).digest('hex');}
 function safeEqual(a,b){if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;return crypto.timingSafeEqual(Buffer.from(a),Buffer.from(b));}
 function runIsolated(manifest,payload,expectedSha256,artifactBase64){
+  const pluginId=typeof manifest?.pluginId==='string'?manifest.pluginId.trim():'';
+  const action=typeof manifest?.action==='string'?manifest.action.trim():'';
+  if(!/^[a-z0-9][a-z0-9._-]{2,119}$/.test(pluginId)||pluginId.length>MAX_PLUGIN_ID) return Promise.reject(Object.assign(new Error('Plugin id is invalid.'),{code:400}));
+  if(!action||action.length>MAX_ACTION||!/^[a-zA-Z0-9._:-]+$/.test(action)) return Promise.reject(Object.assign(new Error('Plugin action is invalid.'),{code:400}));
   return new Promise((resolve,reject)=>{
     const source=typeof manifest?.entrypoint==='string'?manifest.entrypoint:'';
     if(!source.startsWith('file:'))return reject(Object.assign(new Error('Worker accepts only trusted file entrypoints.'),{code:400}));
@@ -35,7 +41,7 @@ function runIsolated(manifest,payload,expectedSha256,artifactBase64){
     const cleanup=()=>{try{fs.rmSync(tempDir,{recursive:true,force:true});}catch{}};
     const child=execFile(process.execPath,[file],{
       cwd:'/tmp',
-      env:{NODE_ENV:'production',AUREN_PLUGIN_PAYLOAD:JSON.stringify(payload)},
+      env:{NODE_ENV:'production',AUREN_PLUGIN_ID:pluginId,AUREN_PLUGIN_ACTION:action,AUREN_PLUGIN_PAYLOAD:JSON.stringify(payload)},
       timeout:TIMEOUT_MS,
       maxBuffer:MAX_BODY,
       windowsHide:true
@@ -62,7 +68,8 @@ const server=http.createServer(async(req,res)=>{
       if(!safeEqual(body.authorization,SHARED_SECRET))return json(res,403,{error:'Unauthorized worker request.'});
       const payloadBytes=Buffer.byteLength(JSON.stringify(body.payload||{}),'utf8');
       if(payloadBytes>MAX_PAYLOAD_BYTES)return json(res,413,{error:'Plugin payload exceeds the worker limit.'});
-      const result=await runIsolated(body.manifest,body.payload||{},body.expectedSha256,body.artifactBase64);
+      const manifest={...(body.manifest||{}),action:body.action};
+      const result=await runIsolated(manifest,body.payload||{},body.expectedSha256,body.artifactBase64);
       return json(res,200,{status:'completed',result});
     }catch(e){return json(res,Number.isInteger(e?.code)?e.code:500,{error:e.message||'Plugin execution failed.'});}
   });
