@@ -27,6 +27,8 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /opportunity_graph/{graphId} { allow read: if isOwner(userId); allow create, update: if isOwner(userId) && graphId == 'current' && request.resource.data.keys().hasOnly(['nodes','generatedAt']) && request.resource.data.nodes is list && request.resource.data.nodes.size() <= 100 && request.resource.data.generatedAt is timestamp; allow delete: if isOwner(userId); }
+
       match /daily_plans/{planId} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
