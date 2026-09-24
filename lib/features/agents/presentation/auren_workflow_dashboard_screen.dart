@@ -74,7 +74,8 @@ class _WorkflowDetails extends StatelessWidget {
     }
   }
 
-\n  Future<void> _command(BuildContext context, String command) async {
+
+  Future<void> _command(BuildContext context, String command) async {
     try {
       await repo.orchestrate(workflow.workflowId, command: command);
       if (context.mounted) Navigator.pop(context);
@@ -126,7 +127,9 @@ class _WorkflowDetails extends StatelessWidget {
                         IconButton(onPressed: () => repo.decide(t.id, 'cancelled'), icon: const Icon(Icons.close)),
                         IconButton(onPressed: () => repo.decide(t.id, 'approved'), icon: const Icon(Icons.check)),
                       ])
-                    : t.status == 'approved'\n                        ? IconButton(onPressed: () => _execute(context, t), icon: const Icon(Icons.play_arrow))\n                        : Icon(t.status == 'completed' ? Icons.check_circle : Icons.hourglass_top),
+                    : t.status == 'approved'
+                    ? IconButton(onPressed: () => _execute(context, t), icon: const Icon(Icons.play_arrow))
+                    : Icon(t.status == 'completed' ? Icons.check_circle : Icons.hourglass_top),
               ))),
             ],
           );
