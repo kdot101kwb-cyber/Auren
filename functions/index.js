@@ -1237,7 +1237,7 @@ exports.invokeAurenPlugin = require('firebase-functions/v2/https').onCall(
     await db.runTransaction(async(tx)=>{
       const snap=await tx.get(quotaRef);const data=snap.exists?snap.data():{};
       const used=data.day===day && Number.isInteger(data.used) ? data.used : 0;
-      const limit=100;
+      const limit=10000;
       if(used>=limit)throw new Error('Daily plugin invocation quota exceeded.');
       const nextUsed=used+1;
       quotaRemaining=limit-nextUsed;
