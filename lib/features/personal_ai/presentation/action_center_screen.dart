@@ -134,6 +134,47 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
       },
     );
   }
+  Widget _auditPanel(String uid) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _repo.watchAudit(uid, limit: 10),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return const SizedBox.shrink();
+        final events = snapshot.data ?? const <Map<String, dynamic>>[];
+        if (events.isEmpty) return const SizedBox.shrink();
+        return Card(
+          child: ExpansionTile(
+            leading: const Icon(Icons.receipt_long_outlined),
+            title: const Text('سجل الأمان'),
+            subtitle: const Text('آخر تغييرات الموافقة والتنفيذ'),
+            children: events.map((event) {
+              final status = event['status']?.toString() ?? 'unknown';
+              final type = event['actionType']?.toString() ?? 'action';
+              final label = switch (status) {
+                'approved' => 'تمت الموافقة',
+                'rejected' => 'تم الرفض',
+                'completed' => 'اكتمل التنفيذ',
+                'failed' => 'فشل التنفيذ',
+                _ => status,
+              };
+              return ListTile(
+                dense: true,
+                leading: Icon(
+                  status == 'approved'
+                      ? Icons.check_circle_outline
+                      : status == 'rejected'
+                          ? Icons.cancel_outlined
+                          : Icons.history,
+                ),
+                title: Text(type),
+                subtitle: Text(label),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _actionCard(AurenActionRequest action, {bool history = false}) {
     final statusLabel = switch (action.status) {
       'completed' => 'اكتمل',
@@ -240,6 +281,8 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 children: [
                   _securityPanel(uid),
                   const SizedBox(height: 16),
+                  _auditPanel(uid),
+                  const SizedBox(height: 8),
                   Text(
                     'Needs your attention',
                     style: Theme.of(context).textTheme.titleLarge,
