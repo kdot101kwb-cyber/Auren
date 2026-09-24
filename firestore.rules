@@ -41,6 +41,17 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /business_growth_plans/{planId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && planId == 'current'
+          && request.resource.data.keys().hasOnly(['businessId','businessName','objective','actions','metrics','generatedAt'])
+          && request.resource.data.businessId is string && request.resource.data.businessName is string
+          && request.resource.data.objective is string && request.resource.data.actions is list
+          && request.resource.data.metrics is list && request.resource.data.generatedAt is timestamp
+          && request.resource.data.actions.size() <= 10 && request.resource.data.metrics.size() <= 10;
+        allow delete: if isOwner(userId);
+      }
+
       match /focus_sessions/{sessionId} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
