@@ -233,3 +233,17 @@ test('publish agent validates canonical ids, capabilities, and listing ownership
   assert.match(publish, /Agent capability/);
   assert.match(publish, /already published by another owner/);
 });
+
+
+test('security boundaries use backend-controlled permission lifecycle and unified plugin quota', () => {
+  assert.match(source, /exports\.setAurenAgentPermissions/);
+  const permissionStart = source.indexOf('exports.setAurenAgentPermissions');
+  const permissionEnd = source.indexOf('exports.publishAurenAgent', permissionStart);
+  const permissionFn = source.slice(permissionStart, permissionEnd);
+  assert.match(permissionFn, /spentTodayMinor/);
+  assert.match(permissionFn, /runTransaction/);
+  const pluginStart = source.indexOf('exports.invokeAurenPlugin');
+  const pluginEnd = source.indexOf('exports.simulateAurenAgentAction', pluginStart);
+  const pluginFn = source.slice(pluginStart, pluginEnd);
+  assert.match(pluginFn, /const limit=10000/);
+});
