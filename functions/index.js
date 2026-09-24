@@ -1098,6 +1098,30 @@ exports.saveAurenAgent = require('firebase-functions/v2/https').onCall(
   return {status:'saved',agentId};
  });
 
+exports.setAurenAgentPermissions = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;if(!uid)throw new Error('Unauthenticated');
+    const enabled=request.data?.enabled;
+    const allowedActions=Array.isArray(request.data?.allowedActions)?request.data.allowedActions:[];
+    const dailySpendingLimitMinor=request.data?.dailySpendingLimitMinor;
+    const currency=typeof request.data?.currency==='string'?request.data.currency.trim().toUpperCase():'USD';
+    if(typeof enabled!=='boolean'||allowedActions.length>100||!allowedActions.every(x=>typeof x==='string'&&x.trim().length>0&&x.trim().length<=80&&/^[a-z0-9._:-]+$/i.test(x.trim())))throw new Error('Invalid agent permissions.');
+    if(dailySpendingLimitMinor!==null&&dailySpendingLimitMinor!==undefined&&(!Number.isSafeInteger(dailySpendingLimitMinor)||dailySpendingLimitMinor<0))throw new Error('Invalid daily spending limit.');
+    if(!/^[A-Z]{3}$/.test(currency))throw new Error('Invalid currency.');
+    const normalized=[...new Set(allowedActions.map(x=>x.trim()))];
+    const ref=db.collection('users').doc(uid).collection('agent_permissions').doc('primary');
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref); const current=snap.exists?snap.data():{};
+      const storedCurrency=typeof current.currency==='string'&&/^[A-Z]{3}$/.test(current.currency)?current.currency:currency;
+      const today=new Date().toISOString().slice(0,10);
+      const spent=current.spendingDay===today&&Number.isSafeInteger(current.spentTodayMinor)&&current.spentTodayMinor>=0?current.spentTodayMinor:0;
+      tx.set(ref,{agentId:'primary',enabled,allowedActions:normalized,dailySpendingLimitMinor:dailySpendingLimitMinor??null,spentTodayMinor:spent,spendingDay:today,currency:storedCurrency,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    });
+    return {status:'saved',agentId:'primary'};
+  },
+);
+
 
 exports.publishAurenAgent = require('firebase-functions/v2/https').onCall(
  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
