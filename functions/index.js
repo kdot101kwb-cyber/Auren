@@ -1316,6 +1316,194 @@ exports.executeAurenAgentTask = require('firebase-functions/v2/https').onCall(
   },
 );
 
+
+
+const AUREN_WORK_AGENTS = [
+  'Personal AI Agent','Business Growth Agent','Supplier & Export Agent',
+  'Creator Studio Agent','Opportunity Match Agent','Skill Coach Agent',
+  'Campaign Agent','Partnership Agent','Market Intelligence Agent',
+  'Travel Agent','Home & Life Agent','Talent Discovery Agent',
+];
+const AUREN_WORK_AGENT_SET = new Set(AUREN_WORK_AGENTS);
+
+function validateAurenWorkAgentInput(data) {
+  const agentId = typeof data?.agentId === 'string' ? data.agentId.trim() : '';
+  const prompt = typeof data?.prompt === 'string' ? data.prompt.trim() : '';
+  if (!AUREN_WORK_AGENT_SET.has(agentId) || !prompt || prompt.length > 4000) {
+    throw new Error('Invalid AUREN work-agent request.');
+  }
+  return {agentId, prompt};
+}
+
+async function countOwnedAurenDocs(collection, uid, limit = 50) {
+  const snap = await db.collection(collection).where('ownerId','==',uid).limit(limit).get();
+  return snap.size;
+}
+
+async function buildAurenWorkAgentResult(uid, agentId, prompt) {
+  const [goals, talents, opportunities, businesses, products, drafts, trips, savedPlaces] = await Promise.all([
+    countOwnedAurenDocs('goals', uid),
+    countOwnedAurenDocs('talents', uid),
+    countOwnedAurenDocs('opportunities', uid),
+    countOwnedAurenDocs('businesses', uid),
+    countOwnedAurenDocs('products', uid),
+    countOwnedAurenDocs('creator_drafts', uid),
+    countOwnedAurenDocs('trips', uid),
+    countOwnedAurenDocs('places', uid),
+  ]);
+
+  const context = {goals, talents, opportunities, businesses, products, drafts, trips, savedPlaces};
+  let actions = [];
+  let summary = '';
+
+  switch (agentId) {
+    case 'Personal AI Agent':
+      summary = 'تم تحليل أهدافك وملفك الحالي لبناء خطوة تالية قابلة للتنفيذ.';
+      actions = ['راجع أهدافك النشطة', 'حدد خطوة واحدة لهذا اليوم', 'اربط الخطوة بفرصة أو مهارة عند الحاجة'];
+      break;
+    case 'Talent Discovery Agent':
+      summary = 'تم تجهيز مسار لاكتشاف الفرص المناسبة بناءً على وجود ملف موهبة وفرص داخل AUREN.';
+      actions = ['تحقق من ملف الموهبة', 'راجع الفرص المفتوحة', 'شغّل المطابقة عند توفر المهارات'];
+      break;
+    case 'Opportunity Match Agent':
+      summary = 'تم تجهيز مطابقة داخلية بين ملف الموهبة والفرص المتاحة في AUREN.';
+      actions = ['قارن المهارات', 'راجع الفجوات', 'اختر الفرص التي تريد متابعة التقديم عليها'];
+      break;
+    case 'Skill Coach Agent':
+      summary = 'تم بناء نقطة بداية لخطة المهارات وربطها بالأهداف والفرص الموجودة.';
+      actions = ['حدد مهارة واحدة ذات أولوية', 'اربطها بهدف', 'طبّقها في مشروع أو فرصة حقيقية'];
+      break;
+    case 'Business Growth Agent':
+      summary = 'تم تحليل الأصول التجارية الحالية لبناء خطة نمو عملية.';
+      actions = ['حسّن صفحة النشاط', 'حوّل المشاهدات إلى Leads', 'اربط المنتجات بالعملاء والشراكات'];
+      break;
+    case 'Supplier & Export Agent':
+      summary = 'تم تجهيز تقييم أولي لجاهزية التجارة والتصدير داخل AUREN.';
+      actions = ['حدد المنتجات القابلة للتصدير', 'حدد السوق والعملة', 'اجمع بيانات المورد والشحن قبل أي التزام'];
+      break;
+    case 'Creator Studio Agent':
+      summary = 'تم تحليل أصول Creator Studio وتجهيز خطة محتوى أولية.';
+      actions = ['اختر فكرة محتوى', 'حوّلها إلى مسودة', 'حدد جمهوراً وقناة نشر'];
+      break;
+    case 'Campaign Agent':
+      summary = 'تم تجهيز هيكل حملة يعتمد على الأصول الحالية بدلاً من إطلاق أي حملة تلقائياً.';
+      actions = ['حدد الهدف', 'حدد الجمهور', 'أنشئ الرسائل والمحتوى', 'راجع النتائج قبل أي إنفاق'];
+      break;
+    case 'Partnership Agent':
+      summary = 'تم تجهيز خريطة شراكات أولية تربط النشاط والفرص والموهبة.';
+      actions = ['حدد نوع الشريك', 'جهز عرض القيمة', 'أنشئ قائمة تواصل', 'راجع أي رسالة قبل إرسالها'];
+      break;
+    case 'Market Intelligence Agent':
+      summary = 'تم تجهيز ملخص بحث داخلي من بيانات AUREN المتاحة دون ادعاء بيانات خارجية.';
+      actions = ['حدد سؤال البحث', 'قارن الخيارات', 'سجل الأدلة ومصدر كل معلومة قبل القرار'];
+      break;
+    case 'Travel Agent':
+      summary = 'تم تحليل أصول السفر المحفوظة وتجهيز قالب رحلة قابل للتخصيص.';
+      actions = ['حدد الوجهة', 'حدد الميزانية والمدة', 'راجع الأماكن والرحلات المحفوظة'];
+      break;
+    case 'Home & Life Agent':
+      summary = 'تم تجهيز خطة تنظيم يومية مرتبطة بأهدافك وبياناتك داخل AUREN.';
+      actions = ['رتب المهام', 'حدد الأولويات', 'حوّل المهمة المهمة إلى هدف قابل للمتابعة'];
+      break;
+  }
+
+  return {
+    kind: 'auren_work_agent_result',
+    agentId,
+    prompt: prompt.slice(0, 1000),
+    summary,
+    actions: actions.slice(0, 10),
+    context,
+    approvalRequired: true,
+    externalActionsExecuted: false,
+    nextStep: 'راجع النتيجة ثم نفّذ أي إجراء حساس بموافقة صريحة.',
+  };
+}
+
+exports.requestAurenWorkAgent = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const input=validateAurenWorkAgentInput(request.data || {});
+    const ref=db.collection('users').doc(uid).collection('agent_work_executions').doc();
+    await ref.set({
+      ownerId:uid, agentId:input.agentId, prompt:input.prompt,
+      status:'proposed', requiresApproval:true,
+      createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+    });
+    await notify(uid,{
+      title:'AUREN Agent جاهز للمراجعة',
+      body:input.agentId+' اقترح تنفيذ مهمة حقيقية داخل AUREN.',
+      type:'agent_work',
+      targetId:uid, entityId:ref.id,
+    });
+    return {status:'proposed',executionId:ref.id};
+  },
+);
+
+exports.decideAurenWorkAgent = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const executionId=typeof request.data?.executionId==='string'?request.data.executionId.trim():'';
+    const decision=request.data?.decision;
+    if(!executionId || executionId.length>120 || !['approved','cancelled'].includes(decision)) {
+      throw new Error('Invalid work-agent decision.');
+    }
+    const ref=db.collection('users').doc(uid).collection('agent_work_executions').doc(executionId);
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw new Error('Work-agent execution not found.');
+      const data=snap.data()||{};
+      if(data.status!=='proposed') throw new Error('Work-agent request is not awaiting approval.');
+      tx.update(ref,{status:decision,decidedBy:uid,decidedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    });
+    return {status:decision,executionId};
+  },
+);
+
+exports.executeAurenWorkAgent = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const executionId=typeof request.data?.executionId==='string'?request.data.executionId.trim():'';
+    if(!executionId || executionId.length>120) throw new Error('Invalid work-agent execution id.');
+    const ref=db.collection('users').doc(uid).collection('agent_work_executions').doc(executionId);
+    const snap=await ref.get();
+    if(!snap.exists) throw new Error('Work-agent execution not found.');
+    const data=snap.data()||{};
+    if(data.status==='completed') return {status:'completed',executionId,result:data.result||null,deduplicated:true};
+    if(data.status!=='approved') throw new Error('Work-agent execution requires explicit approval.');
+    if(!AUREN_WORK_AGENT_SET.has(data.agentId)) throw new Error('Invalid work agent.');
+    await ref.update({status:'executing',startedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    try {
+      const result=await buildAurenWorkAgentResult(uid,data.agentId,String(data.prompt||''));
+      await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      await writeAurenActionAudit(uid,{
+        id:executionId,actionType:'agent.work',agentId:data.agentId,
+        permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true,
+      },'completed',{source:'executeAurenWorkAgent',result});
+      await notify(uid,{
+        title:'AUREN Agent اكتمل',
+        body:data.agentId+' أنهى التحليل والتنفيذ الداخلي المقترح.',
+        type:'agent_work',targetId:uid,entityId:executionId,
+      });
+      return {status:'completed',executionId,result};
+    } catch(e) {
+      const message=e?.message||'Work-agent execution failed.';
+      await ref.update({status:'failed',error:message,updatedAt:FieldValue.serverTimestamp()});
+      await writeAurenActionAudit(uid,{
+        id:executionId,actionType:'agent.work',agentId:data.agentId,
+        permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true,
+      },'failed',{source:'executeAurenWorkAgent',error:message});
+      throw new Error(message);
+    }
+  },
+);
+
 exports.getAurenAgentExecution = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
