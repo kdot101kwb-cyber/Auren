@@ -21,6 +21,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
 
   String? _uid;
   String? _busyActionId;
+  static const _knownActions = <String>['demo.echo', 'demo.create_note', 'memory.save'];
 
   @override
   void initState() {
@@ -124,7 +125,32 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحديث الصلاحيات: $e'))); }
               })]),
               Text(enabled ? 'صلاحيات AUREN مفعّلة' : 'صلاحيات AUREN متوقفة'),
+              const SizedBox(height: 12),
+              Text('الأوامر المسموح بها', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _knownActions.map((type) {
+                  final selected = allowed.contains(type);
+                  return FilterChip(
+                    label: Text(type),
+                    selected: selected,
+                    onSelected: (value) async {
+                      final next = {...allowed};
+                      if (value) { next.add(type); } else { next.remove(type); }
+                      try {
+                        await _repo.setPermissionLedger(uid, enabled: enabled, allowedActions: next.toList(), dailySpendingLimitMinor: dailyLimit is num ? dailyLimit.toInt() : null, currency: currency);
+                      } catch (e) {
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحديث الأمر المسموح: $e')));
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
               const SizedBox(height: 10),
+              Text('الحد اليومي: \${dailyLimit is num ? dailyLimit.toInt() : 'غير محدد'} $currency'),
+              const SizedBox(height: 6),
               Text('Trust: $score/100  •  نجاح $completed  •  فشل $failed'),
               const SizedBox(height: 10),
               Text('العمليات الجديدة تحتاج موافقتك الصريحة قبل التنفيذ.', style: Theme.of(context).textTheme.bodySmall),
