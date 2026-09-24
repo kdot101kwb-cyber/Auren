@@ -4,6 +4,7 @@ import 'agent_marketplace_screen.dart';
 import 'agent_wallet_screen.dart';
 import 'agent_disputes_screen.dart';
 import 'agent_messages_screen.dart';
+import 'auren_agent_suite_screen.dart';
 import 'my_agents_screen.dart';
 import '../../../services/actions/action_repository.dart';
 import '../../../services/agents/agent_plugin_repository.dart';
@@ -176,6 +177,13 @@ class _AurenAgentHubScreenState extends State<AurenAgentHubScreen> {
       }),
       if (uid != null) Card(child: ListTile(leading: const Icon(Icons.receipt_long_outlined), title: const Text('Audit Trail'),
         subtitle: const Text('سجل التنفيذ والموافقات والنتائج'), onTap: () => _showAudit(uid))),
+      Card(child: ListTile(
+        leading: const Icon(Icons.hub_outlined),
+        title: const Text('AUREN Agent Suite'),
+        subtitle: const Text('وكلاء شخصيون للأعمال، المواهب، الفرص، المحتوى والنمو'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAgentSuiteScreen())),
+      )),
       Card(child: ListTile(leading: const Icon(Icons.smart_toy_outlined), title: const Text('My Agents'), subtitle: const Text('إدارة Agents الخاصة بك'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAgentsScreen())))),
       Card(child: ListTile(leading: const Icon(Icons.storefront_outlined), title: const Text('Agent Marketplace'),
         subtitle: const Text('اكتشف الوكلاء والقدرات المتاحة'), trailing: const Icon(Icons.chevron_right),
