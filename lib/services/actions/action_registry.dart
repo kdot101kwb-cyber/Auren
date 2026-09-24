@@ -63,6 +63,12 @@ class AurenActionRegistry {
     ),
   };
 
+  static bool isPayloadAllowed(String type, Map<String, dynamic> payload) {
+    final definition = get(type);
+    if (definition == null) return false;
+    return payload.keys.every(definition.allowedPayloadKeys.contains);
+  }
+
   static AurenActionDefinition? get(String type) => definitions[type];
 
   static AurenActionRequest fromAi({
