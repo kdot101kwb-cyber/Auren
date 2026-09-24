@@ -155,11 +155,12 @@ service cloud.firestore {
             || (request.resource.data.dailySpendingLimitMinor is int
               && request.resource.data.dailySpendingLimitMinor >= 0))
           && request.resource.data.spentTodayMinor == 0
+          && request.resource.data.spendingDay is string
           && request.resource.data.currency is string
           && request.resource.data.currency.matches('^[A-Z]{3}$')
           && request.resource.data.keys().hasOnly([
             'agentId', 'enabled', 'allowedActions', 'dailySpendingLimitMinor',
-            'spentTodayMinor', 'currency', 'updatedAt'
+            'spentTodayMinor', 'spendingDay', 'currency', 'updatedAt'
           ]);
 
         allow update: if isOwner(userId)
@@ -171,7 +172,8 @@ service cloud.firestore {
           && (request.resource.data.dailySpendingLimitMinor == null
             || (request.resource.data.dailySpendingLimitMinor is int
               && request.resource.data.dailySpendingLimitMinor >= 0))
-          && request.resource.data.spentTodayMinor == resource.data.spentTodayMinor
+          && request.resource.data.spentTodayMinor is int
+          && request.resource.data.spendingDay is string
           && request.resource.data.currency == resource.data.currency
           && request.resource.data.keys().hasOnly([
             'agentId', 'enabled', 'allowedActions', 'dailySpendingLimitMinor',
