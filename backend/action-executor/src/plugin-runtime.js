@@ -34,13 +34,15 @@ export async function preparePluginInvocation(db,{agent,manifest,packageMetadata
   return {status:'validated',manifest:normalized,package:meta,artifactBase64:artifactBytes.toString('base64'),sandbox:sandboxPolicy(),quota,payload};
 }
 
-export async function executePluginThroughWorker({prepared,workerUrl,workerSecret,fetchImpl=fetch}){
+export async function executePluginThroughWorker({prepared,workerUrl,workerSecret,action,fetchImpl=fetch}){
   if(!workerUrl)throw Object.assign(new Error('Plugin worker is not configured.'),{code:503});
   if(!workerSecret)throw Object.assign(new Error('Plugin worker secret is not configured.'),{code:503});
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),7000);
   try{
-    const requestBody=JSON.stringify({authorization:workerSecret,manifest:prepared.manifest,expectedSha256:prepared.package.sha256,artifactBase64:prepared.artifactBase64,payload:prepared.payload||{}});
+    const normalizedAction=typeof action==='string'?action.trim():'';
+    if(!normalizedAction||normalizedAction.length>120||!/^[a-zA-Z0-9._:-]+$/.test(normalizedAction))throw Object.assign(new Error('Plugin action is invalid.'),{code:400});
+    const requestBody=JSON.stringify({authorization:workerSecret,manifest:{...prepared.manifest,action:normalizedAction},action:normalizedAction,expectedSha256:prepared.package.sha256,artifactBase64:prepared.artifactBase64,payload:prepared.payload||{}});
     if(Buffer.byteLength(requestBody,'utf8')>7*1024*1024)throw Object.assign(new Error('Plugin worker request exceeds the bounded runtime payload.'),{code:413});
     const response=await fetchImpl(workerUrl,{method:'POST',headers:{'content-type':'application/json','x-auren-runtime-version':'1'},body:requestBody,signal:controller.signal});
     const data=await response.json().catch(()=>({}));
