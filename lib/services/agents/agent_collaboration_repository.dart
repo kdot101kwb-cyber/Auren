@@ -12,5 +12,5 @@ class AurenAgentCollaborationRepository {
   }
   Future<void> decide(String taskId,String decision) async { await functions.httpsCallable('decideAurenAgentTask').call({'taskId':taskId,'decision':decision}); }
   Future<void> execute(String taskId,{Map<String,dynamic> output=const {}}) async { await functions.httpsCallable('executeAurenAgentTask').call({'taskId':taskId,'output':output}); }
-  Future<AurenAgentTask?> get(String uid,String taskId) async { final d=await db.collection('users').doc(uid).collection('agent_collaboration').doc(taskId).get(); return d.exists?AurenAgentTask.fromMap(d.id,d.data()??const {}):null; }
+  Future<Map<String,dynamic>> orchestrate(String workflowId,{String command='status'}) async { final r=await functions.httpsCallable('orchestrateAurenTalentWorkflow').call({'workflowId':workflowId,'command':command}); return Map<String,dynamic>.from(r.data as Map); }\n  Future<AurenAgentTask?> get(String uid,String taskId) async { final d=await db.collection('users').doc(uid).collection('agent_collaboration').doc(taskId).get(); return d.exists?AurenAgentTask.fromMap(d.id,d.data()??const {}):null; }
 }
