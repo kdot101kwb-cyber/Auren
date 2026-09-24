@@ -206,3 +206,12 @@ test('plugin installation requires a published listing and matching version/capa
 test('permission ledger update rules preserve spending day', () => {
   assert.match(rules, /'spentTodayMinor', 'spendingDay', 'currency', 'updatedAt'/);
 });
+
+
+test('memory rules restrict client writes to validated user-facing fields', () => {
+  assert.match(rules, /match \/memory\/\{memoryId\}/);
+  assert.match(rules, /request\.resource\.data\.key\.size\(\) <= 120/);
+  assert.match(rules, /request\.resource\.data\.value\.size\(\) <= 2000/);
+  assert.match(rules, /'key', 'value', 'enabled', 'updatedAt'/);
+  assert.match(rules, /allow delete: if isOwner\(userId\);/);
+});
