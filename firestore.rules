@@ -861,14 +861,7 @@ service cloud.firestore {
         && request.resource.data.type == resource.data.type
         && request.resource.data.title == resource.data.title
         && (
-          (
-            request.resource.data.ownerId == resource.data.ownerId
-            && request.resource.data.memberIds == resource.data.memberIds
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-              'updatedAt', 'lastMessage', 'lastMessageAt', 'lastMessageSenderId'
-            ])
-          )
-          || (
+(
             resource.data.type == 'group'
             && request.auth.uid == resource.data.ownerId
             && request.resource.data.ownerId is string
