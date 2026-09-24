@@ -159,6 +159,67 @@ class AurenRealWorkAgentsScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _previewAndApprove(BuildContext context,AurenWorkAgentRepository repo,AurenWorkAction a) async{
+    final approved=await showDialog<bool>(
+      context:context,
+      builder:(dialog)=>AlertDialog(
+        title:Row(children:[
+          const Icon(Icons.visibility_outlined),
+          const SizedBox(width:8),
+          Expanded(child:Text(a.title)),
+        ]),
+        content:SingleChildScrollView(
+          child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text(a.preview,style:Theme.of(dialog).textTheme.bodyLarge),
+            const SizedBox(height:14),
+            Text('المجال: '+a.domain),
+            Text('نوع الإجراء: '+a.actionType),
+            Text('خارج AUREN: '+(a.externalSideEffects ? 'نعم' : 'لا')),
+            const SizedBox(height:12),
+            const Text('البيانات التي سيحفظها AUREN:',style:TextStyle(fontWeight:FontWeight.w700)),
+            const SizedBox(height:6),
+            SelectableText(a.payload.isEmpty ? 'لا توجد بيانات إضافية.' : a.payload.toString()),
+            const SizedBox(height:12),
+            const Text('الموافقة هنا لا ترسل رسائل، ولا تنشر، ولا تدفع أموالاً. الإجراء الداخلي فقط هو الذي سينفذ.',style:TextStyle(fontSize:12)),
+          ]),
+        ),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(dialog,false),child:const Text('إلغاء')),
+          FilledButton(onPressed:()=>Navigator.pop(dialog,true),child:const Text('أوافق')),
+        ],
+      ),
+    );
+    if(approved==true){
+      try{
+        await repo.decideAction(a.id,'approved');
+        if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تمت الموافقة. راجع الإجراء مرة أخيرة ثم نفّذه.')));
+      }catch(e){
+        if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر حفظ الموافقة: '+e.toString())));
+      }
+    }
+  }
+
+  Future<void> _confirmExecute(BuildContext context,AurenWorkAgentRepository repo,AurenWorkAction a) async{
+    final confirmed=await showDialog<bool>(
+      context:context,
+      builder:(dialog)=>AlertDialog(
+        title:const Text('تأكيد التنفيذ'),
+        content:Text('سيتم الآن تنفيذ الإجراء الداخلي: '+a.title+'. لا توجد آثار خارجية مفعلة لهذا النوع.'),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(dialog,false),child:const Text('رجوع')),
+          FilledButton.icon(onPressed:()=>Navigator.pop(dialog,true),icon:const Icon(Icons.play_arrow),label:const Text('تنفيذ الآن')),
+        ],
+      ),
+    );
+    if(confirmed!=true)return;
+    try{
+      await repo.executeAction(a.id);
+      if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم التنفيذ وحفظ النتيجة في AUREN Audit.')));
+    }catch(e){
+      if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('فشل التنفيذ: '+e.toString())));
+    }
+  }
+
   Widget _actionCard(BuildContext context,AurenWorkAgentRepository repo,AurenWorkAction a){
     return Card(
       child:Padding(
@@ -179,22 +240,16 @@ class AurenRealWorkAgentsScreen extends StatelessWidget {
               child:const Text('إلغاء'),
             )),
             const SizedBox(width:8),
-            Expanded(child:FilledButton(
-              onPressed:()async{await repo.decideAction(a.id,'approved');},
-              child:const Text('موافقة'),
+            Expanded(child:FilledButton.icon(
+              onPressed:()=>_previewAndApprove(context,repo,a),
+              icon:const Icon(Icons.visibility_outlined),
+              label:const Text('Preview + موافقة'),
             )),
           ]),
           if(a.status=='approved')SizedBox(
             width:double.infinity,
             child:FilledButton.icon(
-              onPressed:()async{
-                try{
-                  await repo.executeAction(a.id);
-                  if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم تنفيذ الإجراء وحفظه في AUREN.')));
-                }catch(e){
-                  if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('فشل التنفيذ: '+e.toString())));
-                }
-              },
+              onPressed:()=>_confirmExecute(context,repo,a),
               icon:const Icon(Icons.check_circle),
               label:const Text('تنفيذ الإجراء'),
             ),
