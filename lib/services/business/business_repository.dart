@@ -6,11 +6,12 @@ class BusinessRepository {
   BusinessRepository({FirebaseFirestore? firestore}):_db=firestore??FirebaseFirestore.instance;
   CollectionReference<Map<String,dynamic>> get _c=>_db.collection('businesses');
 
-  Stream<List<AurenBusiness>> watchPublic({String query='',String category='All'})=>
+  Stream<List<AurenBusiness>> watchPublic({String query='',String category='All',String businessType='All'})=>
     _c.where('visibility',isEqualTo:'public').limit(100).snapshots().map((s){
       final q=query.trim().toLowerCase();
       final items=s.docs.map((d)=>AurenBusiness.fromMap(d.id,d.data()))
         .where((b)=>category=='All'||b.category==category)
+        .where((b)=>businessType=='All'||b.businessType==businessType)
         .where((b)=>q.isEmpty||[b.name,b.description,b.category,b.city,b.country,b.businessType].join(' ').toLowerCase().contains(q)).toList();
       items.sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase())); return items;
     });
