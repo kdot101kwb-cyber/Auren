@@ -93,14 +93,17 @@ class ActionRepository {
           ? (current!['spentTodayMinor'] as num).toInt()
           : 0;
       final existingCurrency = current?['currency']?.toString().trim().toUpperCase();
+      final currentSpendingDay = current?['spendingDay']?.toString();
+      final today = DateTime.now().toUtc().toIso8601String().substring(0, 10);
+      final effectiveSpentToday = currentSpendingDay == null || currentSpendingDay == today ? spentTodayMinor : 0;
 
       final data = <String, dynamic>{
         'agentId': 'primary',
         'enabled': enabled,
         'allowedActions': normalizedActions,
         'dailySpendingLimitMinor': dailySpendingLimitMinor,
-        'spentTodayMinor': spentTodayMinor,
-        'spendingDay': current?['spendingDay']?.toString() ?? DateTime.now().toUtc().toIso8601String().substring(0, 10),
+        'spentTodayMinor': effectiveSpentToday,
+        'spendingDay': currentSpendingDay ?? today,
         'currency': existingCurrency ?? normalizedCurrency,
         'updatedAt': DateTime.now().toUtc().toIso8601String(),
       };
