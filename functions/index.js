@@ -420,10 +420,16 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     let text = rawText.trim();
     let action = null;
     let payload = {};
+    let actionDescription = '';
     let requiresApproval = false;
 
+    // "افعلها لي" is proposal-only at this layer: the model can suggest one
+    // of the allow-listed actions, but the server validates every field and
+    // creates a pending request. Nothing is executed here.
     try {
-      const candidate = JSON.parse(text.replace(/^\`\`\`json\\s*/i, '').replace(/\`\`\`$/i, '').trim());
+      const candidate = JSON.parse(
+        text.replace(/^\`\`\`json\\s*/i, '').replace(/\`\`\`$/i, '').trim(),
+      );
       const allowed = new Set(['demo.echo', 'demo.create_note', 'memory.save']);
       if (candidate && typeof candidate === 'object' && allowed.has(candidate.action)) {
         const p = candidate.payload && typeof candidate.payload === 'object' && !Array.isArray(candidate.payload)
@@ -433,15 +439,28 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
           keys.length === 1 && keys[0] === 'text' && typeof p.text === 'string' &&
           p.text.trim().length > 0 && p.text.length <= 2000;
         const memoryOk = candidate.action === 'memory.save' &&
-          keys.every((k) => k === 'key' || k === 'value') &&
+          keys.length === 2 && keys.every((k) => k === 'key' || k === 'value') &&
           typeof p.key === 'string' && typeof p.value === 'string' &&
           p.key.trim() && p.key.length <= 120 && p.value.trim() && p.value.length <= 2000;
         if (textOk || memoryOk) {
           action = candidate.action;
-          payload = textOk ? {text: p.text} : {key: p.key.trim(), value: p.value.trim()};
+          payload = textOk ? {text: p.text.trim()} : {key: p.key.trim(), value: p.value.trim()};
           requiresApproval = true;
-          text = typeof candidate.text === 'string' && candidate.text.trim()
-            ? candidate.text.trim() : 'لدي طلب تنفيذ يحتاج موافقتك قبل التنفيذ.';
+
+          const titles = {
+            'demo.echo': 'تنفيذ طلب AUREN',
+            'demo.create_note': 'إنشاء ملاحظة',
+            'memory.save': 'حفظ معلومة في ذاكرة AUREN',
+          };
+          const payloadSummary = action === 'memory.save'
+            ? payload.key
+            : payload.text;
+          actionDescription = 'طلب تنفيذ: ' + titles[action] +
+            (payloadSummary ? ' — ' + String(payloadSummary).slice(0, 240) : '');
+          const candidateText = typeof candidate.text === 'string' ? candidate.text.trim() : '';
+          text = candidateText && candidateText.length <= 12000
+            ? candidateText
+            : 'لدي طلب تنفيذ جاهز للمراجعة. وافق عليه من بطاقة الإجراء قبل التنفيذ.';
         }
       }
     } catch (_) {}
@@ -477,10 +496,10 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       // Deterministic action id prevents duplicate approval requests on recovery.
       const actionRef = db.collection('users').doc(uid).collection('actions')
         .doc('act_' + requestId);
-      const titles = {'demo.echo': 'Echo', 'demo.create_note': 'Create note', 'memory.save': 'Save AI memory'};
+
       await actionRef.set({
         conversationId, actionType: action, title: titles[action],
-        description: 'طلب تنفيذ: ' + titles[action], payload,
+        description: actionDescription || 'طلب تنفيذ يحتاج موافقتك قبل التنفيذ.', payload,
         permission: 'userApproval', riskLevel: 'low', approvalLevel: 1,
         requiresApproval: true, status: 'pending', createdAt: FieldValue.serverTimestamp(),
       });
