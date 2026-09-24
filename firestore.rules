@@ -74,45 +74,10 @@ service cloud.firestore {
 
       match /actions/{actionId} {
         allow read: if isOwner(userId);
-        // Action proposals are created only by trusted Cloud Functions.
-        // The client can read them, but cannot forge or inject an action.
-        allow create: if false;
-
-          && request.resource.data.conversationId is string
-          && request.resource.data.actionType in ['demo.echo', 'demo.create_note', 'memory.save']
-          && request.resource.data.title is string
-          && request.resource.data.description is string
-          && request.resource.data.payload is map
-          && (
-            ((request.resource.data.actionType in ['demo.echo', 'demo.create_note'])
-              && request.resource.data.payload.keys().hasOnly(['text'])
-              && request.resource.data.payload.text is string
-              && request.resource.data.payload.text.size() > 0
-              && request.resource.data.payload.text.size() <= 2000)
-            || (request.resource.data.actionType == 'memory.save'
-              && request.resource.data.payload.keys().hasOnly(['key', 'value'])
-              && request.resource.data.payload.key is string
-              && request.resource.data.payload.key.size() > 0
-              && request.resource.data.payload.key.size() <= 120
-              && request.resource.data.payload.value is string
-              && request.resource.data.payload.value.size() > 0
-              && request.resource.data.payload.value.size() <= 2000)
-          )
-          && request.resource.data.permission == 'userApproval'
-          && request.resource.data.riskLevel == 'low'
-          && request.resource.data.approvalLevel == 1
-          && request.resource.data.keys().hasOnly([
-            'conversationId', 'actionType', 'title', 'description', 'payload',
-            'permission', 'riskLevel', 'approvalLevel', 'spendingLimitMinor',
-            'currency', 'requiresApproval', 'status', 'result', 'createdAt',
-            'executionStartedAt', 'executionSpendingDay'
-          ]);
-
-        // Approval/rejection is server-audited through decideAurenAction.
-        allow update: if false;
-
-        // Action lifecycle is server-controlled; cancellation uses cancelAurenAction.
-        allow delete: if false;
+        // Action proposals and lifecycle mutations are server-controlled.
+        // The client can read its own action records but cannot forge,
+        // approve, reject, cancel, or execute an action directly.
+        allow create, update, delete: if false;
       }
 
       match /agent_installations/{agentId} {
