@@ -56,3 +56,18 @@ test('permission ledger enforces disabled state and daily spending limits', () =
   assert.match(source, /Daily AUREN spending limit exceeded/);
   assert.match(source, /Action is not granted by the permission ledger/);
 });
+
+
+test('spending reservation is atomic and day-scoped', () => {
+  assert.match(source, /const requestedAmount =/);
+  assert.match(source, /ledgerData.dailySpendingLimitMinor/);
+  assert.match(source, /ledgerData.spendingDay/);
+  assert.match(source, /spentToday + requestedAmount/);
+  assert.match(source, /spentTodayMinor: spentToday + requestedAmount/);
+  assert.match(source, /spendingDay: today/);
+});
+
+test('failed execution refunds only the current-day reservation', () => {
+  assert.match(source, /if (ledgerData.spendingDay !== today) return/);
+  assert.match(source, /spentTodayMinor: Math.max(0, spentToday - requestedAmount)/);
+});
