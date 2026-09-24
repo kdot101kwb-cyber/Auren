@@ -181,3 +181,11 @@ test('action cancellation is explicit, authenticated and server-controlled', () 
   assert.match(source, /status: 'cancelled'/);
   assert.match(source, /cancelledBy: uid/);
 });
+
+
+test('plugin invocation enforces installed capability grants and bounded payloads', () => {
+  assert.match(source, /capabilities\.includes\(action\)/);
+  assert.match(source, /Plugin action is not granted by its installed capabilities/);
+  assert.match(source, /Plugin payload exceeds the 32 KB limit/);
+  assert.match(source, /!\/\^\[a-zA-Z0-9\._:-\]\+\$\//);
+});
