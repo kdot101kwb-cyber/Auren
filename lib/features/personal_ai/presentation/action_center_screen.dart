@@ -331,6 +331,32 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${local.year}-${two(local.month)}-${two(local.day)} ${two(local.hour)}:${two(local.minute)}';
   }
+
+  Future<void> _cancel(AurenActionRequest action) async {
+    if (_uid == null || _busyActionId != null || !['pending', 'approved'].contains(action.status)) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إلغاء العملية'),
+        content: Text('سيتم إلغاء "${action.title}" ولن يتم تنفيذها.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('رجوع')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('إلغاء العملية')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busyActionId = action.id);
+    try {
+      await _repo.cancel(action.id);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إلغاء العملية بأمان.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إلغاء العملية: $e')));
+    } finally {
+      if (mounted) setState(() => _busyActionId = null);
+    }
+  }
+
   Widget _actionCard(AurenActionRequest action, {bool history = false}) {
     final statusLabel = switch (action.status) {
       'completed' => 'اكتمل',
@@ -374,17 +400,9 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 : Wrap(
                     children: [
                       IconButton(
-                        tooltip: 'Reject',
-                        onPressed: () async {
-                          try {
-                            await _decide(action, 'rejected');
-                          } catch (e) {
-                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('تعذر رفض الأمر: $e')),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.close),
+                        tooltip: 'Cancel',
+                        onPressed: () => _cancel(action),
+                        icon: const Icon(Icons.block_outlined),
                       ),
                       if (action.status == 'pending')
                         IconButton(
