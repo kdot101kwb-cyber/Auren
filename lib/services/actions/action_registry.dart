@@ -80,11 +80,11 @@ class AurenActionRegistry {
     Map<String, dynamic> payload = const {},
     required DateTime createdAt,
   }) {
-    final definition = get(actionType);
+    final normalizedType = actionType.trim().toLowerCase();
+    final definition = get(normalizedType);
     if (definition == null) {
       throw StateError('Unknown AUREN action type: $actionType');
     }
-    final normalizedType = actionType.trim().toLowerCase();
     if (normalizedType != actionType || normalizedType.length > 80) {
       throw StateError('Invalid AUREN action type.');
     }
