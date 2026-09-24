@@ -16,7 +16,38 @@ Future<void> main() async {
     firebaseError = error;
   }
 
+  ErrorWidget.builder = (details) => const _AurenErrorView();
   runApp(AurenApp(firebaseError: firebaseError));
+}
+
+class _AurenErrorView extends StatelessWidget {
+  const _AurenErrorView();
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'AUREN',
+        theme: ThemeData.dark(useMaterial3: true),
+        home: const Scaffold(
+          body: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, size: 56),
+                    SizedBox(height: 16),
+                    Text('حدث خطأ غير متوقع في AUREN', textAlign: TextAlign.center),
+                    SizedBox(height: 8),
+                    Text('حاول العودة للصفحة السابقة أو إعادة فتح التطبيق.', textAlign: TextAlign.center),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class AurenApp extends StatelessWidget {
