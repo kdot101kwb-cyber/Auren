@@ -782,6 +782,11 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // AI gateway request idempotency records are server-only.
+    match /users/{userId}/ai_requests/{requestId} {
+      allow read, write: if false;
+    }
+
     match /conversations/{conversationId} {
       allow read: if request.auth != null
         && request.auth.uid in resource.data.memberIds;
