@@ -1506,7 +1506,23 @@ async function createAurenWorkActionProposals(uid, executionId, agentId, prompt,
       createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
   }
-  if (proposals.length) await batch.commit();
+  if (proposals.length) {
+    await batch.commit();
+    await Promise.all(proposals.map((proposal) => writeAurenActionAudit(uid, {
+      id: proposal.id,
+      actionType: proposal.actionType,
+      agentId,
+      permission: 'userApproval',
+      riskLevel: 'low',
+      approvalLevel: 1,
+      requiresApproval: true,
+    }, 'proposed', {
+      source: 'createAurenWorkActionProposals',
+      executionId,
+      domain: proposal.domain,
+      externalSideEffects: false,
+    })));
+  }
   return proposals;
 }
 
