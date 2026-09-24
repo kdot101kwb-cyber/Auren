@@ -2,6 +2,7 @@ const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('fir
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { defineSecret } = require('firebase-functions/params');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 
 initializeApp();
 const db = getFirestore();
@@ -1325,6 +1326,70 @@ exports.orchestrateAurenTalentWorkflow = require('firebase-functions/v2/https').
       pendingTaskId:active?.id||null, completedSteps:completed.length,
       failedSteps:failed.length,
     };
+  },
+);
+
+
+
+async function runAurenTalentScoutForOpportunity(opportunitySnap) {
+  const opportunity = opportunitySnap.data() || {};
+  if (opportunity.status !== 'open') return 0;
+  const skills = Array.isArray(opportunity.skills) ? opportunity.skills.map((x) => String(x).trim().toLowerCase()).filter(Boolean) : [];
+  const skillSet = new Set(skills);
+  const scoutsSnap = await db.collectionGroup('talent_scouts').where('enabled', '==', true).limit(300).get();
+  let created = 0;
+  for (const scoutDoc of scoutsSnap.docs) {
+    const scout = scoutDoc.data() || {};
+    if (scout.role !== 'opportunity') continue;
+    const ownerId = scout.ownerId;
+    if (typeof ownerId !== 'string' || !ownerId) continue;
+    const talentSnap = await db.collection('talents').where('ownerId', '==', ownerId).where('status', '==', 'active').limit(1).get();
+    if (talentSnap.empty) continue;
+    const talent = talentSnap.docs[0].data() || {};
+    const talentSkills = Array.isArray(talent.skills) ? talent.skills.map((x) => String(x).trim().toLowerCase()).filter(Boolean) : [];
+    const matched = skills.filter((s) => talentSkills.includes(s));
+    const missing = skills.filter((s) => !talentSkills.includes(s));
+    const score = skills.length ? Math.round((matched.length / skills.length) * 100) : 35;
+    if (score < 25) continue;
+    const findingId = `opp_${opportunitySnap.id}_${scoutDoc.id.split('/').pop()}`;
+    const ref = db.collection('users').doc(ownerId).collection('talent_scout_findings').doc(findingId);
+    const existing = await ref.get();
+    await ref.set({
+      ownerId, scoutId: scoutDoc.id.split('/').pop(), type: 'opportunity',
+      title: String(opportunity.title || 'فرصة جديدة').slice(0, 200),
+      description: String(opportunity.description || 'فرصة جديدة اكتشفها كشاف AUREN.').slice(0, 3000),
+      sourceType: 'opportunity', sourceId: opportunitySnap.id, status: 'new',
+      score, matchedSkills: matched.slice(0, 30), missingSkills: missing.slice(0, 30),
+      createdAt: existing.exists ? existing.data()?.createdAt : FieldValue.serverTimestamp(),
+      expiresAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    if (!existing.exists) {
+      await notify(ownerId, {
+        title: 'AUREN Scout وجد فرصة جديدة',
+        body: `مطابقة بنسبة ${score}%: ${String(opportunity.title || 'فرصة جديدة').slice(0, 100)}`,
+        type: 'talent_scout', targetId: ownerId, entityId: findingId,
+      });
+      created++;
+    }
+  }
+  return created;
+}
+
+exports.onAurenOpportunityCreatedScout = onDocumentCreated(
+  {document: 'opportunities/{opportunityId}', region: 'us-central1'},
+  async (event) => runAurenTalentScoutForOpportunity(event.data),
+);
+
+exports.runAurenTalentScoutsDaily = onSchedule(
+  {schedule: 'every 24 hours', timeZone: 'Africa/Khartoum', region: 'us-central1', timeoutSeconds: 540, memory: '512MiB'},
+  async () => {
+    const scoutsSnap = await db.collectionGroup('talent_scouts').where('enabled', '==', true).limit(300).get();
+    let created = 0;
+    const opportunitiesSnap = await db.collection('opportunities').where('status', '==', 'open').limit(300).get();
+    for (const opportunityDoc of opportunitiesSnap.docs) {
+      created += await runAurenTalentScoutForOpportunity(opportunityDoc);
+    }
+    return {scouts: scoutsSnap.size, opportunities: opportunitiesSnap.size, created};
   },
 );
 
