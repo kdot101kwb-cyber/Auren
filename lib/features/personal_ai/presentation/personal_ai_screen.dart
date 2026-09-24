@@ -7,6 +7,10 @@ import 'memory_screen.dart';
 import 'memory_timeline_screen.dart';
 import 'personal_brief_screen.dart';
 import 'next_move_screen.dart';
+import 'life_dashboard_screen.dart';
+import 'mission_mode_screen.dart';
+import 'watchtower_screen.dart';
+import 'opportunity_inbox_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
 import 'goals_screen.dart';
@@ -56,6 +60,10 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.history_outlined, 'Memory Timeline', 'شوف كيف تغيّرت ذاكرتك عبر الزمن.', const AurenMemoryTimelineScreen()),
         _tile(context, Icons.article_outlined, 'Personal Brief', 'ملخص شخصي سريع عن أهدافك وأولوياتك الآن.', const AurenPersonalBriefScreen()),
         _tile(context, Icons.next_plan_outlined, 'Next Move', 'يحدد لك AUREN خطوة عملية تالية بناءً على وضعك الحالي.', const AurenNextMoveScreen()),
+        _tile(context, Icons.dashboard_outlined, 'Life Dashboard', 'نظرة موحدة على أهدافك وذاكرتك وBusiness وMarketplace وPulse والفرص.', const AurenLifeDashboardScreen()),
+        _tile(context, Icons.flag_circle_outlined, 'Mission Mode', 'حوّل هدفك الحالي إلى مهمة مركزة وخطوة أولى.', const AurenMissionModeScreen()),
+        _tile(context, Icons.visibility_outlined, 'Watchtower', 'يراقب إشارات واضحة تحتاج انتباهك.', const AurenWatchtowerScreen()),
+        _tile(context, Icons.inbox_outlined, 'Opportunity Inbox', 'اجمع الفرص العامة في مكان واحد وحللها مع AUREN.', const AurenOpportunityInboxScreen()),
         _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.', const MessengerScreen(initialPrompt: 'حوّل هذا الهدف إلى خطوات عملية ونفّذ ما يحتاج موافقتي.')),
         _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.', const AurenOpportunityAiScreen()),
         _tile(context, Icons.gavel_outlined, 'Legal AI', 'افهم المستندات والعقود وأسئلة المراجعة القانونية.', const AurenLegalAiScreen()),
