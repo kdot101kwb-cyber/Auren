@@ -1189,7 +1189,9 @@ exports.proposeAurenAgentTask = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
     const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
-    const data=validateAurenCollaborationInput(request.data || {});\n    const workflowId = typeof request.data?.workflowId === 'string' ? request.data.workflowId.trim() : '';\n    const step = Number.isSafeInteger(request.data?.step) ? request.data.step : null;\n    if (workflowId && (workflowId.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(workflowId))) throw new Error('Invalid workflow id.');\n    if (step !== null && (step < 0 || step >= AUREN_AGENT_FLOW.length)) throw new Error('Invalid workflow step.');
+    const data=validateAurenCollaborationInput(request.data || {});
+    const workflowId = typeof request.data?.workflowId === 'string' ? request.data.workflowId.trim() : '';\n    const step = Number.isSafeInteger(request.data?.step) ? request.data.step : null;
+    if (workflowId && (workflowId.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(workflowId))) throw new Error('Invalid workflow id.');\n    if (step !== null && (step < 0 || step >= AUREN_AGENT_FLOW.length)) throw new Error('Invalid workflow step.');
     const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc();
     await ref.set({...data, ownerId:uid, workflowId:workflowId || ref.id, step:step ?? AUREN_AGENT_FLOW.indexOf(data.targetAgent), status:'proposed',requiresApproval:true,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     return {status:'proposed',taskId:ref.id};
@@ -1231,6 +1233,56 @@ exports.executeAurenAgentTask = require('firebase-functions/v2/https').onCall(
     return {status:'completed',taskId,targetAgent:target};
   },
 );
+
+exports.orchestrateAurenTalentWorkflow = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const workflowId=typeof request.data?.workflowId==='string'?request.data.workflowId.trim():'';
+    const command=typeof request.data?.command==='string'?request.data.command.trim():'status';
+    if(!workflowId||workflowId.length>120||!/^[a-zA-Z0-9._:-]+$/.test(workflowId)||!['status','pause','resume','retry'].includes(command)) {
+      throw new Error('Invalid workflow orchestration request.');
+    }
+    const workflowRef=db.collection('users').doc(uid).collection('agent_workflows').doc(workflowId);
+    const tasksSnap=await db.collection('users').doc(uid).collection('agent_collaboration')
+      .where('workflowId','==',workflowId).limit(50).get();
+    const tasks=tasksSnap.docs.map(d=>({id:d.id,...d.data()}));
+    tasks.sort((a,b)=>Number(a.step??-1)-Number(b.step??-1));
+    const active=tasks.find(t=>['proposed','approved'].includes(t.status));
+    const completed=tasks.filter(t=>t.status==='completed');
+    const failed=tasks.filter(t=>t.status==='failed');
+    let state='active';
+    const currentStep=active ? Number(active.step??0) : (completed.length ? Math.min(completed.length,AUREN_AGENT_FLOW.length-1) : 0);
+    if(command==='pause') state='paused';
+    else if(command==='resume') state='active';
+    else if(command==='retry') {
+      const failedTask=failed.sort((a,b)=>Number(b.step??-1)-Number(a.step??-1))[0];
+      if(failedTask) {
+        await db.collection('users').doc(uid).collection('agent_collaboration').doc(failedTask.id).update({
+          status:'proposed', retryCount:Number(failedTask.retryCount||0)+1, updatedAt:FieldValue.serverTimestamp(),
+        });
+      }
+    }
+    const workflowSnap=await workflowRef.get();
+    const previous=workflowSnap.exists?workflowSnap.data()||{}:{};
+    await workflowRef.set({
+      ownerId:uid, workflowId, type:'talent_opportunity',
+      state: command==='pause'?'paused':command==='resume'?'active':(previous.state||state),
+      currentStep, totalSteps:AUREN_AGENT_FLOW.length,
+      updatedAt:FieldValue.serverTimestamp(),
+      createdAt:previous.createdAt||FieldValue.serverTimestamp(),
+    },{merge:true});
+    return {
+      status:'ok', workflowId, state:command==='pause'?'paused':command==='resume'?'active':(previous.state||state),
+      currentStep, totalSteps:AUREN_AGENT_FLOW.length,
+      currentAgent:AUREN_AGENT_FLOW[Math.min(currentStep,AUREN_AGENT_FLOW.length-1)],
+      pendingTaskId:active?.id||null, completedSteps:completed.length,
+      failedSteps:failed.length,
+    };
+  },
+);
+
 exports.validateAurenPlugin = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
