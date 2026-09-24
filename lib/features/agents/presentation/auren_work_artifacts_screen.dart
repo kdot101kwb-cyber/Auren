@@ -41,7 +41,7 @@ class AurenWorkArtifactsScreen extends StatelessWidget {
                 child: ListTile(
                   leading: const CircleAvatar(child:Icon(Icons.description_outlined)),
                   title: Text(x.title),
-                  subtitle: Text('${x.type} • ${x.status}\n${x.body}',maxLines:4,overflow:TextOverflow.ellipsis),
+                  subtitle: Text('${x.domain} • ${x.type} • ${x.status}\n${x.body}',maxLines:4,overflow:TextOverflow.ellipsis),
                   isThreeLine:true,
                   onTap:()=>showModalBottomSheet<void>(
                     context:context,
@@ -54,6 +54,7 @@ class AurenWorkArtifactsScreen extends StatelessWidget {
                           children:[
                             Text(x.title,style:Theme.of(sheet).textTheme.titleLarge),
                             const SizedBox(height:8),
+                            Text('المجال: ${x.domain}'),
                             Text('النوع: ${x.type}'),
                             Text('الحالة: ${x.status}'),
                             if(x.agentId!=null) Text('الوكيل: ${x.agentId}'),
