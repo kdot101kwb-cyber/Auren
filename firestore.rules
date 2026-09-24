@@ -27,6 +27,21 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId);
 
+      match /weekly_reviews/{reviewId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && reviewId == 'current'
+          && request.resource.data.keys().hasOnly(['activeGoals','completedGoals','enabledMemories','averageProgress','headline','focus','generatedAt'])
+          && request.resource.data.activeGoals is int
+          && request.resource.data.completedGoals is int
+          && request.resource.data.enabledMemories is int
+          && request.resource.data.averageProgress is int
+          && request.resource.data.headline is string
+          && request.resource.data.focus is string
+          && request.resource.data.generatedAt is timestamp;
+        allow delete: if isOwner(userId);
+      }
+
       match /daily_reviews/{reviewId} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
