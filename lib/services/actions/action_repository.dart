@@ -15,9 +15,14 @@ class ActionRepository {
 
   Stream<List<AurenActionRequest>> watchPending(String uid) => _actions(uid)
       .where('status', isEqualTo: 'pending')
-      .orderBy('createdAt')
       .snapshots()
-      .map((s) => s.docs.map((d) => AurenActionRequest.fromMap(d.id, d.data())).toList());
+      .map((s) {
+        final actions = s.docs
+            .map((d) => AurenActionRequest.fromMap(d.id, d.data()))
+            .toList();
+        actions.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        return actions;
+      });
 
   Stream<List<AurenActionRequest>> watchOutstanding(String uid) => _actions(uid)
       .orderBy('createdAt')
