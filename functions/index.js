@@ -1134,8 +1134,20 @@ exports.installAurenPlugin = require('firebase-functions/v2/https').onCall(
   async (request) => {
     const uid=request.auth?.uid;if(!uid)throw new Error('Unauthenticated');
     const manifest=validateAurenPluginManifest(request.data?.manifest);
+    const listingRef = db.collection('agent_listings').doc(manifest.pluginId);
+    const listingSnap = await listingRef.get();
+    if (!listingSnap.exists || listingSnap.data()?.state !== 'published') {
+      throw new Error('Plugin must be published before installation.');
+    }
+    const listing = listingSnap.data() || {};
+    if (listing.pluginId && listing.pluginId !== manifest.pluginId) throw new Error('Published plugin id mismatch.');
+    if (listing.version !== manifest.version) throw new Error('Published plugin version mismatch.');
+    const listingCapabilities = Array.isArray(listing.capabilities) ? listing.capabilities : [];
+    if (JSON.stringify([...listingCapabilities].sort()) !== JSON.stringify([...manifest.capabilities].sort())) {
+      throw new Error('Published plugin capabilities do not match the requested installation.');
+    }
     const ref=db.collection('users').doc(uid).collection('agent_installations').doc(manifest.pluginId);
-    await ref.set({agentId:manifest.pluginId,name:manifest.name,version:manifest.version,status:'active',installedAt:new Date().toISOString(),source:'plugin',capabilities:manifest.capabilities},{merge:true});
+    await ref.set({agentId:manifest.pluginId,name:listing.name || manifest.name,version:manifest.version,status:'active',installedAt:new Date().toISOString(),source:'plugin',capabilities:listingCapabilities},{merge:true});
     return {status:'installed',pluginId:manifest.pluginId};
   },
 );
