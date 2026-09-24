@@ -1408,6 +1408,144 @@ async function buildAurenWorkAgentResult(uid, agentId, prompt) {
   };
 }
 
+
+const AUREN_WORK_ACTIONS = new Set([
+  'work.create_goal',
+  'work.create_task',
+  'work.create_content_draft',
+  'work.create_campaign_draft',
+  'work.create_partnership_draft',
+  'work.create_supplier_task',
+  'work.create_research_note',
+  'work.create_learning_plan',
+  'work.create_itinerary_draft',
+  'work.save_opportunity_match',
+]);
+
+function buildAurenWorkActionProposals(executionId, agentId, prompt, result) {
+  const base = String(prompt || '').trim().slice(0, 1200);
+  const summary = String(result?.summary || '').trim().slice(0, 1200);
+  const context = result?.context || {};
+  const firstOpportunity = context.firstOpportunity || {};
+  const firstBusiness = context.firstBusiness || {};
+  const firstProduct = context.firstProduct || {};
+  const make = (suffix, actionType, title, preview, payload) => ({
+    id: executionId + '_' + suffix,
+    actionType, title,
+    preview: String(preview).slice(0, 1800),
+    payload,
+    status: 'proposed',
+    requiresApproval: true,
+    externalSideEffects: false,
+  });
+
+  switch (agentId) {
+    case 'Personal AI Agent':
+      return [make('goal','work.create_goal','إنشاء هدف عملي',
+        'إنشاء هدف داخلي من طلبك ونتيجة التحليل، بدون نشر أو إرسال خارجي.',
+        {title: base.slice(0, 180) || 'خطوة جديدة مع AUREN', description: summary, progress: 0})];
+    case 'Business Growth Agent':
+      return [make('task','work.create_task','إنشاء مهمة نمو للنشاط',
+        'حفظ مهمة نمو داخل AUREN مرتبطة بالنشاط والمنتجات الحالية.',
+        {title: 'مهمة نمو: ' + (firstBusiness.name || 'نشاطك'), body: summary, relatedId: firstBusiness.id || null})];
+    case 'Supplier & Export Agent':
+      return [make('supplier','work.create_supplier_task','إنشاء مهمة توريد/تصدير',
+        'حفظ مهمة داخلية لمراجعة المنتج والسوق والمورد والشحن قبل أي التزام.',
+        {title: 'مهمة توريد/تصدير: ' + (firstProduct.name || 'منتج'), body: summary, productId: firstProduct.id || null})];
+    case 'Creator Studio Agent':
+      return [make('creator','work.create_content_draft','إنشاء مسودة محتوى',
+        'إنشاء مسودة محتوى داخلية فقط؛ لا يتم نشرها تلقائياً.',
+        {title: 'مسودة AUREN Creator', body: summary, prompt: base})];
+    case 'Campaign Agent':
+      return [make('campaign','work.create_campaign_draft','إنشاء مسودة حملة',
+        'إنشاء هيكل حملة داخلي فقط؛ لا إطلاق ولا إنفاق إعلاني.',
+        {title: 'مسودة حملة AUREN', objective: base, body: summary})];
+    case 'Partnership Agent':
+      return [make('partner','work.create_partnership_draft','إنشاء مسودة شراكة',
+        'حفظ عرض شراكة ومسودة تواصل داخلياً؛ لا يتم إرسال أي رسالة.',
+        {title: 'مسودة شراكة', body: summary, prompt: base})];
+    case 'Market Intelligence Agent':
+      return [make('research','work.create_research_note','حفظ مذكرة بحث',
+        'حفظ نتيجة البحث كمسودة داخلية بدون ادعاء مصادر خارجية.',
+        {title: 'مذكرة بحث AUREN', body: summary, question: base})];
+    case 'Skill Coach Agent':
+      return [make('learning','work.create_learning_plan','إنشاء خطة تعلم',
+        'إنشاء خطة تعلم داخلية مرتبطة بالطلب الحالي.',
+        {title: 'خطة تعلم AUREN', body: summary, goal: base})];
+    case 'Travel Agent':
+      return [make('travel','work.create_itinerary_draft','إنشاء مسودة رحلة',
+        'حفظ قالب رحلة داخلي قابل للتعديل قبل أي حجز أو دفع.',
+        {title: 'مسودة رحلة AUREN', body: summary, request: base})];
+    case 'Opportunity Match Agent':
+      return [make('match','work.save_opportunity_match','حفظ نتيجة المطابقة',
+        'حفظ المطابقة كعنصر متابعة داخلي بدون تقديم أو تواصل خارجي.',
+        {title: firstOpportunity.title || 'مطابقة فرصة', body: summary, opportunityId: firstOpportunity.id || null})];
+    case 'Talent Discovery Agent':
+      return [make('talent','work.create_task','إنشاء مهمة اكتشاف مواهب',
+        'حفظ خطوة اكتشاف داخلية قابلة للمراجعة.',
+        {title: 'مهمة اكتشاف مواهب', body: summary})];
+    case 'Home & Life Agent':
+      return [make('life','work.create_task','إنشاء مهمة للحياة اليومية',
+        'حفظ مهمة شخصية داخل AUREN.',
+        {title: 'مهمة AUREN اليومية', body: summary})];
+    default:
+      return [];
+  }
+}
+
+async function createAurenWorkActionProposals(uid, executionId, agentId, prompt, result) {
+  const proposals = buildAurenWorkActionProposals(executionId, agentId, prompt, result);
+  const batch = db.batch();
+  for (const proposal of proposals) {
+    const ref = db.collection('users').doc(uid).collection('agent_work_actions').doc(proposal.id);
+    batch.set(ref, {
+      ownerId: uid, executionId, agentId, prompt: String(prompt || '').slice(0, 1200),
+      ...proposal, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+  }
+  if (proposals.length) await batch.commit();
+  return proposals;
+}
+
+async function executeAurenWorkActionSideEffect(uid, action, executionId) {
+  const payload = action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload) ? action.payload : {};
+  const now = new Date().toISOString();
+  const safeTitle = String(payload.title || action.title || 'AUREN task').trim().slice(0, 200);
+  const safeBody = String(payload.body || payload.description || '').trim().slice(0, 4000);
+
+  if (action.actionType === 'work.create_goal') {
+    const ref = db.collection('users').doc(uid).collection('goals').doc('agent_' + action.id);
+    await ref.set({
+      title: safeTitle, description: safeBody || null, progress: 0, status: 'active',
+      createdAt: now, updatedAt: now, source: 'auren-work-agent', sourceExecutionId: executionId,
+    }, {merge: true});
+    return {type:'goal_created', goalId:ref.id};
+  }
+
+  const artifactTypes = {
+    'work.create_task':'task',
+    'work.create_content_draft':'content_draft',
+    'work.create_campaign_draft':'campaign_draft',
+    'work.create_partnership_draft':'partnership_draft',
+    'work.create_supplier_task':'supplier_task',
+    'work.create_research_note':'research_note',
+    'work.create_learning_plan':'learning_plan',
+    'work.create_itinerary_draft':'itinerary_draft',
+    'work.save_opportunity_match':'opportunity_match',
+  };
+  const artifactType = artifactTypes[action.actionType];
+  if (!artifactType) throw new Error('Work action is not allow-listed.');
+
+  const ref = db.collection('users').doc(uid).collection('agent_artifacts').doc(action.id);
+  await ref.set({
+    ownerId:uid, executionId, actionId:action.id, agentId:action.agentId || null,
+    type:artifactType, title:safeTitle, body:safeBody,
+    payload:{...payload}, status:'draft', externalSideEffects:false,
+    createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+  }, {merge:true});
+  return {type:'artifact_created', artifactId:ref.id, artifactType};
+}
+
 exports.requestAurenWorkAgent = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB'},
   async (request) => {
@@ -1469,6 +1607,8 @@ exports.executeAurenWorkAgent = require('firebase-functions/v2/https').onCall(
     await ref.update({status:'executing',startedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     try {
       const result=await buildAurenWorkAgentResult(uid,data.agentId,String(data.prompt||''));
+      const proposedActions=await createAurenWorkActionProposals(uid,executionId,data.agentId,String(data.prompt||''),result);
+      result.proposedActions=proposedActions;
       await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
       await writeAurenActionAudit(uid,{
         id:executionId,actionType:'agent.work',agentId:data.agentId,
@@ -1487,6 +1627,75 @@ exports.executeAurenWorkAgent = require('firebase-functions/v2/https').onCall(
         id:executionId,actionType:'agent.work',agentId:data.agentId,
         permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true,
       },'failed',{source:'executeAurenWorkAgent',error:message});
+      throw new Error(message);
+    }
+  },
+);
+
+
+exports.decideAurenWorkAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const actionId=typeof request.data?.actionId==='string'?request.data.actionId.trim():'';
+    const decision=request.data?.decision;
+    if(!actionId || actionId.length>180 || !['approved','cancelled'].includes(decision)) throw new Error('Invalid work action decision.');
+    const ref=db.collection('users').doc(uid).collection('agent_work_actions').doc(actionId);
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw new Error('Work action not found.');
+      const data=snap.data()||{};
+      if(data.status!=='proposed') throw new Error('Work action is not awaiting approval.');
+      tx.update(ref,{status:decision,decidedBy:uid,decidedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    });
+    return {status:decision,actionId};
+  },
+);
+
+exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const actionId=typeof request.data?.actionId==='string'?request.data.actionId.trim():'';
+    if(!actionId || actionId.length>180) throw new Error('Invalid work action id.');
+    const ref=db.collection('users').doc(uid).collection('agent_work_actions').doc(actionId);
+    const snap=await ref.get();
+    if(!snap.exists) throw new Error('Work action not found.');
+    const action=snap.data()||{};
+    if(action.status==='completed') return {status:'completed',actionId,result:action.result||null,deduplicated:true};
+    if(action.status!=='approved' || action.requiresApproval!==true || action.externalSideEffects!==false) {
+      throw new Error('Work action requires explicit approval.');
+    }
+    const executionId=typeof action.executionId==='string'?action.executionId:'';
+    if(!executionId) throw new Error('Work action execution context is missing.');
+    const executionRef=db.collection('users').doc(uid).collection('agent_work_executions').doc(executionId);
+    const executionSnap=await executionRef.get();
+    if(!executionSnap.exists || executionSnap.data()?.status!=='completed') throw new Error('Parent work-agent execution is not completed.');
+    await db.runTransaction(async(tx)=>{
+      const current=await tx.get(ref);
+      if(!current.exists) throw new Error('Work action not found.');
+      const data=current.data()||{};
+      if(data.status==='completed') return;
+      if(data.status!=='approved') throw new Error('Work action is no longer approved.');
+      tx.update(ref,{status:'executing',startedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    });
+    try {
+      const result=await executeAurenWorkActionSideEffect(uid,{...action,id:actionId},executionId);
+      await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      await writeAurenActionAudit(uid,{
+        id:actionId,actionType:action.actionType,agentId:action.agentId,
+        permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true,
+      },'completed',{source:'executeAurenWorkAction',executionId,result});
+      return {status:'completed',actionId,result};
+    } catch(e) {
+      const message=e?.message||'Work action execution failed.';
+      await ref.update({status:'failed',error:message,updatedAt:FieldValue.serverTimestamp()});
+      await writeAurenActionAudit(uid,{
+        id:actionId,actionType:action.actionType,agentId:action.agentId,
+        permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true,
+      },'failed',{source:'executeAurenWorkAction',executionId,error:message});
       throw new Error(message);
     }
   },
