@@ -52,6 +52,23 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /campaign_ai_plans/{planId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && planId == 'current'
+          && request.resource.data.keys().hasOnly(['businessId','businessName','objective','audience','channel','contentIdeas','steps','metrics','generatedAt'])
+          && request.resource.data.businessId is string
+          && request.resource.data.businessName is string
+          && request.resource.data.objective is string && request.resource.data.objective.size() <= 300
+          && request.resource.data.audience is string && request.resource.data.audience.size() <= 300
+          && request.resource.data.channel is string && request.resource.data.channel.size() <= 60
+          && request.resource.data.contentIdeas is list && request.resource.data.contentIdeas.size() <= 20
+          && request.resource.data.steps is list && request.resource.data.steps.size() <= 20
+          && request.resource.data.metrics is list && request.resource.data.metrics.size() <= 20
+          && request.resource.data.generatedAt is timestamp;
+        allow delete: if isOwner(userId);
+      }
+
       match /focus_sessions/{sessionId} {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
