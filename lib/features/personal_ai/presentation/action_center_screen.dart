@@ -283,6 +283,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
         subtitle: Text(
           '${action.description}\n$statusLabel'
           '${action.executionStartedAt == null ? '' : '\nبدأ التنفيذ: ' + _formatActionTime(action.executionStartedAt!)}'
+          '${action.executionSpendingDay == null ? '' : '\nيوم الإنفاق: ${action.executionSpendingDay}'}'
           '${action.result == null ? '' : '\n${action.result}'}',
         ),
         isThreeLine: action.result != null || !history,
