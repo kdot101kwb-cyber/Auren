@@ -34,3 +34,10 @@ test('recovery requires a stale execution window and verifies deterministic side
   assert.match(source, /No deterministic memory side effect found/);
   assert.match(source, /Action cannot be safely recovered/);
 });
+
+test('execution claim must stop retries before side effects', () => {
+  assert.match(source, /const claimed = await db\.runTransaction/);
+  assert.match(source, /if \(!claimed\)/);
+  assert.match(source, /Action is already executing/);
+  assert.match(source, /deduplicated: true/);
+});
