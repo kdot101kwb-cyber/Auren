@@ -1355,6 +1355,57 @@ async function writeAurenScoutFinding(ownerId, findingId, data) {
   return !existing.exists;
 }
 
+async function proposeAurenTalentScoutWorkflow(ownerId, findingId, finding) {
+  if (!ownerId || !findingId || Number(finding.score || 0) < 70) return null;
+  const workflowId = 'scout_' + findingId;
+  const workflowRef = db.collection('users').doc(ownerId).collection('agent_workflows').doc(workflowId);
+  const taskRef = db.collection('users').doc(ownerId).collection('agent_collaboration').doc('scout_' + findingId);
+  const existing = await taskRef.get();
+  if (existing.exists) return existing.id;
+  await workflowRef.set({
+    ownerId,
+    workflowId,
+    type: 'talent_opportunity',
+    state: 'active',
+    currentStep: 1,
+    totalSteps: AUREN_AGENT_FLOW.length,
+    currentAgent: AUREN_AGENT_FLOW[1],
+    pendingTaskId: taskRef.id,
+    source: 'talent_scout',
+    sourceFindingId: findingId,
+    updatedAt: FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+  await taskRef.set({
+    ownerId,
+    workflowId,
+    step: 1,
+    sourceAgent: AUREN_AGENT_FLOW[0],
+    targetAgent: AUREN_AGENT_FLOW[1],
+    taskType: 'scout.opportunity_match',
+    title: 'تحليل فرصة اكتشفها كشاف AUREN',
+    input: {
+      findingId,
+      opportunityId: finding.sourceId,
+      score: Number(finding.score || 0),
+      matchedSkills: Array.isArray(finding.matchedSkills) ? finding.matchedSkills.slice(0, 30) : [],
+      missingSkills: Array.isArray(finding.missingSkills) ? finding.missingSkills.slice(0, 30) : [],
+    },
+    status: 'proposed',
+    requiresApproval: true,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  await notify(ownerId, {
+    title: 'AUREN جهّز خطة لهذه الفرصة',
+    body: 'وجد الكشاف تطابقاً بنسبة ' + Number(finding.score || 0) + '%. راجع خطة الوكلاء ووافق قبل التنفيذ.',
+    type: 'agent_workflow',
+    targetId: ownerId,
+    entityId: taskRef.id,
+  });
+  return taskRef.id;
+}
+
 async function runAurenTalentScoutForOpportunity(opportunitySnap, scouts = null, talentByOwner = null) {
   const opportunity = opportunitySnap.data() || {};
   if (opportunity.status !== 'open') return 0;
@@ -1381,7 +1432,11 @@ async function runAurenTalentScoutForOpportunity(opportunitySnap, scouts = null,
       sourceType: 'opportunity', sourceId: opportunitySnap.id, status: 'new', score,
       matchedSkills: matched.slice(0, 30), missingSkills: missing.slice(0, 30),
     });
-    if (isNew) created.push({ownerId, findingId, score, title: opportunity.title || 'فرصة جديدة'});
+    if (isNew) {
+      const finding = {sourceId: opportunitySnap.id, score, matchedSkills: matched, missingSkills: missing};
+      const taskId = await proposeAurenTalentScoutWorkflow(ownerId, findingId, finding);
+      created.push({ownerId, findingId, score, title: opportunity.title || 'فرصة جديدة', taskId});
+    }
   }
   await Promise.all(created.map((item) => notify(item.ownerId, {
     title: 'AUREN Scout وجد فرصة جديدة',
