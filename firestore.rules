@@ -74,9 +74,10 @@ service cloud.firestore {
 
       match /actions/{actionId} {
         allow read: if isOwner(userId);
-        allow create: if isOwner(userId)
-          && request.resource.data.status == 'pending'
-          && request.resource.data.requiresApproval == true
+        // Action proposals are created only by trusted Cloud Functions.
+        // The client can read them, but cannot forge or inject an action.
+        allow create: if false;
+
           && request.resource.data.conversationId is string
           && request.resource.data.actionType in ['demo.echo', 'demo.create_note', 'memory.save']
           && request.resource.data.title is string
