@@ -11,3 +11,16 @@ test('worker entrypoint policy only permits relative mounted plugin files',()=>{
   assert.equal(allowed.test('Demo/plugin.js'),false);
   assert.equal(allowed.test('demo/plugin.txt'),false);
 });
+
+
+test('worker boundary rejects invalid plugin identity and action',()=>{
+  const pluginId=/^[a-z0-9][a-z0-9._-]{2,119}$/;
+  const action=/^[a-zA-Z0-9._:-]+$/;
+  assert.equal(pluginId.test('auren.demo.plugin'),true);
+  assert.equal(pluginId.test('../escape'),false);
+  assert.equal(pluginId.test('ABCD'),false);
+  assert.equal(action.test('preview.request'),true);
+  assert.equal(action.test('agent:run.v1'),true);
+  assert.equal(action.test('bad action'),false);
+  assert.equal(action.test(''),false);
+});
