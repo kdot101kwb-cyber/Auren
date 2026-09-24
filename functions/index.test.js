@@ -100,3 +100,11 @@ test('AI gateway marks empty provider content as failed', () => {
   const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
   assert.match(source, /errorCode: 'empty_provider_response'/);
 });
+
+
+test('AI gateway terminal-state hardening covers provider failure and empty content', () => {
+  const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  assert.match(source, /status: 'failed'/);
+  assert.match(source, /errorCode: 'empty_provider_response'/);
+  assert.match(source, /status: 'completed',[\s\S]*response: unavailable/);
+});
