@@ -1355,7 +1355,7 @@ async function writeAurenScoutFinding(ownerId, findingId, data) {
   return !existing.exists;
 }
 
-async function runAurenTalentScoutForOpportunity(opportunitySnap, scouts = null) {
+async function runAurenTalentScoutForOpportunity(opportunitySnap, scouts = null, talentByOwner = null) {
   const opportunity = opportunitySnap.data() || {};
   if (opportunity.status !== 'open') return 0;
   const enabledScouts = scouts || (await db.collectionGroup('talent_scouts').where('enabled', '==', true).limit(300).get()).docs;
@@ -1366,7 +1366,7 @@ async function runAurenTalentScoutForOpportunity(opportunitySnap, scouts = null)
     if (scout.role !== 'opportunity') continue;
     const ownerId = typeof scout.ownerId === 'string' ? scout.ownerId : '';
     if (!ownerId) continue;
-    const talent = await loadAurenTalentForOwner(ownerId);
+    const talent = talentByOwner ? talentByOwner.get(ownerId) : await loadAurenTalentForOwner(ownerId);
     if (!talent) continue;
     const talentSkills = Array.isArray(talent.skills) ? talent.skills.map(normalizeScoutText).filter(Boolean) : [];
     const matched = skills.filter((skill) => talentSkills.includes(skill));
@@ -1430,7 +1430,7 @@ exports.runAurenTalentScoutsDaily = onSchedule(
     const talentByOwner = new Map(talentEntries.filter(([, talent]) => talent));
     const opportunitiesSnap = await db.collection('opportunities').where('status', '==', 'open').limit(300).get();
     let created = 0;
-    for (const opportunityDoc of opportunitiesSnap.docs) created += await runAurenTalentScoutForOpportunity(opportunityDoc, scouts);
+    for (const opportunityDoc of opportunitiesSnap.docs) created += await runAurenTalentScoutForOpportunity(opportunityDoc, scouts, talentByOwner);
     for (const scoutDoc of scouts) { const talent = talentByOwner.get(scoutDoc.data()?.ownerId); if (talent) created += await runAurenTalentScoutForOwner(scoutDoc, talent); }
     return {scouts: scouts.length, owners: owners.length, opportunities: opportunitiesSnap.size, created};
   },
