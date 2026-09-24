@@ -659,6 +659,16 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
     const ledger = await loadAurenPermissionLedger(uid);
     assertAurenActionPermission(ledger, action);
 
+    // Spending is reserved atomically with the execution claim. This prevents
+    // concurrent approved actions from both observing the same remaining daily
+    // budget and overspending it.
+    const requestedAmount = Number.isInteger(action.payload?.amountMinor)
+      ? action.payload.amountMinor
+      : 0;
+    if (requestedAmount < 0 || !Number.isSafeInteger(requestedAmount)) {
+      throw new Error('Invalid spending amount.');
+    }
+
     const payload = action.payload && typeof action.payload === 'object' && !Array.isArray(action.payload)
       ? action.payload
       : {};
@@ -696,6 +706,28 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       if (currentData.status !== 'approved') {
         throw new Error('Action is no longer approved for execution.');
       }
+      if (requestedAmount > 0) {
+        const ledgerRef = db.collection('users').doc(uid)
+          .collection('agent_permissions').doc('primary');
+        const ledgerSnapshot = await tx.get(ledgerRef);
+        const ledgerData = ledgerSnapshot.exists ? ledgerSnapshot.data() || {} : {};
+        const dailyLimit = Number.isInteger(ledgerData.dailySpendingLimitMinor)
+          ? ledgerData.dailySpendingLimitMinor
+          : null;
+        const spentToday = Number.isInteger(ledgerData.spentTodayMinor)
+          ? ledgerData.spentTodayMinor
+          : 0;
+        if (dailyLimit !== null && spentToday + requestedAmount > dailyLimit) {
+          throw new Error('Daily AUREN spending limit exceeded.');
+        }
+        if (ledgerSnapshot.exists) {
+          tx.update(ledgerRef, {
+            spentTodayMinor: spentToday + requestedAmount,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
       tx.update(actionRef, {
         status: 'executing',
         executionStartedAt: FieldValue.serverTimestamp(),
