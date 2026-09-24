@@ -1215,13 +1215,19 @@ exports.decideAurenAgentTask = require('firebase-functions/v2/https').onCall(
   },
 );
 
+function validateAurenAgentOutput(output) {
+  if (!output || typeof output !== 'object' || Array.isArray(output)) throw new Error('Invalid collaboration output.');
+  if (Object.keys(output).length > 30 || Buffer.byteLength(JSON.stringify(output), 'utf8') > 32768) throw new Error('Invalid collaboration output.');
+  return output;
+}
+
 exports.executeAurenAgentTask = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
   async (request) => {
     const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
     const taskId=typeof request.data?.taskId==='string'?request.data.taskId.trim():'';
-    const output=request.data?.output && typeof request.data.output==='object' && !Array.isArray(request.data.output)?request.data.output:{};
-    if(!taskId || taskId.length>120 || Object.keys(output).length>30 || Buffer.byteLength(JSON.stringify(output),'utf8')>32768) throw new Error('Invalid collaboration output.');
+    const output=validateAurenAgentOutput(request.data?.output || {});
+    if(!taskId || taskId.length>120) throw new Error('Invalid collaboration task id.');
     const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc(taskId);
     let target='';
     await db.runTransaction(async(tx)=>{
