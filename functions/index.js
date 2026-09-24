@@ -829,6 +829,27 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       return {status: 'completed', actionId, result: executionResult};
     } catch (e) {
       const message = e?.message || 'Action execution failed.';
+
+      // Release a previously reserved amount when execution fails. The refund
+      // is atomic and bounded so concurrent executions cannot corrupt the
+      // permission ledger.
+      if (requestedAmount > 0) {
+        const ledgerRef = db.collection('users').doc(uid)
+          .collection('agent_permissions').doc('primary');
+        await db.runTransaction(async (tx) => {
+          const ledgerSnapshot = await tx.get(ledgerRef);
+          if (!ledgerSnapshot.exists) return;
+          const ledgerData = ledgerSnapshot.data() || {};
+          const spentToday = Number.isInteger(ledgerData.spentTodayMinor)
+            ? ledgerData.spentTodayMinor
+            : 0;
+          tx.update(ledgerRef, {
+            spentTodayMinor: Math.max(0, spentToday - requestedAmount),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        });
+      }
+
       await actionRef.update({
         status: 'failed',
         result: message,
