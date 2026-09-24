@@ -215,3 +215,10 @@ test('memory rules restrict client writes to validated user-facing fields', () =
   assert.match(rules, /'key', 'value', 'enabled', 'updatedAt'/);
   assert.match(rules, /allow delete: if isOwner\(userId\);/);
 });
+
+test('action rules keep lifecycle server-controlled', () => {
+  const actionSection = rules.slice(rules.indexOf('match /actions/{actionId}'), rules.indexOf('match /agent_installations/{agentId}'));
+  assert.match(actionSection, /allow update: if false;/);
+  assert.match(actionSection, /allow delete: if false;/);
+  assert.match(actionSection, /status == 'pending'/);
+});
