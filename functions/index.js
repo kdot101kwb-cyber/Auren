@@ -1250,6 +1250,11 @@ exports.executeAurenAgentTask = require('firebase-functions/v2/https').onCall(
         output, completedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
       },{merge:true});
       tx.update(ref,{status:'completed',output,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      if (workflowRef) {
+        const step=Number(data.step ?? 0);
+        const nextStep=Math.min(step+1,AUREN_AGENT_FLOW.length-1);
+        tx.set(workflowRef,{ownerId:uid,workflowId,type:'talent_opportunity',state:'active',currentStep:nextStep,totalSteps:AUREN_AGENT_FLOW.length,currentAgent:AUREN_AGENT_FLOW[nextStep],pendingTaskId:null,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      }
     });
     await writeAurenActionAudit(uid,{id:taskId,actionType:'agent.task',agentId:target,permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true},'completed',{source:'agent-task-execution',workflowId});
     await notify(uid,{title:'AUREN Agent completed',body:target+' أكمل المرحلة المطلوبة.',type:'agent',targetId:uid,entityId:taskId});
