@@ -171,7 +171,7 @@ class AurenRealWorkAgentsScreen extends StatelessWidget {
             Text(a.status),
           ]),
           const SizedBox(height:8),
-          Text(a.preview),
+          Text('${a.domain} • ${a.preview}'),
           const SizedBox(height:8),
           if(a.status=='proposed')Row(children:[
             Expanded(child:OutlinedButton(
