@@ -124,6 +124,7 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         // Permission ledger lifecycle is server-controlled. Client can only read it.
         allow create, update, delete: if false;
+      }
 
       match /agents/{agentId} {
         allow read: if isOwner(userId);
@@ -217,6 +218,21 @@ service cloud.firestore {
       match /notes/{noteId} {
         allow read: if isOwner(userId);
         allow write: if false;
+      }
+
+      match /agent_work_executions/{executionId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /agent_work_actions/{actionId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /agent_artifacts/{artifactId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
       }
     }
 
