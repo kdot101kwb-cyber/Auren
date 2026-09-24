@@ -1,8 +1,8 @@
 function normalizeAurenActionIntent(message) {
-  const text = typeof message === 'string' ? message.trim() : '';
+  const text = typeof message === 'string' ? message.trim().replace(/\s+/g, ' ') : '';
   if (!text) return null;
 
-  const normalized = text.toLowerCase().replace(/[إأآ]/g, 'ا').replace(/ى/g, 'ي');
+  const normalized = text.toLowerCase().replace(/[إأآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
   const hasAny = (terms) => terms.some((term) => normalized.includes(term));
 
   if (hasAny(['احفظ في الذاكره', 'احفظ في الذاكرة', 'تذكر', 'افتكر', 'احفظ معلومة', 'remember', 'save to memory'])) {
@@ -26,7 +26,7 @@ function normalizeAurenActionIntent(message) {
     }
   }
 
-  if (hasAny(['انشئ ملاحظه', 'انشئ ملاحظة', 'اكتب ملاحظه', 'اكتب ملاحظة', 'سجل ملاحظه', 'سجل ملاحظة', 'create a note', 'make a note', 'write a note'])) {
+  if (hasAny(['انشئ ملاحظه', 'انشئ ملاحظة', 'اكتب ملاحظه', 'اكتب ملاحظة', 'سجل ملاحظه', 'سجل ملاحظة', 'اعمل ملاحظه', 'اعمل ملاحظة', 'create a note', 'make a note', 'write a note', 'add a note'])) {
     const match = text.match(/(?:انشئ|اكتب|سجل)\s+(?:لي\s+)?(?:ملاحظة|ملاحظه)\s*[:：-]?\s*(.+)$/i)
       || text.match(/(?:create|make|write)\s+(?:a\s+)?note\s*[:：-]?\s*(.+)$/i);
     if (match && match[1].trim().length <= 2000) {
