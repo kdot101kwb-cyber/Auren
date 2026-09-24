@@ -10,6 +10,7 @@ import 'more_screen.dart';
 import 'core_five_screen.dart';
 import '../../services/core/auren_core_five_repository.dart';
 import '../../saved/presentation/saved_center_screen.dart';
+import '../../agents/presentation/auren_work_artifacts_screen.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -155,6 +156,7 @@ class AurenHomeV2 extends StatelessWidget {
         _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
         _card(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل الهدف إلى خطوات.', const PersonalAiScreen()),
         _card(context, Icons.bookmark_outline, 'Saved', 'كل المحتوى الذي حفظته في AUREN.', const AurenSavedCenterScreen()),
+        _card(context, Icons.work_outline, 'AUREN Work Center', 'الأعمال والمسودات التي أنشأها الوكلاء بعد موافقتك.', const AurenWorkArtifactsScreen()),
         const SizedBox(height: 12),
         Card(child: ListTile(
           leading: const Icon(Icons.layers_outlined),
