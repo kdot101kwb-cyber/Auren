@@ -3,6 +3,7 @@ import '../../messenger/presentation/messenger_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import 'auren_execution_center_screen.dart';
 import 'auren_workflow_dashboard_screen.dart';
+import 'auren_real_work_agents_screen.dart';
 
 class AurenAgentSuiteScreen extends StatelessWidget {
   const AurenAgentSuiteScreen({super.key});
@@ -47,6 +48,13 @@ class AurenAgentSuiteScreen extends StatelessWidget {
           subtitle: const Text('إدارة الوكلاء المتخصصين للموهبة'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentAgentsScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.bolt_outlined),
+          title: const Text('Real Work Agents'),
+          subtitle: const Text('تشغيل وتحليل وكلاء AUREN على بيانات التطبيق مع موافقة المستخدم'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRealWorkAgentsScreen())),
         )),
         Card(child: ListTile(
           leading: const Icon(Icons.play_circle_outline),
