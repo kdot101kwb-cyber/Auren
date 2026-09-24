@@ -61,7 +61,13 @@ class AurenActionRequest {
   static DateTime _parseDate(dynamic value) {
     if (value is Timestamp) return value.toDate();
     if (value is DateTime) return value;
-    return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+    return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  }
+
+  static Map<String, dynamic> _parsePayload(dynamic value) {
+    if (value is Map<String, dynamic>) return Map<String, dynamic>.from(value);
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return const <String, dynamic>{};
   }
 
   factory AurenActionRequest.fromMap(String id, Map<String, dynamic> m) =>
@@ -71,9 +77,7 @@ class AurenActionRequest {
         actionType: m['actionType'] as String? ?? 'unknown',
         title: m['title'] as String? ?? '',
         description: m['description'] as String? ?? '',
-        payload: Map<String, dynamic>.from(
-          (m['payload'] as Map?) ?? const {},
-        ),
+        payload: _parsePayload(m['payload']),
         permission: m['permission'] as String? ?? 'standard',
         riskLevel: m['riskLevel'] as String? ?? 'low',
         approvalLevel: (m['approvalLevel'] as num?)?.toInt() ?? 1,
