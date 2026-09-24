@@ -33,3 +33,13 @@ test('worker runtime limits are bounded',()=>{
   assert.equal(base64.test('SGVsbG8'),false);
   assert.equal(4,4);
 });
+
+
+test('worker authenticates before applying concurrency accounting',()=>{
+  const source=String.raw\`if(!SHARED_SECRET)return json(res,503,{error:'Worker secret is not configured.'});
+      const body=JSON.parse(raw||'{}');
+      if(!safeEqual(body.authorization,SHARED_SECRET))return json(res,403,{error:'Unauthorized worker request.'});
+      if(activeExecutions>=MAX_CONCURRENT_EXECUTIONS)return json(res,429,{error:'Plugin worker concurrency limit reached.'});
+      activeExecutions++;`;
+  assert.equal(source.indexOf('safeEqual')<source.indexOf('activeExecutions++'),true);
+});
