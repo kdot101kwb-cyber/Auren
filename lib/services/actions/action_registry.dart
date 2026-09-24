@@ -78,6 +78,15 @@ class AurenActionRegistry {
     if (definition == null) {
       throw StateError('Unknown AUREN action type: $actionType');
     }
+    final normalizedType = actionType.trim().toLowerCase();
+    if (normalizedType != actionType || normalizedType.length > 80) {
+      throw StateError('Invalid AUREN action type.');
+    }
+    final normalizedTitle = title.trim();
+    final normalizedDescription = description.trim();
+    if (normalizedDescription.length > 2000) {
+      throw StateError('Action description is too long.');
+    }
     final invalidKeys = payload.keys
         .where((key) => !definition.allowedPayloadKeys.contains(key));
     if (invalidKeys.isNotEmpty) {
@@ -86,9 +95,9 @@ class AurenActionRegistry {
     return AurenActionRequest(
       id: id,
       conversationId: conversationId,
-      actionType: actionType,
-      title: title.isEmpty ? definition.title : title,
-      description: description,
+      actionType: normalizedType,
+      title: normalizedTitle.isEmpty ? definition.title : normalizedTitle,
+      description: normalizedDescription,
       payload: Map<String, dynamic>.from(payload),
       permission: definition.permission.name,
       riskLevel: definition.riskLevel.name,
