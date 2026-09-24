@@ -222,3 +222,14 @@ test('action rules keep lifecycle server-controlled', () => {
   assert.match(actionSection, /allow delete: if false;/);
   assert.match(actionSection, /status == 'pending'/);
 });
+
+
+test('publish agent validates canonical ids, capabilities, and listing ownership', () => {
+  assert.match(source, /exports\.publishAurenAgent/);
+  const start = source.indexOf('exports.publishAurenAgent');
+  const end = source.indexOf('function validateAurenPluginManifest', start);
+  const publish = source.slice(start, end);
+  assert.match(publish, /\^\[a-z0-9\]\[a-z0-9\._-\]\{2,63\}\$/);
+  assert.match(publish, /Agent capability/);
+  assert.match(publish, /already published by another owner/);
+});
