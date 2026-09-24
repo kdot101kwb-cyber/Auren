@@ -127,7 +127,7 @@ service cloud.firestore {
 
       match /agents/{agentId} {
         allow read: if isOwner(userId);
-        // Agent lifecycle is server-controlled. Client may only view the primary agent.
+        // Agent lifecycle is server-controlled. Client may only read owned agents.
         allow create, update, delete: if false;
       }
 
