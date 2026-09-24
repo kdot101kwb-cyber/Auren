@@ -64,7 +64,9 @@ class AurenActionRegistry {
   };
 
   static bool isPayloadAllowed(String type, Map<String, dynamic> payload) {
-    final definition = get(type);
+    final normalizedType = type.trim().toLowerCase();
+    if (normalizedType != type) return false;
+    final definition = get(normalizedType);
     if (definition == null) return false;
     return payload.keys.every(definition.allowedPayloadKeys.contains);
   }
