@@ -515,13 +515,6 @@ exports.decideAurenAction = require('firebase-functions/v2/https').onCall(
       });
     });
 
-    await writeAurenActionAudit(
-      uid,
-      {...action, id: actionId},
-      decision,
-      {source: 'decideAurenAction'},
-    );
-
     return {status: decision, actionId};
   },
 );
