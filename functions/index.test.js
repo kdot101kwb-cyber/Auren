@@ -108,3 +108,13 @@ test('AI gateway terminal-state hardening covers provider failure and empty cont
   assert.match(source, /errorCode: 'empty_provider_response'/);
   assert.match(source, /status: 'completed',[\s\S]*response: unavailable/);
 });
+
+
+test('plugin invocation quota is transactionally day-scoped and reports remaining quota', () => {
+  const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  assert.match(source, /const quotaRemaining=0/);
+  assert.match(source, /const nextUsed=used\+1/);
+  assert.match(source, /quotaRemaining=limit-nextUsed/);
+  assert.match(source, /agent_trust_events/);
+  assert.match(source, /plugin_invocation/);
+});
