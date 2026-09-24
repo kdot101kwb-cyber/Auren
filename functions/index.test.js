@@ -173,3 +173,11 @@ test('Personal AI context is bounded before it reaches the model', () => {
   assert.match(source, /title\.slice\(0, 200\)/);
   assert.match(source, /description\.slice\(0, 500\)/);
 });
+
+
+test('action cancellation is explicit, authenticated and server-controlled', () => {
+  assert.match(source, /exports\.cancelAurenAction/);
+  assert.match(source, /\['pending', 'approved'\]\.includes\(action\.status\)/);
+  assert.match(source, /status: 'cancelled'/);
+  assert.match(source, /cancelledBy: uid/);
+});
