@@ -1,6 +1,6 @@
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { defineSecret } = require('firebase-functions/params');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 
@@ -1361,7 +1361,7 @@ async function runAurenTalentScoutForOpportunity(opportunitySnap) {
       sourceType: 'opportunity', sourceId: opportunitySnap.id, status: 'new',
       score, matchedSkills: matched.slice(0, 30), missingSkills: missing.slice(0, 30),
       createdAt: existing.exists ? existing.data()?.createdAt : FieldValue.serverTimestamp(),
-      expiresAt: FieldValue.serverTimestamp(),
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)),
     }, {merge: true});
     if (!existing.exists) {
       await notify(ownerId, {
