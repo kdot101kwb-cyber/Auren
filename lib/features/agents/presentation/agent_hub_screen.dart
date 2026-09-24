@@ -5,6 +5,7 @@ import 'agent_wallet_screen.dart';
 import 'agent_disputes_screen.dart';
 import 'agent_messages_screen.dart';
 import 'auren_agent_suite_screen.dart';
+import 'auren_workflow_dashboard_screen.dart';
 import 'my_agents_screen.dart';
 import '../../../services/actions/action_repository.dart';
 import '../../../services/agents/agent_plugin_repository.dart';
@@ -177,6 +178,13 @@ class _AurenAgentHubScreenState extends State<AurenAgentHubScreen> {
       }),
       if (uid != null) Card(child: ListTile(leading: const Icon(Icons.receipt_long_outlined), title: const Text('Audit Trail'),
         subtitle: const Text('سجل التنفيذ والموافقات والنتائج'), onTap: () => _showAudit(uid))),
+      Card(child: ListTile(
+        leading: const Icon(Icons.account_tree_outlined),
+        title: const Text('Workflow Dashboard'),
+        subtitle: const Text('كل خطط AUREN: التقدم، الموافقات، النتائج وإعادة المحاولة'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWorkflowDashboardScreen())),
+      )),
       Card(child: ListTile(
         leading: const Icon(Icons.hub_outlined),
         title: const Text('AUREN Agent Suite'),
