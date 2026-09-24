@@ -151,6 +151,12 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
               const SizedBox(height: 10),
               Text('الحد اليومي', style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 6),
+              if (dailyLimit is num)
+                Text(
+                  'المستخدم اليوم: ${permission?['spentTodayMinor'] ?? 0} $currency',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              const SizedBox(height: 6),
               TextFormField(
                 initialValue: dailyLimit is num ? dailyLimit.toInt().toString() : '',
                 keyboardType: TextInputType.number,
