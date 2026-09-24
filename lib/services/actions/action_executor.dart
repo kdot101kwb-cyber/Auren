@@ -81,4 +81,9 @@ abstract interface class AurenActionExecutor {
     required String uid,
     required AurenActionRequest action,
   });
+
+  Future<AurenActionExecutionResult> recover({
+    required String uid,
+    required AurenActionRequest action,
+  });
 }
