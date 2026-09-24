@@ -191,6 +191,12 @@ test('plugin invocation enforces installed capability grants and bounded payload
   assert.match(source, /!\/\^\[a-zA-Z0-9\._:-\]\+\$\//);
 });
 
+test('plugin and simulation inputs enforce canonical ids, actions and payload bounds', () => {
+  assert.match(source, /!\/\^\[a-z0-9\]\[a-z0-9\._-\]\{2,119\}\$/);
+  assert.match(source, /Buffer\.byteLength\(JSON\.stringify\(payload\),'utf8'\)>32768/);
+  assert.match(source, /Invalid simulation request/);
+});
+
 test('plugin installation requires a published listing and matching version/capabilities', () => {
   assert.match(source, /Plugin must be published before installation/);
   assert.match(source, /Published plugin version mismatch/);
