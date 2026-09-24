@@ -1566,7 +1566,14 @@ async function executeAurenWorkActionSideEffect(uid, action, executionId) {
       title: safeTitle, description: safeBody || null, progress: 0, status: 'active',
       createdAt: now, updatedAt: now, source: 'auren-work-agent', sourceExecutionId: executionId,
     }, {merge: true});
-    return {type:'goal_created', goalId:ref.id};
+    const artifactRef = db.collection('users').doc(uid).collection('agent_artifacts').doc(action.id);
+    await artifactRef.set({
+      ownerId:uid, executionId, actionId:action.id, agentId:action.agentId || null,
+      domain:'goals', type:'goal', title:safeTitle, body:safeBody,
+      payload:{...payload, goalId:ref.id}, status:'active', externalSideEffects:false,
+      createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+    }, {merge:true});
+    return {type:'goal_created', goalId:ref.id, artifactId:artifactRef.id, artifactType:'goal'};
   }
 
   const artifactTypes = {
@@ -1743,6 +1750,18 @@ exports.executeAurenWorkAction = require('firebase-functions/v2/https').onCall(
     try {
       const result=await executeAurenWorkActionSideEffect(uid,{...action,id:actionId},executionId);
       await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      await executionRef.update({
+        lastActionId: actionId,
+        lastActionResult: result,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      await notify(uid,{
+        title:'AUREN نفّذ إجراءً داخلياً',
+        body:String(action.title || 'تم تنفيذ الإجراء.').slice(0,180),
+        type:'agent_work_action',
+        targetId:uid,
+        entityId:actionId,
+      });
       await writeAurenActionAudit(uid,{
         id:actionId,actionType:action.actionType,agentId:action.agentId,
         permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true,
