@@ -187,7 +187,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final actions = snapshot.data!;
+          final actions = snapshot.data!.take(20).toList();
           return StreamBuilder<List<AurenActionRequest>>(
             stream: _repo.watchHistory(uid),
             builder: (context, historySnapshot) {
@@ -199,7 +199,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 );
               }
               final history =
-                  historySnapshot.data ?? const <AurenActionRequest>[];
+                  (historySnapshot.data ?? const <AurenActionRequest>[]).take(20).toList();
 
               return ListView(
                 padding: const EdgeInsets.all(16),
