@@ -885,7 +885,7 @@ service cloud.firestore {
             && request.resource.data.memberIds.size() >= 3)
           || (!request.resource.data.isAi && request.resource.data.type == 'direct'
             && request.resource.data.memberIds.size() == 2
-            && request.resource.data.ownerId == null)
+            && !request.resource.data.keys().hasAny(['ownerId']))
           || (request.resource.data.isAi && request.resource.data.type == 'ai'
             && request.resource.data.memberIds.size() == 1
             && !request.resource.data.keys().hasAny(['ownerId']))
@@ -915,7 +915,7 @@ service cloud.firestore {
             resource.data.type == 'group'
             && request.auth.uid == resource.data.ownerId
             && request.resource.data.memberIds is list
-            && request.resource.data.memberIds.size() >= 2
+            && request.resource.data.memberIds.size() >= 3
             && request.resource.data.memberIds.size() <= 50
             && request.resource.data.memberIds.hasAll([resource.data.ownerId])
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
