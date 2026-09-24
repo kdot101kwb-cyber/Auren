@@ -1148,6 +1148,26 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
+
+    match /users/{userId}/routines/{routineId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+    match /users/{userId}/reminders/{reminderId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+    match /users/{userId}/check_ins/{checkInId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+    match /users/{userId}/reflections/{reflectionId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+    match /users/{userId}/focus_history/{sessionId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+    match /users/{userId}/calendar_events/{eventId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+
     match /users/{userId}/agent_work_executions/{executionId} {
       allow read: if isOwner(userId);
       allow create, update, delete: if false;
