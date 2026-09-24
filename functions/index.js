@@ -1190,8 +1190,10 @@ exports.proposeAurenAgentTask = require('firebase-functions/v2/https').onCall(
   async (request) => {
     const uid=request.auth?.uid; if(!uid) throw new Error('Unauthenticated');
     const data=validateAurenCollaborationInput(request.data || {});
-    const workflowId = typeof request.data?.workflowId === 'string' ? request.data.workflowId.trim() : '';\n    const step = Number.isSafeInteger(request.data?.step) ? request.data.step : null;
-    if (workflowId && (workflowId.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(workflowId))) throw new Error('Invalid workflow id.');\n    if (step !== null && (step < 0 || step >= AUREN_AGENT_FLOW.length)) throw new Error('Invalid workflow step.');
+    const workflowId = typeof request.data?.workflowId === 'string' ? request.data.workflowId.trim() : '';
+    const step = Number.isSafeInteger(request.data?.step) ? request.data.step : null;
+    if (workflowId && (workflowId.length > 120 || !/^[a-zA-Z0-9._:-]+$/.test(workflowId))) throw new Error('Invalid workflow id.');
+    if (step !== null && (step < 0 || step >= AUREN_AGENT_FLOW.length)) throw new Error('Invalid workflow step.');
     const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc();
     await ref.set({...data, ownerId:uid, workflowId:workflowId || ref.id, step:step ?? AUREN_AGENT_FLOW.indexOf(data.targetAgent), status:'proposed',requiresApproval:true,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     return {status:'proposed',taskId:ref.id};
@@ -1229,14 +1231,29 @@ exports.executeAurenAgentTask = require('firebase-functions/v2/https').onCall(
     const output=validateAurenAgentOutput(request.data?.output || {});
     if(!taskId || taskId.length>120) throw new Error('Invalid collaboration task id.');
     const ref=db.collection('users').doc(uid).collection('agent_collaboration').doc(taskId);
+    const executionRef=db.collection('users').doc(uid).collection('agent_task_executions').doc(taskId);
     let target='';
+    let workflowId='';
     await db.runTransaction(async(tx)=>{
       const snap=await tx.get(ref); if(!snap.exists) throw new Error('Collaboration task not found.');
-      const data=snap.data()||{}; if(data.status!=='approved') throw new Error('Collaboration task requires approval before execution.');
+      const data=snap.data()||{};
+      if(data.status!=='approved') throw new Error('Collaboration task requires approval before execution.');
       target=data.targetAgent||''; if(!AUREN_AGENT_FLOW_SET.has(target)) throw new Error('Invalid target agent.');
+      workflowId=typeof data.workflowId==='string'?data.workflowId:'';
+      const workflowRef=workflowId ? db.collection('users').doc(uid).collection('agent_workflows').doc(workflowId) : null;
+      if(workflowRef){
+        const workflowSnap=await tx.get(workflowRef);
+        if(workflowSnap.exists && workflowSnap.data()?.state==='paused') throw new Error('Workflow is paused.');
+      }
+      tx.set(executionRef,{
+        ownerId:uid, taskId, workflowId, targetAgent:target, status:'completed',
+        output, completedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+      },{merge:true});
       tx.update(ref,{status:'completed',output,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     });
-    return {status:'completed',taskId,targetAgent:target};
+    await writeAurenActionAudit(uid,{id:taskId,actionType:'agent.task',agentId:target,permission:'userApproval',riskLevel:'low',approvalLevel:1,requiresApproval:true},'completed',{source:'agent-task-execution',workflowId});
+    await notify(uid,{title:'AUREN Agent completed',body:target+' أكمل المرحلة المطلوبة.',type:'agent',targetId:uid,entityId:taskId});
+    return {status:'completed',taskId,targetAgent:target,workflowId};
   },
 );
 
