@@ -1177,7 +1177,7 @@ exports.invokeAurenPlugin = require('firebase-functions/v2/https').onCall(
     const pluginId=typeof request.data?.pluginId==='string'?request.data.pluginId.trim():'';
     const action=typeof request.data?.action==='string'?request.data.action.trim():'';
     const payload=request.data?.payload && typeof request.data.payload==='object' && !Array.isArray(request.data.payload)?request.data.payload:{};
-    if(!pluginId||pluginId.length>120||!action||action.length>120||!/^[a-zA-Z0-9._:-]+$/.test(action)||Object.keys(payload).length>20)throw new Error('Invalid plugin invocation.');
+    if(!pluginId||pluginId.length>120||!/^[a-z0-9][a-z0-9._-]{2,119}$/.test(pluginId)||!action||action.length>120||!/^[a-zA-Z0-9._:-]+$/.test(action)||Object.keys(payload).length>20)throw new Error('Invalid plugin invocation.');
     if(Buffer.byteLength(JSON.stringify(payload),'utf8')>32768)throw new Error('Plugin payload exceeds the 32 KB limit.');
     const install=await db.collection('users').doc(uid).collection('agent_installations').doc(pluginId).get();
     if(!install.exists||install.data()?.status!=='active')throw new Error('Plugin is not installed or active.');
@@ -1210,7 +1210,7 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
     const agentId=typeof request.data?.agentId==='string'?request.data.agentId.trim():'';
     const action=typeof request.data?.action==='string'?request.data.action.trim():'';
     const payload=request.data?.payload && typeof request.data.payload==='object' && !Array.isArray(request.data.payload)?request.data.payload:{};
-    if(!agentId||!action||agentId.length>120||action.length>120||Object.keys(payload).length>20)throw new Error('Invalid simulation request.');
+    if(!agentId||agentId.length>120||!/^[a-z0-9][a-z0-9._-]{2,119}$/.test(agentId)||!action||action.length>120||!/^[a-zA-Z0-9._:-]+$/.test(action)||Object.keys(payload).length>20||Buffer.byteLength(JSON.stringify(payload),'utf8')>32768)throw new Error('Invalid simulation request.');
     const install=await db.collection('users').doc(uid).collection('agent_installations').doc(agentId).get();
     if(!install.exists||install.data()?.status!=='active')throw new Error('Agent is not installed or active.');
     const simulationRef=db.collection('users').doc(uid).collection('agent_simulations').doc();
