@@ -25,7 +25,11 @@ async function loadAurenPermissionLedger(uid) {
   return {
     enabled: data.enabled === true,
     allowedActions: new Set(
-      Array.isArray(data.allowedActions) ? data.allowedActions : [],
+      (Array.isArray(data.allowedActions) ? data.allowedActions : [])
+        .filter((action) => typeof action === 'string')
+        .map((action) => action.trim())
+        .filter(Boolean)
+        .slice(0, 100),
     ),
     dailySpendingLimitMinor:
       Number.isInteger(data.dailySpendingLimitMinor)
@@ -34,7 +38,8 @@ async function loadAurenPermissionLedger(uid) {
     spentTodayMinor: Number.isInteger(data.spentTodayMinor)
       ? data.spentTodayMinor
       : 0,
-    currency: typeof data.currency === 'string' ? data.currency : 'USD',
+    currency: typeof data.currency === 'string' && /^[A-Z]{3}$/.test(data.currency)
+      ? data.currency : 'USD',
     spendingDay: typeof data.spendingDay === 'string' ? data.spendingDay : null,
   };
 }
