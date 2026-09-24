@@ -524,38 +524,35 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     let actionDescription = '';
     let requiresApproval = false;
 
-    // "افعلها لي" is proposal-only at this layer: the model can suggest one
-    // of the allow-listed actions, but the server validates every field and
-    // creates a pending request. Nothing is executed here.
-    try {
-      const candidate = JSON.parse(
-        text.replace(/^\`\`\`json\\s*/i, '').replace(/\`\`\`$/i, '').trim(),
-      );
-      const allowed = new Set(['demo.echo', 'demo.create_note', 'memory.save']);
-      if (candidate && typeof candidate === 'object' && allowed.has(candidate.action)) {
-        const p = candidate.payload && typeof candidate.payload === 'object' && !Array.isArray(candidate.payload)
-          ? candidate.payload : {};
-        const keys = Object.keys(p);
-        const textOk = (candidate.action === 'demo.echo' || candidate.action === 'demo.create_note') &&
-          keys.length === 1 && keys[0] === 'text' && typeof p.text === 'string' &&
-          p.text.trim().length > 0 && p.text.length <= 2000;
-        const memoryOk = candidate.action === 'memory.save' &&
-          keys.length === 2 && keys.every((k) => k === 'key' || k === 'value') &&
-          typeof p.key === 'string' && typeof p.value === 'string' &&
-          p.key.trim() && p.key.length <= 120 && p.value.trim() && p.value.length <= 2000;
-        if (textOk || memoryOk) {
-          action = candidate.action;
-          payload = textOk ? {text: p.text.trim()} : {key: p.key.trim(), value: p.value.trim()};
-          requiresApproval = true;
+    // Natural-language requests are normalized first. The model JSON format
+    // remains supported as a fallback, while the server remains the source
+    // of truth for the allow-list and payload schema.
+    const intent = normalizeAurenActionIntent(message);
+    if (intent) {
+      action = intent.action;
+      payload = assertAurenActionPayload(intent.action, intent.payload);
+      text = intent.text;
+      actionDescription = 'طلب تنفيذ: ' + intent.action;
+      requiresApproval = true;
+    }
 
+    if (!action) {
+      try {
+        const candidate = JSON.parse(
+          text.replace(/^\`\`\`json\\s*/i, '').replace(/\`\`\`$/i, '').trim(),
+        );
+        const allowed = new Set(['demo.echo', 'demo.create_note', 'memory.save']);
+        if (candidate && typeof candidate === 'object' && allowed.has(candidate.action)) {
+          const normalizedPayload = assertAurenActionPayload(candidate.action, candidate.payload);
+          action = candidate.action;
+          payload = normalizedPayload;
+          requiresApproval = true;
           const titles = {
             'demo.echo': 'تنفيذ طلب AUREN',
             'demo.create_note': 'إنشاء ملاحظة',
             'memory.save': 'حفظ معلومة في ذاكرة AUREN',
           };
-          const payloadSummary = action === 'memory.save'
-            ? payload.key
-            : payload.text;
+          const payloadSummary = action === 'memory.save' ? payload.key : payload.text;
           actionDescription = 'طلب تنفيذ: ' + titles[action] +
             (payloadSummary ? ' — ' + String(payloadSummary).slice(0, 240) : '');
           const candidateText = typeof candidate.text === 'string' ? candidate.text.trim() : '';
@@ -563,8 +560,8 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
             ? candidateText
             : 'لدي طلب تنفيذ جاهز للمراجعة. وافق عليه من بطاقة الإجراء قبل التنفيذ.';
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
     // The server is the only writer of AI-authored messages.
     // This prevents a client from impersonating "auren-ai".
