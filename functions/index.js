@@ -1081,6 +1081,24 @@ exports.fundAurenAgentWallet = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.saveAurenAgent = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+ async (request) => {
+  const uid=request.auth?.uid;if(!uid)throw new Error('Unauthenticated');
+  const agentId=typeof request.data?.agentId==='string'?request.data.agentId.trim():'';
+  const name=typeof request.data?.name==='string'?request.data.name.trim():'';
+  const version=typeof request.data?.version==='string'?request.data.version.trim():'';
+  if(!/^[a-z0-9][a-z0-9._-]{2,63}$/.test(agentId)||!name||name.length>120||!version||version.length>64) {
+    throw new Error('Invalid Agent.');
+  }
+  const ref=db.collection('users').doc(uid).collection('agents').doc(agentId);
+  const existing=await ref.get();
+  if(existing.exists && existing.data()?.status==='revoked') throw new Error('Revoked Agent cannot be reactivated.');
+  await ref.set({name,version,status:'active',updatedAt:FieldValue.serverTimestamp()},{merge:true});
+  return {status:'saved',agentId};
+ });
+
+
 exports.publishAurenAgent = require('firebase-functions/v2/https').onCall(
  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
  async (request)=>{
