@@ -122,45 +122,8 @@ service cloud.firestore {
 
       match /agent_permissions/{permissionId} {
         allow read: if isOwner(userId);
-        allow create: if isOwner(userId)
-          && permissionId == 'primary'
-          && request.resource.data.agentId == 'primary'
-          && request.resource.data.enabled is bool
-          && request.resource.data.allowedActions is list
-          && request.resource.data.allowedActions.size() <= 100
-          && (request.resource.data.dailySpendingLimitMinor == null
-            || (request.resource.data.dailySpendingLimitMinor is int
-              && request.resource.data.dailySpendingLimitMinor >= 0))
-          && request.resource.data.spentTodayMinor == 0
-          && request.resource.data.spendingDay is string
-          && request.resource.data.currency is string
-          && request.resource.data.currency.matches('^[A-Z]{3}$')
-          && request.resource.data.keys().hasOnly([
-            'agentId', 'enabled', 'allowedActions', 'dailySpendingLimitMinor',
-            'spentTodayMinor', 'spendingDay', 'currency', 'updatedAt'
-          ]);
-
-        allow update: if isOwner(userId)
-          && permissionId == 'primary'
-          && request.resource.data.agentId == resource.data.agentId
-          && request.resource.data.enabled is bool
-          && request.resource.data.allowedActions is list
-          && request.resource.data.allowedActions.size() <= 100
-          && (request.resource.data.dailySpendingLimitMinor == null
-            || (request.resource.data.dailySpendingLimitMinor is int
-              && request.resource.data.dailySpendingLimitMinor >= 0))
-          && request.resource.data.spentTodayMinor is int
-          && request.resource.data.spendingDay is string
-          && request.resource.data.spentTodayMinor >= 0
-          && request.resource.data.spentTodayMinor >= resource.data.spentTodayMinor
-          && request.resource.data.currency == resource.data.currency
-          && request.resource.data.keys().hasOnly([
-            'agentId', 'enabled', 'allowedActions', 'dailySpendingLimitMinor',
-            'spentTodayMinor', 'spendingDay', 'currency', 'updatedAt'
-          ]);
-
-        allow delete: if isOwner(userId);
-      }
+        // Permission ledger lifecycle is server-controlled. Client can only read it.
+        allow create, update, delete: if false;
 
       match /agents/{agentId} {
         allow read: if isOwner(userId);
