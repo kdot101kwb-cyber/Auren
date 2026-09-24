@@ -256,11 +256,17 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     );
   }
 
+  String _formatActionTime(DateTime value) {
+    final local = value.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)} ${two(local.hour)}:${two(local.minute)}';
+  }
   Widget _actionCard(AurenActionRequest action, {bool history = false}) {
     final statusLabel = switch (action.status) {
       'completed' => 'اكتمل',
       'failed' => 'فشل التنفيذ',
       'rejected' => 'مرفوض',
+      'executing' => 'جارٍ التنفيذ — يمكن الاسترجاع بعد اكتمال نافذة الأمان',
       'approved' => 'تمت الموافقة — جاهز للتنفيذ',
       _ => 'بانتظار موافقتك',
     };
@@ -276,6 +282,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
         title: Text(action.title),
         subtitle: Text(
           '${action.description}\n$statusLabel'
+          '${action.executionStartedAt == null ? '' : '\nبدأ التنفيذ: ' + _formatActionTime(action.executionStartedAt!)}'
           '${action.result == null ? '' : '\n${action.result}'}',
         ),
         isThreeLine: action.result != null || !history,
