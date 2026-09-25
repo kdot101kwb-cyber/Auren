@@ -58,11 +58,22 @@ class _AurenRandomCallScreenState extends State<AurenRandomCallScreen> {
       final uid = auth.currentUserId;
       if (uid == null) throw StateError('not_authenticated');
 
-      pc = await createPeerConnection({
-        'iceServers': [
-          {'urls': 'stun:stun.l.google.com:19302'},
-        ],
-      });
+      const turnUrl = String.fromEnvironment('AUREN_TURN_URL');
+      const turnUsername = String.fromEnvironment('AUREN_TURN_USERNAME');
+      const turnCredential = String.fromEnvironment('AUREN_TURN_CREDENTIAL');
+
+      final iceServers = <Map<String, dynamic>>[
+        {'urls': 'stun:stun.l.google.com:19302'},
+      ];
+      if (turnUrl.isNotEmpty && turnUsername.isNotEmpty && turnCredential.isNotEmpty) {
+        iceServers.add({
+          'urls': turnUrl,
+          'username': turnUsername,
+          'credential': turnCredential,
+        });
+      }
+
+      pc = await createPeerConnection({'iceServers': iceServers});
 
       pc!.onTrack = (e) {
         if (e.streams.isNotEmpty && mounted) {
