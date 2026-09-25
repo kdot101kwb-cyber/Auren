@@ -133,6 +133,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.gavel_outlined, 'Legal AI', 'افهم المستندات والعقود وأسئلة المراجعة القانونية.', const AurenLegalAiScreen()),
         _tile(context, Icons.data_saver_on_outlined, 'Data & Offline', 'تحكم في Low Data واعرف كيف يعمل Offline Sync.', const AurenDataSettingsScreen()),
         _tile(context, Icons.analytics_outlined, 'Business Analytics', 'تابع المشاهدات والحفظ والتقييمات والتواصل لنشاطك.', const AurenBusinessAnalyticsScreen()),
+        _tile(context, Icons.video_library_outlined, 'Creator Studio', 'حوّل الفكرة إلى مسودة محتوى وخطة إنتاج ومراجعة قبل النشر.', const AurenCreatorStudioScreen()),
         _tile(context, Icons.hub_outlined, 'Core 5 Context', 'خلّي AUREN يربط أهدافك وPulse وBusiness وMarketplace وCreator.', null, onTap: () => _openCoreFive(context, uid)),
         if (uid != null) _coreFiveBuildCard(context, uid),
         _tile(context, Icons.alt_route_outlined, 'Goal → Content → Opportunity', 'حوّل هدفك إلى محتوى أو منتج أو فرصة Business عبر الوحدات الخمس.', null, onTap: () => _openCoreFive(context, uid)),
