@@ -1,5 +1,5 @@
 class AurenPost {
-  final String id, authorId, text, mediaUrl, mediaType, contentType, contextLabel, actionLabel;
+  final String id, authorId, text, mediaUrl, mediaType, contentType, contextLabel, actionLabel, communityId;
   final DateTime createdAt;
   final int likes, comments;
 
@@ -13,6 +13,7 @@ class AurenPost {
     this.contentType = 'moment',
     this.contextLabel = '',
     this.actionLabel = '',
+    this.communityId = '',
     this.likes = 0,
     this.comments = 0,
   });
@@ -25,6 +26,7 @@ class AurenPost {
         'contentType': contentType,
         'contextLabel': contextLabel,
         'actionLabel': actionLabel,
+        'communityId': communityId,
         'createdAt': createdAt.toUtc().toIso8601String(),
         'likes': likes,
         'comments': comments,
@@ -39,6 +41,7 @@ class AurenPost {
         contentType: m['contentType']?.toString() ?? 'moment',
         contextLabel: m['contextLabel']?.toString() ?? '',
         actionLabel: m['actionLabel']?.toString() ?? '',
+        communityId: m['communityId']?.toString() ?? '',
         createdAt:
             DateTime.tryParse(m['createdAt']?.toString() ?? '') ?? DateTime.now(),
         likes: (m['likes'] as num?)?.toInt() ?? 0,
