@@ -8,6 +8,7 @@ import '../../creator/presentation/creator_screen.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../marketplace/presentation/marketplace_screen.dart';
 import '../../agents/presentation/agent_hub_screen.dart';
+import '../../real_estate/presentation/real_estate_screen.dart';
 import '../../personal_ai/presentation/local_intelligence_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../social/presentation/saved_pulse_screen.dart';
@@ -27,6 +28,7 @@ class AurenMoreScreen extends StatelessWidget {
     _MoreItem('Travel', 'أماكن، رحلات وتجارب حول العالم.', Icons.flight_takeoff_outlined, 'خطط لي رحلة مناسبة لميزانيتي واهتماماتي.'),
     _MoreItem('Entertainment', 'Series • Music • Gaming • Live.', Icons.play_circle_outline, 'اقترح لي ترفيهًا يناسب مزاجي ووقتي اليوم.'),
     _MoreItem('Creator Studio', 'أنشئ وانشر وطوّر جمهورك.', Icons.video_camera_back_outlined, 'ساعدني أبني خطة Creator Studio ومحتوى مناسب لجمهوري.'),
+    _MoreItem('Real Estate', 'عقارات للبيع والإيجار مع بحث ومقارنة ذكية.', Icons.home_work_outlined, 'ساعدني أبحث عن عقار مناسب وقارن الخيارات حسب احتياجي.'),
   ];
 
   void _open(BuildContext context, _MoreItem item) => Navigator.push(
@@ -84,7 +86,7 @@ class AurenMoreScreen extends StatelessWidget {
           title: Text(item.title),
           subtitle: Text(item.subtitle),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => item.title == 'Business' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())) : item.title == 'Marketplace' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())) : item.title == 'Education' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEducationScreen())) : item.title == 'Travel' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen())) : item.title == 'Entertainment' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen())) : item.title == 'Creator Studio' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENCreatorStudioScreen())) : _open(context, item),
+          onTap: () => item.title == 'Business' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())) : item.title == 'Marketplace' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())) : item.title == 'Education' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEducationScreen())) : item.title == 'Travel' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen())) : item.title == 'Entertainment' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen())) : item.title == 'Creator Studio' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENCreatorStudioScreen())) : item.title == 'Real Estate' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRealEstateScreen())) : _open(context, item),
         ))),
         Card(child: ListTile(
           leading: const Icon(Icons.location_on_outlined),
