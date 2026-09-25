@@ -1200,5 +1200,45 @@ service cloud.firestore {
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
     }
+
+    match /properties/{propertyId} {
+      allow read: if request.auth != null
+        && resource.data.visibility == 'public'
+        && resource.data.status == 'active';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 3000
+        && request.resource.data.city is string
+        && request.resource.data.country is string
+        && request.resource.data.listingType in ['sale','rent']
+        && request.resource.data.type in ['Apartment','House','Villa','Office','Shop','Land','Warehouse']
+        && request.resource.data.currency is string
+        && request.resource.data.priceMinor is int
+        && request.resource.data.priceMinor >= 0
+        && request.resource.data.bedrooms is int
+        && request.resource.data.bathrooms is int
+        && request.resource.data.areaSqm is int
+        && request.resource.data.verified == false
+        && request.resource.data.status == 'active'
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.verified == resource.data.verified
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /users/{userId}/savedProperties/{propertyId} {
+      allow read, create, delete: if isOwner(userId);
+      allow update: if false;
+    }
+
   }
 }
