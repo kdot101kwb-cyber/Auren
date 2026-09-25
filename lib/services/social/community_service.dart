@@ -17,6 +17,8 @@ class AurenCommunityService {
   AurenCommunityService({FirebaseFirestore? db,FirebaseAuth? auth}):_db=db??FirebaseFirestore.instance,_auth=auth??FirebaseAuth.instance;
   String get uid=>_auth.currentUser?.uid??(throw StateError('Sign in required'));
   Stream<List<AurenCommunity>> watchPublic({String query=''}){final q=query.trim().toLowerCase();return _db.collection('communities').where('visibility',isEqualTo:'public').limit(50).snapshots().map((s){final all=s.docs.map(AurenCommunity.fromDoc);if(q.isEmpty){final list=all.toList();list.sort((a,b)=>b.memberCount.compareTo(a.memberCount));return list;}return all.where((c)=>(c.name+' '+c.description+' '+c.topic).toLowerCase().contains(q)).toList();});}
+  Stream<AurenCommunity?> watch(String id) => _db.collection('communities').doc(id).snapshots().map((d) => d.exists ? AurenCommunity.fromDoc(d) : null);
+
   Future<String> create({required String name,required String description,required String topic}) async{
     final n=name.trim(),d=description.trim(),t=topic.trim();if(n.isEmpty||n.length>80)throw ArgumentError('Community name must be 1–80 characters.');if(d.length>500||t.length>80)throw ArgumentError('Community text is too long.');
     final ref=_db.collection('communities').doc();await ref.set({'ownerId':uid,'name':n,'description':d,'topic':t,'visibility':'public','memberIds':[uid],'memberCount':1,'createdAt':FieldValue.serverTimestamp()});return ref.id;
