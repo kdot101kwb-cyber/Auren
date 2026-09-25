@@ -17,7 +17,13 @@ class _AurenMediaStudioScreenState extends State<AurenMediaStudioScreen>{
     if(file==null)return;
     final bytes=await file.readAsBytes();
     if(!mounted)return;
-    setState(()=>{_bytes=bytes,_name=file.name,_type:file.mimeType??'application/octet-stream',_video:(file.mimeType??'').startsWith('video/'),_url:null});
+    setState(() {
+      _bytes = bytes;
+      _name = file.name;
+      _type = file.mimeType ?? 'application/octet-stream';
+      _video = (file.mimeType ?? '').startsWith('video/');
+      _url = null;
+    });
   }
   Future<void> _upload() async {
     final uid=FirebaseAurenAuthService().currentUserId;
