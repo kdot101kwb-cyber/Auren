@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../messaging/conversation_repository.dart';
 
 class AurenRandomGroupConnectService {
   final FirebaseFirestore _db;
@@ -26,6 +27,8 @@ class AurenRandomGroupConnectService {
       tx.update(_c.doc(requestId), {'status': 'grouped', 'groupId': groupRef.id, 'matchedAt': FieldValue.serverTimestamp()});
     });
     }
+
+  Future<String> createMessengerGroup({required String groupId, required String uid, required String title}) async { final snap=await _db.collection('random_groups').doc(groupId).get(); final data=snap.data(); if(!snap.exists||data==null) throw StateError('Group not found.'); final members=List<String>.from(data['memberUids'] as List? ?? const []); if(!members.contains(uid)) throw StateError('Only a group member can open the chat.'); final conversation=await ConversationRepository(firestore:_db).createGroup(uid:uid,title:title,memberIds:members); await _db.collection('random_groups').doc(groupId).update({'conversationId':conversation.id,'chatReady':true}); return conversation.id; }
 
   Future<void> cancel(String uid, String requestId) async { final ref = _c.doc(requestId); final snap = await ref.get(); if (snap.exists && snap.data()?['uid'] == uid) await ref.update({'status': 'cancelled'}); }
 }
