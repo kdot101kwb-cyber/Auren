@@ -16,12 +16,12 @@ class AurenRandomConnectScreen extends StatefulWidget {
 
 class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
   final auth=FirebaseAurenAuthService(), service=AurenRandomConnectService(), safety=AurenRandomConnectSafetyService(), callService=AurenRandomCallService();
-  final name=TextEditingController(),country=TextEditingController(),language=TextEditingController(),interest=TextEditingController(),goal=TextEditingController(),activity=TextEditingController(),topic=TextEditingController(),minAge=TextEditingController(),maxAge=TextEditingController();
+  final name=TextEditingController(),country=TextEditingController(),language=TextEditingController(),interest=TextEditingController(),goal=TextEditingController(),activity=TextEditingController(),topic=TextEditingController(),ownAge=TextEditingController(),minAge=TextEditingController(),maxAge=TextEditingController();
   String? requestId; bool busy=false; String discoveryMode='all'; final Set<String> skippedIds=<String>{}; Timer? presenceTimer;
 
   @override void initState(){super.initState();_presence(true);presenceTimer=Timer.periodic(const Duration(seconds:30),(_)=>_presence(true));}
   Future<void> _presence(bool online)async{final uid=auth.currentUserId;if(uid==null)return;try{await service.setPresence(uid,online:online);}catch(_){}} 
-  @override void dispose(){presenceTimer?.cancel();_presence(false);for(final c in [name,country,language,interest,goal,activity,topic,minAge,maxAge])c.dispose();super.dispose();}
+  @override void dispose(){presenceTimer?.cancel();_presence(false);for(final c in [name,country,language,interest,goal,activity,topic,ownAge,minAge,maxAge])c.dispose();super.dispose();}
   void msg(String s){if(!mounted)return;ScaffoldMessenger.of(context)..hideCurrentSnackBar()..showSnackBar(SnackBar(content:Text(s)));}
   int? _age(TextEditingController c){final v=int.tryParse(c.text.trim());return v!=null&&v>=13&&v<=120?v:null;}
 
@@ -30,7 +30,7 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
     setState(()=>busy=true);
     try{
       skippedIds.clear();
-      final id=await service.join(uid:uid,displayName:name.text,country:country.text,language:language.text,interest:interest.text,goal:goal.text,age:_age(minAge),activity:activity.text,topic:topic.text);
+      final id=await service.join(uid:uid,displayName:name.text,country:country.text,language:language.text,interest:interest.text,goal:goal.text,age:_age(ownAge),activity:activity.text,topic:topic.text);
       if(mounted)setState(()=>requestId=id);
     }catch(_){msg('تعذر بدء البحث.');}finally{if(mounted)setState(()=>busy=false);}
   }
@@ -80,7 +80,7 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
       body:ListView(padding:const EdgeInsets.all(16),children:[
         const Text('تواصل عشوائياً: نص، صوت، فيديو، حسب اللغة والدولة والاهتمام والهدف والنشاط والموضوع.'),
         const SizedBox(height:10),
-        ...[field(name,'الاسم الظاهر'),field(country,'الدولة'),field(language,'اللغة'),field(interest,'الاهتمام'),field(goal,'الهدف'),field(activity,'النشاط الحالي'),field(topic,'موضوع المحادثة'),field(minAge,'العمر الأدنى'),field(maxAge,'العمر الأعلى')],
+        ...[field(name,'الاسم الظاهر'),field(country,'الدولة'),field(language,'اللغة'),field(interest,'الاهتمام'),field(goal,'الهدف'),field(activity,'النشاط الحالي'),field(topic,'موضوع المحادثة'),field(ownAge,'عمرك'),field(minAge,'العمر الأدنى'),field(maxAge,'العمر الأعلى')],
         Wrap(spacing:8,runSpacing:8,children:[
           for(final item in const [['all','الكل'],['language','لغة'],['country','دولة'],['interest','اهتمام'],['goal','هدف'],['topic','موضوع']])
             ChoiceChip(label:Text(item[1]),selected:discoveryMode==item[0],onSelected:(_)=>setState(()=>discoveryMode=item[0])),
