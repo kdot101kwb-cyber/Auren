@@ -1291,6 +1291,51 @@ service cloud.firestore {
 
 
 
-  match /random_calls/{callId} { allow read: if request.auth != null && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid); allow create: if request.auth != null && request.resource.data.callerUid == request.auth.uid && request.resource.data.calleeUid is string && request.resource.data.kind in ['audio','video'] && request.resource.data.status == 'ringing'; allow update: if request.auth != null && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['offer','answer','status','endedBy','endedAt']); allow delete: if false; match /candidates/{candidateId} { allow read,write: if request.auth != null && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid); } }
+  match /random_calls/{callId} {
+    allow read: if request.auth != null
+      && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid);
+    allow create: if request.auth != null
+      && request.resource.data.callerUid == request.auth.uid
+      && request.resource.data.calleeUid is string
+      && request.resource.data.calleeUid != request.auth.uid
+      && request.resource.data.kind in ['audio','video']
+      && request.resource.data.status == 'ringing'
+      && request.resource.data.keys().hasOnly(['callerUid','calleeUid','kind','status','createdAt']);
+    allow update: if request.auth != null
+      && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid)
+      && (
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['offer'])
+          && resource.data.callerUid == request.auth.uid
+          && request.resource.data.offer is map
+          && request.resource.data.offer.sdp is string
+          && request.resource.data.offer.type is string)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer','status'])
+          && resource.data.calleeUid == request.auth.uid
+          && resource.data.status == 'ringing'
+          && request.resource.data.status == 'connected'
+          && request.resource.data.answer is map
+          && request.resource.data.answer.sdp is string
+          && request.resource.data.answer.type is string)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','endedBy','endedAt'])
+          && request.resource.data.status == 'ended'
+          && request.resource.data.endedBy == request.auth.uid
+          && request.resource.data.endedAt is timestamp)
+      );
+    allow delete: if false;
+    match /candidates/{candidateId} {
+      allow read: if request.auth != null
+        && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid
+          || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.senderUid == request.auth.uid
+        && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid
+          || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid)
+        && request.resource.data.candidate is string
+        && request.resource.data.sdpMid is string
+        && request.resource.data.sdpMLineIndex is int
+        && request.resource.data.keys().hasOnly(['senderUid','candidate','sdpMid','sdpMLineIndex','createdAt']);
+      allow update, delete: if false;
+    }
+  }
 
 }
