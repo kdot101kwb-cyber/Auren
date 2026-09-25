@@ -6,6 +6,7 @@ import '../../social/presentation/user_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
+import '../../entertainment/presentation/entertainment_screen.dart';
 
 class AurenDiscoverScreen extends StatefulWidget {
   const AurenDiscoverScreen({super.key});
@@ -39,6 +40,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
   void _open(BuildContext context, _DiscoverItem item) {
     if (item.title == 'Talent') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
+      return;
+    }
+    if (item.title == 'Entertainment') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen()));
       return;
     }
     if (item.title == 'Communities') {
