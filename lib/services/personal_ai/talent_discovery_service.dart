@@ -28,8 +28,9 @@ class AurenTalentDiscoveryService {
       }
       final results = <AurenTalentMatch>[];
       for (final entry in byUser.entries) {
-        final profile = await _users.get(entry.key);
-        if (profile == null) continue;
+        final snap = await FirebaseFirestore.instance.collection('users').doc(entry.key).get();
+        if (!snap.exists || snap.data() == null) continue;
+        final profile = AurenUserProfile.fromMap(entry.key, snap.data()!);
         final signals = <String>[];
         if (entry.value.length >= 3) signals.add('نشاط متكرر');
         if (entry.value.any((p) => p.contentType == 'project')) signals.add('مشاريع');
