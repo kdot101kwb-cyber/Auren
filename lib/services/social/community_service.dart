@@ -22,5 +22,17 @@ class AurenCommunityService {
     final ref=_db.collection('communities').doc();await ref.set({'ownerId':uid,'name':n,'description':d,'topic':t,'visibility':'public','memberIds':[uid],'memberCount':1,'createdAt':FieldValue.serverTimestamp()});return ref.id;
   }
   Future<void> join(String id) async{final ref=_db.collection('communities').doc(id);await _db.runTransaction((tx)async{final snap=await tx.get(ref);if(!snap.exists)throw StateError('Community not found.');final data=snap.data()!;final members=List<String>.from(data['memberIds']??const []);if(members.contains(uid))return;if(members.length>=10000)throw StateError('Community is full.');members.add(uid);tx.update(ref,{'memberIds':members,'memberCount':members.length});});}
+  Future<void> removeMember({required String communityId, required String memberUid}) async{
+    if(memberUid.trim().isEmpty || memberUid == uid) throw StateError('Invalid member.');
+    final ref=_db.collection('communities').doc(communityId);
+    await _db.runTransaction((tx) async{
+      final snap=await tx.get(ref); if(!snap.exists) throw StateError('Community not found.');
+      final data=snap.data()!;
+      if(data['ownerId'] != uid) throw StateError('Only the owner can remove members.');
+      final members=List<String>.from(data['memberIds'] ?? const []);
+      if(!members.remove(memberUid)) return;
+      tx.update(ref, {'memberIds':members,'memberCount':members.length});
+    });
+  }
   Future<void> leave(String id) async{final ref=_db.collection('communities').doc(id);await _db.runTransaction((tx)async{final snap=await tx.get(ref);if(!snap.exists)return;final data=snap.data()!;if(data['ownerId']==uid)throw StateError('Owner cannot leave their community.');final members=List<String>.from(data['memberIds']??const []);if(!members.remove(uid))return;tx.update(ref,{'memberIds':members,'memberCount':members.length});});}
 }
