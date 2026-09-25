@@ -2152,17 +2152,15 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
 exports.randomJoin = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
-
   const input = request.data || {};
-  const language = String(input.language || '').trim();
-  if (!language || language.length > 64) {
-    throw new HttpsError('invalid-argument', 'Language is required.');
-  }
-
+  const clean = (value, max) => String(value ?? '').trim().slice(0, max);
+  const language = clean(input.language, 64);
+  if (!language) throw new HttpsError('invalid-argument', 'Language is required.');
+  const age = Number.isFinite(Number(input.age)) ? Math.trunc(Number(input.age)) : null;
+  if (age !== null && (age < 13 || age > 120)) throw new HttpsError('invalid-argument', 'Invalid age.');
   const safetyRef = db.collection('random_safety').doc(uid);
   const rateRef = db.collection('random_rate_limits').doc(uid);
   const requestRef = db.collection('random_connect').doc();
-
   await db.runTransaction(async (tx) => {
     const [safetySnap, rateSnap] = await Promise.all([tx.get(safetyRef), tx.get(rateRef)]);
     const safety = safetySnap.exists ? safetySnap.data() : {};
@@ -2170,34 +2168,67 @@ exports.randomJoin = onCall(async (request) => {
     if (suspendedUntil && suspendedUntil.toMillis() > Date.now()) {
       throw new HttpsError('permission-denied', 'Random access is temporarily restricted.');
     }
-
     const rate = rateSnap.exists ? rateSnap.data() : {};
-    const last = Array.isArray(rate?.joins) ? rate.joins
-      .filter((v) => typeof v === 'number' && Date.now() - v < 10 * 60 * 1000)
-      .slice(-20) : [];
-    if (last.length >= 10) {
-      throw new HttpsError('resource-exhausted', 'Too many Random attempts. Try again later.');
-    }
-
+    const last = Array.isArray(rate?.joins) ? rate.joins.filter((v) => typeof v === 'number' && Date.now() - v < 10 * 60 * 1000).slice(-20) : [];
+    if (last.length >= 10) throw new HttpsError('resource-exhausted', 'Too many Random attempts. Try again later.');
     tx.set(requestRef, {
       uid,
-      displayName: String(input.displayName || '').trim().slice(0, 80),
-      country: String(input.country || '').trim().slice(0, 64),
+      displayName: clean(input.displayName, 80),
+      country: clean(input.country, 64),
       language,
-      interest: String(input.interest || '').trim().slice(0, 120),
-      goal: String(input.goal || '').trim().slice(0, 120),
+      interest: clean(input.interest, 120),
+      goal: clean(input.goal, 120),
+      age,
+      activity: clean(input.activity, 120),
+      topic: clean(input.topic, 120),
+      photoUrl: clean(input.photoUrl, 500),
       status: 'waiting',
       createdAt: FieldValue.serverTimestamp(),
     });
-
     tx.set(rateRef, { joins: [...last, Date.now()] }, { merge: true });
   });
-
   return { requestId: requestRef.id };
 });
 
 exports.onRandomReportCreated = onDocumentCreated(
   'random_connect_reports/{reportId}',
+  async (event) => {
+    const report = event.data?.data();
+    const reportedUid = report?.reportedUid;
+    if (!reportedUid) return;
+    const safetyRef = db.collection('random_safety').doc(reportedUid);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(safetyRef);
+      const data = snap.exists ? snap.data() : {};
+      const reports = Number(data?.reports || 0) + 1;
+      const update = { reports, updatedAt: FieldValue.serverTimestamp() };
+      if (reports >= 5) update.suspendedUntil = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
+      tx.set(safetyRef, update, { merge: true });
+    });
+  },
+);
+
+exports.onRandomMatched = onDocumentUpdated(
+  'random_connect/{requestId}',
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after || before.status === after.status || after.status !== 'matched') return;
+    const ownerUid = typeof after.uid === 'string' ? after.uid : '';
+    const matchedUid = typeof after.matchedWith === 'string' ? after.matchedWith : '';
+    if (!ownerUid || !matchedUid || ownerUid === matchedUid) return;
+    await db.collection('users').doc(ownerUid).collection('random_notifications').add({
+      type: 'match',
+      title: 'عندك Match جديد في Random',
+      body: 'شخص وافق يتواصل معاك في AUREN Random.',
+      requestId: event.params.requestId,
+      otherUid: matchedUid,
+      read: false,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+,
   async (event) => {
     const report = event.data?.data();
     const reportedUid = report?.reportedUid;
