@@ -7,6 +7,8 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+    match /digital_twin/{twinId} { allow read: if isOwner(userId); allow create, update: if isOwner(userId) && twinId == 'current' && request.resource.data.keys().hasOnly(['name','summary','goals','preferences','strengths','constraints','updatedAt']) && request.resource.data.name is string && request.resource.data.name.size() <= 80 && request.resource.data.summary is string && request.resource.data.summary.size() <= 1000 && request.resource.data.goals is list && request.resource.data.goals.size() <= 20 && request.resource.data.preferences is list && request.resource.data.preferences.size() <= 20 && request.resource.data.strengths is list && request.resource.data.strengths.size() <= 20 && request.resource.data.constraints is list && request.resource.data.constraints.size() <= 20; allow delete: if isOwner(userId); }
+
       allow read: if request.auth != null;
       allow create: if isOwner(userId)
         && request.resource.data.keys().hasOnly([
