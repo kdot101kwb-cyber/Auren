@@ -1194,5 +1194,11 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /users/{userId}/creator_drafts/{draftId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.status == 'draft';
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
   }
 }
