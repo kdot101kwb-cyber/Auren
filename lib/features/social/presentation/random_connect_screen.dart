@@ -305,6 +305,44 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
                             m.goal,
                           ].where((v) => v.isNotEmpty).join(' • '),
                         ),
+                        onTap: () {
+                          final reasons = service.matchReasons(
+                            m,
+                            country: country.text,
+                            language: language.text,
+                            interest: interest.text,
+                            goal: goal.text,
+                          );
+                          showModalBottomSheet<void>(
+                            context: context,
+                            builder: (c) => SafeArea(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(m.displayName, style: Theme.of(c).textTheme.titleLarge),
+                                    const SizedBox(height: 8),
+                                    Text('درجة المطابقة: ' + service.matchScore(m, country: country.text, language: language.text, interest: interest.text, goal: goal.text).toString() + '%'),
+                                    const SizedBox(height: 12),
+                                    if (reasons.isEmpty) const Text('مطابقة عامة'),
+                                    ...reasons.map((r) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 6),
+                                      child: Row(children: [const Icon(Icons.check_circle_outline, size: 18), const SizedBox(width: 8), Text(r)]),
+                                    )),
+                                    const SizedBox(height: 8),
+                                    FilledButton.icon(
+                                      onPressed: () { Navigator.pop(c); connect(m); },
+                                      icon: const Icon(Icons.chat_bubble_outline),
+                                      label: const Text('Connect'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                         trailing: PopupMenuButton<String>(
                           onSelected: (v) {
                             if (v == 'connect') connect(m);
