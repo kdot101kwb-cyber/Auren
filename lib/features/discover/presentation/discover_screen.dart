@@ -5,6 +5,7 @@ import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
+import '../../communities/presentation/communities_screen.dart';
 
 class AurenDiscoverScreen extends StatefulWidget {
   const AurenDiscoverScreen({super.key});
@@ -23,6 +24,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Entertainment', 'Series • Music • Gaming • Live', Icons.play_circle_outline),
     _DiscoverItem('Opportunities', 'عمل • مواهب • مشاريع • تعلم', Icons.work_outline),
     _DiscoverItem('Talent', 'مواهب ووكلاء AI للمسار المهني', Icons.psychology_outlined),
+    _DiscoverItem('Communities', 'مجتمعات حول الاهتمامات والأهداف والمشاريع', Icons.groups_outlined),
   ];
 
   List<_DiscoverItem> get _filteredItems {
@@ -37,6 +39,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
   void _open(BuildContext context, _DiscoverItem item) {
     if (item.title == 'Talent') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
+      return;
+    }
+    if (item.title == 'Communities') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCommunitiesScreen()));
       return;
     }
     if (item.title == 'People') {
