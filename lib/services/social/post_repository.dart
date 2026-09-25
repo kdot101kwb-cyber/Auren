@@ -7,6 +7,10 @@ class PostRepository {
 
   CollectionReference<Map<String, dynamic>> get _posts => _db.collection('posts');
 
+  Stream<List<AurenPost>> watchCommunityFeed(String communityId) => _posts.where('communityId', isEqualTo: communityId).orderBy('createdAt', descending: true).limit(50).snapshots().map((s) => s.docs.map((d) => AurenPost.fromMap(d.id, d.data())).toList());
+
+  Future<void> createCommunityPost(AurenPost post) => _posts.doc(post.id).set({...post.toMap(),'communityId': post.communityId,'searchText': post.text.trim().toLowerCase()});
+
   Stream<List<AurenPost>> watchFeed() => _posts
       .orderBy('createdAt', descending: true)
       .limit(50)
