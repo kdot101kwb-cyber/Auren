@@ -29,4 +29,11 @@ class AurenRandomConnectService {
  int _score(AurenRandomMatch x,String country,String language,String interest,String goal){var n=0;if(country.trim().isNotEmpty&&x.country.toLowerCase()==country.trim().toLowerCase())n+=25;if(language.trim().isNotEmpty&&x.language.toLowerCase()==language.trim().toLowerCase())n+=40;if(interest.trim().isNotEmpty&&x.interest.toLowerCase().contains(interest.trim().toLowerCase()))n+=20;if(goal.trim().isNotEmpty&&x.goal.toLowerCase().contains(goal.trim().toLowerCase()))n+=15;return n;}
  Future<void> cancel(String uid,String id)async{final r=_c.doc(id);final s=await r.get();if(s.exists&&s.data()?['uid']==uid)await r.update({'status':'cancelled'});}
  Future<String?> connect(String myUid,String id)async{final ref=_c.doc(id);return _db.runTransaction<String?>((tx)async{final snap=await tx.get(ref);final data=snap.data();if(!snap.exists||data==null||data['status']!='waiting')return null;final other=data['uid'] as String? ?? '';if(other.isEmpty||other==myUid)return null;if(await AurenRandomConnectSafetyService(firestore:_db).isBlockedEitherWay(myUid,other))return null;tx.update(ref,{'status':'matched','matchedWith':myUid,'matchedAt':FieldValue.serverTimestamp()});return other;});}
+ CollectionReference<Map<String,dynamic>> _history(String uid)=>_db.collection('users').doc(uid).collection('random_sessions');
+ Future<void> recordSession({required String uid,required String otherUid,required String otherName,required String action,required String kind}) async {
+   if(uid.isEmpty||otherUid.isEmpty||uid==otherUid)return;
+   final n=otherName.trim();
+   await _history(uid).add({'otherUid':otherUid,'otherName':n.isEmpty?'AUREN User':n.substring(0,n.length>80?80:n.length),'action':action,'kind':kind,'createdAt':FieldValue.serverTimestamp()});
+ }
+ Stream<List<Map<String,dynamic>>> watchHistory(String uid)=>_history(uid).orderBy('createdAt',descending:true).limit(50).snapshots().map((s)=>s.docs.map((d)=>{...d.data(),'id':d.id}).toList());
 }
