@@ -1331,8 +1331,8 @@ service cloud.firestore {
         && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid
           || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid)
         && request.resource.data.candidate is string
-        && request.resource.data.sdpMid is string
-        && request.resource.data.sdpMLineIndex is int
+        && (request.resource.data.sdpMid == null || request.resource.data.sdpMid is string)
+        && (request.resource.data.sdpMLineIndex == null || request.resource.data.sdpMLineIndex is int)
         && request.resource.data.keys().hasOnly(['senderUid','candidate','sdpMid','sdpMLineIndex','createdAt']);
       allow update, delete: if false;
     }
