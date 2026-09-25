@@ -3,6 +3,7 @@ const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { defineSecret } = require('firebase-functions/params');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 
 initializeApp();
 const db = getFirestore();
@@ -2145,5 +2146,76 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
     const result={mode:'simulation',wouldExecute:true,externalSideEffects:false,spendingMinor:0,network:'denied',secrets:'denied',message:'Simulation completed. No external action was executed.'};
     await simulationRef.set({agentId,action,payload,result,status:'completed',createdAt:FieldValue.serverTimestamp()});
     return {status:'completed',simulationId:simulationRef.id,result};
+  },
+);
+
+exports.randomJoin = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
+
+  const input = request.data || {};
+  const language = String(input.language || '').trim();
+  if (!language || language.length > 64) {
+    throw new HttpsError('invalid-argument', 'Language is required.');
+  }
+
+  const safetyRef = db.collection('random_safety').doc(uid);
+  const rateRef = db.collection('random_rate_limits').doc(uid);
+  const requestRef = db.collection('random_connect').doc();
+
+  await db.runTransaction(async (tx) => {
+    const [safetySnap, rateSnap] = await Promise.all([tx.get(safetyRef), tx.get(rateRef)]);
+    const safety = safetySnap.exists ? safetySnap.data() : {};
+    const suspendedUntil = safety?.suspendedUntil;
+    if (suspendedUntil && suspendedUntil.toMillis() > Date.now()) {
+      throw new HttpsError('permission-denied', 'Random access is temporarily restricted.');
+    }
+
+    const rate = rateSnap.exists ? rateSnap.data() : {};
+    const last = Array.isArray(rate?.joins) ? rate.joins
+      .filter((v) => typeof v === 'number' && Date.now() - v < 10 * 60 * 1000)
+      .slice(-20) : [];
+    if (last.length >= 10) {
+      throw new HttpsError('resource-exhausted', 'Too many Random attempts. Try again later.');
+    }
+
+    tx.set(requestRef, {
+      uid,
+      displayName: String(input.displayName || '').trim().slice(0, 80),
+      country: String(input.country || '').trim().slice(0, 64),
+      language,
+      interest: String(input.interest || '').trim().slice(0, 120),
+      goal: String(input.goal || '').trim().slice(0, 120),
+      status: 'waiting',
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    tx.set(rateRef, { joins: [...last, Date.now()] }, { merge: true });
+  });
+
+  return { requestId: requestRef.id };
+});
+
+exports.onRandomReportCreated = onDocumentCreated(
+  'random_connect_reports/{reportId}',
+  async (event) => {
+    const report = event.data?.data();
+    const reportedUid = report?.reportedUid;
+    if (!reportedUid) return;
+
+    const safetyRef = db.collection('random_safety').doc(reportedUid);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(safetyRef);
+      const data = snap.exists ? snap.data() : {};
+      const reports = Number(data?.reports || 0) + 1;
+      const update = {
+        reports,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      if (reports >= 5) {
+        update.suspendedUntil = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
+      }
+      tx.set(safetyRef, update, { merge: true });
+    });
   },
 );
