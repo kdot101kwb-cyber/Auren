@@ -27,6 +27,7 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
   String? requestId;
   bool busy = false;
   final Set<String> skippedIds = <String>{};
+  String discoveryMode = 'all';
 
   @override
   void dispose() {
@@ -87,6 +88,15 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
     setState(() => skippedIds.add(m.id));
   }
 
+  Future<void> history() async {
+    final uid = auth.currentUserId;
+    if (uid == null) return;
+    await showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (context) => SafeArea(child: SizedBox(height: MediaQuery.of(context).size.height * .72, child: StreamBuilder<List<Map<String,dynamic>>>(stream: service.watchHistory(uid), builder: (context, snapshot) {
+      final rows = snapshot.data ?? const <Map<String,dynamic>>[];
+      return Column(children: [const Padding(padding: EdgeInsets.all(16), child: Text('سجل Random Connect', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))), Expanded(child: rows.isEmpty ? const Center(child: Text('لسه ما عندك جلسات مسجلة.')) : ListView.separated(padding: const EdgeInsets.all(12), itemCount: rows.length, separatorBuilder: (_,__) => const Divider(), itemBuilder: (_,i) { final x=rows[i]; return ListTile(leading: const CircleAvatar(child: Icon(Icons.history)), title: Text((x['otherName'] as String?) ?? 'AUREN User'), subtitle: Text('${x['action'] ?? 'connect'} • ${x['kind'] ?? 'text'}'),); }))]);
+    })))));
+  }
+
   void resetSkipped() {
     setState(() => skippedIds.clear());
   }
@@ -102,6 +112,7 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
         msg('الشخص لم يعد متاحاً. انتقلت للمطابقة التالية.');
         return;
       }
+      await service.recordSession(uid: uid, otherUid: other, otherName: m.displayName, action: 'connect', kind: 'messenger');
       final c = await ConversationRepository().getOrCreateDirectConversation(
         uid: uid,
         otherUid: other,
@@ -126,6 +137,7 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
     if (uid == null || busy || m.uid.isEmpty || m.uid == uid) return;
     setState(() => busy = true);
     try {
+      await service.recordSession(uid: uid, otherUid: m.uid, otherName: m.displayName, action: 'call', kind: kind);
       final callId = await callService.create(
         callerUid: uid,
         calleeUid: m.uid,
@@ -203,6 +215,8 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text('تواصل عشوائياً حسب اللغة والاهتمام والهدف.'),
+          const SizedBox(height: 8),
+          Align(alignment: Alignment.centerRight, child: OutlinedButton.icon(onPressed: history, icon: const Icon(Icons.history), label: const Text('السجل'))),
           const SizedBox(height: 16),
           ...[
             _f(name, 'الاسم الظاهر'),
@@ -222,12 +236,17 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
               child: Center(child: CircularProgressIndicator()),
             ),
           const Divider(height: 32),
+          Wrap(spacing: 8, children: [
+            for (final mode in const ['all','language','country','interest','goal'])
+              ChoiceChip(label: Text({'all':'الكل','language':'لغة','country':'دولة','interest':'اهتمام','goal':'هدف'}[mode]!), selected: discoveryMode == mode, onSelected: (_) => setState(() => discoveryMode = mode)),
+          ]),
+          const SizedBox(height: 10),
           StreamBuilder<List<AurenRandomMatch>>(
             stream: service.watchWaiting(
-              country: country.text,
-              language: language.text,
-              interest: interest.text,
-              goal: goal.text,
+              country: discoveryMode == 'country' ? country.text : '',
+              language: discoveryMode == 'language' ? language.text : language.text,
+              interest: discoveryMode == 'interest' ? interest.text : '',
+              goal: discoveryMode == 'goal' ? goal.text : '',
             ),
             builder: (context, snapshot) {
               final items = (snapshot.data ?? const <AurenRandomMatch>[])
