@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
 import 'features/shell/presentation/auren_shell.dart';
+import 'services/offline/auren_offline_sync_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,7 @@ Future<void> main() async {
   }
 
   ErrorWidget.builder = (details) => const _AurenErrorView();
+  await AurenOfflineSyncService.instance.start();
   runApp(AurenApp(firebaseError: firebaseError));
 }
 
