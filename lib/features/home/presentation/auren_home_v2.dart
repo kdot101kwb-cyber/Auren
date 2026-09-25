@@ -11,6 +11,8 @@ import 'core_five_screen.dart';
 import '../../services/core/auren_core_five_repository.dart';
 import '../../saved/presentation/saved_center_screen.dart';
 import '../../agents/presentation/auren_work_artifacts_screen.dart';
+import '../../notifications/presentation/notifications_screen.dart';
+import '../../../services/notifications/notification_repository.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -22,6 +24,40 @@ class AurenHomeV2 extends StatelessWidget {
     appBar: AppBar(
       title: const Text('AUREN'),
       actions: [
+        StreamBuilder<int>(
+          stream: uid == null ? null : NotificationRepository().watchUnreadCount(uid),
+          builder: (context, snapshot) {
+            final count = snapshot.data ?? 0;
+            return IconButton(
+              tooltip: count > 0 ? 'Notifications: $count unread' : 'Notifications',
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenNotificationsScreen())),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_outlined),
+                  if (count > 0)
+                    Positioned(
+                      right: -7,
+                      top: -7,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.error,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          count > 99 ? '99+' : '$count',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
         IconButton(
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGlobalSearchScreen())),
           icon: const Icon(Icons.search),
