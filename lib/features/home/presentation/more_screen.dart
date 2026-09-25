@@ -13,6 +13,7 @@ import '../../personal_ai/presentation/talent_discovery_screen.dart';
 import '../../personal_ai/presentation/universal_search_screen.dart';
 import '../../personal_ai/presentation/trust_graph_screen.dart';
 import '../../personal_ai/presentation/digital_twin_screen.dart';
+import '../../personal_ai/presentation/future_simulator_screen.dart';
 import '../../personal_ai/presentation/local_intelligence_screen.dart';
 import '../../social/presentation/timeline_screen.dart';
 import '../../social/presentation/saved_pulse_screen.dart';
@@ -37,6 +38,7 @@ class AurenMoreScreen extends StatelessWidget {
     _MoreItem('Universal Search', 'ابحث في شركات ومنتجات ومنشورات AUREN.', Icons.manage_search_outlined, 'ساعدني أبحث داخل AUREN عن أفضل نتيجة لهدفي.'),
     _MoreItem('Trust Graph', 'إشارات ثقة واضحة وقابلة للمراجعة.', Icons.verified_user_outlined, 'ساعدني أفهم إشارات الثقة المرتبطة بهذا المستخدم.'),
     _MoreItem('Digital Twin', 'ملف ذكي للأهداف والتفضيلات والقيود.', Icons.psychology_outlined, 'ساعدني أستخدم الـDigital Twin في التخطيط.'),
+    _MoreItem('Future Simulator', 'جرّب مسارات مختلفة قبل اتخاذ القرار.', Icons.timeline_outlined, 'ساعدني أقارن سيناريوهات مستقبلية لهدفي.'),
   ];
 
   void _open(BuildContext context, _MoreItem item) => Navigator.push(
@@ -94,7 +96,7 @@ class AurenMoreScreen extends StatelessWidget {
           title: Text(item.title),
           subtitle: Text(item.subtitle),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => item.title == 'Business' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())) : item.title == 'Marketplace' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())) : item.title == 'Education' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEducationScreen())) : item.title == 'Travel' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen())) : item.title == 'Entertainment' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen())) : item.title == 'Creator Studio' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENCreatorStudioScreen())) : item.title == 'Real Estate' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRealEstateScreen())) : item.title == 'Talent Scout' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentDiscoveryScreen())) : item.title == 'Universal Search' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUniversalSearchScreen())) : item.title == 'Trust Graph' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTrustGraphScreen())) : item.title == 'Digital Twin' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenDigitalTwinScreen())) : _open(context, item),
+          onTap: () => item.title == 'Business' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessScreen())) : item.title == 'Marketplace' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMarketplaceScreen())) : item.title == 'Education' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEducationScreen())) : item.title == 'Travel' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen())) : item.title == 'Entertainment' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen())) : item.title == 'Creator Studio' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENCreatorStudioScreen())) : item.title == 'Real Estate' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRealEstateScreen())) : item.title == 'Talent Scout' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentDiscoveryScreen())) : item.title == 'Universal Search' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUniversalSearchScreen())) : item.title == 'Trust Graph' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTrustGraphScreen())) : item.title == 'Digital Twin' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenDigitalTwinScreen())) : item.title == 'Future Simulator' ? Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenFutureSimulatorScreen())) : _open(context, item),
         ))),
         Card(child: ListTile(
           leading: const Icon(Icons.location_on_outlined),
