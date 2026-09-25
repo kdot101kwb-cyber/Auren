@@ -1290,3 +1290,7 @@ service cloud.firestore {
     }
 
 
+
+  match /random_calls/{callId} { allow read: if request.auth != null && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid); allow create: if request.auth != null && request.resource.data.callerUid == request.auth.uid && request.resource.data.calleeUid is string && request.resource.data.kind in ['audio','video'] && request.resource.data.status == 'ringing'; allow update: if request.auth != null && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['offer','answer','status','endedBy','endedAt']); allow delete: if false; match /candidates/{candidateId} { allow read,write: if request.auth != null && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid); } }
+
+}
