@@ -383,8 +383,8 @@ class AurenIntentActionPlan {
   });
 
   factory AurenIntentActionPlan.fromIntent(String? intent) {
-    final n = (intent ?? '').toLowerCase().trim();
-    bool has(List<String> words) => words.any(n.contains);
+    final n = _normalizeIntent(intent);
+    bool has(List<String> words) => words.any((word) => n.contains(_normalizeIntent(word)));
     return AurenIntentActionPlan(
       normalized: n,
       commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر']),
@@ -448,7 +448,7 @@ class AurenIntentActionPlan {
 
 extension AurenMatchActionExecution on AurenMatchEverythingService {
   Future<void> recordAction({required String uid, required AurenMatchItem item}) async {
-    await FirebaseFirestore.instance.collection('auren_action_events').add({
+    await _db.collection('auren_action_events').add({
       'uid': uid,
       'targetId': item.id,
       'targetKind': item.kind.name,
