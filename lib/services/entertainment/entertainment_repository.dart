@@ -46,6 +46,24 @@ class EntertainmentRepository {
     }
   }
 
+
+  Future<void> trackShortView(String uid, String itemId, {required int seconds, required bool completed, required String mood}) =>
+      db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId).set({
+        'itemId': itemId,
+        'lastViewedAt': FieldValue.serverTimestamp(),
+        'watchSeconds': FieldValue.increment(seconds),
+        'views': FieldValue.increment(1),
+        'completed': completed,
+        'mood': mood,
+      }, SetOptions(merge: true));
+
+  Future<void> trackShortAction(String uid, String itemId, {required String action, required String mood}) =>
+      db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId).collection('actions').add({
+        'action': action,
+        'mood': mood,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
   Stream<bool> watchLiked(String uid, String itemId) => db.collection('entertainment_items').doc(itemId).collection('likes').doc(uid).snapshots().map((d) => d.exists);
 
   Stream<List<AurenEntertainmentItem>> watchSavedItems(String uid) => db.collection('users').doc(uid).collection('savedEntertainment').snapshots().asyncMap((s) async {
