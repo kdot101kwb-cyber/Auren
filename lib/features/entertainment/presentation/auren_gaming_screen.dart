@@ -21,10 +21,12 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   bool _loadedStats = false;
   final _chatController = TextEditingController();
   final _friendUidController = TextEditingController();
+  final _friendSearchController = TextEditingController();
+  String _friendSearch = '';
 
   @override void initState() { super.initState(); _loadStats(); }
 
-  @override void dispose() { _codeController.dispose(); _chatController.dispose(); _friendUidController.dispose(); super.dispose(); }
+  @override void dispose() { _codeController.dispose(); _chatController.dispose(); _friendUidController.dispose(); _friendSearchController.dispose(); super.dispose(); }
 
   Future<void> _createRoom() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -322,25 +324,80 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('تحدي صديق', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
         const SizedBox(height: 6),
-        const Text('أرسل دعوة مباراة مباشرة إلى صديقك في AUREN.'),
+        const Text('ابحث عن لاعب في AUREN وأرسل له تحدي Tic-Tac-Toe بضغطة واحدة.'),
         const SizedBox(height: 10),
         TextField(
-          controller: _friendUidController,
+          controller: _friendSearchController,
+          onChanged: (value) => setState(() => _friendSearch = value.trim().toLowerCase()),
           decoration: const InputDecoration(
-            labelText: 'معرّف صديقك',
-            hintText: 'User ID',
+            labelText: 'ابحث بالاسم',
+            hintText: 'مثلاً: Khalied',
+            prefixIcon: Icon(Icons.search),
             border: OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: _busy ? null : _challengeFriend,
-          icon: const Icon(Icons.sports_esports),
-          label: const Text('إرسال التحدي'),
-        ),
+        _playerSearchResults(),
       ]),
     ),
   );
+
+  Widget _playerSearchResults() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final query = _friendSearch;
+    if (uid == null || query.length < 2) {
+      return const Text('اكتب حرفين على الأقل للبحث عن لاعب.');
+    }
+    final users = FirebaseFirestore.instance.collection('users')
+        .orderBy('displayNameLower')
+        .startAt([query])
+        .endAt(['$query\\uf8ff'])
+        .limit(12);
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: users.snapshots(),
+      builder: (context, snap) {
+        if (snap.hasError) return const Text('تعذر البحث عن اللاعبين.');
+        final docs = (snap.data?.docs ?? const []).where((d) => d.id != uid).toList();
+        if (docs.isEmpty) return const Text('لم نجد لاعباً بهذا الاسم.');
+        return Column(
+          children: docs.map((doc) {
+            final data = doc.data();
+            final name = (data['displayName']?.toString().trim().isNotEmpty ?? false)
+                ? data['displayName'].toString().trim() : 'لاعب AUREN';
+            final photo = data['photoUrl']?.toString();
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundImage: photo != null && photo.isNotEmpty ? NetworkImage(photo) : null,
+                child: photo == null || photo.isEmpty ? const Icon(Icons.person) : null,
+              ),
+              title: Text(name),
+              subtitle: const Text('متاح لتحديات Gaming'),
+              trailing: FilledButton(
+                onPressed: _busy ? null : () => _challengeFriendUid(doc.id, name),
+                child: const Text('تحدي'),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Future<void> _challengeFriendUid(String friendUid, String name) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || friendUid.isEmpty || friendUid == uid) return;
+    setState(() => _busy = true);
+    try {
+      await _service.createFriendChallenge(uid, friendUid);
+      _friendUidController.text = friendUid;
+      if (mounted) _snack('🎮 تم إرسال تحدي إلى $name.');
+    } catch (_) {
+      if (mounted) _snack('تعذر إرسال التحدي. ربما توجد دعوة قائمة بالفعل.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _challengeFriend() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
