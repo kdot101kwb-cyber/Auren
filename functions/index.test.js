@@ -342,7 +342,7 @@ test('entertainment queue worker claims queued jobs and fails closed without a r
   assert.match(source, /queueStatus: 'waiting_provider'/);
   assert.match(source, /providerStatus: 'not_connected'/);
   assert.match(source, /providerStatus: 'unavailable'/);
-  assert.match(source, /لا يوجد مزوّد/);
+  assert.match(source, /المزوّد المطلوب غير مفعّل/);
 });
 
 test('entertainment queue trigger is idempotent against its own status writes', () => {
