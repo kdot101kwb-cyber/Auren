@@ -59,7 +59,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
         final ids = await _marketplace.watchSavedIds(uid).first;
         _saved = ids.contains(widget.item.id);
       } else if (widget.item.kind == AurenMatchKind.business) {
-        _saved = await _businesses.isSaved(uid, widget.item.id);
+        _saved = await _businesses.watchSaved(uid, widget.item.id).first;
       }
     } catch (_) {
       // The detail screen remains usable even if optional state cannot load.
