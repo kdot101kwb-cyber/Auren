@@ -14,6 +14,8 @@ import '../../agents/presentation/auren_work_artifacts_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../../services/notifications/notification_repository.dart';
 import '../../../services/social/adaptive_discovery_service.dart';
+import '../../profile/presentation/adaptive_profile_surface.dart';
+import '../../../services/social/adaptive_profile_service.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -73,6 +75,12 @@ class AurenHomeV2 extends StatelessWidget {
         const SizedBox(height: 6),
         const Text('AUREN يتكيف معك، وليس العكس.'),
         const SizedBox(height: 16),
+        if (uid != null)
+          AurenAdaptiveProfileSurface(
+            uid: uid,
+            context: AurenProfileContext.social,
+          ),
+        const SizedBox(height: 12),
         Card(
           clipBehavior: Clip.antiAlias,
           child: Container(
