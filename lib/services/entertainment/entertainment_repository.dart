@@ -259,6 +259,50 @@ class EntertainmentRepository {
     return db.collection('users').doc(uid).collection('entertainmentDrafts').doc(draftId).delete();
   }
 
+  Stream<List<Map<String, dynamic>>> watchEntertainmentCreationJobs(String uid) {
+    return db.collection('users').doc(uid).collection('entertainmentCreationJobs')
+        .orderBy('updatedAt', descending: true).limit(20).snapshots()
+        .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+  }
+
+  Future<String> createEntertainmentJob(
+    String uid, {
+    required String draftId,
+    required String mode,
+    required String mood,
+    required String length,
+    required String idea,
+  }) async {
+    final ref = db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc();
+    await ref.set({
+      'draftId': draftId,
+      'mode': mode,
+      'mood': mood,
+      'length': length,
+      'idea': idea,
+      'status': 'planning',
+      'provider': 'auren_ai',
+      'progress': 0,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  }
+
+  Future<void> updateEntertainmentJobStatus(
+    String uid,
+    String jobId, {
+    required String status,
+    required int progress,
+  }) async {
+    if (uid.isEmpty || jobId.isEmpty) return;
+    await db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc(jobId).update({
+      'status': status,
+      'progress': progress.clamp(0, 100),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Stream<List<Map<String, dynamic>>> watchContinueWatching(String uid) {
     return db.collection('users').doc(uid).collection('continueWatching')
         .orderBy('updatedAt', descending: true).limit(20).snapshots()
