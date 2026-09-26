@@ -11,6 +11,7 @@ import '../../../services/users/user_repository.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
+import '../../social/presentation/safety_actions_sheet.dart';
 
 /// Entertainment-first Shorts: users can simply relax, with AUREN intelligence optional.
 class AurenEntertainmentShortsScreen extends StatefulWidget {
@@ -349,6 +350,23 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                         ),
                       ],
                     ),
+                  ),
+
+                  Positioned(
+                    right: 10, top: 58,
+                    child: _creatorId(item) != null && uid != null
+                        ? IconButton(
+                            tooltip: 'Safety',
+                            icon: const Icon(Icons.more_horiz, color: Colors.white, size: 30),
+                            onPressed: () => AurenSafetyActionsSheet.show(
+                              context,
+                              uid: uid!,
+                              targetUid: _creatorId(item)!,
+                              contentId: item.id,
+                              contentType: 'short',
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
 
                   Positioned(
