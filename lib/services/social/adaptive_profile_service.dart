@@ -54,7 +54,7 @@ class AurenAdaptiveProfileService {
     AurenProfileModeData? profile,
     String? intent,
   }) {
-    final text = [
+    final text = _normalize([
       intent ?? '',
       profile?.headline ?? '',
       profile?.bio ?? '',
@@ -62,7 +62,7 @@ class AurenAdaptiveProfileService {
       ...(profile?.interests ?? const <String>[]),
       ...(profile?.goals ?? const <String>[]),
       ...(profile?.services ?? const <String>[]),
-    ].join(' ').toLowerCase();
+    ].join(' '));
 
     AurenProfileMode? detected;
     String reason;
@@ -129,8 +129,24 @@ class AurenAdaptiveProfileService {
     return null;
   }
 
+  String _normalize(String value) {
+    var text = value.toLowerCase();
+    const marks = '\u064B\u064C\u064D\u064E\u064F\u0650\u0651\u0652\u0670';
+    for (final mark in marks.runes) {
+      text = text.replaceAll(String.fromCharCode(mark), '');
+    }
+    text = text
+        .replaceAll('أ', 'ا')
+        .replaceAll('إ', 'ا')
+        .replaceAll('آ', 'ا')
+        .replaceAll('ى', 'ي')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ـ', ' ');
+    return text.replaceAll(RegExp(r'\\s+'), ' ').trim();
+  }
+
   bool _hasAny(String text, List<String> terms) =>
-      terms.any((term) => text.contains(term));
+      terms.any((term) => text.contains(_normalize(term)));
 
   int _confidence(
     AurenProfileContext context,
