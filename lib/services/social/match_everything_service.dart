@@ -74,6 +74,7 @@ class AurenMatchEverythingService {
     final normalizedIntent = _normalize(intent);
     final limit = _safeLimit(limitPerKind);
     final actionPlan = AurenIntentActionPlan.fromIntent(intent);
+    final signals = AurenIntentSignals.fromIntent(intent);
 
     final results = <AurenMatchItem>[];
     results.addAll(await _people(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
@@ -114,7 +115,7 @@ class AurenMatchEverythingService {
           title: _string(d['headline'], 'AUREN member'),
           subtitle: _string(d['bio'], candidateMode?.label ?? 'Person'),
           kind: AurenMatchKind.person,
-          score: _score(text, profile, candidateMode == mode, intentTerms, normalizedIntent),
+          score: _score(text, profile, candidateMode == mode, intentTerms, normalizedIntent, signals),
           reasons: _reasons(text, profile, candidateMode == mode, intentTerms, normalizedIntent),
           data: d,
           action: action,
@@ -153,7 +154,7 @@ class AurenMatchEverythingService {
           title: _titleFor(kind, d),
           subtitle: _subtitleFor(kind, d),
           kind: kind,
-          score: _score(text, profile, modeMatch, intentTerms, normalizedIntent),
+          score: _score(text, profile, modeMatch, intentTerms, normalizedIntent, signals),
           reasons: _reasons(text, profile, modeMatch, intentTerms, normalizedIntent),
           data: d,
           action: action,
@@ -196,7 +197,7 @@ class AurenMatchEverythingService {
         _list(d['goals']).join(' '), _list(d['services']).join(' '),
       ].whereType<String>().join(' ').toLowerCase();
 
-  int _score(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms, String normalizedIntent) {
+  int _score(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms, String normalizedIntent, AurenIntentSignals signals) {
     final profileText = [...profile.skills, ...profile.interests, ...profile.goals, ...profile.services].join(' ');
     var score = _overlapScore(text, profileText);
     if (modeMatch) score += 15;
@@ -204,6 +205,7 @@ class AurenMatchEverythingService {
     score += (intentTerms.intersection(_tokens(text)).length * 10).clamp(0, 25);
     if (normalizedIntent.length >= 6 && normalizedText.contains(normalizedIntent)) score += 15;
     score += _intentSemanticBoost(normalizedText, normalizedIntent);
+    score += signals.matchScore(normalizedText);
     return score.clamp(0, 100);
   }
 
@@ -274,6 +276,55 @@ class AurenMatchEverythingService {
     AurenMatchAction.watch => 2,
     AurenMatchAction.open => 1,
   };
+}
+
+class AurenIntentSignals {
+  final Set<String> countries;
+  final Set<String> cities;
+  final bool wantsCheap;
+  final bool wantsShipping;
+  final bool wantsSupplier;
+  final bool wantsManufacturer;
+  final bool wantsWholesale;
+  final bool wantsBulk;
+  const AurenIntentSignals({
+    this.countries = const {},
+    this.cities = const {},
+    this.wantsCheap = false,
+    this.wantsShipping = false,
+    this.wantsSupplier = false,
+    this.wantsManufacturer = false,
+    this.wantsWholesale = false,
+    this.wantsBulk = false,
+  });
+
+  factory AurenIntentSignals.fromIntent(String? intent) {
+    final n = (intent ?? '').toLowerCase();
+    Set<String> found(List<String> words) => words.where(n.contains).map((e) => e.toLowerCase()).toSet();
+    return AurenIntentSignals(
+      countries: found(['السودان','sudan','مصر','egypt','الصين','china','الإمارات','uae','kenya','نيجيريا','nigeria']),
+      cities: found(['الخرطوم','khartoum','القاهرة','cairo','دبي','dubai','شنتشن','shenzhen']),
+      wantsCheap: ['رخيص','ارخص','أرخص','cheap','cheapest','low price'].any(n.contains),
+      wantsShipping: ['شحن','الشحن','shipping','delivery','توصل','التوصيل'].any(n.contains),
+      wantsSupplier: ['مورد','توريد','supplier','wholesale'].any(n.contains),
+      wantsManufacturer: ['مصنع','مصانع','manufacturer','factory'].any(n.contains),
+      wantsWholesale: ['جملة','wholesale','bulk'].any(n.contains),
+      wantsBulk: ['كميات','كمية كبيرة','bulk','minimum order','moq'].any(n.contains),
+    );
+  }
+
+  int matchScore(String text) {
+    var score = 0;
+    if (countries.any(text.contains)) score += 10;
+    if (cities.any(text.contains)) score += 8;
+    if (wantsCheap && ['رخيص','cheap','low price','affordable','سعر'].any(text.contains)) score += 6;
+    if (wantsShipping && ['شحن','shipping','delivery','التوصيل'].any(text.contains)) score += 6;
+    if (wantsSupplier && ['مورد','supplier','توريد','wholesale'].any(text.contains)) score += 8;
+    if (wantsManufacturer && ['مصنع','manufacturer','factory'].any(text.contains)) score += 8;
+    if (wantsWholesale && ['جملة','wholesale','bulk'].any(text.contains)) score += 6;
+    if (wantsBulk && ['كميات','bulk','moq','minimum order'].any(text.contains)) score += 6;
+    return score.clamp(0, 35);
+  }
 }
 
 class AurenIntentActionPlan {
