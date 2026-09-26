@@ -271,3 +271,25 @@ test('agent collaboration output is bounded before persistence', () => {
   assert.match(fn,/Object\.keys\(output\)\.length>30/);
   assert.match(fn,/Buffer\.byteLength\(JSON\.stringify\(output\),'utf8'\)>32768/);
 });
+
+test('notification delivery is idempotent and server-owned', () => {
+  assert.match(source, /const notificationId = typeof data\\.notificationId === 'string'/);
+  assert.match(source, /if \\(existing\\.exists\\) return/);
+  assert.match(rules, /match \/users\/\\{userId\\}\/notifications\/\\{notificationId\\}/);
+  assert.match(rules, /allow create, delete: if false;/);
+});
+
+test('follow, post and entertainment social events create notifications', () => {
+  assert.match(source, /exports\\.onFollowCreated/);
+  assert.match(source, /exports\\.onPostLikeCreated/);
+  assert.match(source, /exports\\.onPostCommentCreated/);
+  assert.match(source, /exports\\.onEntertainmentLikeCreated/);
+  assert.match(source, /exports\\.onEntertainmentCommentCreated/);
+});
+
+test('entertainment notifications resolve creator and never notify the actor', () => {
+  assert.match(source, /const creatorUid = data\\?\\.creatorId \\|\\| data\\?\\.ownerId \\|\\| data\\?\\.authorId \\|\\| data\\?\\.uid/);
+  assert.match(source, /if \\(!creatorUid \\|\\| creatorUid === actorUid\\) return/);
+  assert.match(source, /notificationId: `like_\\$\\{itemId\\}_\\$\\{actorUid\\}`/);
+  assert.match(source, /notificationId: `comment_\\$\\{event\\.params\\.commentId\\}`/);
+});
