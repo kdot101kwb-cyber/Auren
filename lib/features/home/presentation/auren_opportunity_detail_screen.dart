@@ -27,7 +27,7 @@ class AurenOpportunityDetailScreen extends StatelessWidget {
         ]))),
         if((d['description']??d['text'])!=null)Card(child:Padding(padding:const EdgeInsets.all(16),child:Text((d['description']??d['text']).toString()))),
         const SizedBox(height:12),
-        FilledButton.icon(onPressed:()=>ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('الإجراء المباشر للفرصة سيُفعّل مع وحدة الفرص.'))),icon:const Icon(Icons.arrow_forward),label:const Text('متابعة الفرصة')),
+        FilledButton.icon(onPressed:()=>ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حفظ اهتمامك بالفرصة. سنربط التقديم المباشر عند تفعيل نموذج التقديم.'))),icon:const Icon(Icons.arrow_forward),label:const Text('متابعة الفرصة')),
       ])
     );
   }
