@@ -1788,10 +1788,22 @@ service cloud.firestore {
         && request.resource.data.playerUids.size() >= resource.data.playerUids.size()
         && request.resource.data.playerUids.size() <= 2
         && request.resource.data.playerUids.hasAll(resource.data.playerUids)
-        && request.resource.data.board is list
-        && request.resource.data.board.size() == 9
+        && request.resource.data.board == resource.data.board
+        && request.resource.data.winner == resource.data.winner
+        && request.resource.data.draw == resource.data.draw
+        && request.resource.data.turnUid == resource.data.turnUid
         && request.resource.data.status in ['waiting','ready']
-        && request.resource.data.updatedAt is timestamp;
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerUids','marks','status','updatedAt'])
+        && request.resource.data.updatedAt is timestamp
+        && (
+          request.resource.data.playerUids.size() == resource.data.playerUids.size()
+          || (
+            resource.data.status == 'waiting'
+            && resource.data.playerUids.size() == 1
+            && request.resource.data.playerUids.size() == 2
+            && request.auth.uid in request.resource.data.playerUids
+          )
+        );
       allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
 
       match /messages/{messageId} {
