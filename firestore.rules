@@ -1021,6 +1021,25 @@ service cloud.firestore {
       allow read, create, delete: if isOwner(userId);
       allow update: if false;
     }
+    match /creator_support_requests/{requestId} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['creatorUid','supporterUid','amountMinor','currency','message','status','createdAt'])
+        && request.resource.data.supporterUid == request.auth.uid
+        && request.resource.data.creatorUid is string
+        && request.resource.data.creatorUid.size() > 0
+        && request.resource.data.amountMinor is int
+        && request.resource.data.amountMinor > 0
+        && request.resource.data.amountMinor <= 100000000
+        && request.resource.data.currency is string
+        && request.resource.data.currency.size() == 3
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 500
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt is timestamp;
+      allow read: if request.auth != null
+        && (resource.data.creatorUid == request.auth.uid || resource.data.supporterUid == request.auth.uid);
+      allow update, delete: if false;
+    }
     match /creator_earnings/{earningId} {
       allow read: if request.auth != null && resource.data.creatorUid == request.auth.uid;
       allow create, update, delete: if false;
