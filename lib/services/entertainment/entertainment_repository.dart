@@ -310,6 +310,16 @@ class EntertainmentRepository {
       default: return ['story','characters','scenes','artwork'];
     }
   }
+  Future<Map<String, dynamic>?> getEntertainmentCreationJob(
+    String uid,
+    String jobId,
+  ) async {
+    if (uid.isEmpty || jobId.isEmpty) return null;
+    final doc = await db.collection('users').doc(uid)
+        .collection('entertainmentCreationJobs').doc(jobId).get();
+    return doc.exists ? {'id': doc.id, ...doc.data()!} : null;
+  }
+
   Stream<Map<String, dynamic>?> watchEntertainmentCreationJob(
     String uid,
     String jobId,
