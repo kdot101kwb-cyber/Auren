@@ -63,6 +63,10 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     final nextUid = winner != null || draw ? '' : players.firstWhere((p) => p != uid, orElse: () => uid);
     try {
       await _service.playMove(roomId: _roomId!, board: board, winner: winner, draw: draw, nextUid: nextUid);
+      if (winner != null || draw) {
+        await _service.recordResult(uid, _roomId!, winner == mark, draw);
+        if (mounted) await _loadStats();
+      }
     } catch (_) { if (mounted) _snack('تعذر تسجيل الحركة.'); }
   }
 
@@ -116,6 +120,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       body: ListView(padding: const EdgeInsets.all(16), children: [
         _hero(context), const SizedBox(height: 12),
         _statsCard(), const SizedBox(height: 12),
+        _achievementsCard(), const SizedBox(height: 12),
         if (_roomId == null) ...[
           _gameCard(context, Icons.grid_3x3_rounded, 'Tic-Tac-Toe',
             'لعبة سريعة لشخصين — العب مع صديق برمز دعوة.',
@@ -161,6 +166,25 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   }
 
   Widget _statsCard() => Card(child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Gaming Profile', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)), const SizedBox(height: 8), Text('$_xp XP  •  $_games مباريات  •  $_wins انتصارات')])), CircleAvatar(radius: 25, child: Text('${_xp ~/ 100 + 1}'))])));
+
+  Widget _achievementsCard() {
+    final achievements = <Map<String, dynamic>>[
+      {'title': 'أول مباراة', 'done': _games >= 1, 'icon': Icons.sports_esports},
+      {'title': 'أول انتصار', 'done': _wins >= 1, 'icon': Icons.emoji_events},
+      {'title': '5 انتصارات', 'done': _wins >= 5, 'icon': Icons.military_tech},
+      {'title': '10 مباريات', 'done': _games >= 10, 'icon': Icons.local_fire_department},
+      {'title': '100 XP', 'done': _xp >= 100, 'icon': Icons.stars},
+    ];
+    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('الإنجازات', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+      const SizedBox(height: 10),
+      Wrap(spacing: 10, runSpacing: 10, children: achievements.map((a) => Chip(
+        avatar: Icon(a['icon'] as IconData, size: 18),
+        label: Text(a['title'] as String),
+        side: BorderSide(color: a['done'] == true ? Theme.of(context).colorScheme.primary : Theme.of(context).dividerColor),
+      )).toList()),
+    ])));
+  }
 
   Widget _challengeCard(BuildContext context) => Card(
     child: Padding(
@@ -342,6 +366,14 @@ class AurenGamingService {
     final snap = await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').get();
     final data = snap.data() ?? {};
     return AurenGamingStats(xp: (data['xp'] as num?)?.toInt() ?? 0, games: (data['games'] as num?)?.toInt() ?? 0, wins: (data['wins'] as num?)?.toInt() ?? 0);
+  }
+
+  Future<void> recordResult(String uid, String roomId, bool win, bool draw) async {
+    final ref = _db.collection('users').doc(uid).collection('gaming_results').doc(roomId);
+    final snap = await ref.get();
+    if (snap.exists) return;
+    await ref.set({'roomId': roomId, 'gameId': 'tic_tac_toe', 'result': draw ? 'draw' : win ? 'win' : 'loss', 'xp': win ? 50 : 15, 'createdAt': FieldValue.serverTimestamp()});
+    await incrementStats(uid, win: win);
   }
 
   Future<void> incrementStats(String uid, {required bool win}) async {
