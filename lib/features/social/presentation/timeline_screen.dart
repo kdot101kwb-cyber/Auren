@@ -5,6 +5,7 @@ import '../../../core/models/user_profile.dart';
 import '../../profile/presentation/public_profile_screen.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
+import '../../../services/social/safety_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
 import 'edit_post_screen.dart';
@@ -73,8 +74,12 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
       ),
       body: uid == null
           ? const Center(child: Text('Sign in required'))
-          : StreamBuilder<List<AurenPost>>(
-              stream: PostRepository().watchFeed(),
+          : StreamBuilder<Set<String>>(
+              stream: AurenSafetyRepository().watchBlockedIds(uid),
+              builder: (context, blockedSnapshot) {
+                final blockedIds = blockedSnapshot.data ?? const <String>{};
+                return StreamBuilder<List<AurenPost>>(
+              stream: PostRepository().watchFeed(blockedAuthorIds: blockedIds),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -107,6 +112,8 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                     if (posts.isEmpty) return const _EmptyPulse();
                     return _PulseCard(post: posts[i - 4], uid: uid);
                   },
+                );
+              },
                 );
               },
             ),
