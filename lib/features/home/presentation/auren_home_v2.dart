@@ -19,6 +19,101 @@ import '../../../services/social/adaptive_profile_service.dart';
 import '../../../services/social/match_everything_service.dart';
 import 'auren_intent_match_card.dart';
 
+class AurenAdaptiveHomeFocus extends StatelessWidget {
+  final String uid;
+  final ValueChanged<String> onPrompt;
+
+  const AurenAdaptiveHomeFocus({
+    super.key,
+    required this.uid,
+    required this.onPrompt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final modes = AurenProfileModeService();
+    final adaptive = const AurenAdaptiveProfileService();
+
+    return FutureBuilder<AurenProfileMode>(
+      future: modes.getActiveMode(uid),
+      builder: (context, modeSnapshot) {
+        if (!modeSnapshot.hasData) return const SizedBox.shrink();
+        final mode = modeSnapshot.data!;
+        return FutureBuilder<AurenProfileModeData>(
+          future: modes.get(uid, mode),
+          builder: (context, profileSnapshot) {
+            if (!profileSnapshot.hasData) return const SizedBox.shrink();
+            final result = adaptive.suggest(
+              currentMode: mode,
+              context: AurenProfileContext.unknown,
+              profile: profileSnapshot.data!,
+              intent: 'الصفحة الرئيسية وما أحتاجه الآن',
+            );
+            final config = _config(result.mode);
+            return Card(
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primaryContainer,
+                      Theme.of(context).colorScheme.secondaryContainer,
+                    ],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(radius: 25, child: Icon(config.icon)),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(config.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 4),
+                          Text(config.subtitle),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Ask AUREN',
+                      onPressed: () => onPrompt(config.prompt),
+                      icon: const Icon(Icons.arrow_forward),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  _HomeFocus _config(AurenProfileMode mode) {
+    switch (mode) {
+      case AurenProfileMode.creator:
+        return const _HomeFocus(Icons.movie_creation_outlined, 'Creator mode', 'أفكار ومحتوى وجمهورك في الواجهة.', 'اصنع لي فكرة محتوى مناسبة الآن');
+      case AurenProfileMode.professional:
+        return const _HomeFocus(Icons.work_outline, 'Professional mode', 'الفرص والمهارات والخطوة المهنية التالية.', 'ابحث لي عن فرصة تناسب مهاراتي');
+      case AurenProfileMode.business:
+        return const _HomeFocus(Icons.storefront_outlined, 'Business mode', 'العملاء والمنتجات والنمو في الواجهة.', 'ساعدني أجد عملاء أو فرص نمو لمشروعي');
+      case AurenProfileMode.personal:
+        return const _HomeFocus(Icons.people_outline, 'Personal mode', 'الأشخاص والمحتوى والاهتمامات في الواجهة.', 'اكتشف لي شيئًا ممتعًا يناسب اهتماماتي');
+    }
+  }
+}
+
+class _HomeFocus {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String prompt;
+
+  const _HomeFocus(this.icon, this.title, this.subtitle, this.prompt);
+}
+
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
 
