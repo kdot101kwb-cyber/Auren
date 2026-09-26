@@ -14,13 +14,15 @@ class EntertainmentRepository {
     );
   }
 
-  Stream<List<AurenEntertainmentItem>> watchShorts({String? mood}) {
+  Stream<List<AurenEntertainmentItem>> watchShorts({String? mood, Set<String> blockedCreatorIds = const {}}) {
     return db.collection('entertainment_items')
         .where('visibility', isEqualTo: 'public')
         .where('type', isEqualTo: 'Short')
         .limit(100)
         .snapshots()
-        .map((s) => _filterAndLimitShorts(s.docs, mood));
+        .map((s) => _filterAndLimitShorts(s.docs, mood)
+            .where((i) => !blockedCreatorIds.contains(i.creatorId))
+            .toList());
   }
 
   /// Local ranking avoids a composite Firestore index for visibility + type + moods.
@@ -28,6 +30,7 @@ class EntertainmentRepository {
   Stream<List<AurenEntertainmentItem>> watchPersonalizedShorts(
     String uid, {
     String? mood,
+    Set<String> blockedCreatorIds = const {},
   }) {
     return db.collection('entertainment_items')
         .where('visibility', isEqualTo: 'public')
@@ -35,7 +38,9 @@ class EntertainmentRepository {
         .limit(100)
         .snapshots()
         .asyncMap((s) async {
-      var items = _filterAndLimitShorts(s.docs, mood, maxItems: 100);
+      var items = _filterAndLimitShorts(s.docs, mood, maxItems: 100)
+          .where((i) => !blockedCreatorIds.contains(i.creatorId))
+          .toList();
       final signals = await db.collection('users').doc(uid)
           .collection('entertainmentSignals').get();
 
