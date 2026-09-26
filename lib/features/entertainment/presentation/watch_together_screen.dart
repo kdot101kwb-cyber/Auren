@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 class AurenWatchTogetherService {
@@ -85,7 +86,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
         return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text((data['title'] ?? 'Watch Together').toString(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
-          SelectableText('رمز الدعوة: ' + (data['inviteCode'] ?? '').toString(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          Row(children: [Expanded(child: SelectableText('رمز الدعوة: ' + (data['inviteCode'] ?? '').toString(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700))), IconButton(onPressed: () async { final code = (data['inviteCode'] ?? '').toString(); if (code.isEmpty) return; await Clipboard.setData(ClipboardData(text: code)); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ رمز الدعوة'))); }, icon: const Icon(Icons.copy))]),
           const SizedBox(height: 8), Text('الأعضاء: ' + members.length.toString()),
           Text('الحالة: ' + (data['status'] ?? 'waiting').toString()),
           Text('المشاهدة: ' + ((data['isPlaying'] == true) ? 'تشغيل' : 'متوقفة') + ' • ' + (data['positionSeconds'] ?? 0).toString() + ' ثانية'),
