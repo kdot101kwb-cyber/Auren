@@ -1696,7 +1696,7 @@ service cloud.firestore {
     }
 
     match /users/{userId}/gaming_profile/{docId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.xp is number
@@ -1706,6 +1706,8 @@ service cloud.firestore {
         && request.resource.data.games >= 0
         && request.resource.data.wins >= 0
         && request.resource.data.wins <= request.resource.data.games
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 80
         && request.resource.data.updatedAt is timestamp;
       allow delete: if false;
     }
