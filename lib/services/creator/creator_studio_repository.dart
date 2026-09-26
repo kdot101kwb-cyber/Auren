@@ -95,7 +95,7 @@ class AurenCreatorStudioRepository {
     return ref.id;
   }
 
-  Future<String> createCreatorSupportRequest({required String creatorUid,required int amountMinor,required String currency,required String message})async{
+  Future<String> createCreatorSupportRequest({required String creatorUid, required String supporterUid, required int amountMinor, required String currency, required String message})async{
     final u=creatorUid.trim(),supporter=supporterUid.trim(),m=message.trim(),cur=currency.trim().toUpperCase();
     if(u.isEmpty||u.length>128||supporter.isEmpty||supporter.length>128)throw ArgumentError('Invalid user id.');
   if(u==supporter)throw ArgumentError('Creator and supporter must be different.');
