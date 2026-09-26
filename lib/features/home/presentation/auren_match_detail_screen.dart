@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/social/match_everything_service.dart';
+import '../../../core/models/business.dart';
+import '../../../core/models/product.dart';
+import '../../business/presentation/business_detail_screen.dart';
+import '../../marketplace/presentation/product_detail_screen.dart';
+import '../../profile/presentation/profile_screen.dart';
 
 class AurenMatchDetailScreen extends StatelessWidget {
   final AurenMatchItem item;
@@ -46,6 +51,38 @@ class AurenMatchDetailScreen extends StatelessWidget {
       result.add(MapEntry(key, valueText));
     }
     return result;
+  }
+
+  void _continue(BuildContext context) {
+    switch (item.kind) {
+      case AurenMatchKind.person:
+        final uid = (item.data['uid'] ?? item.data['ownerId'])?.toString();
+        if (uid != null && uid.isNotEmpty) {
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenProfileScreen(userId: uid)));
+          return;
+        }
+        break;
+      case AurenMatchKind.business:
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => AurenBusinessDetailScreen(
+            business: AurenBusiness.fromMap(item.id, item.data),
+          ),
+        ));
+        return;
+      case AurenMatchKind.product:
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => AurenProductDetailScreen(
+            product: AurenProduct.fromMap(item.id, item.data),
+          ),
+        ));
+        return;
+      case AurenMatchKind.opportunity:
+      case AurenMatchKind.content:
+        break;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('هذه الوحدة لم تُربط بوجهتها الأصلية بعد.')),
+    );
   }
 
   @override
@@ -125,9 +162,7 @@ class AurenMatchDetailScreen extends StatelessWidget {
           ],
           const SizedBox(height: 18),
           FilledButton.icon(
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تم تجهيز الوجهة. الإجراء المباشر سيُربط بالوحدة الأصلية عند تفعيلها.')),
-            ),
+            onPressed: () => _continue(context),
             icon: const Icon(Icons.arrow_forward),
             label: const Text('متابعة'),
           ),
