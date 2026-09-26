@@ -11,13 +11,17 @@ class EntertainmentRepository {
     return q.limit(100).snapshots().map((s) => s.docs.map((d) => AurenEntertainmentItem.fromMap(d.id, d.data())).toList());
   }
 
-  Stream<List<AurenEntertainmentItem>> watchShorts() {
-    return db.collection('entertainment_items')
+  Stream<List<AurenEntertainmentItem>> watchShorts({String? mood}) {
+    Query<Map<String, dynamic>> q = db.collection('entertainment_items')
       .where('visibility', isEqualTo: 'public')
-      .where('type', isEqualTo: 'Short')
-      .limit(50)
-      .snapshots()
-      .map((s) => s.docs.map((d) => AurenEntertainmentItem.fromMap(d.id, d.data())).where((i) => i.isVideo && i.mediaUrl.isNotEmpty).toList());
+      .where('type', isEqualTo: 'Short');
+    if (mood != null && mood.isNotEmpty && mood != 'تسلية') {
+      q = q.where('moods', arrayContains: mood);
+    }
+    return q.limit(50).snapshots().map((s) => s.docs
+      .map((d) => AurenEntertainmentItem.fromMap(d.id, d.data()))
+      .where((i) => i.isVideo && i.mediaUrl.isNotEmpty)
+      .toList());
   }
 
   Stream<AurenEntertainmentItem?> watchItem(String itemId) => db.collection('entertainment_items').doc(itemId).snapshots().map((d) {
