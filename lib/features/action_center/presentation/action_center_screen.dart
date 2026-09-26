@@ -332,24 +332,37 @@ class _FlowCardState extends State<_FlowCard> {
                   const SizedBox(height: 4),
                   SelectableText(analysis.questionsText),
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await Clipboard.setData(
-                          ClipboardData(text: analysis.questionsText),
-                        );
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('تم نسخ أسئلة المتابعة. لم يتم إرسالها تلقائياً.'),
-                            ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: analysis.questionsText),
                           );
-                        }
-                      },
-                      icon: const Icon(Icons.copy_outlined),
-                      label: const Text('نسخ الأسئلة'),
-                    ),
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('تم نسخ أسئلة المتابعة. لم يتم إرسالها تلقائياً.'),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.copy_outlined),
+                        label: const Text('نسخ الأسئلة'),
+                      ),
+                      FilledButton.icon(
+                        onPressed: () => _openFollowUpDraft(
+                          context,
+                          analysis.questionsText,
+                          conversationId,
+                        ),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('صياغة رسالة متابعة'),
+                      ),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 4),
@@ -362,6 +375,23 @@ class _FlowCardState extends State<_FlowCard> {
           ),
         );
       },
+    );
+  }
+
+  void _openFollowUpDraft(
+    BuildContext context,
+    String questions,
+    String conversationId,
+  ) {
+    final draft = 'مرحباً، شكراً على ردكم.\n\nلإكمال الطلب، أحتاج تأكيد التالي:\n$questions\n\nشكراً لكم.';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MessengerScreen(
+          conversationId: conversationId,
+          initialPrompt: draft,
+        ),
+      ),
     );
   }
 
