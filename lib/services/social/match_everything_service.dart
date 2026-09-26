@@ -77,7 +77,7 @@ class AurenMatchEverythingService {
     final signals = AurenIntentSignals.fromIntent(intent);
 
     final results = <AurenMatchItem>[];
-    results.addAll(await _people(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
+    results.addAll(await _people(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals));
     results.addAll(await _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
     results.addAll(await _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
     results.addAll(await _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
@@ -99,6 +99,7 @@ class AurenMatchEverythingService {
     Set<String> intentTerms,
     String normalizedIntent,
     AurenIntentActionPlan plan,
+    AurenIntentSignals signals,
   ) async {
     try {
       final snapshot = await _db.collectionGroup('profile_modes')
