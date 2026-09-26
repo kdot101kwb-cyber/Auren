@@ -3,6 +3,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/social/profile_mode_service.dart';
 import '../../../services/social/adaptive_profile_service.dart';
 import '../../creator/presentation/creator_studio_screen.dart';
+import '../../creator/presentation/creator_growth_screen.dart';
 
 class AurenAiProfileScreen extends StatefulWidget {
   const AurenAiProfileScreen({super.key});
@@ -177,6 +178,7 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCreatorStudioScreen())),
               )),
+              Card(child: ListTile(leading: const Icon(Icons.insights_rounded), title: const Text('Creator Growth Engine'), subtitle: const Text('الخطة والتحليلات وجدولة المحتوى.'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCreatorGrowthScreen())))),
               const SizedBox(height: 8),
             ],
             const Text('AUREN AI View', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
