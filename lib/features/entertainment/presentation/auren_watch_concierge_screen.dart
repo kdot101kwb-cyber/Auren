@@ -256,6 +256,14 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     );
   }
 
+  void _moveInPlan(int from, int to) {
+    if (from < 0 || from >= _plan.length || to < 0 || to >= _plan.length) return;
+    final next = [..._plan];
+    final item = next.removeAt(from);
+    next.insert(to, item);
+    setState(() => _plan = next);
+  }
+
   void _removeFromPlan(String itemId) {
     setState(() => _plan = _plan.where((item) => item.id != itemId).toList());
   }
@@ -347,28 +355,51 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                 Text('خطة مشاهدة • ${_plan.length} عناصر • $_minutes دقيقة',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
-                ..._plan.map((item) => Card(child: ListTile(
-                  leading: item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie_outlined))
-                      : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
-                  title: Text(item.title),
-                  subtitle: Text(
-                    item.type + ' • ' + _planReason(item),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'open') _openItem(item);
-                      if (value == 'remove') _removeFromPlan(item.id);
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'open', child: Text('فتح المحتوى')),
-                      PopupMenuItem(value: 'remove', child: Text('إزالة من الخطة')),
-                    ],
-                    icon: const Icon(Icons.more_vert_rounded),
-                  ),
-                  onTap: () => _openItem(item),
-                ))),
+                ReorderableListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _plan.length,
+                  onReorder: (oldIndex, newIndex) {
+                    if (newIndex > oldIndex) newIndex--;
+                    _moveInPlan(oldIndex, newIndex);
+                  },
+                  itemBuilder: (context, index) {
+                    final item = _plan[index];
+                    return Card(
+                      key: ValueKey(item.id),
+                      child: ListTile(
+                        leading: item.imageUrl.isEmpty
+                            ? const CircleAvatar(child: Icon(Icons.movie_outlined))
+                            : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
+                        title: Text(item.title),
+                        subtitle: Text(
+                          item.type + ' • ' + _planReason(item),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        leadingAndTrailingTextStyle: const TextStyle(),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'open') _openItem(item);
+                                if (value == 'remove') _removeFromPlan(item.id);
+                              },
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(value: 'open', child: Text('فتح المحتوى')),
+                                PopupMenuItem(value: 'remove', child: Text('إزالة من الخطة')),
+                              ],
+                              icon: const Icon(Icons.more_vert_rounded),
+                            ),
+                            const Icon(Icons.drag_handle_rounded),
+                          ],
+                        ),
+                        onTap: () => _openItem(item),
+                      ),
+                    );
+                  },
+                ),
               ],
             ],
           );
