@@ -2248,6 +2248,43 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
   },
 );
 
+exports.publishCreatorPlanAsShort = onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
+    const planId=typeof request.data?.planId==='string'?request.data.planId.trim():'';
+    if(!planId||planId.length>128) throw new HttpsError('invalid-argument','Invalid creator plan.');
+    const planRef=db.collection('users').doc(uid).collection('creator_plan').doc(planId);
+    const planSnap=await planRef.get();
+    if(!planSnap.exists) throw new HttpsError('not-found','Creator plan not found.');
+    const plan=planSnap.data()||{};
+    if(plan.status==='published') throw new HttpsError('already-exists','Plan already published.');
+    if(plan.format!=='short') throw new HttpsError('failed-precondition','Only Short plans can be published here.');
+    const draft=typeof plan.aiDraft==='string'?plan.aiDraft.trim():'';
+    if(!draft) throw new HttpsError('failed-precondition','Create an AI draft first.');
+    if(draft.length>12000) throw new HttpsError('invalid-argument','AI draft is too long.');
+    const shortRef=db.collection('entertainment_items').doc();
+    await db.runTransaction(async(tx)=>{
+      tx.set(shortRef,{
+        title:String(plan.title||'AUREN Short').slice(0,200),
+        type:'Short',
+        description:draft.slice(0,12000),
+        imageUrl:'',
+        mediaUrl:'',
+        mediaKind:'',
+        creatorId:uid,
+        ownerId:uid,
+        visibility:'public',
+        source:'creator_studio',
+        createdAt:FieldValue.serverTimestamp(),
+      });
+      tx.update(planRef,{status:'published',publishedPostId:shortRef.id});
+    });
+    return {status:'published',shortId:shortRef.id};
+  },
+);
+
 exports.randomJoin = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
