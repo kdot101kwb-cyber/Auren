@@ -591,13 +591,8 @@ class AurenGamingService {
     if (fromUid == toUid || fromUid.isEmpty || toUid.isEmpty) {
       throw ArgumentError('Invalid challenge target.');
     }
-    await _db.collection('gaming_friend_challenges').add({
-      'fromUid': fromUid,
-      'toUid': toUid,
-      'gameId': 'tic_tac_toe',
-      'status': 'pending',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final callable = FirebaseFunctions.instance.httpsCallable('createGamingFriendChallenge');
+    await callable.call(<String, dynamic>{'toUid': toUid});
   }
 
   Future<AurenGamingRoom?> respondToFriendChallenge(String uid, String challengeId, bool accept) async {
@@ -609,15 +604,43 @@ class AurenGamingService {
     if (!accept) { await challengeRef.update({'status': 'declined'}); return null; }
     final fromUid = data['fromUid']?.toString() ?? '';
     if (fromUid.isEmpty || fromUid == uid) throw StateError('Invalid challenger.');
-    final room = await createTicTacToeRoom(fromUid);
-    final roomRef = _db.collection('gaming_rooms').doc(room.id);
+
+    final roomRef = _db.collection('gaming_rooms').doc();
+    final inviteCode = _makeCode();
+    final roomData = {
+      'gameId': 'tic_tac_toe',
+      'hostUid': fromUid,
+      'playerUids': [fromUid, uid],
+      'marks': {fromUid: 'X', uid: 'O'},
+      'board': List<String>.filled(9, ''),
+      'turnUid': fromUid,
+      'winner': null,
+      'draw': false,
+      'status': 'ready',
+      'inviteCode': inviteCode,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    final inviteRef = _db.collection('gaming_invites').doc(inviteCode);
     await _db.runTransaction((tx) async {
       final challengeSnap = await tx.get(challengeRef);
-      if (!challengeSnap.exists || challengeSnap.data()?['status']?.toString() != 'pending') throw StateError('Challenge already handled.');
-      tx.update(roomRef, {'playerUids': [fromUid, uid], 'marks.' + fromUid: 'X', 'marks.' + uid: 'O', 'status': 'ready', 'turnUid': fromUid, 'updatedAt': FieldValue.serverTimestamp()});
-      tx.update(challengeRef, {'status': 'accepted', 'roomId': room.id, 'updatedAt': FieldValue.serverTimestamp()});
+      if (!challengeSnap.exists || challengeSnap.data()?['status']?.toString() != 'pending') {
+        throw StateError('Challenge already handled.');
+      }
+      tx.set(roomRef, roomData);
+      tx.set(inviteRef, {
+        'roomId': roomRef.id,
+        'hostUid': fromUid,
+        'inviteCode': inviteCode,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      tx.update(challengeRef, {
+        'status': 'accepted',
+        'roomId': roomRef.id,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     });
-    return AurenGamingRoom(room.id, room.inviteCode, {...room.data, 'playerUids': [fromUid, uid], 'status': 'ready', 'marks': {fromUid: 'X', uid: 'O'}});
+    return AurenGamingRoom(roomRef.id, inviteCode, roomData);
   }
   Stream<QuerySnapshot<Map<String, dynamic>>> watchFriendChallenges(String uid) =>
       _db.collection('gaming_friend_challenges').where('toUid', isEqualTo: uid).where('status', isEqualTo: 'pending').limit(20).snapshots();
