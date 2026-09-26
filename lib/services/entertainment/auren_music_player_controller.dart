@@ -29,6 +29,9 @@ class AurenMusicPlayerController extends ChangeNotifier {
   final EntertainmentRepository _signals = EntertainmentRepository();
   int _lastTrackedSecond = 0;
   bool _playTracked = false;
+  int _sessionSkipCount = 0;
+  int _sessionCompletionCount = 0;
+  DateTime _lastSessionAdaptation = DateTime.fromMillisecondsSinceEpoch(0);
 
   AudioPlayer get player => _player;
   AurenEntertainmentItem? get item => _item;
@@ -42,6 +45,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
 
   Future<void> _onProcessingState(ProcessingState state) async {
     if (state != ProcessingState.completed) return;
+    _sessionCompletionCount++;
     await _trackPlayback(completed: true);
     if (_queue.length > 1) {
       await playNextInQueue();
@@ -137,7 +141,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
   }
 
   Future<void> skip(int seconds) async {
-    if (seconds < 0 || seconds > 0) await _trackAction('skip');
+    if (seconds < 0 || seconds > 0) { await _trackAction('skip'); _sessionSkipCount++; notifyListeners(); }
     final target = _player.position + Duration(seconds: seconds);
     final max = _player.duration;
     final clamped = max == null
@@ -179,6 +183,23 @@ class AurenMusicPlayerController extends ChangeNotifier {
         countPlay: countPlay,
       );
     } catch (_) {}
+  }
+
+  Future<void> recordSessionFeedback(String action) async {
+    if (action == 'skip') _sessionSkipCount++;
+    if (action == 'complete') _sessionCompletionCount++;
+    notifyListeners();
+  }
+
+  int get sessionSkipCount => _sessionSkipCount;
+  int get sessionCompletionCount => _sessionCompletionCount;
+
+  bool get shouldAdaptSession {
+    final now = DateTime.now();
+    final triggered = _sessionSkipCount >= 2 || _sessionCompletionCount >= 2;
+    if (!triggered || now.difference(_lastSessionAdaptation) < const Duration(seconds: 20)) return false;
+    _lastSessionAdaptation = now;
+    return true;
   }
 
   Future<void> _trackAction(String action) async {
