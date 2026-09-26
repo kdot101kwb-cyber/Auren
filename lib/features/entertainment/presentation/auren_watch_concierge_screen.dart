@@ -256,6 +256,16 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     );
   }
 
+  void _setMoodAndRegenerate(String mood, List<AurenEntertainmentItem> source) {
+    setState(() => _mood = mood);
+    _regenerate(source);
+  }
+
+  void _setTypeAndRegenerate(String type, List<AurenEntertainmentItem> source) {
+    setState(() => _type = type);
+    _regenerate(source);
+  }
+
   void _setMinutesAndRegenerate(int minutes, List<AurenEntertainmentItem> source) {
     final next = minutes.clamp(10, 240);
     setState(() => _minutes = next);
@@ -349,14 +359,14 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
               const SizedBox(height: 8),
               Wrap(spacing: 8, runSpacing: 8, children: _moods.map((v) => ChoiceChip(
                 label: Text(v), selected: _mood == v,
-                onSelected: (_) => setState(() => _mood = v),
+                onSelected: (_) => _setMoodAndRegenerate(v, source),
               )).toList()),
               const SizedBox(height: 12),
               const Text('نوع المحتوى', style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Wrap(spacing: 8, runSpacing: 8, children: _types.map((v) => ChoiceChip(
                 label: Text(v), selected: _type == v,
-                onSelected: (_) => setState(() => _type = v),
+                onSelected: (_) => _setTypeAndRegenerate(v, source),
               )).toList()),
               const SizedBox(height: 14),
               Text('الوقت: $_minutes دقيقة', style: const TextStyle(fontWeight: FontWeight.w700)),
