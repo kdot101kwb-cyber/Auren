@@ -46,11 +46,11 @@ class AurenSmartFollowUpService {
     final currency = _extractCurrency(text);
     final moq = _extract(text, [
       RegExp(
-        r'(?:moq|minimum\s+order|minimum\s+quantity|حد\s*أدنى|اقل\s+كمية|أقل\s+كمية)\s*[:：-]?\s*([\d٠-٩.,]+(?:\s*[a-zA-Z%]+)?)',
+        r'(?:moq|minimum\s+order|minimum\s+quantity|حد\s*أدنى|اقل\s+كمية|أقل\s+كمية)\s*[:：-]?\s*([\d٠-٩.,]+(?:\s*[a-zA-Z%]+)?(?:\s*(?:pcs|pieces|قطعة|قطع|وحدة|كرتون|كرتونة))?)',
         caseSensitive: false,
       ),
       RegExp(
-        r'([\d٠-٩.,]+)\s*(?:pcs|pieces|قطعة|قطع|وحدة|كرتون|كرتونة)',
+        r'(?:moq|minimum\s+order|minimum\s+quantity)\s*(?:is|=|:)?\s*([\d٠-٩.,]+)',
         caseSensitive: false,
       ),
     ]);
