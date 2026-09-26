@@ -323,3 +323,13 @@ test('conversation message trigger validates sender membership before Match Ever
   assert.match(fn, /data\.memberIds\.includes\(actorUid\)/);
   assert.match(fn, /if \(!actorUid \|\| !data\.memberIds\.includes\(actorUid\)\) return/);
 });
+
+test('Match Everything reply detection ignores AI messages and only advances waiting flows', () => {
+  const start = source.indexOf('exports.onConversationMessageCreated');
+  const end = source.indexOf('exports.onConversationMembershipChanged', start);
+  const fn = source.slice(start, end);
+  assert.match(fn, /if \(!message \|\| message\.isAi === true\) return/);
+  assert.match(fn, /\.filter\(\(doc\) => \(doc\.data\(\) \|\| \{\}\)\.status === 'waiting_response'\)/);
+  assert.match(fn, /status: 'replied'/);
+  assert.match(fn, /replyMessageId: event\.params\.messageId/);
+});
