@@ -120,7 +120,15 @@ async function writeAurenActionAudit(uid, action, status, extra = {}) {
 
 async function notify(uid, data) {
   if (!uid || !data) return;
-  await db.collection('users').doc(uid).collection('notifications').add({
+  const notificationId = typeof data.notificationId === 'string' && data.notificationId.trim()
+    ? data.notificationId.trim().slice(0, 500)
+    : null;
+  const ref = notificationId
+    ? db.collection('users').doc(uid).collection('notifications').doc(notificationId)
+    : db.collection('users').doc(uid).collection('notifications').doc();
+  const existing = await ref.get();
+  if (existing.exists) return;
+  await ref.set({
     title: String(data.title || 'AUREN'),
     body: String(data.body || ''),
     read: false,
@@ -130,6 +138,20 @@ async function notify(uid, data) {
     entityId: data.entityId || null,
     conversationId: data.conversationId || null,
     createdAt: FieldValue.serverTimestamp(),
+  });
+}
+
+async function notifyEntertainmentCreator(itemId, actorUid, payload) {
+  if (!itemId || !actorUid) return;
+  const item = await db.collection('entertainment_items').doc(itemId).get();
+  const data = item.data();
+  const creatorUid = data?.creatorId || data?.ownerId || data?.authorId || data?.uid;
+  if (!creatorUid || creatorUid === actorUid) return;
+  await notify(creatorUid, {
+    ...payload,
+    actorUid,
+    targetId: creatorUid,
+    entityId: itemId,
   });
 }
 
@@ -171,6 +193,7 @@ exports.onFollowCreated = onDocumentCreated('follows/{followId}', async (event) 
     actorUid,
     targetId: targetUid,
     entityId: event.params.followId,
+    notificationId: `follow_${event.params.followId}`,
   });
 });
 
@@ -189,6 +212,7 @@ exports.onPostLikeCreated = onDocumentCreated('posts/{postId}/likes/{userId}', a
     actorUid,
     targetId: targetUid,
     entityId: event.params.postId,
+    notificationId: `like_${event.params.postId}_${actorUid}`,
   });
 });
 
@@ -207,8 +231,37 @@ exports.onPostCommentCreated = onDocumentCreated('posts/{postId}/comments/{comme
     actorUid,
     targetId: targetUid,
     entityId: event.params.postId,
+    notificationId: `comment_${event.params.commentId}`,
   });
 });
+
+exports.onEntertainmentLikeCreated = onDocumentCreated(
+  'entertainment_items/{itemId}/likes/{userId}', async (event) => {
+    const actorUid = event.params.userId;
+    const itemId = event.params.itemId;
+    await notifyEntertainmentCreator(itemId, actorUid, {
+      title: 'Short liked',
+      body: 'Someone liked your content.',
+      type: 'like',
+      notificationId: `like_${itemId}_${actorUid}`,
+    });
+  },
+);
+
+exports.onEntertainmentCommentCreated = onDocumentCreated(
+  'entertainment_items/{itemId}/comments/{commentId}', async (event) => {
+    const comment = event.data?.data();
+    if (!comment) return;
+    const actorUid = comment.uid;
+    const itemId = event.params.itemId;
+    await notifyEntertainmentCreator(itemId, actorUid, {
+      title: 'New comment',
+      body: String(comment.text || '').slice(0, 140),
+      type: 'comment',
+      notificationId: `comment_${event.params.commentId}`,
+    });
+  },
+);
 
 exports.onConversationMessageCreated = onDocumentCreated(
   'conversations/{conversationId}/messages/{messageId}',
