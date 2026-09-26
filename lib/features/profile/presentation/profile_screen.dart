@@ -8,11 +8,12 @@ import 'ai_profile_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 
 class AurenProfileScreen extends StatelessWidget {
-  const AurenProfileScreen({super.key});
+  final String? userId;
+  const AurenProfileScreen({super.key, this.userId});
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAurenAuthService().currentUserId;
+    final uid = userId ?? FirebaseAurenAuthService().currentUserId;
     if (uid == null) return const Scaffold(body: Center(child: Text('Sign in required')));
     final follows = FollowRepository();
     return Scaffold(
