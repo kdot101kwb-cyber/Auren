@@ -14,6 +14,8 @@ import '../../../services/messaging/typing_service.dart';
 import 'group_details_screen.dart';
 import 'message_safety_screen.dart';
 import '../../../services/users/presence_service.dart';
+import '../../profile/presentation/adaptive_profile_surface.dart';
+import '../../../services/social/adaptive_profile_service.dart';
 
 class MessengerScreen extends StatefulWidget {
   final String? conversationId;
@@ -646,6 +648,17 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
       body: Column(
         children: [
           _presenceHeader(),
+          if (_uid != null)
+            AurenAdaptiveProfileSurface(
+              uid: _uid!,
+              context: _isAi
+                  ? AurenProfileContext.unknown
+                  : AurenProfileContext.social,
+              compact: true,
+              intent: _isAi
+                  ? (widget.initialPrompt ?? _conversationTitle)
+                  : 'محادثة وتواصل مع شخص',
+            ),
           _pendingActionsPanel(),
           if (_isAi && !_sending && _controller.text.isEmpty)
             SizedBox(
