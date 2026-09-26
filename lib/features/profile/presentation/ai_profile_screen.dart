@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/profile_mode_service.dart';
 import '../../../services/social/adaptive_profile_service.dart';
+import '../../creator/presentation/creator_studio_screen.dart';
 
 class AurenAiProfileScreen extends StatefulWidget {
   const AurenAiProfileScreen({super.key});
@@ -168,7 +169,17 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
               ),
             ),
             Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('AUREN AI View', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              if (_mode == AurenProfileMode.creator) ...[
+              Card(child: ListTile(
+                leading: const Icon(Icons.video_camera_front_rounded),
+                title: const Text('Creator Studio'),
+                subtitle: const Text('أنشئ وانشر وتابع أداء محتواك.'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCreatorStudioScreen())),
+              )),
+              const SizedBox(height: 8),
+            ],
+            const Text('AUREN AI View', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8), Text(_summary(data)),
               const SizedBox(height: 12),
               const Text('AUREN يعرض المعلومات المناسبة للسياق؛ لا ينشئ شخصية أو معلومة غير موجودة في ملفك.'),
