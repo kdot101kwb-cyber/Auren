@@ -49,6 +49,8 @@ class AurenMatchActionFlowRepository {
     required String intent,
     required int step,
     required int totalSteps,
+    String? status,
+    String? conversationId,
   }) async {
     final safeStep = step.clamp(0, totalSteps - 1);
     final cleanIntent = intent.trim();
@@ -59,8 +61,9 @@ class AurenMatchActionFlowRepository {
       'action': item.action.name,
       'intent': cleanIntent.length > 1000 ? cleanIntent.substring(0, 1000) : cleanIntent,
       'step': safeStep,
-      'status': safeStep >= totalSteps - 1 ? 'completed' : 'active',
+      'status': status ?? (safeStep >= totalSteps - 1 ? 'completed' : 'active'),
       'totalSteps': totalSteps,
+      if (conversationId != null && conversationId.trim().isNotEmpty) 'conversationId': conversationId.trim(),
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -68,3 +71,13 @@ class AurenMatchActionFlowRepository {
     return AurenMatchActionFlowState.fromDoc(snap.id, snap.data()!);
   }
 }
+
+  Future<void> updateStatus({required String uid, required AurenMatchItem item, required String status}) async {
+    if (!['active','waiting_response','replied','completed'].contains(status)) {
+      throw ArgumentError('Invalid flow status');
+    }
+    await _ref(uid, item).update({
+      'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
