@@ -293,3 +293,9 @@ test('entertainment notifications resolve creator and never notify the actor', (
   assert.match(source, /notificationId: `like_\\$\\{itemId\\}_\\$\\{actorUid\\}`/);
   assert.match(source, /notificationId: `comment_\\$\\{event\\.params\\.commentId\\}`/);
 });
+test('social safety foundation has server-private reports and owner-only blocks', () => {
+  assert.match(rules, /match \/users\/\\{userId\\}\/blocked\/\\{blockedUid\\}/);
+  assert.match(rules, /match \/reports\/\\{reportId\\}/);
+  assert.match(rules, /allow read, update, delete: if false;/);
+  assert.match(rules, /blockedUid == request\.resource\.data\.blockedUid/);
+});
