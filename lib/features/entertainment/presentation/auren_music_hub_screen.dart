@@ -5,6 +5,10 @@ import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'auren_audio_player_screen.dart';
+import 'auren_mini_player.dart';
+import 'auren_podcasts_screen.dart';
+import 'auren_radio_screen.dart';
+import '../../../services/entertainment/auren_music_player_controller.dart';
 
 class AurenMusicHubScreen extends StatelessWidget {
   const AurenMusicHubScreen({super.key});
@@ -37,7 +41,10 @@ class AurenMusicHubScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<List<AurenEntertainmentItem>>(
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<List<AurenEntertainmentItem>>(
         stream: repo.watchItems(type: 'Music'),
         builder: (context, snapshot) {
           final items = snapshot.data ?? const <AurenEntertainmentItem>[];
@@ -49,6 +56,25 @@ class AurenMusicHubScreen extends StatelessWidget {
               _sectionTitle('استمع بطريقتك'),
               _actions(context),
               const SizedBox(height: 20),
+              AnimatedBuilder(
+                animation: AurenMusicPlayerController.instance,
+                builder: (context, _) {
+                  final item = AurenMusicPlayerController.instance.item;
+                  if (item == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.history_rounded),
+                        title: const Text('Continue Listening'),
+                        subtitle: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAudioPlayerScreen())),
+                      ),
+                    ),
+                  );
+                },
+              ),
               _sectionTitle('Music & Podcasts'),
               if (snapshot.hasError)
                 Text('تعذر تحميل الموسيقى: ${snapshot.error}')
@@ -82,6 +108,9 @@ class AurenMusicHubScreen extends StatelessWidget {
             ],
           );
         },
+          ),
+          const AurenMiniPlayer(),
+        ],
       ),
     );
   }
@@ -122,12 +151,12 @@ class AurenMusicHubScreen extends StatelessWidget {
           _action(context, Icons.auto_awesome, 'AI Music',
               'أنشئ فكرة أغنية أصلية',
               'ساعدني في إنشاء أغنية أصلية: فكرة، كلمات، بنية وموسيقى مناسبة، بدون تقليد صوت فنان حقيقي.'),
-          _action(context, Icons.radio, 'Radio',
-              'محطات واكتشاف',
-              'اقترح لي تجربة Radio مناسبة لذوقي ووقتي.'),
-          _action(context, Icons.podcasts, 'Podcasts',
-              'بودكاست ذكي',
-              'اقترح لي بودكاست مناسباً لموضوعي ووقتي.'),
+          _action(context, Icons.radio, 'Radio', 'محطات واكتشاف',
+              'اقترح لي تجربة Radio مناسبة لذوقي ووقتي.',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()))),
+          _action(context, Icons.podcasts, 'Podcasts', 'بودكاست ذكي',
+              'اقترح لي بودكاست مناسباً لموضوعي ووقتي.',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenPodcastsScreen()))),
           _action(context, Icons.playlist_play, 'Playlist',
               'قائمة حسب المزاج',
               'أنشئ لي Playlist ذكية حسب مزاجي ووقتي ونشاطي.'),
@@ -135,12 +164,12 @@ class AurenMusicHubScreen extends StatelessWidget {
       );
 
   Widget _action(BuildContext context, IconData icon, String title,
-      String subtitle, String prompt) {
+      String subtitle, String prompt, {VoidCallback? onTap}) {
     return SizedBox(
       width: 160,
       child: Card(
         child: InkWell(
-          onTap: () => _ai(context, prompt),
+          onTap: onTap ?? () => _ai(context, prompt),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(
