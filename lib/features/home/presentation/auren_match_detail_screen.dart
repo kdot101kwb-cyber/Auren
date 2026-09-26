@@ -58,7 +58,7 @@ class AurenMatchDetailScreen extends StatelessWidget {
   void _continue(BuildContext context) {
     switch (item.kind) {
       case AurenMatchKind.person:
-        final uid = (item.data['uid'] ?? item.data['ownerId'])?.toString();
+        final uid = (item.data['uid'] ?? item.data['ownerId'] ?? item.id)?.toString();
         if (uid != null && uid.isNotEmpty) {
           Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenProfileScreen(userId: uid)));
           return;
@@ -79,10 +79,14 @@ class AurenMatchDetailScreen extends StatelessWidget {
         ));
         return;
       case AurenMatchKind.opportunity:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenOpportunityDetailScreen(item: item, intent: intent)));
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => AurenOpportunityDetailScreen(item: item, intent: intent),
+        ));
         return;
       case AurenMatchKind.content:
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenContentDetailScreen(item: item, intent: intent)));
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => AurenContentDetailScreen(item: item, intent: intent),
+        ));
         return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
@@ -106,7 +110,10 @@ class AurenMatchDetailScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(radius: 28, child: Icon(_kindIcon(item.kind), size: 28)),
                   const SizedBox(height: 14),
-                  Text(item.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                  Text(
+                    item.title,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                  ),
                   if (item.subtitle.trim().isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(item.subtitle),
@@ -121,25 +128,47 @@ class AurenMatchDetailScreen extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.route_outlined)),
+              title: const Text('الخطوة التي فهمها AUREN', style: TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text(item.actionReason),
+              trailing: Chip(label: Text(item.actionLabel)),
+            ),
+          ),
           if (intent.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
-            Card(child: ListTile(leading: const Icon(Icons.search), title: const Text('طلبك'), subtitle: Text(intent))),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.search),
+                title: const Text('طلبك'),
+                subtitle: Text(intent),
+              ),
+            ),
           ],
           if (item.reasons.isNotEmpty) ...[
             const SizedBox(height: 12),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('لماذا ظهر لك؟', style: TextStyle(fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 8),
-                  ...item.reasons.map((reason) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('• '), Expanded(child: Text(reason)),
-                    ]),
-                  )),
-                ]),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('لماذا ظهر لك؟', style: TextStyle(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 8),
+                    ...item.reasons.map((reason) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('• '),
+                          Expanded(child: Text(reason)),
+                        ],
+                      ),
+                    )),
+                  ],
+                ),
               ),
             ),
           ],
@@ -148,20 +177,25 @@ class AurenMatchDetailScreen extends StatelessWidget {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('التفاصيل', style: TextStyle(fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 8),
-                  ...details.map((entry) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: RichText(text: TextSpan(
-                      style: DefaultTextStyle.of(context).style,
-                      children: [
-                        TextSpan(text: '${entry.key}: ', style: const TextStyle(fontWeight: FontWeight.w700)),
-                        TextSpan(text: entry.value),
-                      ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('التفاصيل', style: TextStyle(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 8),
+                    ...details.map((entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: RichText(
+                        text: TextSpan(
+                          style: DefaultTextStyle.of(context).style,
+                          children: [
+                            TextSpan(text: '${entry.key}: ', style: const TextStyle(fontWeight: FontWeight.w700)),
+                            TextSpan(text: entry.value),
+                          ],
+                        ),
+                      ),
                     )),
-                  )),
-                ]),
+                  ],
+                ),
               ),
             ),
           ],
@@ -169,7 +203,7 @@ class AurenMatchDetailScreen extends StatelessWidget {
           FilledButton.icon(
             onPressed: () => _continue(context),
             icon: const Icon(Icons.arrow_forward),
-            label: const Text('متابعة'),
+            label: Text(item.actionLabel),
           ),
         ],
       ),
