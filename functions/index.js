@@ -2281,25 +2281,3 @@ exports.onRandomMatched = onDocumentUpdated(
     });
   },
 );
-,
-  async (event) => {
-    const report = event.data?.data();
-    const reportedUid = report?.reportedUid;
-    if (!reportedUid) return;
-
-    const safetyRef = db.collection('random_safety').doc(reportedUid);
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(safetyRef);
-      const data = snap.exists ? snap.data() : {};
-      const reports = Number(data?.reports || 0) + 1;
-      const update = {
-        reports,
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-      if (reports >= 5) {
-        update.suspendedUntil = Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000);
-      }
-      tx.set(safetyRef, update, { merge: true });
-    });
-  },
-);
