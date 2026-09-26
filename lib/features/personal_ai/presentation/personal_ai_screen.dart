@@ -145,40 +145,23 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
   }
 
 
-  Widget _personalContextCard(BuildContext context, String uid) => FutureBuilder<AurenPersonalContext>(
-    future: PersonalContextRepository().load(uid),
+  Widget _personalContextCard(BuildContext context, String uid) => StreamBuilder<AurenPersonalContext>(
+    stream: PersonalContextRepository().watch(uid),
     builder: (context, snapshot) {
-      if (!snapshot.hasData) return const SizedBox.shrink();
+      if (snapshot.hasError) {
+        return Card(child: ListTile(leading: const Icon(Icons.error_outline), title: const Text('Personal AI Context'), subtitle: const Text('تعذر تحديث السياق الآن. حاول مرة أخرى.'), trailing: IconButton(icon: const Icon(Icons.refresh), onPressed: () => setState(() {}))));
+      }
+      if (!snapshot.hasData) {
+        return const Card(child: Padding(padding: EdgeInsets.all(16), child: Row(children: [SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)), SizedBox(width: 12), Text('جاري تحديث سياق Personal AI…')]));
+      }
       final data = snapshot.data!;
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                const Icon(Icons.auto_awesome),
-                const SizedBox(width: 8),
-                const Expanded(child: Text('Personal AI Context', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-                Text('${data.goals.length} أهداف • ${data.memories.length} ذاكرة'),
-              ]),
-              const SizedBox(height: 8),
-              Text(data.goals.isEmpty
-                  ? 'ابدأ بهدف، وAUREN سيستخدمه مع الذاكرة لبناء السياق.'
-                  : 'متوسط تقدم أهدافك: ${data.averageProgress}%'),
-              const SizedBox(height: 10),
-              FilledButton.tonalIcon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: data.toPrompt())),
-                ),
-                icon: const Icon(Icons.chat_outlined),
-                label: const Text('اسأل AUREN باستخدام سياقي'),
-              ),
-            ],
-          ),
-        ),
-      );
+      return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [const Icon(Icons.auto_awesome), const SizedBox(width: 8), const Expanded(child: Text('Personal AI Context', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))), Text('\${data.goals.length} أهداف • \${data.memories.length} ذاكرة')]),
+        const SizedBox(height: 8),
+        Text(data.goals.isEmpty ? 'ابدأ بهدف، وAUREN سيستخدمه مع الذاكرة لبناء السياق.' : 'متوسط تقدم أهدافك: \${data.averageProgress}%'),
+        const SizedBox(height: 10),
+        FilledButton.tonalIcon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: data.toPrompt()))), icon: const Icon(Icons.chat_outlined), label: const Text('اسأل AUREN باستخدام سياقي')),
+      ])));
     },
   );
 
