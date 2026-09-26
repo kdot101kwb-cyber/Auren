@@ -7,6 +7,7 @@ import '../../messenger/presentation/messenger_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
 import '../../../services/social/follow_repository.dart';
+import '../../../services/social/safety_repository.dart';
 import '../../../services/users/user_repository.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../../core/models/entertainment.dart';
@@ -236,9 +237,44 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           ),
         ],
       ),
-      body: StreamBuilder<List<AurenEntertainmentItem>>(
-        stream: uid == null ? repo.watchShorts(mood: mood) : repo.watchPersonalizedShorts(uid!, mood: mood),
-        builder: (context, snapshot) {
+      body: uid == null
+          ? StreamBuilder<List<AurenEntertainmentItem>>(
+              stream: repo.watchShorts(mood: mood),
+              builder: (context, snapshot) => _buildShortsBody(
+                context,
+                snapshot.data ?? const <AurenEntertainmentItem>[],
+                snapshot.connectionState,
+                snapshot.hasError ? snapshot.error : null,
+              ),
+            )
+          : StreamBuilder<Set<String>>(
+              stream: AurenSafetyRepository().watchBlockedIds(uid!),
+              builder: (context, blockedSnapshot) {
+                final blockedIds = blockedSnapshot.data ?? const <String>{};
+                return StreamBuilder<List<AurenEntertainmentItem>>(
+                  stream: repo.watchPersonalizedShorts(
+                    uid!,
+                    mood: mood,
+                    blockedCreatorIds: blockedIds,
+                  ),
+                  builder: (context, snapshot) => _buildShortsBody(
+                    context,
+                    snapshot.data ?? const <AurenEntertainmentItem>[],
+                    snapshot.connectionState,
+                    snapshot.hasError ? snapshot.error : null,
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildShortsBody(
+    BuildContext context,
+    List<AurenEntertainmentItem> items,
+    ConnectionState connectionState,
+    Object? error,
+  ) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -452,8 +488,5 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
               );
             },
           );
-        },
-      ),
-    );
   }
 }
