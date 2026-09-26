@@ -10,12 +10,14 @@ class AurenAdaptiveProfileSurface extends StatelessWidget {
   final String uid;
   final AurenProfileContext context;
   final bool compact;
+  final String? intent;
 
   const AurenAdaptiveProfileSurface({
     super.key,
     required this.uid,
     required this.context,
     this.compact = false,
+    this.intent,
   });
 
   @override
@@ -38,6 +40,7 @@ class AurenAdaptiveProfileSurface extends StatelessWidget {
               currentMode: currentMode,
               context: this.context,
               profile: profile,
+              intent: intent,
             );
 
             final changed = result.mode != currentMode;
