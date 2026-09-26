@@ -162,6 +162,21 @@ class EntertainmentRepository {
                 'createdAt': FieldValue.serverTimestamp(),
               }));
 
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>> > watchShortComments(String itemId) =>
+      db.collection('entertainment_items').doc(itemId).collection('comments')
+          .orderBy('createdAt', descending: true).limit(100).snapshots().map((s) => s.docs);
+
+  Future<void> addShortComment(String uid, String itemId, String text) async {
+    final value = text.trim();
+    if (value.isEmpty || value.length > 1000) return;
+    await db.collection('entertainment_items').doc(itemId).collection('comments').add({
+      'uid': uid,
+      'text': value,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await trackShortAction(uid, itemId, action: 'comment', mood: 'تسلية');
+  }
+
   Stream<bool> watchLiked(String uid, String itemId) =>
       db.collection('entertainment_items').doc(itemId).collection('likes').doc(uid)
           .snapshots().map((d) => d.exists);
