@@ -36,6 +36,37 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
   bool _busy = false;
   bool _interested = false;
   bool _applied = false;
+  bool _saved = false;
+  bool _loadingState = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadState();
+  }
+
+  Future<void> _loadState() async {
+    final uid = _auth.currentUserId;
+    if (uid == null) {
+      if (mounted) setState(() => _loadingState = false);
+      return;
+    }
+    try {
+      if (widget.item.kind == AurenMatchKind.opportunity) {
+        _interested = await _opportunities.watchInterested(uid, widget.item.id).first;
+        _applied = await _opportunities.hasApplied(uid, widget.item.id);
+      } else if (widget.item.kind == AurenMatchKind.product) {
+        final ids = await _marketplace.watchSavedIds(uid).first;
+        _saved = ids.contains(widget.item.id);
+      } else if (widget.item.kind == AurenMatchKind.business) {
+        _saved = await _businesses.isSaved(uid, widget.item.id);
+      }
+    } catch (_) {
+      // The detail screen remains usable even if optional state cannot load.
+    } finally {
+      if (mounted) setState(() => _loadingState = false);
+    }
+  }
 
   String _ownerId() => (widget.item.data['ownerId'] ?? widget.item.data['authorId'] ?? widget.item.data['uid'] ?? widget.item.data['creatorId'] ?? '').toString();
 
@@ -95,7 +126,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
   }
 
   Future<void> _execute() async {
-    if (_busy) return;
+    if (_busy || _loadingState) return;
     setState(() => _busy = true);
     try {
       final uid = _auth.currentUserId;
@@ -136,13 +167,16 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           break;
         case AurenMatchAction.save:
           if (widget.item.kind == AurenMatchKind.product) {
-            final saved = await _marketplace.watchSavedIds(uid).first;
-            await _marketplace.toggleSaved(uid, widget.item.id, saved.contains(widget.item.id));
-            _toast(saved.contains(widget.item.id) ? 'تم إلغاء الحفظ.' : 'تم حفظ المنتج.');
+            final nextSaved = !_saved;
+            await _marketplace.toggleSaved(uid, widget.item.id, nextSaved);
+            if (mounted) setState(() => _saved = nextSaved);
+            _toast(nextSaved ? 'تم حفظ المنتج.' : 'تم إلغاء الحفظ.');
             didExecute = true;
           } else if (widget.item.kind == AurenMatchKind.business) {
+            final nextSaved = !_saved;
             await _businesses.toggleSaved(uid, widget.item.id);
-            _toast('تم تحديث حفظ النشاط.');
+            if (mounted) setState(() => _saved = nextSaved);
+            _toast(nextSaved ? 'تم حفظ النشاط.' : 'تم إلغاء حفظ النشاط.');
             didExecute = true;
           } else {
             _openDestination();
@@ -237,7 +271,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
             leading: const CircleAvatar(child: Icon(Icons.route_outlined)),
             title: const Text('الخطوة التي فهمها AUREN', style: TextStyle(fontWeight: FontWeight.w800)),
             subtitle: Text(item.actionReason),
-            trailing: Chip(label: Text(_applied ? 'تم التقديم' : item.actionLabel)),
+            trailing: Chip(label: Text(_applied ? 'تم التقديم' : (_saved ? 'محفوظ' : (_interested ? 'متابع' : item.actionLabel)))),
           )),
           if (widget.intent.trim().isNotEmpty) ...[const SizedBox(height: 12), Card(child: ListTile(leading: const Icon(Icons.search), title: const Text('طلبك'), subtitle: Text(widget.intent)))],
           if (item.reasons.isNotEmpty) ...[
@@ -262,9 +296,11 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           FilledButton.icon(
             onPressed: _busy ? null : _execute,
             icon: _busy ? const SizedBox(width: 18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : Icon(item.action == AurenMatchAction.apply ? Icons.send : Icons.arrow_forward),
-            label: Text(_applied ? 'تم التقديم' : item.actionLabel),
+            label: Text(_applied ? 'تم التقديم' : (_saved ? 'إلغاء الحفظ' : (_interested ? 'إلغاء المتابعة' : item.actionLabel))),
           ),
-          TextButton.icon(onPressed: _busy ? null : _openDestination, icon: const Icon(Icons.open_in_new), label: const Text('فتح التفاصيل')),
+          TextButton.icon(onPressed: (_busy || _loadingState) ? null : _openDestination, icon: const Icon(Icons.open_in_new), label: const Text('فتح التفاصيل')),
+          if ((item.kind == AurenMatchKind.business || item.kind == AurenMatchKind.product) && item.action != AurenMatchAction.contact)
+            OutlinedButton.icon(onPressed: (_busy || _loadingState) ? null : () => _contact(prompt: 'مرحباً، وصلت إليكم عبر AUREN وأريد الاستفسار عن: ${widget.intent}.'), icon: const Icon(Icons.chat_bubble_outline), label: const Text('تواصل مباشرة')),
         ],
       ),
     );
