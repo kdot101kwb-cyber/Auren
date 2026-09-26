@@ -1630,6 +1630,48 @@ service cloud.firestore {
     }
   }
 
+    match /gaming_invites/{inviteCode} {
+      allow read: if request.auth != null && inviteCode == resource.data.inviteCode;
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.roomId is string
+        && request.resource.data.roomId.size() > 0
+        && request.resource.data.inviteCode == inviteCode
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+    }
+
+    match /gaming_rooms/{roomId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.playerUids;
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.playerUids is list
+        && request.resource.data.playerUids.size() == 1
+        && request.resource.data.playerUids[0] == request.auth.uid
+        && request.resource.data.gameId == 'tic_tac_toe'
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() == 6
+        && request.resource.data.board is list
+        && request.resource.data.board.size() == 9
+        && request.resource.data.turnUid == request.auth.uid
+        && request.resource.data.status == 'waiting';
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.playerUids
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.gameId == resource.data.gameId
+        && request.resource.data.inviteCode == resource.data.inviteCode
+        && request.resource.data.playerUids is list
+        && request.resource.data.playerUids.size() >= resource.data.playerUids.size()
+        && request.resource.data.playerUids.size() <= 2
+        && request.resource.data.playerUids.hasAll(resource.data.playerUids)
+        && request.resource.data.board is list
+        && request.resource.data.board.size() == 9
+        && request.resource.data.status in ['waiting','ready']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+    }
+
     match /watch_together_invites/{inviteCode} {
       allow read: if request.auth != null && inviteCode == resource.data.inviteCode;
       allow create: if request.auth != null
