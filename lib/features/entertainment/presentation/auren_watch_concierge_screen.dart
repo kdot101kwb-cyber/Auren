@@ -177,6 +177,20 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     return 0;
   }
 
+  String _smartLabel(AurenEntertainmentItem item) {
+    final signal = _signals[item.id];
+    final history = _history[item.id];
+    if (history != null && history['completed'] != true) return 'متابعة';
+    if (signal != null) {
+      final saves = (signal['saves'] as num?)?.toInt() ?? 0;
+      final likes = (signal['likes'] as num?)?.toInt() ?? 0;
+      if (saves > 0) return 'محفوظ لك';
+      if (likes > 0) return 'تحبه';
+    }
+    if (!_history.containsKey(item.id)) return 'جديد لك';
+    return 'مقترح ذكي';
+  }
+
   String _planReason(AurenEntertainmentItem item) {
     final signal = _signals[item.id];
     final history = _history[item.id];
@@ -451,7 +465,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                             : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
                         title: Text(item.title),
                         subtitle: Text(
-                          item.type + ' • ' + _planReason(item),
+                          item.type + ' • ' + _smartLabel(item) + ' • ' + _planReason(item),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
