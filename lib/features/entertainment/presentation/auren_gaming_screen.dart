@@ -17,8 +17,11 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   int _xp = 0;
   int _wins = 0;
   int _games = 0;
+  int _seasonXp = 0;
   bool _loadedStats = false;
   final _chatController = TextEditingController();
+
+  @override void initState() { super.initState(); _loadStats(); }
 
   @override void dispose() { _codeController.dispose(); _chatController.dispose(); super.dispose(); }
 
@@ -109,7 +112,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     if (uid == null) return;
     final stats = await _service.getStats(uid);
     if (!mounted) return;
-    setState(() { _xp = stats.xp; _wins = stats.wins; _games = stats.games; _loadedStats = true; });
+    setState(() { _xp = stats.xp; _wins = stats.wins; _games = stats.games; _seasonXp = stats.seasonXp; _loadedStats = true; });
   }
 
   @override Widget build(BuildContext context) {
@@ -120,6 +123,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       body: ListView(padding: const EdgeInsets.all(16), children: [
         _hero(context), const SizedBox(height: 12),
         _statsCard(), const SizedBox(height: 12),
+        _seasonCard(), const SizedBox(height: 12),
         _achievementsCard(), const SizedBox(height: 12),
         _leaderboardCard(), const SizedBox(height: 12),
         if (_roomId == null) ...[
@@ -167,6 +171,29 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   }
 
   Widget _statsCard() => Card(child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Gaming Profile', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)), const SizedBox(height: 8), Text('$_xp XP  •  $_games مباريات  •  $_wins انتصارات')])), CircleAvatar(radius: 25, child: Text('${_xp ~/ 100 + 1}'))])));
+
+  Widget _seasonCard() {
+    final season = _service.currentSeasonId();
+    final level = _seasonXp ~/ 250 + 1;
+    final progress = (_seasonXp % 250) / 250;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.workspace_premium_outlined),
+            const SizedBox(width: 10),
+            Expanded(child: Text('الموسم ' + season, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18))),
+            Text('المستوى ' + level.toString(), style: const TextStyle(fontWeight: FontWeight.w800)),
+          ]),
+          const SizedBox(height: 8),
+          Text(_seasonXp.toString() + ' Season XP • ' + (250 - (_seasonXp % 250)).toString() + ' XP للمستوى التالي'),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(value: progress),
+        ]),
+      ),
+    );
+  }
 
   Widget _achievementsCard() {
     final achievements = <Map<String, dynamic>>[
@@ -387,7 +414,7 @@ class AurenGamingService {
   Future<AurenGamingStats> getStats(String uid) async {
     final snap = await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').get();
     final data = snap.data() ?? {};
-    return AurenGamingStats(xp: (data['xp'] as num?)?.toInt() ?? 0, games: (data['games'] as num?)?.toInt() ?? 0, wins: (data['wins'] as num?)?.toInt() ?? 0);
+    return AurenGamingStats(xp: (data['xp'] as num?)?.toInt() ?? 0, games: (data['games'] as num?)?.toInt() ?? 0, wins: (data['wins'] as num?)?.toInt() ?? 0, seasonXp: (data['seasonXp'] as num?)?.toInt() ?? 0);
   }
 
   Future<void> recordResult(String uid, String roomId, bool win, bool draw) async {
@@ -398,12 +425,18 @@ class AurenGamingService {
     await incrementStats(uid, win: win);
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> watchLeaderboard() => _db.collectionGroup('gaming_profile').orderBy('xp', descending: true).limit(10).snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchLeaderboard() => _db.collectionGroup('gaming_profile').orderBy('xp', descending: true).limit(50).snapshots();
+
+  String currentSeasonId() {
+    final now = DateTime.now().toUtc();
+    return now.year.toString() + '-S' + (((now.month - 1) ~/ 3) + 1).toString();
+  }
 
   Future<void> incrementStats(String uid, {required bool win}) async {
     final user = FirebaseAuth.instance.currentUser;
+    final gain = win ? 50 : 15;
     await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').set({
-      'xp': FieldValue.increment(win ? 50 : 15), 'games': FieldValue.increment(1), 'wins': FieldValue.increment(win ? 1 : 0), 'displayName': user?.displayName ?? 'لاعب AUREN', 'updatedAt': FieldValue.serverTimestamp(),
+      'xp': FieldValue.increment(gain), 'seasonXp': FieldValue.increment(gain), 'seasonId': currentSeasonId(), 'games': FieldValue.increment(1), 'wins': FieldValue.increment(win ? 1 : 0), 'displayName': user?.displayName ?? 'لاعب AUREN', 'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 
@@ -418,7 +451,9 @@ class AurenGamingService {
       'xp': 25,
       'completedAt': FieldValue.serverTimestamp(),
     });
-    await incrementStats(uid, win: false);
+    await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').set({
+      'xp': FieldValue.increment(25), 'seasonXp': FieldValue.increment(25), 'seasonId': currentSeasonId(), 'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
     return true;
   }
 
@@ -431,4 +466,4 @@ class AurenGamingService {
   }
 }
 
-class AurenGamingStats { final int xp; final int games; final int wins; const AurenGamingStats({required this.xp, required this.games, required this.wins}); }
+class AurenGamingStats { final int xp; final int games; final int wins; final int seasonXp; const AurenGamingStats({required this.xp, required this.games, required this.wins, required this.seasonXp}); }
