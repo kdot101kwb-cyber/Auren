@@ -15,6 +15,8 @@ class AurenGlobalSearchRepository {
       _safe(() => _searchPeople(q, blockedIds)),
       _safe(() => _searchPosts(q, blockedIds)),
       _safe(() => _searchCollection(q, 'businesses', AurenSearchType.businesses, const ['name', 'title'], const ['category', 'description', 'location'], blockedIds)),
+      _safe(() => _searchProducts(q, blockedIds)),
+      _safe(() => _searchEntertainment(q, blockedIds)),
       _safe(() => _searchCollection(q, 'places', AurenSearchType.places, const ['name', 'title'], const ['city', 'country', 'description'], blockedIds)),
       _safe(() => _searchCollection(q, 'opportunities', AurenSearchType.opportunities, const ['title', 'name'], const ['company', 'category', 'location'], blockedIds)),
     ]);
@@ -45,6 +47,21 @@ class AurenGlobalSearchRepository {
     }).where((r) => r.title.isNotEmpty).toList();
   }
 
+  Future<List<AurenSearchResult>> _searchProducts(String q, Set<String> blockedIds) async {
+    final snap = await _db.collection('products').where('status', isEqualTo: 'active').orderBy('searchText').startAt([q]).endAt(['$q\\uf8ff']).limit(20).get();
+    return snap.docs.where((d) => !blockedIds.contains(d.data()['ownerId']?.toString() ?? '')).take(8).map((d) {
+      final data = d.data();
+      return AurenSearchResult(id: d.id, type: AurenSearchType.products, title: (data['name']?.toString() ?? d.id), subtitle: 'Product • ${(data['category'] ?? '').toString()}', imageUrl: data['imageUrl']?.toString());
+    }).toList();
+  }
+
+  Future<List<AurenSearchResult>> _searchEntertainment(String q, Set<String> blockedIds) async {
+    final snap = await _db.collection('entertainment_items').where('visibility', isEqualTo: 'public').orderBy('searchText').startAt([q]).endAt(['$q\\uf8ff']).limit(20).get();
+    return snap.docs.where((d) { final data=d.data(); final owner=data['creatorId']?.toString() ?? data['ownerId']?.toString() ?? ''; return owner.isEmpty || !blockedIds.contains(owner); }).take(8).map((d) {
+      final data=d.data();
+      return AurenSearchResult(id:d.id,type:AurenSearchType.entertainment,title:(data['title']?.toString() ?? d.id),subtitle:'Entertainment • ${(data['type'] ?? '').toString()}',imageUrl:data['imageUrl']?.toString());
+    }).toList();
+  }
   Future<List<AurenSearchResult>> _searchCollection(String q, String collection, AurenSearchType type, List<String> titleFields, List<String> subtitleFields, Set<String> blockedIds) async {
     final snap = await _db.collection(collection).where('visibility', isEqualTo: 'public').orderBy('searchText').startAt([q]).endAt(['$q\uf8ff']).limit(20).get();
     return snap.docs.where((d) {
