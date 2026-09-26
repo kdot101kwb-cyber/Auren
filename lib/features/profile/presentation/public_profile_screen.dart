@@ -120,6 +120,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                 );
               }
             ),
+          ),
         ],
       ),
       body: ListView(
