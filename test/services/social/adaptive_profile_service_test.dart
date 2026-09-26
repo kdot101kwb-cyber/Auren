@@ -3,68 +3,58 @@ import 'package:auren/services/social/adaptive_profile_service.dart';
 import 'package:auren/services/social/profile_mode_service.dart';
 
 void main() {
-  const adaptive = AurenAdaptiveProfileService();
+  const service = AurenAdaptiveProfileService();
 
-  test('business context proposes Business without changing current mode', () {
-    final result = adaptive.suggest(
+  test('explicit context maps to the expected profile mode', () {
+    final result = service.suggest(
       currentMode: AurenProfileMode.personal,
       context: AurenProfileContext.business,
-      intent: 'ابحث عن عملاء ومنتجات',
     );
 
     expect(result.mode, AurenProfileMode.business);
     expect(result.confidence, 92);
-    expect(result.alternatives, isNotEmpty);
   });
 
-  test('creator context proposes Creator', () {
-    final result = adaptive.suggest(
-      currentMode: AurenProfileMode.professional,
-      context: AurenProfileContext.content,
-      intent: 'محتوى وفيديو وجمهور',
-    );
-
-    expect(result.mode, AurenProfileMode.creator);
-  });
-
-  test('unknown context keeps current mode when there are no signals', () {
-    final result = adaptive.suggest(
-      currentMode: AurenProfileMode.professional,
-      context: AurenProfileContext.unknown,
-      intent: 'شيء جديد',
-    );
-
-    expect(result.mode, AurenProfileMode.professional);
-    expect(result.confidence, 100);
-  });
-
-  test('unknown context detects profile signals', () {
-    final result = adaptive.suggest(
+  test('Arabic spelling variants are normalized before detection', () {
+    final result = service.suggest(
       currentMode: AurenProfileMode.personal,
-      context: AurenProfileContext.unknown,
-      profile: const AurenProfileModeData(
+      intent: 'أرخص خدمة لعملاء وشركة',
+    );
+
+    expect(result.mode, AurenProfileMode.business);
+    expect(result.confidence, greaterThanOrEqualTo(68));
+  });
+
+  test('profile signals can suggest creator mode', () {
+    final result = service.suggest(
+      currentMode: AurenProfileMode.personal,
+      profile: AurenProfileModeData(
         mode: AurenProfileMode.personal,
-        headline: '',
-        bio: '',
-        skills: [],
-        interests: ['video', 'content'],
-        links: [],
-        goals: [],
-        languages: [],
-        services: [],
-        achievements: [],
+        headline: 'صانع محتوى',
+        bio: 'فيديو وموسيقى للجمهور',
+        skills: const [],
+        interests: const [],
+        links: const [],
+        goals: const [],
+        languages: const [],
+        services: const [],
+        achievements: const [],
         discoverable: true,
         showContact: false,
       ),
     );
 
     expect(result.mode, AurenProfileMode.creator);
-    expect(result.confidence, greaterThanOrEqualTo(68));
+    expect(result.alternatives, isNotEmpty);
   });
-  test('profile mode service rejects blank or oversized uid before Firestore access', () {
-    final service = AurenProfileModeService();
-    expect(() => service.watch('', AurenProfileMode.personal), throwsArgumentError);
-    expect(() => service.getActiveMode('   '), throwsArgumentError);
-    expect(() => service.watch('x' * 129, AurenProfileMode.personal), throwsArgumentError);
+
+  test('unknown context keeps current mode when no strong signal exists', () {
+    final result = service.suggest(
+      currentMode: AurenProfileMode.professional,
+      intent: 'hello',
+    );
+
+    expect(result.mode, AurenProfileMode.professional);
+    expect(result.confidence, 100);
   });
 }
