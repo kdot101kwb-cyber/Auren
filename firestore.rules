@@ -143,7 +143,7 @@ service cloud.firestore {
   match /users/{userId}/entertainmentCreationJobs/{jobId} {
     allow read: if isOwner(userId);
     allow create: if isOwner(userId)
-      && request.resource.data.keys().hasOnly(['draftId','mode','mood','length','idea','status','provider','progress','createdAt','updatedAt'])
+      && request.resource.data.keys().hasOnly(['draftId','mode','mood','length','idea','status','provider','progress','plan','assets','createdAt','updatedAt'])
       && request.resource.data.draftId is string
       && request.resource.data.draftId.size() <= 128
       && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم']
@@ -155,6 +155,11 @@ service cloud.firestore {
       && request.resource.data.status == 'planning'
       && request.resource.data.provider == 'auren_ai'
       && request.resource.data.progress == 0
+      && request.resource.data.plan is list
+      && request.resource.data.plan.size() >= 2
+      && request.resource.data.plan.size() <= 10
+      && request.resource.data.assets is list
+      && request.resource.data.assets.size() <= 10
       && request.resource.data.createdAt is timestamp
       && request.resource.data.updatedAt is timestamp;
     allow update: if isOwner(userId)
