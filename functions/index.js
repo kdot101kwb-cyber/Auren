@@ -165,6 +165,53 @@ async function incrementUnread(uid, conversationId) {
   }, {merge: true});
 }
 
+exports.createGamingFriendChallenge = onCall(async (request) => {
+  const fromUid = request.auth?.uid;
+  const toUid = typeof request.data?.toUid === 'string' ? request.data.toUid.trim() : '';
+  if (!fromUid) throw new HttpsError('unauthenticated', 'Sign in required.');
+  if (!toUid || toUid === fromUid || toUid.length > 128) {
+    throw new HttpsError('invalid-argument', 'Invalid challenge target.');
+  }
+
+  const targetSnap = await db.collection('users').doc(toUid).get();
+  if (!targetSnap.exists) {
+    throw new HttpsError('not-found', 'Player not found.');
+  }
+
+  const reverse = await db.collection('gaming_friend_challenges')
+    .where('fromUid', '==', toUid)
+    .where('toUid', '==', fromUid)
+    .where('status', '==', 'pending')
+    .limit(1).get();
+  if (!reverse.empty) {
+    throw new HttpsError('already-exists', 'A pending challenge already exists.');
+  }
+
+  const keyId = fromUid + '_' + toUid;
+  const keyRef = db.collection('gaming_friend_challenge_keys').doc(keyId);
+  const challengeRef = db.collection('gaming_friend_challenges').doc();
+
+  await db.runTransaction(async (tx) => {
+    const keySnap = await tx.get(keyRef);
+    const key = keySnap.exists ? keySnap.data() || {} : {};
+    if (key.status === 'pending') {
+      throw new HttpsError('already-exists', 'A pending challenge already exists.');
+    }
+    tx.set(keyRef, {
+      fromUid, toUid, status: 'pending',
+      challengeId: challengeRef.id,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    tx.set(challengeRef, {
+      fromUid, toUid, gameId: 'tic_tac_toe',
+      status: 'pending',
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  return {ok: true, challengeId: challengeRef.id};
+});
+
 exports.onGamingFriendChallengeCreated = onDocumentCreated(
   'gaming_friend_challenges/{challengeId}',
   async (event) => {
