@@ -10,6 +10,14 @@ class AurenSafetyRepository {
   Stream<bool> watchBlocked(String uid, String otherUid) =>
       _blocked(uid).doc(otherUid).snapshots().map((s) => s.exists);
 
+  /// Live set of accounts this user has blocked. Consumers can use this to
+  /// hide blocked creators locally without adding Firestore whereNotIn limits.
+  Stream<Set<String>> watchBlockedIds(String uid) =>
+      _blocked(uid).snapshots().map((s) => s.docs.map((d) => d.id).toSet());
+
+  Future<Set<String>> getBlockedIds(String uid) async =>
+      (await _blocked(uid).get()).docs.map((d) => d.id).toSet();
+
   Future<void> block(String uid, String otherUid) async {
     if (uid.isEmpty || otherUid.isEmpty || uid == otherUid) {
       throw ArgumentError('Invalid block target.');
