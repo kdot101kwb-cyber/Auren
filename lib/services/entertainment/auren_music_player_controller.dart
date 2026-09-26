@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'entertainment_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/models/entertainment.dart';
@@ -23,6 +26,9 @@ class AurenMusicPlayerController extends ChangeNotifier {
   Duration _duration = Duration.zero;
   bool _loading = false;
   String? _error;
+  final EntertainmentRepository _signals = EntertainmentRepository();
+  int _lastTrackedSecond = 0;
+  bool _playTracked = false;
 
   AudioPlayer get player => _player;
   AurenEntertainmentItem? get item => _item;
@@ -36,6 +42,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
 
   Future<void> _onProcessingState(ProcessingState state) async {
     if (state != ProcessingState.completed) return;
+    await _trackPlayback(completed: true);
     if (_queue.length > 1) {
       await playNextInQueue();
     } else {
@@ -58,12 +65,16 @@ class AurenMusicPlayerController extends ChangeNotifier {
     if (_history.length > 20) _history.removeLast();
     _item = item;
     _position = startAt;
+    _lastTrackedSecond = startAt.inSeconds;
+    _playTracked = false;
     notifyListeners();
     try {
       await _player.setUrl(item.mediaUrl);
       _duration = _player.duration ?? Duration.zero;
       if (startAt > Duration.zero) await _player.seek(startAt);
       await _player.play();
+      _playTracked = true;
+      await _trackPlayback(completed: false);
       await _saveQueueAndHistory();
       await _saveState();
     } catch (_) {
@@ -126,6 +137,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
   }
 
   Future<void> skip(int seconds) async {
+    if (seconds < 0 || seconds > 0) await _trackAction('skip');
     final target = _player.position + Duration(seconds: seconds);
     final max = _player.duration;
     final clamped = max == null
@@ -138,10 +150,50 @@ class AurenMusicPlayerController extends ChangeNotifier {
     _position = value;
     _duration = _player.duration ?? _duration;
     notifyListeners();
-    if (value.inSeconds % 5 == 0 && _item != null) {
-      await _saveState();
+    if (_item != null) {
+      final second = value.inSeconds;
+      if (second - _lastTrackedSecond >= 10) {
+        final delta = second - _lastTrackedSecond;
+        _lastTrackedSecond = second;
+        await _trackPlayback(seconds: delta, completed: false, countPlay: false);
+      }
+      if (value.inSeconds % 5 == 0) await _saveState();
     }
   }
+
+  Future<void> _trackPlayback({
+    int seconds = 0,
+    required bool completed,
+    bool countPlay = true,
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final item = _item;
+    if (uid == null || item == null || !_playTracked) return;
+    try {
+      await _signals.trackMusicPlayback(
+        uid,
+        item.id,
+        seconds: seconds,
+        completed: completed,
+        contentType: item.type,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _trackAction(String action) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final item = _item;
+    if (uid == null || item == null) return;
+    try {
+      await _signals.trackMusicAction(
+        uid,
+        item.id,
+        action: action,
+        contentType: item.type,
+      );
+    } catch (_) {}
+  }
+
 
   Future<void> _saveQueueAndHistory() async {
     final prefs = await SharedPreferences.getInstance();
