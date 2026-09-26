@@ -5,6 +5,8 @@ import '../../../services/social/match_everything_service.dart';
 import '../../../services/social/follow_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/marketplace/marketplace_commerce_repository.dart';
+import '../../../services/marketplace/marketplace_repository.dart';
+import '../../../services/business/business_repository.dart';
 import '../../../services/opportunities/opportunity_repository.dart';
 import '../../../core/models/business.dart';
 import '../../../core/models/product.dart';
@@ -28,6 +30,8 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
   final _follow = FollowRepository();
   final _conversations = ConversationRepository();
   final _commerce = MarketplaceCommerceRepository();
+  final _marketplace = MarketplaceRepository();
+  final _businesses = BusinessRepository();
   final _opportunities = OpportunityRepository();
   bool _busy = false;
   bool _interested = false;
@@ -106,8 +110,19 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           break;
         case AurenMatchAction.watch:
         case AurenMatchAction.open:
-        case AurenMatchAction.save:
           _openDestination();
+          break;
+        case AurenMatchAction.save:
+          if (widget.item.kind == AurenMatchKind.product) {
+            final saved = await _marketplace.watchSavedIds(uid).first;
+            await _marketplace.toggleSaved(uid, widget.item.id, saved.contains(widget.item.id));
+            _toast(saved.contains(widget.item.id) ? 'تم إلغاء الحفظ.' : 'تم حفظ المنتج.');
+          } else if (widget.item.kind == AurenMatchKind.business) {
+            await _businesses.toggleSaved(uid, widget.item.id);
+            _toast('تم تحديث حفظ النشاط.');
+          } else {
+            _openDestination();
+          }
           break;
       }
     } catch (e) {
