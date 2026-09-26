@@ -165,6 +165,59 @@ async function incrementUnread(uid, conversationId) {
   }, {merge: true});
 }
 
+exports.onGamingFriendChallengeCreated = onDocumentCreated(
+  'gaming_friend_challenges/{challengeId}',
+  async (event) => {
+    const challenge = event.data?.data();
+    if (!challenge) return;
+    const fromUid = typeof challenge.fromUid === 'string' ? challenge.fromUid : '';
+    const toUid = typeof challenge.toUid === 'string' ? challenge.toUid : '';
+    if (!fromUid || !toUid || fromUid === toUid || challenge.status !== 'pending') return;
+    await notify(toUid, {
+      title: '🎮 تحدي جديد في AUREN Gaming',
+      body: 'صديقك أرسل لك تحدي Tic-Tac-Toe. افتح Gaming لقبول الدعوة.',
+      type: 'gaming_challenge',
+      actorUid: fromUid,
+      targetId: toUid,
+      entityId: event.params.challengeId,
+      notificationId: 'gaming_challenge_' + event.params.challengeId,
+    });
+  },
+);
+
+exports.onGamingFriendChallengeUpdated = onDocumentUpdated(
+  'gaming_friend_challenges/{challengeId}',
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after || before.status === after.status) return;
+    const fromUid = typeof after.fromUid === 'string' ? after.fromUid : '';
+    const toUid = typeof after.toUid === 'string' ? after.toUid : '';
+    if (!fromUid || !toUid || fromUid === toUid) return;
+    if (after.status === 'accepted') {
+      await notify(fromUid, {
+        title: '🎮 تم قبول تحديك',
+        body: 'تم قبول تحدي Tic-Tac-Toe. افتح AUREN Gaming للانضمام للمباراة.',
+        type: 'gaming_challenge_accepted',
+        actorUid: toUid,
+        targetId: fromUid,
+        entityId: event.params.challengeId,
+        notificationId: 'gaming_challenge_accepted_' + event.params.challengeId,
+      });
+    } else if (after.status === 'declined') {
+      await notify(fromUid, {
+        title: 'تحدي Gaming',
+        body: 'تم رفض تحدي Tic-Tac-Toe.',
+        type: 'gaming_challenge_declined',
+        actorUid: toUid,
+        targetId: fromUid,
+        entityId: event.params.challengeId,
+        notificationId: 'gaming_challenge_declined_' + event.params.challengeId,
+      });
+    }
+  },
+);
+
 exports.onConversationReadChanged = onDocumentWritten(
   'conversations/{conversationId}/reads/{userId}',
   async (event) => {
