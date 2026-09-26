@@ -310,6 +310,25 @@ class EntertainmentRepository {
       default: return ['story','characters','scenes','artwork'];
     }
   }
+  Stream<Map<String, dynamic>?> watchEntertainmentCreationJob(
+    String uid,
+    String jobId,
+  ) {
+    return db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc(jobId)
+        .snapshots()
+        .map((d) => d.exists ? {'id': d.id, ...d.data()!} : null);
+  }
+
+  Future<void> retryEntertainmentJob(String uid, String jobId) async {
+    if (uid.isEmpty || jobId.isEmpty) return;
+    await updateEntertainmentJobStatus(uid, jobId, status: 'planning', progress: 0);
+  }
+
+  Future<void> cancelEntertainmentJob(String uid, String jobId) async {
+    if (uid.isEmpty || jobId.isEmpty) return;
+    await updateEntertainmentJobStatus(uid, jobId, status: 'cancelled', progress: 0);
+  }
+
   Future<void> updateEntertainmentJobStatus(
     String uid,
     String jobId, {
