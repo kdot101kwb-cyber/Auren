@@ -2850,6 +2850,55 @@ exports.requeueEntertainmentCreationJob = onDocumentUpdated(
   },
 );
 
+// AUREN Entertainment v11 — queue worker lifecycle.
+// The worker claims queued jobs, checks whether a real provider is available,
+// and stops at waiting_provider when none is configured. It never fabricates
+// media, progress, or completion.
+exports.processEntertainmentCreationQueue = onDocumentUpdated(
+  'users/{userId}/entertainmentCreationJobs/{jobId}',
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+    if (after.queueStatus !== 'queued' || before.queueStatus === 'queued') return;
+
+    const jobRef = event.data.after.ref;
+    const providerId = typeof after.provider === 'string' && after.provider.trim()
+      ? after.provider.trim()
+      : 'auren_ai';
+
+    await jobRef.set({
+      queueStatus: 'processing',
+      workerStartedAt: FieldValue.serverTimestamp(),
+      attempts: Number.isInteger(after.attempts) ? after.attempts + 1 : 1,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    // The current built-in planning provider is intentionally not a media
+    // generator. Keep the job waiting rather than pretending it generated.
+    if (providerId === 'auren_ai') {
+      await jobRef.set({
+        queueStatus: 'waiting_provider',
+        providerStatus: 'not_connected',
+        providerMessage: 'الخطة جاهزة وتنتظر ربط مزوّد توليد وسائط حقيقي.',
+        workerFinishedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return;
+    }
+
+    // Future real providers will be routed here. Until registered server-side,
+    // fail closed and keep the job waiting for configuration.
+    await jobRef.set({
+      queueStatus: 'waiting_provider',
+      providerStatus: 'unavailable',
+      providerMessage: 'المزوّد المطلوب غير مفعّل في طبقة الخادم.',
+      workerFinishedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  },
+);
+
 // Health endpoint for deployment/monitoring checks.
 exports.entertainmentQueueHealth = require('firebase-functions/v2/https').onRequest(
   { region: 'us-central1' },
