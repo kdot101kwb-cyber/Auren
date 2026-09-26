@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class AurenCreatorEarning {
   final String id, creatorUid, supporterUid, currency, type, status;
@@ -104,6 +105,25 @@ class AurenCreatorStudioRepository {
     final ref=_db.collection('creator_support_requests').doc();
     await ref.set({'creatorUid':u,'supporterUid':supporter,'amountMinor':amountMinor,'currency':cur,'message':m,'status':'pending','createdAt':FieldValue.serverTimestamp()});
     return ref.id;
+  }
+
+  Future<String> requestWithdrawal({
+    required String creatorUid,
+    required int amountMinor,
+    required String currency,
+    required String method,
+    required String destination,
+  }) async {
+    final uid = creatorUid.trim();
+    if (uid.isEmpty || amountMinor <= 0) throw ArgumentError('Invalid withdrawal request.');
+    final callable = FirebaseFunctions.instance.httpsCallable('requestCreatorWithdrawal');
+    final result = await callable.call({
+      'amountMinor': amountMinor,
+      'currency': currency.trim().toUpperCase(),
+      'method': method.trim(),
+      'destination': destination.trim(),
+    });
+    return (result.data as Map)['withdrawalId'].toString();
   }
 
   Stream<List<AurenCreatorEarning>> watchEarnings(String creatorUid) {
