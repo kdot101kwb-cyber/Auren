@@ -15,6 +15,9 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   String? _inviteCode;
   bool _busy = false;
   int _xp = 0;
+  int _wins = 0;
+  int _games = 0;
+  bool _loadedStats = false;
   final _chatController = TextEditingController();
 
   @override void dispose() { _codeController.dispose(); _chatController.dispose(); super.dispose(); }
@@ -96,12 +99,23 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
 
   void _snack(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 
+  Future<void> _loadStats() async {
+    if (_loadedStats) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final stats = await _service.getStats(uid);
+    if (!mounted) return;
+    setState(() { _xp = stats.xp; _wins = stats.wins; _games = stats.games; _loadedStats = true; });
+  }
+
   @override Widget build(BuildContext context) {
+    _loadStats();
     final uid = FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
       appBar: AppBar(title: const Text('AUREN Gaming')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        _hero(context), const SizedBox(height: 16),
+        _hero(context), const SizedBox(height: 12),
+        _statsCard(), const SizedBox(height: 12),
         if (_roomId == null) ...[
           _gameCard(context, Icons.grid_3x3_rounded, 'Tic-Tac-Toe',
             'لعبة سريعة لشخصين — العب مع صديق برمز دعوة.',
@@ -145,6 +159,8 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       ]),
     );
   }
+
+  Widget _statsCard() => Card(child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Gaming Profile', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)), const SizedBox(height: 8), Text('$_xp XP  •  $_games مباريات  •  $_wins انتصارات')])), CircleAvatar(radius: 25, child: Text('${_xp ~/ 100 + 1}'))])));
 
   Widget _challengeCard(BuildContext context) => Card(
     child: Padding(
@@ -322,6 +338,18 @@ class AurenGamingService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+  Future<AurenGamingStats> getStats(String uid) async {
+    final snap = await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').get();
+    final data = snap.data() ?? {};
+    return AurenGamingStats(xp: (data['xp'] as num?)?.toInt() ?? 0, games: (data['games'] as num?)?.toInt() ?? 0, wins: (data['wins'] as num?)?.toInt() ?? 0);
+  }
+
+  Future<void> incrementStats(String uid, {required bool win}) async {
+    await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').set({
+      'xp': FieldValue.increment(win ? 50 : 15), 'games': FieldValue.increment(1), 'wins': FieldValue.increment(win ? 1 : 0), 'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   Future<bool> claimDailyChallenge(String uid) async {
     final now = DateTime.now().toUtc();
     final key = now.year.toString() + '-' + now.month.toString().padLeft(2, '0') + '-' + now.day.toString().padLeft(2, '0');
@@ -333,6 +361,7 @@ class AurenGamingService {
       'xp': 25,
       'completedAt': FieldValue.serverTimestamp(),
     });
+    await incrementStats(uid, win: false);
     return true;
   }
 
@@ -344,3 +373,5 @@ class AurenGamingService {
     for (var i=0;i<6;i++){out.write(chars[n%chars.length]);n=(n~/chars.length)+i*17;} return out.toString();
   }
 }
+
+class AurenGamingStats { final int xp; final int games; final int wins; const AurenGamingStats({required this.xp, required this.games, required this.wins}); }
