@@ -167,6 +167,57 @@ class EntertainmentRepository {
                 'createdAt': FieldValue.serverTimestamp(),
               }));
 
+
+  /// Playback signals are private to the user and power Music/Audio recommendations.
+  Future<void> trackMusicPlayback(
+    String uid,
+    String itemId, {
+    required int seconds,
+    required bool completed,
+    required String contentType,
+  }) async {
+    if (seconds <= 0 && !completed) return;
+    await db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId).set({
+      'itemId': itemId,
+      'contentType': contentType,
+      'lastPlayedAt': FieldValue.serverTimestamp(),
+      'watchSeconds': FieldValue.increment(seconds),
+      'plays': FieldValue.increment(1),
+      'completions': FieldValue.increment(completed ? 1 : 0),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> trackMusicAction(
+    String uid,
+    String itemId, {
+    required String action,
+    required String contentType,
+  }) async {
+    final ref = db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId);
+    await ref.set({
+      'itemId': itemId,
+      'contentType': contentType,
+      'lastActionAt': FieldValue.serverTimestamp(),
+      'likes': FieldValue.increment(action == 'like' ? 1 : action == 'unlike' ? -1 : 0),
+      'saves': FieldValue.increment(action == 'save' ? 1 : action == 'unsave' ? -1 : 0),
+      'skips': FieldValue.increment(action == 'skip' ? 1 : 0),
+    }, SetOptions(merge: true));
+    await ref.collection('actions').add({
+      'action': action,
+      'contentType': contentType,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<Map<String, Map<String, dynamic>>> getMusicSignals(String uid) async {
+    final snap = await db.collection('users').doc(uid).collection('entertainmentSignals').get();
+    return {
+      for (final d in snap.docs)
+        d.id: d.data(),
+    };
+  }
+
+
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>> > watchShortComments(String itemId) =>
       db.collection('entertainment_items').doc(itemId).collection('comments')
           .orderBy('createdAt', descending: true).limit(100).snapshots().map((s) => s.docs);
