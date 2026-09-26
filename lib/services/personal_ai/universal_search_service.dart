@@ -10,5 +10,38 @@ class AurenSearchResult { final String id,title,subtitle; final AurenSearchType 
 class AurenUniversalSearchService {
  final BusinessRepository businesses; final MarketplaceRepository products; final PostRepository posts;
  AurenUniversalSearchService({BusinessRepository? businesses,MarketplaceRepository? products,PostRepository? posts}):businesses=businesses??BusinessRepository(),products=products??MarketplaceRepository(),posts=posts??PostRepository();
- Stream<List<AurenSearchResult>> watch(String query){final q=query.trim().toLowerCase();if(q.isEmpty)return Stream.value(const <AurenSearchResult>[]);return businesses.watchPublic(query:q).asyncMap((bs) async {final ps=await products.watchPublic(query:q).first;final fs=await posts.watchFeed().first;final out=<AurenSearchResult>[...bs.map((b)=>AurenSearchResult(id:b.id,title:b.name,subtitle:'Business • '+b.city+', '+b.country,type:AurenSearchType.business)),...ps.map((p)=>AurenSearchResult(id:p.id,title:p.name,subtitle:'Product • '+p.category,type:AurenSearchType.product)),...fs.where((p)=>('${p.text} '+p.contentType).toLowerCase().contains(q)).map((p)=>AurenSearchResult(id:p.id,title:p.text.isEmpty?'AUREN Post':p.text,subtitle:'Post • '+p.contentType,type:AurenSearchType.post))];return out.take(60).toList();});}
+ Stream<List<AurenSearchResult>> watch(String query) {
+   final q = query.trim().toLowerCase();
+   if (q.isEmpty) return Stream.value(const <AurenSearchResult>[]);
+   final safeQuery = q.length > 80 ? q.substring(0, 80) : q;
+   return businesses.watchPublic(query: safeQuery).asyncMap((bs) async {
+     final results = await Future.wait([
+       products.watchPublic(query: safeQuery).first,
+       posts.watchFeed().first,
+     ]);
+     final ps = results[0] as List<AurenProduct>;
+     final fs = results[1] as List<AurenPost>;
+     final out = <AurenSearchResult>[
+       ...bs.take(20).map((b) => AurenSearchResult(
+         id: b.id,
+         title: b.name,
+         subtitle: 'Business • ${b.city}, ${b.country}',
+         type: AurenSearchType.business,
+       )),
+       ...ps.take(20).map((p) => AurenSearchResult(
+         id: p.id,
+         title: p.name,
+         subtitle: 'Product • ${p.category}',
+         type: AurenSearchType.product,
+       )),
+       ...fs.where((p) => ('${p.text} ${p.contentType}').toLowerCase().contains(safeQuery)).take(20).map((p) => AurenSearchResult(
+         id: p.id,
+         title: p.text.isEmpty ? 'AUREN Post' : p.text,
+         subtitle: 'Post • ${p.contentType}',
+         type: AurenSearchType.post,
+       )),
+     ];
+     return out.take(60).toList();
+   });
+ }
 }
