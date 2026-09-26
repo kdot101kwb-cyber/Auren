@@ -129,6 +129,69 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     ])));
   }
 
+  void _showComments(AurenEntertainmentItem item) {
+    final controller = TextEditingController();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+        child: SizedBox(
+          height: MediaQuery.of(sheetContext).size.height * .65,
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text('التعليقات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              ),
+              Expanded(
+                child: StreamBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
+                  stream: repo.watchShortComments(item.id),
+                  builder: (context, snapshot) {
+                    final comments = snapshot.data ?? const [];
+                    if (comments.isEmpty) return const Center(child: Text('كن أول من يعلّق 👋'));
+                    return ListView.builder(
+                      itemCount: comments.length,
+                      itemBuilder: (_, i) {
+                        final d = comments[i].data();
+                        return ListTile(
+                          leading: const CircleAvatar(child: Icon(Icons.person)),
+                          title: Text(d['uid']?.toString() ?? 'AUREN User'),
+                          subtitle: Text(d['text']?.toString() ?? ''),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              if (uid != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                  child: Row(
+                    children: [
+                      Expanded(child: TextField(
+                        controller: controller,
+                        maxLength: 1000,
+                        decoration: const InputDecoration(hintText: 'اكتب تعليقاً...', border: OutlineInputBorder()),
+                      )),
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: () async {
+                          await repo.addShortComment(uid!, item.id, controller.text);
+                          controller.clear();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    ).whenComplete(controller.dispose);
+  }
+
   void _showAurenActions(AurenEntertainmentItem item) {
     showModalBottomSheet<void>(context: context, backgroundColor: const Color(0xFF17131F), builder: (sheetContext) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
       ListTile(leading: const Icon(Icons.play_circle_outline), title: const Text('كمل التسلية'), onTap: () => Navigator.pop(sheetContext)),
@@ -253,6 +316,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     right: 10, bottom: 26,
                     child: Column(
                       children: [
+                        IconButton(
+                          tooltip: 'التعليقات',
+                          icon: const Icon(Icons.comment_outlined, color: Colors.white, size: 30),
+                          onPressed: () => _showComments(item),
+                        ),
                         if (uid != null)
                           StreamBuilder<bool>(
                             stream: repo.watchLiked(uid!, item.id),
