@@ -14,6 +14,7 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
   final _adaptive = const AurenAdaptiveProfileService();
   AurenAdaptiveProfileResult? _adaptiveResult;
   AurenProfileContext _context = AurenProfileContext.unknown;
+  bool _autoContext = true;
   AurenProfileMode _mode = AurenProfileMode.personal;
   bool _loading = true, _saving = false, _discoverable = true, _showContact = false;
   final _headline = TextEditingController();
@@ -72,7 +73,7 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
     final data = await _service.get(uid, _mode);
     final result = _adaptive.suggest(
       currentMode: _mode,
-      context: _context,
+      context: _autoContext ? AurenProfileContext.unknown : _context,
       profile: data,
       intent: [_headline.text, _bio.text, _skills.text, _interests.text, _goals.text, _services.text].join(' '),
     );
@@ -131,15 +132,23 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
                     const SizedBox(height: 8),
                     const Text('AUREN يفهم السياق ويقترح الوضع المناسب، لكن القرار النهائي لك دائماً.'),
                     const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: AurenProfileContext.values.map((c) => ChoiceChip(
-                        label: Text(c.label),
-                        selected: _context == c,
-                        onSelected: (_) => setState(() { _context = c; _adaptiveResult = null; }),
-                      )).toList(),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Auto context'),
+                      subtitle: const Text('دع AUREN يستنتج السياق من بيانات الملف عند التحليل.'),
+                      value: _autoContext,
+                      onChanged: (v) => setState(() { _autoContext = v; _adaptiveResult = null; }),
                     ),
+                    if (!_autoContext)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: AurenProfileContext.values.where((c) => c != AurenProfileContext.unknown).map((c) => ChoiceChip(
+                          label: Text(c.label),
+                          selected: _context == c,
+                          onSelected: (_) => setState(() { _context = c; _adaptiveResult = null; }),
+                        )).toList(),
+                      ),
                     const SizedBox(height: 10),
                     if (_adaptiveResult == null)
                       OutlinedButton.icon(onPressed: _analyzeAdaptiveMode, icon: const Icon(Icons.psychology_outlined), label: const Text('حلّل السياق الحالي'))
