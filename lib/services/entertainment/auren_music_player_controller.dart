@@ -90,7 +90,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     final max = _player.duration;
     final clamped = max == null
         ? target
-        : Duration(milliseconds: target.inMilliseconds.clamp(0, max.inMilliseconds));
+        : Duration(milliseconds: target.inMilliseconds.clamp(0, max.inMilliseconds).toInt());
     await seek(clamped);
   }
 
