@@ -24,6 +24,21 @@ service cloud.firestore {
     allow update: if false;
   }
 
+  match /auren_action_events/{eventId} {
+    allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+    allow create: if request.auth != null
+      && request.resource.data.uid == request.auth.uid
+      && request.resource.data.targetId is string
+      && request.resource.data.targetId.size() > 0
+      && request.resource.data.targetId.size() <= 128
+      && request.resource.data.targetKind in ['person','opportunity','business','product','content']
+      && request.resource.data.action in ['open','contact','requestQuote','apply','addToCart','follow','save','watch']
+      && request.resource.data.intent is string
+      && request.resource.data.intent.size() <= 1000
+      && request.resource.data.createdAt is timestamp;
+    allow update, delete: if false;
+  }
+
   match /reports/{reportId} {
     allow create: if request.auth != null
       && request.resource.data.reporterUid == request.auth.uid
