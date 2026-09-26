@@ -14,9 +14,9 @@ class AurenGlobalSearchRepository {
     final results = await Future.wait([
       _safe(() => _searchPeople(q, blockedIds)),
       _safe(() => _searchPosts(q, blockedIds)),
-      _safe(() => _searchCollection(q, 'businesses', AurenSearchType.businesses, const ['name', 'title'], const ['category', 'description', 'location'])),
-      _safe(() => _searchCollection(q, 'places', AurenSearchType.places, const ['name', 'title'], const ['city', 'country', 'description'])),
-      _safe(() => _searchCollection(q, 'opportunities', AurenSearchType.opportunities, const ['title', 'name'], const ['company', 'category', 'location'])),
+      _safe(() => _searchCollection(q, 'businesses', AurenSearchType.businesses, const ['name', 'title'], const ['category', 'description', 'location'], blockedIds)),
+      _safe(() => _searchCollection(q, 'places', AurenSearchType.places, const ['name', 'title'], const ['city', 'country', 'description'], blockedIds)),
+      _safe(() => _searchCollection(q, 'opportunities', AurenSearchType.opportunities, const ['title', 'name'], const ['company', 'category', 'location'], blockedIds)),
     ]);
     return results.expand<AurenSearchResult>((x) => x).toList();
   }
@@ -30,8 +30,8 @@ class AurenGlobalSearchRepository {
   }
 
   Future<List<AurenSearchResult>> _searchPeople(String q, Set<String> blockedIds) async {
-    final snap = await _db.collection('users').orderBy('displayNameLower').startAt([q]).endAt(['$q\uf8ff']).limit(8).get();
-    return snap.docs.where((d) => !blockedIds.contains(d.id)).map((d) {
+    final snap = await _db.collection('users').orderBy('displayNameLower').startAt([q]).endAt(['$q\uf8ff']).limit(20).get();
+    return snap.docs.where((d) => !blockedIds.contains(d.id)).take(8).map((d) {
       final p = AurenUserProfile.fromMap(d.id, d.data());
       return AurenSearchResult(id: d.id, type: AurenSearchType.people, title: p.displayName, subtitle: 'People', imageUrl: p.photoUrl);
     }).toList();
@@ -39,15 +39,19 @@ class AurenGlobalSearchRepository {
 
   Future<List<AurenSearchResult>> _searchPosts(String q, Set<String> blockedIds) async {
     final snap = await _db.collection('posts').orderBy('searchText').startAt([q]).endAt(['$q\uf8ff']).limit(8).get();
-    return snap.docs.where((d) => !blockedIds.contains(d.data()['authorId']?.toString() ?? d.data()['uid']?.toString() ?? '')).map((d) {
+    return snap.docs.where((d) => !blockedIds.contains(d.data()['authorId']?.toString() ?? d.data()['uid']?.toString() ?? '')).take(8).map((d) {
       final data = d.data();
       return AurenSearchResult(id: d.id, type: AurenSearchType.posts, title: (data['text'] as String? ?? '').trim(), subtitle: 'Pulse');
     }).where((r) => r.title.isNotEmpty).toList();
   }
 
-  Future<List<AurenSearchResult>> _searchCollection(String q, String collection, AurenSearchType type, List<String> titleFields, List<String> subtitleFields) async {
+  Future<List<AurenSearchResult>> _searchCollection(String q, String collection, AurenSearchType type, List<String> titleFields, List<String> subtitleFields, Set<String> blockedIds) async {
     final snap = await _db.collection(collection).where('visibility', isEqualTo: 'public').orderBy('searchText').startAt([q]).endAt(['$q\uf8ff']).limit(8).get();
-    return snap.docs.map((d) {
+    return snap.docs.where((d) {
+      final data = d.data();
+      final ownerId = data['ownerId']?.toString() ?? data['creatorId']?.toString() ?? data['authorId']?.toString() ?? data['uid']?.toString() ?? '';
+      return ownerId.isEmpty || !blockedIds.contains(ownerId);
+    }).take(8).map((d) {
       final data = d.data();
       String value(List<String> fields, String fallback) {
         for (final field in fields) {
