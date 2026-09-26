@@ -107,6 +107,17 @@ class AurenCreatorStudioRepository {
     return ref.id;
   }
 
+  Future<void> settleEarning({
+    required String earningId,
+  }) async {
+    final id = earningId.trim();
+    if (id.isEmpty || id.length > 128) {
+      throw ArgumentError('Invalid earning id.');
+    }
+    final callable = FirebaseFunctions.instance.httpsCallable('settleCreatorEarning');
+    await callable.call({'earningId': id});
+  }
+
   Future<String> requestWithdrawal({
     required String creatorUid,
     required int amountMinor,
