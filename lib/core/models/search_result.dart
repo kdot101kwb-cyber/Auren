@@ -1,4 +1,4 @@
-enum AurenSearchType { people, posts, businesses, places, opportunities, ai }
+enum AurenSearchType { people, posts, businesses, products, entertainment, places, opportunities, ai }
 
 class AurenSearchResult {
   final String id;
