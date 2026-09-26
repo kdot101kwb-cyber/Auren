@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class AurenCreatorEarning {
   final String id, creatorUid, supporterUid, currency, type, status;
   final int amountMinor;
@@ -7,10 +9,9 @@ class AurenCreatorEarning {
     id:id, creatorUid:(m['creatorUid']??'').toString(), supporterUid:(m['supporterUid']??'').toString(),
     currency:(m['currency']??'').toString(), type:(m['type']??'').toString(), status:(m['status']??'pending_settlement').toString(),
     amountMinor:(m['amountMinor'] as num?)?.toInt()??0,
-    createdAt: m['createdAt'] is DateTime ? m['createdAt'] : DateTime.now(),
+    createdAt: m['createdAt'] is Timestamp ? (m['createdAt'] as Timestamp).toDate() : m['createdAt'] is DateTime ? m['createdAt'] as DateTime : DateTime.now(),
   );
 }
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AurenCreatorStats {
   final int posts;
