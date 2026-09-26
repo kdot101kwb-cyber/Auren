@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/match_everything_service.dart';
 import '../../../services/social/match_action_flow.dart';
+import '../../../services/social/match_action_flow_service.dart';
 import '../../../services/social/follow_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/marketplace/marketplace_commerce_repository.dart';
@@ -40,6 +41,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
   bool _saved = false;
   bool _loadingState = true;
   late final AurenMatchActionFlow _flow;
+  final _flowRepo = AurenMatchActionFlowRepository();
   int _flowStep = 0;
 
   List<AurenMatchFlowStep> get _flowSteps => _flow.stepsFor(widget.item, widget.intent);
@@ -58,6 +60,8 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
       return;
     }
     try {
+      final savedFlow = await _flowRepo.get(uid, widget.item);
+      if (savedFlow != null && mounted) setState(() => _flowStep = savedFlow.step);
       if (widget.item.kind == AurenMatchKind.opportunity) {
         _interested = await _opportunities.watchInterested(uid, widget.item.id).first;
         _applied = await _opportunities.hasApplied(uid, widget.item.id);
@@ -177,6 +181,12 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
     notes.dispose();
     if (confirmed != true) return false;
 
+    final uid = _auth.currentUserId;
+    if (uid == null) throw StateError('سجّل الدخول أولاً.');
+    final steps = _flowSteps;
+    await _flowRepo.startOrAdvance(uid: uid, item: widget.item, intent: widget.intent, step: 1, totalSteps: steps.length);
+    if (mounted) setState(() => _flowStep = 1);
+
     final prompt = [
       'مرحباً، وصلت إليكم عبر AUREN.',
       'أريد طلب عرض سعر بخصوص: ${widget.intent}.',
@@ -185,8 +195,9 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
       if (n.isNotEmpty) 'ملاحظات: $n.',
       'أرسلوا السعر، العملة، الحد الأدنى للطلب، مدة التجهيز، وخيارات الشحن إن وجدت.',
     ].join(' ');
-    if (mounted) setState(() => _flowStep = 1);
     await _contact(prompt: prompt);
+    if (mounted) setState(() => _flowStep = 2);
+    await _flowRepo.startOrAdvance(uid: uid, item: widget.item, intent: widget.intent, step: 2, totalSteps: steps.length);
     return true;
   }
 
@@ -267,8 +278,10 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           break;
       }
       if (didExecute) {
-        if (mounted && _flowStep < _flowSteps.length - 1) {
-          setState(() => _flowStep += 1);
+        if (widget.item.action != AurenMatchAction.requestQuote) {
+          final next = (_flowStep + 1).clamp(0, _flowSteps.length - 1);
+          if (mounted) setState(() => _flowStep = next);
+          await _flowRepo.startOrAdvance(uid: uid, item: widget.item, intent: widget.intent, step: next, totalSteps: _flowSteps.length);
         }
         try {
           await AurenMatchEverythingService().recordAction(uid: uid, item: widget.item, sourceIntent: widget.intent);
