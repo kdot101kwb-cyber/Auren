@@ -2344,16 +2344,24 @@ exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall
       throw new Error('Invalid withdrawal request.');
     }
     const existing=await db.collection('creator_withdrawals')
-      .where('creatorUid','==',uid).where('currency','==',currency).where('status','in',['pending','approved']).limit(100).get();
+      .where('creatorUid','==',uid).where('currency','==',currency)
+      .where('status','in',['pending','approved','paid']).limit(100).get();
     let reserved=0;
-    for(const doc of existing.docs) reserved+=Number(doc.data()?.amountMinor||0);
+    let alreadyPaid=0;
+    for(const doc of existing.docs){
+      const amount=Number(doc.data()?.amountMinor||0);
+      if(doc.data()?.status==='paid') alreadyPaid+=amount;
+      else reserved+=amount;
+    }
     const earnings=await db.collection('creator_earnings').where('creatorUid','==',uid).limit(100).get();
     let settled=0;
     for(const doc of earnings.docs){
       const e=doc.data();
       if(e.currency===currency && e.status==='settled') settled+=Number(e.amountMinor||0);
     }
-    const available=Math.max(0,settled-reserved);
+    // Settled earnings are the source balance. Pending/approved withdrawals
+    // reserve funds, while paid withdrawals permanently consume them.
+    const available=Math.max(0,settled-reserved-alreadyPaid);
     if(amountMinor>available) throw new Error('Insufficient available settled earnings.');
     const ref=db.collection('creator_withdrawals').doc();
     await ref.set({
