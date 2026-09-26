@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/message.dart';
 import '../../../services/messaging/message_repository.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+import '../../../services/social/match_everything_service.dart';
+import '../../../services/social/match_action_flow_service.dart';
 
 class AurenActionCenterScreen extends StatelessWidget {
   const AurenActionCenterScreen({super.key});
@@ -198,6 +201,7 @@ class _FlowCardState extends State<_FlowCard> {
     final total = (widget.data['totalSteps'] as num?)?.toInt() ?? 1;
     final intent = (widget.data['intent'] ?? '').toString();
     final progress = ((step + 1) / total).clamp(0.0, 1.0);
+    final next = _nextStep(action, status, kind);
 
     final statusLabel = switch (status) {
       'waiting_response' => 'في انتظار الرد',
@@ -246,15 +250,53 @@ class _FlowCardState extends State<_FlowCard> {
             ],
             if (status == 'replied') ...[
               const SizedBox(height: 8),
-              const Text(
-                'وصل رد جديد. راجع المحادثة وحدد الخطوة التالية بنفسك.',
-                style: TextStyle(fontSize: 12),
-              ),
+              Text(next, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 10),
+              Row(children: [
+                if ((widget.data['conversationId'] ?? '').toString().isNotEmpty)
+                  Expanded(child: OutlinedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: widget.data['conversationId'].toString()))),
+                    icon: const Icon(Icons.chat_outlined), label: const Text('فتح المحادثة'),
+                  )),
+                if ((widget.data['conversationId'] ?? '').toString().isNotEmpty) const SizedBox(width: 8),
+                Expanded(child: FilledButton.icon(
+                  onPressed: () => _completeFlow(context),
+                  icon: const Icon(Icons.check), label: const Text('إكمال المسار'),
+                )),
+              ]),
             ],
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _completeFlow(BuildContext context) async {
+    final item = AurenMatchItem(
+      id: (widget.data['targetId'] ?? '').toString(),
+      title: '', subtitle: '', kind: _kindFrom((widget.data['targetKind'] ?? '').toString()),
+      score: 0, reasons: const [], data: widget.data,
+      action: _actionFrom((widget.data['action'] ?? '').toString()), actionLabel: '', actionReason: '',
+    );
+    try {
+      await AurenMatchActionFlowRepository().updateStatus(uid: widget.uid, item: item, status: 'completed');
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إكمال المسار.')));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر إكمال المسار الآن.')));
+    }
+  }
+
+  static AurenMatchKind _kindFrom(String value) => AurenMatchKind.values.firstWhere((e) => e.name == value, orElse: () => AurenMatchKind.person);
+  static AurenMatchAction _actionFrom(String value) => AurenMatchAction.values.firstWhere((e) => e.name == value, orElse: () => AurenMatchAction.open);
+
+  static String _nextStep(String action, String status, String kind) {
+    if (status != 'replied') return '';
+    switch (action) {
+      case 'requestQuote': return 'الخطوة التالية: راجع السعر والعملة والحد الأدنى ووقت التجهيز والشحن، ثم قرر هل تكمل الطلب.';
+      case 'apply': return 'الخطوة التالية: راجع الرد أو حالة الطلب، ثم أكمل أي معلومات ناقصة قبل المتابعة.';
+      case 'contact': return 'الخطوة التالية: راجع الرد وحدد الإجراء الذي تريده.';
+      default: return 'الخطوة التالية: راجع الرد وحدد الإجراء الذي تريده.';
+    }
   }
 
   static IconData _icon(String kind) {
