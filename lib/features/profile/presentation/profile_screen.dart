@@ -4,6 +4,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/users/user_repository.dart';
 import '../../../services/social/follow_repository.dart';
 import 'social_graph_screen.dart';
+import 'ai_profile_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 
 class AurenProfileScreen extends StatelessWidget {
@@ -36,7 +37,7 @@ class AurenProfileScreen extends StatelessWidget {
               ]),
               const SizedBox(height: 18),
               Card(child: ListTile(leading: const Icon(Icons.edit), title: const Text('Edit profile'), onTap: () => showDialog(context: context, builder: (_) => _EditNameDialog(uid: uid, current: p.displayName)))),
-              Card(child: ListTile(leading: const Icon(Icons.auto_awesome), title: const Text('AI Profile'), subtitle: const Text('Personal • Creator • Professional • Business'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalAiScreen())))),
+              Card(child: ListTile(leading: const Icon(Icons.auto_awesome), title: const Text('AI Profile'), subtitle: const Text('Personal • Creator • Professional • Business'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAiProfileScreen())))),
               Card(child: ListTile(leading: const Icon(Icons.people_outline), title: const Text('Social Graph'), subtitle: const Text('Followers, following and communities'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSocialGraphScreen(uid: uid))))),
               Card(child: ListTile(leading: const Icon(Icons.share_outlined), title: const Text('Share my AUREN profile'), subtitle: const Text('انسخ رابط ملفك وشاركه مع الآخرين'), onTap: () async {
                 final link = 'https://auren.app/u/$uid';
