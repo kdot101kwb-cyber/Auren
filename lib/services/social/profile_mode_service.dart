@@ -76,6 +76,22 @@ class AurenProfileModeService {
   CollectionReference<Map<String, dynamic>> _modes(String uid) =>
       _db.collection('users').doc(uid).collection('profile_modes');
 
+  DocumentReference<Map<String, dynamic>> _settings(String uid) =>
+      _db.collection('users').doc(uid).collection('profile_settings').doc('current');
+
+  Stream<AurenProfileMode> watchActiveMode(String uid) => _settings(uid).snapshots().map((doc) =>
+      AurenProfileModeX.fromId(doc.data()?['activeMode'] as String?));
+
+  Future<AurenProfileMode> getActiveMode(String uid) async {
+    final doc = await _settings(uid).get();
+    return AurenProfileModeX.fromId(doc.data()?['activeMode'] as String?);
+  }
+
+  Future<void> setActiveMode(String uid, AurenProfileMode mode) => _settings(uid).set({
+    'activeMode': mode.id,
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
+
   Stream<AurenProfileModeData> watch(String uid, AurenProfileMode mode) =>
       _modes(uid).doc(mode.id).snapshots().map((doc) =>
           doc.exists ? AurenProfileModeData.fromDoc(doc) : AurenProfileModeData.empty(mode));
