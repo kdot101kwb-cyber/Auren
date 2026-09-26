@@ -2650,7 +2650,7 @@ exports.playGamingMove = onCall(
           xp:FieldValue.increment(xp),seasonXp:FieldValue.increment(xp),
           seasonId:new Date().getUTCFullYear()+'-S'+(Math.floor(new Date().getUTCMonth()/3)+1),
           games:FieldValue.increment(1),wins:FieldValue.increment(win?1:0),
-          displayName:'لاعب AUREN',updatedAt:FieldValue.serverTimestamp()
+          lastGameAt:Date.now(),displayName:'لاعب AUREN',updatedAt:FieldValue.serverTimestamp()
         },{merge:true});
       }
       await batch.commit();
