@@ -1,0 +1,1 @@
+import 'package:flutter_test/flutter_test.dart';import 'package:auren/services/creator/creator_growth_repository.dart';void main(){test('empty creator average is zero',(){const s=AurenCreatorGrowthSummary(posts:0,likes:5,mediaPosts:0,scheduled:2);expect(s.avgLikes,0);});}
