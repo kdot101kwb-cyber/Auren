@@ -76,13 +76,18 @@ class AurenMatchEverythingService {
     final actionPlan = AurenIntentActionPlan.fromIntent(intent);
     final signals = AurenIntentSignals.fromIntent(intent);
 
-    final results = <AurenMatchItem>[];
-    results.addAll(await _people(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals));
-    results.addAll(await _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
-    results.addAll(await _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
-    results.addAll(await _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
-    results.addAll(await _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan));
-
+    // These five reads are independent after the profile/mode context is resolved.
+    // Run them concurrently to keep Match Everything latency bounded.
+    final groups = await Future.wait<List<AurenMatchItem>>([
+      _people(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
+      _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan),
+      _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan),
+      _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan),
+      _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan),
+    ]);
+    final results = <AurenMatchItem>[
+      for (final group in groups) ...group,
+    ];
     results.sort((a, b) {
       final score = b.score.compareTo(a.score);
       if (score != 0) return score;
@@ -447,13 +452,18 @@ class AurenIntentActionPlan {
 
 
 extension AurenMatchActionExecution on AurenMatchEverythingService {
-  Future<void> recordAction({required String uid, required AurenMatchItem item}) async {
+  Future<void> recordAction({
+    required String uid,
+    required AurenMatchItem item,
+    String? sourceIntent,
+  }) async {
     await _db.collection('auren_action_events').add({
       'uid': uid,
       'targetId': item.id,
       'targetKind': item.kind.name,
       'action': item.action.name,
       'intent': item.actionReason,
+      'sourceIntent': (sourceIntent ?? '').trim().isEmpty ? null : sourceIntent!.trim(),
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
