@@ -275,10 +275,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     ConnectionState connectionState,
     Object? error,
   ) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final items = snapshot.data ?? const <AurenEntertainmentItem>[];
+    if (connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (error != null) {
+      return Center(child: Text('Could not load Shorts: $error'));
+    }
           if (items.isEmpty) {
             return const Center(child: Text('لا توجد Shorts متاحة حالياً.'));
           }
