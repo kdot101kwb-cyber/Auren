@@ -2335,13 +2335,13 @@ exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall
   {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
   async (request) => {
     const uid=request.auth?.uid;
-    if(!uid) throw new Error('Unauthenticated');
+    if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
     const amountMinor=Number(request.data?.amountMinor);
     const currency=typeof request.data?.currency==='string'?request.data.currency.trim().toUpperCase():'';
     const method=typeof request.data?.method==='string'?request.data.method.trim():'';
     const destination=typeof request.data?.destination==='string'?request.data.destination.trim():'';
     if(!Number.isSafeInteger(amountMinor)||amountMinor<=0||amountMinor>100000000||!/^[A-Z]{3}$/.test(currency)||!['bank','mobile_money','manual'].includes(method)||!destination||destination.length>300) {
-      throw new Error('Invalid withdrawal request.');
+      throw new HttpsError('invalid-argument','Invalid withdrawal request.');
     }
     const existing=await db.collection('creator_withdrawals')
       .where('creatorUid','==',uid).where('currency','==',currency)
@@ -2362,7 +2362,7 @@ exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall
     // Settled earnings are the source balance. Pending/approved withdrawals
     // reserve funds, while paid withdrawals permanently consume them.
     const available=Math.max(0,settled-reserved-alreadyPaid);
-    if(amountMinor>available) throw new Error('Insufficient available settled earnings.');
+    if(amountMinor>available) throw new HttpsError('failed-precondition','Insufficient available settled earnings.');
     const ref=db.collection('creator_withdrawals').doc();
     await ref.set({
       creatorUid:uid,amountMinor,currency,method,destination,status:'pending',
@@ -2376,15 +2376,15 @@ exports.acceptCreatorSupport = require('firebase-functions/v2/https').onCall(
   {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
   async (request) => {
     const uid=request.auth?.uid;
-    if(!uid) throw new Error('Unauthenticated');
+    if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
     const requestId=typeof request.data?.requestId==='string'?request.data.requestId.trim():'';
-    if(!requestId||requestId.length>128) throw new Error('Invalid support request.');
+    if(!requestId||requestId.length>128) throw new HttpsError('invalid-argument','Invalid support request.');
     const ref=db.collection('creator_support_requests').doc(requestId);
     const snap=await ref.get();
-    if(!snap.exists) throw new Error('Support request not found.');
+    if(!snap.exists) throw new HttpsError('not-found','Support request not found.');
     const data=snap.data()||{};
-    if(data.creatorUid!==uid) throw new Error('Only the creator can accept support.');
-    if(data.status!=='pending') throw new Error('Support request is no longer pending.');
+    if(data.creatorUid!==uid) throw new HttpsError('permission-denied','Only the creator can accept support.');
+    if(data.status!=='pending') throw new HttpsError('failed-precondition','Support request is no longer pending.');
     const amountMinor=Number(data.amountMinor);
     const currency=typeof data.currency==='string'?data.currency:'';
     const earningsRef=db.collection('creator_earnings').doc();
