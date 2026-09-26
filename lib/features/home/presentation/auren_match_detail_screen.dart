@@ -140,6 +140,9 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           }
           break;
       }
+      try {
+        await AurenMatchEverythingService().recordAction(uid: uid, item: widget.item);
+      } catch (_) {}
     } catch (e) {
       if (mounted) _toast('تعذر تنفيذ الإجراء: $e');
     } finally {
