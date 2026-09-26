@@ -2248,6 +2248,33 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
   },
 );
 
+exports.setCreatorWithdrawalStatus = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid || request.auth.token?.admin !== true) throw new Error('Admin access required.');
+    const withdrawalId=typeof request.data?.withdrawalId==='string'?request.data.withdrawalId.trim():'';
+    const nextStatus=typeof request.data?.status==='string'?request.data.status.trim():'';
+    const note=typeof request.data?.note==='string'?request.data.note.trim():'';
+    if(!withdrawalId||withdrawalId.length>128||!['approved','paid','failed'].includes(nextStatus)||note.length>500) throw new Error('Invalid settlement update.');
+    const ref=db.collection('creator_withdrawals').doc(withdrawalId);
+    const snap=await ref.get();
+    if(!snap.exists) throw new Error('Withdrawal not found.');
+    const data=snap.data()||{};
+    const current=data.status;
+    const transitions={pending:['approved','failed'],approved:['paid','failed'],paid:[],failed:[]};
+    if(!transitions[current]?.includes(nextStatus)) throw new Error('Invalid withdrawal status transition.');
+    await ref.update({
+      status:nextStatus,
+      note,
+      reviewedBy:uid,
+      reviewedAt:FieldValue.serverTimestamp(),
+      ...(nextStatus==='paid'?{paidAt:FieldValue.serverTimestamp()}:{}),
+    });
+    return {status:nextStatus,withdrawalId};
+  },
+);
+
 exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall(
   {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
   async (request) => {
