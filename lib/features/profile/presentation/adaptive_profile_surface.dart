@@ -124,3 +124,77 @@ class AurenAdaptiveProfileSurface extends StatelessWidget {
     );
   }
 }
+
+
+/// Context-aware actions that change the visible next-step controls without
+/// changing the user's primary Profile Mode.
+class AurenAdaptiveActionRail extends StatelessWidget {
+  final String uid;
+  final AurenProfileContext context;
+  final String? intent;
+  final ValueChanged<String> onPrompt;
+
+  const AurenAdaptiveActionRail({
+    super.key,
+    required this.uid,
+    required this.context,
+    required this.onPrompt,
+    this.intent,
+  });
+
+  List<String> _actions(AurenProfileMode mode) {
+    switch (mode) {
+      case AurenProfileMode.creator:
+        return const ['اصنع فكرة محتوى', 'اكتشف جمهورك', 'استكشف محتوى مشابه'];
+      case AurenProfileMode.professional:
+        return const ['ابحث عن فرصة', 'طوّر مهارة', 'حسّن ملفي المهني'];
+      case AurenProfileMode.business:
+        return const ['ابحث عن عملاء', 'اكتشف موردين', 'نمِّ مشروعي'];
+      case AurenProfileMode.personal:
+        return const ['اكتشف أشخاصًا', 'اكتشف شيئًا جديدًا', 'ابدأ محادثة'];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final modes = AurenProfileModeService();
+    final adaptive = const AurenAdaptiveProfileService();
+
+    return FutureBuilder<AurenProfileMode>(
+      future: modes.getActiveMode(uid),
+      builder: (context, modeSnapshot) {
+        if (!modeSnapshot.hasData) return const SizedBox.shrink();
+        final currentMode = modeSnapshot.data!;
+
+        return FutureBuilder<AurenProfileModeData>(
+          future: modes.get(uid, currentMode),
+          builder: (context, profileSnapshot) {
+            if (!profileSnapshot.hasData) return const SizedBox.shrink();
+            final result = adaptive.suggest(
+              currentMode: currentMode,
+              context: this.context,
+              profile: profileSnapshot.data!,
+              intent: intent,
+            );
+            final actions = _actions(result.mode);
+
+            return SizedBox(
+              height: 44,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                itemCount: actions.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, index) => ActionChip(
+                  avatar: const Icon(Icons.auto_awesome, size: 16),
+                  label: Text(actions[index]),
+                  onPressed: () => onPrompt(actions[index]),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
