@@ -2343,32 +2343,51 @@ exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall
     if(!Number.isSafeInteger(amountMinor)||amountMinor<=0||amountMinor>100000000||!/^[A-Z]{3}$/.test(currency)||!['bank','mobile_money','manual'].includes(method)||!destination||destination.length>300) {
       throw new HttpsError('invalid-argument','Invalid withdrawal request.');
     }
-    const existing=await db.collection('creator_withdrawals')
-      .where('creatorUid','==',uid).where('currency','==',currency)
-      .where('status','in',['pending','approved','paid']).limit(100).get();
-    let reserved=0;
-    let alreadyPaid=0;
-    for(const doc of existing.docs){
-      const amount=Number(doc.data()?.amountMinor||0);
-      if(doc.data()?.status==='paid') alreadyPaid+=amount;
-      else reserved+=amount;
-    }
-    const earnings=await db.collection('creator_earnings').where('creatorUid','==',uid).limit(100).get();
-    let settled=0;
-    for(const doc of earnings.docs){
-      const e=doc.data();
-      if(e.currency===currency && e.status==='settled') settled+=Number(e.amountMinor||0);
-    }
-    // Settled earnings are the source balance. Pending/approved withdrawals
-    // reserve funds, while paid withdrawals permanently consume them.
-    const available=Math.max(0,settled-reserved-alreadyPaid);
-    if(amountMinor>available) throw new HttpsError('failed-precondition','Insufficient available settled earnings.');
-    const ref=db.collection('creator_withdrawals').doc();
-    await ref.set({
-      creatorUid:uid,amountMinor,currency,method,destination,status:'pending',
-      createdAt:FieldValue.serverTimestamp()
+
+    // One lock document serializes withdrawal reservations for each creator/currency.
+    // Firestore transactions retry when concurrent requests contend on this document.
+    const lockId=uid+'_'+currency;
+    const lockRef=db.collection('creator_withdrawal_locks').doc(lockId);
+    const withdrawalRef=db.collection('creator_withdrawals').doc();
+
+    let available=0;
+    await db.runTransaction(async(tx)=>{
+      await tx.get(lockRef);
+
+      const existing=await tx.get(db.collection('creator_withdrawals')
+        .where('creatorUid','==',uid).where('currency','==',currency)
+        .where('status','in',['pending','approved','paid']).limit(1000));
+      let reserved=0;
+      let alreadyPaid=0;
+      for(const doc of existing.docs){
+        const amount=Number(doc.data()?.amountMinor||0);
+        if(doc.data()?.status==='paid') alreadyPaid+=amount;
+        else reserved+=amount;
+      }
+
+      const earnings=await tx.get(db.collection('creator_earnings')
+        .where('creatorUid','==',uid).where('currency','==',currency)
+        .where('status','==','settled').limit(1000));
+      let settled=0;
+      for(const doc of earnings.docs) settled+=Number(doc.data()?.amountMinor||0);
+
+      available=Math.max(0,settled-reserved-alreadyPaid);
+      if(amountMinor>available) {
+        throw new HttpsError('failed-precondition','Insufficient available settled earnings.');
+      }
+
+      tx.set(withdrawalRef,{
+        creatorUid:uid,amountMinor,currency,method,destination,status:'pending',
+        createdAt:FieldValue.serverTimestamp()
+      });
+      tx.set(lockRef,{
+        creatorUid:uid,currency,
+        lastWithdrawalId:withdrawalRef.id,
+        updatedAt:FieldValue.serverTimestamp()
+      },{merge:true});
     });
-    return {status:'pending',withdrawalId:ref.id};
+
+    return {status:'pending',withdrawalId:withdrawalRef.id,availableAfter:available-amountMinor};
   },
 );
 
