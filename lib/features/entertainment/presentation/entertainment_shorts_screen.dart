@@ -1,6 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter/services.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+import '../../search/presentation/global_search_screen.dart';
+import '../../talent/presentation/talent_screen.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 
@@ -110,57 +114,28 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     );
   }
 
+  void _openAi(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'حلّل لي هذا الـShort: '+item.title+'. '+item.description)));
+
+  void _exploreLike(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGlobalSearchScreen()));
+
+  void _matchMe(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
+
+  Future<void> _shareItem(AurenEntertainmentItem item) async {
+    if (uid != null) await repo.trackShortAction(uid!, item.id, action: 'share', mood: mood);
+    if (!mounted) return;
+    await showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (sheet) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      ListTile(leading: const Icon(Icons.link), title: const Text('نسخ رابط المحتوى'), onTap: () async { await Clipboard.setData(ClipboardData(text: item.mediaUrl)); if (sheet.mounted) Navigator.pop(sheet); }),
+      ListTile(leading: const Icon(Icons.send_outlined), title: const Text('مشاركة داخل AUREN'), onTap: () { Navigator.pop(sheet); Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد مشاركة هذا المحتوى داخل AUREN: '+item.title+'\n'+item.mediaUrl))); }),
+    ])));
+  }
+
   void _showAurenActions(AurenEntertainmentItem item) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF17131F),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.play_circle_outline),
-              title: const Text('كمل التسلية'),
-              subtitle: const Text('أقفل القائمة وخليك في الـShorts'),
-              onTap: () => Navigator.pop(sheetContext),
-            ),
-            ListTile(
-              leading: const Icon(Icons.auto_awesome),
-              title: const Text('اسأل AUREN AI'),
-              subtitle: Text('عن "${item.title}"'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('AUREN AI جاهز — ربط المحادثة العامة يأتي من هنا.')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.explore_outlined),
-              title: const Text('استكشف مثل هذا'),
-              subtitle: const Text('محتوى وأشخاص ومواضيع مرتبطة'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('AUREN سيبني اكتشافاً مرتبطاً بهذا المحتوى.')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.bolt_outlined),
-              title: const Text('Match Me'),
-              subtitle: const Text('اختياري — حوّل المحتوى إلى اهتمام أو فرصة'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  const SnackBar(content: Text('Match Me اختياري ولن يزعج وضع التسلية.')),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+    showModalBottomSheet<void>(context: context, backgroundColor: const Color(0xFF17131F), builder: (sheetContext) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      ListTile(leading: const Icon(Icons.play_circle_outline), title: const Text('كمل التسلية'), onTap: () => Navigator.pop(sheetContext)),
+      ListTile(leading: const Icon(Icons.auto_awesome), title: const Text('اسأل AUREN AI'), subtitle: Text('عن "'+item.title+'"'), onTap: () { Navigator.pop(sheetContext); _openAi(item); }),
+      ListTile(leading: const Icon(Icons.explore_outlined), title: const Text('استكشف مثل هذا'), subtitle: const Text('محتوى وأشخاص ومواضيع مرتبطة'), onTap: () { Navigator.pop(sheetContext); _exploreLike(item); }),
+      ListTile(leading: const Icon(Icons.bolt_outlined), title: const Text('Match Me'), subtitle: const Text('اختياري — حوّل المحتوى إلى اهتمام أو فرصة'), onTap: () { Navigator.pop(sheetContext); _matchMe(item); }),
+    ])));
   }
 
   @override
@@ -324,9 +299,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                           ),
                         IconButton(
                           icon: const Icon(Icons.share, color: Colors.white, size: 30),
-                          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('المشاركة العامة ستتصل بنظام AUREN Share.')),
-                          ),
+                          onPressed: () => _shareItem(item),
                         ),
                       ],
                     ),
