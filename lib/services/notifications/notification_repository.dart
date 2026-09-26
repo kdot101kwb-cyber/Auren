@@ -44,11 +44,27 @@ class AurenNotification {
 
 class NotificationRepository {
   final FirebaseFirestore _db;
+
+  String _uid(String uid) {
+    final value = uid.trim();
+    if (value.isEmpty || value.length > 128) {
+      throw ArgumentError('Invalid uid.');
+    }
+    return value;
+  }
+
+  String _id(String id) {
+    final value = id.trim();
+    if (value.isEmpty || value.length > 128) {
+      throw ArgumentError('Invalid notification id.');
+    }
+    return value;
+  }
   NotificationRepository({FirebaseFirestore? firestore})
       : _db = firestore ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> _items(String uid) =>
-      _db.collection('users').doc(uid).collection('notifications');
+      _db.collection('users').doc(_uid(uid)).collection('notifications');
 
   Stream<List<AurenNotification>> watch(String uid) => _items(uid)
       .orderBy('createdAt', descending: true)
@@ -62,7 +78,7 @@ class NotificationRepository {
       .map((s) => s.size);
 
   Future<void> markRead(String uid, String id) =>
-      _items(uid).doc(id).update({'read': true});
+      _items(uid).doc(_id(id)).update({'read': true});
 
   Future<void> markAllRead(String uid) async {
     final snap = await _items(uid).where('read', isEqualTo: false).get();
