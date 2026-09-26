@@ -116,7 +116,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   void _openAi(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'حلّل لي هذا الـShort: '+item.title+'. '+item.description)));
 
-  void _exploreLike(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGlobalSearchScreen()));
+  void _exploreLike(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenGlobalSearchScreen(initialQuery: item.title)));
 
   void _matchMe(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
 
