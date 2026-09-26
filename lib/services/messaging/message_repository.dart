@@ -45,6 +45,23 @@ class FirestoreMessageRepository implements MessageRepository {
     }).toList().reversed.toList();
   }
 
+  Future<AurenMessage?> getById(
+    String conversationId,
+    String messageId,
+  ) async {
+    final snapshot = await _messages(conversationId).doc(messageId).get();
+    if (!snapshot.exists || snapshot.data() == null) return null;
+    final data = snapshot.data()!;
+    return AurenMessage(
+      id: snapshot.id,
+      conversationId: conversationId,
+      senderId: data['senderId'] as String? ?? '',
+      text: data['text'] as String? ?? '',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isAi: data['isAi'] as bool? ?? false,
+    );
+  }
+
   @override
   Future<void> send(AurenMessage message) async {
     final messageRef = _messages(message.conversationId).doc(message.id);
