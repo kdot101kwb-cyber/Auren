@@ -9,6 +9,7 @@ import 'entertainment_shorts_screen.dart';
 import 'auren_music_hub_screen.dart';
 import 'auren_watch_concierge_screen.dart';
 import 'continue_watching_screen.dart';
+import 'watch_history_screen.dart';
 import 'auren_radio_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../core/models/entertainment.dart';
@@ -136,6 +137,18 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   if (uid != null) ...[
                     const SizedBox(height: 14),
                     _buildContinueWatching(context, uid),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: TextButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AurenWatchHistoryScreen()),
+                        ),
+                        icon: const Icon(Icons.history),
+                        label: const Text('سجل المشاهدة'),
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 12),
                   _buildMoodBar(),
