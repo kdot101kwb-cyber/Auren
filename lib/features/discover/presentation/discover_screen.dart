@@ -7,6 +7,9 @@ import '../../talent/presentation/talent_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
+import '../../profile/presentation/adaptive_profile_surface.dart';
+import '../../../services/social/adaptive_profile_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AurenDiscoverScreen extends StatefulWidget {
   const AurenDiscoverScreen({super.key});
@@ -68,6 +71,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
   @override
   Widget build(BuildContext context) {
     final items = _filteredItems;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Discover'),
@@ -94,6 +98,13 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
             'AUREN يتكيف مع ما يهمك — أشخاص، أماكن، محتوى وفرص.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
+          const SizedBox(height: 12),
+          if (uid != null)
+            AurenAdaptiveProfileSurface(
+              uid: uid,
+              context: AurenProfileContext.discovery,
+              intent: query.isEmpty ? 'اكتشاف أشخاص وأماكن ومحتوى وفرص' : query,
+            ),
           const SizedBox(height: 12),
           TextField(
             onChanged: (value) => setState(() => query = value),
