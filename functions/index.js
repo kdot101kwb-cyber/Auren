@@ -241,6 +241,17 @@ exports.onGamingFriendChallengeUpdated = onDocumentUpdated(
     const fromUid = typeof after.fromUid === 'string' ? after.fromUid : '';
     const toUid = typeof after.toUid === 'string' ? after.toUid : '';
     if (!fromUid || !toUid || fromUid === toUid) return;
+
+    const keyRef = db.collection('gaming_friend_challenge_keys')
+      .doc(fromUid + '_' + toUid);
+    await keyRef.set({
+      fromUid,
+      toUid,
+      status: after.status,
+      challengeId: event.params.challengeId,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+
     if (after.status === 'accepted') {
       await notify(fromUid, {
         title: '🎮 تم قبول تحديك',
