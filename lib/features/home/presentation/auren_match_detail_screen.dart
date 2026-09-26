@@ -185,8 +185,8 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
       if (n.isNotEmpty) 'ملاحظات: $n.',
       'أرسلوا السعر، العملة، الحد الأدنى للطلب، مدة التجهيز، وخيارات الشحن إن وجدت.',
     ].join(' ');
+    if (mounted) setState(() => _flowStep = 1);
     await _contact(prompt: prompt);
-    if (mounted) setState(() => _flowStep = _flowSteps.length > 1 ? 2 : _flowStep + 1);
     return true;
   }
 
