@@ -236,6 +236,25 @@ class EntertainmentRepository {
     return ref.id;
   }
 
+  Future<void> updateEntertainmentDraft(
+    String uid,
+    String draftId, {
+    required String mode,
+    required String mood,
+    required String length,
+    required String idea,
+  }) async {
+    if (uid.isEmpty || draftId.isEmpty) return;
+    await db.collection('users').doc(uid).collection('entertainmentDrafts').doc(draftId).update({
+      'mode': mode,
+      'mood': mood,
+      'length': length,
+      'idea': idea,
+      'status': 'draft',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> deleteEntertainmentDraft(String uid, String draftId) {
     return db.collection('users').doc(uid).collection('entertainmentDrafts').doc(draftId).delete();
   }
