@@ -10,6 +10,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     _player = AudioPlayer();
     _player.playerStateStream.listen((_) => notifyListeners());
     _player.positionStream.listen(_onPosition);
+    _player.processingStateStream.listen(_onProcessingState);
     _restore();
   }
 
@@ -33,6 +34,15 @@ class AurenMusicPlayerController extends ChangeNotifier {
   List<AurenEntertainmentItem> get queue => List.unmodifiable(_queue);
   List<AurenEntertainmentItem> get history => List.unmodifiable(_history);
 
+  Future<void> _onProcessingState(ProcessingState state) async {
+    if (state != ProcessingState.completed) return;
+    if (_queue.length > 1) {
+      await playNextInQueue();
+    } else {
+      await _saveState();
+    }
+  }
+
   Future<void> playItem(AurenEntertainmentItem item, {Duration startAt = Duration.zero}) async {
     if (item.mediaUrl.isEmpty) {
       _error = 'لا يوجد رابط صوت لهذا المحتوى.';
@@ -54,6 +64,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
       _duration = _player.duration ?? Duration.zero;
       if (startAt > Duration.zero) await _player.seek(startAt);
       await _player.play();
+      await _saveQueueAndHistory();
       await _saveState();
     } catch (_) {
       _error = 'تعذر تشغيل الصوت.';
@@ -67,11 +78,13 @@ class AurenMusicPlayerController extends ChangeNotifier {
   Future<void> addToQueue(AurenEntertainmentItem item) async {
     if (item.mediaUrl.isEmpty || _queue.any((x) => x.id == item.id)) return;
     _queue.add(item);
+    await _saveQueueAndHistory();
     notifyListeners();
   }
 
   Future<void> removeFromQueue(AurenEntertainmentItem item) async {
     _queue.removeWhere((x) => x.id == item.id);
+    await _saveQueueAndHistory();
     notifyListeners();
   }
 
@@ -98,6 +111,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     if (_player.playing) {
       await _player.pause();
     } else if (_item != null) {
+      if (_player.duration == null) await restorePlayback();
       await _player.play();
     }
     await _saveState();
@@ -129,6 +143,27 @@ class AurenMusicPlayerController extends ChangeNotifier {
     }
   }
 
+  Future<void> _saveQueueAndHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    String encode(AurenEntertainmentItem x) => jsonEncode({
+      'id': x.id, 'title': x.title, 'type': x.type, 'description': x.description,
+      'imageUrl': x.imageUrl, 'mediaUrl': x.mediaUrl, 'mediaKind': x.mediaKind,
+      'creatorId': x.creatorId,
+    });
+    await prefs.setStringList('auren_music_queue', _queue.map(encode).toList());
+    await prefs.setStringList('auren_music_history', _history.map(encode).toList());
+  }
+
+  AurenEntertainmentItem decode(String raw) {
+    final map = jsonDecode(raw) as Map<String, dynamic>;
+    return AurenEntertainmentItem(
+      id: map['id'] ?? '', title: map['title'] ?? '', type: map['type'] ?? 'Music',
+      description: map['description'] ?? '', imageUrl: map['imageUrl'] ?? '',
+      mediaUrl: map['mediaUrl'] ?? '', mediaKind: map['mediaKind'] ?? 'audio',
+      creatorId: map['creatorId'] ?? '',
+    );
+  }
+
   Future<void> _saveState() async {
     final item = _item;
     if (item == null) return;
@@ -148,6 +183,16 @@ class AurenMusicPlayerController extends ChangeNotifier {
 
   Future<void> _restore() async {
     final prefs = await SharedPreferences.getInstance();
+    final queueRaw = prefs.getStringList('auren_music_queue') ?? const [];
+    final historyRaw = prefs.getStringList('auren_music_history') ?? const [];
+    try {
+      _queue
+        ..clear()
+        ..addAll(queueRaw.map(decode));
+      _history
+        ..clear()
+        ..addAll(historyRaw.map(decode));
+    } catch (_) {}
     final raw = prefs.getString('auren_continue_listening');
     if (raw == null) return;
     try {
@@ -175,6 +220,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     await _player.stop();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auren_continue_listening');
+    await _saveQueueAndHistory();
     notifyListeners();
   }
 
