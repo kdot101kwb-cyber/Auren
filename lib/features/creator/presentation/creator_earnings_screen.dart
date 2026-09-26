@@ -110,6 +110,32 @@ class _AurenCreatorEarningsScreenState extends State<AurenCreatorEarningsScreen>
                 },
               ),
               const SizedBox(height: 20),
+              StreamBuilder<List<Map<String, dynamic>>>(
+                stream: repo.watchCreatorWithdrawals(uid),
+                builder: (context, withdrawalSnap) {
+                  final withdrawals = withdrawalSnap.data ?? const <Map<String, dynamic>>[];
+                  if (withdrawals.isEmpty) return const SizedBox.shrink();
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('سجل طلبات السحب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 8),
+                        ...withdrawals.map((w) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.account_balance_wallet_outlined),
+                          title: Text(((w['amountMinor'] as num?)?.toInt() ?? 0) / 100 == 0
+                              ? '0.00 ' + (w['currency'] ?? '')
+                              : (((w['amountMinor'] as num?)?.toInt() ?? 0) / 100).toStringAsFixed(2) + ' ' + (w['currency'] ?? '')),
+                          subtitle: Text((w['method'] ?? '').toString()),
+                          trailing: Chip(label: Text((w['status'] ?? 'pending').toString())),
+                        )),
+                      ]),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
               if (items.isEmpty)
                 const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد أرباح مسجلة حتى الآن.')))
               else
