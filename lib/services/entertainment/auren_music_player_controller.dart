@@ -74,7 +74,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
       if (startAt > Duration.zero) await _player.seek(startAt);
       await _player.play();
       _playTracked = true;
-      await _trackPlayback(completed: false);
+      await _trackPlayback(completed: false, countPlay: true);
       await _saveQueueAndHistory();
       await _saveState();
     } catch (_) {
@@ -164,7 +164,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
   Future<void> _trackPlayback({
     int seconds = 0,
     required bool completed,
-    bool countPlay = true,
+    bool countPlay = false,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final item = _item;
@@ -176,6 +176,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
         seconds: seconds,
         completed: completed,
         contentType: item.type,
+        countPlay: countPlay,
       );
     } catch (_) {}
   }
