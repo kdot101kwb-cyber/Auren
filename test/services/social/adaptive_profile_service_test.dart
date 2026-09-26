@@ -61,4 +61,10 @@ void main() {
     expect(result.mode, AurenProfileMode.creator);
     expect(result.confidence, greaterThanOrEqualTo(68));
   });
+  test('profile mode service rejects blank or oversized uid before Firestore access', () {
+    final service = AurenProfileModeService();
+    expect(() => service.watch('', AurenProfileMode.personal), throwsArgumentError);
+    expect(() => service.getActiveMode('   '), throwsArgumentError);
+    expect(() => service.watch('x' * 129, AurenProfileMode.personal), throwsArgumentError);
+  });
 }
