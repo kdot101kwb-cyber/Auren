@@ -99,12 +99,23 @@ class AurenMusicHubScreen extends StatelessWidget {
                       title: Text(item.title),
                       subtitle: Text(item.description, maxLines: 2),
                       onTap: item.mediaUrl.isEmpty ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item))),
-                      trailing: uid == null
-                          ? null
-                          : IconButton(
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'إضافة إلى Queue',
+                            icon: const Icon(Icons.queue_music_rounded),
+                            onPressed: item.mediaUrl.isEmpty
+                                ? null
+                                : () => AurenMusicPlayerController.instance.addToQueue(item),
+                          ),
+                          if (uid != null)
+                            IconButton(
                               icon: const Icon(Icons.bookmark_border),
                               onPressed: () => repo.save(uid, item.id),
                             ),
+                        ],
+                      ),
                     )),
             ],
           );
