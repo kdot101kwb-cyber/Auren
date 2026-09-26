@@ -660,29 +660,19 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                   : 'محادثة وتواصل مع شخص',
             ),
           _pendingActionsPanel(),
-          if (_isAi && !_sending && _controller.text.isEmpty)
-            SizedBox(
-              height: 52,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                children: [
-                  'خطط لي يومي',
-                  'ساعدني في هدفي',
-                  'ابحث عن فرصة',
-                  'اكتشف شيئًا جديدًا',
-                ].map((prompt) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ActionChip(
-                    label: Text(prompt),
-                    onPressed: () {
-                      _controller.text = prompt;
-                      _controller.selection =
-                          TextSelection.collapsed(offset: prompt.length);
-                      setState(() {});
-                    },
-                  ),
-                )).toList(),
+          if (_isAi && !_sending && _controller.text.isEmpty && _uid != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 2, 12, 4),
+              child: AurenAdaptiveActionRail(
+                uid: _uid!,
+                context: AurenProfileContext.unknown,
+                intent: widget.initialPrompt ?? _conversationTitle,
+                onPrompt: (prompt) {
+                  _controller.text = prompt;
+                  _controller.selection =
+                      TextSelection.collapsed(offset: prompt.length);
+                  setState(() {});
+                },
               ),
             ),
           if (!_isAi && _otherUid != null)
