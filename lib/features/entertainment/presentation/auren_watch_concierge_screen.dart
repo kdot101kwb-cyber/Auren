@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/entertainment.dart';
@@ -213,6 +214,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     // from filling the whole plan even when its raw recommendation score is high.
     final ranked = [...usable]
       ..sort((a, b) => rankedScore(b).compareTo(rankedScore(a)));
+    final target = (_minutes / 30).ceil().clamp(1, 8);
     final typeCounts = <String, int>{};
     final diverse = <AurenEntertainmentItem>[];
     for (final item in ranked) {
