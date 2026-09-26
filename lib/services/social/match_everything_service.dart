@@ -463,7 +463,7 @@ extension AurenMatchActionExecution on AurenMatchEverythingService {
       'targetKind': item.kind.name,
       'action': item.action.name,
       'intent': item.actionReason,
-      'sourceIntent': (sourceIntent ?? '').trim().isEmpty ? null : sourceIntent!.trim(),
+      'sourceIntent': (sourceIntent ?? '').trim(),
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
