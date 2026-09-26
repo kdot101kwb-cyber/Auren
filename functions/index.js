@@ -2570,6 +2570,71 @@ exports.publishCreatorPlanAsShort = onCall(
   },
 );
 
+exports.playGamingMove = onCall(
+  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
+    const roomId=typeof request.data?.roomId==='string'?request.data.roomId.trim():'';
+    const index=Number.isInteger(request.data?.index)?request.data.index:-1;
+    if(!roomId || roomId.length>128 || index<0 || index>8) {
+      throw new HttpsError('invalid-argument','Invalid game move.');
+    }
+    const roomRef=db.collection('gaming_rooms').doc(roomId);
+    let result=null;
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(roomRef);
+      if(!snap.exists) throw new HttpsError('not-found','Game room not found.');
+      const data=snap.data()||{};
+      const players=Array.isArray(data.playerUids)?data.playerUids.filter((v)=>typeof v==='string'):[];
+      if(players.length!==2 || !players.includes(uid)) throw new HttpsError('permission-denied','You are not a player in this game.');
+      if(data.status!=='ready' || data.winner || data.draw===true) throw new HttpsError('failed-precondition','Game is already finished.');
+      if(data.turnUid!==uid) throw new HttpsError('failed-precondition','It is not your turn.');
+      const board=Array.isArray(data.board)?data.board.map((v)=>typeof v==='string'?v:''):[];
+      if(board.length!==9 || board[index]) throw new HttpsError('failed-precondition','That cell is not available.');
+      const marks=data.marks&&typeof data.marks==='object'?data.marks:{};
+      const mark=marks[uid];
+      if(mark!=='X' && mark!=='O') throw new HttpsError('failed-precondition','Player mark is invalid.');
+      board[index]=mark;
+      const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      let winner=null;
+      for(const line of lines) {
+        if(board[line[0] && board[line[0]] && board[line[0]]===board[line[1]] && board[line[1]]===board[line[2]]) {
+          winner=board[line[0]];
+          break;
+        }
+      }
+      const isDraw=!winner && board.every((v)=>v);
+      const nextUid=winner || isDraw ? '' : players.find((p)=>p!==uid)||uid;
+      tx.update(roomRef,{
+        board,winner: winner || null,draw:isDraw,turnUid:nextUid,
+        status:'ready',updatedAt:FieldValue.serverTimestamp()
+      });
+      if(winner || isDraw) result={players,marks, winner, draw:isDraw};
+    });
+    if(result) {
+      const batch=db.batch();
+      for(const playerUid of result.players) {
+        const playerMark=result.marks[playerUid];
+        const win=result.winner && playerMark===result.winner;
+        const outcome=result.draw?'draw':win?'win':'loss';
+        const xp=result.draw?15:win?50:15;
+        const resultRef=db.collection('users').doc(playerUid).collection('gaming_results').doc(roomId);
+        const statsRef=db.collection('users').doc(playerUid).collection('gaming_profile').doc('stats');
+        batch.set(resultRef,{roomId,gameId:'tic_tac_toe',result:outcome,xp,createdAt:FieldValue.serverTimestamp()},{merge:false});
+        batch.set(statsRef,{
+          xp:FieldValue.increment(xp),seasonXp:FieldValue.increment(xp),
+          seasonId:new Date().getUTCFullYear()+'-S'+(Math.floor(new Date().getUTCMonth()/3)+1),
+          games:FieldValue.increment(1),wins:FieldValue.increment(win?1:0),
+          displayName:'لاعب AUREN',updatedAt:FieldValue.serverTimestamp()
+        },{merge:true});
+      }
+      await batch.commit();
+    }
+    return {ok:true};
+  },
+);
+
 exports.randomJoin = onCall(async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
