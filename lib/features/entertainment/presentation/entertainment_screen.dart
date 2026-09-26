@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../profile/presentation/adaptive_profile_surface.dart';
+import '../../../services/social/adaptive_profile_service.dart';
 import 'package:flutter/material.dart';
 
 import '../../search/presentation/global_search_screen.dart';
@@ -103,6 +105,25 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                 children: [
+                  if (uid != null) ...[
+                    AurenAdaptiveProfileSurface(
+                      uid: uid,
+                      context: AurenProfileContext.content,
+                      intent: query.isEmpty ? 'الترفيه والمحتوى الذي أريده الآن' : query,
+                      compact: true,
+                    ),
+                    const SizedBox(height: 6),
+                    AurenAdaptiveActionRail(
+                      uid: uid,
+                      context: AurenProfileContext.content,
+                      intent: query.isEmpty ? 'اختيار تجربة ترفيهية مناسبة' : query,
+                      onPrompt: (prompt) => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   _buildHero(context),
                   const SizedBox(height: 18),
                   _buildQuickActions(context),
