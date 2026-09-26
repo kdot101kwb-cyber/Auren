@@ -139,10 +139,17 @@ class AurenMatchEverythingService {
     AurenIntentActionPlan plan,
   ) async {
     try {
-      final snapshot = await _db.collection(collection)
-          .where('visibility', isEqualTo: 'public')
-          .limit(_candidateLimit(limit))
-          .get();
+      Query<Map<String, dynamic>> query = _db.collection(collection);
+      if (collection == 'businesses') {
+        query = query.where('visibility', isEqualTo: 'public');
+      } else if (collection == 'products') {
+        query = query.where('status', isEqualTo: 'active');
+      } else if (collection == 'opportunities') {
+        query = query.where('status', isEqualTo: 'open');
+      } else if (collection == 'posts') {
+        query = query.where('visibility', isEqualTo: 'public');
+      }
+      final snapshot = await query.limit(_candidateLimit(limit)).get();
       return snapshot.docs.map((doc) {
         final d = doc.data();
         final text = _documentText(d);
