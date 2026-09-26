@@ -16,6 +16,8 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
   int _minutes = 60;
   Map<String, Map<String, dynamic>> _signals = const {};
   Map<String, Map<String, dynamic>> _history = const {};
+  Map<String, double> _typeAffinity = const {};
+  Map<String, double> _creatorAffinity = const {};
   List<AurenEntertainmentItem> _plan = const [];
 
   static const _moods = ['الكل', 'خفيف', 'هادئ', 'حماس', 'غموض', 'رومانسي', 'كوميدي', 'اكتشاف'];
@@ -69,12 +71,17 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     if (_mood != 'الكل' && text.contains(_mood.toLowerCase())) score += 12;
     final words = prompt.split(RegExp(r'\s+')).where((x) => x.length > 2).toSet();
     score += words.where(text.contains).length * 3;
+    score += (_typeAffinity[item.type] ?? 0).clamp(-8, 12);
+    if (item.creatorId.isNotEmpty) score += (_creatorAffinity[item.creatorId] ?? 0).clamp(-6, 10);
+
     final signal = _signals[item.id];
     if (signal != null) {
       score += ((signal['watchSeconds'] as num?)?.toDouble() ?? 0) * .01;
       score += ((signal['views'] as num?)?.toDouble() ?? 0) * 1.5;
       score += ((signal['completions'] as num?)?.toDouble() ?? 0) * 5;
       score -= ((signal['skips'] as num?)?.toDouble() ?? 0) * 3;
+    } else {
+      score += 5; // discovery boost for content with no prior signal
     }
     final history = _history[item.id];
     if (history != null) {
@@ -87,6 +94,49 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
       score += ((history['views'] as num?)?.toDouble() ?? 0).clamp(0, 3) * 0.5;
     }
     return score;
+  }
+
+  void _buildAffinities(List<AurenEntertainmentItem> source) {
+    final typeScores = <String, double>{};
+    final creatorScores = <String, double>{};
+    AurenEntertainmentItem? findItem(String id) {
+      for (final item in source) {
+        if (item.id == id) return item;
+      }
+      return null;
+    }
+
+    for (final entry in _signals.entries) {
+      final item = findItem(entry.key);
+      if (item == null) continue;
+      final s = entry.value;
+      final value =
+          ((s['watchSeconds'] as num?)?.toDouble() ?? 0) * .005 +
+          ((s['views'] as num?)?.toDouble() ?? 0) * .6 +
+          ((s['likes'] as num?)?.toDouble() ?? 0) * 3 +
+          ((s['saves'] as num?)?.toDouble() ?? 0) * 2 +
+          ((s['completions'] as num?)?.toDouble() ?? 0) * 4 -
+          ((s['skips'] as num?)?.toDouble() ?? 0) * 3;
+      typeScores[item.type] = (typeScores[item.type] ?? 0) + value;
+      if (item.creatorId.isNotEmpty) {
+        creatorScores[item.creatorId] = (creatorScores[item.creatorId] ?? 0) + value;
+      }
+    }
+
+    for (final entry in _history.entries) {
+      final item = findItem(entry.key);
+      if (item == null) continue;
+      final progress = ((entry.value['progress'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
+      final value = entry.value['completed'] == true ? 2.0 : progress * 4;
+      typeScores[item.type] = (typeScores[item.type] ?? 0) + value;
+      if (item.creatorId.isNotEmpty) {
+        creatorScores[item.creatorId] = (creatorScores[item.creatorId] ?? 0) + value;
+      }
+    }
+
+    double normalize(double value) => (value / 4).clamp(-8.0, 12.0);
+    _typeAffinity = {for (final e in typeScores.entries) e.key: normalize(e.value)};
+    _creatorAffinity = {for (final e in creatorScores.entries) e.key: normalize(e.value)};
   }
 
   List<AurenEntertainmentItem> _buildPlan(List<AurenEntertainmentItem> items) {
@@ -122,6 +172,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
         _history = {for (final d in history.docs) d.id: d.data()};
       } catch (_) {}
     }
+    _buildAffinities(source);
     if (!mounted) return;
     setState(() => _plan = _buildPlan(source));
   }
