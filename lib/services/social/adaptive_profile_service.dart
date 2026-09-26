@@ -1,0 +1,137 @@
+import 'profile_mode_service.dart';
+
+enum AurenProfileContext {
+  social,
+  content,
+  work,
+  business,
+  discovery,
+  education,
+  travel,
+  unknown,
+}
+
+class AurenAdaptiveProfileResult {
+  final AurenProfileMode mode;
+  final int confidence;
+  final String reason;
+  final List<AurenProfileMode> alternatives;
+
+  const AurenAdaptiveProfileResult({
+    required this.mode,
+    required this.confidence,
+    required this.reason,
+    this.alternatives = const [],
+  });
+}
+
+/// Lightweight on-device context engine.
+///
+/// It never changes the active mode by itself. The app can ask for a
+/// recommendation and the user can accept it or keep the manually selected
+/// mode.
+class AurenAdaptiveProfileService {
+  const AurenAdaptiveProfileService();
+
+  AurenAdaptiveProfileResult suggest({
+    required AurenProfileMode currentMode,
+    AurenProfileContext context = AurenProfileContext.unknown,
+    AurenProfileModeData? profile,
+    String? intent,
+  }) {
+    final text = [
+      intent ?? '',
+      profile?.headline ?? '',
+      profile?.bio ?? '',
+      ...(profile?.skills ?? const <String>[]),
+      ...(profile?.interests ?? const <String>[]),
+      ...(profile?.goals ?? const <String>[]),
+      ...(profile?.services ?? const <String>[]),
+    ].join(' ').toLowerCase();
+
+    AurenProfileMode? detected;
+    String reason;
+
+    switch (context) {
+      case AurenProfileContext.business:
+        detected = AurenProfileMode.business;
+        reason = 'السياق الحالي يركز على المنتجات والخدمات والعملاء والنمو.';
+        break;
+      case AurenProfileContext.work:
+        detected = AurenProfileMode.professional;
+        reason = 'السياق الحالي يركز على المهارات والخبرة والفرص المهنية.';
+        break;
+      case AurenProfileContext.content:
+        detected = AurenProfileMode.creator;
+        reason = 'السياق الحالي يركز على إنشاء المحتوى والجمهور.';
+        break;
+      case AurenProfileContext.social:
+        detected = AurenProfileMode.personal;
+        reason = 'السياق الحالي يركز على التواصل والاهتمامات الشخصية.';
+        break;
+      case AurenProfileContext.discovery:
+      case AurenProfileContext.education:
+      case AurenProfileContext.travel:
+      case AurenProfileContext.unknown:
+        detected = _fromText(text);
+        reason = detected == null
+            ? 'لا توجد إشارة قوية؛ سيبقى الوضع الحالي كما هو.'
+            : 'AUREN وجد إشارات من اهتماماتك وأهدافك تناسب هذا الوضع.';
+        break;
+    }
+
+    final selected = detected ?? currentMode;
+    final confidence = detected == null
+        ? 100
+        : selected == currentMode
+            ? 95
+            : _confidence(context, text, selected);
+
+    return AurenAdaptiveProfileResult(
+      mode: selected,
+      confidence: confidence,
+      reason: reason,
+      alternatives: _alternatives(selected),
+    );
+  }
+
+  AurenProfileMode? _fromText(String text) {
+    if (_hasAny(text, const [
+      'business', 'company', 'customer', 'client', 'product', 'service',
+      'بيع', 'شركة', 'عملاء', 'منتج', 'خدمة', 'تجارة', 'مشروع',
+    ])) return AurenProfileMode.business;
+
+    if (_hasAny(text, const [
+      'creator', 'content', 'video', 'podcast', 'music', 'audience',
+      'محتوى', 'فيديو', 'موسيقى', 'جمهور', 'تصوير',
+    ])) return AurenProfileMode.creator;
+
+    if (_hasAny(text, const [
+      'job', 'career', 'skill', 'freelance', 'professional', 'work',
+      'وظيفة', 'مهنة', 'مهارة', 'عمل', 'فرصة', 'خبرة',
+    ])) return AurenProfileMode.professional;
+
+    return null;
+  }
+
+  bool _hasAny(String text, List<String> terms) =>
+      terms.any((term) => text.contains(term));
+
+  int _confidence(
+    AurenProfileContext context,
+    String text,
+    AurenProfileMode mode,
+  ) {
+    if (context != AurenProfileContext.unknown) return 92;
+    final signals = <AurenProfileMode, List<String>>{
+      AurenProfileMode.business: const ['business', 'company', 'customer', 'product', 'service', 'شركة', 'عملاء', 'منتج', 'خدمة'],
+      AurenProfileMode.creator: const ['creator', 'content', 'video', 'music', 'audience', 'محتوى', 'فيديو', 'موسيقى', 'جمهور'],
+      AurenProfileMode.professional: const ['job', 'career', 'skill', 'work', 'وظيفة', 'مهنة', 'مهارة', 'فرصة'],
+    };
+    final count = signals[mode]?.where(text.contains).length ?? 0;
+    return (68 + count * 8).clamp(68, 92);
+  }
+
+  List<AurenProfileMode> _alternatives(AurenProfileMode selected) =>
+      AurenProfileMode.values.where((m) => m != selected).take(2).toList();
+}
