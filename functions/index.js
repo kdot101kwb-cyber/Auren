@@ -2575,12 +2575,20 @@ exports.claimGamingDailyChallenge = onCall(
   async (request) => {
     const uid=request.auth?.uid;
     if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
+    const roomId=typeof request.data?.roomId==='string'?request.data.roomId.trim():'';
+    if(!roomId||roomId.length>128) throw new HttpsError('invalid-argument','A finished game room is required.');
     const now=new Date();
     const key=now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0')+'-'+String(now.getUTCDate()).padStart(2,'0');
     const challengeRef=db.collection('users').doc(uid).collection('gaming_challenges').doc(key);
     const statsRef=db.collection('users').doc(uid).collection('gaming_profile').doc('stats');
+    const roomRef=db.collection('gaming_rooms').doc(roomId);
     const result=await db.runTransaction(async(tx)=>{
-      const [challengeSnap,statsSnap]=await Promise.all([tx.get(challengeRef),tx.get(statsRef)]);
+      const [challengeSnap,statsSnap,roomSnap]=await Promise.all([tx.get(challengeRef),tx.get(statsRef),tx.get(roomRef)]);
+      if(!roomSnap.exists) throw new HttpsError('failed-precondition','Game room not found.');
+      const room=roomSnap.data()||{};
+      const players=Array.isArray(room.playerUids)?room.playerUids:[];
+      const finished=room.status==='finished'||room.winner!=null||room.draw===true;
+      if(!finished||!players.includes(uid)) throw new HttpsError('failed-precondition','Finish a Tic-Tac-Toe game first.');
       if(challengeSnap.exists) return false;
       const stats=statsSnap.exists?statsSnap.data()||{}:{};
       const games=Number(stats.games||0);
@@ -2650,7 +2658,7 @@ exports.playGamingMove = onCall(
           xp:FieldValue.increment(xp),seasonXp:FieldValue.increment(xp),
           seasonId:new Date().getUTCFullYear()+'-S'+(Math.floor(new Date().getUTCMonth()/3)+1),
           games:FieldValue.increment(1),wins:FieldValue.increment(win?1:0),
-          lastGameAt:Date.now(),displayName:'لاعب AUREN',updatedAt:FieldValue.serverTimestamp()
+          lastGameAt:Date.now(),updatedAt:FieldValue.serverTimestamp()
         },{merge:true});
       }
       await batch.commit();
