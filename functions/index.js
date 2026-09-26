@@ -2570,6 +2570,30 @@ exports.publishCreatorPlanAsShort = onCall(
   },
 );
 
+exports.claimGamingDailyChallenge = onCall(
+  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
+    const now=new Date();
+    const key=now.getUTCFullYear()+'-'+String(now.getUTCMonth()+1).padStart(2,'0')+'-'+String(now.getUTCDate()).padStart(2,'0');
+    const challengeRef=db.collection('users').doc(uid).collection('gaming_challenges').doc(key);
+    const statsRef=db.collection('users').doc(uid).collection('gaming_profile').doc('stats');
+    const result=await db.runTransaction(async(tx)=>{
+      const [challengeSnap,statsSnap]=await Promise.all([tx.get(challengeRef),tx.get(statsRef)]);
+      if(challengeSnap.exists) return false;
+      const stats=statsSnap.exists?statsSnap.data()||{}:{};
+      const games=Number(stats.games||0);
+      const lastGame=typeof stats.lastGameAt==='number'?stats.lastGameAt:0;
+      if(games<1 && !lastGame) throw new HttpsError('failed-precondition','Complete a game first.');
+      tx.set(challengeRef,{challengeId:'daily_tic_tac_toe',xp:25,completedAt:FieldValue.serverTimestamp()});
+      tx.set(statsRef,{xp:FieldValue.increment(25),seasonXp:FieldValue.increment(25),seasonId:now.getUTCFullYear()+'-S'+(Math.floor(now.getUTCMonth()/3)+1),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      return true;
+    });
+    return {claimed:result};
+  },
+);
+
 exports.playGamingMove = onCall(
   {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
   async (request) => {
