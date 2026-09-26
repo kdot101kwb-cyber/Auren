@@ -51,6 +51,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
   String? _roomId;
   bool _busy = false;
   bool _sharing = false;
+  String? _syncError;
   VideoPlayerController? _controller;
   bool _syncingRemote = false;
   final _chat = TextEditingController();
@@ -66,6 +67,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
     catch (e) { _show(e.toString()); } finally { if (mounted) setState(() => _busy = false); }
   }
   void _show(String value) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value.replaceFirst('Bad state: ', ''))));
+  Future<void> _retrySync() async { if (_roomId == null || _controller == null || !_controller!.value.isInitialized) return; setState(() => _syncError = null); try { final position = _controller!.value.position.inMilliseconds / 1000.0; await _service.updatePlayback(roomId: _roomId!, positionSeconds: position, isPlaying: _controller!.value.isPlaying); } catch (e) { if (mounted) setState(() => _syncError = e.toString()); } }
   Future<void> _shareInvite(String code) async {
     if (code.isEmpty || _sharing) return;
     setState(() => _sharing = true);
@@ -99,6 +101,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
           const SizedBox(height: 8), Text('الأعضاء: ' + members.length.toString()),
           Text('الحالة: ' + (data['status'] ?? 'waiting').toString()),
           Text('المشاهدة: ' + ((data['isPlaying'] == true) ? 'تشغيل' : 'متوقفة') + ' • ' + (data['positionSeconds'] ?? 0).toString() + ' ثانية'),
+          if (_syncError != null) ...[const SizedBox(height: 8), Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)), color: Colors.redAccent.withOpacity(.12)), child: Row(children: [const Expanded(child: Text('تعذر تحديث حالة المشاهدة.')) , TextButton(onPressed: _retrySync, child: const Text('إعادة المحاولة'))]))],
           const SizedBox(height: 14),
           if (widget.mediaUrl != null && widget.mediaUrl!.isNotEmpty) _buildSyncedPlayer(roomId, data),
           if (widget.mediaUrl == null || widget.mediaUrl!.isEmpty)
@@ -168,7 +171,13 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
         onPressed: _syncingRemote ? null : () async {
           final next = !controller.value.isPlaying;
           final position = controller.value.position.inMilliseconds / 1000.0;
-          await _service.updatePlayback(roomId: roomId, positionSeconds: position, isPlaying: next);
+          try {
+            await _service.updatePlayback(roomId: roomId, positionSeconds: position, isPlaying: next);
+            if (mounted) setState(() => _syncError = null);
+          } catch (e) {
+            if (mounted) setState(() => _syncError = e.toString());
+            return;
+          }
           if (next) { await controller.play(); } else { await controller.pause(); }
           if (mounted) setState(() {});
         },
