@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AurenPersonalContext {
@@ -81,22 +83,45 @@ class PersonalContextRepository {
       );
     }
 
-    return _db
-        .collection('users')
-        .doc(cleanUid)
-        .collection('goals')
-        .limit(50)
-        .snapshots()
-        .asyncMap((goals) async {
-      final memory = await _db
-          .collection('users')
-          .doc(cleanUid)
-          .collection('memory')
-          .where('enabled', isEqualTo: true)
-          .limit(50)
-          .get();
-      return _fromSnapshots(goals, memory);
-    });
+    late final StreamController<AurenPersonalContext> controller;
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? goalsSub;
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? memorySub;
+    QuerySnapshot<Map<String, dynamic>>? latestGoals;
+    QuerySnapshot<Map<String, dynamic>>? latestMemory;
+
+    Future<void> emitIfReady() async {
+      final goals = latestGoals;
+      final memory = latestMemory;
+      if (goals == null || memory == null || controller.isClosed) return;
+      controller.add(_fromSnapshots(goals, memory));
+    }
+
+    controller = StreamController<AurenPersonalContext>(
+      onListen: () {
+        final user = _db.collection('users').doc(cleanUid);
+
+        goalsSub = user.collection('goals').limit(50).snapshots().listen((snapshot) {
+          latestGoals = snapshot;
+          emitIfReady();
+        }, onError: controller.addError);
+
+        memorySub = user
+            .collection('memory')
+            .where('enabled', isEqualTo: true)
+            .limit(50)
+            .snapshots()
+            .listen((snapshot) {
+          latestMemory = snapshot;
+          emitIfReady();
+        }, onError: controller.addError);
+      },
+      onCancel: () async {
+        await goalsSub?.cancel();
+        await memorySub?.cancel();
+      },
+    );
+
+    return controller.stream;
   }
 
   AurenPersonalContext _fromSnapshots(
