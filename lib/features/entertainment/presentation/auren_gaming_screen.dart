@@ -20,10 +20,11 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   int _seasonXp = 0;
   bool _loadedStats = false;
   final _chatController = TextEditingController();
+  final _friendUidController = TextEditingController();
 
   @override void initState() { super.initState(); _loadStats(); }
 
-  @override void dispose() { _codeController.dispose(); _chatController.dispose(); super.dispose(); }
+  @override void dispose() { _codeController.dispose(); _chatController.dispose(); _friendUidController.dispose(); super.dispose(); }
 
   Future<void> _createRoom() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -143,6 +144,8 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
             'تحديات يومية ونتائج اجتماعية ستتوسع مع ألعاب AUREN القادمة.',
             OutlinedButton.icon(onPressed: () => _snack('التحديات ستتوسع مع ألعاب AUREN القادمة.'), icon: const Icon(Icons.flag_outlined), label: const Text('استكشف'))),
           const SizedBox(height: 12),
+          _friendChallengeCard(),
+          const SizedBox(height: 12),
           _gameCard(context, Icons.groups_outlined, 'Social Play',
             'غرف لعب، دعوات ومنافسات مرتبطة بتجربة AUREN.',
             OutlinedButton.icon(onPressed: () => _snack('Social Play متصل حالياً بغرف الألعاب.'), icon: const Icon(Icons.people_outline), label: const Text('استكشف'))),
@@ -235,6 +238,51 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       ]),
     ),
   );
+  Widget _friendChallengeCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('تحدي صديق', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        const SizedBox(height: 6),
+        const Text('أرسل دعوة مباراة مباشرة إلى صديقك في AUREN.'),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _friendUidController,
+          decoration: const InputDecoration(
+            labelText: 'معرّف صديقك',
+            hintText: 'User ID',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        FilledButton.icon(
+          onPressed: _busy ? null : _challengeFriend,
+          icon: const Icon(Icons.sports_esports),
+          label: const Text('إرسال التحدي'),
+        ),
+      ]),
+    ),
+  );
+
+  Future<void> _challengeFriend() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final friendUid = _friendUidController.text.trim();
+    if (uid == null || friendUid.isEmpty || friendUid == uid) {
+      _snack('أدخل معرّف صديق صحيح.');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await _service.createFriendChallenge(uid, friendUid);
+      _friendUidController.clear();
+      if (mounted) _snack('🎮 تم إرسال تحدي المباراة لصديقك.');
+    } catch (_) {
+      if (mounted) _snack('تعذر إرسال التحدي.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Widget _challengeCard(BuildContext context) => Card(
     child: Padding(
       padding: const EdgeInsets.all(16),
@@ -369,6 +417,22 @@ class AurenGamingRoom {
 
 class AurenGamingService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  Future<void> createFriendChallenge(String fromUid, String toUid) async {
+    if (fromUid == toUid || fromUid.isEmpty || toUid.isEmpty) {
+      throw ArgumentError('Invalid challenge target.');
+    }
+    await _db.collection('gaming_friend_challenges').add({
+      'fromUid': fromUid,
+      'toUid': toUid,
+      'gameId': 'tic_tac_toe',
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchFriendChallenges(String uid) =>
+      _db.collection('gaming_friend_challenges').where('toUid', isEqualTo: uid).where('status', isEqualTo: 'pending').limit(20).snapshots();
 
   Future<AurenGamingRoom> createTicTacToeRoom(String uid) async {
     final ref = _db.collection('gaming_rooms').doc();
