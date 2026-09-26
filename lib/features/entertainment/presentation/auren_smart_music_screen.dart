@@ -17,6 +17,7 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
   final search = TextEditingController();
   String mood = 'الكل';
   String context = 'تلقائي';
+  List<AurenEntertainmentItem> _latestSource = const <AurenEntertainmentItem>[];
 
   static const moods = ['الكل', 'هادئ', 'حماس', 'تركيز', 'سفر', 'تسلية'];
   static const contexts = ['تلقائي', 'صباح', 'ليل', 'عمل', 'رحلة', 'استرخاء'];
@@ -123,7 +124,7 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
           IconButton(
             icon: const Icon(Icons.auto_awesome_rounded),
             tooltip: 'AI Music Concierge',
-            onPressed: () => _concierge(const []),
+            onPressed: () => _concierge(_latestSource),
           ),
         ],
       ),
@@ -131,6 +132,7 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
         stream: repo.watchItems(type: 'Music'),
         builder: (context, snapshot) {
           final source = snapshot.data ?? const <AurenEntertainmentItem>[];
+          _latestSource = source;
           final smart = _smart(source);
 
           if (snapshot.connectionState == ConnectionState.waiting) {
