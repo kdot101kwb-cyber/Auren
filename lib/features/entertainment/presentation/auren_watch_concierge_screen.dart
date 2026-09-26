@@ -29,6 +29,13 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
   @override
   void dispose() { _prompt.removeListener(_inferIntent); _prompt.dispose(); super.dispose(); }
 
+  String _promptSummary() {
+    final value = _prompt.text.trim();
+    if (value.isEmpty) return 'جاهز لاختيار شيء مناسب لك';
+    if (value.length <= 70) return value;
+    return value.substring(0, 67) + '...';
+  }
+
   void _inferIntent() {
     final text = _prompt.text.toLowerCase();
     const moodKeys = <String, List<String>>{
@@ -346,6 +353,13 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                   Text('قل لـ AUREN ماذا تريد أن تشاهد', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
                   SizedBox(height: 6),
                   Text('مثال: عندي ساعة وعايز أنمي حماسي أو مسلسل خفيف.'),
+                  SizedBox(height: 10),
+                  Builder(builder: (context) => Text(
+                    'AUREN يفهم: ' + _promptSummary(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  )),
                 ]),
               ),
               const SizedBox(height: 14),
