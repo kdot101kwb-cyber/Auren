@@ -143,7 +143,7 @@ service cloud.firestore {
   match /users/{userId}/entertainmentCreationJobs/{jobId} {
     allow read: if isOwner(userId);
     allow create: if isOwner(userId)
-      && request.resource.data.keys().hasOnly(['draftId','mode','mood','length','idea','status','provider','progress','plan','assets','createdAt','updatedAt'])
+      && request.resource.data.keys().hasOnly(['draftId','mode','mood','length','idea','status','provider','externalJobId','progress','plan','assets','createdAt','updatedAt'])
       && request.resource.data.draftId is string
       && request.resource.data.draftId.size() <= 128
       && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم']
@@ -153,7 +153,8 @@ service cloud.firestore {
       && request.resource.data.idea is string
       && request.resource.data.idea.size() <= 5000
       && request.resource.data.status == 'planning'
-      && request.resource.data.provider == 'auren_ai'
+      && request.resource.data.provider is string
+      && request.resource.data.provider.size() <= 80
       && request.resource.data.progress == 0
       && request.resource.data.plan is list
       && request.resource.data.plan.size() >= 2
@@ -163,8 +164,11 @@ service cloud.firestore {
       && request.resource.data.createdAt is timestamp
       && request.resource.data.updatedAt is timestamp;
     allow update: if isOwner(userId)
-      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','progress','updatedAt'])
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','provider','externalJobId','progress','updatedAt'])
       && request.resource.data.status in ['planning','generating','processing','ready','failed','cancelled']
+      && request.resource.data.provider is string
+      && request.resource.data.provider.size() <= 80
+      && (!('externalJobId' in request.resource.data) || (request.resource.data.externalJobId is string && request.resource.data.externalJobId.size() <= 256))
       && request.resource.data.progress is int
       && request.resource.data.progress >= 0
       && request.resource.data.progress <= 100
