@@ -52,21 +52,23 @@ class AurenMatchEverythingService {
       profile: profile,
       intent: intent,
     );
+    final intentTerms = _intentTerms(intent);
+
     final limit = _safeLimit(limitPerKind);
 
     final results = <AurenMatchItem>[];
-    results.addAll(await _people(uid, profile, resolved.mode, limit));
-    results.addAll(await _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit));
-    results.addAll(await _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit));
-    results.addAll(await _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit));
-    results.addAll(await _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit));
+    results.addAll(await _people(uid, profile, resolved.mode, limit, intentTerms));
+    results.addAll(await _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit, intentTerms));
+    results.addAll(await _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms));
+    results.addAll(await _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms));
+    results.addAll(await _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms));
 
     results.sort((a, b) => b.score.compareTo(a.score));
     return results.take(limit * 5).toList();
   }
 
   Future<List<AurenMatchItem>> _people(
-    String uid, AurenProfileModeData profile, AurenProfileMode mode, int limit) async {
+    String uid, AurenProfileModeData profile, AurenProfileMode mode, int limit, Set<String> intentTerms) async {
     try {
       final snapshot = await _db.collectionGroup('profile_modes')
           .where('discoverable', isEqualTo: true).limit(limit).get();
@@ -79,8 +81,8 @@ class AurenMatchEverythingService {
           title: _string(d['headline'], 'AUREN member'),
           subtitle: _string(d['bio'], candidateMode?.label ?? 'Person'),
           kind: AurenMatchKind.person,
-          score: _score(text, profile, candidateMode == mode),
-          reasons: _reasons(text, profile, candidateMode == mode),
+          score: _score(text, profile, candidateMode == mode, intentTerms),
+          reasons: _reasons(text, profile, candidateMode == mode, intentTerms),
           data: d,
         );
       }).toList();
@@ -91,7 +93,7 @@ class AurenMatchEverythingService {
 
   Future<List<AurenMatchItem>> _collectionMatches(
     String collection, AurenMatchKind kind, AurenProfileModeData profile,
-    AurenProfileMode mode, int limit) async {
+    AurenProfileMode mode, int limit, Set<String> intentTerms) async {
     try {
       final snapshot = await _db.collection(collection)
           .where('visibility', isEqualTo: 'public').limit(limit).get();
@@ -105,8 +107,8 @@ class AurenMatchEverythingService {
           title: _titleFor(kind, d),
           subtitle: _subtitleFor(kind, d),
           kind: kind,
-          score: _score(text, profile, modeMatch),
-          reasons: _reasons(text, profile, modeMatch),
+          score: _score(text, profile, modeMatch, intentTerms),
+          reasons: _reasons(text, profile, modeMatch, intentTerms),
           data: d,
         );
       }).toList();
@@ -145,14 +147,15 @@ class AurenMatchEverythingService {
         _list(d['goals']).join(' '), _list(d['services']).join(' '),
       ].whereType<String>().join(' ').toLowerCase();
 
-  int _score(String text, AurenProfileModeData profile, bool modeMatch) {
+  int _score(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms) {
     final profileText = [...profile.skills, ...profile.interests, ...profile.goals, ...profile.services].join(' ');
     var score = _overlapScore(text, profileText);
     if (modeMatch) score += 15;
+    score += (intentTerms.intersection(_tokens(text)).length * 10).clamp(0, 25);
     return score.clamp(0, 100);
   }
 
-  List<String> _reasons(String text, AurenProfileModeData profile, bool modeMatch) {
+  List<String> _reasons(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms) {
     final reasons = <String>[];
     final tokens = _tokens(text);
     final common = <String>[];
@@ -162,6 +165,8 @@ class AurenMatchEverythingService {
       if (common.length == 2) break;
     }
     if (common.isNotEmpty) reasons.add('تطابق: '+common.join('، '));
+    final intentCommon = intentTerms.intersection(tokens).take(3).toList();
+    if (intentCommon.isNotEmpty) reasons.add('مرتبط بطلبك: '+intentCommon.join('، '));
     if (modeMatch) reasons.add('متوافق مع نمط ملفك الحالي');
     if (reasons.isEmpty) reasons.add('مرتبط بسياقك الحالي');
     return reasons;
@@ -182,6 +187,8 @@ class AurenMatchEverythingService {
 
   String _string(dynamic value, String fallback) =>
       value is String && value.trim().isNotEmpty ? value.trim() : fallback;
+
+  Set<String> _intentTerms(String? intent) => intent == null ? <String>{} : _tokens(intent);
 
   int _safeLimit(int value) => value < 1 ? 1 : (value > 20 ? 20 : value);
 }
