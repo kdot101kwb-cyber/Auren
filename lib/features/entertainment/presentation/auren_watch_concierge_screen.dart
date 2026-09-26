@@ -270,6 +270,11 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     return result;
   }
 
+  void _startPlan() {
+    if (_plan.isEmpty) return;
+    _openItem(_plan.first);
+  }
+
   void _openItem(AurenEntertainmentItem item) {
     Navigator.push(
       context,
@@ -422,6 +427,11 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
               if (_plan.isNotEmpty) ...[
                 const SizedBox(height: 18),
                 Row(
+                    FilledButton.icon(
+                      onPressed: _startPlan,
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text('ابدأ الخطة'),
+                    ),
                   children: [
                     Expanded(
                       child: Text(
