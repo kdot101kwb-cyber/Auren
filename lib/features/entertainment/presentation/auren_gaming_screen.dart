@@ -14,6 +14,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   String? _roomId;
   String? _inviteCode;
   bool _busy = false;
+  int _xp = 0;
   final _chatController = TextEditingController();
 
   @override void dispose() { _codeController.dispose(); _chatController.dispose(); super.dispose(); }
@@ -70,6 +71,29 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     return null;
   }
 
+  Future<void> _claimDailyChallenge(Map<String, dynamic> data) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final players = List<String>.from((data['playerUids'] as List<dynamic>? ?? const []).map((e) => e.toString()));
+    final finished = data['winner'] != null || data['draw'] == true;
+    if (!players.contains(uid) || !finished) {
+      _snack('أكمل مباراة أولاً ثم احصل على XP.');
+      return;
+    }
+    try {
+      final result = await _service.claimDailyChallenge(uid);
+      if (!mounted) return;
+      if (result) {
+        setState(() => _xp += 25);
+        _snack('🎉 حصلت على 25 XP! الإنجاز اليومي اكتمل.');
+      } else {
+        _snack('تم استلام تحدي اليوم مسبقاً.');
+      }
+    } catch (_) {
+      if (mounted) _snack('تعذر تسجيل التحدي.');
+    }
+  }
+
   void _snack(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 
   @override Widget build(BuildContext context) {
@@ -110,6 +134,9 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
               if (data == null) return const Text('الغرفة غير متاحة.');
               return Column(children: [
                 _buildBoard(context, data, uid),
+                const SizedBox(height: 10),
+                if (data['winner'] != null || data['draw'] == true)
+                  FilledButton.icon(onPressed: () => _claimDailyChallenge(data), icon: const Icon(Icons.workspace_premium), label: const Text('استلام 25 XP')),
                 const SizedBox(height: 18),
                 _buildChat(),
               ]);
@@ -118,6 +145,24 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       ]),
     );
   }
+
+  Widget _challengeCard(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const CircleAvatar(child: Icon(Icons.emoji_events_outlined)),
+          const SizedBox(width: 12),
+          const Expanded(child: Text('تحدي اليوم', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18))),
+          Text('$_xp XP', style: const TextStyle(fontWeight: FontWeight.w900)),
+        ]),
+        const SizedBox(height: 8),
+        const Text('العب مباراة Tic-Tac-Toe حتى النهاية واحصل على 25 XP.'),
+        const SizedBox(height: 10),
+        LinearProgressIndicator(value: _xp >= 25 ? 1 : 0),
+      ]),
+    ),
+  );
 
   Widget _hero(BuildContext context) => Container(padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(borderRadius: BorderRadius.circular(24),
@@ -276,6 +321,20 @@ class AurenGamingService {
         'text': text,
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+  Future<bool> claimDailyChallenge(String uid) async {
+    final now = DateTime.now().toUtc();
+    final key = now.year.toString() + '-' + now.month.toString().padLeft(2, '0') + '-' + now.day.toString().padLeft(2, '0');
+    final ref = _db.collection('users').doc(uid).collection('gaming_challenges').doc(key);
+    final snap = await ref.get();
+    if (snap.exists) return false;
+    await ref.set({
+      'challengeId': 'daily_tic_tac_toe',
+      'xp': 25,
+      'completedAt': FieldValue.serverTimestamp(),
+    });
+    return true;
+  }
 
   Future<void> playMove({required String roomId, required List<String> board, required String? winner, required bool draw, required String nextUid}) =>
     _db.collection('gaming_rooms').doc(roomId).update({'board':board,'winner':winner,'draw':draw,'turnUid':nextUid,'updatedAt':FieldValue.serverTimestamp()});
