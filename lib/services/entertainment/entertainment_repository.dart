@@ -18,10 +18,42 @@ class EntertainmentRepository {
     if (mood != null && mood.isNotEmpty && mood != 'تسلية') {
       q = q.where('moods', arrayContains: mood);
     }
-    return q.limit(50).snapshots().map((s) => s.docs
-      .map((d) => AurenEntertainmentItem.fromMap(d.id, d.data()))
-      .where((i) => i.isVideo && i.mediaUrl.isNotEmpty)
-      .toList());
+    return q.limit(50).snapshots().asyncMap((s) async {
+      final items = s.docs
+          .map((d) => AurenEntertainmentItem.fromMap(d.id, d.data()))
+          .where((i) => i.isVideo && i.mediaUrl.isNotEmpty)
+          .toList();
+      return items;
+    });
+  }
+
+
+  Stream<List<AurenEntertainmentItem>> watchPersonalizedShorts(String uid, {String? mood}) {
+    Query<Map<String, dynamic>> q = db.collection('entertainment_items')
+        .where('visibility', isEqualTo: 'public')
+        .where('type', isEqualTo: 'Short');
+    if (mood != null && mood.isNotEmpty && mood != 'تسلية') {
+      q = q.where('moods', arrayContains: mood);
+    }
+    return q.limit(50).snapshots().asyncMap((s) async {
+      final items = s.docs
+          .map((d) => AurenEntertainmentItem.fromMap(d.id, d.data()))
+          .where((i) => i.isVideo && i.mediaUrl.isNotEmpty)
+          .toList();
+      final signals = await db.collection('users').doc(uid)
+          .collection('entertainmentSignals').get();
+      final scores = <String, double>{};
+      for (final d in signals.docs) {
+        final data = d.data();
+        var score = 0.0;
+        score += ((data['watchSeconds'] as num?)?.toDouble() ?? 0) * 0.02;
+        score += ((data['views'] as num?)?.toDouble() ?? 0) * 0.5;
+        if (data['mood'] == mood) score += 2;
+        scores[d.id] = score;
+      }
+      items.sort((a, b) => (scores[b.id] ?? 0).compareTo(scores[a.id] ?? 0));
+      return items;
+    });
   }
 
   Stream<AurenEntertainmentItem?> watchItem(String itemId) => db.collection('entertainment_items').doc(itemId).snapshots().map((d) {
