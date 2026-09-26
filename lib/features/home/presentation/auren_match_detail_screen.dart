@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/match_everything_service.dart';
+import '../../../services/social/match_action_flow.dart';
 import '../../../services/social/follow_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/marketplace/marketplace_commerce_repository.dart';
@@ -38,10 +39,15 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
   bool _applied = false;
   bool _saved = false;
   bool _loadingState = true;
+  late final AurenMatchActionFlow _flow;
+  int _flowStep = 0;
+
+  List<AurenMatchFlowStep> get _flowSteps => _flow.stepsFor(widget.item, widget.intent);
 
   @override
   void initState() {
     super.initState();
+    _flow = AurenMatchActionFlow();
     _loadState();
   }
 
@@ -180,6 +186,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
       'أرسلوا السعر، العملة، الحد الأدنى للطلب، مدة التجهيز، وخيارات الشحن إن وجدت.',
     ].join(' ');
     await _contact(prompt: prompt);
+    if (mounted) setState(() => _flowStep = _flowSteps.length > 1 ? 2 : _flowStep + 1);
     return true;
   }
 
@@ -260,6 +267,9 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           break;
       }
       if (didExecute) {
+        if (mounted && _flowStep < _flowSteps.length - 1) {
+          setState(() => _flowStep += 1);
+        }
         try {
           await AurenMatchEverythingService().recordAction(uid: uid, item: widget.item, sourceIntent: widget.intent);
         } catch (_) {}
@@ -269,6 +279,42 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Widget _buildFlowCard(BuildContext context) {
+    final steps = _flowSteps;
+    if (steps.length < 2) return const SizedBox.shrink();
+    final active = _flowStep.clamp(0, steps.length - 1);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.alt_route),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('مسار AUREN', style: TextStyle(fontWeight: FontWeight.w800))),
+            Text('${active + 1}/${steps.length}'),
+          ]),
+          const SizedBox(height: 12),
+          ...List.generate(steps.length, (index) {
+            final step = steps[index];
+            final done = index < active;
+            final current = index == active;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                CircleAvatar(radius: 13, child: Icon(done ? Icons.check : (current ? Icons.play_arrow : Icons.circle_outlined), size: 16)),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(step.title, style: TextStyle(fontWeight: current || done ? FontWeight.w800 : FontWeight.w500)),
+                  if (current) Padding(padding: const EdgeInsets.only(top: 2), child: Text(step.description)),
+                ])),
+              ]),
+            );
+          }),
+        ]),
+      ),
+    );
   }
 
   void _openDestination() {
@@ -341,6 +387,8 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
             const SizedBox(height: 14),
             Row(children: [const Icon(Icons.auto_awesome, size: 18), const SizedBox(width: 6), Text('مطابقة ${item.score}%', style: const TextStyle(fontWeight: FontWeight.w800))]),
           ]))),
+          const SizedBox(height: 12),
+          _buildFlowCard(context),
           const SizedBox(height: 12),
           Card(child: ListTile(
             leading: const CircleAvatar(child: Icon(Icons.route_outlined)),
