@@ -17,6 +17,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   int active = 0;
   String? uid;
   String mood = 'تسلية';
+  bool pureEntertainment = true;
 
   static const moods = <String>['تسلية', 'ضحك', 'موسيقى', 'أفلام', 'Gaming', 'اكتشاف'];
 
@@ -61,7 +62,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
             children: [
               const Text('شنو مزاجك الآن؟',
                   style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('تسلية فقط'),
+                subtitle: const Text('بدون اقتراحات عمل أو فرص أو AI أثناء المشاهدة'),
+                value: pureEntertainment,
+                onChanged: (value) => setState(() => pureEntertainment = value),
+              ),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -146,7 +155,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('AUREN Shorts'),
+        title: Text(pureEntertainment ? 'AUREN Shorts • تسلية' : 'AUREN Shorts'),
         actions: [
           IconButton(
             tooltip: 'مزاجي',
@@ -221,7 +230,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                           Text(item.description, maxLines: 3, overflow: TextOverflow.ellipsis),
                         ],
                         const SizedBox(height: 10),
-                        GestureDetector(
+                        if (!pureEntertainment)
+                          GestureDetector(
                           onTap: () => _showAurenActions(item),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -264,11 +274,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                             icon: const Icon(Icons.bookmark_border, color: Colors.white, size: 32),
                             onPressed: () => repo.save(uid!, item.id),
                           ),
-                        IconButton(
-                          icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 30),
-                          tooltip: 'AUREN',
-                          onPressed: () => _showAurenActions(item),
-                        ),
+                        if (!pureEntertainment)
+                          IconButton(
+                            icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 30),
+                            tooltip: 'AUREN',
+                            onPressed: () => _showAurenActions(item),
+                          ),
                         IconButton(
                           icon: const Icon(Icons.share, color: Colors.white, size: 30),
                           onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
