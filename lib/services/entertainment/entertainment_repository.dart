@@ -210,6 +210,35 @@ class EntertainmentRepository {
     });
   }
 
+  Stream<List<Map<String, dynamic>>> watchContinueWatching(String uid) {
+    return db.collection('users').doc(uid).collection('continueWatching')
+        .orderBy('updatedAt', descending: true).limit(20).snapshots()
+        .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+  }
+
+  Future<void> saveWatchProgress(String uid, AurenEntertainmentItem item, Duration position, Duration duration) async {
+    if (uid.isEmpty || item.id.isEmpty) return;
+    final total = duration.inSeconds;
+    final seconds = position.inSeconds.clamp(0, total > 0 ? total : 1);
+    final completed = total > 0 && seconds >= (total * 0.95).round();
+    final ref = db.collection('users').doc(uid).collection('continueWatching').doc(item.id);
+    if (completed) {
+      await ref.delete();
+      return;
+    }
+    await ref.set({
+      'itemId': item.id,
+      'title': item.title,
+      'type': item.type,
+      'imageUrl': item.imageUrl,
+      'mediaUrl': item.mediaUrl,
+      'positionSeconds': seconds,
+      'durationSeconds': total,
+      'progress': total > 0 ? seconds / total : 0,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   Future<Map<String, Map<String, dynamic>>> getMusicSignals(String uid) async {
     final snap = await db.collection('users').doc(uid).collection('entertainmentSignals').get();
     return {
