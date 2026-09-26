@@ -15,6 +15,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
   String _type = 'الكل';
   int _minutes = 60;
   Map<String, Map<String, dynamic>> _signals = const {};
+  Map<String, Map<String, dynamic>> _history = const {};
   List<AurenEntertainmentItem> _plan = const [];
 
   static const _moods = ['الكل', 'خفيف', 'هادئ', 'حماس', 'غموض', 'رومانسي', 'كوميدي', 'اكتشاف'];
@@ -75,6 +76,16 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
       score += ((signal['completions'] as num?)?.toDouble() ?? 0) * 5;
       score -= ((signal['skips'] as num?)?.toDouble() ?? 0) * 3;
     }
+    final history = _history[item.id];
+    if (history != null) {
+      final progress = ((history['progress'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
+      final completed = history['completed'] == true;
+      // Prefer unfinished content for "continue/discover" plans, while still
+      // allowing completed items back in when the user explicitly searches for them.
+      if (progress > 0 && !completed) score += 10 + progress * 8;
+      if (completed && _prompt.text.trim().isEmpty) score -= 7;
+      score += ((history['views'] as num?)?.toDouble() ?? 0).clamp(0, 3) * 0.5;
+    }
     return score;
   }
 
@@ -102,9 +113,13 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
       try {
-        final snap = await EntertainmentRepository().db.collection('users').doc(uid)
+        final repo = EntertainmentRepository();
+        final snap = await repo.db.collection('users').doc(uid)
             .collection('entertainmentSignals').get();
         _signals = {for (final d in snap.docs) d.id: d.data()};
+        final history = await repo.db.collection('users').doc(uid)
+            .collection('watchHistory').limit(100).get();
+        _history = {for (final d in history.docs) d.id: d.data()};
       } catch (_) {}
     }
     if (!mounted) return;
