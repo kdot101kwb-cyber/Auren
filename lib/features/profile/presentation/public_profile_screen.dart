@@ -5,6 +5,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/social/follow_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/users/presence_service.dart';
+import '../../../services/social/profile_mode_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenPublicProfileScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class AurenPublicProfileScreen extends StatefulWidget {
 class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
   final repo = FollowRepository();
   final conversations = ConversationRepository();
+  final profileModes = AurenProfileModeService();
   bool busy = false;
   bool messaging = false;
 
@@ -164,6 +166,34 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
             ],
           ),
           const SizedBox(height: 20),
+          StreamBuilder<AurenProfileMode>(
+            stream: profileModes.watchActiveMode(widget.profile.uid),
+            builder: (context, modeSnapshot) {
+              final mode = modeSnapshot.data ?? AurenProfileMode.personal;
+              return StreamBuilder<AurenProfileModeData>(
+                stream: profileModes.watch(widget.profile.uid, mode),
+                builder: (context, snapshot) {
+                  final data = snapshot.data;
+                  if (data == null || !data.discoverable) return const SizedBox.shrink();
+                  final details = <String>[];
+                  if (data.headline.isNotEmpty) details.add(data.headline);
+                  if (data.skills.isNotEmpty) details.add('مهارات: ${data.skills.take(4).join('، ')}');
+                  if (data.interests.isNotEmpty) details.add('اهتمامات: ${data.interests.take(4).join('، ')}');
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [const Icon(Icons.auto_awesome), const SizedBox(width: 8), Text('AI Profile • ${mode.label}', style: const TextStyle(fontWeight: FontWeight.bold))]),
+                        if (data.bio.isNotEmpty) ...[const SizedBox(height: 8), Text(data.bio)],
+                        if (details.isNotEmpty) ...[const SizedBox(height: 8), Text(details.join('\n'))],
+                      ]),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 12),
           if (!own && me != null)
             FilledButton.tonalIcon(
               onPressed: messaging ? null : () => _message(me),
