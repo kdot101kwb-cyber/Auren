@@ -272,7 +272,12 @@ exports.onConversationMessageCreated = onDocumentCreated(
     const data = conversation.data();
     if (!data || !Array.isArray(data.memberIds)) return;
 
-    const actorUid = message.senderId;
+    const actorUid = typeof message.senderId === 'string'
+      ? message.senderId.trim()
+      : '';
+    // Do not let malformed/server-written messages advance Match Everything
+    // flows or fan out notifications to unrelated members.
+    if (!actorUid || !data.memberIds.includes(actorUid)) return;
 
     // The server owns conversation preview/order metadata.
     const createdAt = message.createdAt || FieldValue.serverTimestamp();
