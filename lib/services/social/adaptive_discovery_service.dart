@@ -75,7 +75,7 @@ class AurenAdaptiveDiscoveryService {
     final snapshot = await _db
         .collection('opportunities')
         .where('visibility', isEqualTo: 'public')
-        .limit(limit.clamp(1, 50))
+        .limit(_safeLimit(limit))
         .get();
 
     return snapshot.docs
@@ -154,7 +154,7 @@ class AurenAdaptiveDiscoveryService {
     AurenProfileMode mode,
   ) {
     final d = doc.data();
-    final candidateMode = AurenProfileModeX.fromId(d['mode'] as String?);
+    final candidateMode = AurenProfileModeX.fromId(d['mode'] as String?) ?? AurenProfileMode.personal;
     final text = [
       _string(d['headline'], ''),
       _string(d['bio'], ''),
@@ -215,7 +215,7 @@ class AurenAdaptiveDiscoveryService {
     return (20 + common * 12).clamp(20, 80);
   }
 
-  Set<String> _tokens(String value) => value
+  int _safeLimit(int value) => value < 1 ? 1 : (value > 50 ? 50 : value);\n\n  Set<String> _tokens(String value) => value
       .toLowerCase()
       .split(RegExp(r'[^a-z0-9\u0600-\u06ff]+'))
       .where((v) => v.length >= 3)
