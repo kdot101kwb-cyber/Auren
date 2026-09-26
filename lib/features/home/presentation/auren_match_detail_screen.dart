@@ -76,6 +76,21 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
     _toast('تم إرسال التقديم بنجاح.');
   }
 
+  Future<void> _confirmAndRun(Future<void> Function() action, String title, String message) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('متابعة')),
+        ],
+      ),
+    );
+    if (ok == true) await action();
+  }
+
   Future<void> _execute() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -87,10 +102,10 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           await _contact();
           break;
         case AurenMatchAction.requestQuote:
-          await _contact(prompt: 'مرحباً، وصلت إليكم عبر AUREN. أريد طلب عرض سعر بخصوص: ${widget.intent}. أرسلوا لي السعر، الحد الأدنى للطلب، العملة، مدة التجهيز، وخيارات الشحن إن وجدت.');
+          await _confirmAndRun(() => _contact(prompt: 'مرحباً، وصلت إليكم عبر AUREN. أريد طلب عرض سعر بخصوص: ${widget.intent}. أرسلوا لي السعر، الحد الأدنى للطلب، العملة، مدة التجهيز، وخيارات الشحن إن وجدت.'), 'طلب عرض سعر', 'سيتم فتح محادثة مع الجهة وإعداد رسالة طلب عرض السعر.');
           break;
         case AurenMatchAction.addToCart:
-          await _commerce.addToCart(uid: uid, productId: widget.item.id, quantity: 1);
+          await _confirmAndRun(() => _commerce.addToCart(uid: uid, productId: widget.item.id, quantity: 1), 'إضافة للسلة', 'سيتم إضافة المنتج إلى سلتك. لن يتم تنفيذ أي دفع.');
           _toast('تمت إضافة المنتج إلى السلة.');
           break;
         case AurenMatchAction.follow:
