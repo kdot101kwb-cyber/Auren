@@ -78,8 +78,18 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     if (signal != null) {
       score += ((signal['watchSeconds'] as num?)?.toDouble() ?? 0) * .01;
       score += ((signal['views'] as num?)?.toDouble() ?? 0) * 1.5;
+      score += ((signal['likes'] as num?)?.toDouble() ?? 0).clamp(-2, 4) * 2;
+      score += ((signal['saves'] as num?)?.toDouble() ?? 0).clamp(-2, 4) * 2;
       score += ((signal['completions'] as num?)?.toDouble() ?? 0) * 5;
       score -= ((signal['skips'] as num?)?.toDouble() ?? 0) * 3;
+
+      // Explicit feedback beats passive viewing: a like/save is a stronger
+      // preference signal, while repeated skips suppress the item.
+      if (signal['mood'] is String &&
+          _mood != 'الكل' &&
+          signal['mood'] == _mood) {
+        score += 4;
+      }
     } else {
       score += 5; // discovery boost for content with no prior signal
     }
@@ -139,17 +149,39 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     _creatorAffinity = {for (final e in creatorScores.entries) e.key: normalize(e.value)};
   }
 
+  double _recencyBoost(AurenEntertainmentItem item) {
+    final history = _history[item.id];
+    if (history == null) return 0;
+    final raw = history['lastWatchedAt'];
+    if (raw is Timestamp) {
+      final days = DateTime.now().difference(raw.toDate()).inDays;
+      if (days <= 1) return 3;
+      if (days <= 7) return 2;
+      if (days <= 30) return 1;
+    }
+    return 0;
+  }
+
   List<AurenEntertainmentItem> _buildPlan(List<AurenEntertainmentItem> items) {
     final usable = items
         .where((x) => x.mediaUrl.isNotEmpty || x.imageUrl.isNotEmpty)
         .toList();
+    for (final item in usable) {
+      // Freshness is intentionally a small signal, so it never overwhelms
+      // explicit user preferences.
+      if (_history.containsKey(item.id)) {
+        // Applied below through a stable per-item score adjustment.
+      }
+    }
 
     // Discovery-first: reserve part of the plan for never-watched items,
     // while keeping the strongest personalized items in the remaining slots.
     final neverWatched = usable.where((x) => !_history.containsKey(x.id)).toList();
     final personalized = usable.where((x) => _history.containsKey(x.id)).toList();
-    neverWatched.sort((a, b) => _score(b).compareTo(_score(a)));
-    personalized.sort((a, b) => _score(b).compareTo(_score(a)));
+    double rankedScore(AurenEntertainmentItem item) =>
+        _score(item) + _recencyBoost(item);
+    neverWatched.sort((a, b) => rankedScore(b).compareTo(rankedScore(a)));
+    personalized.sort((a, b) => rankedScore(b).compareTo(rankedScore(a)));
     if (usable.isEmpty) return const [];
     final target = (_minutes / 30).ceil().clamp(1, 8);
     final result = <AurenEntertainmentItem>[];
