@@ -149,6 +149,13 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     _creatorAffinity = {for (final e in creatorScores.entries) e.key: normalize(e.value)};
   }
 
+  double _explorationBoost(AurenEntertainmentItem item) {
+    if (_history.containsKey(item.id) || _signals.containsKey(item.id)) return 0;
+    final typeKnown = _typeAffinity.containsKey(item.type);
+    // Novelty stays a bounded signal so it cannot overpower explicit preferences.
+    return typeKnown ? 2.5 : 5.0;
+  }
+
   double _recencyBoost(AurenEntertainmentItem item) {
     final history = _history[item.id];
     if (history == null) return 0;
@@ -179,7 +186,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     final neverWatched = usable.where((x) => !_history.containsKey(x.id)).toList();
     final personalized = usable.where((x) => _history.containsKey(x.id)).toList();
     double rankedScore(AurenEntertainmentItem item) =>
-        _score(item) + _recencyBoost(item);
+        _score(item) + _recencyBoost(item) + _explorationBoost(item);
 
     // Build a diversified candidate pool first. This prevents the same type
     // from filling the whole plan even when its raw recommendation score is high.
@@ -300,6 +307,14 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                 label: _minutes.toString(), onChanged: (v) => setState(() => _minutes = v.round())),
               FilledButton.icon(onPressed: () => _generate(source),
                 icon: const Icon(Icons.auto_awesome_rounded), label: const Text('AUREN جهّز لي المشاهدة')),
+              if (_plan.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => setState(() => _plan = _buildPlan(source)),
+                  icon: const Icon(Icons.shuffle_rounded),
+                  label: const Text('اكتشف Mix مختلف'),
+                ),
+              ],
               if (_plan.isNotEmpty) ...[
                 const SizedBox(height: 18),
                 Text('خطة مشاهدة • ${_plan.length} عناصر • $_minutes دقيقة',
