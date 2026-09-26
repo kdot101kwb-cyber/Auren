@@ -11,11 +11,14 @@ class PostRepository {
 
   Future<void> createCommunityPost(AurenPost post) => _posts.doc(post.id).set({...post.toMap(),'communityId': post.communityId,'searchText': post.text.trim().toLowerCase()});
 
-  Stream<List<AurenPost>> watchFeed() => _posts
+  Stream<List<AurenPost>> watchFeed({Set<String> blockedAuthorIds = const {}}) => _posts
       .orderBy('createdAt', descending: true)
       .limit(50)
       .snapshots()
-      .map((s) => s.docs.map((d) => AurenPost.fromMap(d.id, d.data())).toList());
+      .map((s) => s.docs
+          .map((d) => AurenPost.fromMap(d.id, d.data()))
+          .where((p) => !blockedAuthorIds.contains(p.authorId))
+          .toList());
 
   Future<void> create(AurenPost post) => _posts.doc(post.id).set({
     ...post.toMap(),
