@@ -299,3 +299,18 @@ test('social safety foundation has server-private reports and owner-only blocks'
   assert.match(rules, /allow read, update, delete: if false;/);
   assert.match(rules, /blockedUid == request\.resource\.data\.blockedUid/);
 });
+test('Match Everything reply detection is server-side, member-scoped and stores exact reply metadata', () => {
+  assert.match(source, /exports\.onConversationMessageCreated/);
+  assert.match(source, /\.where\('conversationId', '==', event\.params\.conversationId\)/);
+  assert.match(source, /const owners = data\.memberIds\.filter\(\(uid\) => uid && uid !== actorUid\)/);
+  assert.match(source, /replyMessageId: event\.params\.messageId/);
+  assert.match(source, /replyDetectedAt: FieldValue\.serverTimestamp\(\)/);
+  assert.match(source, /type: 'match_flow_reply'/);
+  assert.doesNotMatch(source, /db\.collectionGroup\('match_action_flows'\)/);
+});
+
+test('Match Everything only advances waiting flows and keeps notification id deterministic', () => {
+  assert.match(source, /\.filter\(\(doc\) => \(doc\.data\(\) \|\| \{\}\)\.status === 'waiting_response'\)/);
+  assert.match(source, /notificationId: 'match_reply_' \+ doc\.id \+ '_' \+ event\.params\.messageId/);
+});
+
