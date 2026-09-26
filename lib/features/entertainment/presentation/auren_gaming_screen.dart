@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AurenGamingScreen extends StatefulWidget {
   const AurenGamingScreen({super.key});
@@ -13,8 +14,9 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   String? _roomId;
   String? _inviteCode;
   bool _busy = false;
+  final _chatController = TextEditingController();
 
-  @override void dispose() { _codeController.dispose(); super.dispose(); }
+  @override void dispose() { _codeController.dispose(); _chatController.dispose(); super.dispose(); }
 
   Future<void> _createRoom() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -98,14 +100,19 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
             OutlinedButton.icon(onPressed: () => _snack('Social Play متصل حالياً بغرف الألعاب.'), icon: const Icon(Icons.people_outline), label: const Text('استكشف'))),
         ] else ...[
           if (_inviteCode != null) Card(child: ListTile(leading: const Icon(Icons.share_outlined), title: const Text('رمز الغرفة'),
-            subtitle: Text(_inviteCode!, style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)))),
+            subtitle: Text(_inviteCode!, style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
+            trailing: IconButton(icon: const Icon(Icons.copy), onPressed: () { Clipboard.setData(ClipboardData(text: _inviteCode!)); _snack('تم نسخ رمز اللعبة.'); }))),
           const SizedBox(height: 10),
           StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             stream: _service.watchRoom(_roomId!), builder: (context, snap) {
               if (snap.hasError) return const Text('تعذر تحميل اللعبة.');
               final data = snap.data?.data();
               if (data == null) return const Text('الغرفة غير متاحة.');
-              return _buildBoard(context, data, uid);
+              return Column(children: [
+                _buildBoard(context, data, uid),
+                const SizedBox(height: 18),
+                _buildChat(),
+              ]);
             }),
         ],
       ]),
@@ -128,6 +135,72 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         Text(subtitle), const SizedBox(height: 10), action,
       ]))
     ])));
+
+  Widget _buildChat() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('دردشة اللاعبين', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 180,
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _service.watchMessages(_roomId!),
+              builder: (context, snap) {
+                if (snap.hasError) return const Center(child: Text('تعذر تحميل الدردشة.'));
+                final docs = snap.data?.docs ?? const [];
+                if (docs.isEmpty) return const Center(child: Text('ابدأ الحديث مع خصمك 👋'));
+                return ListView.builder(
+                  reverse: true,
+                  itemCount: docs.length,
+                  itemBuilder: (_, i) {
+                    final data = docs[i].data();
+                    final mine = data['senderUid']?.toString() == FirebaseAuth.instance.currentUser?.uid;
+                    return Align(
+                      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: mine ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surfaceContainerHighest,
+                        ),
+                        child: Text(data['text']?.toString() ?? ''),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: TextField(
+              controller: _chatController,
+              maxLength: 500,
+              decoration: const InputDecoration(hintText: 'اكتب رسالة…', border: OutlineInputBorder(), counterText: ''),
+              onSubmitted: (_) => _sendChat(),
+            )),
+            const SizedBox(width: 8),
+            IconButton.filled(onPressed: _sendChat, icon: const Icon(Icons.send)),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _sendChat() async {
+    final text = _chatController.text.trim();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (_roomId == null || uid == null || text.isEmpty) return;
+    try {
+      await _service.sendMessage(_roomId!, uid, text);
+      _chatController.clear();
+    } catch (_) {
+      if (mounted) _snack('تعذر إرسال الرسالة.');
+    }
+  }
 
   Widget _buildBoard(BuildContext context, Map<String, dynamic> data, String? uid) {
     final board = List<String>.from((data['board'] as List<dynamic>? ?? const []).map((e) => e.toString()));
@@ -193,6 +266,16 @@ class AurenGamingService {
   }
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchRoom(String roomId) => _db.collection('gaming_rooms').doc(roomId).snapshots();
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchMessages(String roomId) =>
+      _db.collection('gaming_rooms').doc(roomId).collection('messages').orderBy('createdAt', descending: true).limit(50).snapshots();
+
+  Future<void> sendMessage(String roomId, String uid, String text) =>
+      _db.collection('gaming_rooms').doc(roomId).collection('messages').add({
+        'senderUid': uid,
+        'text': text,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
   Future<void> playMove({required String roomId, required List<String> board, required String? winner, required bool draw, required String nextUid}) =>
     _db.collection('gaming_rooms').doc(roomId).update({'board':board,'winner':winner,'draw':draw,'turnUid':nextUid,'updatedAt':FieldValue.serverTimestamp()});
