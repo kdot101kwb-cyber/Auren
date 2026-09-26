@@ -2396,6 +2396,49 @@ exports.acceptCreatorSupport = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.settleCreatorEarning = onCall(
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid || request.auth.token?.admin !== true) {
+      throw new HttpsError('permission-denied','Admin access required.');
+    }
+    const earningId=typeof request.data?.earningId==='string'?request.data.earningId.trim():'';
+    if(!earningId || earningId.length>128) {
+      throw new HttpsError('invalid-argument','Invalid earning.');
+    }
+    const earningRef=db.collection('creator_earnings').doc(earningId);
+    let creatorUid='';
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(earningRef);
+      if(!snap.exists) throw new HttpsError('not-found','Earning not found.');
+      const data=snap.data()||{};
+      creatorUid=typeof data.creatorUid==='string'?data.creatorUid:'';
+      if(!creatorUid) throw new HttpsError('failed-precondition','Earning has no creator.');
+      if(data.status==='settled') return;
+      if(data.status!=='pending_settlement') {
+        throw new HttpsError('failed-precondition','Earning is not awaiting settlement.');
+      }
+      tx.update(earningRef,{
+        status:'settled',
+        settledBy:uid,
+        settledAt:FieldValue.serverTimestamp(),
+      });
+    });
+    if(creatorUid) {
+      await notify(creatorUid,{
+        title:'Creator earning settled',
+        body:'A creator earning is now available for withdrawal.',
+        type:'creator_earning',
+        targetId:creatorUid,
+        entityId:earningId,
+        notificationId:'creator_earning_settled_'+earningId,
+      });
+    }
+    return {status:'settled',earningId};
+  },
+);
+
 exports.publishCreatorPlanAsShort = onCall(
   {region:'us-central1', timeoutSeconds:30, memory:'256MiB'},
   async (request) => {
