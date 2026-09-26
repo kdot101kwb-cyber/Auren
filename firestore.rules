@@ -1102,6 +1102,11 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    match /users/{userId}/savedOpportunities/{opportunityId} {
+      allow read, create, delete: if isOwner(userId);
+      allow update: if false;
+    }
+
     match /users/{userId}/savedBusinesses/{businessId} {
       allow read, create, delete: if isOwner(userId);
       allow update: if false;
