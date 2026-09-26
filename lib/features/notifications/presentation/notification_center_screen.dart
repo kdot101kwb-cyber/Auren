@@ -3,6 +3,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/messaging/messenger_screen.dart';
 import '../../../services/social/notification_service.dart';
+import '../../profile/presentation/profile_screen.dart';
 
 class AurenNotificationCenterScreen extends StatefulWidget {
   const AurenNotificationCenterScreen({super.key});
@@ -65,6 +66,17 @@ class _AurenNotificationCenterScreenState extends State<AurenNotificationCenterS
           final all = snapshot.data!;
           final items = all.where(_matches).toList();
           return Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+              child: Row(children: [
+                Expanded(child: Text(
+                  unreadOnly ? 'Unread notifications' : 'Your latest updates',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                )),
+                if (all.isNotEmpty)
+                  Text('${items.length} shown', style: Theme.of(context).textTheme.bodySmall),
+              ]),
+            ),
             SizedBox(
               height: 58,
               child: ListView(
@@ -117,13 +129,25 @@ class _AurenNotificationCenterScreenState extends State<AurenNotificationCenterS
     final uid = auth.currentUserId;
     if (uid == null) return;
     if (!item.read) await service.markRead(uid, item.id);
+    if (!mounted) return;
+
     final conversationId = item.conversationId;
-    if (conversationId == null || conversationId.isEmpty || !mounted) return;
-    final conversation = await ConversationRepository().findById(conversationId);
-    if (conversation == null || !mounted) return;
-    await Navigator.push(context, MaterialPageRoute(
-      builder: (_) => MessengerScreen(conversationId: conversationId),
-    ));
+    if (conversationId != null && conversationId.isNotEmpty) {
+      final conversation = await ConversationRepository().findById(conversationId);
+      if (conversation == null || !mounted) return;
+      await Navigator.push(context, MaterialPageRoute(
+        builder: (_) => MessengerScreen(conversationId: conversationId),
+      ));
+      return;
+    }
+
+    final actorUid = item.actorUid;
+    if (actorUid != null && actorUid.isNotEmpty && actorUid != uid &&
+        ['follow', 'like', 'comment'].contains(item.type)) {
+      await Navigator.push(context, MaterialPageRoute(
+        builder: (_) => AurenProfileScreen(userId: actorUid),
+      ));
+    }
   }
 }
 
