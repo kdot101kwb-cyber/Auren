@@ -13,6 +13,7 @@ import '../../saved/presentation/saved_center_screen.dart';
 import '../../agents/presentation/auren_work_artifacts_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../../services/notifications/notification_repository.dart';
+import '../../../services/social/adaptive_discovery_service.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -186,7 +187,85 @@ class AurenHomeV2 extends StatelessWidget {
                 );
               },
             ),
-          const SizedBox(height: 12),
+          if (uid != null)
+          FutureBuilder<List<AurenDiscoveryItem>>(
+            future: AurenAdaptiveDiscoveryService().findOpportunities(
+              uid: uid,
+              context: AurenProfileContext.work,
+              limit: 5,
+            ),
+            builder: (context, snapshot) {
+              final items = snapshot.data ?? const <AurenDiscoveryItem>[];
+              if (items.isEmpty) return const SizedBox.shrink();
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(children: [
+                        Icon(Icons.radar),
+                        SizedBox(width: 8),
+                        Text('Opportunity Radar',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ]),
+                      const SizedBox(height: 6),
+                      const Text('فرص مرتبة حسب سياق ملفك الحالي.'),
+                      const SizedBox(height: 8),
+                      ...items.take(3).map((item) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          child: Text(item.score.toString()),
+                        ),
+                        title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(item.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      )),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        if (uid != null)
+          FutureBuilder<List<AurenDiscoveryItem>>(
+            future: AurenAdaptiveDiscoveryService().findPeople(
+              uid: uid,
+              context: AurenProfileContext.social,
+              limit: 5,
+            ),
+            builder: (context, snapshot) {
+              final items = snapshot.data ?? const <AurenDiscoveryItem>[];
+              if (items.isEmpty) return const SizedBox.shrink();
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(children: [
+                        Icon(Icons.people_alt_outlined),
+                        SizedBox(width: 8),
+                        Text('People to Connect',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ]),
+                      const SizedBox(height: 6),
+                      const Text('أشخاص قد يتوافقون مع اهتماماتك وسياقك.'),
+                      const SizedBox(height: 8),
+                      ...items.take(3).map((item) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          child: Text(item.score.toString()),
+                        ),
+                        title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(item.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      )),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        const SizedBox(height: 12),
         _card(context, Icons.auto_awesome, 'AUREN AI', 'اسأل، خطط، وأنجز.', const MessengerScreen()),
         _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.', const AurenDiscoverScreen()),
         _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
