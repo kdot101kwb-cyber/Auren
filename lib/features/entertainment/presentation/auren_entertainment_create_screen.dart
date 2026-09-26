@@ -355,7 +355,7 @@ class _AurenEntertainmentCreateScreenState
           ...jobs.take(3).map((job) {
             final progress = (job['progress'] as num?)?.toInt() ?? 0;
             final status = job['status']?.toString() ?? 'planning';
-            return ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.movie_filter_rounded)), title: Text('${job['mode'] ?? 'مشروع'} • $status'), subtitle: Text('التقدم $progress% • ${job['provider'] ?? 'auren_ai'}'), trailing: SizedBox(width: 54, child: CircularProgressIndicator(value: progress / 100)));
+            return ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.movie_filter_rounded)), title: Text('${job['mode'] ?? 'مشروع'} • $status'), subtitle: Text('التقدم $progress% • ${job['provider'] ?? 'auren_ai'}\n${(job['plan'] is List && (job['plan'] as List).isNotEmpty) ? (job['plan'] as List).first.toString() : 'الخطة قيد التجهيز'}'), trailing: SizedBox(width: 54, child: CircularProgressIndicator(value: progress / 100)));
           }),
         ])));
       },
