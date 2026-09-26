@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/conversation.dart';
 import 'conversation_id.dart';
+import '../social/safety_repository.dart';
 
 class ConversationRepository {
   final FirebaseFirestore _firestore;
+  late final AurenSafetyRepository _safety = AurenSafetyRepository(db: _firestore);
 
   ConversationRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -50,6 +52,11 @@ class ConversationRepository {
   }) async {
     if (uid.isEmpty || otherUid.isEmpty || uid == otherUid) {
       throw ArgumentError('Invalid direct conversation members.');
+    }
+    final blockedByMe = await _safety.watchBlocked(uid, otherUid).first;
+    final blockedMe = await _safety.watchBlocked(otherUid, uid).first;
+    if (blockedByMe || blockedMe) {
+      throw StateError('Direct messaging is unavailable because one of the users is blocked.');
     }
     final ref = _conversations.doc(ConversationId.direct(uid, otherUid));
     final members = [uid, otherUid]..sort();
