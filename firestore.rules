@@ -21,6 +21,16 @@ service cloud.firestore {
     allow create, delete: if false;
   }
 
+  match /users/{userId}/profile_settings/{settingId} {
+    allow read: if isOwner(userId);
+    allow create, update: if isOwner(userId)
+      && settingId == 'current'
+      && request.resource.data.keys().hasOnly(['activeMode','updatedAt'])
+      && request.resource.data.activeMode in ['personal','creator','professional','business']
+      && request.resource.data.updatedAt is timestamp;
+    allow delete: if isOwner(userId);
+  }
+
   match /users/{userId}/profile_modes/{modeId} {
     allow read: if request.auth != null
       && (request.auth.uid == userId || resource.data.discoverable == true);
