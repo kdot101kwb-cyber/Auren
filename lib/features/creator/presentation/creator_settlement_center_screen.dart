@@ -23,7 +23,7 @@ class _AurenCreatorSettlementCenterScreenState extends State<AurenCreatorSettlem
   Future<void> _setStatus(Map<String,dynamic> item,String status)async{
     try{
       final c=FirebaseFunctions.instance.httpsCallable('setCreatorWithdrawalStatus');
-      await c.call({'withdrawalId':item['id'],'status':status});
+      await c.call({'withdrawalId':item['id'],'status':status,'note':''});
       await _load();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحديث الحالة: $e')));}
   }
