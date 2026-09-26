@@ -2248,6 +2248,30 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
   },
 );
 
+exports.acceptCreatorSupport = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const requestId=typeof request.data?.requestId==='string'?request.data.requestId.trim():'';
+    if(!requestId||requestId.length>128) throw new Error('Invalid support request.');
+    const ref=db.collection('creator_support_requests').doc(requestId);
+    const snap=await ref.get();
+    if(!snap.exists) throw new Error('Support request not found.');
+    const data=snap.data()||{};
+    if(data.creatorUid!==uid) throw new Error('Only the creator can accept support.');
+    if(data.status!=='pending') throw new Error('Support request is no longer pending.');
+    const amountMinor=Number(data.amountMinor);
+    const currency=typeof data.currency==='string'?data.currency:'';
+    const earningsRef=db.collection('creator_earnings').doc();
+    await db.runTransaction(async(tx)=>{
+      tx.update(ref,{status:'accepted',acceptedAt:FieldValue.serverTimestamp()});
+      tx.set(earningsRef,{creatorUid:uid,supportRequestId:requestId,supporterUid:data.supporterUid||'',amountMinor,currency,type:'support',status:'pending_settlement',createdAt:FieldValue.serverTimestamp()});
+    });
+    return {status:'accepted',earningId:earningsRef.id};
+  },
+);
+
 exports.publishCreatorPlanAsShort = onCall(
   {region:'us-central1', timeoutSeconds:30, memory:'256MiB'},
   async (request) => {
