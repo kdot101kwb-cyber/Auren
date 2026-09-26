@@ -9,6 +9,7 @@ import 'auren_mini_player.dart';
 import 'auren_podcasts_screen.dart';
 import 'auren_radio_screen.dart';
 import 'auren_music_queue_screen.dart';
+import 'auren_smart_music_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 
 class AurenMusicHubScreen extends StatelessWidget {
@@ -161,8 +162,9 @@ class AurenMusicHubScreen extends StatelessWidget {
         runSpacing: 10,
         children: [
           _action(context, Icons.auto_awesome, 'AI Music',
-              'أنشئ فكرة أغنية أصلية',
-              'ساعدني في إنشاء أغنية أصلية: فكرة، كلمات، بنية وموسيقى مناسبة، بدون تقليد صوت فنان حقيقي.'),
+              'Smart Music',
+              'ساعدني في إنشاء أغنية أصلية: فكرة، كلمات، بنية وموسيقى مناسبة، بدون تقليد صوت فنان حقيقي.',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSmartMusicScreen()))),
           _action(context, Icons.radio, 'Radio', 'محطات واكتشاف',
               'اقترح لي تجربة Radio مناسبة لذوقي ووقتي.',
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()))),
