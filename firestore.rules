@@ -64,7 +64,7 @@ service cloud.firestore {
     allow create, update: if isOwner(userId)
       && modeId in ['personal','creator','professional','business']
       && request.resource.data.keys().hasOnly([
-        'mode','headline','bio','skills','interests','links','discoverable','updatedAt'
+        'mode','headline','bio','skills','interests','links','goals','languages','services','achievements','discoverable','showContact','updatedAt'
       ])
       && request.resource.data.mode == modeId
       && request.resource.data.headline is string
@@ -77,7 +77,16 @@ service cloud.firestore {
       && request.resource.data.interests.size() <= 20
       && request.resource.data.links is list
       && request.resource.data.links.size() <= 5
+      && request.resource.data.goals is list
+      && request.resource.data.goals.size() <= 10
+      && request.resource.data.languages is list
+      && request.resource.data.languages.size() <= 10
+      && request.resource.data.services is list
+      && request.resource.data.services.size() <= 15
+      && request.resource.data.achievements is list
+      && request.resource.data.achievements.size() <= 10
       && request.resource.data.discoverable is bool
+      && request.resource.data.showContact is bool
       && request.resource.data.updatedAt is timestamp;
     allow delete: if isOwner(userId);
   }
