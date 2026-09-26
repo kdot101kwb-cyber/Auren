@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
+import '../../../services/entertainment/entertainment_repository.dart';
 import 'auren_audio_player_screen.dart';
 
 class AurenMusicConciergeScreen extends StatefulWidget {
@@ -15,10 +17,15 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
   String activity = 'تلقائي';
   String mood = 'الكل';
   int minutes = 45;
+  String contextMode = 'تلقائي';
+  String contentMode = 'موسيقى';
+  Map<String, Map<String, dynamic>> signals = const {};
   List<AurenEntertainmentItem> plan = const [];
 
   static const activities = ['تلقائي', 'تمرين', 'دراسة', 'سفر', 'نوم', 'استرخاء', 'حفلة'];
   static const moods = ['الكل', 'هادئ', 'حماس', 'تركيز', 'سفر', 'تسلية'];
+  static const contexts = ['تلقائي', 'صباح', 'ليل', 'عمل', 'رحلة', 'استرخاء'];
+  static const contentModes = ['موسيقى', 'راديو', 'بودكاست', 'أي صوت'];
 
   @override
   void initState() {
@@ -43,6 +50,41 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
     if (parsed != null) {
       final next = parsed!.clamp(10, 240);
       if (next != minutes && mounted) setState(() => minutes = next);
+    }
+
+    const moodKeys = <String, List<String>>{
+      'هادئ': ['هادئ', 'calm', 'relax', 'chill', 'quiet'],
+      'حماس': ['حماس', 'energetic', 'energy', 'power'],
+      'تركيز': ['تركيز', 'focus', 'study'],
+      'سفر': ['سفر', 'رحلة', 'travel', 'trip'],
+      'تسلية': ['تسلية', 'fun', 'entertainment'],
+    };
+    for (final e in moodKeys.entries) {
+      if (e.value.any(text.contains) && mood != e.key && mounted) {
+        setState(() => mood = e.key);
+        break;
+      }
+    }
+
+    const contextKeys = <String, List<String>>{
+      'صباح': ['صباح', 'morning'], 'ليل': ['ليل', 'night'], 'عمل': ['عمل', 'work'],
+      'رحلة': ['رحلة', 'سفر', 'travel', 'trip'], 'استرخاء': ['استرخاء', 'relax', 'calm'],
+    };
+    for (final e in contextKeys.entries) {
+      if (e.value.any(text.contains) && contextMode != e.key && mounted) {
+        setState(() => contextMode = e.key);
+        break;
+      }
+    }
+
+    const contentKeys = <String, List<String>>{
+      'بودكاست': ['بودكاست', 'podcast'], 'راديو': ['راديو', 'radio'], 'موسيقى': ['موسيقى', 'music', 'song'],
+    };
+    for (final e in contentKeys.entries) {
+      if (e.value.any(text.contains) && contentMode != e.key && mounted) {
+        setState(() => contentMode = e.key);
+        break;
+      }
     }
 
     const keys = <String, List<String>>{
@@ -85,6 +127,19 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
         var value = item.title.length * .05 + item.description.length * .01;
         if (activity != 'تلقائي' && (hints[activity] ?? const []).any(text.contains)) value += 20;
         if (mood != 'الكل' && text.contains(mood.toLowerCase())) value += 12;
+        if (contextMode != 'تلقائي' && text.contains(contextMode.toLowerCase())) value += 8;
+        if (contentMode != 'أي صوت' && item.type.toLowerCase().contains(contentMode.toLowerCase())) value += 10;
+        final words = prompt.text.toLowerCase().split(RegExp(r'\\s+')).where((x) => x.length > 2);
+        value += words.where(text.contains).length * 2;
+        final signal = signals[item.id];
+        if (signal != null) {
+          value += ((signal['watchSeconds'] as num?)?.toDouble() ?? 0) * .02;
+          value += ((signal['plays'] as num?)?.toDouble() ?? 0) * .5;
+          value += ((signal['likes'] as num?)?.toDouble() ?? 0) * 5;
+          value += ((signal['saves'] as num?)?.toDouble() ?? 0) * 3;
+          value += ((signal['completions'] as num?)?.toDouble() ?? 0) * 2;
+          value -= ((signal['skips'] as num?)?.toDouble() ?? 0) * 2;
+        }
         if (AurenMusicPlayerController.instance.history.any((x) => x.id == item.id)) value += 4;
         return value;
       }
@@ -93,7 +148,14 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
     return candidates;
   }
 
-  void generate() {
+  Future<void> generate() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      try {
+        signals = await EntertainmentRepository().getMusicSignals(uid);
+      } catch (_) {}
+    }
+    if (!mounted) return;
     final sorted = buildPlan();
     final count = sorted.isEmpty ? 0 : (minutes / 3).ceil().clamp(1, sorted.length);
     setState(() => plan = sorted.take(count).toList());
@@ -175,6 +237,20 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
               onSelected: (_) => setState(() => activity = v),
             )).toList(),
           ),
+          const SizedBox(height: 12),
+          const Text('السياق', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: contexts.map((v) => ChoiceChip(
+            label: Text(v), selected: contextMode == v,
+            onSelected: (_) => setState(() => contextMode = v),
+          )).toList()),
+          const SizedBox(height: 12),
+          const Text('نوع المحتوى', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: contentModes.map((v) => ChoiceChip(
+            label: Text(v), selected: contentMode == v,
+            onSelected: (_) => setState(() => contentMode = v),
+          )).toList()),
           const SizedBox(height: 12),
           const Text('المزاج', style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
