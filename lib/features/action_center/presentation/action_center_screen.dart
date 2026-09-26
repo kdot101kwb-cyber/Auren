@@ -219,8 +219,8 @@ class _FlowCardState extends State<_FlowCard> {
         (widget.data['conversationId'] ?? '').toString().trim();
     if (conversationId.isEmpty) return const SizedBox.shrink();
 
-    return FutureBuilder<List<AurenMessage>>(
-      future: FirestoreMessageRepository().recent(conversationId, limit: 20),
+    return FutureBuilder<AurenMessage?>(
+      future: _loadReply(conversationId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -228,26 +228,9 @@ class _FlowCardState extends State<_FlowCard> {
             child: LinearProgressIndicator(),
           );
         }
-        if (snapshot.hasError || !snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
+        final reply = snapshot.data;
+        if (reply == null) return const SizedBox.shrink();
 
-        final inbound = snapshot.data!
-            .where(
-              (m) =>
-                  m.senderId.isNotEmpty &&
-                  m.senderId != widget.uid &&
-                  !m.isAi,
-            )
-            .toList();
-        if (inbound.isEmpty) return const SizedBox.shrink();
-
-        final storedReplyId = (widget.data['replyMessageId'] ?? '').toString().trim();
-        final reply = storedReplyId.isEmpty
-            ? inbound.last
-            : inbound.where((m) => m.id == storedReplyId).isNotEmpty
-                ? inbound.firstWhere((m) => m.id == storedReplyId)
-                : inbound.last;
         final analysis = AurenSmartFollowUpService().analyze(
           reply: reply,
           action: (widget.data['action'] ?? 'open').toString(),
@@ -337,6 +320,31 @@ class _FlowCardState extends State<_FlowCard> {
         );
       },
     );
+  }
+
+  Future<AurenMessage?> _loadReply(String conversationId) async {
+    final replyId = (widget.data['replyMessageId'] ?? '').toString().trim();
+    final repository = FirestoreMessageRepository();
+
+    if (replyId.isNotEmpty) {
+      final reply = await repository.getById(conversationId, replyId);
+      if (reply != null &&
+          reply.senderId.isNotEmpty &&
+          reply.senderId != widget.uid &&
+          !reply.isAi) {
+        return reply;
+      }
+    }
+
+    final recent = await repository.recent(conversationId, limit: 20);
+    for (final message in recent.reversed) {
+      if (message.senderId.isNotEmpty &&
+          message.senderId != widget.uid &&
+          !message.isAi) {
+        return message;
+      }
+    }
+    return null;
   }
 
   void _openFollowUpDraft(
