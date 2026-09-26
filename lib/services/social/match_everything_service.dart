@@ -203,6 +203,7 @@ class AurenMatchEverythingService {
     final normalizedText = _normalize(text);
     score += (intentTerms.intersection(_tokens(text)).length * 10).clamp(0, 25);
     if (normalizedIntent.length >= 6 && normalizedText.contains(normalizedIntent)) score += 15;
+    score += _intentSemanticBoost(normalizedText, normalizedIntent);
     return score.clamp(0, 100);
   }
 
@@ -222,6 +223,21 @@ class AurenMatchEverythingService {
     if (modeMatch) reasons.add('متوافق مع نمط ملفك الحالي');
     if (reasons.isEmpty) reasons.add('مرتبط بسياقك الحالي');
     return reasons;
+  }
+
+  int _intentSemanticBoost(String text, String intent) {
+    if (intent.isEmpty) return 0;
+    var boost = 0;
+    bool pair(List<String> words) => words.any(intent.contains) && words.any(text.contains);
+    if (pair(['السودان', 'sudan'])) boost += 12;
+    if (pair(['مصر', 'egypt'])) boost += 8;
+    if (pair(['أفريقيا', 'افريقيا', 'africa'])) boost += 8;
+    if (pair(['الصين', 'china'])) boost += 8;
+    if (pair(['رخيص', 'ارخص', 'cheap', 'cheapest'])) boost += 6;
+    if (pair(['مصنع', 'مصانع', 'manufacturer', 'factory'])) boost += 10;
+    if (pair(['مورد', 'توريد', 'supplier', 'wholesale'])) boost += 10;
+    if (pair(['ملابس', 'clothing', 'fashion'])) boost += 6;
+    return boost.clamp(0, 30);
   }
 
   int _overlapScore(String a, String b) {
@@ -284,7 +300,7 @@ class AurenIntentActionPlan {
     bool has(List<String> words) => words.any(n.contains);
     return AurenIntentActionPlan(
       normalized: n,
-      commercial: has(['مورد','توريد','supplier','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر']),
+      commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر']),
       learning: has(['اتعلم','تعلم','كورس','دورة','flutter','learn','course','study']),
       work: has(['وظيفة','شغل','عمل','فرصة','تقديم','توظيف','job','work','career','apply']),
       social: has(['تابع','متابعة','صديق','تواصل','chat','follow','connect','creator','مؤثر']),
@@ -297,7 +313,7 @@ class AurenIntentActionPlan {
     if (commercial) {
       switch (kind) {
         case AurenMatchKind.business:
-          return normalized.contains('مورد') || normalized.contains('supplier') || normalized.contains('توريد') || normalized.contains('quote') || normalized.contains('عرض سعر')
+          return normalized.contains('مورد') || normalized.contains('supplier') || normalized.contains('توريد') || normalized.contains('wholesale') || normalized.contains('مصنع') || normalized.contains('manufacturer') || normalized.contains('factory') || normalized.contains('quote') || normalized.contains('عرض سعر')
               ? AurenMatchAction.requestQuote : AurenMatchAction.contact;
         case AurenMatchKind.product:
           return normalized.contains('اشتري') || normalized.contains('شراء') || normalized.contains('buy')
