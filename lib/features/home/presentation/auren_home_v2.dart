@@ -17,6 +17,7 @@ import '../../../services/social/adaptive_discovery_service.dart';
 import '../../profile/presentation/adaptive_profile_surface.dart';
 import '../../../services/social/adaptive_profile_service.dart';
 import '../../../services/social/match_everything_service.dart';
+import 'auren_intent_match_card.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -287,6 +288,10 @@ class AurenHomeV2 extends StatelessWidget {
               );
             },
           ),
+        if (uid != null) ...[
+          AurenIntentMatchCard(uid: uid),
+          const SizedBox(height: 12),
+        ],
         if (uid != null)
           FutureBuilder<List<AurenMatchItem>>(
             future: AurenMatchEverythingService().findMatches(
