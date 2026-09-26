@@ -8,6 +8,7 @@ import 'auren_audio_player_screen.dart';
 import 'auren_mini_player.dart';
 import 'auren_podcasts_screen.dart';
 import 'auren_radio_screen.dart';
+import 'auren_music_queue_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 
 class AurenMusicHubScreen extends StatelessWidget {
@@ -158,8 +159,9 @@ class AurenMusicHubScreen extends StatelessWidget {
               'اقترح لي بودكاست مناسباً لموضوعي ووقتي.',
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenPodcastsScreen()))),
           _action(context, Icons.playlist_play, 'Playlist',
-              'قائمة حسب المزاج',
-              'أنشئ لي Playlist ذكية حسب مزاجي ووقتي ونشاطي.'),
+              'Queue + History',
+              'أنشئ لي Playlist ذكية حسب مزاجي ووقتي ونشاطي.',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicQueueScreen()))),
         ],
       );
 
