@@ -10,6 +10,8 @@ class AurenSmartFollowUp {
   final String? quantity;
   final List<String> missing;
   final List<String> questions;
+  final List<String> strengths;
+  final int readinessScore;
 
   const AurenSmartFollowUp({
     required this.summary,
@@ -21,6 +23,8 @@ class AurenSmartFollowUp {
     this.quantity,
     this.missing = const [],
     this.questions = const [],
+    this.strengths = const [],
+    this.readinessScore = 0,
   });
 
   bool get hasDetails =>
@@ -83,8 +87,15 @@ class AurenSmartFollowUpService {
 
     final missing = <String>[];
     final questions = <String>[];
+    final strengths = <String>[];
 
     if (action == 'requestQuote') {
+      if (price != null) strengths.add('السعر مذكور');
+      if (currency != null) strengths.add('العملة مذكورة');
+      if (moq != null) strengths.add('الحد الأدنى للطلب مذكور');
+      if (lead != null) strengths.add('مدة التجهيز مذكورة');
+      if (shipping != null) strengths.add('خيارات الشحن مذكورة');
+      if (quantity != null) strengths.add('الكمية مذكورة');
       if (price == null) {
         missing.add('السعر');
         questions.add('ما السعر النهائي للكمية المطلوبة، وبأي عملة؟');
@@ -139,6 +150,15 @@ class AurenSmartFollowUpService {
       if (quantity != null) 'الكمية: ' + quantity,
     ];
 
+    final readinessScore = action == 'requestQuote'
+        ? ((price != null ? 25 : 0) +
+                (currency != null ? 10 : 0) +
+                (moq != null ? 20 : 0) +
+                (lead != null ? 15 : 0) +
+                (shipping != null ? 15 : 0) +
+                (quantity != null ? 15 : 0))
+            .clamp(0, 100)
+        : (missing.isEmpty ? 100 : 50);
     final summary = detailParts.isEmpty
         ? 'تم استلام الرد. لم يتم استخراج تفاصيل منظمة كافية بعد.'
         : detailParts.join(' • ');
@@ -153,6 +173,8 @@ class AurenSmartFollowUpService {
       quantity: quantity,
       missing: missing,
       questions: questions,
+      strengths: strengths,
+      readinessScore: readinessScore,
     );
   }
 
