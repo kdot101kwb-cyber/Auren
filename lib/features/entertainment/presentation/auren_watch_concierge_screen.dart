@@ -256,6 +256,17 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     );
   }
 
+  void _clearPlan() {
+    if (_plan.isEmpty) return;
+    setState(() => _plan = const []);
+  }
+
+  void _shufflePlan() {
+    if (_plan.length < 2) return;
+    final next = [..._plan]..shuffle();
+    setState(() => _plan = next);
+  }
+
   void _moveInPlan(int from, int to) {
     if (from < 0 || from >= _plan.length || to < 0 || to >= _plan.length) return;
     final next = [..._plan];
@@ -352,8 +363,26 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
               ],
               if (_plan.isNotEmpty) ...[
                 const SizedBox(height: 18),
-                Text('خطة مشاهدة • ${_plan.length} عناصر • $_minutes دقيقة',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'خطة مشاهدة • ${_plan.length} عناصر • $_minutes دقيقة',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'خلط الترتيب',
+                      onPressed: _shufflePlan,
+                      icon: const Icon(Icons.shuffle_rounded),
+                    ),
+                    IconButton(
+                      tooltip: 'مسح الخطة',
+                      onPressed: _clearPlan,
+                      icon: const Icon(Icons.delete_sweep_rounded),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 ReorderableListView.builder(
                   shrinkWrap: true,
