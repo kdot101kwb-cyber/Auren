@@ -20,6 +20,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   bool pureEntertainment = true;
   final Map<String, DateTime> _startedAt = {};
   final Set<String> _tracked = {};
+  Stream<Set<String>>? _savedStream;
 
   static const moods = <String>['تسلية', 'ضحك', 'موسيقى', 'أفلام', 'Gaming', 'اكتشاف'];
 
@@ -27,6 +28,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   void initState() {
     super.initState();
     uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) _savedStream = repo.watchSavedIds(uid!);
   }
 
   Future<void> _prepare(AurenEntertainmentItem item) async {
@@ -48,9 +50,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   Future<void> _trackView(AurenEntertainmentItem item, {bool completed = false}) async {
     if (uid == null || _tracked.contains(item.id)) return;
     final started = _startedAt[item.id];
+    final controller = controllers[item.id];
+    final naturallyCompleted = controller != null && controller.value.isInitialized && controller.value.duration.inMilliseconds > 0 &&
+        controller.value.position.inMilliseconds >= (controller.value.duration.inMilliseconds * 0.9).round();
     final seconds = started == null ? 0 : DateTime.now().difference(started).inSeconds;
     _tracked.add(item.id);
-    await repo.trackShortView(uid!, item.id, seconds: seconds, completed: completed, mood: mood);
+    await repo.trackShortView(uid!, item.id, seconds: seconds, completed: completed || naturallyCompleted, mood: mood);
+    if (seconds < 3) {
+      await repo.trackShortAction(uid!, item.id, action: 'skip', mood: mood);
+    }
   }
 
   void _onPage(int index, List<AurenEntertainmentItem> items) {
@@ -282,14 +290,31 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                 await repo.toggleShortLike(uid!, item.id, next);
                                 await repo.trackShortAction(uid!, item.id, action: next ? 'like' : 'unlike', mood: mood);
                               },
-                              /* onPressed: () => repo.toggleShortLike(
-                                uid!, item.id, !(s.data == true)), */
-                            ),
+                                                          ),
                           ),
                         if (uid != null)
-                          IconButton(
-                            icon: const Icon(Icons.bookmark_border, color: Colors.white, size: 32),
-                            onPressed: () => repo.save(uid!, item.id),
+                          StreamBuilder<Set<String>>(
+                            stream: _savedStream,
+                            builder: (context, saved) {
+                              final isSaved = saved.data?.contains(item.id) == true;
+                              return IconButton(
+                                tooltip: isSaved ? 'إزالة الحفظ' : 'حفظ',
+                                icon: Icon(
+                                  isSaved ? Icons.bookmark : Icons.bookmark_border,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                                onPressed: () async {
+                                  if (isSaved) {
+                                    await repo.unsave(uid!, item.id);
+                                    await repo.trackShortAction(uid!, item.id, action: 'unsave', mood: mood);
+                                  } else {
+                                    await repo.save(uid!, item.id);
+                                    await repo.trackShortAction(uid!, item.id, action: 'save', mood: mood);
+                                  }
+                                },
+                              );
+                            },
                           ),
                         if (!pureEntertainment)
                           IconButton(
