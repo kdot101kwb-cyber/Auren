@@ -9,6 +9,75 @@ initializeApp();
 const db = getFirestore();
 const AUREN_AI_API_KEY = defineSecret('AUREN_AI_API_KEY');
 
+// Entertainment provider adapter.
+// The secret is server-only. The endpoint is configured as a secret so the
+// client never receives credentials. No request is sent until the endpoint is
+// explicitly configured.
+const AUREN_ENTERTAINMENT_PROVIDER_URL = defineSecret(
+  'AUREN_ENTERTAINMENT_PROVIDER_URL',
+);
+
+async function submitEntertainmentProviderJob({ jobId, mode, mood, length, idea, plan, assets }) {
+  const url = AUREN_ENTERTAINMENT_PROVIDER_URL.value().trim();
+  if (!url) {
+    return {
+      accepted: false,
+      provider: 'server_provider',
+      message: 'مزوّد التوليد غير مفعّل بعد.',
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${AUREN_AI_API_KEY.value()}`,
+        'x-auren-job-id': jobId,
+      },
+      body: JSON.stringify({
+        jobId, mode, mood, length, idea, plan, assets,
+      }),
+      signal: controller.signal,
+    });
+
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        accepted: false,
+        provider: 'server_provider',
+        message: typeof body.message === 'string'
+          ? body.message.slice(0, 500)
+          : `Provider HTTP ${response.status}`,
+      };
+    }
+
+    return {
+      accepted: body.accepted === true,
+      provider: typeof body.provider === 'string' ? body.provider.slice(0, 80) : 'server_provider',
+      externalJobId: typeof body.externalJobId === 'string'
+        ? body.externalJobId.slice(0, 256)
+        : null,
+      message: typeof body.message === 'string'
+        ? body.message.slice(0, 500)
+        : 'تم إرسال المهمة إلى مزوّد التوليد.',
+    };
+  } catch (error) {
+    return {
+      accepted: false,
+      provider: 'server_provider',
+      message: error?.name === 'AbortError'
+        ? 'انتهت مهلة الاتصال بمزوّد التوليد.'
+        : 'تعذر الاتصال بمزوّد التوليد.',
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
 async function loadAurenPermissionLedger(uid) {
   const ref = db.collection('users').doc(uid)
     .collection('agent_permissions').doc('primary');
@@ -2894,6 +2963,50 @@ exports.processEntertainmentCreationQueue = onDocumentUpdated(
       providerStatus: 'unavailable',
       providerMessage: 'المزوّد المطلوب غير مفعّل في طبقة الخادم.',
       workerFinishedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  },
+);
+
+// v12 — server-side provider adapter.
+// Only the worker can read provider secrets. If no endpoint is configured,
+// the job remains waiting_provider and no fake progress is written.
+exports.dispatchEntertainmentToProvider = onDocumentUpdated(
+  'users/{userId}/entertainmentCreationJobs/{jobId}',
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+    if (after.queueStatus !== 'processing' || before.queueStatus === 'processing') return;
+    if (after.providerStatus === 'submitted' || after.providerStatus === 'completed') return;
+
+    const result = await submitEntertainmentProviderJob({
+      jobId: event.params.jobId,
+      mode: after.mode || '',
+      mood: after.mood || '',
+      length: after.length || '',
+      idea: after.idea || '',
+      plan: Array.isArray(after.plan) ? after.plan : [],
+      assets: Array.isArray(after.assets) ? after.assets : [],
+    });
+
+    const ref = event.data.after.ref;
+    if (!result.accepted) {
+      await ref.set({
+        queueStatus: 'waiting_provider',
+        providerStatus: 'not_connected',
+        providerMessage: result.message,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return;
+    }
+
+    await ref.set({
+      providerStatus: 'submitted',
+      providerMessage: result.message,
+      externalJobId: result.externalJobId || null,
+      status: 'generating',
+      progress: 1,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   },
