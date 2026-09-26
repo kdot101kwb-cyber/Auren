@@ -76,11 +76,24 @@ class AurenHomeV2 extends StatelessWidget {
         const SizedBox(height: 6),
         const Text('AUREN يتكيف معك، وليس العكس.'),
         const SizedBox(height: 16),
-        if (uid != null)
+        if (uid != null) ...[
           AurenAdaptiveProfileSurface(
             uid: uid,
-            context: AurenProfileContext.social,
+            context: AurenProfileContext.unknown,
           ),
+          const SizedBox(height: 6),
+          AurenAdaptiveActionRail(
+            uid: uid,
+            context: AurenProfileContext.unknown,
+            intent: 'الصفحة الرئيسية وما أحتاجه الآن',
+            onPrompt: (prompt) => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MessengerScreen(initialPrompt: prompt),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         Card(
           clipBehavior: Clip.antiAlias,
