@@ -8,6 +8,15 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
   final String jobId;
   const AurenEntertainmentJobDetailScreen({super.key, required this.jobId});
 
+  String _queueLabel(String queueStatus) {
+    switch (queueStatus) {
+      case 'queued': return 'في قائمة الانتظار';
+      case 'processing': return 'المعالج يعمل على المهمة';
+      case 'waiting_provider': return 'بانتظار مزوّد حقيقي';
+      default: return '';
+    }
+  }
+
   String _statusLabel(String status) {
     switch (status) {
       case 'planning': return 'التخطيط';
@@ -95,6 +104,8 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
           }
 
           final status = job['status']?.toString() ?? 'planning';
+          final queueStatus = job['queueStatus']?.toString() ?? '';
+          final queueLabel = _queueLabel(queueStatus);
           final progress = ((job['progress'] as num?)?.toInt() ?? 0).clamp(0, 100);
           final plan = job['plan'] is List
               ? (job['plan'] as List).map((e) => e.toString()).toList()
@@ -112,6 +123,23 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
             children: [
               _summaryCard(context, job, status, progress),
+              if (queueLabel.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Card(
+                  child: ListTile(
+                    leading: Icon(
+                      queueStatus == 'waiting_provider'
+                          ? Icons.cloud_off_rounded
+                          : Icons.sync_rounded,
+                    ),
+                    title: Text(queueLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text(
+                      job['providerMessage']?.toString() ??
+                          'حالة قائمة الانتظار تُدار من خادم AUREN.',
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               if (status == 'planning')
                 SizedBox(
