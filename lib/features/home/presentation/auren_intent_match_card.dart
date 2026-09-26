@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../services/social/adaptive_profile_service.dart';
 import '../../../services/social/match_everything_service.dart';
+import 'auren_match_detail_screen.dart';
 
 class AurenIntentMatchCard extends StatefulWidget {
   final String uid;
@@ -56,6 +57,14 @@ class _AurenIntentMatchCardState extends State<AurenIntentMatchCard> {
       case AurenMatchKind.product: return 'منتج';
       case AurenMatchKind.content: return 'محتوى';
     }
+  }
+
+  Future<void> _openMatch(AurenMatchItem item) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AurenMatchDetailScreen(item: item, intent: _intent),
+      ),
+    );
   }
 
   IconData _kindIcon(AurenMatchKind kind) {
@@ -138,6 +147,8 @@ class _AurenIntentMatchCardState extends State<AurenIntentMatchCard> {
               const SizedBox(height: 4),
               ..._items.take(5).map((item) => ListTile(
                 contentPadding: EdgeInsets.zero,
+                onTap: () => _openMatch(item),
+                trailing: const Icon(Icons.chevron_right),
                 leading: CircleAvatar(child: Icon(_kindIcon(item.kind), size: 20)),
                 title: Row(children: [
                   Expanded(child: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
