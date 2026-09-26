@@ -95,6 +95,22 @@ class AurenWatchTogetherService {
   Future<void> sendMessage(String roomId, String text) async { final uid = FirebaseAuth.instance.currentUser?.uid; final value = text.trim(); if (uid == null || value.isEmpty) return; await _rooms.doc(roomId).collection('messages').add({'senderUid': uid, 'text': value, 'createdAt': FieldValue.serverTimestamp()}); }
 }
 
+class AurenWatchTogetherAnalytics {
+  static String statusLabel(String status) {
+    switch (status) {
+      case 'ready':
+        return 'جاهزة للمشاهدة';
+      case 'waiting':
+        return 'بانتظار الأصدقاء';
+      default:
+        return status;
+    }
+  }
+
+  static String membersLabel(int count) =>
+      count == 1 ? 'أنت وحدك' : '$count مشاركين';
+}
+
 class AurenWatchTogetherScreen extends StatefulWidget {
   final String? title;
   final String? mediaUrl;
@@ -159,8 +175,10 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
           const SizedBox(height: 10),
           Row(children: [Expanded(child: SelectableText('رمز الدعوة: ' + (data['inviteCode'] ?? '').toString(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700))), IconButton(onPressed: () async { final code = (data['inviteCode'] ?? '').toString(); if (code.isEmpty) return; await Clipboard.setData(ClipboardData(text: code)); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ رمز الدعوة'))); }, icon: const Icon(Icons.copy)), IconButton(onPressed: _sharing ? null : () => _shareInvite((data['inviteCode'] ?? '').toString()), icon: const Icon(Icons.share))]),
           const SizedBox(height: 8), Text('الأعضاء: ' + members.length.toString()),
-          Text('الحالة: ' + (data['status'] ?? 'waiting').toString()),
-          Text('المشاهدة: ' + ((data['isPlaying'] == true) ? 'تشغيل' : 'متوقفة') + ' • ' + (data['positionSeconds'] ?? 0).toString() + ' ثانية'),
+          Text('الحالة: ' + AurenWatchTogetherAnalytics.statusLabel((data['status'] ?? 'waiting').toString())),
+          Text(AurenWatchTogetherAnalytics.membersLabel(members.length) + ' • ' +
+              'المشاهدة: ' + ((data['isPlaying'] == true) ? 'تشغيل' : 'متوقفة') +
+              ' • ' + (data['positionSeconds'] ?? 0).toString() + ' ثانية'),
           if (_syncError != null) ...[const SizedBox(height: 8), Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)), color: Colors.redAccent.withOpacity(.12)), child: Row(children: [const Expanded(child: Text('تعذر تحديث حالة المشاهدة.')) , TextButton(onPressed: _retrySync, child: const Text('إعادة المحاولة'))]))],
           const SizedBox(height: 14),
           if (widget.mediaUrl != null && widget.mediaUrl!.isNotEmpty) _buildSyncedPlayer(roomId, data),
