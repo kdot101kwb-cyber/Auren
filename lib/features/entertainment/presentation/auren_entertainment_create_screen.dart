@@ -375,9 +375,9 @@ class _AurenEntertainmentCreateScreenState
                                 : Icons.movie_filter_rounded,
                       ),
                     ),
-                    title: Text('§{job['mode'] ?? 'مشروع'} • §{status}'),
+                    title: Text('${job['mode'] ?? 'مشروع'} • ${status}'),
                     subtitle: Text(
-                      'التقدم §{progress}% • §{job['provider'] ?? 'auren_ai'}\n§{nextStep}',
+                      'التقدم ${progress}% • ${job['provider'] ?? 'auren_ai'}\n${nextStep}',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
