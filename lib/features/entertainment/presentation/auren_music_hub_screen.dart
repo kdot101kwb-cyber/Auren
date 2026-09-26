@@ -113,7 +113,10 @@ class AurenMusicHubScreen extends StatelessWidget {
                           if (uid != null)
                             IconButton(
                               icon: const Icon(Icons.bookmark_border),
-                              onPressed: () => repo.save(uid, item.id),
+                              onPressed: () async {
+                                  await repo.save(uid, item.id);
+                                  await repo.trackMusicAction(uid, item.id, action: 'save', contentType: item.type);
+                                },
                             ),
                         ],
                       ),
