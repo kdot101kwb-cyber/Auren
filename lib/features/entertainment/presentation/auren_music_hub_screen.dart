@@ -10,6 +10,7 @@ import 'auren_podcasts_screen.dart';
 import 'auren_radio_screen.dart';
 import 'auren_music_queue_screen.dart';
 import 'auren_smart_music_screen.dart';
+import 'auren_saved_music_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 
 class AurenMusicHubScreen extends StatelessWidget {
@@ -33,6 +34,11 @@ class AurenMusicHubScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('AUREN Music'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmarks_rounded),
+            tooltip: 'Saved Music',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedMusicScreen())),
+          ),
           IconButton(
             icon: const Icon(Icons.auto_awesome),
             tooltip: 'Music AI',
