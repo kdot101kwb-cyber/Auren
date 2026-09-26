@@ -1,3 +1,15 @@
+class AurenCreatorEarning {
+  final String id, creatorUid, supporterUid, currency, type, status;
+  final int amountMinor;
+  final DateTime createdAt;
+  const AurenCreatorEarning({required this.id,required this.creatorUid,required this.supporterUid,required this.currency,required this.type,required this.status,required this.amountMinor,required this.createdAt});
+  factory AurenCreatorEarning.fromMap(String id, Map<String,dynamic> m) => AurenCreatorEarning(
+    id:id, creatorUid:(m['creatorUid']??'').toString(), supporterUid:(m['supporterUid']??'').toString(),
+    currency:(m['currency']??'').toString(), type:(m['type']??'').toString(), status:(m['status']??'pending_settlement').toString(),
+    amountMinor:(m['amountMinor'] as num?)?.toInt()??0,
+    createdAt: m['createdAt'] is DateTime ? m['createdAt'] : DateTime.now(),
+  );
+}
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AurenCreatorStats {
@@ -82,14 +94,29 @@ class AurenCreatorStudioRepository {
   }
 
   Future<String> createCreatorSupportRequest({required String creatorUid,required int amountMinor,required String currency,required String message})async{
-    final u=creatorUid.trim(),m=message.trim(),cur=currency.trim().toUpperCase();
-    if(u.isEmpty||u.length>128)throw ArgumentError('Invalid creator uid.');
+    final u=creatorUid.trim(),supporter=supporterUid.trim(),m=message.trim(),cur=currency.trim().toUpperCase();
+    if(u.isEmpty||u.length>128||supporter.isEmpty||supporter.length>128)throw ArgumentError('Invalid user id.');
+  if(u==supporter)throw ArgumentError('Creator and supporter must be different.');
     if(amountMinor<=0||amountMinor>100000000)throw ArgumentError('Invalid support amount.');
     if(cur.length!=3)throw ArgumentError('Currency must be 3 letters.');
     if(m.length>500)throw ArgumentError('Support message is too long.');
     final ref=_db.collection('creator_support_requests').doc();
-    await ref.set({'creatorUid':u,'supporterUid':u,'amountMinor':amountMinor,'currency':cur,'message':m,'status':'pending','createdAt':FieldValue.serverTimestamp()});
+    await ref.set({'creatorUid':u,'supporterUid':supporter,'amountMinor':amountMinor,'currency':cur,'message':m,'status':'pending','createdAt':FieldValue.serverTimestamp()});
     return ref.id;
+  }
+
+  Stream<List<AurenCreatorEarning>> watchEarnings(String creatorUid) {
+    final uid = creatorUid.trim();
+    if (uid.isEmpty || uid.length > 128) return const Stream.empty();
+    return _db.collection('creator_earnings')
+        .where('creatorUid', isEqualTo: uid)
+        .limit(100)
+        .snapshots()
+        .map((snap) {
+          final items = snap.docs.map((d) => AurenCreatorEarning.fromMap(d.id, d.data())).toList();
+          items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return items;
+        });
   }
   Future<void> delete(String uid, String postId) async {
     final cleanUid = uid.trim();
