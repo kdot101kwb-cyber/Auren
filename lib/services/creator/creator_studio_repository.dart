@@ -167,6 +167,20 @@ class AurenCreatorStudioRepository {
     return (result.data as Map)['withdrawalId'].toString();
   }
 
+  Stream<List<Map<String, dynamic>>> watchCreatorWithdrawals(String creatorUid) {
+    final uid = creatorUid.trim();
+    if (uid.isEmpty || uid.length > 128) return Stream.error(ArgumentError('Invalid creator id.'));
+    return _db.collection('creator_withdrawals').where('creatorUid', isEqualTo: uid).limit(100).snapshots().map((snap) {
+      final items = snap.docs.map((d) {
+        final data = Map<String, dynamic>.from(d.data());
+        data['id'] = d.id;
+        return data;
+      }).toList();
+      items.sort((a,b) => _dateValue(b['createdAt']).compareTo(_dateValue(a['createdAt'])));
+      return items;
+    });
+  }
+
   Stream<List<AurenCreatorEarning>> watchEarnings(String creatorUid) {
     final uid = creatorUid.trim();
     if (uid.isEmpty || uid.length > 128) return const Stream.empty();
