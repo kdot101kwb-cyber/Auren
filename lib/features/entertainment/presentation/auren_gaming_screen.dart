@@ -696,20 +696,9 @@ class AurenGamingService {
   }
 
   Future<bool> claimDailyChallenge(String uid) async {
-    final now = DateTime.now().toUtc();
-    final key = now.year.toString() + '-' + now.month.toString().padLeft(2, '0') + '-' + now.day.toString().padLeft(2, '0');
-    final ref = _db.collection('users').doc(uid).collection('gaming_challenges').doc(key);
-    final snap = await ref.get();
-    if (snap.exists) return false;
-    await ref.set({
-      'challengeId': 'daily_tic_tac_toe',
-      'xp': 25,
-      'completedAt': FieldValue.serverTimestamp(),
-    });
-    await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').set({
-      'xp': FieldValue.increment(25), 'seasonXp': FieldValue.increment(25), 'seasonId': currentSeasonId(), 'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-    return true;
+    final callable = FirebaseFunctions.instance.httpsCallable('claimGamingDailyChallenge');
+    final result = await callable.call(<String, dynamic>{});
+    return result.data is Map && result.data['claimed'] == true;
   }
 
   Future<void> playMove({required String roomId, required int index}) async {
