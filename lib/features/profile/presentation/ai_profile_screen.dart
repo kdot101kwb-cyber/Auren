@@ -11,119 +11,119 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
   final _auth = FirebaseAurenAuthService();
   final _service = AurenProfileModeService();
   AurenProfileMode _mode = AurenProfileMode.personal;
-  bool _discoverable = true, _saving = false;
-  final _headline = TextEditingController(), _bio = TextEditingController();
-  final _skills = TextEditingController(), _interests = TextEditingController(), _links = TextEditingController();
+  bool _loading = true, _saving = false, _discoverable = true, _showContact = false;
+  final _headline = TextEditingController();
+  final _bio = TextEditingController();
+  final _skills = TextEditingController();
+  final _interests = TextEditingController();
+  final _goals = TextEditingController();
+  final _languages = TextEditingController();
+  final _services = TextEditingController();
+  final _achievements = TextEditingController();
+  final _links = TextEditingController();
 
   @override void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
     final uid = _auth.currentUserId;
     if (uid == null) return;
-    final active = await _service.getActiveMode(uid);
-    if (!mounted) return;
-    _mode = active;
-    final data = await _service.get(uid, _mode);
-    if (mounted) _apply(data);
+    try {
+      final mode = await _service.getActiveMode(uid);
+      final data = await _service.get(uid, mode);
+      if (!mounted) return;
+      _mode = mode; _apply(data, rebuild: false);
+    } finally { if (mounted) setState(() => _loading = false); }
   }
 
-  void _apply(AurenProfileModeData d) {
+  void _apply(AurenProfileModeData d, {bool rebuild = true}) {
     _headline.text = d.headline; _bio.text = d.bio;
     _skills.text = d.skills.join(', '); _interests.text = d.interests.join(', ');
-    _links.text = d.links.join(', '); _discoverable = d.discoverable;
-    setState(() {});
+    _goals.text = d.goals.join(', '); _languages.text = d.languages.join(', ');
+    _services.text = d.services.join(', '); _achievements.text = d.achievements.join(', ');
+    _links.text = d.links.join(', '); _discoverable = d.discoverable; _showContact = d.showContact;
+    if (rebuild) setState(() {});
   }
 
   Future<void> _changeMode(AurenProfileMode mode) async {
-    final uid = _auth.currentUserId;
-    if (uid == null) return;
-    setState(() => _mode = mode);
-    await _service.setActiveMode(uid, mode);
-    final data = await _service.get(uid, mode);
-    if (mounted) _apply(data);
+    final uid = _auth.currentUserId; if (uid == null || _saving) return;
+    setState(() { _mode = mode; _loading = true; });
+    try { await _service.setActiveMode(uid, mode); _apply(await _service.get(uid, mode)); }
+    finally { if (mounted) setState(() => _loading = false); }
   }
 
   List<String> _split(String v) => v.split(',').map((x) => x.trim()).where((x) => x.isNotEmpty).toList();
 
   String _summary(AurenProfileModeData d) {
-    final focus = d.skills.isNotEmpty ? d.skills.take(3).join('، ') :
-        (d.interests.isNotEmpty ? d.interests.take(3).join('، ') : 'اهتماماتك وأهدافك');
-    switch (d.mode) {
-      case AurenProfileMode.personal: return 'ملف شخصي يركز على التواصل والاهتمامات: $focus.';
-      case AurenProfileMode.creator: return 'ملف Creator يبرز المحتوى والمشاريع الإبداعية: $focus.';
-      case AurenProfileMode.professional: return 'ملف مهني يبرز المهارات والخبرة والفرص: $focus.';
-      case AurenProfileMode.business: return 'ملف Business يبرز الخدمات والمنتجات وفرص النمو: $focus.';
-    }
+    final focus = d.mode == AurenProfileMode.business ? d.services : (d.skills.isNotEmpty ? d.skills : d.interests);
+    final f = focus.take(3).join('، ');
+    if (f.isEmpty && d.goals.isEmpty) return 'أكمل بياناتك، وسيستخدم AUREN هذه المعلومات لبناء عرض مناسب للسياق.';
+    final target = d.goals.take(2).join('، ');
+    return '${d.mode.label}: ${f.isEmpty ? 'ملف متكيف' : f}${target.isEmpty ? '' : ' • الهدف: $target'}';
   }
 
   Future<void> _save() async {
-    final uid = _auth.currentUserId;
-    if (uid == null) return;
+    final uid = _auth.currentUserId; if (uid == null || _saving) return;
     setState(() => _saving = true);
     try {
       await _service.save(uid: uid, mode: _mode, headline: _headline.text, bio: _bio.text,
-        skills: _split(_skills.text), interests: _split(_interests.text),
-        links: _split(_links.text), discoverable: _discoverable);
+        skills: _split(_skills.text), interests: _split(_interests.text), links: _split(_links.text),
+        goals: _split(_goals.text), languages: _split(_languages.text), services: _split(_services.text),
+        achievements: _split(_achievements.text), discoverable: _discoverable, showContact: _showContact);
       await _service.setActiveMode(uid, _mode);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ AI Profile والوضع النشط.')));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الحفظ: $e')));
-    } finally { if (mounted) setState(() => _saving = false); }
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الحفظ: $e'))); }
+    finally { if (mounted) setState(() => _saving = false); }
   }
+
+  Widget _field(TextEditingController c, String label, {String? hint, int maxLines = 1, int? maxLength}) =>
+      Padding(padding: const EdgeInsets.only(bottom: 10), child: TextField(controller: c, maxLines: maxLines, maxLength: maxLength,
+        decoration: InputDecoration(labelText: label, hintText: hint, border: const OutlineInputBorder())));
 
   @override Widget build(BuildContext context) {
     final uid = _auth.currentUserId;
     if (uid == null) return const Scaffold(body: Center(child: Text('Sign in required')));
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Profile')),
-      body: StreamBuilder<AurenProfileModeData>(
-        stream: _service.watch(uid, _mode),
-        builder: (context, snapshot) {
-          final data = snapshot.data ?? AurenProfileModeData.empty(_mode);
-          return ListView(
-            padding: const EdgeInsets.all(18),
-            children: [
-              const Text('Profile Modes', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              const Text('AUREN يغيّر طريقة عرض ملفك حسب السياق — بدون إنشاء حسابات منفصلة.'),
-              const SizedBox(height: 16),
-              Card(child: ListTile(
-                leading: const Icon(Icons.tune),
-                title: Text('الوضع النشط: ${_mode.label}'),
-                subtitle: const Text('هذا هو الوضع الذي يستخدمه AUREN افتراضياً عند عرض ملفك.'),
-              )),
-              const SizedBox(height: 8),
-              Wrap(spacing: 8, runSpacing: 8, children: AurenProfileMode.values.map((m) => ChoiceChip(
-                label: Text(m.label), selected: _mode == m, onSelected: (_) => _changeMode(m),
-              )).toList()),
+      appBar: AppBar(title: const Text('AI Profile'), actions: [IconButton(onPressed: _saving ? null : _save, icon: const Icon(Icons.save_outlined))]),
+      body: _loading ? const Center(child: CircularProgressIndicator()) : StreamBuilder<AurenProfileModeData>(
+        stream: _service.watch(uid, _mode), builder: (context, snap) {
+          final data = snap.data ?? AurenProfileModeData.empty(_mode);
+          return ListView(padding: const EdgeInsets.fromLTRB(18, 10, 18, 32), children: [
+            const Text('AI Profile', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6), const Text('ملف واحد يتكيّف مع السياق بدل إنشاء حسابات منفصلة.'),
+            const SizedBox(height: 18),
+            Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Row(children: [Icon(Icons.auto_awesome), SizedBox(width: 8), Text('Profile Mode', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))]),
+              const SizedBox(height: 10), Wrap(spacing: 8, runSpacing: 8, children: AurenProfileMode.values.map((m) => ChoiceChip(label: Text(m.label), selected: _mode == m, onSelected: (_) => _changeMode(m))).toList()),
+              const SizedBox(height: 10), Text(_mode.description),
+            ]))),
+            Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('AUREN AI View', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8), Text(_summary(data)),
               const SizedBox(height: 12),
-              Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
-                title: Text('${_mode.label} AI Profile'), subtitle: Text(_mode.description))),
-              Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('AI Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6), Text(_summary(data)),
-                ],
-              ))),
-              TextField(controller: _headline, maxLength: 120, decoration: const InputDecoration(labelText: 'Headline')),
-              TextField(controller: _bio, maxLength: 800, maxLines: 4, decoration: const InputDecoration(labelText: 'Bio')),
-              TextField(controller: _skills, decoration: const InputDecoration(labelText: 'Skills', hintText: 'Flutter, Design, Business')),
-              TextField(controller: _interests, decoration: const InputDecoration(labelText: 'Interests', hintText: 'Music, Travel, Sports')),
-              TextField(controller: _links, decoration: const InputDecoration(labelText: 'Links', hintText: 'ضع الروابط مفصولة بفواصل')),
-              SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Discoverable'),
-                subtitle: const Text('اسمح لـAUREN باستخدام هذا الوضع في الاكتشاف والمطابقة.'),
-                value: _discoverable, onChanged: (v) => setState(() => _discoverable = v)),
-              const SizedBox(height: 12),
-              FilledButton.icon(onPressed: _saving ? null : _save, icon: const Icon(Icons.save_outlined),
-                label: Text(_saving ? 'Saving…' : 'Save profile mode')),
-            ],
-          );
-        },
-      ),
+              const Text('AUREN يعرض المعلومات المناسبة للسياق؛ لا ينشئ شخصية أو معلومة غير موجودة في ملفك.'),
+            ]))),
+            _field(_headline, 'Headline', hint: 'مثال: مصمم ومنشئ منتجات رقمية', maxLength: 120),
+            _field(_bio, 'Bio', hint: 'عرّف بنفسك باختصار', maxLines: 4, maxLength: 800),
+            _field(_skills, 'Skills', hint: 'Flutter, Design, Business'),
+            _field(_interests, 'Interests', hint: 'Music, Travel, Sports'),
+            _field(_goals, 'Goals', hint: 'بناء مشروع، إيجاد شريك، تعلم مهارة'),
+            _field(_languages, 'Languages', hint: 'العربية, English'),
+            if (_mode == AurenProfileMode.creator || _mode == AurenProfileMode.business)
+              _field(_services, _mode == AurenProfileMode.creator ? 'What I create' : 'Services / Products'),
+            if (_mode != AurenProfileMode.personal) _field(_achievements, 'Achievements', hint: 'مشروع، شهادة، إنجاز...'),
+            _field(_links, 'Links', hint: 'ضع الروابط مفصولة بفواصل'),
+            SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Discoverable'), value: _discoverable,
+              subtitle: const Text('استخدم هذا الوضع في البحث والمطابقة والاكتشاف.'), onChanged: (v) => setState(() => _discoverable = v)),
+            SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Show contact'), value: _showContact,
+              subtitle: const Text('تحكم في إظهار وسيلة التواصل العامة في هذا الوضع.'), onChanged: (v) => setState(() => _showContact = v)),
+            const SizedBox(height: 8), FilledButton.icon(onPressed: _saving ? null : _save, icon: const Icon(Icons.save_outlined), label: Text(_saving ? 'Saving…' : 'Save AI Profile')),
+          ]);
+        }),
     );
   }
 
   @override void dispose() {
-    _headline.dispose(); _bio.dispose(); _skills.dispose(); _interests.dispose(); _links.dispose(); super.dispose();
+    _headline.dispose(); _bio.dispose(); _skills.dispose(); _interests.dispose(); _goals.dispose(); _languages.dispose();
+    _services.dispose(); _achievements.dispose(); _links.dispose(); super.dispose();
   }
 }
