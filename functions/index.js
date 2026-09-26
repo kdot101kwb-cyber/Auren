@@ -2266,26 +2266,68 @@ exports.setCreatorWithdrawalStatus = require('firebase-functions/v2/https').onCa
   {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
   async (request) => {
     const uid=request.auth?.uid;
-    if(!uid || request.auth.token?.admin !== true) throw new Error('Admin access required.');
+    if(!uid || request.auth.token?.admin !== true) {
+      throw new HttpsError('permission-denied','Admin access required.');
+    }
     const withdrawalId=typeof request.data?.withdrawalId==='string'?request.data.withdrawalId.trim():'';
     const nextStatus=typeof request.data?.status==='string'?request.data.status.trim():'';
     const note=typeof request.data?.note==='string'?request.data.note.trim():'';
-    if(!withdrawalId||withdrawalId.length>128||!['approved','paid','failed'].includes(nextStatus)||note.length>500) throw new Error('Invalid settlement update.');
+    if(!withdrawalId||withdrawalId.length>128||!['approved','paid','failed'].includes(nextStatus)||note.length>500) {
+      throw new HttpsError('invalid-argument','Invalid settlement update.');
+    }
     const ref=db.collection('creator_withdrawals').doc(withdrawalId);
-    const snap=await ref.get();
-    if(!snap.exists) throw new Error('Withdrawal not found.');
-    const data=snap.data()||{};
-    const current=data.status;
-    const transitions={pending:['approved','failed'],approved:['paid','failed'],paid:[],failed:[]};
-    if(!transitions[current]?.includes(nextStatus)) throw new Error('Invalid withdrawal status transition.');
-    await ref.update({
-      status:nextStatus,
-      note,
-      reviewedBy:uid,
-      reviewedAt:FieldValue.serverTimestamp(),
-      ...(nextStatus==='paid'?{paidAt:FieldValue.serverTimestamp()}:{}),
+    const ledgerRef=db.collection('creator_withdrawal_ledger').doc(withdrawalId);
+    let creatorUid='';
+    let finalStatus=nextStatus;
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw new HttpsError('not-found','Withdrawal not found.');
+      const data=snap.data()||{};
+      creatorUid=typeof data.creatorUid==='string'?data.creatorUid:'';
+      const current=data.status;
+      const transitions={pending:['approved','failed'],approved:['paid','failed'],paid:[],failed:[]};
+      if(!transitions[current]?.includes(nextStatus)) {
+        throw new HttpsError('failed-precondition','Invalid withdrawal status transition.');
+      }
+      const now=FieldValue.serverTimestamp();
+      const update={
+        status:nextStatus,
+        note,
+        reviewedBy:uid,
+        reviewedAt:now,
+      };
+      if(nextStatus==='paid') {
+        const ledgerSnap=await tx.get(ledgerRef);
+        if(ledgerSnap.exists) {
+          throw new HttpsError('already-exists','Withdrawal settlement already recorded.');
+        }
+        update.paidAt=now;
+        tx.set(ledgerRef,{
+          withdrawalId,
+          creatorUid,
+          amountMinor:Number(data.amountMinor||0),
+          currency:String(data.currency||''),
+          method:String(data.method||''),
+          status:'paid',
+          settledBy:uid,
+          settledAt:now,
+        });
+      }
+      tx.update(ref,update);
     });
-    return {status:nextStatus,withdrawalId};
+    if(creatorUid) {
+      await notify(creatorUid,{
+        title: finalStatus==='paid'?'Creator payout marked paid':'Creator withdrawal updated',
+        body: finalStatus==='paid'
+          ? 'Your withdrawal has been marked as paid.'
+          : 'Your creator withdrawal status was updated to '+finalStatus+'.',
+        type:'creator_withdrawal',
+        targetId:creatorUid,
+        entityId:withdrawalId,
+        notificationId:'creator_withdrawal_'+withdrawalId+'_'+finalStatus,
+      });
+    }
+    return {status:finalStatus,withdrawalId};
   },
 );
 
