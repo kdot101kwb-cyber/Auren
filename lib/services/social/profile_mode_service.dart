@@ -132,11 +132,19 @@ class AurenProfileModeService {
   AurenProfileModeService({FirebaseFirestore? db})
       : _db = db ?? FirebaseFirestore.instance;
 
+  String _uid(String uid) {
+    final value = uid.trim();
+    if (value.isEmpty || value.length > 128) {
+      throw ArgumentError('Invalid uid.');
+    }
+    return value;
+  }
+
   CollectionReference<Map<String, dynamic>> _modes(String uid) =>
-      _db.collection('users').doc(uid).collection('profile_modes');
+      _db.collection('users').doc(_uid(uid)).collection('profile_modes');
 
   DocumentReference<Map<String, dynamic>> _settings(String uid) =>
-      _db.collection('users').doc(uid).collection('profile_settings').doc('current');
+      _db.collection('users').doc(_uid(uid)).collection('profile_settings').doc('current');
 
   Stream<AurenProfileMode> watchActiveMode(String uid) =>
       _settings(uid).snapshots().map((doc) =>
@@ -147,11 +155,13 @@ class AurenProfileModeService {
     return AurenProfileModeX.fromId(doc.data()?['activeMode'] as String?);
   }
 
-  Future<void> setActiveMode(String uid, AurenProfileMode mode) =>
-      _settings(uid).set({
+  Future<void> setActiveMode(String uid, AurenProfileMode mode) {
+    _uid(uid);
+    return _settings(uid).set({
         'activeMode': mode.id,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+  }
 
   Stream<AurenProfileModeData> watch(String uid, AurenProfileMode mode) =>
       _modes(uid).doc(mode.id).snapshots().map((doc) => doc.exists
@@ -183,6 +193,8 @@ class AurenProfileModeService {
     required bool discoverable,
     required bool showContact,
   }) async {
+    _uid(uid);
+
     String clean(String value, int max) {
       final trimmed = value.trim();
       return trimmed.length <= max ? trimmed : trimmed.substring(0, max);
