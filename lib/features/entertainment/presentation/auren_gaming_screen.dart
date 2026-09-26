@@ -127,7 +127,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         _seasonCard(), const SizedBox(height: 12),
         _achievementsCard(), const SizedBox(height: 12),
         _leaderboardCard(), const SizedBox(height: 12),
-        if (_roomId == null) ...[_incomingChallengesCard(), const SizedBox(height: 12)],
+        if (_roomId == null) ...[_incomingChallengesCard(), const SizedBox(height: 12), _outgoingChallengesCard(), const SizedBox(height: 12)],
         if (_roomId == null) ...[
           _gameCard(context, Icons.grid_3x3_rounded, 'Tic-Tac-Toe',
             'لعبة سريعة لشخصين — العب مع صديق برمز دعوة.',
@@ -251,14 +251,56 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         if (docs.isEmpty) return const Text('لا توجد دعوات جديدة.');
         return Column(children: docs.map((doc) {
           final fromUid = doc.data()['fromUid']?.toString() ?? '';
-          final shortUid = fromUid.length > 12 ? fromUid.substring(0, 12) + '…' : fromUid;
-          return ListTile(leading: const CircleAvatar(child: Icon(Icons.sports_esports)), title: const Text('تحدي Tic-Tac-Toe'), subtitle: Text('من لاعب AUREN • ' + shortUid),
-            trailing: Wrap(spacing: 4, children: [
-              IconButton(tooltip: 'رفض', onPressed: _busy ? null : () => _respondChallenge(doc.id, false), icon: const Icon(Icons.close)),
-              IconButton(tooltip: 'قبول', onPressed: _busy ? null : () => _respondChallenge(doc.id, true), icon: const Icon(Icons.check_circle)),
-            ]));
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(stream: _dbUser(fromUid), builder: (context, userSnap) {
+            final name = userSnap.data?.data()?['displayName']?.toString().trim();
+            final label = (name == null || name.isEmpty) ? 'لاعب AUREN' : name;
+            return ListTile(leading: const CircleAvatar(child: Icon(Icons.sports_esports)), title: Text(label), subtitle: const Text('أرسل لك تحدي Tic-Tac-Toe'),
+              trailing: Wrap(spacing: 4, children: [
+                IconButton(tooltip: 'رفض', onPressed: _busy ? null : () => _respondChallenge(doc.id, false), icon: const Icon(Icons.close)),
+                IconButton(tooltip: 'قبول', onPressed: _busy ? null : () => _respondChallenge(doc.id, true), icon: const Icon(Icons.check_circle)),
+              ]));
+          });
         }).toList());
       }),
+    ])));
+  }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> _dbUser(String uid) =>
+      FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
+
+  Widget _outgoingChallengesCard() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const SizedBox.shrink();
+    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('تحدياتك', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+      const SizedBox(height: 8),
+      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _service.watchOutgoingFriendChallenges(uid),
+        builder: (context, snap) {
+          if (snap.hasError) return const Text('تعذر تحميل حالة التحديات.');
+          final docs = snap.data?.docs ?? const [];
+          final accepted = docs.where((d) => d.data()['status']?.toString() == 'accepted' && (d.data()['roomId']?.toString() ?? '').isNotEmpty).toList();
+          if (accepted.isEmpty) return const Text('لا توجد مباريات مقبولة بانتظارك.');
+          return Column(children: accepted.map((doc) {
+            final data = doc.data();
+            final toUid = data['toUid']?.toString() ?? '';
+            final roomId = data['roomId']?.toString() ?? '';
+            return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: _dbUser(toUid),
+              builder: (context, userSnap) {
+                final name = userSnap.data?.data()?['displayName']?.toString().trim();
+                final label = (name == null || name.isEmpty) ? 'لاعب AUREN' : name;
+                return ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.sports_esports)),
+                  title: Text('مباراة مع $label'),
+                  subtitle: const Text('تم قبول التحدي — المباراة جاهزة'),
+                  trailing: FilledButton(onPressed: () => setState(() { _roomId = roomId; _inviteCode = null; }), child: const Text('فتح')),
+                );
+              },
+            );
+          }).toList());
+        },
+      ),
     ])));
   }
 
@@ -481,7 +523,6 @@ class AurenGamingService {
     await _db.runTransaction((tx) async {
       final challengeSnap = await tx.get(challengeRef);
       if (!challengeSnap.exists || challengeSnap.data()?['status']?.toString() != 'pending') throw StateError('Challenge already handled.');
-      tx.get(roomRef);
       tx.update(roomRef, {'playerUids': [fromUid, uid], 'marks.' + fromUid: 'X', 'marks.' + uid: 'O', 'status': 'ready', 'turnUid': fromUid, 'updatedAt': FieldValue.serverTimestamp()});
       tx.update(challengeRef, {'status': 'accepted', 'roomId': room.id, 'updatedAt': FieldValue.serverTimestamp()});
     });
@@ -489,6 +530,8 @@ class AurenGamingService {
   }
   Stream<QuerySnapshot<Map<String, dynamic>>> watchFriendChallenges(String uid) =>
       _db.collection('gaming_friend_challenges').where('toUid', isEqualTo: uid).where('status', isEqualTo: 'pending').limit(20).snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchOutgoingFriendChallenges(String uid) =>
+      _db.collection('gaming_friend_challenges').where('fromUid', isEqualTo: uid).limit(30).snapshots();
 
   Future<AurenGamingRoom> createTicTacToeRoom(String uid) async {
     final ref = _db.collection('gaming_rooms').doc();
