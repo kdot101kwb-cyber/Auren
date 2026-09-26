@@ -53,4 +53,31 @@ void main() {
     expect(signals.wantsSupplier, isTrue);
     expect(signals.countries, contains('الامارات'));
   });
+
+  test('handles null and empty intent safely', () {
+    final emptySignals = AurenIntentSignals.fromIntent(null);
+    final emptyPlan = AurenIntentActionPlan.fromIntent('');
+    expect(emptySignals.countries, isEmpty);
+    expect(emptySignals.wantsSupplier, isFalse);
+    expect(emptyPlan.normalized, isEmpty);
+    expect(emptyPlan.actionFor(AurenMatchKind.person), AurenMatchAction.open);
+    expect(emptyPlan.actionFor(AurenMatchKind.opportunity), AurenMatchAction.follow);
+    expect(emptyPlan.actionFor(AurenMatchKind.business), AurenMatchAction.contact);
+    expect(emptyPlan.actionFor(AurenMatchKind.product), AurenMatchAction.contact);
+    expect(emptyPlan.actionFor(AurenMatchKind.content), AurenMatchAction.watch);
+  });
+
+  test('clamps intent signal scores to 35', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'السودان مصر الصين الإمارات كينيا نيجيريا الخرطوم القاهرة دبي شنتشن '
+      'رخيص شحن مورد مصنع جملة كميات',
+    );
+    expect(
+      signals.matchScore(
+        'السودان مصر الصين الإمارات كينيا نيجيريا الخرطوم القاهرة دبي شنتشن '
+        'رخيص شحن مورد مصنع جملة كميات supplier manufacturer wholesale bulk cheap',
+      ),
+      lessThanOrEqualTo(35),
+    );
+  });
 }
