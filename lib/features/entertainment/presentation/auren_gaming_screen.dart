@@ -127,6 +127,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         _seasonCard(), const SizedBox(height: 12),
         _achievementsCard(), const SizedBox(height: 12),
         _leaderboardCard(), const SizedBox(height: 12),
+        if (_roomId == null) ...[_incomingChallengesCard(), const SizedBox(height: 12)],
         if (_roomId == null) ...[
           _gameCard(context, Icons.grid_3x3_rounded, 'Tic-Tac-Toe',
             'لعبة سريعة لشخصين — العب مع صديق برمز دعوة.',
@@ -238,6 +239,41 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       ]),
     ),
   );
+  Widget _incomingChallengesCard() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const SizedBox.shrink();
+    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('دعوات الأصدقاء', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+      const SizedBox(height: 8),
+      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(stream: _service.watchFriendChallenges(uid), builder: (context, snap) {
+        if (snap.hasError) return const Text('تعذر تحميل الدعوات.');
+        final docs = snap.data?.docs ?? const [];
+        if (docs.isEmpty) return const Text('لا توجد دعوات جديدة.');
+        return Column(children: docs.map((doc) {
+          final fromUid = doc.data()['fromUid']?.toString() ?? '';
+          final shortUid = fromUid.length > 12 ? fromUid.substring(0, 12) + '…' : fromUid;
+          return ListTile(leading: const CircleAvatar(child: Icon(Icons.sports_esports)), title: const Text('تحدي Tic-Tac-Toe'), subtitle: Text('من لاعب AUREN • ' + shortUid),
+            trailing: Wrap(spacing: 4, children: [
+              IconButton(tooltip: 'رفض', onPressed: _busy ? null : () => _respondChallenge(doc.id, false), icon: const Icon(Icons.close)),
+              IconButton(tooltip: 'قبول', onPressed: _busy ? null : () => _respondChallenge(doc.id, true), icon: const Icon(Icons.check_circle)),
+            ]));
+        }).toList());
+      }),
+    ])));
+  }
+
+  Future<void> _respondChallenge(String challengeId, bool accept) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    setState(() => _busy = true);
+    try {
+      final room = await _service.respondToFriendChallenge(uid, challengeId, accept);
+      if (!mounted) return;
+      if (room != null) { setState(() { _roomId = room.id; _inviteCode = room.inviteCode; }); _snack('🎮 تم قبول التحدي. المباراة جاهزة.'); }
+      else { _snack('تم رفض التحدي.'); }
+    } catch (_) { if (mounted) _snack('تعذر معالجة الدعوة.'); }
+    finally { if (mounted) setState(() => _busy = false); }
+  }
   Widget _friendChallengeCard() => Card(
     child: Padding(
       padding: const EdgeInsets.all(16),
@@ -431,6 +467,26 @@ class AurenGamingService {
     });
   }
 
+  Future<AurenGamingRoom?> respondToFriendChallenge(String uid, String challengeId, bool accept) async {
+    final challengeRef = _db.collection('gaming_friend_challenges').doc(challengeId);
+    final snap = await challengeRef.get();
+    if (!snap.exists) throw StateError('Challenge not found.');
+    final data = snap.data() ?? {};
+    if (data['toUid']?.toString() != uid || data['status']?.toString() != 'pending') throw StateError('Challenge is no longer available.');
+    if (!accept) { await challengeRef.update({'status': 'declined'}); return null; }
+    final fromUid = data['fromUid']?.toString() ?? '';
+    if (fromUid.isEmpty || fromUid == uid) throw StateError('Invalid challenger.');
+    final room = await createTicTacToeRoom(fromUid);
+    final roomRef = _db.collection('gaming_rooms').doc(room.id);
+    await _db.runTransaction((tx) async {
+      final challengeSnap = await tx.get(challengeRef);
+      if (!challengeSnap.exists || challengeSnap.data()?['status']?.toString() != 'pending') throw StateError('Challenge already handled.');
+      tx.get(roomRef);
+      tx.update(roomRef, {'playerUids': [fromUid, uid], 'marks.' + fromUid: 'X', 'marks.' + uid: 'O', 'status': 'ready', 'turnUid': fromUid, 'updatedAt': FieldValue.serverTimestamp()});
+      tx.update(challengeRef, {'status': 'accepted', 'roomId': room.id, 'updatedAt': FieldValue.serverTimestamp()});
+    });
+    return AurenGamingRoom(room.id, room.inviteCode, {...room.data, 'playerUids': [fromUid, uid], 'status': 'ready', 'marks': {fromUid: 'X', uid: 'O'}});
+  }
   Stream<QuerySnapshot<Map<String, dynamic>>> watchFriendChallenges(String uid) =>
       _db.collection('gaming_friend_challenges').where('toUid', isEqualTo: uid).where('status', isEqualTo: 'pending').limit(20).snapshots();
 
