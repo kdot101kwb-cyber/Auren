@@ -5,6 +5,7 @@ import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 import 'auren_audio_player_screen.dart';
+import 'auren_music_concierge_screen.dart';
 
 class AurenSmartMusicScreen extends StatefulWidget {
   const AurenSmartMusicScreen({super.key});
@@ -168,7 +169,7 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
           IconButton(
             icon: const Icon(Icons.auto_awesome_rounded),
             tooltip: 'AI Music Concierge',
-            onPressed: () => _concierge(_latestSource),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenMusicConciergeScreen(source: _latestSource))),
           ),
         ],
       ),
@@ -281,7 +282,7 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
               ),
               const SizedBox(height: 14),
               FilledButton.icon(
-                onPressed: () => _concierge(source),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenMusicConciergeScreen(source: source))),
                 icon: const Icon(Icons.playlist_add_rounded),
                 label: const Text('افعلها لي — أنشئ قائمة ذكية'),
               ),
