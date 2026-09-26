@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../search/presentation/global_search_screen.dart';
 import 'entertainment_detail_screen.dart';
 import 'entertainment_shorts_screen.dart';
+import 'auren_music_hub_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../core/models/entertainment.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -275,7 +276,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
             child: Card(
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: _openAI,
+                onTap: action.title == 'Music'
+                    ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()))
+                    : _openAI,
                 child: Padding(
                   padding: const EdgeInsets.all(11),
                   child: Column(
