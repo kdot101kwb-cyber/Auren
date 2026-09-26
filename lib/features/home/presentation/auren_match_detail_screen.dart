@@ -108,6 +108,81 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
     return true;
   }
 
+  Future<bool> _requestQuoteFlow() async {
+    final quantity = TextEditingController();
+    final destination = TextEditingController();
+    final notes = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('طلب عرض سعر'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('طلبك: ${widget.intent}'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: quantity,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'الكمية المطلوبة (اختياري)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: destination,
+                decoration: const InputDecoration(
+                  labelText: 'بلد/مدينة التسليم (اختياري)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: notes,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'ملاحظات إضافية (اختياري)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('فتح المحادثة'),
+          ),
+        ],
+      ),
+    );
+    final q = quantity.text.trim();
+    final d = destination.text.trim();
+    final n = notes.text.trim();
+    quantity.dispose();
+    destination.dispose();
+    notes.dispose();
+    if (confirmed != true) return false;
+
+    final prompt = [
+      'مرحباً، وصلت إليكم عبر AUREN.',
+      'أريد طلب عرض سعر بخصوص: ${widget.intent}.',
+      if (q.isNotEmpty) 'الكمية المطلوبة: $q.',
+      if (d.isNotEmpty) 'التسليم إلى: $d.',
+      if (n.isNotEmpty) 'ملاحظات: $n.',
+      'أرسلوا السعر، العملة، الحد الأدنى للطلب، مدة التجهيز، وخيارات الشحن إن وجدت.',
+    ].join(' ');
+    await _contact(prompt: prompt);
+    return true;
+  }
+
   Future<bool> _confirmAndRun(Future<void> Function() action, String title, String message) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -138,7 +213,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           didExecute = true;
           break;
         case AurenMatchAction.requestQuote:
-          didExecute = await _confirmAndRun(() => _contact(prompt: 'مرحباً، وصلت إليكم عبر AUREN. أريد طلب عرض سعر بخصوص: ${widget.intent}. أرسلوا لي السعر، الحد الأدنى للطلب، العملة، مدة التجهيز، وخيارات الشحن إن وجدت.'), 'طلب عرض سعر', 'سيتم فتح محادثة مع الجهة وإعداد رسالة طلب عرض السعر.');
+          didExecute = await _requestQuoteFlow();
           break;
         case AurenMatchAction.addToCart:
           didExecute = await _confirmAndRun(() => _commerce.addToCart(uid: uid, productId: widget.item.id, quantity: 1), 'إضافة للسلة', 'سيتم إضافة المنتج إلى سلتك. لن يتم تنفيذ أي دفع.');
