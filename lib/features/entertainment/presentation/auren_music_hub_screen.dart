@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'auren_audio_player_screen.dart';
 
 class AurenMusicHubScreen extends StatelessWidget {
   const AurenMusicHubScreen({super.key});
@@ -70,6 +71,7 @@ class AurenMusicHubScreen extends StatelessWidget {
                           : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
                       title: Text(item.title),
                       subtitle: Text(item.description, maxLines: 2),
+                      onTap: item.mediaUrl.isEmpty ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item))),
                       trailing: uid == null
                           ? null
                           : IconButton(
