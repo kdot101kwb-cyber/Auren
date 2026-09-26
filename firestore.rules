@@ -168,6 +168,18 @@ service cloud.firestore {
       && request.resource.data.progress is int
       && request.resource.data.progress >= 0
       && request.resource.data.progress <= 100
+      && (
+        request.resource.data.status == resource.data.status
+        || (
+          resource.data.status in ['planning','generating','processing']
+          && request.resource.data.status in ['planning','generating','processing','failed','cancelled']
+        )
+        || (
+          resource.data.status in ['failed','cancelled']
+          && request.resource.data.status == 'planning'
+          && request.resource.data.progress == 0
+        )
+      )
       && request.resource.data.updatedAt is timestamp;
     allow delete: if isOwner(userId);
   }
