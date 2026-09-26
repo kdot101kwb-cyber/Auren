@@ -239,6 +239,53 @@ class EntertainmentRepository {
     }, SetOptions(merge: true));
   }
 
+  Future<void> recordWatchStarted(String uid, AurenEntertainmentItem item) async {
+    if (uid.isEmpty || item.id.isEmpty) return;
+    await db.collection('users').doc(uid).collection('watchHistory').doc(item.id).set({
+      'itemId': item.id,
+      'title': item.title,
+      'type': item.type,
+      'imageUrl': item.imageUrl,
+      'mediaUrl': item.mediaUrl,
+      'lastWatchedAt': FieldValue.serverTimestamp(),
+      'views': FieldValue.increment(1),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> recordWatchProgress(
+    String uid,
+    AurenEntertainmentItem item, {
+    required int seconds,
+    required int durationSeconds,
+    required bool completed,
+  }) async {
+    if (uid.isEmpty || item.id.isEmpty) return;
+    await db.collection('users').doc(uid).collection('watchHistory').doc(item.id).set({
+      'itemId': item.id,
+      'title': item.title,
+      'type': item.type,
+      'imageUrl': item.imageUrl,
+      'mediaUrl': item.mediaUrl,
+      'lastPositionSeconds': seconds,
+      'durationSeconds': durationSeconds,
+      'progress': durationSeconds > 0 ? (seconds / durationSeconds).clamp(0.0, 1.0) : 0.0,
+      'completed': completed,
+      'lastWatchedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Stream<List<Map<String, dynamic>>> watchHistory(String uid) {
+    return db.collection('users').doc(uid).collection('watchHistory')
+        .orderBy('lastWatchedAt', descending: true).limit(30).snapshots()
+        .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+  }
+
+  Future<Map<String, dynamic>?> getWatchProgress(String uid, String itemId) async {
+    if (uid.isEmpty || itemId.isEmpty) return null;
+    final doc = await db.collection('users').doc(uid).collection('continueWatching').doc(itemId).get();
+    return doc.exists ? doc.data() : null;
+  }
+
   Future<Map<String, Map<String, dynamic>>> getMusicSignals(String uid) async {
     final snap = await db.collection('users').doc(uid).collection('entertainmentSignals').get();
     return {
