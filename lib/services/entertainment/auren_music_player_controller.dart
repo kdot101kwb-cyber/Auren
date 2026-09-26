@@ -35,6 +35,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
   List<AurenEntertainmentItem> _adaptivePool = const [];
   bool _adaptiveSessionActive = false;
   int _adaptiveCursor = 0;
+  final Set<String> _adaptiveServedIds = <String>{};
   String _adaptiveActivity = 'تلقائي';
   String _adaptiveMood = 'الكل';
   String _adaptiveContext = 'تلقائي';
@@ -61,6 +62,9 @@ class AurenMusicPlayerController extends ChangeNotifier {
     _adaptivePool = List.unmodifiable(candidates.where((x) => x.mediaUrl.isNotEmpty));
     _adaptiveSessionActive = _adaptivePool.isNotEmpty;
     _adaptiveCursor = 0;
+    _adaptiveServedIds
+      ..clear()
+      ..addAll(_history.take(8).map((x) => x.id));
     _adaptiveActivity = activity;
     _adaptiveMood = mood;
     _adaptiveContext = contextMode;
@@ -75,6 +79,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     _adaptiveSessionActive = false;
     _adaptivePool = const [];
     _adaptiveCursor = 0;
+    _adaptiveServedIds.clear();
     _sessionSkipCount = 0;
     _sessionCompletionCount = 0;
     notifyListeners();
@@ -104,6 +109,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     _queue.insert(0, item);
     _history.removeWhere((x) => x.id == item.id);
     _history.insert(0, item);
+    if (_adaptiveSessionActive) _adaptiveServedIds.add(item.id);
     if (_history.length > 20) _history.removeLast();
     _item = item;
     _position = startAt;
@@ -231,11 +237,17 @@ class AurenMusicPlayerController extends ChangeNotifier {
     final queuedIds = _queue.map((x) => x.id).toSet();
     final historyIds = _history.take(8).map((x) => x.id).toSet();
 
-    final available = _adaptivePool.where((x) {
-      if (x.id == currentId || queuedIds.contains(x.id) || historyIds.contains(x.id)) return false;
+    final baseAvailable = _adaptivePool.where((x) {
+      if (x.id == currentId || queuedIds.contains(x.id)) return false;
+      if (_adaptiveServedIds.contains(x.id)) return false;
       return true;
     }).toList();
 
+    // Prefer never-served items first; if the pool is exhausted, allow a
+    // controlled replay only after all unique candidates have been used.
+    final available = baseAvailable.isNotEmpty
+        ? baseAvailable
+        : _adaptivePool.where((x) => x.id != currentId && !queuedIds.contains(x.id)).toList();
     if (available.isEmpty) return;
 
     final skipDriven = _sessionSkipCount >= 2;
@@ -249,6 +261,16 @@ class AurenMusicPlayerController extends ChangeNotifier {
 
     final calmKeys = ['calm', 'chill', 'relax', 'quiet', 'soft', 'sleep', 'هادئ', 'استرخاء', 'نوم'];
     final energyKeys = ['energy', 'energetic', 'workout', 'gym', 'party', 'dance', 'power', 'حماس', 'تمرين', 'حفلة'];
+
+    final recentCreators = <String>{
+      ..._queue.take(3).where((x) => x.creatorId.isNotEmpty).map((x) => x.creatorId),
+      ..._history.take(4).where((x) => x.creatorId.isNotEmpty).map((x) => x.creatorId),
+    };
+
+    int diversityScore(AurenEntertainmentItem x) {
+      if (x.creatorId.isEmpty) return 0;
+      return recentCreators.contains(x.creatorId) ? -20 : 12;
+    }
 
     Iterable<AurenEntertainmentItem> ordered;
     if (skipDriven && _adaptiveActivity != 'تمرين' && _adaptiveActivity != 'حفلة') {
@@ -265,7 +287,10 @@ class AurenMusicPlayerController extends ChangeNotifier {
       ordered = available;
     }
 
-    for (final candidate in ordered) {
+    final ranked = ordered.toList()
+      ..sort((a, b) => diversityScore(b).compareTo(diversityScore(a)));
+
+    for (final candidate in ranked) {
       if (selected.length >= desired) break;
       if (!selected.any((x) => x.id == candidate.id)) selected.add(candidate);
     }
@@ -279,6 +304,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     }
 
     _adaptiveCursor += selected.length;
+    _adaptiveServedIds.addAll(selected.map((x) => x.id));
     _sessionSkipCount = 0;
     _sessionCompletionCount = 0;
     await _saveQueueAndHistory();
