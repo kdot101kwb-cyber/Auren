@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
+import '../../../services/social/follow_repository.dart';
+import '../../../services/users/user_repository.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 
@@ -23,6 +25,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   String mood = 'تسلية';
   bool pureEntertainment = true;
   final Map<String, DateTime> _startedAt = {};
+  final follows = FollowRepository();
   final Set<String> _tracked = {};
   Stream<Set<String>>? _savedStream;
 
@@ -119,6 +122,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   void _exploreLike(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenGlobalSearchScreen(initialQuery: item.title)));
 
   void _matchMe(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
+
+  String? _creatorId(AurenEntertainmentItem item) => null;
 
   Future<void> _shareItem(AurenEntertainmentItem item) async {
     if (uid != null) await repo.trackShortAction(uid!, item.id, action: 'share', mood: mood);
