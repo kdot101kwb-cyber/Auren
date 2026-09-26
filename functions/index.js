@@ -287,17 +287,22 @@ exports.onConversationMessageCreated = onDocumentCreated(
     // inbound message arrives. This keeps reply detection working even when
     // the user has not opened Action Center.
     if (actorUid) {
-      const flowSnap = await db.collectionGroup('match_action_flows')
-        .where('conversationId', '==', event.params.conversationId)
-        .limit(50)
-        .get();
-      const replyFlows = flowSnap.docs.filter((doc) => {
-        const flow = doc.data() || {};
-        const ownerUid = doc.ref.parent.parent?.id || '';
-        return flow.status === 'waiting_response' &&
-          ownerUid &&
-          ownerUid !== actorUid;
-      });
+      // Only inspect flow documents owned by the other conversation members.
+      // This avoids a collection-group index dependency and keeps reply
+      // detection scoped to people who can actually receive this message.
+      const owners = data.memberIds.filter((uid) => uid && uid !== actorUid);
+      const flowSnapshots = await Promise.all(
+        owners.map((ownerUid) =>
+          db.collection('users').doc(ownerUid).collection('match_action_flows')
+            .where('conversationId', '==', event.params.conversationId)
+            .limit(50)
+            .get()
+        )
+      );
+
+      const replyFlows = flowSnapshots
+        .flatMap((snapshot) => snapshot.docs)
+        .filter((doc) => (doc.data() || {}).status === 'waiting_response');
 
       await Promise.all(replyFlows.map(async (doc) => {
         const ownerUid = doc.ref.parent.parent.id;
