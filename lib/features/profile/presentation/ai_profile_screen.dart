@@ -20,6 +20,9 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
   Future<void> _load() async {
     final uid = _auth.currentUserId;
     if (uid == null) return;
+    final active = await _service.getActiveMode(uid);
+    if (!mounted) return;
+    _mode = active;
     final data = await _service.get(uid, _mode);
     if (mounted) _apply(data);
   }
@@ -35,6 +38,7 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
     final uid = _auth.currentUserId;
     if (uid == null) return;
     setState(() => _mode = mode);
+    await _service.setActiveMode(uid, mode);
     final data = await _service.get(uid, mode);
     if (mounted) _apply(data);
   }
@@ -60,7 +64,8 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
       await _service.save(uid: uid, mode: _mode, headline: _headline.text, bio: _bio.text,
         skills: _split(_skills.text), interests: _split(_interests.text),
         links: _split(_links.text), discoverable: _discoverable);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ AI Profile.')));
+      await _service.setActiveMode(uid, _mode);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ AI Profile والوضع النشط.')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر الحفظ: $e')));
     } finally { if (mounted) setState(() => _saving = false); }
@@ -82,6 +87,12 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
               const SizedBox(height: 6),
               const Text('AUREN يغيّر طريقة عرض ملفك حسب السياق — بدون إنشاء حسابات منفصلة.'),
               const SizedBox(height: 16),
+              Card(child: ListTile(
+                leading: const Icon(Icons.tune),
+                title: Text('الوضع النشط: ${_mode.label}'),
+                subtitle: const Text('هذا هو الوضع الذي يستخدمه AUREN افتراضياً عند عرض ملفك.'),
+              )),
+              const SizedBox(height: 8),
               Wrap(spacing: 8, runSpacing: 8, children: AurenProfileMode.values.map((m) => ChoiceChip(
                 label: Text(m.label), selected: _mode == m, onSelected: (_) => _changeMode(m),
               )).toList()),
