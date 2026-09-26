@@ -56,43 +56,88 @@ class PersonalContextRepository {
       : _db = firestore ?? FirebaseFirestore.instance;
 
   Future<AurenPersonalContext> load(String uid) async {
+    final cleanUid = uid.trim();
+    if (cleanUid.isEmpty) {
+      throw ArgumentError.value(uid, 'uid', 'must not be empty');
+    }
+
     final results = await Future.wait([
-      _db.collection('users').doc(uid).collection('goals').limit(50).get(),
-      _db.collection('users').doc(uid).collection('memory')
+      _db.collection('users').doc(cleanUid).collection('goals').limit(50).get(),
+      _db.collection('users').doc(cleanUid).collection('memory')
           .where('enabled', isEqualTo: true).limit(50).get(),
     ]);
 
-    final goalsSnap = results[0] as QuerySnapshot<Map<String, dynamic>>;
-    final memorySnap = results[1] as QuerySnapshot<Map<String, dynamic>>;
+    return _fromSnapshots(
+      results[0] as QuerySnapshot<Map<String, dynamic>>,
+      results[1] as QuerySnapshot<Map<String, dynamic>>,
+    );
+  }
 
-    final goals = goalsSnap.docs
-        .map((d) {
-          final data = d.data();
-          final rawProgress = data['progress'];
-          final progress = rawProgress is num
-              ? rawProgress.toInt().clamp(0, 100)
-              : 0;
-          return AurenPersonalGoalContext(
-            id: d.id,
-            title: (data['title']?.toString() ?? '').trim(),
-            description: (data['description']?.toString() ?? '').trim(),
-            progress: progress,
-          );
-        })
-        .where((g) =>
-            g.title.isNotEmpty &&
-            ((goalsSnap.docs.firstWhere((d) => d.id == g.id).data()['status']?.toString() ?? 'active') == 'active'))
-        .take(10)
-        .toList();
-
-    final memories = memorySnap.docs.map((d) {
-      final data = d.data();
-      return AurenPersonalMemoryContext(
-        id: d.id,
-        key: (data['key']?.toString() ?? '').trim(),
-        value: (data['value']?.toString() ?? '').trim(),
+  Stream<AurenPersonalContext> watch(String uid) {
+    final cleanUid = uid.trim();
+    if (cleanUid.isEmpty) {
+      return Stream.error(
+        ArgumentError.value(uid, 'uid', 'must not be empty'),
       );
-    }).where((m) => m.key.isNotEmpty && m.value.isNotEmpty).take(20).toList();
+    }
+
+    return _db
+        .collection('users')
+        .doc(cleanUid)
+        .collection('goals')
+        .limit(50)
+        .snapshots()
+        .asyncMap((goals) async {
+      final memory = await _db
+          .collection('users')
+          .doc(cleanUid)
+          .collection('memory')
+          .where('enabled', isEqualTo: true)
+          .limit(50)
+          .get();
+      return _fromSnapshots(goals, memory);
+    });
+  }
+
+  AurenPersonalContext _fromSnapshots(
+    QuerySnapshot<Map<String, dynamic>> goalsSnap,
+    QuerySnapshot<Map<String, dynamic>> memorySnap,
+  ) {
+    final goals = <AurenPersonalGoalContext>[];
+    for (final doc in goalsSnap.docs) {
+      final data = doc.data();
+      final title = (data['title']?.toString() ?? '').trim();
+      final status = (data['status']?.toString() ?? 'active').trim();
+      if (title.isEmpty || status != 'active') continue;
+
+      final rawProgress = data['progress'];
+      final progress = rawProgress is num
+          ? rawProgress.toInt().clamp(0, 100)
+          : 0;
+
+      goals.add(AurenPersonalGoalContext(
+        id: doc.id,
+        title: title,
+        description: (data['description']?.toString() ?? '').trim(),
+        progress: progress,
+      ));
+      if (goals.length == 10) break;
+    }
+
+    final memories = <AurenPersonalMemoryContext>[];
+    for (final doc in memorySnap.docs) {
+      final data = doc.data();
+      final key = (data['key']?.toString() ?? '').trim();
+      final value = (data['value']?.toString() ?? '').trim();
+      if (key.isEmpty || value.isEmpty) continue;
+
+      memories.add(AurenPersonalMemoryContext(
+        id: doc.id,
+        key: key,
+        value: value,
+      ));
+      if (memories.length == 20) break;
+    }
 
     return AurenPersonalContext(goals: goals, memories: memories);
   }
