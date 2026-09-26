@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'watch_together_screen.dart';
 
 class AurenEntertainmentDetailScreen extends StatefulWidget {
   final String itemId;
@@ -134,6 +135,14 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد معرفة المزيد عن ' + item.title + '، واقترح لي محتوى مشابهًا له.'))),
                 icon: const Icon(Icons.auto_awesome), label: const Text('اسأل AUREN عنه'),
               ),
+              if (item.isVideo && item.mediaUrl.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenWatchTogetherScreen(title: item.title, mediaUrl: item.mediaUrl, mediaId: item.id))),
+                  icon: const Icon(Icons.groups_rounded),
+                  label: const Text('شاهد مع الأصدقاء'),
+                ),
+              ],
               if (uid != null) ...[
                 const SizedBox(height: 10),
                 OutlinedButton.icon(onPressed: () => repo.save(uid, item.id), icon: const Icon(Icons.bookmark_add_outlined), label: const Text('حفظ للمشاهدة لاحقاً')),
