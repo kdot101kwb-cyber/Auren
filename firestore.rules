@@ -164,8 +164,8 @@ service cloud.firestore {
       && request.resource.data.createdAt is timestamp
       && request.resource.data.updatedAt is timestamp;
     allow update: if isOwner(userId)
-      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','provider','externalJobId','progress','updatedAt'])
-      && request.resource.data.status in ['planning','generating','processing','ready','failed','cancelled']
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','provider','externalJobId','progress','queueStatus','queueAttempts','queuedAt','workerStartedAt','workerFinishedAt','providerStatus','providerMessage','updatedAt'])
+      && request.resource.data.status in ['planning','queued','generating','processing','ready','failed','cancelled']
       && request.resource.data.provider is string
       && request.resource.data.provider.size() <= 80
       && (!('externalJobId' in request.resource.data) || (request.resource.data.externalJobId is string && request.resource.data.externalJobId.size() <= 256))
