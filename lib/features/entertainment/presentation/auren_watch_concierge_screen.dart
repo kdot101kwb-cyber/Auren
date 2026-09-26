@@ -256,6 +256,11 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     );
   }
 
+  Future<void> _regenerate(List<AurenEntertainmentItem> source) async {
+    setState(() => _plan = const []);
+    await _generate(source);
+  }
+
   void _clearPlan() {
     if (_plan.isEmpty) return;
     setState(() => _plan = const []);
@@ -375,6 +380,11 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                       tooltip: 'خلط الترتيب',
                       onPressed: _shufflePlan,
                       icon: const Icon(Icons.shuffle_rounded),
+                    ),
+                    IconButton(
+                      tooltip: 'إعادة إنشاء',
+                      onPressed: () => _regenerate(source),
+                      icon: const Icon(Icons.refresh_rounded),
                     ),
                     IconButton(
                       tooltip: 'مسح الخطة',
