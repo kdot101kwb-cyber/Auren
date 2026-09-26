@@ -9,6 +9,7 @@ import '../../../services/messaging/message_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/social/match_everything_service.dart';
 import '../../../services/social/match_action_flow_service.dart';
+import '../../../services/social/match_smart_follow_up_service.dart';
 
 class AurenActionCenterScreen extends StatelessWidget {
   const AurenActionCenterScreen({super.key});
@@ -252,6 +253,8 @@ class _FlowCardState extends State<_FlowCard> {
               const SizedBox(height: 8),
               Text(next, style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
+              _smartFollowUpPanel(context),
+              const SizedBox(height: 10),
               Row(children: [
                 if ((widget.data['conversationId'] ?? '').toString().isNotEmpty)
                   Expanded(child: OutlinedButton.icon(
@@ -268,6 +271,97 @@ class _FlowCardState extends State<_FlowCard> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _smartFollowUpPanel(BuildContext context) {
+    final conversationId = (widget.data['conversationId'] ?? '').toString().trim();
+    if (conversationId.isEmpty) return const SizedBox.shrink();
+
+    return FutureBuilder<List<AurenMessage>>(
+      future: FirestoreMessageRepository().recent(conversationId, limit: 20),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: LinearProgressIndicator(),
+          );
+        }
+        if (snapshot.hasError || !snapshot.hasData) return const SizedBox.shrink();
+
+        final inbound = snapshot.data!
+            .where((m) => m.senderId.isNotEmpty && m.senderId != widget.uid && !m.isAi)
+            .toList();
+        if (inbound.isEmpty) return const SizedBox.shrink();
+
+        final reply = inbound.last;
+        final analysis = AurenSmartFollowUpService().analyze(
+          reply: reply,
+          action: (widget.data['action'] ?? 'open').toString(),
+          intent: (widget.data['intent'] ?? '').toString(),
+        );
+
+        return Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.auto_awesome, size: 19),
+                    SizedBox(width: 7),
+                    Text('AUREN Smart Follow-up',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(analysis.summary),
+                if (analysis.missing.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const Text('معلومات ناقصة',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text(analysis.missing.join(' • ')),
+                ],
+                if (analysis.questions.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const Text('أسئلة المتابعة المقترحة',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  SelectableText(analysis.questionsText),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await Clipboard.setData(
+                          ClipboardData(text: analysis.questionsText),
+                        );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('تم نسخ أسئلة المتابعة. لم يتم إرسالها تلقائياً.'),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.copy_outlined),
+                      label: const Text('نسخ الأسئلة'),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  'التحليل محلي على الجهاز ولا يرسل نص المحادثة إلى خدمة خارجية.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
