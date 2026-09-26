@@ -256,7 +256,7 @@ class AurenMatchEverythingService {
     return (20 + aa.intersection(bb).length * 12).clamp(20, 80);
   }
 
-  Set<String> _tokens(String value) => value.toLowerCase()
+  Set<String> _tokens(String value) => _normalize(value)
       .split(RegExp(r'[^a-z0-9\u0600-\u06ff]+'))
       .where((v) => v.length >= 3).toSet();
 
@@ -268,7 +268,18 @@ class AurenMatchEverythingService {
 
   Set<String> _intentTerms(String? intent) => intent == null ? <String>{} : _tokens(intent);
 
-  String _normalize(String? value) => (value ?? '').toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+  String _normalize(String? value) {
+    var valueText = (value ?? '').toLowerCase();
+    valueText = valueText
+        .replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '')
+        .replaceAll('أ', 'ا')
+        .replaceAll('إ', 'ا')
+        .replaceAll('آ', 'ا')
+        .replaceAll('ى', 'ي')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ـ', '');
+    return valueText.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
 
   int _candidateLimit(int limit) => (limit * 5).clamp(10, 50);
 
@@ -307,31 +318,48 @@ class AurenIntentSignals {
   });
 
   factory AurenIntentSignals.fromIntent(String? intent) {
-    final n = (intent ?? '').toLowerCase();
-    Set<String> found(List<String> words) => words.where(n.contains).map((e) => e.toLowerCase()).toSet();
+    final n = _normalizeIntent(intent);
+    Set<String> found(List<String> words) => words
+        .map(_normalizeIntent)
+        .where(n.contains)
+        .toSet();
     return AurenIntentSignals(
       countries: found(['السودان','sudan','مصر','egypt','الصين','china','الإمارات','uae','kenya','نيجيريا','nigeria']),
       cities: found(['الخرطوم','khartoum','القاهرة','cairo','دبي','dubai','شنتشن','shenzhen']),
-      wantsCheap: ['رخيص','ارخص','أرخص','cheap','cheapest','low price'].any(n.contains),
-      wantsShipping: ['شحن','الشحن','shipping','delivery','توصل','التوصيل'].any(n.contains),
-      wantsSupplier: ['مورد','توريد','supplier','wholesale'].any(n.contains),
-      wantsManufacturer: ['مصنع','مصانع','manufacturer','factory'].any(n.contains),
-      wantsWholesale: ['جملة','wholesale','bulk'].any(n.contains),
-      wantsBulk: ['كميات','كمية كبيرة','bulk','minimum order','moq'].any(n.contains),
+      wantsCheap: ['رخيص','ارخص','cheap','cheapest','low price'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsShipping: ['شحن','shipping','delivery','توصل','التوصيل'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsSupplier: ['مورد','توريد','supplier','wholesale'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsManufacturer: ['مصنع','مصانع','manufacturer','factory'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsWholesale: ['جملة','wholesale','bulk'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsBulk: ['كميات','كمية كبيرة','bulk','minimum order','moq'].any((w) => n.contains(_normalizeIntent(w))),
     );
   }
 
   int matchScore(String text) {
+    final n = _normalizeIntent(text);
     var score = 0;
-    if (countries.any(text.contains)) score += 10;
-    if (cities.any(text.contains)) score += 8;
-    if (wantsCheap && ['رخيص','cheap','low price','affordable','سعر'].any(text.contains)) score += 6;
-    if (wantsShipping && ['شحن','shipping','delivery','التوصيل'].any(text.contains)) score += 6;
-    if (wantsSupplier && ['مورد','supplier','توريد','wholesale'].any(text.contains)) score += 8;
-    if (wantsManufacturer && ['مصنع','manufacturer','factory'].any(text.contains)) score += 8;
-    if (wantsWholesale && ['جملة','wholesale','bulk'].any(text.contains)) score += 6;
-    if (wantsBulk && ['كميات','bulk','moq','minimum order'].any(text.contains)) score += 6;
+    if (countries.any(n.contains)) score += 10;
+    if (cities.any(n.contains)) score += 8;
+    if (wantsCheap && ['رخيص','cheap','low price','affordable','سعر'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
+    if (wantsShipping && ['شحن','shipping','delivery','التوصيل'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
+    if (wantsSupplier && ['مورد','supplier','توريد','wholesale'].any((w) => n.contains(_normalizeIntent(w)))) score += 8;
+    if (wantsManufacturer && ['مصنع','manufacturer','factory'].any((w) => n.contains(_normalizeIntent(w)))) score += 8;
+    if (wantsWholesale && ['جملة','wholesale','bulk'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
+    if (wantsBulk && ['كميات','bulk','moq','minimum order'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
     return score.clamp(0, 35);
+  }
+
+  static String _normalizeIntent(String? value) {
+    var text = (value ?? '').toLowerCase();
+    text = text
+        .replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '')
+        .replaceAll('أ', 'ا')
+        .replaceAll('إ', 'ا')
+        .replaceAll('آ', 'ا')
+        .replaceAll('ى', 'ي')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ـ', '');
+    return text.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 }
 
