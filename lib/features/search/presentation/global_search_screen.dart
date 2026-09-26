@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../services/auth/auth_service.dart';
 import '../../../core/models/search_result.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../services/search/global_search_repository.dart';
@@ -33,7 +34,7 @@ class _AurenGlobalSearchScreenState extends State<AurenGlobalSearchScreen> {
     if (query.isEmpty) { setState(() { _results = []; _lastQuery = ''; }); return; }
     setState(() => _loading = true);
     try {
-      final results = await _repository.search(query);
+      final results = await _repository.search(query, uid: FirebaseAurenAuthService().currentUserId);
       if (!mounted) return;
       setState(() { _results = results; _lastQuery = query; });
     } catch (e) {
