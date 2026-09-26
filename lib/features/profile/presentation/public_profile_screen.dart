@@ -9,6 +9,7 @@ import '../../../services/social/profile_mode_service.dart';
 import '../../../services/social/safety_repository.dart';
 import '../../social/presentation/safety_actions_sheet.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../../services/social/adaptive_profile_service.dart';
 
 class AurenPublicProfileScreen extends StatefulWidget {
   final AurenUserProfile profile;
@@ -119,9 +120,6 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                 );
               }
             ),
-                ]);
-              },
-            ),
         ],
       ),
       body: ListView(
@@ -195,24 +193,91 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                 builder: (context, snapshot) {
                   final data = snapshot.data;
                   if (data == null || !data.discoverable) return const SizedBox.shrink();
-                  final details = <String>[];
-                  if (data.headline.isNotEmpty) details.add(data.headline);
-                  if (data.skills.isNotEmpty) details.add('مهارات: ${data.skills.take(4).join('، ')}');
-                  if (data.interests.isNotEmpty) details.add('اهتمامات: ${data.interests.take(4).join('، ')}');
-                  if (mode == AurenProfileMode.creator && data.services.isNotEmpty) details.add('محتوى: ' + data.services.take(4).join('، '));
-                  if (mode == AurenProfileMode.business && data.services.isNotEmpty) details.add('خدمات / منتجات: ' + data.services.take(4).join('، '));
-                  if (mode == AurenProfileMode.professional && data.goals.isNotEmpty) details.add('أهداف: ' + data.goals.take(3).join('، '));
-                  if (data.languages.isNotEmpty) details.add('لغات: ' + data.languages.take(4).join('، '));
-                  if (data.achievements.isNotEmpty && mode != AurenProfileMode.personal) details.add('إنجازات: ' + data.achievements.take(3).join('، '));
+
+                  final adaptive = const AurenAdaptiveProfileService();
+                  final result = adaptive.suggest(
+                    currentMode: mode,
+                    context: AurenProfileContext.social,
+                    profile: data,
+                  );
+                  final displayMode = result.mode;
+
+                  final sections = <String>[];
+                  void add(String label, List<String> values, {int max = 4}) {
+                    if (values.isNotEmpty) sections.add(label + ': ' + values.take(max).join('، '));
+                  }
+
+                  // The same profile is presented differently depending on the
+                  // active mode; no duplicate profile data is created.
+                  switch (displayMode) {
+                    case AurenProfileMode.creator:
+                      add('محتوى', data.services);
+                      add('اهتمامات', data.interests);
+                      add('إنجازات', data.achievements, max: 3);
+                      add('لغات', data.languages);
+                      break;
+                    case AurenProfileMode.professional:
+                      add('مهارات', data.skills);
+                      add('أهداف', data.goals, max: 3);
+                      add('إنجازات', data.achievements, max: 3);
+                      add('لغات', data.languages);
+                      break;
+                    case AurenProfileMode.business:
+                      add('خدمات / منتجات', data.services);
+                      add('اهتمامات', data.interests);
+                      add('إنجازات', data.achievements, max: 3);
+                      add('لغات', data.languages);
+                      break;
+                    case AurenProfileMode.personal:
+                      add('اهتمامات', data.interests);
+                      add('لغات', data.languages);
+                      break;
+                  }
+
                   return Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [const Icon(Icons.auto_awesome), const SizedBox(width: 8), Expanded(child: Text('AI Profile • ${mode.label}', style: const TextStyle(fontWeight: FontWeight.bold)))]),
-                        if (data.headline.isNotEmpty) ...[const SizedBox(height: 8), Text(data.headline, style: const TextStyle(fontWeight: FontWeight.w600))],
-                        if (data.bio.isNotEmpty) ...[const SizedBox(height: 8), Text(data.bio)],
-                        if (details.isNotEmpty) ...[const SizedBox(height: 8), Text(details.join('\n'))],
-                      ]),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.auto_awesome),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'AI Profile • ' + displayMode.label,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              if (displayMode != mode)
+                                const Tooltip(
+                                  message: 'عرض متكيف مع السياق',
+                                  child: Icon(Icons.tune, size: 18),
+                                ),
+                            ],
+                          ),
+                          if (data.headline.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(data.headline, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          ],
+                          if (data.bio.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(data.bio),
+                          ],
+                          if (sections.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Text(sections.join('\\n')),
+                          ],
+                          if (displayMode != mode) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'AUREN يعرض المعلومات الأنسب للسياق الحالي بدون تغيير وضع الملف الأساسي.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   );
                 },
