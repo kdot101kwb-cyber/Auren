@@ -81,6 +81,16 @@ class AurenCreatorStudioRepository {
     return ref.id;
   }
 
+  Future<String> createCreatorSupportRequest({required String creatorUid,required int amountMinor,required String currency,required String message})async{
+    final u=creatorUid.trim(),m=message.trim(),cur=currency.trim().toUpperCase();
+    if(u.isEmpty||u.length>128)throw ArgumentError('Invalid creator uid.');
+    if(amountMinor<=0||amountMinor>100000000)throw ArgumentError('Invalid support amount.');
+    if(cur.length!=3)throw ArgumentError('Currency must be 3 letters.');
+    if(m.length>500)throw ArgumentError('Support message is too long.');
+    final ref=_db.collection('creator_support_requests').doc();
+    await ref.set({'creatorUid':u,'supporterUid':u,'amountMinor':amountMinor,'currency':cur,'message':m,'status':'pending','createdAt':FieldValue.serverTimestamp()});
+    return ref.id;
+  }
   Future<void> delete(String uid, String postId) async {
     final cleanUid = uid.trim();
     final cleanPostId = postId.trim();
