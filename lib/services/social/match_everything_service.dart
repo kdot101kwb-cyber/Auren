@@ -341,3 +341,17 @@ class AurenIntentActionPlan {
     AurenMatchAction.open => 'افتح النتيجة لمتابعة الخطوة المناسبة.',
   };
 }
+
+
+extension AurenMatchActionExecution on AurenMatchEverythingService {
+  Future<void> recordAction({required String uid, required AurenMatchItem item}) async {
+    await FirebaseFirestore.instance.collection('auren_action_events').add({
+      'uid': uid,
+      'targetId': item.id,
+      'targetKind': item.kind.name,
+      'action': item.action.name,
+      'intent': item.actionReason,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+}
