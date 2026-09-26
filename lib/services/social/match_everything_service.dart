@@ -53,25 +53,26 @@ class AurenMatchEverythingService {
       intent: intent,
     );
     final intentTerms = _intentTerms(intent);
+    final normalizedIntent = _normalize(intent);
 
     final limit = _safeLimit(limitPerKind);
 
     final results = <AurenMatchItem>[];
-    results.addAll(await _people(uid, profile, resolved.mode, limit, intentTerms));
-    results.addAll(await _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit, intentTerms));
-    results.addAll(await _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms));
-    results.addAll(await _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms));
-    results.addAll(await _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms));
+    results.addAll(await _people(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent));
+    results.addAll(await _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit, intentTerms, normalizedIntent));
+    results.addAll(await _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms, normalizedIntent));
+    results.addAll(await _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms, normalizedIntent));
+    results.addAll(await _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms, normalizedIntent));
 
     results.sort((a, b) => b.score.compareTo(a.score));
     return results.take(limit * 5).toList();
   }
 
   Future<List<AurenMatchItem>> _people(
-    String uid, AurenProfileModeData profile, AurenProfileMode mode, int limit, Set<String> intentTerms) async {
+    String uid, AurenProfileModeData profile, AurenProfileMode mode, int limit, Set<String> intentTerms, String normalizedIntent) async {
     try {
       final snapshot = await _db.collectionGroup('profile_modes')
-          .where('discoverable', isEqualTo: true).limit(limit).get();
+          .where('discoverable', isEqualTo: true).limit(_candidateLimit(limit)).get();
       return snapshot.docs.where((doc) => doc.reference.parent.parent?.id != uid).map((doc) {
         final d = doc.data();
         final candidateMode = AurenProfileModeX.fromId(d['mode'] as String?);
@@ -81,8 +82,8 @@ class AurenMatchEverythingService {
           title: _string(d['headline'], 'AUREN member'),
           subtitle: _string(d['bio'], candidateMode?.label ?? 'Person'),
           kind: AurenMatchKind.person,
-          score: _score(text, profile, candidateMode == mode, intentTerms),
-          reasons: _reasons(text, profile, candidateMode == mode, intentTerms),
+          score: _score(text, profile, candidateMode == mode, intentTerms, normalizedIntent),
+          reasons: _reasons(text, profile, candidateMode == mode, intentTerms, normalizedIntent),
           data: d,
         );
       }).toList();
@@ -93,10 +94,10 @@ class AurenMatchEverythingService {
 
   Future<List<AurenMatchItem>> _collectionMatches(
     String collection, AurenMatchKind kind, AurenProfileModeData profile,
-    AurenProfileMode mode, int limit, Set<String> intentTerms) async {
+    AurenProfileMode mode, int limit, Set<String> intentTerms, String normalizedIntent) async {
     try {
       final snapshot = await _db.collection(collection)
-          .where('visibility', isEqualTo: 'public').limit(limit).get();
+          .where('visibility', isEqualTo: 'public').limit(_candidateLimit(limit)).get();
       return snapshot.docs.map((doc) {
         final d = doc.data();
         final text = _documentText(d);
@@ -107,8 +108,8 @@ class AurenMatchEverythingService {
           title: _titleFor(kind, d),
           subtitle: _subtitleFor(kind, d),
           kind: kind,
-          score: _score(text, profile, modeMatch, intentTerms),
-          reasons: _reasons(text, profile, modeMatch, intentTerms),
+          score: _score(text, profile, modeMatch, intentTerms, normalizedIntent),
+          reasons: _reasons(text, profile, modeMatch, intentTerms, normalizedIntent),
           data: d,
         );
       }).toList();
@@ -147,15 +148,17 @@ class AurenMatchEverythingService {
         _list(d['goals']).join(' '), _list(d['services']).join(' '),
       ].whereType<String>().join(' ').toLowerCase();
 
-  int _score(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms) {
+  int _score(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms, String normalizedIntent) {
     final profileText = [...profile.skills, ...profile.interests, ...profile.goals, ...profile.services].join(' ');
     var score = _overlapScore(text, profileText);
     if (modeMatch) score += 15;
+    final normalizedText = _normalize(text);
     score += (intentTerms.intersection(_tokens(text)).length * 10).clamp(0, 25);
+    if (normalizedIntent.length >= 6 && normalizedText.contains(normalizedIntent)) score += 15;
     return score.clamp(0, 100);
   }
 
-  List<String> _reasons(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms) {
+  List<String> _reasons(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms, String normalizedIntent) {
     final reasons = <String>[];
     final tokens = _tokens(text);
     final common = <String>[];
@@ -166,6 +169,7 @@ class AurenMatchEverythingService {
     }
     if (common.isNotEmpty) reasons.add('تطابق: '+common.join('، '));
     final intentCommon = intentTerms.intersection(tokens).take(3).toList();
+    if (normalizedIntent.length >= 6 && _normalize(text).contains(normalizedIntent)) reasons.add('تطابق مباشر مع طلبك');
     if (intentCommon.isNotEmpty) reasons.add('مرتبط بطلبك: '+intentCommon.join('، '));
     if (modeMatch) reasons.add('متوافق مع نمط ملفك الحالي');
     if (reasons.isEmpty) reasons.add('مرتبط بسياقك الحالي');
@@ -189,6 +193,10 @@ class AurenMatchEverythingService {
       value is String && value.trim().isNotEmpty ? value.trim() : fallback;
 
   Set<String> _intentTerms(String? intent) => intent == null ? <String>{} : _tokens(intent);
+
+  String _normalize(String? value) => (value ?? '').toLowerCase().replaceAll(RegExp(r'\\s+'), ' ').trim();
+
+  int _candidateLimit(int limit) => (limit * 5).clamp(10, 50);
 
   int _safeLimit(int value) => value < 1 ? 1 : (value > 20 ? 20 : value);
 }
