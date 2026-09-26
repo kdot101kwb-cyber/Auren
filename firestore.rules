@@ -1378,6 +1378,27 @@ service cloud.firestore {
       allow read, create, update, delete: if isOwner(userId);
     }
 
+    match /users/{userId}/match_action_flows/{flowId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.targetId is string
+        && request.resource.data.targetId.size() > 0
+        && request.resource.data.targetId.size() <= 128
+        && request.resource.data.targetKind in ['person','opportunity','business','product','content']
+        && request.resource.data.action in ['open','contact','requestQuote','apply','addToCart','follow','save','watch']
+        && request.resource.data.intent is string
+        && request.resource.data.intent.size() <= 1000
+        && request.resource.data.step is int
+        && request.resource.data.step >= 0
+        && request.resource.data.totalSteps is int
+        && request.resource.data.totalSteps >= 1
+        && request.resource.data.step < request.resource.data.totalSteps
+        && request.resource.data.status in ['active','completed']
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
     match /users/{userId}/agent_work_executions/{executionId} {
       allow read: if isOwner(userId);
       allow create, update, delete: if false;
