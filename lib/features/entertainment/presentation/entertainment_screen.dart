@@ -7,6 +7,8 @@ import '../../search/presentation/global_search_screen.dart';
 import 'entertainment_detail_screen.dart';
 import 'entertainment_shorts_screen.dart';
 import 'auren_music_hub_screen.dart';
+import 'auren_radio_screen.dart';
+import 'auren_podcasts_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../core/models/entertainment.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -23,6 +25,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
   final repo = EntertainmentRepository();
   String query = '';
   String? type;
+  String _mood = 'الكل';
 
   static const _quickActions = <_EntertainmentAction>[
     _EntertainmentAction(Icons.music_note_rounded, 'Music', 'Songs, playlists & AI music'),
@@ -32,6 +35,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.public_rounded, 'AUREN World', 'Explore interactive worlds'),
     _EntertainmentAction(Icons.download_rounded, 'Offline', 'Save entertainment for low-data use'),
   ];
+
+  void _setMood(String mood, String prompt) => setState(() { _mood = mood; query = prompt; });
 
   void _openAI() {
     Navigator.push(
@@ -126,7 +131,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     const SizedBox(height: 12),
                   ],
                   _buildHero(context),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 12),
+                  _buildMoodBar(),
+                  const SizedBox(height: 14),
                   _buildQuickActions(context),
                   const SizedBox(height: 20),
                   TextField(
@@ -262,6 +269,35 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     );
   }
 
+  Widget _buildMoodBar() {
+    const moods = <String, String>{
+      'خفيف': 'شيء خفيف وسريع للترفيه',
+      'هدوء': 'موسيقى هادئة أو بودكاست مريح',
+      'حماس': 'شيء حماسي وممتع',
+      'اكتشاف': 'اكتشف شيئاً جديداً ومختلفاً',
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('اختار الإحساس', style: TextStyle(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: moods.entries.map((entry) => Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8),
+              child: ChoiceChip(
+                label: Text(entry.key),
+                selected: _mood == entry.key,
+                onSelected: (_) => _setMood(entry.key, entry.value),
+              ),
+            )).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildQuickActions(BuildContext context) {
     return SizedBox(
       height: 112,
@@ -276,9 +312,19 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
             child: Card(
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: action.title == 'Music'
-                    ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()))
-                    : _openAI,
+                onTap: () {
+                  if (action.title == 'Music') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()));
+                  } else if (action.title == 'Live') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()));
+                  } else if (action.title == 'Create') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(
+                      initialPrompt: 'ساعدني في إنشاء تجربة ترفيهية أصلية: أغنية أو قصة أو فيلم أو بودكاست.',
+                    )));
+                  } else {
+                    _openAI();
+                  }
+                },
                 child: Padding(
                   padding: const EdgeInsets.all(11),
                   child: Column(
