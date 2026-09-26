@@ -11,6 +11,21 @@ enum AurenProfileContext {
   unknown,
 }
 
+extension AurenProfileContextX on AurenProfileContext {
+  String get label {
+    switch (this) {
+      case AurenProfileContext.social: return 'Social';
+      case AurenProfileContext.content: return 'Creator';
+      case AurenProfileContext.work: return 'Work';
+      case AurenProfileContext.business: return 'Business';
+      case AurenProfileContext.discovery: return 'Discovery';
+      case AurenProfileContext.education: return 'Education';
+      case AurenProfileContext.travel: return 'Travel';
+      case AurenProfileContext.unknown: return 'Auto';
+    }
+  }
+}
+
 class AurenAdaptiveProfileResult {
   final AurenProfileMode mode;
   final int confidence;
