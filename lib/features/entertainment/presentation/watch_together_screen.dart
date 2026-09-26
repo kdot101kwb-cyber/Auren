@@ -32,6 +32,8 @@ class AurenWatchTogetherService {
   }
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchRoom(String roomId) => _rooms.doc(roomId).snapshots();
   Future<void> updatePlayback({required String roomId, required double positionSeconds, required bool isPlaying}) => _rooms.doc(roomId).update({'positionSeconds': positionSeconds.clamp(0, 86400), 'isPlaying': isPlaying, 'updatedAt': FieldValue.serverTimestamp()});
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchMessages(String roomId) => _rooms.doc(roomId).collection('messages').orderBy('createdAt', descending: true).limit(50).snapshots();
+  Future<void> sendMessage(String roomId, String text) async { final uid = FirebaseAuth.instance.currentUser?.uid; final value = text.trim(); if (uid == null || value.isEmpty) return; await _rooms.doc(roomId).collection('messages').add({'senderUid': uid, 'text': value, 'createdAt': FieldValue.serverTimestamp()}); }
 }
 
 class AurenWatchTogetherScreen extends StatefulWidget {
@@ -49,7 +51,8 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
   bool _busy = false;
   VideoPlayerController? _controller;
   bool _syncingRemote = false;
-  @override void dispose() { _title.dispose(); _code.dispose(); _controller?.dispose(); super.dispose(); }
+  final _chat = TextEditingController();
+  @override void dispose() { _title.dispose(); _code.dispose(); _chat.dispose(); _controller?.dispose(); super.dispose(); }
   Future<void> _create() async {
     setState(() => _busy = true);
     try { _roomId = await _service.createRoom(title: widget.title ?? _title.text, mediaId: widget.mediaId); if (mounted) setState(() {}); }
@@ -90,6 +93,35 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
           if (widget.mediaUrl != null && widget.mediaUrl!.isNotEmpty) _buildSyncedPlayer(roomId, data),
           if (widget.mediaUrl == null || widget.mediaUrl!.isEmpty)
             FilledButton.icon(onPressed: () => _service.updatePlayback(roomId: roomId, positionSeconds: ((data['positionSeconds'] ?? 0) as num).toDouble(), isPlaying: !(data['isPlaying'] == true)), icon: Icon(data['isPlaying'] == true ? Icons.pause : Icons.play_arrow), label: Text(data['isPlaying'] == true ? 'إيقاف' : 'تشغيل')),
+          const SizedBox(height: 18),
+          const Text('دردشة الغرفة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          SizedBox(height: 220, child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: _service.watchMessages(roomId),
+            builder: (context, chatSnapshot) {
+              final messages = chatSnapshot.data?.docs ?? const [];
+              return ListView.builder(
+                reverse: true,
+                itemCount: messages.length,
+                itemBuilder: (_, index) {
+                  final message = messages[index].data();
+                  final mine = message['senderUid'] == FirebaseAuth.instance.currentUser?.uid;
+                  return Align(alignment: mine ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart, child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(color: mine ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(14)),
+                    child: Text((message['text'] ?? '').toString()),
+                  ));
+                },
+              );
+            },
+          )),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: TextField(controller: _chat, maxLength: 1000, decoration: const InputDecoration(hintText: 'اكتب رسالة...', border: OutlineInputBorder(), counterText: ''))),
+            const SizedBox(width: 8),
+            IconButton.filled(onPressed: () async { final text = _chat.text; _chat.clear(); await _service.sendMessage(roomId, text); }, icon: const Icon(Icons.send)),
+          ]),
         ])));
       }),
     ]));
