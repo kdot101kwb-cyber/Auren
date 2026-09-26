@@ -100,10 +100,10 @@ class _NotificationTile extends StatelessWidget {
     if (value == null) return '';
     final delta = DateTime.now().difference(value);
     if (delta.inSeconds < 60) return 'الآن';
-    if (delta.inMinutes < 60) return 'منذ \${delta.inMinutes} د';
-    if (delta.inHours < 24) return 'منذ \${delta.inHours} س';
-    if (delta.inDays < 7) return 'منذ \${delta.inDays} ي';
-    return '\${value.day}/\${value.month}/\${value.year}';
+    if (delta.inMinutes < 60) return 'منذ ${delta.inMinutes} د';
+    if (delta.inHours < 24) return 'منذ ${delta.inHours} س';
+    if (delta.inDays < 7) return 'منذ ${delta.inDays} ي';
+    return '${value.day}/${value.month}/${value.year}';
   }
 
   @override
