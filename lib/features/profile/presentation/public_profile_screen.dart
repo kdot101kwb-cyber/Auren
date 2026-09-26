@@ -10,6 +10,7 @@ import '../../../services/social/safety_repository.dart';
 import '../../social/presentation/safety_actions_sheet.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/social/adaptive_profile_service.dart';
+import '../../../services/creator/creator_studio_repository.dart';
 
 class AurenPublicProfileScreen extends StatefulWidget {
   final AurenUserProfile profile;
@@ -69,6 +70,37 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
     }
   }
 
+  Future<void> _supportCreator(String supporterUid) async {
+    final amount = TextEditingController();
+    final message = TextEditingController();
+    var currency = 'USD';
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text('دعم '+widget.profile.displayName),
+            content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(controller: amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'المبلغ')),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(value: currency, items: const ['USD','AED','SDG'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => currency = v ?? 'USD'), decoration: const InputDecoration(labelText: 'العملة')),
+              const SizedBox(height: 8),
+              TextField(controller: message, maxLength: 500, maxLines: 3, decoration: const InputDecoration(labelText: 'رسالة (اختياري)')),
+              const Text('هذا طلب دعم؛ لا يتم تحويل أموال تلقائياً في هذه المرحلة.'),
+            ])),
+            actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('إرسال طلب الدعم'))],
+          ),
+        ),
+      );
+      if (result != true) return;
+      final value = double.tryParse(amount.text.trim());
+      if (value == null || value <= 0 || value > 1000000) throw ArgumentError('مبلغ غير صالح.');
+      await AurenCreatorStudioRepository().createCreatorSupportRequest(creatorUid: widget.profile.uid, supporterUid: supporterUid, amountMinor: (value * 100).round(), currency: currency, message: message.text.trim());
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إرسال طلب الدعم للـCreator.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إرسال الدعم: $e')));
+    } finally { amount.dispose(); message.dispose(); }
+  }
   void _askAuren() {
     Navigator.push(
       context,
@@ -304,6 +336,13 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
               onPressed: _askAuren,
               icon: const Icon(Icons.auto_awesome),
               label: const Text('Ask AUREN'),
+            ),          if (!own && me != null)
+            StreamBuilder<AurenProfileMode>(
+              stream: profileModes.watchActiveMode(widget.profile.uid),
+              builder: (context, modeSnapshot) {
+                if (modeSnapshot.data != AurenProfileMode.creator) return const SizedBox.shrink();
+                return FilledButton.icon(onPressed: () => _supportCreator(me), icon: const Icon(Icons.favorite_outline), label: const Text('دعم Creator'));
+              },
             ),
           if (!own && me != null)
             StreamBuilder<bool>(
