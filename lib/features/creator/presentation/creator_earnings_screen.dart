@@ -71,6 +71,45 @@ class _AurenCreatorEarningsScreenState extends State<AurenCreatorEarningsScreen>
                 SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_sending?null:_withdraw,icon:const Icon(Icons.send_rounded),label:Text(_sending?'جاري الإرسال...':'إرسال طلب السحب'))),
               ])),
               const SizedBox(height: 20),
+              StreamBuilder<List<Map<String, dynamic>>>(
+                stream: repo.watchCreatorSupportRequests(uid),
+                builder: (context, requestSnap) {
+                  final requests = requestSnap.data ?? const <Map<String, dynamic>>[];
+                  if (requests.isEmpty) return const SizedBox.shrink();
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('طلبات دعم الجمهور', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 8),
+                        ...requests.map((r) {
+                          final status = (r['status'] ?? 'pending').toString();
+                          final amount = ((r['amountMinor'] as num?)?.toInt() ?? 0) / 100;
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(amount.toStringAsFixed(2) + ' ' + (r['currency'] ?? '')),
+                            subtitle: Text((r['message'] ?? '').toString().isEmpty ? status : (r['message'] ?? '').toString() + ' • ' + status),
+                            trailing: status == 'pending'
+                                ? FilledButton(
+                                    onPressed: () async {
+                                      try {
+                                        await repo.acceptCreatorSupport((r['id'] ?? '').toString());
+                                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم قبول الدعم وإضافته إلى الأرباح قيد التسوية.')));
+                                      } catch (e) {
+                                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر قبول الطلب: $e')));
+                                      }
+                                    },
+                                    child: const Text('قبول'),
+                                  )
+                                : Text(status),
+                          );
+                        }),
+                      ]),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
               if (items.isEmpty)
                 const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد أرباح مسجلة حتى الآن.')))
               else
