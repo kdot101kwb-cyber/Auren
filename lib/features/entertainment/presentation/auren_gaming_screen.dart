@@ -122,7 +122,6 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   }
 
   @override Widget build(BuildContext context) {
-    _loadStats();
     final uid = FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
       appBar: AppBar(title: const Text('AUREN Gaming')),
@@ -695,9 +694,9 @@ class AurenGamingService {
     }, SetOptions(merge: true));
   }
 
-  Future<bool> claimDailyChallenge(String uid) async {
+  Future<bool> claimDailyChallenge(String uid, String roomId) async {
     final callable = FirebaseFunctions.instance.httpsCallable('claimGamingDailyChallenge');
-    final result = await callable.call(<String, dynamic>{});
+    final result = await callable.call(<String, dynamic>{'roomId': roomId});
     return result.data is Map && result.data['claimed'] == true;
   }
 
