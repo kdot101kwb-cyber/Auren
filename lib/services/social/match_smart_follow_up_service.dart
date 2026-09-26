@@ -45,18 +45,40 @@ class AurenSmartFollowUpService {
     final price = _extractPrice(text);
     final currency = _extractCurrency(text);
     final moq = _extract(text, [
-      RegExp(r'(?:moq|minimum\s+order|minimum\s+quantity|حد\s*أدنى|اقل\s+كمية|أقل\s+كمية)\s*[:：-]?\s*([\d٠-٩.,]+(?:\s*[a-zA-Z%]+)?)', caseSensitive: false),
-      RegExp(r'([\d٠-٩.,]+)\s*(?:pcs|pieces|قطعة|وحدة|كرتون|كرتونة)', caseSensitive: false),
+      RegExp(
+        r'(?:moq|minimum\s+order|minimum\s+quantity|حد\s*أدنى|اقل\s+كمية|أقل\s+كمية)\s*[:：-]?\s*([\d٠-٩.,]+(?:\s*[a-zA-Z%]+)?)',
+        caseSensitive: false,
+      ),
+      RegExp(
+        r'([\d٠-٩.,]+)\s*(?:pcs|pieces|قطعة|قطع|وحدة|كرتون|كرتونة)',
+        caseSensitive: false,
+      ),
     ]);
     final lead = _extract(text, [
-      RegExp(r'(?:lead\s*time|production\s*time|preparation|مدة\s*(?:التجهيز|التصنيع)|زمن\s*(?:التجهيز|التصنيع))\s*[:：-]?\s*([^،,.;\n]{1,40})', caseSensitive: false),
-      RegExp(r'([\d٠-٩]+)\s*(?:days?|أيام?|يوم)', caseSensitive: false),
+      RegExp(
+        r'(?:lead\s*time|production\s*time|preparation|مدة\s*(?:التجهيز|التصنيع)|زمن\s*(?:التجهيز|التصنيع))\s*[:：-]?\s*([^،,.;\n]{1,40})',
+        caseSensitive: false,
+      ),
+      RegExp(
+        r'([\d٠-٩]+)\s*(?:days?|أيام?|يوم)',
+        caseSensitive: false,
+      ),
     ]);
     final shipping = _extract(text, [
-      RegExp(r'(?:shipping|delivery|الشحن|التوصيل|التسليم)\s*[:：-]?\s*([^،,.;\n]{1,70})', caseSensitive: false),
+      RegExp(
+        r'(?:shipping|delivery|الشحن|التوصيل|التسليم)\s*[:：-]?\s*([^،,.;\n]{1,70})',
+        caseSensitive: false,
+      ),
     ]);
     final quantity = _extract(text, [
-      RegExp(r'(?:quantity|qty|الكمية)\s*[:：-]?\s*([\d٠-٩.,]+)', caseSensitive: false),
+      RegExp(
+        r'(?:quantity|qty|الكمية)\s*[:：-]?\s*([\d٠-٩.,]+)',
+        caseSensitive: false,
+      ),
+      RegExp(
+        r'(?:عايز|أريد|اريد|نحتاج|نريد|need|want|looking\s+for)\s*([\d٠-٩.,]+)\s*(?:قطعة|قطع|وحدة|pcs|pieces)',
+        caseSensitive: false,
+      ),
     ]);
 
     final missing = <String>[];
@@ -79,10 +101,27 @@ class AurenSmartFollowUpService {
         missing.add('خيارات الشحن');
         questions.add('ما خيارات الشحن والتكلفة ومدة التوصيل إلى الوجهة؟');
       }
+      if (quantity == null &&
+          _containsAny(lower, ['quote', 'عرض سعر', 'السعر', 'price'])) {
+        missing.add('الكمية');
+        questions.add('ما الكمية التي يمكن تسعيرها في العرض؟');
+      }
     } else if (action == 'apply') {
-      if (!_containsAny(lower, ['next', 'step', 'خطوة', 'مستند', 'document', 'cv', 'سيرة'])) {
+      if (!_containsAny(lower, [
+        'next',
+        'step',
+        'خطوة',
+        'مستند',
+        'document',
+        'cv',
+        'سيرة',
+        'apply',
+        'تقديم',
+      ])) {
         missing.add('الخطوة التالية');
-        questions.add('ما الخطوة التالية، وهل توجد مستندات أو معلومات إضافية مطلوبة؟');
+        questions.add(
+          'ما الخطوة التالية، وهل توجد مستندات أو معلومات إضافية مطلوبة؟',
+        );
       }
     } else if (action == 'contact') {
       if (text.length < 20) {
@@ -92,7 +131,8 @@ class AurenSmartFollowUpService {
     }
 
     final detailParts = <String>[
-      if (price != null) 'السعر: ' + price + (currency == null ? '' : ' ' + currency),
+      if (price != null)
+        'السعر: ' + price + (currency == null ? '' : ' ' + currency),
       if (moq != null) 'MOQ: ' + moq,
       if (lead != null) 'التجهيز: ' + lead,
       if (shipping != null) 'الشحن: ' + shipping,
@@ -118,9 +158,18 @@ class AurenSmartFollowUpService {
 
   String? _extractPrice(String text) {
     final patterns = [
-      RegExp(r'(?:[$€£]|USD|EUR|GBP|دولار|يورو|جنيه)\s*([\d٠-٩][\d٠-٩.,]*)', caseSensitive: false),
-      RegExp(r'([\d٠-٩][\d٠-٩.,]*)\s*(?:USD|EUR|GBP|دولار|يورو|جنيه)', caseSensitive: false),
-      RegExp(r'(?:price|السعر)\s*[:：-]?\s*([\d٠-٩][\d٠-٩.,]*)', caseSensitive: false),
+      RegExp(
+        r'(?:[$€£]|USD|EUR|GBP|دولار|يورو|جنيه)\s*([\d٠-٩][\d٠-٩.,]*)',
+        caseSensitive: false,
+      ),
+      RegExp(
+        r'([\d٠-٩][\d٠-٩.,]*)\s*(?:USD|EUR|GBP|دولار|يورو|جنيه)',
+        caseSensitive: false,
+      ),
+      RegExp(
+        r'(?:price|السعر)\s*[:：-]?\s*([\d٠-٩][\d٠-٩.,]*)',
+        caseSensitive: false,
+      ),
     ];
     for (final pattern in patterns) {
       final match = pattern.firstMatch(text);
