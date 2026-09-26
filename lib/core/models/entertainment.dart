@@ -1,9 +1,10 @@
 class AurenEntertainmentItem {
-  final String id, title, type, description, imageUrl, mediaUrl, mediaKind;
+  final String id, title, type, description, imageUrl, mediaUrl, mediaKind, creatorId;
   const AurenEntertainmentItem({
     required this.id, required this.title, required this.type,
     required this.description, required this.imageUrl,
     required this.mediaUrl, required this.mediaKind,
+    this.creatorId = '',
   });
 
   bool get isVideo => mediaKind == 'video' || mediaUrl.toLowerCase().endsWith('.mp4') || mediaUrl.toLowerCase().contains('.m3u8');
@@ -17,5 +18,6 @@ class AurenEntertainmentItem {
     imageUrl: d['imageUrl'] ?? '',
     mediaUrl: d['mediaUrl'] ?? d['videoUrl'] ?? d['audioUrl'] ?? '',
     mediaKind: d['mediaKind'] ?? (d['videoUrl'] != null ? 'video' : d['audioUrl'] != null ? 'audio' : ''),
+    creatorId: (d['creatorId'] ?? d['ownerId'] ?? d['authorId'] ?? d['uid'] ?? '').toString(),
   );
 }
