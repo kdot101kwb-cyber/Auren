@@ -46,4 +46,11 @@ void main() {
       expect(plan.actionFor(AurenMatchKind.person), AurenMatchAction.contact);
     });
   });
+
+  test('normalizes Arabic spelling variants for intent signals', () {
+    final signals = AurenIntentSignals.fromIntent('أرخص مورد ملابس في الإمارات');
+    expect(signals.wantsCheap, isTrue);
+    expect(signals.wantsSupplier, isTrue);
+    expect(signals.countries, contains('الامارات'));
+  });
 }
