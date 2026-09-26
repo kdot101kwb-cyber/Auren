@@ -175,14 +175,15 @@ class EntertainmentRepository {
     required int seconds,
     required bool completed,
     required String contentType,
+    bool countPlay = false,
   }) async {
-    if (seconds <= 0 && !completed) return;
+    if (seconds <= 0 && !completed && !countPlay) return;
     await db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId).set({
       'itemId': itemId,
       'contentType': contentType,
       'lastPlayedAt': FieldValue.serverTimestamp(),
       'watchSeconds': FieldValue.increment(seconds),
-      'plays': FieldValue.increment(1),
+      'plays': FieldValue.increment(countPlay ? 1 : 0),
       'completions': FieldValue.increment(completed ? 1 : 0),
     }, SetOptions(merge: true));
   }
