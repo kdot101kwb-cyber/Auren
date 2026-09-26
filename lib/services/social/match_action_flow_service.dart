@@ -10,6 +10,8 @@ class AurenMatchActionFlowState {
   final String targetId;
   final String targetKind;
   final String? conversationId;
+  final String? replyMessageId;
+  final DateTime? replyDetectedAt;
   final DateTime? updatedAt;
 
   const AurenMatchActionFlowState({
@@ -20,6 +22,8 @@ class AurenMatchActionFlowState {
     required this.targetId,
     required this.targetKind,
     this.conversationId,
+    this.replyMessageId,
+    this.replyDetectedAt,
     this.updatedAt,
   });
 
@@ -27,6 +31,7 @@ class AurenMatchActionFlowState {
 
   factory AurenMatchActionFlowState.fromDoc(String id, Map<String, dynamic> data) {
     final raw = data['updatedAt'];
+    final rawReplyDetectedAt = data['replyDetectedAt'];
     return AurenMatchActionFlowState(
       flowId: id,
       status: (data['status'] ?? 'active').toString(),
@@ -37,6 +42,12 @@ class AurenMatchActionFlowState {
       conversationId: (data['conversationId'] as String?)?.trim().isEmpty == true
           ? null
           : (data['conversationId'] as String?)?.trim(),
+      replyMessageId: (data['replyMessageId'] as String?)?.trim().isEmpty == true
+          ? null
+          : (data['replyMessageId'] as String?)?.trim(),
+      replyDetectedAt: rawReplyDetectedAt is Timestamp
+          ? rawReplyDetectedAt.toDate()
+          : null,
       updatedAt: raw is Timestamp ? raw.toDate() : null,
     );
   }
