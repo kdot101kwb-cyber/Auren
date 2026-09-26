@@ -1,4 +1,6 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
@@ -12,6 +14,15 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
+    );
+    // Activate App Check before AUREN starts using Firebase services.
+    // Enforcement is intentionally configured in Firebase Console after monitoring,
+    // so existing development builds are not locked out.
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: const AndroidPlayIntegrityProvider(),
+      providerApple: const AppleDeviceCheckProvider(),
+      providerWeb: kDebugMode ? WebDebugProvider() : WebDebugProvider(),
+      providerWindows: const WindowsDebugProvider(),
     );
   } catch (error) {
     firebaseError = error;
