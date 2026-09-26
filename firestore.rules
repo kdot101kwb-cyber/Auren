@@ -13,6 +13,33 @@ service cloud.firestore {
   match /random_connect_blocks/{blockId} { allow read: if request.auth != null && resource.data.uid == request.auth.uid; allow create: if request.auth != null && request.resource.data.uid == request.auth.uid && request.resource.data.blockedUid is string; allow delete: if request.auth != null && resource.data.uid == request.auth.uid; allow update: if false; }
   match /users/{userId}/random_sessions/{sessionId} { allow read: if isOwner(userId); allow create: if isOwner(userId) && request.resource.data.keys().hasOnly(['otherUid','otherName','action','kind','createdAt']) && request.resource.data.otherUid is string && request.resource.data.otherUid.size() > 0 && request.resource.data.otherUid.size() <= 128 && request.resource.data.otherName is string && request.resource.data.otherName.size() <= 80 && request.resource.data.action is string && request.resource.data.action.size() <= 32 && request.resource.data.kind is string && request.resource.data.kind.size() <= 16 && request.resource.data.createdAt is timestamp; allow update, delete: if isOwner(userId); }
   match /random_connect/{requestId} { allow read: if request.auth != null; allow create: if false; allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','matchedWith','matchedAt','endedAt']) && ((resource.data.uid == request.auth.uid && (request.resource.data.status == 'cancelled' || request.resource.data.status == 'ended')) || (resource.data.status == 'waiting' && request.resource.data.status == 'matched' && request.resource.data.matchedWith == request.auth.uid && request.resource.data.matchedAt is timestamp)); allow delete: if request.auth != null && resource.data.uid == request.auth.uid; }
+  match /users/{userId}/blocked/{blockedUid} {
+    allow read: if isOwner(userId);
+    allow create: if isOwner(userId)
+      && blockedUid == request.resource.data.blockedUid
+      && blockedUid != userId
+      && request.resource.data.keys().hasOnly(['blockedUid','createdAt'])
+      && request.resource.data.createdAt is timestamp;
+    allow delete: if isOwner(userId);
+    allow update: if false;
+  }
+
+  match /reports/{reportId} {
+    allow create: if request.auth != null
+      && request.resource.data.reporterUid == request.auth.uid
+      && request.resource.data.reportedUid is string
+      && request.resource.data.reportedUid != request.auth.uid
+      && request.resource.data.reason is string
+      && request.resource.data.reason.size() > 0
+      && request.resource.data.reason.size() <= 500
+      && (!request.resource.data.keys().hasAny(['contentId']) || request.resource.data.contentId == null || request.resource.data.contentId is string)
+      && (!request.resource.data.keys().hasAny(['contentType']) || request.resource.data.contentType == null || request.resource.data.contentType is string)
+      && request.resource.data.status == 'open'
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.keys().hasOnly(['reporterUid','reportedUid','reason','contentId','contentType','status','createdAt']);
+    allow read, update, delete: if false;
+  }
+
   match /users/{userId}/notifications/{notificationId} {
     allow read: if isOwner(userId);
     allow update: if isOwner(userId)
@@ -709,6 +736,8 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.resource.data.followerId == request.auth.uid
+        && !exists(/databases/$(database)/documents/users/$(request.auth.uid)/blocked/$(request.resource.data.followingId))
+        && !exists(/databases/$(database)/documents/users/$(request.resource.data.followingId)/blocked/$(request.auth.uid))
         && followId == request.resource.data.followerId + '_' + request.resource.data.followingId
         && request.resource.data.followingId is string
         && request.resource.data.followerId != request.resource.data.followingId
