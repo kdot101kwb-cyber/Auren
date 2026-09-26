@@ -2287,13 +2287,18 @@ exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall
     if(!Number.isSafeInteger(amountMinor)||amountMinor<=0||amountMinor>100000000||!/^[A-Z]{3}$/.test(currency)||!['bank','mobile_money','manual'].includes(method)||!destination||destination.length>300) {
       throw new Error('Invalid withdrawal request.');
     }
+    const existing=await db.collection('creator_withdrawals')
+      .where('creatorUid','==',uid).where('currency','==',currency).where('status','in',['pending','approved']).limit(100).get();
+    let reserved=0;
+    for(const doc of existing.docs) reserved+=Number(doc.data()?.amountMinor||0);
     const earnings=await db.collection('creator_earnings').where('creatorUid','==',uid).limit(100).get();
-    let available=0;
+    let settled=0;
     for(const doc of earnings.docs){
       const e=doc.data();
-      if(e.currency===currency && e.status==='settled') available+=Number(e.amountMinor||0);
+      if(e.currency===currency && e.status==='settled') settled+=Number(e.amountMinor||0);
     }
-    if(amountMinor>available) throw new Error('Insufficient settled earnings.');
+    const available=Math.max(0,settled-reserved);
+    if(amountMinor>available) throw new Error('Insufficient available settled earnings.');
     const ref=db.collection('creator_withdrawals').doc();
     await ref.set({
       creatorUid:uid,amountMinor,currency,method,destination,status:'pending',
