@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import '../../search/presentation/global_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
 import '../../../services/social/follow_repository.dart';
 import '../../../services/users/user_repository.dart';
+import '../../profile/presentation/profile_screen.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 
@@ -123,7 +125,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   void _matchMe(AurenEntertainmentItem item) => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
 
-  String? _creatorId(AurenEntertainmentItem item) => null;
+  String? _creatorId(AurenEntertainmentItem item) => item.creatorId.isEmpty ? null : item.creatorId;
 
   Future<void> _shareItem(AurenEntertainmentItem item) async {
     if (uid != null) await repo.trackShortAction(uid!, item.id, action: 'share', mood: mood);
@@ -132,6 +134,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       ListTile(leading: const Icon(Icons.link), title: const Text('نسخ رابط المحتوى'), onTap: () async { await Clipboard.setData(ClipboardData(text: item.mediaUrl)); if (sheet.mounted) Navigator.pop(sheet); }),
       ListTile(leading: const Icon(Icons.send_outlined), title: const Text('مشاركة داخل AUREN'), onTap: () { Navigator.pop(sheet); Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد مشاركة هذا المحتوى داخل AUREN: '+item.title+'\n'+item.mediaUrl))); }),
     ])));
+  }
+
+  void _showCreator(AurenEntertainmentItem item) {
+    final creatorId = _creatorId(item);
+    if (creatorId == null) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AurenProfileScreen(userId: creatorId)));
   }
 
   void _showComments(AurenEntertainmentItem item) {
@@ -183,7 +191,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                       IconButton(
                         icon: const Icon(Icons.send),
                         onPressed: () async {
-                          await repo.addShortComment(uid!, item.id, controller.text);
+                          await repo.addShortComment(uid!, item.id, controller.text, mood: mood);
                           controller.clear();
                         },
                       ),
@@ -281,6 +289,32 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     ),
                   ),
 
+                  if (_creatorId(item) != null)
+                    Positioned(
+                      left: 16, right: 78, top: 62,
+                      child: StreamBuilder(
+                        stream: UserRepository().watch(_creatorId(item)!),
+                        builder: (context, s) {
+                          final name = s.hasData ? s.data!.displayName : 'Creator';
+                          final me = uid;
+                          if (me == _creatorId(item)) return const SizedBox.shrink();
+                          return Row(children: [
+                            InkWell(onTap: () => _showCreator(item), child: const CircleAvatar(radius: 18, child: Icon(Icons.person, size: 20))),
+                            const SizedBox(width: 8),
+                            Flexible(child: InkWell(onTap: () => _showCreator(item), child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)))),
+                            const SizedBox(width: 10),
+                            StreamBuilder<bool>(
+                              stream: follows.watchFollowing(me ?? '', _creatorId(item)!),
+                              builder: (context, f) => OutlinedButton.icon(
+                                onPressed: me == null ? null : () => follows.toggle(me, _creatorId(item)!, f.data == true),
+                                icon: Icon(f.data == true ? Icons.check : Icons.person_add, size: 16),
+                                label: Text(f.data == true ? 'Following' : 'Follow'),
+                              ),
+                            ),
+                          ]);
+                        },
+                      ),
+                    ),
                   Positioned(
                     left: 16, right: 78, bottom: 28,
                     child: Column(
