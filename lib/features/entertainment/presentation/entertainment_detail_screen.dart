@@ -14,11 +14,25 @@ class AurenEntertainmentDetailScreen extends StatefulWidget {
 class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScreen> {
   VideoPlayerController? _controller;
   bool _starting = false;
+  AurenEntertainmentItem? _activeItem;
+  String? _uid;
+  Duration _lastSavedPosition = Duration.zero;
 
   @override
-  void dispose() { _controller?.dispose(); super.dispose(); }
+  void dispose() { _saveProgress(); _controller?.dispose(); super.dispose(); }
 
-  Future<void> _openPlayer(String url) async {
+  Future<void> _saveProgress() async {
+    final item = _activeItem;
+    final uid = _uid;
+    final controller = _controller;
+    if (item == null || uid == null || controller == null || !controller.value.isInitialized) return;
+    final position = controller.value.position;
+    if ((position - _lastSavedPosition).abs() < const Duration(seconds: 5) && position != controller.value.duration) return;
+    _lastSavedPosition = position;
+    await EntertainmentRepository().saveWatchProgress(uid, item, position, controller.value.duration);
+  }
+
+  Future<void> _openPlayer(String url, AurenEntertainmentItem item, {Duration? resume}) async {
     if (url.isEmpty || _starting) return;
     setState(() => _starting = true);
     try {
@@ -26,7 +40,10 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
       final controller = VideoPlayerController.networkUrl(Uri.parse(url));
       await controller.initialize();
       if (!mounted) { await controller.dispose(); return; }
-      setState(() { _controller = controller; _starting = false; });
+      _activeItem = item;
+      if (resume != null && resume > Duration.zero) await controller.seekTo(resume);
+      setState(() { _controller = controller; _starting = false; _lastSavedPosition = Duration.zero; });
+      controller.addListener(() { if (mounted) _saveProgress(); });
       await controller.play();
     } catch (_) {
       if (mounted) {
@@ -39,6 +56,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    _uid = uid;
     final repo = EntertainmentRepository();
     return Scaffold(
       appBar: AppBar(title: const Text('AUREN Entertainment')),
@@ -70,7 +88,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                 Container(height: 210, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xff4527a0), Color(0xff1565c0), Color(0xffad1457)])), child: const Center(child: Icon(Icons.play_circle_outline, size: 72))),
               if (item.isVideo && item.mediaUrl.isNotEmpty && (_controller == null || !_controller!.value.isInitialized)) ...[
                 const SizedBox(height: 12),
-                FilledButton.icon(onPressed: _starting ? null : () => _openPlayer(item.mediaUrl),
+                FilledButton.icon(onPressed: _starting ? null : () => _openPlayer(item.mediaUrl, item),
                   icon: const Icon(Icons.play_arrow), label: Text(_starting ? 'جاري التحميل…' : 'تشغيل')),
               ],
               if (_controller != null && _controller!.value.isInitialized)
