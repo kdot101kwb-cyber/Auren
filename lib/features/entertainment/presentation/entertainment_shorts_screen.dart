@@ -177,7 +177,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         ],
       ),
       body: StreamBuilder<List<AurenEntertainmentItem>>(
-        stream: repo.watchShorts(mood: mood),
+        stream: uid == null ? repo.watchShorts(mood: mood) : repo.watchPersonalizedShorts(uid!, mood: mood),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
