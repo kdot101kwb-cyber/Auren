@@ -107,6 +107,36 @@ class AurenCreatorStudioRepository {
     return ref.id;
   }
 
+  Stream<List<Map<String, dynamic>>> watchCreatorSupportRequests(String creatorUid) {
+    final uid = creatorUid.trim();
+    if (uid.isEmpty || uid.length > 128) {
+      return Stream.error(ArgumentError('Invalid creator id.'));
+    }
+    return _db
+        .collection('creator_support_requests')
+        .where('creatorUid', isEqualTo: uid)
+        .limit(100)
+        .snapshots()
+        .map((snap) {
+      final items = snap.docs.map((d) {
+        final data = Map<String, dynamic>.from(d.data());
+        data['id'] = d.id;
+        return data;
+      }).toList();
+      items.sort((a, b) => _dateValue(b['createdAt']).compareTo(_dateValue(a['createdAt'])));
+      return items;
+    });
+  }
+
+  Future<void> acceptCreatorSupport(String requestId) async {
+    final id = requestId.trim();
+    if (id.isEmpty || id.length > 128) {
+      throw ArgumentError('Invalid support request id.');
+    }
+    final callable = FirebaseFunctions.instance.httpsCallable('acceptCreatorSupport');
+    await callable.call({'requestId': id});
+  }
+
   Future<void> settleEarning({
     required String earningId,
   }) async {
