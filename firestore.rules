@@ -1746,13 +1746,9 @@ service cloud.firestore {
     match /gaming_friend_challenges/{challengeId} {
       allow read: if request.auth != null
         && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
-      allow create: if request.auth != null
-        && request.resource.data.fromUid == request.auth.uid
-        && request.resource.data.toUid is string
-        && request.resource.data.toUid != request.auth.uid
-        && request.resource.data.gameId == 'tic_tac_toe'
-        && request.resource.data.status == 'pending'
-        && request.resource.data.createdAt is timestamp;
+      // Creation is server-authoritative so clients cannot spoof players,
+      // bypass target existence checks, or flood duplicate invitations.
+      allow create: if false;
       allow update: if request.auth != null
         && resource.data.toUid == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','roomId'])
