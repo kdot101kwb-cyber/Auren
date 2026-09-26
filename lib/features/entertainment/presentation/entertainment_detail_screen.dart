@@ -29,7 +29,18 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
     final position = controller.value.position;
     if ((position - _lastSavedPosition).abs() < const Duration(seconds: 5) && position != controller.value.duration) return;
     _lastSavedPosition = position;
-    await EntertainmentRepository().saveWatchProgress(uid, item, position, controller.value.duration);
+    final duration = controller.value.duration;
+    final completed = duration > Duration.zero &&
+        position >= Duration(milliseconds: (duration.inMilliseconds * 0.95).round());
+    final repo = EntertainmentRepository();
+    await repo.saveWatchProgress(uid, item, position, duration);
+    await repo.recordWatchProgress(
+      uid,
+      item,
+      seconds: position.inSeconds,
+      durationSeconds: duration.inSeconds,
+      completed: completed,
+    );
   }
 
   Future<void> _openPlayer(String url, AurenEntertainmentItem item, {Duration? resume}) async {
@@ -42,6 +53,10 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
       if (!mounted) { await controller.dispose(); return; }
       _activeItem = item;
       if (resume != null && resume > Duration.zero) await controller.seekTo(resume);
+      final uid = _uid;
+      if (uid != null) {
+        await EntertainmentRepository().recordWatchStarted(uid, item);
+      }
       setState(() { _controller = controller; _starting = false; _lastSavedPosition = Duration.zero; });
       controller.addListener(() { if (mounted) _saveProgress(); });
       await controller.play();
@@ -88,8 +103,23 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                 Container(height: 210, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xff4527a0), Color(0xff1565c0), Color(0xffad1457)])), child: const Center(child: Icon(Icons.play_circle_outline, size: 72))),
               if (item.isVideo && item.mediaUrl.isNotEmpty && (_controller == null || !_controller!.value.isInitialized)) ...[
                 const SizedBox(height: 12),
-                FilledButton.icon(onPressed: _starting ? null : () => _openPlayer(item.mediaUrl, item),
-                  icon: const Icon(Icons.play_arrow), label: Text(_starting ? 'جاري التحميل…' : 'تشغيل')),
+                FutureBuilder<Map<String, dynamic>?>(
+                  future: uid == null ? Future.value(null) : repo.getWatchProgress(uid, item.id),
+                  builder: (context, progressSnapshot) {
+                    final data = progressSnapshot.data;
+                    final seconds = (data?['positionSeconds'] as num?)?.toInt() ?? 0;
+                    final progress = ((data?['progress'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
+                    final hasResume = seconds >= 5 && progress > 0 && progress < 1;
+                    final resume = Duration(seconds: seconds);
+                    return FilledButton.icon(
+                      onPressed: _starting ? null : () => _openPlayer(item.mediaUrl, item, resume: hasResume ? resume : null),
+                      icon: const Icon(Icons.play_arrow),
+                      label: Text(_starting
+                          ? 'جاري التحميل…'
+                          : hasResume ? 'متابعة من ${(progress * 100).round()}%' : 'تشغيل'),
+                    );
+                  },
+                ),
               ],
               if (_controller != null && _controller!.value.isInitialized)
                 VideoProgressIndicator(_controller!, allowScrubbing: true, padding: const EdgeInsets.symmetric(vertical: 10)),
