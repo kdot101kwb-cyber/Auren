@@ -2,6 +2,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/opportunity.dart';
 class OpportunityRepository{final FirebaseFirestore db;OpportunityRepository({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
 Stream<List<AurenOpportunity>> watchOpen({String query='',String type='All'}){final q=query.trim().toLowerCase();return db.collection('opportunities').where('status',isEqualTo:'open').limit(100).snapshots().map((s){final list=s.docs.map((d)=>AurenOpportunity.fromMap(d.id,d.data())).where((o)=>type=='All'||o.type==type).where((o)=>q.isEmpty||('${o.title} ${o.description} ${o.category} ${o.city} ${o.country} ${o.skills.join(' ')}').toLowerCase().contains(q)).toList();list.sort((a,b)=>(b.createdAt??DateTime.fromMillisecondsSinceEpoch(0)).compareTo(a.createdAt??DateTime.fromMillisecondsSinceEpoch(0)));return list;});}
+Stream<List<AurenOpportunity>> watchSaved(String uid) => db.collection('users').doc(uid).collection('savedOpportunities').orderBy('createdAt', descending: true).limit(100).snapshots().map((s) => s.docs.map((d) => AurenOpportunity.fromMap(d.id, {
+  'ownerId': '',
+  'title': d.data()['title'] ?? '',
+  'description': '',
+  'type': d.data()['type'] ?? 'opportunity',
+  'category': d.data()['category'] ?? '',
+  'city': d.data()['city'] ?? '',
+  'country': d.data()['country'] ?? '',
+  'status': 'open',
+  'skills': const <String>[],
+  'createdAt': d.data()['createdAt'],
+})).toList());
+
 Stream<bool> watchInterested(String uid, String opportunityId) => db.collection('users').doc(uid).collection('savedOpportunities').doc(opportunityId).snapshots().map((d) => d.exists);
 
 Future<bool> hasApplied(String uid, String opportunityId) async => (await db.collection('users').doc(uid).collection('opportunityApplications').doc(opportunityId).get()).exists;
