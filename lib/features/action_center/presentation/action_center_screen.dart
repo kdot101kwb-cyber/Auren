@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -118,83 +116,6 @@ class _FlowCard extends StatefulWidget {
 }
 
 class _FlowCardState extends State<_FlowCard> {
-  StreamSubscription<List<AurenMessage>>? _messageSubscription;
-  bool _replyUpdateSent = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _watchForReply();
-  }
-
-  @override
-  void didUpdateWidget(covariant _FlowCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final oldConversation = oldWidget.data['conversationId']?.toString();
-    final newConversation = widget.data['conversationId']?.toString();
-    final oldStatus = oldWidget.data['status']?.toString();
-    final newStatus = widget.data['status']?.toString();
-
-    if (oldConversation != newConversation || oldStatus != newStatus) {
-      _messageSubscription?.cancel();
-      _replyUpdateSent = false;
-      _watchForReply();
-    }
-  }
-
-  void _watchForReply() {
-    final status = (widget.data['status'] ?? 'active').toString();
-    final conversationId =
-        (widget.data['conversationId'] ?? '').toString().trim();
-    if (conversationId.isEmpty ||
-        status != 'waiting_response' ||
-        widget.data['targetKind'] == null) {
-      return;
-    }
-
-    final rawUpdatedAt = widget.data['updatedAt'];
-    final flowUpdatedAt =
-        rawUpdatedAt is Timestamp ? rawUpdatedAt.toDate() : null;
-    if (flowUpdatedAt == null) return;
-
-    final messages = FirestoreMessageRepository();
-    _messageSubscription = messages.watchConversation(conversationId).listen(
-      (items) {
-        if (_replyUpdateSent || !mounted) return;
-
-        final hasReply = items.any(
-          (message) =>
-              message.senderId.isNotEmpty &&
-              message.senderId != widget.uid &&
-              !message.isAi &&
-              message.createdAt.isAfter(flowUpdatedAt),
-        );
-        if (!hasReply) return;
-
-        _replyUpdateSent = true;
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.uid)
-            .collection('match_action_flows')
-            .doc(widget.flowId)
-            .update({
-          'status': 'replied',
-          'updatedAt': FieldValue.serverTimestamp(),
-        })
-            .catchError((_) {
-          _replyUpdateSent = false;
-        });
-      },
-      onError: (_) {},
-    );
-  }
-
-  @override
-  void dispose() {
-    _messageSubscription?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final kind = (widget.data['targetKind'] ?? '').toString();
@@ -321,7 +242,12 @@ class _FlowCardState extends State<_FlowCard> {
             .toList();
         if (inbound.isEmpty) return const SizedBox.shrink();
 
-        final reply = inbound.last;
+        final storedReplyId = (widget.data['replyMessageId'] ?? '').toString().trim();
+        final reply = storedReplyId.isEmpty
+            ? inbound.last
+            : inbound.where((m) => m.id == storedReplyId).isNotEmpty
+                ? inbound.firstWhere((m) => m.id == storedReplyId)
+                : inbound.last;
         final analysis = AurenSmartFollowUpService().analyze(
           reply: reply,
           action: (widget.data['action'] ?? 'open').toString(),
