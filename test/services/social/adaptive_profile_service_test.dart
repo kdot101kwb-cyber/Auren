@@ -42,8 +42,19 @@ void main() {
     final result = adaptive.suggest(
       currentMode: AurenProfileMode.personal,
       context: AurenProfileContext.unknown,
-      profile: AurenProfileModeData.empty(AurenProfileMode.personal).copyWith(
-        interests: const ['video', 'content'],
+      profile: const AurenProfileModeData(
+        mode: AurenProfileMode.personal,
+        headline: '',
+        bio: '',
+        skills: [],
+        interests: ['video', 'content'],
+        links: [],
+        goals: [],
+        languages: [],
+        services: [],
+        achievements: [],
+        discoverable: true,
+        showContact: false,
       ),
     );
 
