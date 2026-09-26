@@ -231,12 +231,10 @@ class AurenMusicPlayerController extends ChangeNotifier {
   }
 
   Future<void> _maybeAutoAdaptSession() async {
-    if (!_adaptiveSessionActive || _adaptivePool.isEmpty || !shouldAdaptSession) return;
+    if (!_adaptiveSessionActive || _adaptivePool.isEmpty || !_consumeAdaptationTrigger()) return;
 
     final currentId = _item?.id;
     final queuedIds = _queue.map((x) => x.id).toSet();
-    final historyIds = _history.take(8).map((x) => x.id).toSet();
-
     final baseAvailable = _adaptivePool.where((x) {
       if (x.id == currentId || queuedIds.contains(x.id)) return false;
       if (_adaptiveServedIds.contains(x.id)) return false;
@@ -272,6 +270,36 @@ class AurenMusicPlayerController extends ChangeNotifier {
       return recentCreators.contains(x.creatorId) ? -20 : 12;
     }
 
+    int preferenceScore(AurenEntertainmentItem x) {
+      final t = (x.title + ' ' + x.description + ' ' + x.type).toLowerCase();
+      var score = 0;
+      final moodKeys = <String, List<String>>{
+        'هادئ': calmKeys,
+        'حماس': energyKeys,
+        'تركيز': ['focus', 'study', 'ambient', 'concentration', 'تركيز', 'دراسة'],
+        'سفر': ['travel', 'trip', 'road', 'journey', 'سفر', 'رحلة'],
+        'تسلية': ['fun', 'entertainment', 'comedy', 'تسلية'],
+      };
+      final contextKeys = <String, List<String>>{
+        'صباح': ['morning', 'sunrise', 'صباح'],
+        'ليل': ['night', 'midnight', 'ليل'],
+        'عمل': ['work', 'office', 'عمل'],
+        'رحلة': ['travel', 'road', 'journey', 'رحلة'],
+        'استرخاء': calmKeys,
+      };
+      if (_adaptiveMood != 'الكل') {
+        score += (moodKeys[_adaptiveMood] ?? const []).any(t.contains) ? 14 : 0;
+      }
+      if (_adaptiveContext != 'تلقائي') {
+        score += (contextKeys[_adaptiveContext] ?? const []).any(t.contains) ? 8 : 0;
+      }
+      if (_adaptiveContentMode != 'أي صوت') {
+        final mode = _adaptiveContentMode.toLowerCase();
+        score += t.contains(mode) ? 7 : 0;
+      }
+      return score;
+    }
+
     Iterable<AurenEntertainmentItem> ordered;
     if (skipDriven && _adaptiveActivity != 'تمرين' && _adaptiveActivity != 'حفلة') {
       ordered = [
@@ -288,7 +316,11 @@ class AurenMusicPlayerController extends ChangeNotifier {
     }
 
     final ranked = ordered.toList()
-      ..sort((a, b) => diversityScore(b).compareTo(diversityScore(a)));
+      ..sort((a, b) {
+        final scoreA = diversityScore(a) + preferenceScore(a);
+        final scoreB = diversityScore(b) + preferenceScore(b);
+        return scoreB.compareTo(scoreA);
+      });
 
     for (final candidate in ranked) {
       if (selected.length >= desired) break;
@@ -320,13 +352,15 @@ class AurenMusicPlayerController extends ChangeNotifier {
   int get sessionSkipCount => _sessionSkipCount;
   int get sessionCompletionCount => _sessionCompletionCount;
 
-  bool get shouldAdaptSession {
+  bool _consumeAdaptationTrigger() {
     final now = DateTime.now();
     final triggered = _sessionSkipCount >= 2 || _sessionCompletionCount >= 2;
     if (!triggered || now.difference(_lastSessionAdaptation) < const Duration(seconds: 20)) return false;
     _lastSessionAdaptation = now;
     return true;
   }
+
+  bool get shouldAdaptSession => _sessionSkipCount >= 2 || _sessionCompletionCount >= 2;
 
   Future<void> _trackAction(String action) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
