@@ -72,6 +72,20 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
     return filtered;
   }
 
+  void _generateSmartPlaylist(List<AurenEntertainmentItem> source) {
+    final items = _smart(source).where((item) => item.mediaUrl.isNotEmpty).take(10).toList();
+    final controller = AurenMusicPlayerController.instance;
+    for (final item in items) {
+      if (!controller.queue.any((queued) => queued.id == item.id)) {
+        controller.addToQueue(item);
+      }
+    }
+    if (items.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تم إنشاء Smart Playlist من ${items.length} مقاطع 🎵')),
+      );
+    }
+  }
   void _mix() {
     final controller = AurenMusicPlayerController.instance;
     final queue = controller.queue;
@@ -93,18 +107,17 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
         title: const Text('AUREN Smart Music'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.shuffle_rounded),
-            tooltip: 'Mix queue',
-            onPressed: _mix,
+            icon: const Icon(Icons.auto_awesome_rounded),
+            tooltip: 'Generate Smart Playlist',
+            onPressed: () {},
           ),
         ],
       ),
       body: StreamBuilder<List<AurenEntertainmentItem>>(
         stream: repo.watchItems(type: 'Music'),
         builder: (context, snapshot) {
-          final smart = _smart(
-            snapshot.data ?? const <AurenEntertainmentItem>[],
-          );
+          final source = snapshot.data ?? const <AurenEntertainmentItem>[];
+          final smart = _smart(source);
 
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -188,6 +201,12 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
                     onSelected: (_) => setState(() => context = contexts[index]),
                   ),
                 ),
+              ),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: () => _generateSmartPlaylist(source),
+                icon: const Icon(Icons.playlist_add_rounded),
+                label: const Text('أنشئ Smart Playlist الآن'),
               ),
               const SizedBox(height: 18),
               const Text(
