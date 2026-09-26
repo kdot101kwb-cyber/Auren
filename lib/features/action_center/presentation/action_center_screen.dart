@@ -379,10 +379,9 @@ class _FlowCardState extends State<_FlowCard> {
       actionReason: '',
     );
     try {
-      await AurenMatchActionFlowRepository().updateStatus(
+      await AurenMatchActionFlowRepository().complete(
         uid: widget.uid,
         item: item,
-        status: 'completed',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
