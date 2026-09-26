@@ -272,7 +272,11 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
 
   void _startPlan() {
     if (_plan.isEmpty) return;
-    _openItem(_plan.first);
+    final first = _plan.first;
+    _openItem(first);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('بدأت الخطة • ' + first.title)),
+    );
   }
 
   void _openItem(AurenEntertainmentItem item) {
