@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/models/message.dart';
 import '../../../services/messaging/message_repository.dart';
@@ -165,6 +166,7 @@ class _FlowCardState extends State<_FlowCard> {
           (message) =>
               message.senderId.isNotEmpty &&
               message.senderId != widget.uid &&
+              !message.isAi &&
               message.createdAt.isAfter(flowUpdatedAt),
         );
         if (!hasReply) return;
@@ -236,11 +238,7 @@ class _FlowCardState extends State<_FlowCard> {
             Text('الخطوة ${step + 1} من $total'),
             if (intent.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text(
-                intent,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(intent, maxLines: 2, overflow: TextOverflow.ellipsis),
             ],
             if (status == 'waiting_response') ...[
               const SizedBox(height: 8),
@@ -255,18 +253,39 @@ class _FlowCardState extends State<_FlowCard> {
               const SizedBox(height: 10),
               _smartFollowUpPanel(context),
               const SizedBox(height: 10),
-              Row(children: [
-                if ((widget.data['conversationId'] ?? '').toString().isNotEmpty)
-                  Expanded(child: OutlinedButton.icon(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: widget.data['conversationId'].toString()))),
-                    icon: const Icon(Icons.chat_outlined), label: const Text('فتح المحادثة'),
-                  )),
-                if ((widget.data['conversationId'] ?? '').toString().isNotEmpty) const SizedBox(width: 8),
-                Expanded(child: FilledButton.icon(
-                  onPressed: () => _completeFlow(context),
-                  icon: const Icon(Icons.check), label: const Text('إكمال المسار'),
-                )),
-              ]),
+              Row(
+                children: [
+                  if ((widget.data['conversationId'] ?? '')
+                      .toString()
+                      .isNotEmpty)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MessengerScreen(
+                              conversationId:
+                                  widget.data['conversationId'].toString(),
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.chat_outlined),
+                        label: const Text('فتح المحادثة'),
+                      ),
+                    ),
+                  if ((widget.data['conversationId'] ?? '')
+                      .toString()
+                      .isNotEmpty)
+                    const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _completeFlow(context),
+                      icon: const Icon(Icons.check),
+                      label: const Text('إكمال المسار'),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ],
         ),
@@ -275,7 +294,8 @@ class _FlowCardState extends State<_FlowCard> {
   }
 
   Widget _smartFollowUpPanel(BuildContext context) {
-    final conversationId = (widget.data['conversationId'] ?? '').toString().trim();
+    final conversationId =
+        (widget.data['conversationId'] ?? '').toString().trim();
     if (conversationId.isEmpty) return const SizedBox.shrink();
 
     return FutureBuilder<List<AurenMessage>>(
@@ -287,10 +307,17 @@ class _FlowCardState extends State<_FlowCard> {
             child: LinearProgressIndicator(),
           );
         }
-        if (snapshot.hasError || !snapshot.hasData) return const SizedBox.shrink();
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
 
         final inbound = snapshot.data!
-            .where((m) => m.senderId.isNotEmpty && m.senderId != widget.uid && !m.isAi)
+            .where(
+              (m) =>
+                  m.senderId.isNotEmpty &&
+                  m.senderId != widget.uid &&
+                  !m.isAi,
+            )
             .toList();
         if (inbound.isEmpty) return const SizedBox.shrink();
 
@@ -312,23 +339,29 @@ class _FlowCardState extends State<_FlowCard> {
                   children: [
                     Icon(Icons.auto_awesome, size: 19),
                     SizedBox(width: 7),
-                    Text('AUREN Smart Follow-up',
-                        style: TextStyle(fontWeight: FontWeight.w800)),
+                    Text(
+                      'AUREN Smart Follow-up',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(analysis.summary),
                 if (analysis.missing.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  const Text('معلومات ناقصة',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  const Text(
+                    'معلومات ناقصة',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 4),
                   Text(analysis.missing.join(' • ')),
                 ],
                 if (analysis.questions.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  const Text('أسئلة المتابعة المقترحة',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  const Text(
+                    'أسئلة المتابعة المقترحة',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 4),
                   SelectableText(analysis.questionsText),
                   const SizedBox(height: 8),
@@ -345,7 +378,9 @@ class _FlowCardState extends State<_FlowCard> {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('تم نسخ أسئلة المتابعة. لم يتم إرسالها تلقائياً.'),
+                                content: Text(
+                                  'تم نسخ أسئلة المتابعة. لم يتم إرسالها تلقائياً.',
+                                ),
                               ),
                             );
                           }
@@ -383,7 +418,8 @@ class _FlowCardState extends State<_FlowCard> {
     String questions,
     String conversationId,
   ) {
-    final draft = 'مرحباً، شكراً على ردكم.\n\nلإكمال الطلب، أحتاج تأكيد التالي:\n$questions\n\nشكراً لكم.';
+    final draft =
+        'مرحباً، شكراً على ردكم.\n\nلإكمال الطلب، أحتاج تأكيد التالي:\n$questions\n\nشكراً لكم.';
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -398,28 +434,59 @@ class _FlowCardState extends State<_FlowCard> {
   Future<void> _completeFlow(BuildContext context) async {
     final item = AurenMatchItem(
       id: (widget.data['targetId'] ?? '').toString(),
-      title: '', subtitle: '', kind: _kindFrom((widget.data['targetKind'] ?? '').toString()),
-      score: 0, reasons: const [], data: widget.data,
-      action: _actionFrom((widget.data['action'] ?? '').toString()), actionLabel: '', actionReason: '',
+      title: '',
+      subtitle: '',
+      kind: _kindFrom((widget.data['targetKind'] ?? '').toString()),
+      score: 0,
+      reasons: const [],
+      data: widget.data,
+      action: _actionFrom((widget.data['action'] ?? '').toString()),
+      actionLabel: '',
+      actionReason: '',
     );
     try {
-      await AurenMatchActionFlowRepository().updateStatus(uid: widget.uid, item: item, status: 'completed');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إكمال المسار.')));
+      await AurenMatchActionFlowRepository().updateStatus(
+        uid: widget.uid,
+        item: item,
+        status: 'completed',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إكمال المسار.')),
+        );
+      }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر إكمال المسار الآن.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر إكمال المسار الآن.')),
+        );
+      }
     }
   }
 
-  static AurenMatchKind _kindFrom(String value) => AurenMatchKind.values.firstWhere((e) => e.name == value, orElse: () => AurenMatchKind.person);
-  static AurenMatchAction _actionFrom(String value) => AurenMatchAction.values.firstWhere((e) => e.name == value, orElse: () => AurenMatchAction.open);
+  static AurenMatchKind _kindFrom(String value) =>
+      AurenMatchKind.values.firstWhere(
+        (e) => e.name == value,
+        orElse: () => AurenMatchKind.person,
+      );
+
+  static AurenMatchAction _actionFrom(String value) =>
+      AurenMatchAction.values.firstWhere(
+        (e) => e.name == value,
+        orElse: () => AurenMatchAction.open,
+      );
 
   static String _nextStep(String action, String status, String kind) {
     if (status != 'replied') return '';
     switch (action) {
-      case 'requestQuote': return 'الخطوة التالية: راجع السعر والعملة والحد الأدنى ووقت التجهيز والشحن، ثم قرر هل تكمل الطلب.';
-      case 'apply': return 'الخطوة التالية: راجع الرد أو حالة الطلب، ثم أكمل أي معلومات ناقصة قبل المتابعة.';
-      case 'contact': return 'الخطوة التالية: راجع الرد وحدد الإجراء الذي تريده.';
-      default: return 'الخطوة التالية: راجع الرد وحدد الإجراء الذي تريده.';
+      case 'requestQuote':
+        return 'الخطوة التالية: راجع السعر والعملة والحد الأدنى ووقت التجهيز والشحن، ثم قرر هل تكمل الطلب.';
+      case 'apply':
+        return 'الخطوة التالية: راجع الرد أو حالة الطلب، ثم أكمل أي معلومات ناقصة قبل المتابعة.';
+      case 'contact':
+        return 'الخطوة التالية: راجع الرد وحدد الإجراء الذي تريده.';
+      default:
+        return 'الخطوة التالية: راجع الرد وحدد الإجراء الذي تريده.';
     }
   }
 
