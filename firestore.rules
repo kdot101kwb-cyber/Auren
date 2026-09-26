@@ -1670,6 +1670,19 @@ service cloud.firestore {
         && request.resource.data.status in ['waiting','ready']
         && request.resource.data.updatedAt is timestamp;
       allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/gaming_rooms/$(roomId)).data.playerUids;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/gaming_rooms/$(roomId)).data.playerUids
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
     }
 
     match /watch_together_invites/{inviteCode} {
