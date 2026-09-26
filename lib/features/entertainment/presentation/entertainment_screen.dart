@@ -7,6 +7,7 @@ import '../../search/presentation/global_search_screen.dart';
 import 'entertainment_detail_screen.dart';
 import 'entertainment_shorts_screen.dart';
 import 'auren_music_hub_screen.dart';
+import 'auren_watch_concierge_screen.dart';
 import 'auren_radio_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../core/models/entertainment.dart';
@@ -27,6 +28,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
   String _mood = 'الكل';
 
   static const _quickActions = <_EntertainmentAction>[
+    _EntertainmentAction(Icons.movie_filter_rounded, 'Watch AI', 'Smart movies, series & anime'),
     _EntertainmentAction(Icons.music_note_rounded, 'Music', 'Songs, playlists & AI music'),
     _EntertainmentAction(Icons.live_tv_rounded, 'Live', 'Channels, live events & radio'),
     _EntertainmentAction(Icons.sports_esports_rounded, 'Gaming', 'Games, challenges & social play'),
@@ -312,7 +314,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
-                  if (action.title == 'Music') {
+                  if (action.title == 'Watch AI') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchConciergeScreen()));
+                  } else if (action.title == 'Music') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()));
                   } else if (action.title == 'Live') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()));
