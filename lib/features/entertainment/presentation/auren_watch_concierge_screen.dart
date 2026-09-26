@@ -247,6 +247,19 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     return result;
   }
 
+  void _openItem(AurenEntertainmentItem item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id),
+      ),
+    );
+  }
+
+  void _removeFromPlan(String itemId) {
+    setState(() => _plan = _plan.where((item) => item.id != itemId).toList());
+  }
+
   Future<void> _generate(List<AurenEntertainmentItem> source) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -343,9 +356,18 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  trailing: const Icon(Icons.auto_awesome_rounded),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id))),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'open') _openItem(item);
+                      if (value == 'remove') _removeFromPlan(item.id);
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'open', child: Text('فتح المحتوى')),
+                      PopupMenuItem(value: 'remove', child: Text('إزالة من الخطة')),
+                    ],
+                    icon: const Icon(Icons.more_vert_rounded),
+                  ),
+                  onTap: () => _openItem(item),
                 ))),
               ],
             ],
