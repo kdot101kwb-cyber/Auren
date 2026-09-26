@@ -32,6 +32,13 @@ class AurenMusicPlayerController extends ChangeNotifier {
   int _sessionSkipCount = 0;
   int _sessionCompletionCount = 0;
   DateTime _lastSessionAdaptation = DateTime.fromMillisecondsSinceEpoch(0);
+  List<AurenEntertainmentItem> _adaptivePool = const [];
+  bool _adaptiveSessionActive = false;
+  int _adaptiveCursor = 0;
+  String _adaptiveActivity = 'تلقائي';
+  String _adaptiveMood = 'الكل';
+  String _adaptiveContext = 'تلقائي';
+  String _adaptiveContentMode = 'موسيقى';
 
   AudioPlayer get player => _player;
   AurenEntertainmentItem? get item => _item;
@@ -42,11 +49,42 @@ class AurenMusicPlayerController extends ChangeNotifier {
   String? get error => _error;
   List<AurenEntertainmentItem> get queue => List.unmodifiable(_queue);
   List<AurenEntertainmentItem> get history => List.unmodifiable(_history);
+  bool get adaptiveSessionActive => _adaptiveSessionActive;
+
+  void startAdaptiveSession({
+    required List<AurenEntertainmentItem> candidates,
+    String activity = 'تلقائي',
+    String mood = 'الكل',
+    String contextMode = 'تلقائي',
+    String contentMode = 'موسيقى',
+  }) {
+    _adaptivePool = List.unmodifiable(candidates.where((x) => x.mediaUrl.isNotEmpty));
+    _adaptiveSessionActive = _adaptivePool.isNotEmpty;
+    _adaptiveCursor = 0;
+    _adaptiveActivity = activity;
+    _adaptiveMood = mood;
+    _adaptiveContext = contextMode;
+    _adaptiveContentMode = contentMode;
+    _sessionSkipCount = 0;
+    _sessionCompletionCount = 0;
+    _lastSessionAdaptation = DateTime.fromMillisecondsSinceEpoch(0);
+    notifyListeners();
+  }
+
+  void stopAdaptiveSession() {
+    _adaptiveSessionActive = false;
+    _adaptivePool = const [];
+    _adaptiveCursor = 0;
+    _sessionSkipCount = 0;
+    _sessionCompletionCount = 0;
+    notifyListeners();
+  }
 
   Future<void> _onProcessingState(ProcessingState state) async {
     if (state != ProcessingState.completed) return;
     _sessionCompletionCount++;
     await _trackPlayback(completed: true);
+    await _maybeAutoAdaptSession();
     if (_queue.length > 1) {
       await playNextInQueue();
     } else {
@@ -148,6 +186,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
         ? target
         : Duration(milliseconds: target.inMilliseconds.clamp(0, max.inMilliseconds).toInt());
     await seek(clamped);
+    await _maybeAutoAdaptSession();
   }
 
   Future<void> _onPosition(Duration value) async {
@@ -183,6 +222,67 @@ class AurenMusicPlayerController extends ChangeNotifier {
         countPlay: countPlay,
       );
     } catch (_) {}
+  }
+
+  Future<void> _maybeAutoAdaptSession() async {
+    if (!_adaptiveSessionActive || _adaptivePool.isEmpty || !shouldAdaptSession) return;
+
+    final currentId = _item?.id;
+    final queuedIds = _queue.map((x) => x.id).toSet();
+    final historyIds = _history.take(8).map((x) => x.id).toSet();
+
+    final available = _adaptivePool.where((x) {
+      if (x.id == currentId || queuedIds.contains(x.id) || historyIds.contains(x.id)) return false;
+      return true;
+    }).toList();
+
+    if (available.isEmpty) return;
+
+    final skipDriven = _sessionSkipCount >= 2;
+    final desired = skipDriven ? 2 : 3;
+    final selected = <AurenEntertainmentItem>[];
+
+    bool hasKeyword(AurenEntertainmentItem x, List<String> keys) {
+      final t = (x.title + ' ' + x.description).toLowerCase();
+      return keys.any(t.contains);
+    }
+
+    final calmKeys = ['calm', 'chill', 'relax', 'quiet', 'soft', 'sleep', 'هادئ', 'استرخاء', 'نوم'];
+    final energyKeys = ['energy', 'energetic', 'workout', 'gym', 'party', 'dance', 'power', 'حماس', 'تمرين', 'حفلة'];
+
+    Iterable<AurenEntertainmentItem> ordered;
+    if (skipDriven && _adaptiveActivity != 'تمرين' && _adaptiveActivity != 'حفلة') {
+      ordered = [
+        ...available.where((x) => hasKeyword(x, calmKeys)),
+        ...available.where((x) => !hasKeyword(x, calmKeys)),
+      ];
+    } else if (!skipDriven && (_adaptiveActivity == 'تمرين' || _adaptiveActivity == 'حفلة')) {
+      ordered = [
+        ...available.where((x) => hasKeyword(x, energyKeys)),
+        ...available.where((x) => !hasKeyword(x, energyKeys)),
+      ];
+    } else {
+      ordered = available;
+    }
+
+    for (final candidate in ordered) {
+      if (selected.length >= desired) break;
+      if (!selected.any((x) => x.id == candidate.id)) selected.add(candidate);
+    }
+    if (selected.isEmpty) return;
+
+    if (skipDriven && _queue.length > 1) {
+      _queue.removeAt(1);
+    }
+    for (final candidate in selected) {
+      if (!_queue.any((x) => x.id == candidate.id)) _queue.add(candidate);
+    }
+
+    _adaptiveCursor += selected.length;
+    _sessionSkipCount = 0;
+    _sessionCompletionCount = 0;
+    await _saveQueueAndHistory();
+    notifyListeners();
   }
 
   Future<void> recordSessionFeedback(String action) async {
