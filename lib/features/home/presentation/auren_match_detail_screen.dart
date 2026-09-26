@@ -80,13 +80,13 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
 
   String _ownerId() => (widget.item.data['ownerId'] ?? widget.item.data['authorId'] ?? widget.item.data['uid'] ?? widget.item.data['creatorId'] ?? '').toString();
 
-  Future<void> _contact({String? prompt}) async {
+  Future<String> _contact({String? prompt}) async {
     final uid = _auth.currentUserId;
     final otherUid = _ownerId().isNotEmpty ? _ownerId() : widget.item.id;
     if (uid == null || otherUid.isEmpty || uid == otherUid) throw StateError('لا يمكن بدء محادثة مع هذا الحساب.');
     final conversation = await _conversations.getOrCreateDirectConversation(uid: uid, otherUid: otherUid, otherTitle: widget.item.title);
-    if (!mounted) return;
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: conversation.id, initialPrompt: prompt)));
+    if (mounted) Navigator.of(context).push(MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: conversation.id, initialPrompt: prompt)));
+    return conversation.id;
   }
 
   Future<bool> _apply(String uid) async {
@@ -195,9 +195,9 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
       if (n.isNotEmpty) 'ملاحظات: $n.',
       'أرسلوا السعر، العملة، الحد الأدنى للطلب، مدة التجهيز، وخيارات الشحن إن وجدت.',
     ].join(' ');
-    await _contact(prompt: prompt);
+    final conversationId = await _contact(prompt: prompt);
     if (mounted) setState(() => _flowStep = 2);
-    await _flowRepo.startOrAdvance(uid: uid, item: widget.item, intent: widget.intent, step: 2, totalSteps: steps.length);
+    await _flowRepo.startOrAdvance(uid: uid, item: widget.item, intent: widget.intent, step: 2, totalSteps: steps.length, status: 'waiting_response', conversationId: conversationId);
     return true;
   }
 
