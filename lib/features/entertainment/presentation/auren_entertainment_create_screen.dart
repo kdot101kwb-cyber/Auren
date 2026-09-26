@@ -1,4 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../../../services/entertainment/entertainment_repository.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
 
@@ -25,6 +28,9 @@ class _AurenEntertainmentCreateScreenState
   };
   static const _moods = <String>['سينمائي','هادئ','حماسي','غامض','كوميدي','ملهم'];
   static const _lengths = <String>['قصير','متوسط','طويل'];
+
+  String? _uid;
+  bool _saving = false;
 
   String get _idea => _promptController.text.trim();
 
@@ -67,7 +73,19 @@ class _AurenEntertainmentCreateScreenState
 ''';
   }
 
-  void _create() {
+  Future<void> _create() async {
+    final uid = _uid;
+    if (uid != null && !_saving) {
+      setState(() => _saving = true);
+      try {
+        await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: _idea.isEmpty ? _exampleFor(_mode) : _idea);
+      } catch (_) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر حفظ المسودة.')));
+      } finally {
+        if (mounted) setState(() => _saving = false);
+      }
+    }
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -79,6 +97,12 @@ class _AurenEntertainmentCreateScreenState
   void _useExample() {
     _promptController.text = _exampleFor(_mode);
     setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _uid = FirebaseAuth.instance.currentUser?.uid;
   }
 
   @override
@@ -218,7 +242,7 @@ class _AurenEntertainmentCreateScreenState
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: _create,
-            icon: const Icon(Icons.auto_awesome_rounded),
+            icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.auto_awesome_rounded),
             label: const Padding(
               padding: EdgeInsets.symmetric(vertical: 14),
               child: Text('حوّل الفكرة إلى مشروع',
@@ -236,6 +260,24 @@ class _AurenEntertainmentCreateScreenState
     );
   }
 
+  Widget _buildDrafts(BuildContext context) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: EntertainmentRepository().watchEntertainmentDrafts(_uid!),
+      builder: (context, snapshot) {
+        final drafts = snapshot.data ?? const <Map<String, dynamic>>[];
+        if (drafts.isEmpty) return const SizedBox.shrink();
+        return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('مسوداتك', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          ...drafts.take(3).map((draft) => ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.edit_note_rounded)),
+            title: Text('${draft['mode'] ?? 'مشروع'} • ${draft['mood'] ?? ''}'),
+            subtitle: Text(draft['idea']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
+            trailing: IconButton(icon: const Icon(Icons.delete_outline_rounded), onPressed: () => EntertainmentRepository().deleteEntertainmentDraft(_uid!, draft['id'].toString())),
+          )),
+        ])));
+      },
+    );
+  }
   Widget _hero(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(22),
