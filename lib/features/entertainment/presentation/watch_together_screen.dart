@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 class AurenWatchTogetherService {
   final FirebaseFirestore _db;
@@ -34,7 +35,10 @@ class AurenWatchTogetherService {
 }
 
 class AurenWatchTogetherScreen extends StatefulWidget {
-  const AurenWatchTogetherScreen({super.key});
+  final String? title;
+  final String? mediaUrl;
+  final String? mediaId;
+  const AurenWatchTogetherScreen({super.key, this.title, this.mediaUrl, this.mediaId});
   @override State<AurenWatchTogetherScreen> createState() => _AurenWatchTogetherScreenState();
 }
 class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
@@ -43,10 +47,12 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
   final _code = TextEditingController();
   String? _roomId;
   bool _busy = false;
-  @override void dispose() { _title.dispose(); _code.dispose(); super.dispose(); }
+  VideoPlayerController? _controller;
+  bool _syncingRemote = false;
+  @override void dispose() { _title.dispose(); _code.dispose(); _controller?.dispose(); super.dispose(); }
   Future<void> _create() async {
     setState(() => _busy = true);
-    try { _roomId = await _service.createRoom(title: _title.text); if (mounted) setState(() {}); }
+    try { _roomId = await _service.createRoom(title: widget.title ?? _title.text, mediaId: widget.mediaId); if (mounted) setState(() {}); }
     catch (e) { _show(e.toString()); } finally { if (mounted) setState(() => _busy = false); }
   }
   Future<void> _join() async {
@@ -81,9 +87,53 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
           Text('الحالة: ' + (data['status'] ?? 'waiting').toString()),
           Text('المشاهدة: ' + ((data['isPlaying'] == true) ? 'تشغيل' : 'متوقفة') + ' • ' + (data['positionSeconds'] ?? 0).toString() + ' ثانية'),
           const SizedBox(height: 14),
-          FilledButton.icon(onPressed: () => _service.updatePlayback(roomId: roomId, positionSeconds: ((data['positionSeconds'] ?? 0) as num).toDouble(), isPlaying: !(data['isPlaying'] == true)), icon: Icon(data['isPlaying'] == true ? Icons.pause : Icons.play_arrow), label: Text(data['isPlaying'] == true ? 'إيقاف' : 'تشغيل')),
+          if (widget.mediaUrl != null && widget.mediaUrl!.isNotEmpty) _buildSyncedPlayer(roomId, data),
+          if (widget.mediaUrl == null || widget.mediaUrl!.isEmpty)
+            FilledButton.icon(onPressed: () => _service.updatePlayback(roomId: roomId, positionSeconds: ((data['positionSeconds'] ?? 0) as num).toDouble(), isPlaying: !(data['isPlaying'] == true)), icon: Icon(data['isPlaying'] == true ? Icons.pause : Icons.play_arrow), label: Text(data['isPlaying'] == true ? 'إيقاف' : 'تشغيل')),
         ])));
       }),
     ]));
   }
+  Widget _buildSyncedPlayer(String roomId, Map<String, dynamic> data) {
+    final remotePosition = ((data['positionSeconds'] ?? 0) as num).toDouble();
+    final remotePlaying = data['isPlaying'] == true;
+    if (_controller == null) {
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.mediaUrl!));
+      _controller!.initialize().then((_) async {
+        if (!mounted) return;
+        await _controller!.seekTo(Duration(milliseconds: (remotePosition * 1000).round()));
+        if (remotePlaying) await _controller!.play();
+        if (mounted) setState(() {});
+      });
+    } else if (_controller!.value.isInitialized && !_syncingRemote) {
+      final local = _controller!.value.position.inMilliseconds / 1000.0;
+      if ((local - remotePosition).abs() > 1.5) {
+        _syncingRemote = true;
+        _controller!.seekTo(Duration(milliseconds: (remotePosition * 1000).round())).whenComplete(() => _syncingRemote = false);
+      }
+      if (remotePlaying && !_controller!.value.isPlaying) _controller!.play();
+      if (!remotePlaying && _controller!.value.isPlaying) _controller!.pause();
+    }
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return const AspectRatio(aspectRatio: 16 / 9, child: Center(child: CircularProgressIndicator()));
+    }
+    return Column(children: [
+      ClipRRect(borderRadius: BorderRadius.circular(16), child: AspectRatio(aspectRatio: controller.value.aspectRatio, child: VideoPlayer(controller))),
+      VideoProgressIndicator(controller, allowScrubbing: true),
+      const SizedBox(height: 8),
+      FilledButton.icon(
+        onPressed: _syncingRemote ? null : () async {
+          final next = !controller.value.isPlaying;
+          final position = controller.value.position.inMilliseconds / 1000.0;
+          await _service.updatePlayback(roomId: roomId, positionSeconds: position, isPlaying: next);
+          if (next) { await controller.play(); } else { await controller.pause(); }
+          if (mounted) setState(() {});
+        },
+        icon: Icon(controller.value.isPlaying ? Icons.pause : Icons.play_arrow),
+        label: Text(controller.value.isPlaying ? 'إيقاف للجميع' : 'تشغيل للجميع'),
+      ),
+    ]);
+  }
+
 }
