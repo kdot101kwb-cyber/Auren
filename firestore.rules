@@ -1212,7 +1212,15 @@ service cloud.firestore {
             && request.resource.data.memberIds.size() >= 3)
           || (!request.resource.data.isAi && request.resource.data.type == 'direct'
             && request.resource.data.memberIds.size() == 2
-            && !request.resource.data.keys().hasAny(['ownerId']))
+            && !request.resource.data.keys().hasAny(['ownerId'])
+            && (
+              (request.resource.data.memberIds[0] == request.auth.uid
+                && !exists(/databases/$(database)/documents/users/$(request.auth.uid)/blocked/$(request.resource.data.memberIds[1]))
+                && !exists(/databases/$(database)/documents/users/$(request.resource.data.memberIds[1])/blocked/$(request.auth.uid)))
+              || (request.resource.data.memberIds[1] == request.auth.uid
+                && !exists(/databases/$(database)/documents/users/$(request.auth.uid)/blocked/$(request.resource.data.memberIds[0]))
+                && !exists(/databases/$(database)/documents/users/$(request.resource.data.memberIds[0])/blocked/$(request.auth.uid)))
+            ))
           || (request.resource.data.isAi && request.resource.data.type == 'ai'
             && request.resource.data.memberIds.size() == 1
             && !request.resource.data.keys().hasAny(['ownerId']))
