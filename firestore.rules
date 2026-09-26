@@ -21,6 +21,30 @@ service cloud.firestore {
     allow create, delete: if false;
   }
 
+  match /users/{userId}/profile_modes/{modeId} {
+    allow read: if request.auth != null
+      && (request.auth.uid == userId || resource.data.discoverable == true);
+    allow create, update: if isOwner(userId)
+      && modeId in ['personal','creator','professional','business']
+      && request.resource.data.keys().hasOnly([
+        'mode','headline','bio','skills','interests','links','discoverable','updatedAt'
+      ])
+      && request.resource.data.mode == modeId
+      && request.resource.data.headline is string
+      && request.resource.data.headline.size() <= 120
+      && request.resource.data.bio is string
+      && request.resource.data.bio.size() <= 800
+      && request.resource.data.skills is list
+      && request.resource.data.skills.size() <= 20
+      && request.resource.data.interests is list
+      && request.resource.data.interests.size() <= 20
+      && request.resource.data.links is list
+      && request.resource.data.links.size() <= 5
+      && request.resource.data.discoverable is bool
+      && request.resource.data.updatedAt is timestamp;
+    allow delete: if isOwner(userId);
+  }
+
   match /users/{userId}/random_notifications/{notificationId} {
     allow read: if isOwner(userId);
     allow update: if isOwner(userId)
