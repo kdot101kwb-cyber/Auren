@@ -16,6 +16,7 @@ import '../../../services/notifications/notification_repository.dart';
 import '../../../services/social/adaptive_discovery_service.dart';
 import '../../profile/presentation/adaptive_profile_surface.dart';
 import '../../../services/social/adaptive_profile_service.dart';
+import '../../../services/social/match_everything_service.dart';
 
 class AurenHomeV2 extends StatelessWidget {
   const AurenHomeV2({super.key});
@@ -266,6 +267,43 @@ class AurenHomeV2 extends StatelessWidget {
                         ),
                         title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                         subtitle: Text(item.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      )),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        if (uid != null)
+          FutureBuilder<List<AurenMatchItem>>(
+            future: AurenMatchEverythingService().findMatches(
+              uid: uid,
+              context: AurenProfileContext.unknown,
+              limitPerKind: 4,
+            ),
+            builder: (context, snapshot) {
+              final items = snapshot.data ?? const <AurenMatchItem>[];
+              if (items.isEmpty) return const SizedBox.shrink();
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(children: [
+                        Icon(Icons.hub_outlined),
+                        SizedBox(width: 8),
+                        Text('Match Everything',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ]),
+                      const SizedBox(height: 6),
+                      const Text('AUREN يربطك بالشخص أو الفرصة أو النشاط أو المنتج أو المحتوى المناسب.'),
+                      const SizedBox(height: 8),
+                      ...items.take(5).map((item) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(child: Text(item.score.toString())),
+                        title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(item.reasons.join(' • '), maxLines: 2, overflow: TextOverflow.ellipsis),
                       )),
                     ],
                   ),
