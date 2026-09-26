@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../services/social/follow_repository.dart';
 
 class AurenGamingScreen extends StatefulWidget {
   const AurenGamingScreen({super.key});
@@ -10,6 +11,7 @@ class AurenGamingScreen extends StatefulWidget {
 
 class _AurenGamingScreenState extends State<AurenGamingScreen> {
   final _service = AurenGamingService();
+  final _followRepository = FollowRepository();
   final _codeController = TextEditingController();
   String? _roomId;
   String? _inviteCode;
@@ -345,9 +347,40 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   Widget _playerSearchResults() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final query = _friendSearch;
-    if (uid == null || query.length < 2) {
-      return const Text('اكتب حرفين على الأقل للبحث عن لاعب.');
-    }
+    if (uid == null) return const SizedBox.shrink();
+    return StreamBuilder<List<String>>(
+      stream: _followRepository.following(uid),
+      builder: (context, followingSnap) {
+        if (followingSnap.hasError) return const Text('تعذر تحميل قائمة Following.');
+        final followingIds = followingSnap.data ?? const <String>[];
+        final followingSet = followingIds.toSet();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (query.length < 2 && followingIds.isEmpty)
+              const Text('لا توجد حسابات تتابعها بعد. استخدم Discover للعثور على لاعبين.'),
+            if (query.length < 2 && followingIds.isNotEmpty)
+              const Text('أصدقاؤك / Following'),
+            if (query.length < 2 && followingIds.isNotEmpty)
+              _usersByIds(followingIds, uid),
+            if (query.length >= 2)
+              _searchUsers(query, uid, followingSet),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _usersByIds(List<String> ids, String uid) {
+    return Column(
+      children: ids.take(12).map((id) => StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance.collection('users').doc(id).snapshots(),
+        builder: (context, snap) => _userTile(snap.data, id),
+      )).toList(),
+    );
+  }
+
+  Widget _searchUsers(String query, String uid, Set<String> followingIds) {
     final users = FirebaseFirestore.instance.collection('users')
         .orderBy('displayNameLower')
         .startAt([query])
@@ -359,28 +392,29 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         if (snap.hasError) return const Text('تعذر البحث عن اللاعبين.');
         final docs = (snap.data?.docs ?? const []).where((d) => d.id != uid).toList();
         if (docs.isEmpty) return const Text('لم نجد لاعباً بهذا الاسم.');
-        return Column(
-          children: docs.map((doc) {
-            final data = doc.data();
-            final name = (data['displayName']?.toString().trim().isNotEmpty ?? false)
-                ? data['displayName'].toString().trim() : 'لاعب AUREN';
-            final photo = data['photoUrl']?.toString();
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundImage: photo != null && photo.isNotEmpty ? NetworkImage(photo) : null,
-                child: photo == null || photo.isEmpty ? const Icon(Icons.person) : null,
-              ),
-              title: Text(name),
-              subtitle: const Text('متاح لتحديات Gaming'),
-              trailing: FilledButton(
-                onPressed: _busy ? null : () => _challengeFriendUid(doc.id, name),
-                child: const Text('تحدي'),
-              ),
-            );
-          }).toList(),
-        );
+        return Column(children: docs.map((doc) => _userTile(doc, doc.id, followingIds: followingIds)).toList());
       },
+    );
+  }
+
+  Widget _userTile(DocumentSnapshot<Map<String, dynamic>>? doc, String id, {Set<String> followingIds = const {}}) {
+    if (doc == null || !doc.exists || id == FirebaseAuth.instance.currentUser?.uid) return const SizedBox.shrink();
+    final data = doc.data() ?? {};
+    final name = (data['displayName']?.toString().trim().isNotEmpty ?? false)
+        ? data['displayName'].toString().trim() : 'لاعب AUREN';
+    final photo = data['photoUrl']?.toString();
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: CircleAvatar(
+        backgroundImage: photo != null && photo.isNotEmpty ? NetworkImage(photo) : null,
+        child: photo == null || photo.isEmpty ? const Icon(Icons.person) : null,
+      ),
+      title: Text(name),
+      subtitle: Text(followingIds.contains(id) ? 'Following • متاح لتحديات Gaming' : 'لاعب AUREN'),
+      trailing: FilledButton(
+        onPressed: _busy ? null : () => _challengeFriendUid(id, name),
+        child: const Text('تحدي'),
+      ),
     );
   }
 
