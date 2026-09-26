@@ -169,6 +169,20 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     return 0;
   }
 
+  String _planReason(AurenEntertainmentItem item) {
+    final signal = _signals[item.id];
+    final history = _history[item.id];
+    if (history != null && history['completed'] != true) return 'متابعة من سجل المشاهدة';
+    if (signal != null) {
+      final likes = (signal['likes'] as num?)?.toInt() ?? 0;
+      final saves = (signal['saves'] as num?)?.toInt() ?? 0;
+      if (likes > 0 || saves > 0) return 'لأن تفاعلك يشير إلى أنك تحبه';
+      if (((signal['watchSeconds'] as num?)?.toDouble() ?? 0) > 120) return 'لأنك شاهدت منه وقتاً جيداً';
+    }
+    if (!_history.containsKey(item.id)) return 'اكتشاف جديد مناسب لك';
+    return 'اختيار ذكي من AUREN';
+  }
+
   List<AurenEntertainmentItem> _buildPlan(List<AurenEntertainmentItem> items) {
     final usable = items
         .where((x) => x.mediaUrl.isNotEmpty || x.imageUrl.isNotEmpty)
@@ -324,8 +338,12 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                   leading: item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie_outlined))
                       : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
                   title: Text(item.title),
-                  subtitle: Text(item.type, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: const Icon(Icons.chevron_right_rounded),
+                  subtitle: Text(
+                    item.type + ' • ' + _planReason(item),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.auto_awesome_rounded),
                   onTap: () => Navigator.push(context, MaterialPageRoute(
                     builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id))),
                 ))),
