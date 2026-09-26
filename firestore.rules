@@ -1107,6 +1107,20 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    match /users/{userId}/opportunityApplications/{opportunityId} {
+      allow read, create, delete: if isOwner(userId);
+      allow update: if false;
+    }
+
+    match /opportunity_application_notifications/{notificationId} {
+      allow create: if request.auth != null
+        && request.resource.data.applicantUid == request.auth.uid
+        && request.resource.data.recipientUid is string
+        && request.resource.data.opportunityId is string;
+      allow read, update, delete: if request.auth != null
+        && resource.data.recipientUid == request.auth.uid;
+    }
+
     match /users/{userId}/savedBusinesses/{businessId} {
       allow read, create, delete: if isOwner(userId);
       allow update: if false;
