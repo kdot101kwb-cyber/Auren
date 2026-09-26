@@ -29,7 +29,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
   bool get loading => _loading;
   String? get error => _error;
 
-  Future<void> playItem(AurenEntertainmentItem item) async {
+  Future<void> playItem(AurenEntertainmentItem item, {Duration startAt = Duration.zero}) async {
     if (item.mediaUrl.isEmpty) {
       _error = 'لا يوجد رابط صوت لهذا المحتوى.';
       notifyListeners();
@@ -38,17 +38,32 @@ class AurenMusicPlayerController extends ChangeNotifier {
     _loading = true;
     _error = null;
     _item = item;
-    _position = Duration.zero;
+    _position = startAt;
     notifyListeners();
     try {
       await _player.setUrl(item.mediaUrl);
       _duration = _player.duration ?? Duration.zero;
+      if (startAt > Duration.zero) await _player.seek(startAt);
       await _player.play();
       await _saveState();
     } catch (_) {
       _error = 'تعذر تشغيل الصوت.';
     } finally {
       _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> restorePlayback() async {
+    final item = _item;
+    if (item == null || item.mediaUrl.isEmpty) return;
+    try {
+      await _player.setUrl(item.mediaUrl);
+      _duration = _player.duration ?? Duration.zero;
+      if (_position > Duration.zero) await _player.seek(_position);
+      notifyListeners();
+    } catch (_) {
+      _error = 'تعذر استعادة الصوت.';
       notifyListeners();
     }
   }
