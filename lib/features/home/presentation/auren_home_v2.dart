@@ -18,6 +18,7 @@ import '../../profile/presentation/adaptive_profile_surface.dart';
 import '../../../services/social/adaptive_profile_service.dart';
 import '../../../services/social/match_everything_service.dart';
 import 'auren_intent_match_card.dart';
+import '../../action_center/presentation/action_center_screen.dart';
 
 class AurenAdaptiveHomeFocus extends StatelessWidget {
   final String uid;
@@ -407,6 +408,7 @@ class AurenHomeV2 extends StatelessWidget {
         _card(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل الهدف إلى خطوات.', const PersonalAiScreen()),
         _card(context, Icons.bookmark_outline, 'Saved', 'كل المحتوى الذي حفظته في AUREN.', const AurenSavedCenterScreen()),
         _card(context, Icons.work_outline, 'AUREN Work Center', 'الأعمال والمسودات التي أنشأها الوكلاء بعد موافقتك.', const AurenWorkArtifactsScreen()),
+        _card(context, Icons.track_changes, 'Action Center', 'تابع كل إجراء بدأته من Match Everything.', const AurenActionCenterScreen()),
         const SizedBox(height: 12),
         Card(child: ListTile(
           leading: const Icon(Icons.layers_outlined),
