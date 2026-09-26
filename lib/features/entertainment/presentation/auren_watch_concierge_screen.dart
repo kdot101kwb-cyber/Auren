@@ -83,6 +83,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     if (item.creatorId.isNotEmpty) score += (_creatorAffinity[item.creatorId] ?? 0).clamp(-6, 10);
 
     final signal = _signals[item.id];
+    score += _moodAffinity(item);
     if (signal != null) {
       score += ((signal['watchSeconds'] as num?)?.toDouble() ?? 0) * .01;
       score += ((signal['views'] as num?)?.toDouble() ?? 0) * 1.5;
@@ -162,6 +163,16 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     final typeKnown = _typeAffinity.containsKey(item.type);
     // Novelty stays a bounded signal so it cannot overpower explicit preferences.
     return typeKnown ? 2.5 : 5.0;
+  }
+
+  double _moodAffinity(AurenEntertainmentItem item) {
+    final selected = _mood;
+    if (selected == 'الكل') return 0;
+    final signal = _signals[item.id];
+    if (signal == null) return 0;
+    final mood = signal['mood'];
+    if (mood is! String) return 0;
+    return mood == selected ? 6 : -1;
   }
 
   double _recencyBoost(AurenEntertainmentItem item) {
