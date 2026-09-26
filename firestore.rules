@@ -140,6 +140,33 @@ service cloud.firestore {
       && request.resource.data.updatedAt is timestamp;
   }
 
+  match /users/{userId}/entertainmentCreationJobs/{jobId} {
+    allow read: if isOwner(userId);
+    allow create: if isOwner(userId)
+      && request.resource.data.keys().hasOnly(['draftId','mode','mood','length','idea','status','provider','progress','createdAt','updatedAt'])
+      && request.resource.data.draftId is string
+      && request.resource.data.draftId.size() <= 128
+      && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم']
+      && request.resource.data.mood is string
+      && request.resource.data.mood.size() <= 40
+      && request.resource.data.length in ['قصير','متوسط','طويل']
+      && request.resource.data.idea is string
+      && request.resource.data.idea.size() <= 5000
+      && request.resource.data.status == 'planning'
+      && request.resource.data.provider == 'auren_ai'
+      && request.resource.data.progress == 0
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.updatedAt is timestamp;
+    allow update: if isOwner(userId)
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','progress','updatedAt'])
+      && request.resource.data.status in ['planning','generating','processing','ready','failed','cancelled']
+      && request.resource.data.progress is int
+      && request.resource.data.progress >= 0
+      && request.resource.data.progress <= 100
+      && request.resource.data.updatedAt is timestamp;
+    allow delete: if isOwner(userId);
+  }
+
   match /users/{userId} {
     match /future_simulator/{scenarioId} { allow read: if isOwner(userId); allow create, update: if isOwner(userId) && scenarioId == 'current' && request.resource.data.keys().hasOnly(['scenarios','updatedAt']) && request.resource.data.scenarios is list && request.resource.data.scenarios.size() <= 10; allow delete: if isOwner(userId); }
 
