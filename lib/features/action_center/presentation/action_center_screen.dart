@@ -173,6 +173,10 @@ class _FlowCardState extends State<_FlowCard> {
               Text(next, style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
               _smartFollowUpPanel(context),
+              if (action == 'requestQuote') ...[
+                const SizedBox(height: 10),
+                _quoteReadinessPanel(context),
+              ],
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -214,6 +218,73 @@ class _FlowCardState extends State<_FlowCard> {
     );
   }
 
+  Widget _quoteReadinessPanel(BuildContext context) {
+    final conversationId =
+        (widget.data['conversationId'] ?? '').toString().trim();
+    if (conversationId.isEmpty) return const SizedBox.shrink();
+
+    return FutureBuilder<AurenMessage?>(
+      future: _loadReply(conversationId),
+      builder: (context, snapshot) {
+        final reply = snapshot.data;
+        if (reply == null) return const SizedBox.shrink();
+
+        final analysis = AurenSmartFollowUpService().analyze(
+          reply: reply,
+          action: 'requestQuote',
+          intent: (widget.data['intent'] ?? '').toString(),
+        );
+        final score = analysis.readinessScore;
+        final label = score >= 80
+            ? 'العرض شبه مكتمل'
+            : score >= 50
+                ? 'العرض يحتاج بعض المعلومات'
+                : 'العرض يحتاج معلومات أساسية';
+
+        return Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.fact_check_outlined),
+                    const SizedBox(width: 7),
+                    const Expanded(
+                      child: Text(
+                        'جاهزية عرض السعر',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    Text(score.toString() + '%'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(value: score / 100),
+                const SizedBox(height: 6),
+                Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                if (analysis.strengths.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text('متوفر: ' + analysis.strengths.join(' • ')),
+                ],
+                if (score < 100) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'الناقص: ' +
+                        (analysis.missing.isEmpty
+                            ? 'لا توجد معلومات ناقصة حسب التحليل الحالي.'
+                            : analysis.missing.join(' • ')),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
   Widget _smartFollowUpPanel(BuildContext context) {
     final conversationId =
         (widget.data['conversationId'] ?? '').toString().trim();
