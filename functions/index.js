@@ -291,20 +291,32 @@ exports.onConversationMessageCreated = onDocumentCreated(
         .where('conversationId', '==', event.params.conversationId)
         .limit(50)
         .get();
-      const updates = flowSnap.docs
-        .filter((doc) => {
-          const flow = doc.data() || {};
-          return flow.status === 'waiting_response' &&
-            doc.ref.parent.parent?.id &&
-            doc.ref.parent.parent.id !== actorUid;
-        })
-        .map((doc) => doc.ref.update({
+      const replyFlows = flowSnap.docs.filter((doc) => {
+        const flow = doc.data() || {};
+        const ownerUid = doc.ref.parent.parent?.id || '';
+        return flow.status === 'waiting_response' &&
+          ownerUid &&
+          ownerUid !== actorUid;
+      });
+
+      await Promise.all(replyFlows.map(async (doc) => {
+        const ownerUid = doc.ref.parent.parent.id;
+        await doc.ref.update({
           status: 'replied',
           replyMessageId: event.params.messageId,
           replyDetectedAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
-        }));
-      if (updates.length) await Promise.all(updates);
+        });
+        await notify(ownerUid, {
+          title: 'AUREN: وصل رد جديد',
+          body: 'وصل رد على مسار Match Everything. افتح Action Center لمراجعته ومتابعة الخطوة التالية.',
+          type: 'match_flow_reply',
+          targetId: ownerUid,
+          entityId: doc.id,
+          conversationId: event.params.conversationId,
+          notificationId: 'match_reply_' + doc.id + '_' + event.params.messageId,
+        });
+      }));
     }
 
     const recipients = data.memberIds.filter((uid) => uid && uid !== actorUid);
