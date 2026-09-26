@@ -333,3 +333,22 @@ test('Match Everything reply detection ignores AI messages and only advances wai
   assert.match(fn, /status: 'replied'/);
   assert.match(fn, /replyMessageId: event\.params\.messageId/);
 });
+
+
+test('entertainment queue worker claims queued jobs and fails closed without a real provider', () => {
+  assert.match(source, /exports\.processEntertainmentCreationQueue/);
+  assert.match(source, /after\.queueStatus !== 'queued'/);
+  assert.match(source, /queueStatus: 'processing'/);
+  assert.match(source, /queueStatus: 'waiting_provider'/);
+  assert.match(source, /providerStatus: 'not_connected'/);
+  assert.match(source, /providerStatus: 'unavailable'/);
+  assert.match(source, /لا يوجد مزوّد/);
+});
+
+test('entertainment queue trigger is idempotent against its own status writes', () => {
+  const start = source.indexOf('exports.processEntertainmentCreationQueue');
+  const end = source.indexOf('// Health endpoint', start);
+  const fn = source.slice(start, end);
+  assert.match(fn, /after\.queueStatus !== 'queued'/);
+  assert.match(fn, /before\.queueStatus === 'queued'/);
+});
