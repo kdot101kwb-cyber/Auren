@@ -141,4 +141,26 @@ class AurenMatchActionFlowRepository {
     required AurenMatchItem item,
   }) =>
       updateStatus(uid: uid, item: item, status: 'replied');
+
+  /// Completes the flow and moves the progress indicator to its final step.
+  Future<void> complete({
+    required String uid,
+    required AurenMatchItem item,
+  }) async {
+    final ref = _ref(uid, item);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) {
+        throw StateError('Match Everything flow not found.');
+      }
+      final data = snap.data() ?? <String, dynamic>{};
+      final totalSteps = (data['totalSteps'] as num?)?.toInt() ?? 1;
+      final finalStep = totalSteps > 0 ? totalSteps - 1 : 0;
+      tx.update(ref, {
+        'status': 'completed',
+        'step': finalStep,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
 }
