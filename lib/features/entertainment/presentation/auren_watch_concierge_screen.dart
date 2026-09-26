@@ -140,22 +140,36 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
   }
 
   List<AurenEntertainmentItem> _buildPlan(List<AurenEntertainmentItem> items) {
-    final usable = items.where((x) => x.mediaUrl.isNotEmpty || x.imageUrl.isNotEmpty).toList();
-    usable.sort((a, b) => _score(b).compareTo(_score(a)));
+    final usable = items
+        .where((x) => x.mediaUrl.isNotEmpty || x.imageUrl.isNotEmpty)
+        .toList();
+
+    // Discovery-first: reserve part of the plan for never-watched items,
+    // while keeping the strongest personalized items in the remaining slots.
+    final neverWatched = usable.where((x) => !_history.containsKey(x.id)).toList();
+    final personalized = usable.where((x) => _history.containsKey(x.id)).toList();
+    neverWatched.sort((a, b) => _score(b).compareTo(_score(a)));
+    personalized.sort((a, b) => _score(b).compareTo(_score(a)));
     if (usable.isEmpty) return const [];
     final target = (_minutes / 30).ceil().clamp(1, 8);
     final result = <AurenEntertainmentItem>[];
     final creators = <String>{};
-    for (final item in usable) {
-      if (result.length >= target) break;
-      if (item.creatorId.isNotEmpty && creators.contains(item.creatorId)) continue;
-      result.add(item);
-      if (item.creatorId.isNotEmpty) creators.add(item.creatorId);
+    final discoveryTarget = target >= 3 ? (target * 0.4).ceil() : target;
+
+    void addFrom(List<AurenEntertainmentItem> pool, {bool discovery = false}) {
+      for (final item in pool) {
+        if (result.length >= target) break;
+        if (discovery && result.length >= discoveryTarget) break;
+        if (item.creatorId.isNotEmpty && creators.contains(item.creatorId)) continue;
+        result.add(item);
+        if (item.creatorId.isNotEmpty) creators.add(item.creatorId);
+      }
     }
-    for (final item in usable) {
-      if (result.length >= target) break;
-      if (!result.any((x) => x.id == item.id)) result.add(item);
-    }
+
+    addFrom(neverWatched, discovery: true);
+    addFrom(personalized);
+    addFrom(neverWatched);
+    addFrom(usable);
     return result;
   }
 
