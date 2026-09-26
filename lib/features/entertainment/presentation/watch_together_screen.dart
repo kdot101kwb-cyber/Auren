@@ -202,6 +202,12 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
               ' • ' + (data['positionSeconds'] ?? 0).toString() + ' ثانية'),
           if (_syncError != null) ...[const SizedBox(height: 8), Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)), color: Colors.redAccent.withOpacity(.12)), child: Row(children: [const Expanded(child: Text('تعذر تحديث حالة المشاهدة.')) , TextButton(onPressed: _retrySync, child: const Text('إعادة المحاولة'))]))],
           const SizedBox(height: 14),
+          if (members.length < 8)
+            OutlinedButton.icon(
+              onPressed: () => _shareInvite((data['inviteCode'] ?? '').toString()),
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              label: const Text('دعوة صديق'),
+            ),
           if (widget.mediaUrl != null && widget.mediaUrl!.isNotEmpty) _buildSyncedPlayer(roomId, data),
           if (_lastRemoteSync != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('آخر مزامنة: ${_lastRemoteSync!.hour.toString().padLeft(2,'0')}:${_lastRemoteSync!.minute.toString().padLeft(2,'0')}:${_lastRemoteSync!.second.toString().padLeft(2,'0')}'));
           if (widget.mediaUrl == null || widget.mediaUrl!.isEmpty)
