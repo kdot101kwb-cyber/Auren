@@ -5,6 +5,8 @@ class BusinessRepository {
   final FirebaseFirestore _db;
   BusinessRepository({FirebaseFirestore? firestore}):_db=firestore??FirebaseFirestore.instance;
   CollectionReference<Map<String,dynamic>> get _c=>_db.collection('businesses');
+  void _uid(String value){if(value.trim().isEmpty) throw ArgumentError.value(value,'uid','must not be empty');}
+  String _clean(String value,int max){final v=value.trim();return v.length>max?v.substring(0,max):v;}
 
   Stream<List<AurenBusiness>> watchPublic({String query='',String category='All',String businessType='All'})=>
     _c.where('visibility',isEqualTo:'public').limit(100).snapshots().map((s){
@@ -17,6 +19,9 @@ class BusinessRepository {
     });
 
   Future<String> create({required String ownerId,required String name,required String description,required String category,required String city,required String country,required String phone,required String website,required String imageUrl,required String businessType})async{
+    _uid(ownerId);
+    final cleanName=_clean(name,120);
+    if(cleanName.isEmpty) throw ArgumentError('اسم النشاط مطلوب.');
     final r=_c.doc();
     await r.set({'ownerId':ownerId,'name':name.trim(),'description':description.trim(),'category':category,'city':city.trim(),'country':country.trim(),'phone':phone.trim(),'website':website.trim(),'imageUrl':imageUrl.trim(),'businessType':businessType,'status':'active','visibility':'public','verified':false,'createdAt':FieldValue.serverTimestamp()});
     return r.id;
