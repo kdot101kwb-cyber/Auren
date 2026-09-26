@@ -16,6 +16,8 @@ class AurenMusicPlayerController extends ChangeNotifier {
   static final AurenMusicPlayerController instance = AurenMusicPlayerController._();
   late final AudioPlayer _player;
   AurenEntertainmentItem? _item;
+  final List<AurenEntertainmentItem> _queue = [];
+  final List<AurenEntertainmentItem> _history = [];
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   bool _loading = false;
@@ -28,6 +30,8 @@ class AurenMusicPlayerController extends ChangeNotifier {
   bool get playing => _player.playing;
   bool get loading => _loading;
   String? get error => _error;
+  List<AurenEntertainmentItem> get queue => List.unmodifiable(_queue);
+  List<AurenEntertainmentItem> get history => List.unmodifiable(_history);
 
   Future<void> playItem(AurenEntertainmentItem item, {Duration startAt = Duration.zero}) async {
     if (item.mediaUrl.isEmpty) {
@@ -37,6 +41,11 @@ class AurenMusicPlayerController extends ChangeNotifier {
     }
     _loading = true;
     _error = null;
+    _queue.removeWhere((x) => x.id == item.id);
+    _queue.insert(0, item);
+    _history.removeWhere((x) => x.id == item.id);
+    _history.insert(0, item);
+    if (_history.length > 20) _history.removeLast();
     _item = item;
     _position = startAt;
     notifyListeners();
@@ -52,6 +61,23 @@ class AurenMusicPlayerController extends ChangeNotifier {
       _loading = false;
       notifyListeners();
     }
+  }
+
+
+  Future<void> addToQueue(AurenEntertainmentItem item) async {
+    if (item.mediaUrl.isEmpty || _queue.any((x) => x.id == item.id)) return;
+    _queue.add(item);
+    notifyListeners();
+  }
+
+  Future<void> removeFromQueue(AurenEntertainmentItem item) async {
+    _queue.removeWhere((x) => x.id == item.id);
+    notifyListeners();
+  }
+
+  Future<void> playNextInQueue() async {
+    if (_queue.length < 2) return;
+    await playItem(_queue[1]);
   }
 
   Future<void> restorePlayback() async {
