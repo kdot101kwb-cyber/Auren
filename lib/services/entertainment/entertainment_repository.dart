@@ -210,6 +210,36 @@ class EntertainmentRepository {
     });
   }
 
+  Stream<List<Map<String, dynamic>>> watchEntertainmentDrafts(String uid) {
+    return db.collection('users').doc(uid).collection('entertainmentDrafts')
+        .orderBy('updatedAt', descending: true).limit(20).snapshots()
+        .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+  }
+
+  Future<String> saveEntertainmentDraft(
+    String uid, {
+    required String mode,
+    required String mood,
+    required String length,
+    required String idea,
+  }) async {
+    final ref = db.collection('users').doc(uid).collection('entertainmentDrafts').doc();
+    await ref.set({
+      'mode': mode,
+      'mood': mood,
+      'length': length,
+      'idea': idea,
+      'status': 'draft',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  }
+
+  Future<void> deleteEntertainmentDraft(String uid, String draftId) {
+    return db.collection('users').doc(uid).collection('entertainmentDrafts').doc(draftId).delete();
+  }
+
   Stream<List<Map<String, dynamic>>> watchContinueWatching(String uid) {
     return db.collection('users').doc(uid).collection('continueWatching')
         .orderBy('updatedAt', descending: true).limit(20).snapshots()
