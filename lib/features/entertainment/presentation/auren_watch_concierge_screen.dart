@@ -349,6 +349,25 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     setState(() => _plan = _plan.where((item) => item.id != itemId).toList());
   }
 
+  String _adaptiveTip() {
+    if (_plan.isEmpty) return '';
+    final unfinished = _plan.where((item) {
+      final h = _history[item.id];
+      return h != null && h['completed'] != true;
+    }).length;
+    final newCount = _plan.where((item) => !_history.containsKey(item.id)).length;
+    if (_mood == 'الكل' && _type == 'الكل' && newCount > 0) {
+      return 'اقتراح AUREN: جرّب الاكتشاف الجديد أولاً.';
+    }
+    if (unfinished > 0) {
+      return 'اقتراح AUREN: عندك محتوى بدأته سابقاً، ويمكنك المتابعة منه.';
+    }
+    if (_mood != 'الكل') {
+      return 'اقتراح AUREN: الخطة مضبوطة على مزاج «' + _mood + '».';
+    }
+    return 'اقتراح AUREN: الخطة جاهزة حسب تفضيلاتك.';
+  }
+
   String _planInsight() {
     if (_plan.isEmpty) return 'لا توجد خطة حالياً';
     final types = <String>{for (final item in _plan) item.type};
@@ -469,6 +488,16 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                     Expanded(
                       child: Text(
                         _planInsight(),
+                    if (_adaptiveTip().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          _adaptiveTip(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 12),
