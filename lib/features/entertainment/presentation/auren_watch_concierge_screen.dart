@@ -349,6 +349,24 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     setState(() => _plan = _plan.where((item) => item.id != itemId).toList());
   }
 
+  String _planInsight() {
+    if (_plan.isEmpty) return 'لا توجد خطة حالياً';
+    final types = <String>{for (final item in _plan) item.type};
+    final newCount = _plan.where((item) => !_history.containsKey(item.id)).length;
+    final continued = _plan.where((item) {
+      final h = _history[item.id];
+      return h != null && h['completed'] != true;
+    }).length;
+    if (continued > 0 && newCount > 0) {
+      return 'مزيج متوازن: ' + continued.toString() + ' متابعة + ' +
+          newCount.toString() + ' اكتشاف جديد • ' + types.length.toString() + ' أنواع';
+    }
+    if (continued > 0) {
+      return continued.toString() + ' محتوى للمتابعة • ' + types.length.toString() + ' أنواع';
+    }
+    return newCount.toString() + ' اكتشاف جديد • ' + types.length.toString() + ' أنواع';
+  }
+
   Future<void> _generate(List<AurenEntertainmentItem> source) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -448,6 +466,14 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
               if (_plan.isNotEmpty) ...[
                 const SizedBox(height: 18),
                 Row(
+                    Expanded(
+                      child: Text(
+                        _planInsight(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
                     FilledButton.icon(
                       onPressed: _startPlan,
                       icon: const Icon(Icons.play_arrow_rounded),
