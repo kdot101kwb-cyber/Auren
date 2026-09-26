@@ -1044,6 +1044,10 @@ service cloud.firestore {
       allow read: if request.auth != null && resource.data.creatorUid == request.auth.uid;
       allow create, update, delete: if false;
     }
+    match /creator_withdrawals/{withdrawalId} {
+      allow read: if request.auth != null && resource.data.creatorUid == request.auth.uid;
+      allow create, update, delete: if false;
+    }
     match /creator_drafts/{draftId} {
       allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
