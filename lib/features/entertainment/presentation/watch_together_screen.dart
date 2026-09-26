@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,31 +10,87 @@ class AurenWatchTogetherService {
   final FirebaseFirestore _db;
   AurenWatchTogetherService({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
   CollectionReference<Map<String, dynamic>> get _rooms => _db.collection('watch_together_rooms');
-  String _code() => DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase().substring(4);
+  CollectionReference<Map<String, dynamic>> get _invites => _db.collection('watch_together_invites');
+  String _code() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final random = Random.secure();
+    return List.generate(6, (_) => alphabet[random.nextInt(alphabet.length)]).join();
+  }
   Future<String> createRoom({required String title, String? mediaId}) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('سجّل الدخول أولاً.');
-    final ref = _rooms.doc();
-    await ref.set({'hostUid': uid, 'memberIds': [uid], 'inviteCode': _code(), 'title': title.trim().isEmpty ? 'Watch Together' : title.trim(), 'mediaId': mediaId, 'status': 'waiting', 'positionSeconds': 0, 'isPlaying': false, 'createdAt': FieldValue.serverTimestamp(), 'updatedAt': FieldValue.serverTimestamp()});
-    return ref.id;
+    for (var attempt = 0; attempt < 5; attempt++) {
+      final code = _code();
+      final ref = _rooms.doc();
+      final inviteRef = _invites.doc(code);
+      try {
+        await _db.runTransaction((tx) async {
+          final existing = await tx.get(inviteRef);
+          if (existing.exists) throw StateError('INVITE_CODE_COLLISION');
+          tx.set(ref, {'hostUid': uid, 'memberIds': [uid], 'inviteCode': code, 'title': title.trim().isEmpty ? 'Watch Together' : title.trim(), 'mediaId': mediaId, 'status': 'waiting', 'positionSeconds': 0, 'isPlaying': false, 'createdAt': FieldValue.serverTimestamp(), 'updatedAt': FieldValue.serverTimestamp()});
+          tx.set(inviteRef, {'roomId': ref.id, 'hostUid': uid, 'inviteCode': code, 'createdAt': FieldValue.serverTimestamp()});
+        });
+        return ref.id;
+      } on StateError catch (e) {
+        if (e.message != 'INVITE_CODE_COLLISION' || attempt == 4) rethrow;
+      }
+    }
+    throw StateError('تعذر إنشاء رمز دعوة آمن.');
   }
+
   Future<String> joinRoom(String code) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('سجّل الدخول أولاً.');
-    final snap = await _rooms.where('inviteCode', isEqualTo: code.trim().toUpperCase()).limit(1).get();
-    if (snap.docs.isEmpty) throw StateError('رمز الغرفة غير صحيح.');
-    final ref = snap.docs.first.reference;
+    final normalized = code.trim().toUpperCase();
+    if (normalized.length != 6) throw StateError('رمز الغرفة يجب أن يكون 6 أحرف.');
+    final invite = await _invites.doc(normalized).get();
+    if (!invite.exists) throw StateError('رمز الغرفة غير صحيح.');
+    final roomId = (invite.data()?['roomId'] ?? '').toString();
+    if (roomId.isEmpty) throw StateError('الغرفة غير متاحة.');
+    final ref = _rooms.doc(roomId);
     await _db.runTransaction((tx) async {
       final current = await tx.get(ref);
+      if (!current.exists) throw StateError('الغرفة غير متاحة.');
       final data = current.data() ?? <String, dynamic>{};
       final members = List<String>.from(data['memberIds'] ?? const <String>[]);
       if (!members.contains(uid)) members.add(uid);
       tx.update(ref, {'memberIds': members, 'status': 'ready', 'updatedAt': FieldValue.serverTimestamp()});
     });
-    return ref.id;
+    return roomId;
   }
+
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchRoom(String roomId) => _rooms.doc(roomId).snapshots();
   Future<void> updatePlayback({required String roomId, required double positionSeconds, required bool isPlaying}) => _rooms.doc(roomId).update({'positionSeconds': positionSeconds.clamp(0, 86400), 'isPlaying': isPlaying, 'updatedAt': FieldValue.serverTimestamp()});
+  Future<void> leaveRoom(String roomId) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) throw StateError('سجّل الدخول أولاً.');
+    final ref = _rooms.doc(roomId);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final data = snap.data() ?? <String, dynamic>{};
+      if (data['hostUid'] == uid) throw StateError('المضيف يجب أن ينهي الغرفة.');
+      final members = List<String>.from(data['memberIds'] ?? const <String>[]);
+      if (!members.contains(uid)) return;
+      members.remove(uid);
+      tx.update(ref, {'memberIds': members, 'status': members.length > 1 ? 'ready' : 'waiting', 'updatedAt': FieldValue.serverTimestamp()});
+    });
+  }
+
+  Future<void> deleteRoom(String roomId) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) throw StateError('سجّل الدخول أولاً.');
+    final roomRef = _rooms.doc(roomId);
+    await _db.runTransaction((tx) async {
+      final room = await tx.get(roomRef);
+      if (!room.exists) return;
+      final data = room.data() ?? <String, dynamic>{};
+      if (data['hostUid'] != uid) throw StateError('فقط المضيف يستطيع إنهاء الغرفة.');
+      final code = (data['inviteCode'] ?? '').toString().toUpperCase();
+      tx.delete(roomRef);
+      if (code.isNotEmpty) tx.delete(_invites.doc(code));
+    });
+  }
   Stream<QuerySnapshot<Map<String, dynamic>>> watchMessages(String roomId) => _rooms.doc(roomId).collection('messages').orderBy('createdAt', descending: true).limit(50).snapshots();
   Future<void> sendMessage(String roomId, String text) async { final uid = FirebaseAuth.instance.currentUser?.uid; final value = text.trim(); if (uid == null || value.isEmpty) return; await _rooms.doc(roomId).collection('messages').add({'senderUid': uid, 'text': value, 'createdAt': FieldValue.serverTimestamp()}); }
 }
