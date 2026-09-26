@@ -1,4 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../profile/presentation/adaptive_profile_surface.dart';
+import '../../../services/social/adaptive_profile_service.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/business.dart';
 import '../../../services/business/business_repository.dart';
@@ -18,7 +20,14 @@ IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>c
  Padding(padding:const EdgeInsets.fromLTRB(16,12,16,8),child:TextField(controller:_search,onChanged:(_)=>setState((){}),decoration:InputDecoration(hintText:'ابحث عن شركة، متجر أو خدمة...',prefixIcon:const Icon(Icons.search),border:OutlineInputBorder(borderRadius:BorderRadius.circular(16))))),
  SizedBox(height:48,child:ListView.separated(padding:const EdgeInsets.symmetric(horizontal:16),scrollDirection:Axis.horizontal,itemCount:types.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i)=>ChoiceChip(label:Text(types[i]),selected:_type==types[i],onSelected:(_)=>setState(()=>_type=types[i])))),
  SizedBox(height:48,child:ListView.separated(padding:const EdgeInsets.symmetric(horizontal:16),scrollDirection:Axis.horizontal,itemCount:cats.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i)=>ChoiceChip(label:Text(cats[i]),selected:_category==cats[i],onSelected:(_)=>setState(()=>_category=cats[i])))),
- Expanded(child:StreamBuilder<List<AurenBusiness>>(stream:_repo.watchPublic(query:_search.text,category:_category,businessType:_type),builder:(context,s){if(s.hasError)return Center(child:Text('حدث خطأ: $s'));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('لا توجد نتائج بعد.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:10),itemBuilder:(_,i)=>_Card(b:s.data![i]);})),
+ Expanded(child:ListView(
+  children:[
+   if(FirebaseAuth.instance.currentUser!=null) ...[
+    AurenAdaptiveProfileSurface(uid:FirebaseAuth.instance.currentUser!.uid,context:AurenProfileContext.business,intent:_search.text.isEmpty?'العملاء والمنتجات ونمو النشاط':'البحث عن '+_search.text),
+    AurenAdaptiveActionRail(uid:FirebaseAuth.instance.currentUser!.uid,context:AurenProfileContext.business,intent:_search.text.isEmpty?'العملاء والمنتجات ونمو النشاط':_search.text,onPrompt:(prompt)=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:prompt)))),
+    const SizedBox(height:8),
+   ],
+   StreamBuilder<List<AurenBusiness>>(stream:_repo.watchPublic(query:_search.text,category:_category,businessType:_type),builder:(context,s){if(s.hasError)return Center(child:Text('حدث خطأ: $s'));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('لا توجد نتائج بعد.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:10),itemBuilder:(_,i)=>_Card(b:s.data![i]);})),
  ]),floatingActionButton:FloatingActionButton.extended(onPressed:_create,icon:const Icon(Icons.add),label:const Text('أضف Business')));
 }
 class _Card extends StatelessWidget{final AurenBusiness b;const _Card({required this.b});@override Widget build(BuildContext c)=>Card(child:ListTile(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>AurenBusinessDetailScreen(business:b))),leading:CircleAvatar(backgroundImage:b.imageUrl.isEmpty?null:NetworkImage(b.imageUrl),child:b.imageUrl.isEmpty?const Icon(Icons.storefront_outlined):null),title:Row(children:[Expanded(child:Text(b.name,maxLines:1,overflow:TextOverflow.ellipsis)),if(b.verified)const Icon(Icons.verified,size:17)]),subtitle:Text([b.category,b.city,b.country,b.description].where((x)=>x.isNotEmpty).join(' • ')),trailing:const Icon(Icons.chevron_right)));}
