@@ -121,6 +121,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         _hero(context), const SizedBox(height: 12),
         _statsCard(), const SizedBox(height: 12),
         _achievementsCard(), const SizedBox(height: 12),
+        _leaderboardCard(), const SizedBox(height: 12),
         if (_roomId == null) ...[
           _gameCard(context, Icons.grid_3x3_rounded, 'Tic-Tac-Toe',
             'لعبة سريعة لشخصين — العب مع صديق برمز دعوة.',
@@ -186,6 +187,27 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     ])));
   }
 
+  Widget _leaderboardCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('لوحة المتصدرين', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        const SizedBox(height: 10),
+        StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: _service.watchLeaderboard(),
+          builder: (context, snap) {
+            if (snap.hasError) return const Text('تعذر تحميل لوحة المتصدرين.');
+            final docs = snap.data?.docs ?? const [];
+            if (docs.isEmpty) return const Text('ابدأ اللعب لتظهر في لوحة المتصدرين.');
+            return Column(children: [
+              for (var i = 0; i < docs.length; i++)
+                ListTile(dense: true, leading: CircleAvatar(child: Text('${i + 1}')), title: Text(docs[i].data()['displayName']?.toString() ?? 'لاعب AUREN'), trailing: Text('${(docs[i].data()['xp'] as num?)?.toInt() ?? 0} XP')),
+            ]);
+          },
+        ),
+      ]),
+    ),
+  );
   Widget _challengeCard(BuildContext context) => Card(
     child: Padding(
       padding: const EdgeInsets.all(16),
@@ -376,9 +398,12 @@ class AurenGamingService {
     await incrementStats(uid, win: win);
   }
 
+  Stream<QuerySnapshot<Map<String, dynamic>>> watchLeaderboard() => _db.collectionGroup('gaming_profile').orderBy('xp', descending: true).limit(10).snapshots();
+
   Future<void> incrementStats(String uid, {required bool win}) async {
+    final user = FirebaseAuth.instance.currentUser;
     await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').set({
-      'xp': FieldValue.increment(win ? 50 : 15), 'games': FieldValue.increment(1), 'wins': FieldValue.increment(win ? 1 : 0), 'updatedAt': FieldValue.serverTimestamp(),
+      'xp': FieldValue.increment(win ? 50 : 15), 'games': FieldValue.increment(1), 'wins': FieldValue.increment(win ? 1 : 0), 'displayName': user?.displayName ?? 'لاعب AUREN', 'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 
