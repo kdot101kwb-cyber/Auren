@@ -33,12 +33,37 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
 
   List<_DiscoverItem> get _filteredItems {
     final q = query.trim().toLowerCase();
-    if (q.isEmpty) return _items;
-    return _items.where((item) {
-      final haystack = (item.title + ' ' + item.subtitle).toLowerCase();
-      return haystack.contains(q);
-    }).toList();
+    final source = q.isEmpty
+        ? List<_DiscoverItem>.from(_items)
+        : _items.where((item) {
+            final haystack = (item.title + ' ' + item.subtitle).toLowerCase();
+            return haystack.contains(q);
+          }).toList();
+
+    // Context changes presentation priority, not the underlying Discover data.
+    final priority = <String>[];
+    if (_hasAny(q, const ['business', 'company', 'shop', 'product', 'خدمة', 'شركة', 'تجارة', 'منتج'])) {
+      priority.addAll(['Business', 'Creators', 'People', 'Places', 'Opportunities']);
+    } else if (_hasAny(q, const ['creator', 'content', 'video', 'music', 'محتوى', 'فيديو', 'موسيقى'])) {
+      priority.addAll(['Creators', 'Entertainment', 'Communities', 'People', 'Business']);
+    } else if (_hasAny(q, const ['job', 'career', 'skill', 'work', 'وظيفة', 'مهنة', 'مهارة', 'فرصة'])) {
+      priority.addAll(['Opportunities', 'Talent', 'People', 'Communities', 'Business']);
+    } else if (_hasAny(q, const ['travel', 'place', 'hotel', 'سفر', 'مكان', 'فندق', 'رحلة'])) {
+      priority.addAll(['Places', 'Entertainment', 'People', 'Communities', 'Business']);
+    } else {
+      priority.addAll(['People', 'Places', 'Creators', 'Entertainment', 'Communities', 'Opportunities', 'Talent', 'Business']);
+    }
+
+    source.sort((a, b) {
+      final ai = priority.indexOf(a.title);
+      final bi = priority.indexOf(b.title);
+      return (ai < 0 ? 999 : ai).compareTo(bi < 0 ? 999 : bi);
+    });
+    return source;
   }
+
+  bool _hasAny(String text, List<String> terms) =>
+      terms.any((term) => text.contains(term));
 
   void _open(BuildContext context, _DiscoverItem item) {
     if (item.title == 'Talent') {
@@ -99,12 +124,23 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 12),
-          if (uid != null)
+          if (uid != null) ...[
             AurenAdaptiveProfileSurface(
               uid: uid,
-              context: AurenProfileContext.discovery,
+              context: AurenProfileContext.unknown,
               intent: query.isEmpty ? 'اكتشاف أشخاص وأماكن ومحتوى وفرص' : query,
             ),
+            const SizedBox(height: 6),
+            AurenAdaptiveActionRail(
+              uid: uid,
+              context: AurenProfileContext.unknown,
+              intent: query.isEmpty ? 'اكتشاف أشخاص وأماكن ومحتوى وفرص' : query,
+              onPrompt: (prompt) => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           TextField(
             onChanged: (value) => setState(() => query = value),
