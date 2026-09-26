@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/creator/creator_studio_repository.dart';
 import 'creator_growth_screen.dart';
+import 'creator_earnings_screen.dart';
 
 class AurenCreatorStudioScreen extends StatefulWidget {
   const AurenCreatorStudioScreen({super.key});
@@ -60,6 +61,18 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
           const SizedBox(height: 6),
           const Text('أنشئ وانشر وتابع أداء محتواك من مكان واحد. صفحة Creator تعتمد على AI Profile Mode.'),
           const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: const Text('Creator Earnings'),
+              subtitle: const Text('تابع الدعم المسجل وحالة التسوية من مكان واحد.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AurenCreatorEarningsScreen()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           Card(
             child: ListTile(
               leading: const Icon(Icons.insights_rounded),
