@@ -50,6 +50,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
   final _code = TextEditingController();
   String? _roomId;
   bool _busy = false;
+  bool _sharing = false;
   VideoPlayerController? _controller;
   bool _syncingRemote = false;
   final _chat = TextEditingController();
@@ -65,6 +66,14 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
     catch (e) { _show(e.toString()); } finally { if (mounted) setState(() => _busy = false); }
   }
   void _show(String value) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value.replaceFirst('Bad state: ', ''))));
+  Future<void> _shareInvite(String code) async {
+    if (code.isEmpty || _sharing) return;
+    setState(() => _sharing = true);
+    try {
+      await Clipboard.setData(ClipboardData(text: 'انضم إلى غرفة Watch Together في AUREN 🎬\nرمز الدعوة: $code'));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ دعوة الغرفة للمشاركة')));
+    } finally { if (mounted) setState(() => _sharing = false); }
+  }
   @override Widget build(BuildContext context) {
     final roomId = _roomId;
     return Scaffold(appBar: AppBar(title: const Text('Watch Together')), body: ListView(padding: const EdgeInsets.all(20), children: [
@@ -86,7 +95,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
         return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text((data['title'] ?? 'Watch Together').toString(), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
-          Row(children: [Expanded(child: SelectableText('رمز الدعوة: ' + (data['inviteCode'] ?? '').toString(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700))), IconButton(onPressed: () async { final code = (data['inviteCode'] ?? '').toString(); if (code.isEmpty) return; await Clipboard.setData(ClipboardData(text: code)); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ رمز الدعوة'))); }, icon: const Icon(Icons.copy))]),
+          Row(children: [Expanded(child: SelectableText('رمز الدعوة: ' + (data['inviteCode'] ?? '').toString(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700))), IconButton(onPressed: () async { final code = (data['inviteCode'] ?? '').toString(); if (code.isEmpty) return; await Clipboard.setData(ClipboardData(text: code)); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ رمز الدعوة'))); }, icon: const Icon(Icons.copy)), IconButton(onPressed: _sharing ? null : () => _shareInvite((data['inviteCode'] ?? '').toString()), icon: const Icon(Icons.share))]),
           const SizedBox(height: 8), Text('الأعضاء: ' + members.length.toString()),
           Text('الحالة: ' + (data['status'] ?? 'waiting').toString()),
           Text('المشاهدة: ' + ((data['isPlaying'] == true) ? 'تشغيل' : 'متوقفة') + ' • ' + (data['positionSeconds'] ?? 0).toString() + ' ثانية'),
