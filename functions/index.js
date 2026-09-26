@@ -2746,3 +2746,60 @@ exports.onRandomMatched = onDocumentUpdated(
     });
   },
 );
+
+
+// AUREN Entertainment v10 — server-side queue foundation.
+// New planning jobs are queued automatically. No client secret or provider
+// credential is used here, and no media/progress is fabricated.
+exports.queueEntertainmentCreationJob = onDocumentCreated(
+  'users/{userId}/entertainmentCreationJobs/{jobId}',
+  async (event) => {
+    const snap = event.data;
+    const data = snap?.data();
+    if (!data || data.status !== 'planning') return;
+    if (data.queueStatus === 'queued' || data.queueStatus === 'processing') return;
+
+    await snap.ref.set({
+      queueStatus: 'queued',
+      attempts: Number.isInteger(data.attempts) ? data.attempts : 0,
+      queuedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  },
+);
+
+// Explicit retries are re-queued, but normal edits do not restart work.
+exports.requeueEntertainmentCreationJob = onDocumentUpdated(
+  'users/{userId}/entertainmentCreationJobs/{jobId}',
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+
+    const retryRequested =
+      before.status !== 'planning' &&
+      after.status === 'planning' &&
+      after.progress === 0;
+
+    if (!retryRequested || after.queueStatus === 'queued') return;
+
+    await event.data.after.ref.set({
+      queueStatus: 'queued',
+      attempts: Number.isInteger(after.attempts) ? after.attempts + 1 : 1,
+      queuedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  },
+);
+
+// Health endpoint for deployment/monitoring checks.
+exports.entertainmentQueueHealth = require('firebase-functions/v2/https').onRequest(
+  { region: 'us-central1' },
+  async (req, res) => {
+    res.status(200).json({
+      service: 'auren-entertainment-queue',
+      status: 'ok',
+      generationProvider: 'not_connected',
+    });
+  },
+);
