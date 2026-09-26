@@ -16,8 +16,10 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
   final repo = EntertainmentRepository();
   final search = TextEditingController();
   String mood = 'الكل';
+  String context = 'تلقائي';
 
   static const moods = ['الكل', 'هادئ', 'حماس', 'تركيز', 'سفر', 'تسلية'];
+  static const contexts = ['تلقائي', 'صباح', 'ليل', 'عمل', 'رحلة', 'استرخاء'];
 
   @override
   void dispose() {
@@ -41,12 +43,31 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
       if (moodMatches.isNotEmpty) return moodMatches;
     }
 
-    // Keep the recommendation deterministic: richer metadata first, then title.
+    final now = DateTime.now();
+    final hour = now.hour;
+    final effectiveContext = context == 'تلقائي'
+        ? (hour >= 6 && hour < 12 ? 'صباح' : hour >= 21 || hour < 6 ? 'ليل' : 'عمل')
+        : context;
+    final historyIds = AurenMusicPlayerController.instance.history
+        .map((item) => item.id)
+        .toSet();
+
+    // Context-aware local ranking: recent listening, matching metadata, and
+    // the user's selected context influence order without changing the library.
     filtered.sort((a, b) {
-      final aScore = a.description.length + a.title.length;
-      final bScore = b.description.length + b.title.length;
-      final score = bScore.compareTo(aScore);
-      return score != 0 ? score : a.title.compareTo(b.title);
+      double score(AurenEntertainmentItem item) {
+        final text = (item.title + ' ' + item.description).toLowerCase();
+        var value = (item.description.length + item.title.length) / 10;
+        if (historyIds.contains(item.id)) value += 4;
+        if (mood != 'الكل' && text.contains(mood.toLowerCase())) value += 8;
+        if (effectiveContext != 'تلقائي' && text.contains(effectiveContext.toLowerCase())) value += 6;
+        if (effectiveContext == 'ليل' && text.contains('هادئ')) value += 3;
+        if (effectiveContext == 'عمل' && text.contains('تركيز')) value += 3;
+        if (effectiveContext == 'رحلة' && text.contains('سفر')) value += 3;
+        if (effectiveContext == 'استرخاء' && text.contains('هادئ')) value += 3;
+        return value;
+      }
+      return score(b).compareTo(score(a));
     });
     return filtered;
   }
@@ -151,6 +172,20 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
                     label: Text(moods[index]),
                     selected: mood == moods[index],
                     onSelected: (_) => setState(() => mood = moods[index]),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 42,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: contexts.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, index) => ChoiceChip(
+                    label: Text(contexts[index]),
+                    selected: context == contexts[index],
+                    onSelected: (_) => setState(() => context = contexts[index]),
                   ),
                 ),
               ),
