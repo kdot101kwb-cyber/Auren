@@ -283,6 +283,30 @@ exports.onConversationMessageCreated = onDocumentCreated(
       updatedAt: createdAt,
     }, {merge: true});
 
+    // Match Everything flows are advanced server-side as soon as a real
+    // inbound message arrives. This keeps reply detection working even when
+    // the user has not opened Action Center.
+    if (actorUid) {
+      const flowSnap = await db.collectionGroup('match_action_flows')
+        .where('conversationId', '==', event.params.conversationId)
+        .limit(50)
+        .get();
+      const updates = flowSnap.docs
+        .filter((doc) => {
+          const flow = doc.data() || {};
+          return flow.status === 'waiting_response' &&
+            doc.ref.parent.parent?.id &&
+            doc.ref.parent.parent.id !== actorUid;
+        })
+        .map((doc) => doc.ref.update({
+          status: 'replied',
+          replyMessageId: event.params.messageId,
+          replyDetectedAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        }));
+      if (updates.length) await Promise.all(updates);
+    }
+
     const recipients = data.memberIds.filter((uid) => uid && uid !== actorUid);
     await Promise.all(recipients.map(async (uid) => {
       await notify(uid, {
