@@ -31,6 +31,7 @@ class _AurenEntertainmentCreateScreenState
 
   String? _uid;
   bool _saving = false;
+  String? _editingDraftId;
 
   String get _idea => _promptController.text.trim();
 
@@ -73,27 +74,43 @@ class _AurenEntertainmentCreateScreenState
 ''';
   }
 
-  Future<void> _create() async {
+  Future<void> _saveDraft() async {
     final uid = _uid;
-    if (uid != null && !_saving) {
-      setState(() => _saving = true);
-      try {
-        await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: _idea.isEmpty ? _exampleFor(_mode) : _idea);
-      } catch (_) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر حفظ المسودة.')));
-      } finally {
-        if (mounted) setState(() => _saving = false);
+    if (uid == null || _saving) return;
+    setState(() => _saving = true);
+    final idea = _idea.isEmpty ? _exampleFor(_mode) : _idea;
+    try {
+      if (_editingDraftId == null) {
+        _editingDraftId = await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: idea);
+      } else {
+        await EntertainmentRepository().updateEntertainmentDraft(uid, _editingDraftId!, mode: _mode, mood: _mood, length: _length, idea: idea);
       }
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ المسودة.')));
+      }
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر حفظ المسودة.')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MessengerScreen(initialPrompt: _buildPrompt()),
-      ),
-    );
   }
 
+  Future<void> _create() async {
+    if (_uid != null && !_saving) await _saveDraft();
+    if (!mounted) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: _buildPrompt())));
+  }
+
+  void _editDraft(Map<String, dynamic> draft) {
+    setState(() {
+      _editingDraftId = draft['id']?.toString();
+      if (_modes.containsKey(draft['mode']?.toString())) _mode = draft['mode'].toString();
+      if (_moods.contains(draft['mood']?.toString())) _mood = draft['mood'].toString();
+      if (_lengths.contains(draft['length']?.toString())) _length = draft['length'].toString();
+      _promptController.text = draft['idea']?.toString() ?? '';
+    });
+  }
   void _useExample() {
     _promptController.text = _exampleFor(_mode);
     setState(() {});
@@ -116,12 +133,12 @@ class _AurenEntertainmentCreateScreenState
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AUREN Create Studio'),
+        title: Text(_editingDraftId == null ? 'AUREN Create Studio' : 'تعديل المسودة'),
         actions: [
           IconButton(
             tooltip: 'ابدأ',
             icon: const Icon(Icons.auto_awesome_rounded),
-            onPressed: _create,
+            onPressed: _saving ? null : _create,
           ),
         ],
       ),
@@ -249,6 +266,10 @@ class _AurenEntertainmentCreateScreenState
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             ),
           ),
+          if (_uid != null) ...[
+            const SizedBox(height: 18),
+            _buildDrafts(context),
+          ],
           const SizedBox(height: 12),
           Text(
             'AUREN يبني أولاً الـConcept وخطة الإنتاج عبر AI. ربط مولدات الصوت والفيديو والعوالم الفعلية يأتي كطبقة إنتاج لاحقة.',
