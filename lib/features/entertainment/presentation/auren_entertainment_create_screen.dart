@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
+import 'auren_entertainment_job_detail_screen.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
 
@@ -349,18 +350,62 @@ class _AurenEntertainmentCreateScreenState
       builder: (context, snapshot) {
         final jobs = snapshot.data ?? const <Map<String, dynamic>>[];
         if (jobs.isEmpty) return const SizedBox.shrink();
-        return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('مهام الإنتاج', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          ...jobs.take(3).map((job) {
-            final progress = (job['progress'] as num?)?.toInt() ?? 0;
-            final status = job['status']?.toString() ?? 'planning';
-            return ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.movie_filter_rounded)), title: Text('${job['mode'] ?? 'مشروع'} • $status'), subtitle: Text('التقدم $progress% • ${job['provider'] ?? 'auren_ai'}\n${(job['plan'] is List && (job['plan'] as List).isNotEmpty) ? (job['plan'] as List).first.toString() : 'الخطة قيد التجهيز'}'), trailing: SizedBox(width: 54, child: CircularProgressIndicator(value: progress / 100)));
-          }),
-        ])));
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('مهام الإنتاج',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 8),
+                ...jobs.take(3).map((job) {
+                  final progress = (job['progress'] as num?)?.toInt() ?? 0;
+                  final status = job['status']?.toString() ?? 'planning';
+                  final plan = job['plan'] is List ? job['plan'] as List : const [];
+                  final nextStep = plan.isNotEmpty ? plan.first.toString() : 'الخطة قيد التجهيز';
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      child: Icon(
+                        status == 'failed'
+                            ? Icons.error_outline_rounded
+                            : status == 'ready'
+                                ? Icons.check_rounded
+                                : Icons.movie_filter_rounded,
+                      ),
+                    ),
+                    title: Text('§{job['mode'] ?? 'مشروع'} • §{status}'),
+                    subtitle: Text(
+                      'التقدم §{progress}% • §{job['provider'] ?? 'auren_ai'}\n§{nextStep}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: CircularProgressIndicator(value: progress / 100),
+                    ),
+                    onTap: () {
+                      final id = job['id']?.toString();
+                      if (id == null || id.isEmpty) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AurenEntertainmentJobDetailScreen(jobId: id),
+                        ),
+                      );
+                    },
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
+
   Widget _hero(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(22),
