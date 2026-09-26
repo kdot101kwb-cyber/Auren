@@ -19,10 +19,12 @@ Future<void> main() async {
     // Enforcement is intentionally configured in Firebase Console after monitoring,
     // so existing development builds are not locked out.
     await FirebaseAppCheck.instance.activate(
-      providerAndroid: const AndroidPlayIntegrityProvider(),
-      providerApple: const AppleDeviceCheckProvider(),
-      providerWeb: kDebugMode ? WebDebugProvider() : WebDebugProvider(),
-      providerWindows: const WindowsDebugProvider(),
+      androidProvider: kDebugMode
+          ? AndroidProvider.debug
+          : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode
+          ? AppleProvider.debug
+          : AppleProvider.deviceCheck,
     );
   } catch (error) {
     firebaseError = error;
