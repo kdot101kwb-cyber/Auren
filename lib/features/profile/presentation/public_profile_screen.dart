@@ -6,6 +6,8 @@ import '../../../services/social/follow_repository.dart';
 import '../../../services/messaging/conversation_repository.dart';
 import '../../../services/users/presence_service.dart';
 import '../../../services/social/profile_mode_service.dart';
+import '../../../services/social/safety_repository.dart';
+import '../../social/presentation/safety_actions_sheet.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenPublicProfileScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
   final repo = FollowRepository();
   final conversations = ConversationRepository();
   final profileModes = AurenProfileModeService();
+  final safety = AurenSafetyRepository();
   bool busy = false;
   bool messaging = false;
 
@@ -89,6 +92,21 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
+          if (me != null && !own)
+            StreamBuilder<bool>(
+              stream: safety.watchBlocked(me, widget.profile.uid),
+              builder: (context, blockedSnapshot) {
+                final blocked = blockedSnapshot.data == true;
+                return IconButton(
+                  tooltip: blocked ? 'Unblock' : 'Safety',
+                  icon: Icon(blocked ? Icons.block : Icons.more_horiz),
+                  onPressed: () async {
+                    if (blocked) await safety.unblock(me, widget.profile.uid);
+                    else await AurenSafetyActionsSheet.show(context, uid: me, targetUid: widget.profile.uid, contentType: 'profile');
+                  },
+                );
+              },
+            ),
           IconButton(
             tooltip: 'Share profile',
             icon: const Icon(Icons.share_outlined),
@@ -100,8 +118,10 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                   const SnackBar(content: Text('Profile link copied.')),
                 );
               }
-            },
-          ),
+            ),
+                ]);
+              },
+            ),
         ],
       ),
       body: ListView(
@@ -195,7 +215,14 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
           ),
           const SizedBox(height: 12),
           if (!own && me != null)
-            FilledButton.tonalIcon(
+            StreamBuilder<bool>(
+              stream: safety.watchBlocked(me, widget.profile.uid),
+              builder: (context, blockedSnapshot) {
+                if (blockedSnapshot.data == true) {
+                  return const Card(child: ListTile(leading: Icon(Icons.block), title: Text('Profile blocked'), subtitle: Text('Unblock from the top menu to interact again.')));
+                }
+                return Column(children: [
+          FilledButton.tonalIcon(
               onPressed: messaging ? null : () => _message(me),
               icon: const Icon(Icons.chat_bubble_outline),
               label: Text(messaging ? 'Opening…' : 'Message'),
