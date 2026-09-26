@@ -2392,7 +2392,7 @@ exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall
 );
 
 exports.acceptCreatorSupport = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
   async (request) => {
     const uid=request.auth?.uid;
     if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
@@ -2416,7 +2416,7 @@ exports.acceptCreatorSupport = require('firebase-functions/v2/https').onCall(
 );
 
 exports.settleCreatorEarning = onCall(
-  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
   async (request) => {
     const uid=request.auth?.uid;
     if(!uid || request.auth.token?.admin !== true) {
