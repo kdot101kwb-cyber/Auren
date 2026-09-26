@@ -180,8 +180,29 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     final personalized = usable.where((x) => _history.containsKey(x.id)).toList();
     double rankedScore(AurenEntertainmentItem item) =>
         _score(item) + _recencyBoost(item);
-    neverWatched.sort((a, b) => rankedScore(b).compareTo(rankedScore(a)));
-    personalized.sort((a, b) => rankedScore(b).compareTo(rankedScore(a)));
+
+    // Build a diversified candidate pool first. This prevents the same type
+    // from filling the whole plan even when its raw recommendation score is high.
+    final ranked = [...usable]
+      ..sort((a, b) => rankedScore(b).compareTo(rankedScore(a)));
+    final typeCounts = <String, int>{};
+    final diverse = <AurenEntertainmentItem>[];
+    for (final item in ranked) {
+      final count = typeCounts[item.type] ?? 0;
+      if (count >= 2 && ranked.length > target * 2) continue;
+      diverse.add(item);
+      typeCounts[item.type] = count + 1;
+    }
+    final diversifiedNeverWatched =
+        diverse.where((x) => !_history.containsKey(x.id)).toList();
+    final diversifiedPersonalized =
+        diverse.where((x) => _history.containsKey(x.id)).toList();
+    diversifiedNeverWatched.sort(
+      (a, b) => rankedScore(b).compareTo(rankedScore(a)),
+    );
+    diversifiedPersonalized.sort(
+      (a, b) => rankedScore(b).compareTo(rankedScore(a)),
+    );
     if (usable.isEmpty) return const [];
     final target = (_minutes / 30).ceil().clamp(1, 8);
     final result = <AurenEntertainmentItem>[];
@@ -198,9 +219,9 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
       }
     }
 
-    addFrom(neverWatched, discovery: true);
-    addFrom(personalized);
-    addFrom(neverWatched);
+    addFrom(diversifiedNeverWatched, discovery: true);
+    addFrom(diversifiedPersonalized);
+    addFrom(diversifiedNeverWatched);
     addFrom(usable);
     return result;
   }
