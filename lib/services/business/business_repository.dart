@@ -23,7 +23,7 @@ class BusinessRepository {
     final cleanName=_clean(name,120);
     if(cleanName.isEmpty) throw ArgumentError('اسم النشاط مطلوب.');
     final r=_c.doc();
-    await r.set({'ownerId':ownerId,'name':name.trim(),'description':description.trim(),'category':category,'city':city.trim(),'country':country.trim(),'phone':phone.trim(),'website':website.trim(),'imageUrl':imageUrl.trim(),'businessType':businessType,'status':'active','visibility':'public','verified':false,'createdAt':FieldValue.serverTimestamp()});
+    await r.set({'ownerId':ownerId,'name':cleanName,'description':description.trim(),'category':category,'city':city.trim(),'country':country.trim(),'phone':phone.trim(),'website':website.trim(),'imageUrl':imageUrl.trim(),'businessType':businessType,'status':'active','visibility':'public','verified':false,'createdAt':FieldValue.serverTimestamp()});
     return r.id;
   }
   Future<void> update({required String id,required String name,required String description,required String category,required String city,required String country,required String phone,required String website,required String imageUrl,required String businessType,required String status})=>
