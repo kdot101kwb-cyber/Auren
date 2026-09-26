@@ -386,6 +386,48 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     return newCount.toString() + ' اكتشاف جديد • ' + types.length.toString() + ' أنواع';
   }
 
+  String _watchSummary() {
+    if (_plan.isEmpty) return 'لا توجد خطة مشاهدة بعد.';
+    final types = <String>{for (final item in _plan) item.type};
+    final newCount = _plan.where((item) => !_history.containsKey(item.id)).length;
+    final continueCount = _plan.where((item) {
+      final h = _history[item.id];
+      return h != null && h['completed'] != true;
+    }).length;
+    final mood = _mood == 'الكل' ? 'تلقائي' : _mood;
+    return _minutes.toString() + ' دقيقة • ' + mood + ' • ' +
+        types.length.toString() + ' أنواع • ' + newCount.toString() +
+        ' جديد • ' + continueCount.toString() + ' متابعة';
+  }
+
+  void _showWatchSummary() {
+    if (_plan.isEmpty) return;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('AUREN Watch AI',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            Text(_watchSummary()),
+            const SizedBox(height: 14),
+            Text(_adaptiveTip(),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 14),
+            const Text(
+              'الخطة مبنية من تفضيلاتك، سجل المشاهدة، الإشارات الأخيرة، التنوع، والمزاج المختار.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _generate(List<AurenEntertainmentItem> source) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -514,6 +556,11 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                         'خطة مشاهدة • ${_plan.length} عناصر • $_minutes دقيقة',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                       ),
+                    ),
+                    IconButton(
+                      tooltip: 'ملخص الخطة',
+                      onPressed: _showWatchSummary,
+                      icon: const Icon(Icons.insights_rounded),
                     ),
                     IconButton(
                       tooltip: 'خلط الترتيب',
