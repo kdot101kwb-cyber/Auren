@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../services/social/follow_repository.dart';
@@ -70,9 +71,9 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     final draw = winner == null && board.every((e) => e.isNotEmpty);
     final nextUid = winner != null || draw ? '' : players.firstWhere((p) => p != uid, orElse: () => uid);
     try {
-      await _service.playMove(roomId: _roomId!, board: board, winner: winner, draw: draw, nextUid: nextUid);
+      await _service.playMove(roomId: _roomId!, index: index);
       if (winner != null || draw) {
-        await _service.recordResult(uid, _roomId!, winner == mark, draw);
+        _loadedStats = false;
         if (mounted) await _loadStats();
       }
     } catch (_) { if (mounted) _snack('تعذر تسجيل الحركة.'); }
@@ -711,8 +712,10 @@ class AurenGamingService {
     return true;
   }
 
-  Future<void> playMove({required String roomId, required List<String> board, required String? winner, required bool draw, required String nextUid}) =>
-    _db.collection('gaming_rooms').doc(roomId).update({'board':board,'winner':winner,'draw':draw,'turnUid':nextUid,'updatedAt':FieldValue.serverTimestamp()});
+  Future<void> playMove({required String roomId, required int index}) async {
+    final callable = FirebaseFunctions.instance.httpsCallable('playGamingMove');
+    await callable.call({'roomId': roomId, 'index': index});
+  }
 
   String _makeCode() {
     const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; var n=DateTime.now().microsecondsSinceEpoch; final out=StringBuffer();
