@@ -48,12 +48,12 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: conversation.id, initialPrompt: prompt)));
   }
 
-  Future<void> _apply(String uid) async {
-    if (widget.item.kind != AurenMatchKind.opportunity) { _openDestination(); return; }
+  Future<bool> _apply(String uid) async {
+    if (widget.item.kind != AurenMatchKind.opportunity) { _openDestination(); return true; }
     if (_applied || await _opportunities.hasApplied(uid, widget.item.id)) {
       if (mounted) setState(() => _applied = true);
       _toast('سبق أن تقدمت لهذه الفرصة.');
-      return;
+      return false;
     }
     final note = TextEditingController();
     final confirmed = await showDialog<bool>(
@@ -69,14 +69,15 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
     );
     final clean = note.text.trim();
     note.dispose();
-    if (confirmed != true) return;
+    if (confirmed != true) return false;
     final opportunity = AurenOpportunity.fromMap(widget.item.id, widget.item.data);
     await _opportunities.apply(uid: uid, opportunity: opportunity, note: clean);
     if (mounted) setState(() => _applied = true);
     _toast('تم إرسال التقديم بنجاح.');
+    return true;
   }
 
-  Future<void> _confirmAndRun(Future<void> Function() action, String title, String message) async {
+  Future<bool> _confirmAndRun(Future<void> Function() action, String title, String message) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
@@ -88,7 +89,9 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
         ],
       ),
     );
-    if (ok == true) await action();
+    if (ok != true) return false;
+    await action();
+    return true;
   }
 
   Future<void> _execute() async {
@@ -97,16 +100,18 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
     try {
       final uid = _auth.currentUserId;
       if (uid == null) throw StateError('سجّل الدخول أولاً.');
+      var didExecute = false;
       switch (widget.item.action) {
         case AurenMatchAction.contact:
           await _contact();
+          didExecute = true;
           break;
         case AurenMatchAction.requestQuote:
-          await _confirmAndRun(() => _contact(prompt: 'مرحباً، وصلت إليكم عبر AUREN. أريد طلب عرض سعر بخصوص: ${widget.intent}. أرسلوا لي السعر، الحد الأدنى للطلب، العملة، مدة التجهيز، وخيارات الشحن إن وجدت.'), 'طلب عرض سعر', 'سيتم فتح محادثة مع الجهة وإعداد رسالة طلب عرض السعر.');
+          didExecute = await _confirmAndRun(() => _contact(prompt: 'مرحباً، وصلت إليكم عبر AUREN. أريد طلب عرض سعر بخصوص: ${widget.intent}. أرسلوا لي السعر، الحد الأدنى للطلب، العملة، مدة التجهيز، وخيارات الشحن إن وجدت.'), 'طلب عرض سعر', 'سيتم فتح محادثة مع الجهة وإعداد رسالة طلب عرض السعر.');
           break;
         case AurenMatchAction.addToCart:
-          await _confirmAndRun(() => _commerce.addToCart(uid: uid, productId: widget.item.id, quantity: 1), 'إضافة للسلة', 'سيتم إضافة المنتج إلى سلتك. لن يتم تنفيذ أي دفع.');
-          _toast('تمت إضافة المنتج إلى السلة.');
+          didExecute = await _confirmAndRun(() => _commerce.addToCart(uid: uid, productId: widget.item.id, quantity: 1), 'إضافة للسلة', 'سيتم إضافة المنتج إلى سلتك. لن يتم تنفيذ أي دفع.');
+          if (didExecute) _toast('تمت إضافة المنتج إلى السلة.');
           break;
         case AurenMatchAction.follow:
           if (widget.item.kind == AurenMatchKind.opportunity) {
@@ -119,30 +124,37 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
             await _follow.toggle(uid, widget.item.id, following);
             _toast(following ? 'تم إلغاء المتابعة.' : 'تمت المتابعة.');
           }
+          didExecute = true;
           break;
         case AurenMatchAction.apply:
-          await _apply(uid);
+          didExecute = await _apply(uid);
           break;
         case AurenMatchAction.watch:
         case AurenMatchAction.open:
           _openDestination();
+          didExecute = true;
           break;
         case AurenMatchAction.save:
           if (widget.item.kind == AurenMatchKind.product) {
             final saved = await _marketplace.watchSavedIds(uid).first;
             await _marketplace.toggleSaved(uid, widget.item.id, saved.contains(widget.item.id));
             _toast(saved.contains(widget.item.id) ? 'تم إلغاء الحفظ.' : 'تم حفظ المنتج.');
+            didExecute = true;
           } else if (widget.item.kind == AurenMatchKind.business) {
             await _businesses.toggleSaved(uid, widget.item.id);
             _toast('تم تحديث حفظ النشاط.');
+            didExecute = true;
           } else {
             _openDestination();
+            didExecute = true;
           }
           break;
       }
-      try {
-        await AurenMatchEverythingService().recordAction(uid: uid, item: widget.item);
-      } catch (_) {}
+      if (didExecute) {
+        try {
+          await AurenMatchEverythingService().recordAction(uid: uid, item: widget.item, sourceIntent: widget.intent);
+        } catch (_) {}
+      }
     } catch (e) {
       if (mounted) _toast('تعذر تنفيذ الإجراء: $e');
     } finally {
