@@ -64,69 +64,10 @@ class AurenMusicHubScreen extends StatelessWidget {
               _sectionTitle('استمع بطريقتك'),
               _actions(context),
               const SizedBox(height: 20),
-              AnimatedBuilder(
-                animation: AurenMusicPlayerController.instance,
-                builder: (context, _) {
-                  final item = AurenMusicPlayerController.instance.item;
-                  if (item == null) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.history_rounded),
-                        title: const Text('Continue Listening'),
-                        subtitle: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAudioPlayerScreen())),
-                      ),
-                    ),
-                  );
-                },
-              ),
+              _intelligentHome(context, items, repo, uid),
+
               _sectionTitle('Music & Podcasts'),
-              if (snapshot.hasError)
-                Text('تعذر تحميل الموسيقى: ${snapshot.error}')
-              else if (snapshot.connectionState == ConnectionState.waiting)
-                const Center(child: CircularProgressIndicator())
-              else if (items.isEmpty)
-                const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      'لا توجد موسيقى مضافة بعد. يمكنك استخدام Music AI لإنشاء فكرة أو اكتشاف نوع موسيقى مناسب.',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                )
-              else
-                ...items.map((item) => ListTile(
-                      leading: item.imageUrl.isEmpty
-                          ? const CircleAvatar(child: Icon(Icons.music_note))
-                          : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
-                      title: Text(item.title),
-                      subtitle: Text(item.description, maxLines: 2),
-                      onTap: item.mediaUrl.isEmpty ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item))),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            tooltip: 'إضافة إلى Queue',
-                            icon: const Icon(Icons.queue_music_rounded),
-                            onPressed: item.mediaUrl.isEmpty
-                                ? null
-                                : () => AurenMusicPlayerController.instance.addToQueue(item),
-                          ),
-                          if (uid != null)
-                            IconButton(
-                              icon: const Icon(Icons.bookmark_border),
-                              onPressed: () async {
-                                  await repo.save(uid, item.id);
-                                  await repo.trackMusicAction(uid, item.id, action: 'save', contentType: item.type);
-                                },
-                            ),
-                        ],
-                      ),
-                    )),
+
             ],
           );
         },
@@ -136,6 +77,176 @@ class AurenMusicHubScreen extends StatelessWidget {
       ),
     );
   }
+
+
+  List<AurenEntertainmentItem> _rankForYou(List<AurenEntertainmentItem> items, Map<String, Map<String, dynamic>> signals) {
+    final history = AurenMusicPlayerController.instance.history.map((x) => x.id).toSet();
+    double score(AurenEntertainmentItem item) {
+      final data = signals[item.id];
+      if (data == null) return history.contains(item.id) ? 1.0 : 7.0;
+      final seconds = (data['watchSeconds'] as num?)?.toDouble() ?? 0;
+      final plays = (data['plays'] as num?)?.toDouble() ?? 0;
+      final likes = (data['likes'] as num?)?.toDouble() ?? 0;
+      final saves = (data['saves'] as num?)?.toDouble() ?? 0;
+      final completions = (data['completions'] as num?)?.toDouble() ?? 0;
+      final skips = (data['skips'] as num?)?.toDouble() ?? 0;
+      var value = seconds * .02 + plays * .5 + likes * 5 + saves * 3 + completions * 2 - skips * 2;
+      if (!history.contains(item.id)) value += 2.5;
+      final hour = DateTime.now().hour;
+      final contextText = item.title + ' ' + item.description.toLowerCase();
+      final hints = hour < 12
+          ? const ['morning', 'صباح', 'focus', 'تركيز']
+          : hour < 18
+              ? const ['work', 'عمل', 'study', 'دراسة', 'focus', 'تركيز']
+              : hour < 23
+                  ? const ['evening', 'مساء', 'chill', 'هادئ']
+                  : const ['night', 'ليل', 'sleep', 'نوم', 'هادئ'];
+      if (hints.any(contextText.contains)) value += 2;
+      return value;
+    }
+    return [...items]..sort((a, b) => score(b).compareTo(score(a)));
+  }
+
+  List<AurenEntertainmentItem> _discover(List<AurenEntertainmentItem> items, Map<String, Map<String, dynamic>> signals) {
+    final history = AurenMusicPlayerController.instance.history.map((x) => x.id).toSet();
+    return [...items]
+      ..removeWhere((item) => history.contains(item.id))
+      ..sort((a, b) => (signals[b.id] == null ? 1 : 0).compareTo(signals[a.id] == null ? 1 : 0));
+  }
+
+  Widget _intelligentHome(BuildContext context, List<AurenEntertainmentItem> items, EntertainmentRepository repo, String? uid) {
+    final future = uid == null ? Future.value(const <String, Map<String, dynamic>>{}) : repo.getMusicSignals(uid);
+    return FutureBuilder<Map<String, Map<String, dynamic>>>(
+      future: future,
+      builder: (context, snapshot) {
+        final signals = snapshot.data ?? const <String, Map<String, dynamic>>{};
+        final forYou = _rankForYou(items, signals).take(12).toList();
+        final discover = _discover(items, signals).take(12).toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _continueListening(context),
+            _recentlyPlayed(context),
+            if (items.isNotEmpty) ...[
+              _sectionTitle('For You'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  signals.isEmpty
+                      ? 'AUREN يبدأ من ذوقك الحالي ويكتشف لك الجديد.'
+                      : 'اختيارات تتعلم من استماعك وحفظك وإعجابك ووقت استخدامك.',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              ...forYou.map((item) => _musicTile(context, item, repo, uid)),
+              const SizedBox(height: 12),
+              _sectionTitle('اكتشف جديد'),
+              ...discover.map((item) => _musicTile(context, item, repo, uid)),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _continueListening(BuildContext context) => AnimatedBuilder(
+        animation: AurenMusicPlayerController.instance,
+        builder: (context, _) {
+          final controller = AurenMusicPlayerController.instance;
+          final item = controller.item;
+          if (item == null || item.mediaUrl.isEmpty) return const SizedBox.shrink();
+          final duration = controller.duration;
+          final progress = duration.inMilliseconds > 0
+              ? (controller.position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
+              : 0.0;
+          return Card(
+            margin: const EdgeInsets.only(bottom: 14),
+            child: ListTile(
+              leading: const Icon(Icons.play_circle_fill_rounded, size: 34),
+              title: const Text('Continue Listening'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(value: progress),
+                ],
+              ),
+              trailing: Text((progress * 100).round().toString() + '%'),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAudioPlayerScreen())),
+            ),
+          );
+        },
+      );
+
+  Widget _recentlyPlayed(BuildContext context) => AnimatedBuilder(
+        animation: AurenMusicPlayerController.instance,
+        builder: (context, _) {
+          final history = AurenMusicPlayerController.instance.history.take(8).toList();
+          if (history.isEmpty) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionTitle('Recently Played'),
+              SizedBox(
+                height: 100,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: history.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, index) => SizedBox(
+                    width: 190,
+                    child: Card(
+                      child: ListTile(
+                        dense: true,
+                        leading: history[index].imageUrl.isEmpty
+                            ? const CircleAvatar(child: Icon(Icons.music_note))
+                            : CircleAvatar(backgroundImage: NetworkImage(history[index].imageUrl)),
+                        title: Text(history[index].title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                        onTap: () => AurenMusicPlayerController.instance.playItem(history[index]),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
+          );
+        },
+      );
+
+  Widget _musicTile(BuildContext context, AurenEntertainmentItem item, EntertainmentRepository repo, String? uid) => Card(
+        margin: const EdgeInsets.only(bottom: 6),
+        child: ListTile(
+          leading: item.imageUrl.isEmpty
+              ? const CircleAvatar(child: Icon(Icons.music_note))
+              : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
+          title: Text(item.title),
+          subtitle: Text(item.description.isEmpty ? item.type : item.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+          onTap: item.mediaUrl.isEmpty
+              ? null
+              : () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item))),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'إضافة إلى Queue',
+                icon: const Icon(Icons.queue_music_rounded),
+                onPressed: item.mediaUrl.isEmpty ? null : () => AurenMusicPlayerController.instance.addToQueue(item),
+              ),
+              if (uid != null)
+                IconButton(
+                  tooltip: 'حفظ',
+                  icon: const Icon(Icons.bookmark_border_rounded),
+                  onPressed: () async {
+                    await repo.save(uid, item.id);
+                    await repo.trackMusicAction(uid, item.id, action: 'save', contentType: item.type);
+                  },
+                ),
+            ],
+          ),
+        ),
+      );
 
   Widget _hero(BuildContext context) => Container(
         padding: const EdgeInsets.all(22),
