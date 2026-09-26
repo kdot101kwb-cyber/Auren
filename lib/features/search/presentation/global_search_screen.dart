@@ -6,7 +6,8 @@ import '../../messenger/presentation/messenger_screen.dart';
 import '../../profile/presentation/public_profile_screen.dart';
 
 class AurenGlobalSearchScreen extends StatefulWidget {
-  const AurenGlobalSearchScreen({super.key});
+  final String? initialQuery;
+  const AurenGlobalSearchScreen({super.key, this.initialQuery});
   @override State<AurenGlobalSearchScreen> createState() => _AurenGlobalSearchScreenState();
 }
 
@@ -16,6 +17,16 @@ class _AurenGlobalSearchScreenState extends State<AurenGlobalSearchScreen> {
   List<AurenSearchResult> _results = [];
   bool _loading = false;
   String _lastQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialQuery?.trim() ?? '';
+    if (initial.isNotEmpty) {
+      _controller.text = initial;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _search());
+    }
+  }
 
   Future<void> _search() async {
     final query = _controller.text.trim();
