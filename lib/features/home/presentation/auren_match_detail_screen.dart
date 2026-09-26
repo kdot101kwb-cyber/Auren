@@ -6,6 +6,8 @@ import '../../../core/models/product.dart';
 import '../../business/presentation/business_detail_screen.dart';
 import '../../marketplace/presentation/product_detail_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
+import 'auren_opportunity_detail_screen.dart';
+import 'auren_content_detail_screen.dart';
 
 class AurenMatchDetailScreen extends StatelessWidget {
   final AurenMatchItem item;
@@ -77,8 +79,11 @@ class AurenMatchDetailScreen extends StatelessWidget {
         ));
         return;
       case AurenMatchKind.opportunity:
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenOpportunityDetailScreen(item: item, intent: intent)));
+        return;
       case AurenMatchKind.content:
-        break;
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenContentDetailScreen(item: item, intent: intent)));
+        return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('هذه الوحدة لم تُربط بوجهتها الأصلية بعد.')),
