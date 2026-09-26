@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -28,7 +29,10 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
     super.dispose();
   }
 
-  List<AurenEntertainmentItem> _smart(List<AurenEntertainmentItem> source) {
+  List<AurenEntertainmentItem> _smart(
+    List<AurenEntertainmentItem> source, {
+    Map<String, Map<String, dynamic>> signals = const {},
+  }) {
     final query = search.text.trim().toLowerCase();
     final filtered = source.where((item) {
       if (query.isEmpty) return true;
@@ -60,6 +64,19 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
         final text = (item.title + ' ' + item.description).toLowerCase();
         var value = (item.description.length + item.title.length) / 10;
         if (historyIds.contains(item.id)) value += 4;
+        final signal = signals[item.id];
+        if (signal != null) {
+          final watchSeconds = (signal['watchSeconds'] as num?)?.toDouble() ?? 0;
+          final likes = (signal['likes'] as num?)?.toDouble() ?? 0;
+          final saves = (signal['saves'] as num?)?.toDouble() ?? 0;
+          final completions = (signal['completions'] as num?)?.toDouble() ?? 0;
+          final skips = (signal['skips'] as num?)?.toDouble() ?? 0;
+          value += watchSeconds * 0.02;
+          value += likes * 5;
+          value += saves * 3;
+          value += completions * 2;
+          value -= skips * 2;
+        }
         if (mood != 'الكل' && text.contains(mood.toLowerCase())) value += 8;
         if (effectiveContext != 'تلقائي' && text.contains(effectiveContext.toLowerCase())) value += 6;
         if (effectiveContext == 'ليل' && text.contains('هادئ')) value += 3;
@@ -133,21 +150,24 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
         builder: (context, snapshot) {
           final source = snapshot.data ?? const <AurenEntertainmentItem>[];
           _latestSource = source;
-          final smart = _smart(source);
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          return FutureBuilder<Map<String, Map<String, dynamic>>>(
+            future: uid == null ? Future.value(const <String, Map<String, dynamic>>{}) : repo.getMusicSignals(uid),
+            builder: (context, signalSnapshot) {
+              final smart = _smart(source, signals: signalSnapshot.data ?? const <String, Map<String, dynamic>>{});
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+          }
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('تعذر تحميل الموسيقى: ' + snapshot.error.toString()),
+                );
+              }
+              if (smart.isEmpty) {
+                return const Center(child: Text('لا توجد موسيقى مطابقة حاليًا.'));
+              }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('تعذر تحميل الموسيقى: ' + snapshot.error.toString()),
-            );
-          }
-          if (smart.isEmpty) {
-            return const Center(child: Text('لا توجد موسيقى مطابقة حاليًا.'));
-          }
-
-          return ListView(
+              return ListView(
             padding: const EdgeInsets.all(16),
             children: [
               Container(
@@ -265,6 +285,8 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
                 ),
               ),
             ],
+              );
+            },
           );
         },
       ),
