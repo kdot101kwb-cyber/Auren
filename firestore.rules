@@ -1685,6 +1685,16 @@ service cloud.firestore {
       }
     }
 
+    match /users/{userId}/gaming_challenges/{challengeId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.challengeId == 'daily_tic_tac_toe'
+        && request.resource.data.xp == 25
+        && request.resource.data.completedAt is timestamp;
+      allow update, delete: if false;
+    }
+
     match /watch_together_invites/{inviteCode} {
       allow read: if request.auth != null && inviteCode == resource.data.inviteCode;
       allow create: if request.auth != null
