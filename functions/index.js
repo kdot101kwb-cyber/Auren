@@ -2248,6 +2248,34 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
   },
 );
 
+exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const amountMinor=Number(request.data?.amountMinor);
+    const currency=typeof request.data?.currency==='string'?request.data.currency.trim().toUpperCase():'';
+    const method=typeof request.data?.method==='string'?request.data.method.trim():'';
+    const destination=typeof request.data?.destination==='string'?request.data.destination.trim():'';
+    if(!Number.isSafeInteger(amountMinor)||amountMinor<=0||amountMinor>100000000||!/^[A-Z]{3}$/.test(currency)||!['bank','mobile_money','manual'].includes(method)||!destination||destination.length>300) {
+      throw new Error('Invalid withdrawal request.');
+    }
+    const earnings=await db.collection('creator_earnings').where('creatorUid','==',uid).limit(100).get();
+    let available=0;
+    for(const doc of earnings.docs){
+      const e=doc.data();
+      if(e.currency===currency && e.status==='settled') available+=Number(e.amountMinor||0);
+    }
+    if(amountMinor>available) throw new Error('Insufficient settled earnings.');
+    const ref=db.collection('creator_withdrawals').doc();
+    await ref.set({
+      creatorUid:uid,amountMinor,currency,method,destination,status:'pending',
+      createdAt:FieldValue.serverTimestamp()
+    });
+    return {status:'pending',withdrawalId:ref.id};
+  },
+);
+
 exports.acceptCreatorSupport = require('firebase-functions/v2/https').onCall(
   {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
   async (request) => {
