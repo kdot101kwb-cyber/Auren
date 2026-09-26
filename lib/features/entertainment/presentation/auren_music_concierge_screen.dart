@@ -242,8 +242,21 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
       }
     }
     if (!mounted) return;
+    if (added > 0) {
+      controller.startAdaptiveSession(
+        candidates: plan,
+        activity: activity,
+        mood: mood,
+        contextMode: contextMode,
+        contentMode: contentMode,
+      );
+    }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('AUREN أضاف ' + added.toString() + ' مقاطع إلى Queue • حوالي ' + minutes.toString() + ' دقيقة 🎵')),
+      SnackBar(content: Text(
+        added > 0
+          ? 'AUREN أضاف ' + added.toString() + ' مقاطع • والتكييف التلقائي للجلسة مفعّل 🎵'
+          : 'المقاطع موجودة بالفعل في Queue.',
+      )),
     );
   }
 
