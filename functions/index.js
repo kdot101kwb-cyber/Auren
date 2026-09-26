@@ -2248,6 +2248,20 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
   },
 );
 
+exports.listCreatorWithdrawals = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  async (request) => {
+    if(!request.auth?.uid || request.auth.token?.admin !== true) throw new Error('Admin access required.');
+    const status=typeof request.data?.status==='string'?request.data.status.trim():'';
+    const allowed=['pending','approved','paid','failed'];
+    const q=status && allowed.includes(status)
+      ? db.collection('creator_withdrawals').where('status','==',status).limit(100)
+      : db.collection('creator_withdrawals').limit(100);
+    const snap=await q.get();
+    return {items:snap.docs.map(d=>({id:d.id,...d.data()}))};
+  },
+);
+
 exports.setCreatorWithdrawalStatus = require('firebase-functions/v2/https').onCall(
   {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
   async (request) => {
