@@ -3,12 +3,14 @@ import '../../core/models/product.dart';
 class MarketplaceRepository{
  final FirebaseFirestore _db; MarketplaceRepository({FirebaseFirestore? firestore}):_db=firestore??FirebaseFirestore.instance;
  CollectionReference<Map<String,dynamic>> get _c=>_db.collection('products');
+ void _uid(String value){if(value.trim().isEmpty) throw ArgumentError.value(value,'uid','must not be empty');}
+ String _clean(String value,int max){final v=value.trim();return v.length>max?v.substring(0,max):v;}
  Stream<List<AurenProduct>> watchPublic({String query='',String category='All',String currency='',int? maxPriceMinor})=>_c.where('status',isEqualTo:'active').limit(100).snapshots().map((s){
   final q=query.trim().toLowerCase(); final cur=currency.trim().toUpperCase(); final items=s.docs.map((d)=>AurenProduct.fromMap(d.id,d.data())).where((p)=>category=='All'||p.category==category).where((p)=>q.isEmpty||[p.name,p.description,p.category].join(' ').toLowerCase().contains(q)).where((p)=>cur.isEmpty||p.currency==cur).where((p)=>maxPriceMinor==null||p.priceMinor<=maxPriceMinor).toList();
   items.sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase())); return items;
  });
  Future<String> create({required String ownerId,required String businessId,required String name,required String description,required String category,required String currency,required int priceMinor,required String imageUrl,required bool service})async{
-  final r=_c.doc(); await r.set({'ownerId':ownerId,'businessId':businessId,'name':name.trim(),'description':description.trim(),'category':category,'currency':currency,'priceMinor':priceMinor,'imageUrl':imageUrl.trim(),'service':service,'status':'active','createdAt':FieldValue.serverTimestamp()}); return r.id;
+  final r=_c.doc(); await r.set({'ownerId':ownerId,'businessId':businessId,'name':cleanName,'description':description.trim(),'category':category,'currency':currency,'priceMinor':priceMinor,'imageUrl':imageUrl.trim(),'service':service,'status':'active','createdAt':FieldValue.serverTimestamp()}); return r.id;
  }
  Future<void> update(String id,Map<String,dynamic> data)=>_c.doc(id).update(data);
  Future<void> delete(String id)=>_c.doc(id).delete();
