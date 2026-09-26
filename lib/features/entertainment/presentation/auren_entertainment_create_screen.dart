@@ -287,15 +287,33 @@ class _AurenEntertainmentCreateScreenState
       builder: (context, snapshot) {
         final drafts = snapshot.data ?? const <Map<String, dynamic>>[];
         if (drafts.isEmpty) return const SizedBox.shrink();
-        return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('مسوداتك', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          ...drafts.take(3).map((draft) => ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.edit_note_rounded)),
-            title: Text('${draft['mode'] ?? 'مشروع'} • ${draft['mood'] ?? ''}'),
-            subtitle: Text(draft['idea']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
-            trailing: IconButton(icon: const Icon(Icons.delete_outline_rounded), onPressed: () => EntertainmentRepository().deleteEntertainmentDraft(_uid!, draft['id'].toString())),
-          )),
-        ])));
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('مسوداتك', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 8),
+                ...drafts.take(3).map((draft) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(child: Icon(_modes[draft['mode']?.toString()] ?? Icons.edit_note_rounded)),
+                  title: Text('${draft['mode'] ?? 'مشروع'} • ${draft['mood'] ?? ''}'),
+                  subtitle: Text(draft['idea']?.toString() ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
+                  onTap: () => _editDraft(draft),
+                  trailing: IconButton(
+                    tooltip: 'حذف',
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    onPressed: () async {
+                      await EntertainmentRepository().deleteEntertainmentDraft(_uid!, draft['id'].toString());
+                      if (mounted && _editingDraftId == draft['id']?.toString()) setState(() => _editingDraftId = null);
+                    },
+                  ),
+                )),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
