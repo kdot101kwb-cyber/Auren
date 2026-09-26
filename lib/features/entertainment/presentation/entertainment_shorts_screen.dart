@@ -18,6 +18,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   String? uid;
   String mood = 'تسلية';
   bool pureEntertainment = true;
+  final Map<String, DateTime> _startedAt = {};
+  final Set<String> _tracked = {};
 
   static const moods = <String>['تسلية', 'ضحك', 'موسيقى', 'أفلام', 'Gaming', 'اكتشاف'];
 
@@ -43,9 +45,19 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     }
   }
 
+  Future<void> _trackView(AurenEntertainmentItem item, {bool completed = false}) async {
+    if (uid == null || _tracked.contains(item.id)) return;
+    final started = _startedAt[item.id];
+    final seconds = started == null ? 0 : DateTime.now().difference(started).inSeconds;
+    _tracked.add(item.id);
+    await repo.trackShortView(uid!, item.id, seconds: seconds, completed: completed, mood: mood);
+  }
+
   void _onPage(int index, List<AurenEntertainmentItem> items) {
+    if (active < items.length) _trackView(items[active]);
     for (final c in controllers.values) c.pause();
     setState(() => active = index);
+    _startedAt[items[index].id] = DateTime.now();
     _prepare(items[index]).then((_) => controllers[items[index].id]?.play());
     if (index + 1 < items.length) _prepare(items[index + 1]);
   }
@@ -265,8 +277,13 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                               color: s.data == true ? Colors.redAccent : Colors.white,
                               iconSize: 34,
                               icon: Icon(s.data == true ? Icons.favorite : Icons.favorite_border),
-                              onPressed: () => repo.toggleShortLike(
-                                uid!, item.id, !(s.data == true)),
+                              onPressed: () async {
+                                final next = !(s.data == true);
+                                await repo.toggleShortLike(uid!, item.id, next);
+                                await repo.trackShortAction(uid!, item.id, action: next ? 'like' : 'unlike', mood: mood);
+                              },
+                              /* onPressed: () => repo.toggleShortLike(
+                                uid!, item.id, !(s.data == true)), */
                             ),
                           ),
                         if (uid != null)
