@@ -143,14 +143,35 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
   }
   void _show(String value) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value.replaceFirst('Bad state: ', ''))));
   Future<void> _syncFromRoom(Map<String, dynamic> data) async { if (_controller == null || !_controller!.value.isInitialized || _syncingRemote) return; final remotePosition = ((data['positionSeconds'] ?? 0) as num).toDouble(); final remotePlaying = data['isPlaying'] == true; final local = _controller!.value.position.inMilliseconds / 1000.0; if ((local - remotePosition).abs() > 1.5) { _syncingRemote = true; try { await _controller!.seekTo(Duration(milliseconds: (remotePosition * 1000).round())); } finally { _syncingRemote = false; } } if (remotePlaying && !_controller!.value.isPlaying) await _controller!.play(); if (!remotePlaying && _controller!.value.isPlaying) await _controller!.pause(); if (mounted) setState(() => _lastRemoteSync = DateTime.now()); }
-  Future<void> _retrySync() async { if (_roomId == null || _controller == null || !_controller!.value.isInitialized) return; setState(() => _syncError = null); try { final position = _controller!.value.position.inMilliseconds / 1000.0; await _service.updatePlayback(roomId: _roomId!, positionSeconds: position, isPlaying: _controller!.value.isPlaying); } catch (e) { if (mounted) setState(() => _syncError = e.toString()); } }
-  Future<void> _shareInvite(String code) async {
-    if (code.isEmpty || _sharing) return;
-    setState(() => _sharing = true);
+  Future<void> _retrySync() async {
+    if (_roomId == null || _controller == null || !_controller!.value.isInitialized) return;
+    if (_syncingRemote) return;
+    setState(() => _syncError = null);
     try {
-      await Clipboard.setData(ClipboardData(text: 'انضم إلى غرفة Watch Together في AUREN 🎬\nرمز الدعوة: $code'));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ دعوة الغرفة للمشاركة')));
-    } finally { if (mounted) setState(() => _sharing = false); }
+      final position = _controller!.value.position.inMilliseconds / 1000.0;
+      await _service.updatePlayback(roomId: _roomId!, positionSeconds: position, isPlaying: _controller!.value.isPlaying);
+    } catch (e) {
+      if (mounted) setState(() => _syncError = e.toString());
+    }
+  }
+
+  Future<void> _togglePlayback(String roomId, Map<String, dynamic> data) async {
+    if (_syncingRemote) return;
+    final controller = _controller;
+    final currentPosition = controller?.value.isInitialized == true
+        ? controller!.value.position.inMilliseconds / 1000.0
+        : ((data['positionSeconds'] ?? 0) as num).toDouble();
+    final nextPlaying = !(data['isPlaying'] == true);
+    try {
+      await _service.updatePlayback(roomId: roomId, positionSeconds: currentPosition, isPlaying: nextPlaying);
+      if (controller?.value.isInitialized == true) {
+        if (nextPlaying) await controller!.play();
+        else await controller!.pause();
+      }
+      if (mounted) setState(() => _syncError = null);
+    } catch (e) {
+      if (mounted) setState(() => _syncError = e.toString());
+    }
   }
   @override Widget build(BuildContext context) {
     final roomId = _roomId;
