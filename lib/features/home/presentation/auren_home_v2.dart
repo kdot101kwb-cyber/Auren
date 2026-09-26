@@ -96,41 +96,17 @@ class AurenHomeV2 extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 12),
-        Card(
-          clipBehavior: Clip.antiAlias,
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primaryContainer,
-                  Theme.of(context).colorScheme.secondaryContainer,
-                ],
-              ),
+        if (uid != null)
+          AurenAdaptiveHomeFocus(
+            uid: uid,
+            onPrompt: (prompt) => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)),
             ),
-            child: Row(
-              children: [
-                const CircleAvatar(radius: 25, child: Icon(Icons.auto_awesome)),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('What should we do next?', style: TextStyle(fontWeight: FontWeight.w800)),
-                      SizedBox(height: 4),
-                      Text('قل لـ AUREN هدفك الآن وسنحوّله إلى خطوة عملية.'),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Ask AUREN',
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ما أفضل خطوة أقدر أعملها الآن؟'))),
-                  icon: const Icon(Icons.arrow_forward),
-                ),
-              ],
-            ),
-          ),
-        ),
+          )
+        else
+          _homeAurenCard(context, 'ما أفضل خطوة أقدر أعملها الآن؟', 'قل لـ AUREN هدفك الآن وسنحوّله إلى خطوة عملية.'),
+
         const SizedBox(height: 16),
         if (uid != null)
           StreamBuilder<List<AurenGoal>>(
@@ -355,6 +331,45 @@ class AurenHomeV2 extends StatelessWidget {
     ),
   );
   }
+
+  Widget _homeAurenCard(BuildContext context, String prompt, String subtitle) => Card(
+    clipBehavior: Clip.antiAlias,
+    child: Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer,
+            Theme.of(context).colorScheme.secondaryContainer,
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(radius: 25, child: Icon(Icons.auto_awesome)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('What should we do next?', style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(subtitle),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Ask AUREN',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)),
+            ),
+            icon: const Icon(Icons.arrow_forward),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _goalEmpty(BuildContext context) => Card(
         child: ListTile(
