@@ -13,6 +13,7 @@ import 'watch_history_screen.dart';
 import 'watch_together_screen.dart';
 import 'auren_gaming_screen.dart';
 import 'auren_radio_screen.dart';
+import 'auren_entertainment_create_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../core/models/entertainment.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -385,9 +386,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   } else if (action.title == 'Live') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()));
                   } else if (action.title == 'Create') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(
-                      initialPrompt: 'ساعدني في إنشاء تجربة ترفيهية أصلية: أغنية أو قصة أو فيلم أو بودكاست.',
-                    )));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentCreateScreen()));
                   } else {
                     _openAI();
                   }
