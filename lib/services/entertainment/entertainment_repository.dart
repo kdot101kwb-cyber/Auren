@@ -283,12 +283,33 @@ class EntertainmentRepository {
       'status': 'planning',
       'provider': 'auren_ai',
       'progress': 0,
+      'plan': _creationPlan(mode),
+      'assets': _creationAssets(mode),
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
     return ref.id;
   }
 
+  List<String> _creationPlan(String mode) {
+    switch (mode) {
+      case 'أغنية': return ['Concept وكلمات','لحن وتوزيع','صوت/أداء','Mix & Master','مراجعة الحقوق','Ready'];
+      case 'فيديو': return ['Concept وScript','Storyboard','الأصول البصرية','الصوت والموسيقى','المونتاج','مراجعة الحقوق','Ready'];
+      case 'بودكاست': return ['الفكرة والهيكل','Script/Notes','تسجيل الصوت','تنظيف ومكساج','غلاف ووصف','مراجعة الحقوق','Ready'];
+      case 'عالم': return ['تصميم العالم','الشخصيات والأماكن','المهام والتفاعل','الأصول الصوتية والبصرية','اختبار التجربة','Ready'];
+      default: return ['Concept','السيناريو','الشخصيات والمشاهد','الصوت والأصول','المراجعة','Ready'];
+    }
+  }
+
+  List<String> _creationAssets(String mode) {
+    switch (mode) {
+      case 'أغنية': return ['lyrics','music','vocals','artwork'];
+      case 'فيديو': return ['script','storyboard','video','audio','thumbnail'];
+      case 'بودكاست': return ['script','voice','cover','description'];
+      case 'عالم': return ['world','characters','locations','missions','audio'];
+      default: return ['story','characters','scenes','artwork'];
+    }
+  }
   Future<void> updateEntertainmentJobStatus(
     String uid,
     String jobId, {
