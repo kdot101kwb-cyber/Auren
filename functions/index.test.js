@@ -314,3 +314,12 @@ test('Match Everything only advances waiting flows and keeps notification id det
   assert.match(source, /notificationId: 'match_reply_' \+ doc\.id \+ '_' \+ event\.params\.messageId/);
 });
 
+
+test('conversation message trigger validates sender membership before Match Everything side effects', () => {
+  const start = source.indexOf('exports.onConversationMessageCreated');
+  const end = source.indexOf('exports.onConversationMembershipChanged', start);
+  const fn = source.slice(start, end);
+  assert.match(fn, /typeof message\.senderId === 'string'/);
+  assert.match(fn, /data\.memberIds\.includes\(actorUid\)/);
+  assert.match(fn, /if \(!actorUid \|\| !data\.memberIds\.includes\(actorUid\)\) return/);
+});
