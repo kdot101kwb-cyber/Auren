@@ -1239,8 +1239,20 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.applicantUid == request.auth.uid
         && request.resource.data.recipientUid is string
-        && request.resource.data.opportunityId is string;
-      allow read, update, delete: if request.auth != null
+        && request.resource.data.opportunityId is string
+        && request.resource.data.title is string
+        && request.resource.data.read == false
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly([
+          'recipientUid','applicantUid','opportunityId','title','createdAt','read'
+        ]);
+      allow read: if request.auth != null
+        && resource.data.recipientUid == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.recipientUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        && request.resource.data.read is bool;
+      allow delete: if request.auth != null
         && resource.data.recipientUid == request.auth.uid;
     }
 
@@ -1284,7 +1296,25 @@ service cloud.firestore {
     match /opportunities/{opportunityId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
       allow create: if request.auth != null
-        && request.resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 5000
+        && request.resource.data.type is string
+        && request.resource.data.category is string
+        && request.resource.data.city is string
+        && request.resource.data.country is string
+        && request.resource.data.skills is list
+        && request.resource.data.skills.size() <= 20
+        && request.resource.data.status == 'open'
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly([
+          'ownerId','title','description','type','category','city','country',
+          'skills','status','visibility','createdAt'
+        ]);
       allow update, delete: if request.auth != null
         && resource.data.ownerId == request.auth.uid;
     }
