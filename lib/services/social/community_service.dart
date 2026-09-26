@@ -33,6 +33,14 @@ class AurenCommunityService {
     final n=name.trim(),d=description.trim(),t=topic.trim();if(n.isEmpty||n.length>80)throw ArgumentError('Community name must be 1–80 characters.');if(d.length>500||t.length>80)throw ArgumentError('Community text is too long.');
     final ref=_db.collection('communities').doc();await ref.set({'ownerId':uid,'name':n,'description':d,'topic':t,'visibility':'public','memberIds':[uid],'memberCount':1,'createdAt':FieldValue.serverTimestamp()});return ref.id;
   }
+  Future<bool> isMember(String communityId, String memberUid) async {
+    if (communityId.trim().isEmpty || memberUid.trim().isEmpty) return false;
+    final snap = await _db.collection('communities').doc(communityId).get();
+    if (!snap.exists) return false;
+    final members = List<String>.from(snap.data()?['memberIds'] ?? const []);
+    return members.contains(memberUid);
+  }
+
   Future<void> join(String id) async{final ref=_db.collection('communities').doc(id);await _db.runTransaction((tx)async{final snap=await tx.get(ref);if(!snap.exists)throw StateError('Community not found.');final data=snap.data()!;final members=List<String>.from(data['memberIds']??const []);if(members.contains(uid))return;if(members.length>=10000)throw StateError('Community is full.');members.add(uid);tx.update(ref,{'memberIds':members,'memberCount':members.length});});}
   Future<void> removeMember({required String communityId, required String memberUid}) async{
     if(memberUid.trim().isEmpty || memberUid == uid) throw StateError('Invalid member.');
@@ -51,6 +59,7 @@ class AurenCommunityService {
   Stream<List<AurenCommunityPoll>> watchPolls(String communityId) => _polls.where('communityId', isEqualTo: communityId).orderBy('createdAt', descending: true).limit(30).snapshots().map((s) => s.docs.map(AurenCommunityPoll.fromDoc).toList());
 
   Future<String> createPoll({required String communityId, required String question, required List<String> options}) async {
+    if (!await isMember(communityId, uid)) throw StateError('Join the community first.');
     final q=question.trim();
     final clean=options.map((x)=>x.trim()).where((x)=>x.isNotEmpty).take(6).toList();
     if(q.isEmpty || q.length>240 || clean.length<2) throw ArgumentError('Invalid poll.');
