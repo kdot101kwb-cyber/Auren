@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/profile_mode_service.dart';
+import '../../../services/social/adaptive_profile_service.dart';
 
 class AurenAiProfileScreen extends StatefulWidget {
   const AurenAiProfileScreen({super.key});
@@ -10,6 +11,8 @@ class AurenAiProfileScreen extends StatefulWidget {
 class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
   final _auth = FirebaseAurenAuthService();
   final _service = AurenProfileModeService();
+  final _adaptive = const AurenAdaptiveProfileService();
+  AurenAdaptiveProfileResult? _adaptiveResult;
   AurenProfileMode _mode = AurenProfileMode.personal;
   bool _loading = true, _saving = false, _discoverable = true, _showContact = false;
   final _headline = TextEditingController();
@@ -61,6 +64,26 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
     return '${d.mode.label}: ${f.isEmpty ? 'ملف متكيف' : f}${target.isEmpty ? '' : ' • الهدف: $target'}';
   }
 
+  Future<void> _analyzeAdaptiveMode() async {
+    final uid = _auth.currentUserId;
+    if (uid == null || _loading) return;
+    setState(() => _adaptiveResult = null);
+    final data = await _service.get(uid, _mode);
+    final result = _adaptive.suggest(
+      currentMode: _mode,
+      profile: data,
+      intent: [_headline.text, _bio.text, _skills.text, _interests.text, _goals.text, _services.text].join(' '),
+    );
+    if (mounted) setState(() => _adaptiveResult = result);
+  }
+
+  Future<void> _applyAdaptiveMode() async {
+    final result = _adaptiveResult;
+    if (result == null || result.mode == _mode) return;
+    await _changeMode(result.mode);
+    if (mounted) setState(() => _adaptiveResult = null);
+  }
+
   Future<void> _save() async {
     final uid = _auth.currentUserId; if (uid == null || _saving) return;
     setState(() => _saving = true);
@@ -96,6 +119,33 @@ class _AurenAiProfileScreenState extends State<AurenAiProfileScreen> {
               const SizedBox(height: 10), Wrap(spacing: 8, runSpacing: 8, children: AurenProfileMode.values.map((m) => ChoiceChip(label: Text(m.label), selected: _mode == m, onSelected: (_) => _changeMode(m))).toList()),
               const SizedBox(height: 10), Text(_mode.description),
             ]))),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(children: [Icon(Icons.auto_awesome), SizedBox(width: 8), Text('Adaptive Profile', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))]),
+                    const SizedBox(height: 8),
+                    const Text('AUREN يفهم السياق ويقترح الوضع المناسب، لكن القرار النهائي لك دائماً.'),
+                    const SizedBox(height: 10),
+                    if (_adaptiveResult == null)
+                      OutlinedButton.icon(onPressed: _analyzeAdaptiveMode, icon: const Icon(Icons.psychology_outlined), label: const Text('حلّل السياق الحالي'))
+                    else ...[
+                      Text('الاقتراح: ' + _adaptiveResult!.mode.label + ' • ' + _adaptiveResult!.confidence.toString() + '%', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(_adaptiveResult!.reason),
+                      const SizedBox(height: 10),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        if (_adaptiveResult!.mode != _mode)
+                          FilledButton.icon(onPressed: _applyAdaptiveMode, icon: const Icon(Icons.check), label: Text('استخدم ' + _adaptiveResult!.mode.label)),
+                        TextButton(onPressed: () => setState(() => _adaptiveResult = null), child: const Text('ليس الآن')),
+                      ]),
+                    ],
+                  ],
+                ),
+              ),
+            ),
             Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('AUREN AI View', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8), Text(_summary(data)),
