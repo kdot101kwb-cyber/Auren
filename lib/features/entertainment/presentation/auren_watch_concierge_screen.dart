@@ -256,6 +256,12 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     );
   }
 
+  void _setMinutesAndRegenerate(int minutes, List<AurenEntertainmentItem> source) {
+    final next = minutes.clamp(10, 240);
+    setState(() => _minutes = next);
+    _regenerate(source);
+  }
+
   Future<void> _regenerate(List<AurenEntertainmentItem> source) async {
     setState(() => _plan = const []);
     await _generate(source);
@@ -354,6 +360,13 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
               )).toList()),
               const SizedBox(height: 14),
               Text('الوقت: $_minutes دقيقة', style: const TextStyle(fontWeight: FontWeight.w700)),
+              Wrap(
+                spacing: 8,
+                children: [15, 30, 60, 90, 120].map((minutes) => ActionChip(
+                  label: Text('$minutes د'),
+                  onPressed: () => _setMinutesAndRegenerate(minutes, source),
+                )).toList(),
+              ),
               Slider(value: _minutes.toDouble(), min: 10, max: 240, divisions: 23,
                 label: _minutes.toString(), onChanged: (v) => setState(() => _minutes = v.round())),
               FilledButton.icon(onPressed: () => _generate(source),
