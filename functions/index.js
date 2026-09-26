@@ -2468,6 +2468,28 @@ exports.acceptCreatorSupport = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.listCreatorEarnings = onCall(
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
+  async (request) => {
+    if(!request.auth?.uid || request.auth.token?.admin !== true) {
+      throw new HttpsError('permission-denied','Admin access required.');
+    }
+    const status=typeof request.data?.status==='string'?request.data.status.trim():'';
+    const allowed=['pending_settlement','settled'];
+    const q=status && allowed.includes(status)
+      ? db.collection('creator_earnings').where('status','==',status).limit(100)
+      : db.collection('creator_earnings').limit(100);
+    const snap=await q.get();
+    const items=snap.docs.map(d=>({id:d.id,...d.data()}));
+    items.sort((a,b)=>{
+      const av=a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const bv=b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return bv-av;
+    });
+    return {items};
+  },
+);
+
 exports.settleCreatorEarning = onCall(
   {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
   async (request) => {
