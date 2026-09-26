@@ -148,6 +148,72 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
     return candidates;
   }
 
+  String _sessionShape() {
+    switch (activity) {
+      case 'تمرين': return 'إحماء → تصاعد → ذروة → تعافٍ';
+      case 'دراسة': return 'تهيئة → تركيز ثابت → تنويع خفيف → نهاية هادئة';
+      case 'سفر': return 'بداية → تنويع → مفضلات → خاتمة هادئة';
+      case 'نوم': return 'هدوء تدريجي → استقرار → خاتمة ناعمة';
+      case 'حفلة': return 'إحماء → تصاعد → ذروة → تنويع';
+      case 'استرخاء': return 'هدوء → استرخاء عميق → خاتمة لطيفة';
+      default: return 'بداية → قلب الجلسة → تنويع → خاتمة';
+    }
+  }
+
+  List<AurenEntertainmentItem> _buildSession(List<AurenEntertainmentItem> sorted) {
+    final target = sorted.isEmpty ? 0 : (minutes / 3).ceil().clamp(1, sorted.length);
+    if (target <= 1) return sorted.take(target).toList();
+    final used = <String>{};
+    final result = <AurenEntertainmentItem>[];
+
+    bool calm(AurenEntertainmentItem x) {
+      final t = (x.title + ' ' + x.description).toLowerCase();
+      return ['calm', 'chill', 'relax', 'quiet', 'soft', 'sleep', 'هادئ', 'استرخاء', 'نوم'].any(t.contains);
+    }
+    bool energetic(AurenEntertainmentItem x) {
+      final t = (x.title + ' ' + x.description).toLowerCase();
+      return ['energy', 'energetic', 'workout', 'gym', 'party', 'dance', 'power', 'حماس', 'تمرين', 'حفلة'].any(t.contains);
+    }
+    AurenEntertainmentItem? takeWhere(bool Function(AurenEntertainmentItem) test) {
+      for (final item in sorted) {
+        if (!used.contains(item.id) && test(item)) {
+          used.add(item.id); result.add(item); return item;
+        }
+      }
+      return null;
+    }
+
+    final intro = (target * .2).floor().clamp(1, target - 1);
+    final core = (target * .5).floor().clamp(1, target - intro);
+    final variety = (target * .2).floor().clamp(0, target - intro - core);
+    final outro = target - intro - core - variety;
+
+    for (var i = 0; i < intro; i++) {
+      if (activity == 'تمرين' || activity == 'حفلة') takeWhere((x) => !energetic(x));
+      else takeWhere(calm);
+    }
+    for (var i = 0; i < core; i++) {
+      var picked = false;
+      for (final item in sorted) {
+        if (!used.contains(item.id) && !calm(item)) {
+          used.add(item.id); result.add(item); picked = true; break;
+        }
+      }
+      if (!picked) takeWhere((_) => true);
+    }
+    final creators = <String>{};
+    for (var i = 0; i < variety; i++) {
+      final picked = takeWhere((x) => x.creatorId.isNotEmpty && !creators.contains(x.creatorId));
+      if (picked != null) creators.add(picked.creatorId); else takeWhere((_) => true);
+    }
+    for (var i = 0; i < outro; i++) takeWhere(calm);
+    for (final item in sorted) {
+      if (result.length >= target) break;
+      if (used.add(item.id)) result.add(item);
+    }
+    return result.take(target).toList();
+  }
+
   Future<void> generate() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
@@ -157,8 +223,8 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
     }
     if (!mounted) return;
     final sorted = buildPlan();
-    final count = sorted.isEmpty ? 0 : (minutes / 3).ceil().clamp(1, sorted.length);
-    setState(() => plan = sorted.take(count).toList());
+    final session = _buildSession(sorted);
+    setState(() => plan = session);
     if (plan.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('لم أجد مقاطع مناسبة. جرّب نشاطًا أو مدة مختلفة.')),
@@ -288,8 +354,10 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
           ),
           if (plan.isNotEmpty) ...[
             const SizedBox(height: 18),
-            Text('الخطة: ' + plan.length.toString() + ' مقاطع • حوالي ' + estimated.toString() + ' دقيقة',
+            Text('الجلسة: ' + plan.length.toString() + ' مقاطع • حوالي ' + estimated.toString() + ' دقيقة',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text('بنية الجلسة: ' + _sessionShape(), style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             ...plan.map((item) => Card(
               child: ListTile(
