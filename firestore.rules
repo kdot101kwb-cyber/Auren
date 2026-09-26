@@ -1790,31 +1790,12 @@ service cloud.firestore {
 
     match /users/{userId}/gaming_profile/{docId} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.data.xp is number
-        && request.resource.data.games is number
-        && request.resource.data.wins is number
-        && request.resource.data.xp >= 0
-        && request.resource.data.games >= 0
-        && request.resource.data.wins >= 0
-        && request.resource.data.wins <= request.resource.data.games
-        && request.resource.data.displayName is string
-        && request.resource.data.displayName.size() <= 80
-        && request.resource.data.updatedAt is timestamp;
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/gaming_results/{resultId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.data.roomId is string
-        && request.resource.data.gameId == 'tic_tac_toe'
-        && request.resource.data.result in ['win', 'loss', 'draw']
-        && request.resource.data.xp is number
-        && request.resource.data.createdAt is timestamp;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     match /watch_together_invites/{inviteCode} {
