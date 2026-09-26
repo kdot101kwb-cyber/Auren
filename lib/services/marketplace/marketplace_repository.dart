@@ -10,7 +10,7 @@ class MarketplaceRepository{
   items.sort((a,b)=>a.name.toLowerCase().compareTo(b.name.toLowerCase())); return items;
  });
  Future<String> create({required String ownerId,required String businessId,required String name,required String description,required String category,required String currency,required int priceMinor,required String imageUrl,required bool service})async{
-  final r=_c.doc(); await r.set({'ownerId':ownerId,'businessId':businessId,'name':cleanName,'description':description.trim(),'category':category,'currency':currency,'priceMinor':priceMinor,'imageUrl':imageUrl.trim(),'service':service,'status':'active','createdAt':FieldValue.serverTimestamp()}); return r.id;
+  final cleanName=_clean(name,160); if(cleanName.isEmpty) throw ArgumentError('اسم المنتج مطلوب.'); if(businessId.trim().isEmpty) throw ArgumentError('businessId مطلوب.'); if(currency.trim().length != 3) throw ArgumentError('currency must be 3 characters.'); if(priceMinor < 0) throw ArgumentError('priceMinor must be >= 0.'); final r=_c.doc(); await r.set({'ownerId':ownerId.trim(),'businessId':businessId.trim(),'name':cleanName,'description':description.trim(),'category':category,'currency':currency,'priceMinor':priceMinor,'imageUrl':imageUrl.trim(),'service':service,'status':'active','createdAt':FieldValue.serverTimestamp()}); return r.id;
  }
  Future<void> update(String id,Map<String,dynamic> data)=>_c.doc(id).update(data);
  Future<void> delete(String id)=>_c.doc(id).delete();
