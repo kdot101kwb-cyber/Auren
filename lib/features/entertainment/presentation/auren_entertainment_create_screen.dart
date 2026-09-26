@@ -32,6 +32,7 @@ class _AurenEntertainmentCreateScreenState
   String? _uid;
   bool _saving = false;
   String? _editingDraftId;
+  String? _activeJobId;
 
   String get _idea => _promptController.text.trim();
 
@@ -96,6 +97,22 @@ class _AurenEntertainmentCreateScreenState
     }
   }
 
+  Future<void> _startCreationJob() async {
+    final uid = _uid;
+    if (uid == null || _saving) return;
+    setState(() => _saving = true);
+    final idea = _idea.isEmpty ? _exampleFor(_mode) : _idea;
+    try {
+      final draftId = _editingDraftId ?? await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: idea);
+      _editingDraftId ??= draftId;
+      _activeJobId = await EntertainmentRepository().createEntertainmentJob(uid, draftId: draftId, mode: _mode, mood: _mood, length: _length, idea: idea);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إنشاء مهمة الإنتاج: مرحلة التخطيط.')));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر بدء مهمة الإنتاج.')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
   Future<void> _create() async {
     if (_uid != null && !_saving) await _saveDraft();
     if (!mounted) return;
@@ -135,6 +152,11 @@ class _AurenEntertainmentCreateScreenState
       appBar: AppBar(
         title: Text(_editingDraftId == null ? 'AUREN Create Studio' : 'تعديل المسودة'),
         actions: [
+          IconButton(
+            tooltip: 'إنشاء مهمة إنتاج',
+            icon: const Icon(Icons.rocket_launch_rounded),
+            onPressed: _saving ? null : _startCreationJob,
+          ),
           IconButton(
             tooltip: 'ابدأ',
             icon: const Icon(Icons.auto_awesome_rounded),
@@ -270,6 +292,10 @@ class _AurenEntertainmentCreateScreenState
             const SizedBox(height: 18),
             _buildDrafts(context),
           ],
+          if (_uid != null) ...[
+            const SizedBox(height: 18),
+            _buildJobs(context),
+          ],
           const SizedBox(height: 12),
           Text(
             'AUREN يبني أولاً الـConcept وخطة الإنتاج عبر AI. ربط مولدات الصوت والفيديو والعوالم الفعلية يأتي كطبقة إنتاج لاحقة.',
@@ -314,6 +340,24 @@ class _AurenEntertainmentCreateScreenState
             ),
           ),
         );
+      },
+    );
+  }
+  Widget _buildJobs(BuildContext context) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: EntertainmentRepository().watchEntertainmentCreationJobs(_uid!),
+      builder: (context, snapshot) {
+        final jobs = snapshot.data ?? const <Map<String, dynamic>>[];
+        if (jobs.isEmpty) return const SizedBox.shrink();
+        return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('مهام الإنتاج', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          ...jobs.take(3).map((job) {
+            final progress = (job['progress'] as num?)?.toInt() ?? 0;
+            final status = job['status']?.toString() ?? 'planning';
+            return ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.movie_filter_rounded)), title: Text('${job['mode'] ?? 'مشروع'} • $status'), subtitle: Text('التقدم $progress% • ${job['provider'] ?? 'auren_ai'}'), trailing: SizedBox(width: 54, child: CircularProgressIndicator(value: progress / 100)));
+          }),
+        ])));
       },
     );
   }
