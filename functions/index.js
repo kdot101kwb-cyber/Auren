@@ -2249,7 +2249,7 @@ exports.simulateAurenAgentAction = require('firebase-functions/v2/https').onCall
 );
 
 exports.listCreatorWithdrawals = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
   async (request) => {
     if(!request.auth?.uid || request.auth.token?.admin !== true) throw new Error('Admin access required.');
     const status=typeof request.data?.status==='string'?request.data.status.trim():'';
@@ -2263,7 +2263,7 @@ exports.listCreatorWithdrawals = require('firebase-functions/v2/https').onCall(
 );
 
 exports.setCreatorWithdrawalStatus = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
   async (request) => {
     const uid=request.auth?.uid;
     if(!uid || request.auth.token?.admin !== true) {
@@ -2332,7 +2332,7 @@ exports.setCreatorWithdrawalStatus = require('firebase-functions/v2/https').onCa
 );
 
 exports.requestCreatorWithdrawal = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1',timeoutSeconds:20,memory:'256MiB'},
+  {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
   async (request) => {
     const uid=request.auth?.uid;
     if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
