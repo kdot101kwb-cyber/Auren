@@ -1421,16 +1421,16 @@ service cloud.firestore {
     match /users/{userId}/creator_plan/{planId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
-        && request.resource.data.keys().hasOnly(['title','format','status','scheduledAt','createdAt','aiDraft'])
+        && request.resource.data.keys().hasOnly(['title','format','status','scheduledAt','createdAt','aiDraft','publishedPostId'])
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
         && request.resource.data.title.size() <= 200
         && request.resource.data.format in ['post','short','video','live','audio']
-        && request.resource.data.status in ['draft','scheduled']
+        && request.resource.data.status in ['draft','scheduled','published']
         && (request.resource.data.scheduledAt == null || request.resource.data.scheduledAt is timestamp)
         && request.resource.data.createdAt is timestamp;
       allow update: if isOwner(userId)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','format','status','scheduledAt','aiDraft'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','format','status','scheduledAt','aiDraft','publishedPostId'])
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
         && request.resource.data.title.size() <= 200
