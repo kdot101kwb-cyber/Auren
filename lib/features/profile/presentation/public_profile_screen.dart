@@ -199,11 +199,17 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                   if (data.headline.isNotEmpty) details.add(data.headline);
                   if (data.skills.isNotEmpty) details.add('مهارات: ${data.skills.take(4).join('، ')}');
                   if (data.interests.isNotEmpty) details.add('اهتمامات: ${data.interests.take(4).join('، ')}');
+                  if (mode == AurenProfileMode.creator && data.services.isNotEmpty) details.add('محتوى: ' + data.services.take(4).join('، '));
+                  if (mode == AurenProfileMode.business && data.services.isNotEmpty) details.add('خدمات / منتجات: ' + data.services.take(4).join('، '));
+                  if (mode == AurenProfileMode.professional && data.goals.isNotEmpty) details.add('أهداف: ' + data.goals.take(3).join('، '));
+                  if (data.languages.isNotEmpty) details.add('لغات: ' + data.languages.take(4).join('، '));
+                  if (data.achievements.isNotEmpty && mode != AurenProfileMode.personal) details.add('إنجازات: ' + data.achievements.take(3).join('، '));
                   return Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [const Icon(Icons.auto_awesome), const SizedBox(width: 8), Text('AI Profile • ${mode.label}', style: const TextStyle(fontWeight: FontWeight.bold))]),
+                        Row(children: [const Icon(Icons.auto_awesome), const SizedBox(width: 8), Expanded(child: Text('AI Profile • ${mode.label}', style: const TextStyle(fontWeight: FontWeight.bold)))]),
+                        if (data.headline.isNotEmpty) ...[const SizedBox(height: 8), Text(data.headline, style: const TextStyle(fontWeight: FontWeight.w600))],
                         if (data.bio.isNotEmpty) ...[const SizedBox(height: 8), Text(data.bio)],
                         if (details.isNotEmpty) ...[const SizedBox(height: 8), Text(details.join('\n'))],
                       ]),
