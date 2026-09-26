@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
+import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
 
 class AurenEntertainmentJobDetailScreen extends StatelessWidget {
   final String jobId;
@@ -29,6 +30,18 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
       case 'cancelled': return Icons.cancel_rounded;
       default: return Icons.timelapse_rounded;
     }
+  }
+
+  Future<void> _startProvider(BuildContext context, String uid) async {
+    final orchestration = await AurenEntertainmentJobOrchestrator().start(uid, jobId);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(
+        orchestration.accepted
+            ? 'بدأت المهمة عبر ${orchestration.provider}.'
+            : orchestration.message,
+      )),
+    );
   }
 
   Future<void> _retry(BuildContext context, String uid) async {
@@ -100,6 +113,16 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             children: [
               _summaryCard(context, job, status, progress),
               const SizedBox(height: 16),
+              if (status == 'planning')
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => _startProvider(context, uid),
+                    icon: const Icon(Icons.auto_awesome_rounded),
+                    label: const Text('بدء التنفيذ مع AUREN AI'),
+                  ),
+                ),
+              if (status == 'planning') const SizedBox(height: 12),
               if (canCancel || canRetry)
                 Row(
                   children: [
