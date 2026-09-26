@@ -148,7 +148,7 @@ class _AurenIntentMatchCardState extends State<AurenIntentMatchCard> {
               ..._items.take(5).map((item) => ListTile(
                 contentPadding: EdgeInsets.zero,
                 onTap: () => _openMatch(item),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: Chip(label: Text(item.actionLabel)),
                 leading: CircleAvatar(child: Icon(_kindIcon(item.kind), size: 20)),
                 title: Row(children: [
                   Expanded(child: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
