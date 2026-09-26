@@ -1,0 +1,204 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+class AurenGamingScreen extends StatefulWidget {
+  const AurenGamingScreen({super.key});
+  @override State<AurenGamingScreen> createState() => _AurenGamingScreenState();
+}
+
+class _AurenGamingScreenState extends State<AurenGamingScreen> {
+  final _service = AurenGamingService();
+  final _codeController = TextEditingController();
+  String? _roomId;
+  String? _inviteCode;
+  bool _busy = false;
+
+  @override void dispose() { _codeController.dispose(); super.dispose(); }
+
+  Future<void> _createRoom() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    setState(() => _busy = true);
+    try {
+      final room = await _service.createTicTacToeRoom(uid);
+      if (!mounted) return;
+      setState(() { _roomId = room.id; _inviteCode = room.inviteCode; });
+    } catch (_) { if (mounted) _snack('تعذر إنشاء الغرفة.'); }
+    finally { if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _joinRoom() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final code = _codeController.text.trim().toUpperCase();
+    if (uid == null || code.length != 6) return;
+    setState(() => _busy = true);
+    try {
+      final room = await _service.joinTicTacToeRoom(uid, code);
+      if (!mounted) return;
+      setState(() { _roomId = room.id; _inviteCode = room.inviteCode; });
+    } catch (_) { if (mounted) _snack('تعذر الانضمام. تأكد من رمز الغرفة.'); }
+    finally { if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _play(int index, Map<String, dynamic> data) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (_roomId == null || uid == null) return;
+    final board = List<String>.from((data['board'] as List<dynamic>? ?? const []).map((e) => e.toString()));
+    if (board.length != 9 || board[index].isNotEmpty || data['winner'] != null || data['draw'] == true) return;
+    final players = List<String>.from((data['playerUids'] as List<dynamic>? ?? const []).map((e) => e.toString()));
+    final marks = data['marks'] is Map ? Map<String, dynamic>.from(data['marks'] as Map) : <String, dynamic>{};
+    if (!players.contains(uid) || players.length < 2 || data['turnUid']?.toString() != uid) return;
+    final mark = marks[uid]?.toString();
+    if (mark == null) return;
+    board[index] = mark;
+    final winner = _winner(board);
+    final draw = winner == null && board.every((e) => e.isNotEmpty);
+    final nextUid = winner != null || draw ? '' : players.firstWhere((p) => p != uid, orElse: () => uid);
+    try {
+      await _service.playMove(roomId: _roomId!, board: board, winner: winner, draw: draw, nextUid: nextUid);
+    } catch (_) { if (mounted) _snack('تعذر تسجيل الحركة.'); }
+  }
+
+  String? _winner(List<String> b) {
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (final l in lines) {
+      if (b[l[0]].isNotEmpty && b[l[0]] == b[l[1]] && b[l[1]] == b[l[2]]) return b[l[0]];
+    }
+    return null;
+  }
+
+  void _snack(String message) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+
+  @override Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return Scaffold(
+      appBar: AppBar(title: const Text('AUREN Gaming')),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        _hero(context), const SizedBox(height: 16),
+        if (_roomId == null) ...[
+          _gameCard(context, Icons.grid_3x3_rounded, 'Tic-Tac-Toe',
+            'لعبة سريعة لشخصين — العب مع صديق برمز دعوة.',
+            FilledButton.icon(onPressed: _busy ? null : _createRoom, icon: const Icon(Icons.add), label: const Text('إنشاء غرفة'))),
+          const SizedBox(height: 12),
+          Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
+            const Text('عندك رمز غرفة؟', style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            TextField(controller: _codeController, textCapitalization: TextCapitalization.characters, maxLength: 6,
+              decoration: const InputDecoration(labelText: 'رمز الدعوة', hintText: 'ABC123', border: OutlineInputBorder())),
+            FilledButton.icon(onPressed: _busy ? null : _joinRoom, icon: const Icon(Icons.login), label: const Text('انضم للعبة')),
+          ]))),
+          const SizedBox(height: 12),
+          _gameCard(context, Icons.emoji_events_outlined, 'Challenges',
+            'تحديات يومية ونتائج اجتماعية ستتوسع مع ألعاب AUREN القادمة.',
+            OutlinedButton.icon(onPressed: () => _snack('التحديات ستتوسع مع ألعاب AUREN القادمة.'), icon: const Icon(Icons.flag_outlined), label: const Text('استكشف'))),
+          const SizedBox(height: 12),
+          _gameCard(context, Icons.groups_outlined, 'Social Play',
+            'غرف لعب، دعوات ومنافسات مرتبطة بتجربة AUREN.',
+            OutlinedButton.icon(onPressed: () => _snack('Social Play متصل حالياً بغرف الألعاب.'), icon: const Icon(Icons.people_outline), label: const Text('استكشف'))),
+        ] else ...[
+          if (_inviteCode != null) Card(child: ListTile(leading: const Icon(Icons.share_outlined), title: const Text('رمز الغرفة'),
+            subtitle: Text(_inviteCode!, style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)))),
+          const SizedBox(height: 10),
+          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: _service.watchRoom(_roomId!), builder: (context, snap) {
+              if (snap.hasError) return const Text('تعذر تحميل اللعبة.');
+              final data = snap.data?.data();
+              if (data == null) return const Text('الغرفة غير متاحة.');
+              return _buildBoard(context, data, uid);
+            }),
+        ],
+      ]),
+    );
+  }
+
+  Widget _hero(BuildContext context) => Container(padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(borderRadius: BorderRadius.circular(24),
+      gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer])),
+    child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Play. Connect. Challenge.', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+      SizedBox(height: 8), Text('ألعاب خفيفة داخل AUREN مرتبطة بالأصدقاء والتحديات والهوية الاجتماعية.')
+    ]));
+
+  Widget _gameCard(BuildContext context, IconData icon, String title, String subtitle, Widget action) => Card(
+    child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
+      CircleAvatar(radius: 26, child: Icon(icon)), const SizedBox(width: 14),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)), const SizedBox(height: 4),
+        Text(subtitle), const SizedBox(height: 10), action,
+      ]))
+    ])));
+
+  Widget _buildBoard(BuildContext context, Map<String, dynamic> data, String? uid) {
+    final board = List<String>.from((data['board'] as List<dynamic>? ?? const []).map((e) => e.toString()));
+    final players = List<String>.from((data['playerUids'] as List<dynamic>? ?? const []).map((e) => e.toString()));
+    final marks = data['marks'] is Map ? Map<String, dynamic>.from(data['marks'] as Map) : <String, dynamic>{};
+    final turnUid = data['turnUid']?.toString() ?? '';
+    final winner = data['winner']?.toString();
+    final draw = data['draw'] == true;
+    final myMark = uid == null ? null : marks[uid]?.toString();
+    final ready = players.length >= 2;
+    final status = winner != null ? 'الفائز: ' + winner : draw ? 'تعادل 🤝' : !ready ? 'في انتظار لاعب آخر' : myMark == null ? 'أنت متفرج' : turnUid == uid ? 'دورك — ' + myMark : 'انتظر دور اللاعب الآخر';
+
+    return Column(children: [
+      Card(child: ListTile(leading: Icon(ready ? Icons.play_circle : Icons.hourglass_top), title: Text(ready ? 'اللعبة جاهزة' : 'في انتظار لاعب آخر'), subtitle: Text(status))),
+      const SizedBox(height: 12),
+      GridView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: 9,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8),
+        itemBuilder: (_, i) => AspectRatio(aspectRatio: 1, child: FilledButton(
+          onPressed: ready && winner == null && !draw ? () => _play(i, data) : null,
+          child: Text(board.length == 9 ? board[i] : '', style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900)),
+        ))),
+      const SizedBox(height: 14),
+      OutlinedButton.icon(onPressed: () => setState(() { _roomId = null; _inviteCode = null; }), icon: const Icon(Icons.exit_to_app), label: const Text('الخروج من الغرفة')),
+    ]);
+  }
+}
+
+class AurenGamingRoom {
+  final String id; final String inviteCode; final Map<String, dynamic> data;
+  AurenGamingRoom(this.id, this.inviteCode, this.data);
+}
+
+class AurenGamingService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  Future<AurenGamingRoom> createTicTacToeRoom(String uid) async {
+    final ref = _db.collection('gaming_rooms').doc();
+    final invite = _makeCode();
+    final data = {'gameId':'tic_tac_toe','hostUid':uid,'playerUids':[uid],'marks':{uid:'X'},'board':List<String>.filled(9,''),'turnUid':uid,'winner':null,'draw':false,'status':'waiting','inviteCode':invite,'createdAt':FieldValue.serverTimestamp(),'updatedAt':FieldValue.serverTimestamp()};
+    await ref.set(data);
+    await _db.collection('gaming_invites').doc(invite).set({'roomId':ref.id,'hostUid':uid,'inviteCode':invite,'createdAt':FieldValue.serverTimestamp()});
+    return AurenGamingRoom(ref.id, invite, data);
+  }
+
+  Future<AurenGamingRoom> joinTicTacToeRoom(String uid, String code) async {
+    final inviteSnap = await _db.collection('gaming_invites').doc(code).get();
+    if (!inviteSnap.exists) throw StateError('رمز اللعبة غير صحيح.');
+    final roomId = inviteSnap.data()?['roomId']?.toString();
+    if (roomId == null || roomId.isEmpty) throw StateError('الغرفة غير موجودة.');
+    final ref = _db.collection('gaming_rooms').doc(roomId);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('الغرفة غير موجودة.');
+      final data = snap.data() ?? {};
+      final players = List<String>.from((data['playerUids'] as List<dynamic>? ?? const []).map((e) => e.toString()));
+      if (players.contains(uid)) return;
+      if (players.length >= 2) throw StateError('الغرفة ممتلئة.');
+      players.add(uid);
+      tx.update(ref, {'playerUids':players,'marks.' + uid:'O','status':'ready','updatedAt':FieldValue.serverTimestamp()});
+    });
+    final snap = await ref.get();
+    return AurenGamingRoom(roomId, code, snap.data() ?? {});
+  }
+
+  Stream<DocumentSnapshot<Map<String, dynamic>>> watchRoom(String roomId) => _db.collection('gaming_rooms').doc(roomId).snapshots();
+
+  Future<void> playMove({required String roomId, required List<String> board, required String? winner, required bool draw, required String nextUid}) =>
+    _db.collection('gaming_rooms').doc(roomId).update({'board':board,'winner':winner,'draw':draw,'turnUid':nextUid,'updatedAt':FieldValue.serverTimestamp()});
+
+  String _makeCode() {
+    const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; var n=DateTime.now().microsecondsSinceEpoch; final out=StringBuffer();
+    for (var i=0;i<6;i++){out.write(chars[n%chars.length]);n=(n~/chars.length)+i*17;} return out.toString();
+  }
+}
