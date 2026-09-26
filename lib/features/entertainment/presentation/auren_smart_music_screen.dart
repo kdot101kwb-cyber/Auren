@@ -18,10 +18,12 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
   final search = TextEditingController();
   String mood = 'الكل';
   String context = 'تلقائي';
+  String activity = 'تلقائي';
   List<AurenEntertainmentItem> _latestSource = const <AurenEntertainmentItem>[];
 
   static const moods = ['الكل', 'هادئ', 'حماس', 'تركيز', 'سفر', 'تسلية'];
   static const contexts = ['تلقائي', 'صباح', 'ليل', 'عمل', 'رحلة', 'استرخاء'];
+  static const activities = ['تلقائي', 'تمرين', 'دراسة', 'سفر', 'نوم', 'استرخاء', 'حفلة'];
 
   @override
   void dispose() {
@@ -39,6 +41,22 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
       final text = (item.title + ' ' + item.description).toLowerCase();
       return text.contains(query);
     }).toList();
+
+    if (activity != 'تلقائي') {
+      final matches = filtered.where((item) {
+        final text = (item.title + ' ' + item.description).toLowerCase();
+        const map = <String, List<String>>{
+          'تمرين': ['workout', 'gym', 'exercise', 'تمرين', 'رياضة'],
+          'دراسة': ['study', 'focus', 'دراسة', 'تركيز'],
+          'سفر': ['travel', 'trip', 'سفر', 'رحلة'],
+          'نوم': ['sleep', 'night', 'نوم', 'ليل'],
+          'استرخاء': ['relax', 'calm', 'chill', 'استرخاء', 'هادئ'],
+          'حفلة': ['party', 'dance', 'حفلة', 'رقص'],
+        };
+        return (map[activity] ?? const <String>[]).any(text.contains);
+      }).toList();
+      if (matches.isNotEmpty) return matches;
+    }
 
     if (mood != 'الكل') {
       final moodMatches = filtered.where((item) {
@@ -83,6 +101,15 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
         if (effectiveContext == 'عمل' && text.contains('تركيز')) value += 3;
         if (effectiveContext == 'رحلة' && text.contains('سفر')) value += 3;
         if (effectiveContext == 'استرخاء' && text.contains('هادئ')) value += 3;
+        const activityHints = <String, List<String>>{
+          'تمرين': ['workout', 'gym', 'exercise', 'تمرين', 'رياضة'],
+          'دراسة': ['study', 'focus', 'دراسة', 'تركيز'],
+          'سفر': ['travel', 'trip', 'سفر', 'رحلة'],
+          'نوم': ['sleep', 'night', 'نوم', 'ليل'],
+          'استرخاء': ['relax', 'calm', 'chill', 'استرخاء', 'هادئ'],
+          'حفلة': ['party', 'dance', 'حفلة', 'رقص'],
+        };
+        if (activity != 'تلقائي' && (activityHints[activity] ?? const <String>[]).any(text.contains)) value += 10;
         return value;
       }
       return score(b).compareTo(score(a));
@@ -235,6 +262,20 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
                     label: Text(contexts[index]),
                     selected: context == contexts[index],
                     onSelected: (_) => setState(() => context = contexts[index]),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 42,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: activities.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, index) => ChoiceChip(
+                    label: Text(activities[index]),
+                    selected: activity == activities[index],
+                    onSelected: (_) => setState(() => activity = activities[index]),
                   ),
                 ),
               ),
