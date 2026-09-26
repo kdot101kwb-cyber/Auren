@@ -8,6 +8,7 @@ import 'entertainment_detail_screen.dart';
 import 'entertainment_shorts_screen.dart';
 import 'auren_music_hub_screen.dart';
 import 'auren_watch_concierge_screen.dart';
+import 'continue_watching_screen.dart';
 import 'auren_radio_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../core/models/entertainment.dart';
@@ -132,6 +133,10 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     const SizedBox(height: 12),
                   ],
                   _buildHero(context),
+                  if (uid != null) ...[
+                    const SizedBox(height: 14),
+                    _buildContinueWatching(context, uid),
+                  ],
                   const SizedBox(height: 12),
                   _buildMoodBar(),
                   const SizedBox(height: 14),
@@ -267,6 +272,45 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildContinueWatching(BuildContext context, String uid) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: repo.watchContinueWatching(uid),
+      builder: (context, snapshot) {
+        final entries = snapshot.data ?? const <Map<String, dynamic>>[];
+        if (entries.isEmpty) return const SizedBox.shrink();
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Continue Watching', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          SizedBox(height: 145, child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: entries.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) {
+              final e = entries[i];
+              final progress = ((e['progress'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
+              return SizedBox(width: 210, child: Card(child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => AurenEntertainmentDetailScreen(itemId: e['id'].toString()))),
+                child: Padding(padding: const EdgeInsets.all(10), child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(e['title']?.toString() ?? 'محتوى', maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                    const Spacer(),
+                    LinearProgressIndicator(value: progress),
+                    const SizedBox(height: 6),
+                    Text('${(progress * 100).round()}% مكتمل', style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                )),
+              )));
+            },
+          )),
+        ]);
+      },
     );
   }
 
