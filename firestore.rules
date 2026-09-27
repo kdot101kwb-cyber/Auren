@@ -1231,8 +1231,30 @@ service cloud.firestore {
     }
 
     match /users/{userId}/opportunityApplications/{opportunityId} {
-      allow read, create, delete: if isOwner(userId);
-      allow update: if false;
+      allow read: if isOwner(userId) || (request.auth != null && resource.data.ownerId == request.auth.uid);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['opportunityId','ownerId','applicantId','title','note','status','createdAt','updatedAt'])
+        && request.resource.data.opportunityId == opportunityId
+        && request.resource.data.ownerId is string
+        && request.resource.data.applicantId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 2000
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && request.resource.data.status in ['pending','accepted','rejected']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /{path=**}/opportunityApplications/{applicationId} {
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
     match /opportunity_application_notifications/{notificationId} {
