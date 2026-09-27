@@ -48,10 +48,9 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
             ),
           ),
         ),
-        Expanded(child: _selected < 7 ? IndexedStack(index: _selected, children: const [
-          _MemoryGame(), _QuizGame(), _ReactionGame(), _DiceDuelGame(),
-          _HigherLowerGame(), _WordScrambleGame(), _TwentyFortEightGame(),
-        ]) : _selected < 17 ? _TenMoreGamesPanel(initialIndex: _selected - 7) : _ThreeDGamePanel(gameIndex: _selected - 17, adventure: _selected >= 38)),
+        Expanded(child: _selected < 17
+            ? _ThreeDGamePanel(gameIndex: _selected, adventure: false, core: true)
+            : _ThreeDGamePanel(gameIndex: _selected - 17, adventure: _selected >= 38, core: false)),
       ]),
     );
   }
@@ -465,7 +464,8 @@ class _Auren3DGamePainter extends CustomPainter{
 class _ThreeDGamePanel extends StatefulWidget {
   final int gameIndex;
   final bool adventure;
-  const _ThreeDGamePanel({required this.gameIndex, required this.adventure});
+  final bool core;
+  const _ThreeDGamePanel({required this.gameIndex, required this.adventure, required this.core});
 
   @override
   State<_ThreeDGamePanel> createState() => _ThreeDGamePanelState();
@@ -487,11 +487,24 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
     '🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City',
   ];
 
-  String get title => widget.adventure
-      ? _adventureNames[widget.gameIndex - 21]
-      : _categoryNames[widget.gameIndex];
+  static const _coreNames = [
+    '🧠 Memory','❓ Quiz','⚡ Reaction','🎲 Dice Duel','↕️ Higher / Lower','🔤 Word Scramble','🔢 2048',
+    '🔴 Simon','➕ Math Sprint','🎯 Number Guess','🪙 Coin Flip','🎯 Target Tap','🔤 Hangman','🔗 Word Chain','🎨 Color Match','🔷 Odd One Out','👀 Quick Count',
+  ];
+
+  String get title => widget.core
+      ? _coreNames[widget.gameIndex]
+      : widget.adventure
+          ? _adventureNames[widget.gameIndex - 21]
+          : _categoryNames[widget.gameIndex];
 
   Auren3DWorldPreset get preset {
+    if (widget.core) {
+      if (widget.gameIndex == 0 || widget.gameIndex >= 15) return Auren3DWorldPreset.city;
+      if (widget.gameIndex >= 3 && widget.gameIndex <= 4) return Auren3DWorldPreset.arena;
+      if (widget.gameIndex == 5 || widget.gameIndex == 13) return Auren3DWorldPreset.desert;
+      return Auren3DWorldPreset.sports;
+    }
     if (widget.adventure) {
       return widget.gameIndex == 22 || widget.gameIndex == 25
           ? Auren3DWorldPreset.city
@@ -505,6 +518,7 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
   }
 
   String get actionLabel {
+    if (widget.core) return 'العب التحدي ثلاثي الأبعاد';
     if (widget.adventure) return 'استكشف وحرّك الشخصية';
     if (widget.gameIndex < 5 || widget.gameIndex == 20) return 'نفّذ حركة قتالية';
     if (widget.gameIndex < 10) return 'نفّذ الحركة الرياضية';
@@ -555,9 +569,11 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
       ),
       const SizedBox(height: 12),
       Text(
-        widget.adventure
-            ? 'استكشف العالم ثلاثي الأبعاد، تحرك، وافتح نقاطاً جديدة.'
-            : widget.gameIndex < 5 || widget.gameIndex == 20
+        widget.core
+            ? 'نسخة 3D من اللعبة مع حركة وتحدي ونقاط داخل عالم AUREN.'
+            : widget.adventure
+                ? 'استكشف العالم ثلاثي الأبعاد، تحرك، وافتح نقاطاً جديدة.'
+                : widget.gameIndex < 5 || widget.gameIndex == 20
                 ? 'ساحة قتال ثلاثية الأبعاد — الحركة والنتيجة تتحدثان مع كل جولة.'
                 : widget.gameIndex < 10
                     ? 'ملعب ثلاثي الأبعاد — نفّذ الحركة واجمع النقاط.'
