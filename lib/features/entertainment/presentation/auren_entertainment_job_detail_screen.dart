@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'auren_entertainment_output_screen.dart';
 import 'entertainment_detail_screen.dart';
-import 'entertainment_detail_screen.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
@@ -309,6 +308,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     final text = output['text']?.toString() ?? '';
     final mime = output['mimeType']?.toString() ?? '';
     final isVideo = type == 'video' || mime.startsWith('video/');
+    final isAudio = type == 'audio' || mime.startsWith('audio/');
 
     return Card(
       child: Padding(
@@ -321,6 +321,8 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                 Icon(
                   isVideo
                       ? Icons.video_library_rounded
+                      : isAudio
+                          ? Icons.music_note_rounded
                       : type == 'image'
                           ? Icons.image_rounded
                           : Icons.auto_awesome_rounded,
@@ -330,6 +332,8 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   child: Text(
                     isVideo
                         ? 'فيديو جاهز'
+                        : isAudio
+                            ? 'موسيقى جاهزة'
                         : type == 'image'
                             ? 'صورة جاهزة'
                             : 'ناتج جاهز',
@@ -357,7 +361,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                     );
                   },
                   icon: Icon(
-                    isVideo
+                    isVideo || isAudio
                         ? Icons.play_circle_fill_rounded
                         : type == 'image'
                             ? Icons.visibility_rounded
@@ -366,6 +370,8 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   label: Text(
                     isVideo
                         ? 'تشغيل الفيديو'
+                        : isAudio
+                            ? 'تشغيل الموسيقى'
                         : type == 'image'
                             ? 'عرض الصورة'
                             : 'فتح الناتج',
@@ -410,7 +416,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
               ],
               const SizedBox(height: 6),
               Text(
-                'الناتج محفوظ في تخزين AUREN والرابط الحالي مؤقت.',
+                'الناتج محفوظ في تخزين AUREN، ويمكن تشغيله أو مشاركته من هنا.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
