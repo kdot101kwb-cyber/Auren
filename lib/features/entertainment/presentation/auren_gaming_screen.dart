@@ -97,7 +97,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       return;
     }
     try {
-      final result = await _service.claimDailyChallenge(uid);
+      final result = await _service.claimDailyChallenge(uid, _roomId!);
       if (!mounted) return;
       if (result) {
         setState(() => _xp += 25);
@@ -128,6 +128,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       body: ListView(padding: const EdgeInsets.all(16), children: [
         _hero(context), const SizedBox(height: 12),
         _statsCard(), const SizedBox(height: 12),
+        _challengeCard(context), const SizedBox(height: 12),
         _seasonCard(), const SizedBox(height: 12),
         _achievementsCard(), const SizedBox(height: 12),
         _leaderboardCard(), const SizedBox(height: 12),
@@ -596,24 +597,44 @@ class AurenGamingService {
   }
 
   Future<AurenGamingRoom?> respondToFriendChallenge(String uid, String challengeId, bool accept) async {
-    if (uid.isEmpty || challengeId.isEmpty) throw ArgumentError('Invalid challenge.');
+    if (uid.isEmpty || challengeId.isEmpty) {
+      throw ArgumentError('Invalid challenge.');
+    }
     final callable = FirebaseFunctions.instance.httpsCallable('respondGamingFriendChallenge');
     final result = await callable.call(<String, dynamic>{
       'challengeId': challengeId,
       'accept': accept,
     });
-    if (!accept) return null;
-    final data = Map<String, dynamic>.from(result.data as Map);
+    final data = result.data is Map
+        ? Map<String, dynamic>.from(result.data as Map)
+        : <String, dynamic>{};
+    if (data['accepted'] != true) return null;
     final roomId = data['roomId']?.toString() ?? '';
     final inviteCode = data['inviteCode']?.toString() ?? '';
     if (roomId.isEmpty || inviteCode.isEmpty) {
-      throw StateError('Game room was not created.');
+      throw StateError('Server returned an invalid game room.');
     }
-    return AurenGamingRoom(roomId, inviteCode, {
+    final roomData = <String, dynamic>{
       'gameId': 'tic_tac_toe',
+      'hostUid': data['hostUid']?.toString() ?? '',
+      'playerUids': List<String>.from(
+        (data['playerUids'] as List<dynamic>? ?? const []).map((e) => e.toString()),
+      ),
+      'marks': data['marks'] is Map
+          ? Map<String, dynamic>.from(data['marks'] as Map)
+          : <String, dynamic>{},
+      'board': List<String>.from(
+        (data['board'] as List<dynamic>? ?? const []).map((e) => e.toString()),
+      ),
+      'turnUid': data['turnUid']?.toString() ?? '',
+      'winner': data['winner'],
+      'draw': data['draw'] == true,
+      'status': data['status']?.toString() ?? 'ready',
       'inviteCode': inviteCode,
-    });
+    };
+    return AurenGamingRoom(roomId, inviteCode, roomData);
   }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> watchFriendChallenges(String uid) =>
       _db.collection('gaming_friend_challenges').where('toUid', isEqualTo: uid).where('status', isEqualTo: 'pending').limit(20).snapshots();
   Stream<QuerySnapshot<Map<String, dynamic>>> watchOutgoingFriendChallenges(String uid) =>
