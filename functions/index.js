@@ -84,6 +84,34 @@ async function callAurenTextProvider(provider, messages, options = {}) {
   return {ok:false, unavailable:true, message:'Unknown AUREN AI provider.'};
 }
 
+function inferAurenAiTask(message) {
+  const text = String(message || '').trim().toLowerCase();
+  if (!text) return 'chat';
+
+  const translation = [
+    'ترجم', 'ترجمة', 'ترجم لي', 'translate', 'translation',
+    'بالانجليزي', 'بالإنجليزي', 'بالفرنسي', 'بالفرنسية',
+    'بالعربي', 'بالعربية', 'باللغة',
+  ];
+  const summary = [
+    'لخص', 'لخّص', 'تلخيص', 'ملخص', 'ملخّص',
+    'اختصر', 'اختصار', 'summary', 'summarize', 'summarise',
+    'باختصار', 'مختصر',
+  ];
+  const planning = [
+    'خطط', 'خطّة', 'خطة', 'خطه', 'رتب لي', 'رتبلي', 'نظم لي',
+    'نظّم لي', 'جدول', 'خطة عمل', 'خطة يوم', 'خطة أسبوع',
+    'plan', 'planning', 'schedule', 'roadmap', 'organize my day',
+    'organise my day', 'what should i do today',
+  ];
+
+  const has = (items) => items.some((item) => text.includes(item));
+  if (has(translation)) return 'translation';
+  if (has(summary)) return 'summarization';
+  if (has(planning)) return 'planning';
+  return 'chat';
+}
+
 exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB', secrets: [AUREN_AI_API_KEY, OPENROUTER_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, HF_TOKEN] },
   async (request) => {
@@ -186,9 +214,13 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       {role: 'user', content: message},
     ];
 
-    const requestedTask = typeof request.data?.task === 'string' ? request.data.task.trim().toLowerCase() : 'chat';
+    const requestedTask = typeof request.data?.task === 'string'
+      ? request.data.task.trim().toLowerCase()
+      : '';
     const allowedTasks = new Set(['chat', 'planning', 'summarization', 'translation']);
-    const task = allowedTasks.has(requestedTask) ? requestedTask : 'chat';
+    const task = allowedTasks.has(requestedTask)
+      ? requestedTask
+      : inferAurenAiTask(message);
 
     const providerCandidates = [
       'openrouter',
