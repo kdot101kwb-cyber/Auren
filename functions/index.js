@@ -3382,7 +3382,13 @@ exports.processEntertainmentCreationQueue = onDocumentUpdated(
 // Only the worker can read provider secrets. If no endpoint is configured,
 // the job remains waiting_provider and no fake progress is written.
 exports.dispatchEntertainmentToProvider = onDocumentUpdated(
-  'users/{userId}/entertainmentCreationJobs/{jobId}',
+  {
+    document: 'users/{userId}/entertainmentCreationJobs/{jobId}',
+    region: 'us-central1',
+    timeoutSeconds: 540,
+    memory: '1GiB',
+    secrets: [GEMINI_API_KEY, POLLINATIONS_API_KEY, AUREN_ENTERTAINMENT_PROVIDER_URL, AUREN_AI_API_KEY],
+  },
   async (event) => {
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
@@ -3606,6 +3612,7 @@ exports.trackEntertainmentProviderJob = onSchedule(
     timeZone: 'UTC',
     region: 'us-central1',
     timeoutSeconds: 60,
+    secrets: [GEMINI_API_KEY],
   },
   async () => {
     const snap = await db.collectionGroup('entertainmentCreationJobs')
