@@ -234,6 +234,15 @@ async function incrementUnread(uid, conversationId) {
   }, {merge: true});
 }
 
+function makeGamingInviteCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i += 1) {
+    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return code;
+}
+
 exports.createGamingFriendChallenge = onCall(async (request) => {
   const fromUid = request.auth?.uid;
   const toUid = typeof request.data?.toUid === 'string' ? request.data.toUid.trim() : '';
@@ -280,6 +289,111 @@ exports.createGamingFriendChallenge = onCall(async (request) => {
 
   return {ok: true, challengeId: challengeRef.id};
 });
+
+exports.respondGamingFriendChallenge = onCall(
+  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+  async (request) => {
+    const uid = request.auth?.uid;
+    const challengeId = typeof request.data?.challengeId === 'string'
+      ? request.data.challengeId.trim()
+      : '';
+    const accept = request.data?.accept === true;
+
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
+    if (!challengeId || challengeId.length > 128) {
+      throw new HttpsError('invalid-argument', 'Invalid challenge.');
+    }
+
+    const challengeRef = db.collection('gaming_friend_challenges').doc(challengeId);
+
+    if (!accept) {
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(challengeRef);
+        if (!snap.exists) throw new HttpsError('not-found', 'Challenge not found.');
+        const data = snap.data() || {};
+        if (data.toUid !== uid) throw new HttpsError('permission-denied', 'You cannot respond to this challenge.');
+        if (data.status !== 'pending') throw new HttpsError('failed-precondition', 'Challenge is no longer available.');
+        tx.update(challengeRef, {
+          status: 'declined',
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      });
+      return {accepted:false};
+    }
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const inviteCode = makeGamingInviteCode();
+      const roomRef = db.collection('gaming_rooms').doc();
+      const inviteRef = db.collection('gaming_invites').doc(inviteCode);
+
+      try {
+        await db.runTransaction(async (tx) => {
+          const [challengeSnap, inviteSnap] = await Promise.all([
+            tx.get(challengeRef),
+            tx.get(inviteRef),
+          ]);
+
+          if (!challengeSnap.exists) {
+            throw new HttpsError('not-found', 'Challenge not found.');
+          }
+
+          const data = challengeSnap.data() || {};
+          if (data.toUid !== uid) {
+            throw new HttpsError('permission-denied', 'You cannot respond to this challenge.');
+          }
+          if (data.status !== 'pending') {
+            throw new HttpsError('failed-precondition', 'Challenge is no longer available.');
+          }
+
+          const fromUid = typeof data.fromUid === 'string' ? data.fromUid : '';
+          if (!fromUid || fromUid === uid) {
+            throw new HttpsError('failed-precondition', 'Invalid challenger.');
+          }
+
+          if (inviteSnap.exists) {
+            throw new HttpsError('aborted', 'Invite code collision.');
+          }
+
+          tx.set(roomRef, {
+            gameId: 'tic_tac_toe',
+            hostUid: fromUid,
+            playerUids: [fromUid, uid],
+            marks: {[fromUid]:'X', [uid]:'O'},
+            board: Array(9).fill(''),
+            turnUid: fromUid,
+            winner: null,
+            draw: false,
+            status: 'ready',
+            inviteCode,
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+
+          tx.set(inviteRef, {
+            roomId: roomRef.id,
+            hostUid: fromUid,
+            inviteCode,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+
+          tx.update(challengeRef, {
+            status: 'accepted',
+            roomId: roomRef.id,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        });
+
+        return {accepted:true, roomId:roomRef.id, inviteCode};
+      } catch (error) {
+        if (error?.code === 10 || error?.code === 'aborted') continue;
+        throw error;
+      }
+    }
+
+    throw new HttpsError('aborted', 'Could not allocate a unique game invite.');
+  },
+);
+
 
 exports.onGamingFriendChallengeCreated = onDocumentCreated(
   'gaming_friend_challenges/{challengeId}',
