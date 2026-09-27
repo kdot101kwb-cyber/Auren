@@ -20,7 +20,6 @@ class AurenEntertainmentOrchestratorResult {
 class AurenEntertainmentJobOrchestrator {
   final EntertainmentRepository repository;
   final AurenEntertainmentProviderRegistry registry;
-  final AurenEntertainmentProviderStore providerStore;
 
   AurenEntertainmentJobOrchestrator({
     EntertainmentRepository? repository,
@@ -30,7 +29,6 @@ class AurenEntertainmentJobOrchestrator {
         registry = registry ?? AurenEntertainmentProviderRegistry(
           providers: const [AurenPlanningProvider()],
         ),
-        providerStore = providerStore ?? AurenEntertainmentProviderStore();
 
   Future<AurenEntertainmentOrchestratorResult> start(
     String uid,
@@ -54,13 +52,6 @@ class AurenEntertainmentJobOrchestrator {
     }
 
     final status = job['status']?.toString() ?? 'planning';
-    if (status == 'cancelled') {
-      return const AurenEntertainmentOrchestratorResult(
-        accepted: false,
-        provider: 'none',
-        message: 'المهمة ملغاة. أعد المحاولة أولاً.',
-      );
-    }
     if (status == 'ready') {
       return AurenEntertainmentOrchestratorResult(
         accepted: true,
@@ -76,58 +67,19 @@ class AurenEntertainmentJobOrchestrator {
       );
     }
 
-    final provider = registry.forMode(job['mode']?.toString() ?? '');
-    if (provider == null) {
-      return const AurenEntertainmentOrchestratorResult(
-        accepted: false,
-        provider: 'none',
-        message: 'لا يوجد مزوّد متاح لهذا النوع حالياً.',
-      );
-    }
-
-    final request = AurenGenerationRequest(
-      jobId: jobId,
-      mode: job['mode']?.toString() ?? '',
-      mood: job['mood']?.toString() ?? '',
-      length: job['length']?.toString() ?? '',
-      idea: job['idea']?.toString() ?? '',
-      plan: _stringList(job['plan']),
-      assets: _stringList(job['assets']),
-    );
-
-    final generation = await provider.submit(request);
-    await providerStore.recordSubmission(
-      uid,
-      jobId,
-      provider: generation.provider,
-      externalJobId: generation.externalJobId,
-    );
-
-    if (!generation.accepted) {
-      await repository.updateEntertainmentJobStatus(
-        uid,
-        jobId,
-        status: 'planning',
-        progress: 0,
-      );
-      return AurenEntertainmentOrchestratorResult(
-        accepted: false,
-        provider: generation.provider,
-        message: generation.message,
-      );
-    }
-
+    // The queue is server-owned. The client only asks for a fresh planning
+    // state; the Cloud Functions lifecycle re-queues and dispatches it.
     await repository.updateEntertainmentJobStatus(
       uid,
       jobId,
-      status: 'generating',
-      progress: 1,
+      status: 'planning',
+      progress: 0,
     );
 
     return AurenEntertainmentOrchestratorResult(
       accepted: true,
-      provider: generation.provider,
-      message: generation.message,
+      provider: job['provider']?.toString() ?? 'auren_ai',
+      message: 'تمت إعادة المهمة إلى طابور AUREN للتنفيذ.',
     );
   }
 
