@@ -391,7 +391,6 @@ exports.respondGamingFriendChallenge = onCall(
     }
 
     const challengeRef = db.collection('gaming_friend_challenges').doc(challengeId);
-    const challengeKeyRef = db.collection('gaming_friend_challenge_keys').doc();
 
     if (!accept) {
       await db.runTransaction(async (tx) => {
@@ -416,6 +415,7 @@ exports.respondGamingFriendChallenge = onCall(
       return {accepted:false};
     }
 
+    let acceptedFromUid = '';
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const inviteCode = makeGamingInviteCode();
       const roomRef = db.collection('gaming_rooms').doc();
@@ -442,6 +442,7 @@ exports.respondGamingFriendChallenge = onCall(
           }
 
           const fromUid = typeof data.fromUid === 'string' ? data.fromUid : '';
+          acceptedFromUid = fromUid;
           if (!fromUid || fromUid === uid) {
             throw new HttpsError('failed-precondition', 'Invalid challenger.');
           }
@@ -454,9 +455,9 @@ exports.respondGamingFriendChallenge = onCall(
             gameId: 'tic_tac_toe',
             hostUid: fromUid,
             playerUids: [fromUid, uid],
-            marks: {[fromUid]:'X', [uid]:'O'},
+            marks: {[acceptedFromUid]:'X', [uid]:'O'},
             board: Array(9).fill(''),
-            turnUid: fromUid,
+            turnUid: acceptedFromUid,
             winner: null,
             draw: false,
             status: 'ready',
@@ -491,8 +492,8 @@ exports.respondGamingFriendChallenge = onCall(
           accepted:true,
           roomId:roomRef.id,
           inviteCode,
-          hostUid: fromUid,
-          playerUids: [fromUid, uid],
+          hostUid: acceptedFromUid,
+          playerUids: [acceptedFromUid, uid],
           marks: {[fromUid]:'X', [uid]:'O'},
           board: Array(9).fill(''),
           turnUid: fromUid,
