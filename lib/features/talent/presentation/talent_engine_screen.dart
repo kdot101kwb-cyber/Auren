@@ -19,6 +19,15 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
     catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تشغيل الكشاف: $e')));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
+  Future<void> _invite(AurenTalentCandidate candidate) async {
+    final uid=FirebaseAuth.instance.currentUser?.uid;
+    final oid=widget.opportunityId; final title=widget.opportunityTitle;
+    if(uid==null||oid==null||title==null)return;
+    try{await _service.inviteToOpportunity(ownerId:uid,talentUid:candidate.uid,opportunityId:oid,opportunityTitle:title);
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إرسال الدعوة للمواهب.')));}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إرسال الدعوة: $e')));}
+  }
+
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('AUREN Talent Engine'),actions:[IconButton(icon:const Icon(Icons.auto_awesome),tooltip:'AI Scout',onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'أنت AI Scout في AUREN. ساعدني في تحديد نوع الموهبة التي أحتاجها، المهارات المطلوبة، ثم اقترح طريقة البحث والتواصل بأمان.'))))]),
     body:ListView(padding:const EdgeInsets.all(16),children:[
@@ -35,7 +44,7 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
         title:Text(candidate.headline.isEmpty?'AUREN Professional':candidate.headline),
         subtitle:Text('${candidate.reasons.join(' • ')}\n${[...candidate.skills,...candidate.services].take(5).join(' • ')}'),
         isThreeLine:true,
-        trailing:candidate.showContact?IconButton(icon:const Icon(Icons.chat_outlined),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد التواصل مع صاحب هذا الملف بخصوص: ${_query.text.trim()}')))):null,
+        trailing:(widget.opportunityId!=null)?IconButton(icon:const Icon(Icons.mail_outline),tooltip:'دعوة للفرصة',onPressed:()=>_invite(candidate)):candidate.showContact?IconButton(icon:const Icon(Icons.chat_outlined),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد التواصل مع صاحب هذا الملف بخصوص: ${_query.text.trim()}')))):null,
       ))),
     ]);
 }
