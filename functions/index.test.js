@@ -381,3 +381,33 @@ test('entertainment job client updates are restricted to retry/cancel lifecycle 
   assert.match(rules, /affectedKeys\(\)\.hasOnly\(\['status','progress','updatedAt'\]\)/);
   assert.doesNotMatch(rules, /affectedKeys\(\)\.hasOnly\(\['status','provider','externalJobId','progress','queueStatus'/);
 });
+
+
+test('Gaming friend challenges are server-authoritative end to end', () => {
+  assert.match(source, /exports\.createGamingFriendChallenge/);
+  assert.match(source, /exports\.respondGamingFriendChallenge/);
+  const start = source.indexOf('exports.respondGamingFriendChallenge');
+  const end = source.indexOf('exports.onGamingFriendChallengeCreated', start);
+  const fn = source.slice(start, end);
+  assert.match(fn, /data\.toUid !== uid/);
+  assert.match(fn, /status: 'accepted'/);
+  assert.match(fn, /hostUid: fromUid/);
+  assert.match(fn, /playerUids: \[fromUid, uid\]/);
+  assert.match(fn, /status: 'declined'/);
+});
+test('Gaming daily challenge requires a server completion timestamp from today', () => {
+  const start = source.indexOf('exports.claimGamingDailyChallenge');
+  const end = source.indexOf('exports.playGamingMove', start);
+  const fn = source.slice(start, end);
+  assert.match(fn, /finishedAt/);
+  assert.match(fn, /finishedDay!==key/);
+  assert.match(fn, /gaming_challenges/);
+});
+test('Gaming move completion is server-owned and records finishedAt', () => {
+  const start = source.indexOf('exports.playGamingMove');
+  const end = source.indexOf('exports.randomJoin', start);
+  const fn = source.slice(start, end);
+  assert.match(fn, /status: winner \|\| isDraw \? 'finished' : 'ready'/);
+  assert.match(fn, /finishedAt: winner \|\| isDraw \? FieldValue\.serverTimestamp\(\) : null/);
+  assert.match(fn, /lastGameAt:Date\.now\(\)/);
+});
