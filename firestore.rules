@@ -1265,7 +1265,30 @@ service cloud.firestore {
       allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
-    match /opportunity_application_notifications/{notificationId} {
+    match /opportunity_invitations/{invitationId} {
+    allow read: if request.auth != null
+      && (resource.data.talentUid == request.auth.uid || resource.data.ownerId == request.auth.uid);
+    allow create: if request.auth != null
+      && request.resource.data.ownerId == request.auth.uid
+      && request.resource.data.talentUid is string
+      && request.resource.data.talentUid != request.auth.uid
+      && request.resource.data.opportunityId is string
+      && request.resource.data.opportunityTitle is string
+      && request.resource.data.opportunityTitle.size() > 0
+      && request.resource.data.opportunityTitle.size() <= 200
+      && request.resource.data.status == 'pending'
+      && request.resource.data.createdAt is timestamp
+      && exists(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId))
+      && get(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId)).data.ownerId == request.auth.uid;
+    allow update: if request.auth != null
+      && (resource.data.talentUid == request.auth.uid || resource.data.ownerId == request.auth.uid)
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+      && request.resource.data.status in ['accepted','declined','pending']
+      && request.resource.data.updatedAt is timestamp;
+    allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+  }
+
+  match /opportunity_application_notifications/{notificationId} {
       allow create: if request.auth != null
         && request.resource.data.applicantUid == request.auth.uid
         && request.resource.data.recipientUid is string
