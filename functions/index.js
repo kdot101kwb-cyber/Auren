@@ -3011,6 +3011,40 @@ exports.playRpsMove = onCall(
   },
 );
 
+exports.playConnectFourMove = onCall(
+  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
+    const roomId=typeof request.data?.roomId==='string'?request.data.roomId.trim():'';
+    const column=Number.isInteger(request.data?.column)?request.data.column:-1;
+    if(!roomId||roomId.length>128||column<0||column>6) throw new HttpsError('invalid-argument','Invalid Connect Four move.');
+    const roomRef=db.collection('gaming_rooms').doc(roomId); let finished=null;
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(roomRef); if(!snap.exists) throw new HttpsError('not-found','Game room not found.');
+      const d=snap.data()||{}, ps=Array.isArray(d.playerUids)?d.playerUids.filter(v=>typeof v==='string'):[];
+      if(d.gameId!=='connect_four'||ps.length!==2||!ps.includes(uid)) throw new HttpsError('permission-denied','You are not a player in this game.');
+      if(d.status!=='ready'||d.winnerUid||d.draw===true) throw new HttpsError('failed-precondition','Game is already finished.');
+      if(d.turnUid!==uid) throw new HttpsError('failed-precondition','It is not your turn.');
+      const board=Array.isArray(d.board)?d.board.map(v=>typeof v==='string'?v:''):[];
+      if(board.length!==42) throw new HttpsError('failed-precondition','Invalid board.');
+      const marks=d.marks&&typeof d.marks==='object'?d.marks:{}, mark=marks[uid];
+      if(mark!=='R'&&mark!=='Y') throw new HttpsError('failed-precondition','Player mark is invalid.');
+      let row=-1; for(let r=5;r>=0;r--){const i=r*7+column;if(!board[i]){row=r;break;}}
+      if(row<0) throw new HttpsError('failed-precondition','That column is full.');
+      board[row*7+column]=mark;
+      const four=(dr,dc)=>{let n=1;for(const s of [1,-1]){let r=row+dr*s,c=column+dc*s;while(r>=0&&r<6&&c>=0&&c<7&&board[r*7+c]===mark){n++;r+=dr*s;c+=dc*s;}}return n>=4;};
+      const won=[[1,0],[0,1],[1,1],[1,-1]].some(([dr,dc])=>four(dr,dc));
+      const draw=!won&&board.every(v=>v);
+      const next=won||draw?'':ps.find(p=>p!==uid)||uid;
+      tx.update(roomRef,{board,winnerUid:won?uid:null,draw,turnUid:next,status:won||draw?'finished':'ready',finishedAt:won||draw?FieldValue.serverTimestamp():null,updatedAt:FieldValue.serverTimestamp()});
+      if(won||draw) finished={players:ps,winner:won?uid:null,draw};
+    });
+    if(finished){const batch=db.batch();for(const p of finished.players){const win=finished.winner===p,xp=finished.draw?15:win?50:15;batch.set(db.collection('users').doc(p).collection('gaming_results').doc(roomId+'_'+Date.now()),{roomId,gameId:'connect_four',result:finished.draw?'draw':win?'win':'loss',xp,createdAt:FieldValue.serverTimestamp()});batch.set(db.collection('users').doc(p).collection('gaming_profile').doc('stats'),{xp:FieldValue.increment(xp),seasonXp:FieldValue.increment(xp),games:FieldValue.increment(1),wins:FieldValue.increment(win?1:0),updatedAt:FieldValue.serverTimestamp()},{merge:true});}await batch.commit();}
+    return {ok:true};
+  },
+);
+
 exports.playGamingMove = onCall(
   {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
   async (request) => {
