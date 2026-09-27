@@ -9,6 +9,7 @@ import '../../business/presentation/business_growth_screen.dart';
 import '../../local/presentation/local_intelligence_screen.dart';
 import '../../payments/presentation/wallet_screen.dart';
 import '../../stay/presentation/stay_screen.dart';
+import '../../transport/presentation/transport_screen.dart';
 import '../../travel/presentation/travel_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
@@ -30,6 +31,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('People', 'اكتشف أشخاصًا واهتمامات جديدة', Icons.people_outline),
     _DiscoverItem('Places', 'أماكن وتجارب حول العالم', Icons.place_outlined),
     _DiscoverItem('Stay', 'فنادق وإقامات وحجوزات السفر', Icons.hotel_outlined),
+    _DiscoverItem('Transport', 'تاكسي وتنقل داخل المدن', Icons.local_taxi_outlined),
     _DiscoverItem('Travel', 'خطط رحلاتك واحفظ وجهاتك', Icons.flight_takeoff_outlined),
     _DiscoverItem('Local Intelligence', 'الأعمال والخدمات والفرص في منطقتك', Icons.location_searching_outlined),
     _DiscoverItem('Creators', 'مبدعون ومحتوى يستحق المتابعة', Icons.movie_creation_outlined),
@@ -80,6 +82,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
   void _open(BuildContext context, _DiscoverItem item) {
     if (item.title == 'Travel') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen()));
+      return;
+    }
+    if (item.title == 'Transport') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTransportScreen()));
       return;
     }
     if (item.title == 'Stay') {
