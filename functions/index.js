@@ -20,6 +20,9 @@ const AUREN_ENTERTAINMENT_PROVIDER_URL = defineSecret(
   'AUREN_ENTERTAINMENT_PROVIDER_URL',
 );
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
+// Free-first multimodal provider. The key is server-only; usage depends on the
+// user's Pollinations/Pollen balance or free quest credits.
+const POLLINATIONS_API_KEY = defineSecret('POLLINATIONS_API_KEY');
 
 const GEMINI_MEDIA_MODELS = Object.freeze({
   'فيديو': 'veo-3.1-generate-preview',
@@ -40,6 +43,100 @@ function buildGeminiPrompt({ mode, mood, length, idea, plan, assets }) {
     assetList ? `Required assets: ${assetList}.` : '',
     'Create original content. Do not imitate a living artist or copyrighted work style.',
   ].filter(Boolean).join('\\n');
+}
+
+async function submitPollinationsEntertainmentJob({ jobId, mode, mood, length, idea, plan, assets }) {
+  const apiKey = POLLINATIONS_API_KEY.value().trim();
+  if (!apiKey) {
+    return { accepted: false, provider: 'pollinations', message: 'مفتاح Pollinations غير مفعّل بعد.' };
+  }
+
+  const prompt = buildGeminiPrompt({ mode, mood, length, idea, plan, assets });
+  let endpoint = '';
+  let outputType = '';
+  let mimeType = '';
+
+  if (mode === 'فيديو') {
+    endpoint = 'https://gen.pollinations.ai/video/' + encodeURIComponent(prompt) + '?duration=5';
+    outputType = 'video';
+    mimeType = 'video/mp4';
+  } else if (mode === 'قصة' || mode === 'عالم') {
+    endpoint = 'https://gen.pollinations.ai/image/' + encodeURIComponent(prompt) + '?model=flux';
+    outputType = 'image';
+    mimeType = 'image/jpeg';
+  } else if (mode === 'بودكاست') {
+    endpoint = 'https://gen.pollinations.ai/audio/' + encodeURIComponent(prompt) + '?voice=nova';
+    outputType = 'audio';
+    mimeType = 'audio/mpeg';
+  } else {
+    return {
+      accepted: false,
+      provider: 'pollinations',
+      message: 'Pollinations مناسب هنا للصورة/الفيديو/الصوت، لكنه لا يوفّر لنا حالياً Music Generation API موثوقاً لهذا المسار.',
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), mode === 'فيديو' ? 320000 : 60000);
+  try {
+    const response = await fetch(endpoint, {
+      headers: {
+        authorization: 'Bearer ' + apiKey,
+        'x-auren-job-id': jobId,
+      },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const message = await response.text().catch(() => '');
+      return {
+        accepted: false,
+        provider: 'pollinations',
+        message: message.slice(0, 500) || ('Pollinations HTTP ' + response.status),
+      };
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const maxBytes = outputType === 'video' ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
+    if (!buffer.length || buffer.length > maxBytes) {
+      return { accepted: false, provider: 'pollinations', message: 'حجم الناتج من Pollinations غير صالح.' };
+    }
+
+    return {
+      accepted: true,
+      provider: 'pollinations',
+      inlineOutput: { type: outputType, mimeType, buffer },
+      message: 'تم إنشاء الناتج عبر Pollinations.',
+    };
+  } catch (error) {
+    return {
+      accepted: false,
+      provider: 'pollinations',
+      message: error?.name === 'AbortError'
+        ? 'انتهت مهلة Pollinations.'
+        : 'تعذر الاتصال بـ Pollinations.',
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function persistBinaryEntertainmentOutput({ uid, jobId, output }) {
+  const type = output?.type;
+  const mimeType = typeof output?.mimeType === 'string' ? output.mimeType : 'application/octet-stream';
+  const buffer = Buffer.isBuffer(output?.buffer) ? output.buffer : null;
+  if (!buffer || !buffer.length) return { ok: false, message: 'ناتج الوسائط فارغ.' };
+
+  const ext = type === 'video' ? 'mp4' : type === 'audio' ? 'mp3' : 'jpg';
+  const path = 'entertainment_outputs/' + uid + '/' + jobId + '/output.' + ext;
+  const file = storage.bucket().file(path);
+  await file.save(buffer, {
+    resumable: false,
+    metadata: { contentType: mimeType, cacheControl: 'private,max-age=3600' },
+  });
+  const [url] = await file.getSignedUrl({
+    action: 'read',
+    expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+  });
+  return { ok: true, output: { type, mimeType, storagePath: path, url } };
 }
 
 async function submitGeminiEntertainmentJob({ jobId, mode, mood, length, idea, plan, assets }) {
@@ -3305,7 +3402,9 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
     };
     const result = after.provider === 'gemini'
       ? await submitGeminiEntertainmentJob(request)
-      : await submitEntertainmentProviderJob(request);
+      : after.provider === 'pollinations'
+          ? await submitPollinationsEntertainmentJob(request)
+          : await submitEntertainmentProviderJob(request);
 
     const ref = event.data.after.ref;
     if (!result.accepted) {
@@ -3318,11 +3417,11 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
       return;
     }
 
-    if (result.inlineBody) {
-      const outputResult = await persistGeminiOutput({
+    if (result.inlineOutput) {
+      const outputResult = await persistBinaryEntertainmentOutput({
         uid: event.params.userId,
         jobId: event.params.jobId,
-        body: result.inlineBody,
+        output: result.inlineOutput,
       });
       if (!outputResult.ok) {
         await ref.set({
@@ -3338,7 +3437,7 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
         status: 'ready',
         queueStatus: 'completed',
         progress: 100,
-        providerMessage: 'اكتملت عملية Gemini وتم حفظ الناتج.',
+        providerMessage: 'اكتملت عملية ' + result.provider + ' وتم حفظ الناتج.',
         providerResult: outputResult.output,
         workerFinishedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
