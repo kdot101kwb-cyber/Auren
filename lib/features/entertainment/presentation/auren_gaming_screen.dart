@@ -239,19 +239,55 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   }
   Widget _arenaCard(){
     if(_arenaRoomId==null)return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      const Text('🔥 AUREN Arena',style:TextStyle(fontWeight:FontWeight.w900,fontSize:20)),const SizedBox(height:6),const Text('قتال سريع 1 ضد 1 — ضربات، صد، وسلسلة انتصارات.'),
-      const SizedBox(height:10),Row(children:[Expanded(child:FilledButton.icon(onPressed:_createArena,icon:const Icon(Icons.add),label:const Text('إنشاء'))),const SizedBox(width:8),Expanded(child:TextField(controller:_arenaCodeController,maxLength:6,textCapitalization:TextCapitalization.characters,decoration:const InputDecoration(labelText:'رمز',counterText:'',border:OutlineInputBorder()))) ]),
-      const SizedBox(height:8),FilledButton.icon(onPressed:_joinArena,icon:const Icon(Icons.login),label:const Text('انضم')),
+      const Text('🔥 AUREN Arena',style:TextStyle(fontWeight:FontWeight.w900,fontSize:20)),
+      const SizedBox(height:6),
+      const Text('قتال سريع 1 ضد 1 — أول لاعب يصل إلى 3 جولات يفوز بالمباراة.'),
+      const SizedBox(height:10),
+      Row(children:[
+        Expanded(child:FilledButton.icon(onPressed:_createArena,icon:const Icon(Icons.add),label:const Text('إنشاء'))),
+        const SizedBox(width:8),
+        Expanded(child:TextField(controller:_arenaCodeController,maxLength:6,textCapitalization:TextCapitalization.characters,decoration:const InputDecoration(labelText:'رمز',counterText:'',border:OutlineInputBorder()))),
+      ]),
+      const SizedBox(height:8),
+      FilledButton.icon(onPressed:_joinArena,icon:const Icon(Icons.login),label:const Text('انضم')),
     ])));
-    return StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(stream:FirebaseFirestore.instance.collection('arena_rooms').doc(_arenaRoomId).snapshots(),builder:(context,snap){
-      final d=snap.data?.data()??<String,dynamic>{};final players=List<String>.from((d['playerUids'] as List<dynamic>? ?? const []).map((e)=>e.toString()));final hp=Map<String,dynamic>.from(d['hp'] as Map? ?? {});
-      final uid=FirebaseAuth.instance.currentUser?.uid;final opponent=players.where((p)=>p!=uid).isEmpty?null:players.where((p)=>p!=uid).first;final myHp=(hp[uid] as num?)?.toInt()??100;final enemyHp=(hp[opponent] as num?)?.toInt()??100;
-      return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(children:[
-        const Text('🔥 AUREN Arena',style:TextStyle(fontSize:26,fontWeight:FontWeight.w900)),Text('الجولة '+(d['round']??1).toString()+' • أنت '+myHp.toString()+' HP • الخصم '+enemyHp.toString()+' HP'),
-        const SizedBox(height:12),Wrap(spacing:8,children:[FilledButton.tonal(onPressed:players.length==2&&d['turnUid']==uid?()=>_arenaMove(0):null,child:const Text('⚔️ ضربة')),FilledButton.tonal(onPressed:players.length==2&&d['turnUid']==uid?()=>_arenaMove(1):null,child:const Text('💥 قوية')),FilledButton.tonal(onPressed:players.length==2&&d['turnUid']==uid?()=>_arenaMove(2):null,child:const Text('🛡️ صد'))]),
-        const SizedBox(height:8),Text(_arenaAction<0?'اختر حركة':'تم إرسال الحركة • انتظر الخصم'),if(_arenaCode!=null)Text('رمز الدعوة: '+_arenaCode!),OutlinedButton(onPressed:()=>setState(()=>{_arenaRoomId=null,_arenaCode=null,_arenaAction=-1}),child:const Text('الخروج')),
-      ])));
-    });
+    return StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(
+      stream:FirebaseFirestore.instance.collection('arena_rooms').doc(_arenaRoomId).snapshots(),
+      builder:(context,snap){
+        if(snap.hasError)return const Text('تعذر تحميل Arena.');
+        final d=snap.data?.data()??<String,dynamic>{};
+        final players=List<String>.from((d['playerUids'] as List<dynamic>? ?? const []).map((e)=>e.toString()));
+        final hp=Map<String,dynamic>.from(d['hp'] as Map? ?? {});
+        final wins=Map<String,dynamic>.from(d['wins'] as Map? ?? {});
+        final uid=FirebaseAuth.instance.currentUser?.uid;
+        final opponent=players.where((p)=>p!=uid).isEmpty?null:players.where((p)=>p!=uid).first;
+        final myHp=(hp[uid] as num?)?.toInt()??100;
+        final enemyHp=(hp[opponent] as num?)?.toInt()??100;
+        final myWins=(wins[uid] as num?)?.toInt()??0;
+        final enemyWins=(wins[opponent] as num?)?.toInt()??0;
+        final ready=players.length==2&&d['status']=='ready'&&d['turnUid']==uid;
+        final finished=d['status']=='finished';
+        final matchWinner=d['lastAction'] is Map ? (d['lastAction'] as Map)['winnerUid']?.toString() : null;
+        return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(children:[
+          const Text('🔥 AUREN Arena',style:TextStyle(fontSize:26,fontWeight:FontWeight.w900)),
+          Text('الجولة '+(d['round']??1).toString()+' • أنت '+myHp.toString()+' HP • الخصم '+enemyHp.toString()+' HP'),
+          const SizedBox(height:6),
+          Text('النتيجة: '+myWins.toString()+' - '+enemyWins.toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+          const SizedBox(height:12),
+          Wrap(spacing:8,children:[
+            FilledButton.tonal(onPressed:ready?()=>_arenaMove(0):null,child:const Text('⚔️ ضربة')),
+            FilledButton.tonal(onPressed:ready?()=>_arenaMove(1):null,child:const Text('💥 قوية')),
+            FilledButton.tonal(onPressed:ready?()=>_arenaMove(2):null,child:const Text('🛡️ صد')),
+          ]),
+          const SizedBox(height:8),
+          if(players.length<2) const Text('بانتظار لاعب آخر…'),
+          if(players.length==2&&!finished&&!ready) const Text('دور الخصم…'),
+          if(finished) Text(matchWinner==uid?'🏆 فزت بالمباراة!':'🏆 انتهت المباراة — حظ أوفر!',style:const TextStyle(fontWeight:FontWeight.w900)),
+          if(_arenaAction>=0&&!finished) const Text('تم إرسال الحركة • انتظر الخصم'),
+          if(_arenaCode!=null)Text('رمز الدعوة: '+_arenaCode!),
+          OutlinedButton(onPressed:()=>setState((){_arenaRoomId=null;_arenaCode=null;_arenaAction=-1;}),child:const Text('الخروج')),
+        ])));
+      });
   }
 
   Widget _statsCard() => Card(child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Gaming Profile', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)), const SizedBox(height: 8), Text('$_xp XP  •  $_games مباريات  •  $_wins انتصارات')])), CircleAvatar(radius: 25, child: Text('${_xp ~/ 100 + 1}'))])));
