@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/content/content_platform_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../entertainment/presentation/entertainment_detail_screen.dart';
 
 class AurenContentPlatformScreen extends StatefulWidget {
   const AurenContentPlatformScreen({super.key});
@@ -35,7 +36,21 @@ class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>
           if(videos.isEmpty)return const Center(child:Text('لا توجد فيديوهات منشورة حالياً.'));
           return ListView.separated(padding:const EdgeInsets.all(16),itemCount:videos.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i){
             final v=videos[i];
-            return Card(child:ListTile(leading:v.imageUrl.isEmpty?const CircleAvatar(child:Icon(Icons.play_arrow)):CircleAvatar(backgroundImage:NetworkImage(v.imageUrl)),title:Text(v.title),subtitle:Text('${v.type} • ${v.description}',maxLines:2,overflow:TextOverflow.ellipsis),trailing:const Icon(Icons.play_circle_fill)));
+            return Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: v.imageUrl.isEmpty
+                    ? const CircleAvatar(child: Icon(Icons.play_arrow))
+                    : CircleAvatar(backgroundImage: NetworkImage(v.imageUrl)),
+                title: Text(v.title),
+                subtitle: Text('${v.type} • ${v.description}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                trailing: const Icon(Icons.play_circle_fill),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: v.id)),
+                ),
+              ),
+            );
           });
         }))
       ])
