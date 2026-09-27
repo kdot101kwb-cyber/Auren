@@ -195,13 +195,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   Future<void> _executeAction(AurenActionRequest action) async {
     if (_uid == null || action.status != 'approved') return;
     try {
-      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
-          .httpsCallable('executeAurenAction');
-      final response = await callable.call(<String, dynamic>{
-        'actionId': action.id,
-      });
-      final data = Map<String, dynamic>.from(response.data as Map);
-      final result = data['result'];
+      final status = await _actionRepository.execute(action.id);
+      final refreshed = await _actionRepository.get(_uid!, action.id);
+      final result = refreshed?.result;
+      if (status != 'completed') {
+        throw StateError('Action did not complete.');
+      }
       String message = 'تم تنفيذ العملية بنجاح.';
       if (result is Map) {
         switch (result['type']?.toString()) {
@@ -213,6 +212,15 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
             break;
           case 'echo':
             message = 'تم تنفيذ الطلب بنجاح.';
+            break;
+          case 'goal_created':
+            message = 'تم إنشاء الهدف بنجاح.';
+            break;
+          case 'message_sent':
+            message = 'تم إرسال الرسالة بنجاح.';
+            break;
+          case 'content_job_created':
+            message = 'تم إنشاء مهمة المحتوى وبدأت في AUREN Entertainment.';
             break;
         }
       }
@@ -423,6 +431,8 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
             case 'completed': return 'تم التنفيذ بنجاح';
             case 'failed': return 'تعذر تنفيذ العملية';
             case 'rejected': return 'تم رفض العملية';
+            case 'expired': return 'انتهت صلاحية الطلب';
+            case 'cancelled': return 'تم إلغاء العملية';
             case 'executing': return 'جارٍ التنفيذ';
             default: return status;
           }
@@ -443,6 +453,9 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
             final type = result['type']?.toString();
             if (type == 'note_created') return 'تم إنشاء الملاحظة بنجاح.';
             if (type == 'memory_saved') return 'تم حفظ المعلومة في ذاكرة AUREN.';
+            if (type == 'goal_created') return 'تم إنشاء الهدف بنجاح.';
+            if (type == 'message_sent') return 'تم إرسال الرسالة بنجاح.';
+            if (type == 'content_job_created') return 'تم إنشاء مهمة المحتوى وبدأت في AUREN Entertainment.';
             if (type == 'echo') return 'تم تنفيذ الطلب بنجاح.';
           }
           if (result == null || result.toString().trim().isEmpty) return statusLabel(action.status);
