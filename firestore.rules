@@ -158,8 +158,7 @@ service cloud.firestore {
       && request.resource.data.idea is string
       && request.resource.data.idea.size() <= 5000
       && request.resource.data.status == 'planning'
-      && request.resource.data.provider is string
-      && request.resource.data.provider.size() <= 80
+      && request.resource.data.provider in ['auren_ai','gemini','server_provider']
       && request.resource.data.progress == 0
       && request.resource.data.plan is list
       && request.resource.data.plan.size() >= 2
