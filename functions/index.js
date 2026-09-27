@@ -383,7 +383,19 @@ exports.respondGamingFriendChallenge = onCall(
           });
         });
 
-        return {accepted:true, roomId:roomRef.id, inviteCode};
+        return {
+          accepted:true,
+          roomId:roomRef.id,
+          inviteCode,
+          hostUid: fromUid,
+          playerUids: [fromUid, uid],
+          marks: {[fromUid]:'X', [uid]:'O'},
+          board: Array(9).fill(''),
+          turnUid: fromUid,
+          winner: null,
+          draw: false,
+          status: 'ready',
+        };
       } catch (error) {
         if (error?.code === 10 || error?.code === 'aborted') continue;
         throw error;
