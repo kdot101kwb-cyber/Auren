@@ -1799,17 +1799,14 @@ service cloud.firestore {
     match /gaming_friend_challenges/{challengeId} {
       allow read: if request.auth != null
         && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
-      // Creation is server-authoritative so clients cannot spoof players,
-      // bypass target existence checks, or flood duplicate invitations.
+      // Challenge lifecycle is server-authoritative.
       allow create: if false;
-      allow update: if request.auth != null
-        && resource.data.toUid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','roomId'])
-        && request.resource.data.status in ['accepted','declined']
-        && (request.resource.data.status == 'declined'
-          || (request.resource.data.roomId is string && request.resource.data.roomId.size() > 0));
-      allow delete: if request.auth != null
-        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /gaming_friend_challenge_keys/{keyId} {
+      allow read, write: if false;
     }
 
     match /gaming_invites/{inviteCode} {
