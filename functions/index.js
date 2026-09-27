@@ -206,6 +206,120 @@ function normalizeActionRequest(intent, message) {
   return base;
 }
 
+const AUREN_ACTION_DEFINITIONS = {
+  'demo.echo': { requiresApproval: true, keys: ['text'] },
+  'demo.create_note': { requiresApproval: true, keys: ['text'] },
+  'memory.save': { requiresApproval: true, keys: ['key', 'value'] },
+  'goal.create': { requiresApproval: true, keys: ['title'] },
+};
+
+function validateAurenAction(type, payload) {
+  const definition = AUREN_ACTION_DEFINITIONS[type];
+  if (!definition) throw new Error('Unsupported AUREN action.');
+  const keys = Object.keys(payload || {});
+  if (keys.some((key) => !definition.keys.includes(key))) throw new Error('Unsupported action payload.');
+  return definition;
+}
+
+exports.approveAurenAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+    const actionId = String(request.data?.actionId || '').trim();
+    if (!actionId || actionId.length > 128) throw new Error('Invalid action id.');
+    const ref = db.collection('users').doc(uid).collection('actions').doc(actionId);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists || snap.data()?.status !== 'pending') throw new Error('Action is not pending.');
+      const data = snap.data() || {};
+      const definition = validateAurenAction(String(data.actionType || ''), data.payload || {});
+      if (!definition.requiresApproval) throw new Error('Approval is not required.');
+      tx.update(ref, {status:'approved', approvedAt:FieldValue.serverTimestamp(), approvedBy:uid, updatedAt:FieldValue.serverTimestamp()});
+    });
+    return {status:'approved', actionId};
+  }
+);
+
+exports.rejectAurenAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+    const actionId = String(request.data?.actionId || '').trim();
+    const ref = db.collection('users').doc(uid).collection('actions').doc(actionId);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data()?.status !== 'pending') throw new Error('Action is not pending.');
+    await ref.update({status:'rejected', rejectedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+    return {status:'rejected', actionId};
+  }
+);
+
+exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB'},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new Error('Unauthenticated');
+    const actionId = String(request.data?.actionId || '').trim();
+    const ref = db.collection('users').doc(uid).collection('actions').doc(actionId);
+    let action;
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Action not found.');
+      const data = snap.data() || {};
+      if (data.status !== 'approved' || data.requiresApproval !== true) throw new Error('Action must be approved before execution.');
+      validateAurenAction(String(data.actionType || ''), data.payload || {});
+      action = {type:String(data.actionType), payload:data.payload || {}};
+      tx.update(ref,{status:'executing',executionStartedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    });
+    let result;
+    try {
+      if (action.type === 'demo.echo') result={type:'echo',text:String(action.payload.text||'').slice(0,2000)};
+      else if (action.type === 'demo.create_note') {
+        const text=String(action.payload.text||'').trim().slice(0,5000);
+        if(!text) throw new Error('Note text is required.');
+        const noteRef=db.collection('users').doc(uid).collection('notes').doc();
+        await noteRef.set({text,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+        result={type:'note_created',noteId:noteRef.id};
+      } else if (action.type === 'memory.save') {
+        const key=String(action.payload.key||'').trim().slice(0,120);
+        const value=String(action.payload.value||'').trim().slice(0,2000);
+        if(!key||!value) throw new Error('Memory key and value are required.');
+        const memoryRef=db.collection('users').doc(uid).collection('memory').doc();
+        await memoryRef.set({key,value,enabled:true,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+        result={type:'memory_saved',memoryId:memoryRef.id};
+      } else if (action.type === 'goal.create') {
+        const title=String(action.payload.title||'').trim().slice(0,300);
+        if(!title) throw new Error('Goal title is required.');
+        const goalRef=db.collection('users').doc(uid).collection('goals').doc();
+        await goalRef.set({title,description:'',status:'active',progress:0,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+        result={type:'goal_created',goalId:goalRef.id};
+      } else throw new Error('Action is not executable yet.');
+      await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      await db.collection('users').doc(uid).collection('action_audit').doc().set({actionId,actionType:action.type,status:'completed',createdAt:FieldValue.serverTimestamp()});
+      return {status:'completed',actionId,result};
+    } catch(error) {
+      const message=String(error?.message||error).slice(0,500);
+      await ref.update({status:'failed',result:{type:'error',message},failedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      throw error;
+    }
+  }
+);
+
+exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new Error('Unauthenticated');
+    const actionId=String(request.data?.actionId||'').trim();
+    const ref=db.collection('users').doc(uid).collection('actions').doc(actionId);
+    const snap=await ref.get();
+    if(!snap.exists || !['pending','approved'].includes(snap.data()?.status)) throw new Error('Action cannot be cancelled.');
+    await ref.update({status:'cancelled',cancelledAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    return {status:'cancelled',actionId};
+  }
+);
+
 exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB', secrets: [AUREN_AI_API_KEY, OPENROUTER_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, HF_TOKEN] },
   async (request) => {
