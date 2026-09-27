@@ -10,6 +10,9 @@ class AurenExtraGamesScreen extends StatefulWidget {
 
 class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
   int _selected = 0;
+  int _gamingXp = 0;
+  int _gamesPlayed = 0;
+  final Set<String> _gameBadges = {};
   final _games = const [
     ('Memory', Icons.grid_view_rounded),
     ('Quiz', Icons.quiz_outlined),
@@ -48,11 +51,32 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
             ),
           ),
         ),
+        Padding(padding: const EdgeInsets.fromLTRB(12, 4, 12, 8), child: Row(children: [
+          Expanded(child: _statTile(Icons.stars_rounded, 'XP', '\$_gamingXp')), const SizedBox(width: 8),
+          Expanded(child: _statTile(Icons.sports_esports, 'جولات', '\$_gamesPlayed')), const SizedBox(width: 8),
+          Expanded(child: _statTile(Icons.workspace_premium, 'جوائز', '\${_gameBadges.length}')),
+        ])),
         Expanded(child: _buildSelectedGame()),
       ]),
     );
   }
 }
+
+  Widget _statTile(IconData icon, String label, String value) {
+    return Card(margin: EdgeInsets.zero, child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      child: Row(children: [Icon(icon, size: 18), const SizedBox(width: 6),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: const TextStyle(fontSize: 11)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
+        ])),
+      ]),
+    ));
+  }
+
+  void _awardGamingXp({int base = 10, String? badge}) {
+    setState(() { _gamingXp += base; _gamesPlayed++; if (badge != null) _gameBadges.add(badge); });
+  }
 
   Widget _buildSelectedGame() {
     if (_selected < 17) {
