@@ -31,17 +31,24 @@ class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>
               stream: uid == null ? const Stream<bool>.empty() : AurenContentPlatformService.instance.watchSubscribed(uid, c.id),
               builder: (context, sub) {
                 final subscribed = sub.data ?? _subscribedChannels.contains(c.id);
-                return FilterChip(
-                  avatar: const Icon(Icons.tv_outlined, size: 18),
-                  label: Text(c.name),
-                  selected: selectedChannelId == c.id,
-                  onSelected: (_) => setState(() => selectedChannelId = selectedChannelId == c.id ? null : c.id),
-                  secondarySelected: subscribed,
-                  onDeleted: uid == null ? null : () async {
-                    await AurenContentPlatformService.instance.subscribe(uid, c.id, !subscribed);
-                    if (mounted) setState(() => subscribed ? _subscribedChannels.remove(c.id) : _subscribedChannels.add(c.id));
-                  },
-                );
+                return Row(mainAxisSize: MainAxisSize.min, children: [
+                  FilterChip(
+                    avatar: const Icon(Icons.tv_outlined, size: 18),
+                    label: Text(c.name),
+                    selected: selectedChannelId == c.id,
+                    onSelected: (_) => setState(() => selectedChannelId = selectedChannelId == c.id ? null : c.id),
+                  ),
+                  if (uid != null)
+                    IconButton(
+                      tooltip: subscribed ? 'إلغاء المتابعة' : 'متابعة القناة',
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(subscribed ? Icons.notifications_active : Icons.notifications_none),
+                      onPressed: () async {
+                        await AurenContentPlatformService.instance.subscribe(uid, c.id, !subscribed);
+                        if (mounted) setState(() => subscribed ? _subscribedChannels.remove(c.id) : _subscribedChannels.add(c.id));
+                      },
+                    ),
+                ]);
               },
             );
           });
