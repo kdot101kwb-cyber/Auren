@@ -1032,6 +1032,28 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
+    match /supply_requests/{requestId} {
+      allow read: if request.auth != null && resource.data.status == 'open';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 160
+        && request.resource.data.description is string && request.resource.data.description.size() > 0 && request.resource.data.description.size() <= 3000
+        && request.resource.data.category is string && request.resource.data.category.size() <= 100
+        && request.resource.data.city is string && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() <= 100
+        && request.resource.data.targetCountries is list && request.resource.data.targetCountries.size() <= 20
+        && request.resource.data.requestedSkills is list && request.resource.data.requestedSkills.size() <= 20
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && request.resource.data.status in ['open','closed']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
     match /users/{userId}/commerce_intents/{intentId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
