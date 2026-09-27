@@ -1011,6 +1011,27 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /businesses/{businessId}/growth_campaigns/{campaignId} {
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.businessId == businessId
+        && request.resource.data.status == 'draft'
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 120
+        && request.resource.data.goal is string && request.resource.data.goal.size() > 0 && request.resource.data.goal.size() <= 500
+        && request.resource.data.audience is string && request.resource.data.audience.size() <= 300
+        && request.resource.data.channel in ['Social','Messenger','Email','Community','Creator']
+        && request.resource.data.message is string && request.resource.data.message.size() <= 2000
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && request.resource.data.status in ['draft','active','paused','completed']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
     match /courses/{courseId} {
       allow read: if request.auth != null && resource.data.status == 'published';
       allow create, update, delete: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
