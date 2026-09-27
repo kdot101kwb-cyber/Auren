@@ -112,6 +112,25 @@ function inferAurenAiTask(message) {
   return 'chat';
 }
 
+function buildAurenActionPlan(intent) {
+  const safe = {
+    save_memory: {type:'memory.save', requiresApproval:true},
+    create_note: {type:'note.create', requiresApproval:true},
+    set_goal: {type:'goal.create', requiresApproval:true},
+    plan_day: {type:'plan.generate', requiresApproval:false},
+    find_opportunity: {type:'opportunity.search', requiresApproval:false},
+    find_business: {type:'business.search', requiresApproval:false},
+    create_content: {type:'entertainment.create', requiresApproval:true},
+    chat: {type:'chat.reply', requiresApproval:false},
+  };
+  const item = safe[intent] || safe.chat;
+  return {
+    type: item.type,
+    requiresApproval: item.requiresApproval,
+    status: item.requiresApproval ? 'awaiting_approval' : 'ready',
+  };
+}
+
 function inferAurenIntent(message) {
   const text = String(message || '').trim().toLowerCase();
   if (!text) return { intent: 'chat', confidence: 1, requiresApproval: false, entities: {} };
@@ -178,6 +197,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       ? request.data.requestId.trim() : '';
     const inferredTask = inferAurenAiTask(message);
     const inferredIntent = inferAurenIntent(message);
+    const actionPlan = buildAurenActionPlan(inferredIntent.intent);
     const actionRequest = normalizeActionRequest(inferredIntent.intent, message);
     if (!conversationId || !message || message.length > 12000 ||
         !requestId || requestId.length > 120 ||
@@ -210,6 +230,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         task: typeof request.data?.task === 'string' ? request.data.task.trim().toLowerCase() : null,
         inferredTask,
         intent: inferredIntent.intent,
+        actionPlan,
         startedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
