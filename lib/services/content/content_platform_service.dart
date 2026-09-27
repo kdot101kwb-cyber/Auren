@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/models/entertainment.dart';
 import '../../core/models/entertainment.dart';
 
 class AurenChannel {
@@ -7,10 +8,14 @@ class AurenChannel {
   const AurenChannel({required this.id,required this.ownerId,required this.name,required this.description,required this.avatarUrl,required this.subscribers});
   factory AurenChannel.fromDoc(DocumentSnapshot<Map<String,dynamic>> d){final x=d.data()??{};return AurenChannel(id:d.id,ownerId:(x['ownerId']??'').toString(),name:(x['name']??'').toString(),description:(x['description']??'').toString(),avatarUrl:(x['avatarUrl']??'').toString(),subscribers:(x['subscribers'] as num?)?.toInt()??0);}
 }
+class AurenContentVideo { final String id,title,description,mediaUrl,imageUrl,creatorId,type; const AurenContentVideo({required this.id,required this.title,required this.description,required this.mediaUrl,required this.imageUrl,required this.creatorId,required this.type}); factory AurenContentVideo.fromDoc(DocumentSnapshot<Map<String,dynamic>> d){final x=d.data()??{};return AurenContentVideo(id:d.id,title:(x['title']??'').toString(),description:(x['description']??'').toString(),mediaUrl:(x['mediaUrl']??'').toString(),imageUrl:(x['imageUrl']??'').toString(),creatorId:(x['creatorId']??'').toString(),type:(x['type']??'').toString());}}
+
 class AurenContentPlatformService {
   AurenContentPlatformService._(); static final instance=AurenContentPlatformService._(); final _db=FirebaseFirestore.instance;
   Stream<List<AurenEntertainmentItem>> watchPublicVideos({String query=''}) => _db.collection('entertainment_items').where('visibility',isEqualTo:'public').limit(100).snapshots().map((s){ final q=query.trim().toLowerCase(); return s.docs.map((d)=>AurenEntertainmentItem.fromMap(d.id,d.data())).where((x)=>x.isVideo && x.mediaUrl.isNotEmpty && (q.isEmpty || ('${x.title} ${x.description} ${x.type}'.toLowerCase().contains(q)))).take(50).toList(); });
   Stream<List<AurenChannel>> watchChannels() => _db.collection('content_channels').where('public',isEqualTo:true).limit(100).snapshots().map((s)=>s.docs.map(AurenChannel.fromDoc).toList());
+
+  Stream<List<AurenContentVideo>> watchVideos() => _db.collection('entertainment_items').limit(100).snapshots().map((s)=>s.docs.map((d){final x=AurenEntertainmentItem.fromDoc(d);return AurenContentVideo(id:x.id,title:x.title,description:x.description,mediaUrl:x.mediaUrl,imageUrl:x.imageUrl,creatorId:x.creatorId,type:x.type);}).where((x)=>x.mediaUrl.isNotEmpty).toList());
 
   Future<void> ensureStarterChannels(String uid) async {
     if (uid.isEmpty) return;
