@@ -80,6 +80,32 @@ class AurenGeminiProvider implements AurenEntertainmentProvider {
   Future<void> cancel(String externalJobId) async {}
 }
 
+class AurenPollinationsProvider implements AurenEntertainmentProvider {
+  @override
+  String get id => 'pollinations';
+
+  @override
+  Set<AurenCreationCapability> get capabilities => {
+        AurenCreationCapability.video,
+        AurenCreationCapability.voice,
+        AurenCreationCapability.image,
+        AurenCreationCapability.podcast,
+        AurenCreationCapability.world,
+      };
+
+  @override
+  Future<AurenGenerationResult> submit(AurenGenerationRequest request) async {
+    return const AurenGenerationResult(
+      accepted: true,
+      provider: 'pollinations',
+      message: 'تم تجهيز المهمة للإرسال الآمن إلى Pollinations عبر الخادم.',
+    );
+  }
+
+  @override
+  Future<void> cancel(String externalJobId) async {}
+}
+
 class AurenPlanningProvider implements AurenEntertainmentProvider {
   @override
   String get id => 'auren_ai';
@@ -107,6 +133,7 @@ class AurenEntertainmentProviderRegistry {
     Iterable<AurenEntertainmentProvider> providers = const [],
   }) : _providers = {
           'auren_ai': AurenPlanningProvider(),
+          'pollinations': AurenPollinationsProvider(),
           'gemini': AurenGeminiProvider(),
           for (final provider in providers) provider.id: provider,
         };
