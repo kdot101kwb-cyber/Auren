@@ -154,6 +154,10 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         const SizedBox(height: 12),
         _arenaCard(),
         const SizedBox(height: 12),
+        _arenaSeasonCard(), const SizedBox(height: 12),
+        _arenaRankingCard(), const SizedBox(height: 12),
+        _arenaHistoryCard(),
+        const SizedBox(height: 12),
         _statsCard(), const SizedBox(height: 12),
         _challengeCard(context), const SizedBox(height: 12),
         _seasonCard(), const SizedBox(height: 12),
@@ -246,6 +250,29 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     if(_arenaRoomId==null)return;
     try{await FirebaseFunctions.instance.httpsCallable('playAurenArenaMove').call({'roomId':_arenaRoomId,'action':action});if(mounted)setState(()=>_arenaAction=action);}catch(_){if(mounted)_snack('ليست حركتك أو تعذر تسجيل الحركة.');}
   }
+  Widget _arenaSeasonCard() {
+    final uid=FirebaseAuth.instance.currentUser?.uid;
+    if(uid==null)return const SizedBox.shrink();
+    return StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(
+      stream:FirebaseFirestore.instance.collection('users').doc(uid).collection('gaming_profile').doc('stats').snapshots(),
+      builder:(context,snap){
+        final d=snap.data?.data()??<String,dynamic>{};
+        final xp=(d['arenaSeasonXp'] as num?)?.toInt()??0;
+        final wins=(d['arenaSeasonWins'] as num?)?.toInt()??0;
+        final level=xp~/250+1;
+        final progress=(xp%250)/250.0;
+        return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          const Text('🏅 Arena Season',style:TextStyle(fontWeight:FontWeight.w900,fontSize:18)),
+          const SizedBox(height:6),
+          Text('الموسم الحالي • المستوى $level • $wins انتصارات Arena • $xp Season XP'),
+          const SizedBox(height:8),
+          ClipRRect(borderRadius:BorderRadius.circular(8),child:LinearProgressIndicator(value:progress,minHeight:8)),
+          const SizedBox(height:6),
+          Text('${xp%250}/250 XP للمستوى التالي',style:Theme.of(context).textTheme.bodySmall),
+        ])));
+      });
+  }
+
   Widget _arenaRankingCard() => Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     const Text('🏆 Arena Ranking',style:TextStyle(fontWeight:FontWeight.w900,fontSize:18)),const SizedBox(height:8),
     StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(stream:FirebaseFirestore.instance.collectionGroup('gaming_profile').orderBy('arenaWins',descending:true).limit(10).snapshots(),builder:(context,snap){
