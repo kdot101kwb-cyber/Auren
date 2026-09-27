@@ -588,8 +588,8 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
 
   Widget _extraGamesCard(BuildContext context) => Card(child: ListTile(
     leading: const CircleAvatar(child: Icon(Icons.extension_outlined)),
-    title: const Text('7 ألعاب إضافية'),
-    subtitle: const Text('Memory • Quiz • Reaction • Dice Duel • Higher/Lower • Word Scramble • 2048'),
+    title: const Text('10 ألعاب داخل AUREN Gaming'),
+    subtitle: const Text('Tic-Tac-Toe • RPS • Connect Four • Memory • Quiz • Reaction • Dice • Higher/Lower • Word Scramble • 2048'),
     trailing: const Icon(Icons.chevron_right),
     onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenExtraGamesScreen())),
   ));
