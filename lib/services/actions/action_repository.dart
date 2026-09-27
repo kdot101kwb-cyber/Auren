@@ -117,6 +117,16 @@ class ActionRepository {
     return data['status']?.toString() ?? 'rejected';
   }
 
+  Future<String> execute(String actionId) async {
+    final id = actionId.trim();
+    if (id.isEmpty) throw ArgumentError('Action id is required.');
+    final result = await FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('executeAurenAction')
+        .call({'actionId': id});
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return data['status']?.toString() ?? 'completed';
+  }
+
   Future<String> cancel(String actionId) async {
     final id = actionId.trim();
     if (id.isEmpty) throw ArgumentError('Action id is required.');
