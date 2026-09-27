@@ -187,22 +187,15 @@ function actionRequiresApproval(action) {
 }
 
 function normalizeActionRequest(intent, message) {
-  const text = String(message || '').trim();
+  const text = String(message || '').trim().slice(0, 5000);
   const base = { intent: intent || 'chat', action: null, requiresApproval: false, payload: {} };
-  if (intent === 'save_memory') return {...base, action: 'memory.save', requiresApproval: true, payload: {text}};
+  if (intent === 'save_memory') return {...base, action: 'memory.save', requiresApproval: true, payload: {key: 'user_note', value: text.slice(0, 2000)}};
   if (intent === 'create_note') return {...base, action: 'demo.create_note', requiresApproval: true, payload: {text}};
-  if (intent === 'set_goal') return {...base, action: 'goal.create', requiresApproval: true, payload: {text}};
+  if (intent === 'set_goal') return {...base, action: 'goal.create', requiresApproval: true, payload: {title: text.slice(0, 300)}};
   if (intent === 'plan_day') return {...base, action: 'plan.generate', payload: {text}};
   if (intent === 'find_opportunity') return {...base, action: 'opportunity.search', payload: {text}};
   if (intent === 'find_business') return {...base, action: 'business.search', payload: {text}};
-  if (intent === 'create_content') return {...base, action: 'content.create', requiresApproval: true, payload: {text}      actionPlan: {
-        intent: actionRequest.intent,
-        action: actionRequest.action,
-        requiresApproval: actionRequest.requiresApproval || actionRequiresApproval(actionRequest.action),
-        payload: actionRequest.payload,
-        status: actionRequest.requiresApproval ? 'awaiting_approval' : (actionRequest.action ? 'ready' : 'none'),
-      },
-};
+  if (intent === 'create_content') return {...base, action: 'content.create', requiresApproval: true, payload: {text}};
   return base;
 }
 
@@ -505,3 +498,84 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
 
     if (!rawText.trim()) {
       console.error('All AUREN AI providers failed:', lastProviderError);
+      await requestRef.set({
+        status: 'failed',
+        error: lastProviderError || 'No AI provider returned a response.',
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge:true});
+      throw new Error(lastProviderError || 'AUREN AI is temporarily unavailable.');
+    }
+
+    const responseText = rawText.trim().slice(0, 20000);
+
+    // Persist only server-authored AI output. The client can read the
+    // conversation stream but cannot impersonate the AI sender.
+    const aiMessageRef = db.collection('conversations').doc(conversationId)
+      .collection('messages').doc('ai_' + requestId);
+    await aiMessageRef.set({
+      conversationId,
+      senderId: 'auren-ai',
+      text: responseText,
+      isAi: true,
+      createdAt: FieldValue.serverTimestamp(),
+      source: 'auren_ai_gateway',
+      provider: selectedProvider,
+      requestId,
+    }, {merge:true});
+
+    let persistedAction = null;
+    const executableActions = new Set(['memory.save', 'demo.create_note', 'goal.create']);
+    if (actionProposal.action && executableActions.has(actionProposal.action) && actionProposal.requiresApproval) {
+      const actionRef = db.collection('users').doc(uid).collection('actions').doc();
+      const actionTitle = {
+        'memory.save': 'حفظ معلومة في ذاكرة AUREN',
+        'demo.create_note': 'إنشاء ملاحظة',
+        'goal.create': 'إنشاء هدف',
+      }[actionProposal.action] || 'إجراء من AUREN AI';
+      const actionDescription = {
+        'memory.save': 'AUREN يقترح حفظ هذه المعلومة في ذاكرتك. لن يتم الحفظ قبل موافقتك.',
+        'demo.create_note': 'AUREN يقترح إنشاء ملاحظة بالنص المحدد. لن يتم الإنشاء قبل موافقتك.',
+        'goal.create': 'AUREN يقترح إضافة هذا الهدف إلى أهدافك. لن يتم الإنشاء قبل موافقتك.',
+      }[actionProposal.action] || 'AUREN يقترح تنفيذ هذا الإجراء بعد موافقتك.';
+      await actionRef.set({
+        conversationId,
+        actionType: actionProposal.action,
+        title: actionTitle,
+        description: actionDescription,
+        payload: actionProposal.payload || {},
+        permission: 'standard',
+        riskLevel: 'low',
+        approvalLevel: 1,
+        requiresApproval: true,
+        status: 'pending',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        source: 'auren_ai_gateway',
+        requestId,
+      });
+      persistedAction = {id: actionRef.id, actionType: actionProposal.action};
+    }
+
+    const response = {
+      text: responseText,
+      action: actionProposal.action,
+      payload: actionProposal.payload || {},
+      requiresApproval: actionProposal.requiresApproval === true,
+      intent: inferredIntent.intent,
+      task,
+      provider: selectedProvider,
+      actionId: persistedAction?.id || null,
+    };
+
+    await requestRef.set({
+      status: 'completed',
+      response,
+      provider: selectedProvider,
+      actionId: persistedAction?.id || null,
+      completedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge:true});
+
+    return response;
+  }
+);
