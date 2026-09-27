@@ -5,6 +5,7 @@ const { getStorage } = require('firebase-admin/storage');
 const { defineSecret } = require('firebase-functions/params');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { randomUUID } = require('crypto');
 
 initializeApp();
 const db = getFirestore();
@@ -3582,9 +3583,12 @@ exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCa
     if (job.status !== 'ready') throw new HttpsError('failed-precondition', 'الناتج غير جاهز للنشر.');
 
     const output = job.providerResult && typeof job.providerResult === 'object' ? job.providerResult : null;
-    const url = typeof output?.url === 'string' ? output.url : '';
     const type = typeof output?.type === 'string' ? output.type : 'output';
-    if (!url && type !== 'text') throw new HttpsError('failed-precondition', 'لا يوجد ناتج قابل للنشر.');
+    if (type === 'text') {
+      if (!String(output?.text || '').trim()) throw new HttpsError('failed-precondition', 'لا يوجد نص قابل للنشر.');
+    } else if (!output?.storagePath || typeof output.storagePath !== 'string') {
+      throw new HttpsError('failed-precondition', 'ملف الناتج الأصلي غير متاح للنشر.');
+    }
 
     const existing = await db.collection('entertainment_items')
       .where('ownerId', '==', uid).where('sourceJobId', '==', jobId).limit(1).get();
@@ -3596,17 +3600,54 @@ exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCa
     const title = 'AUREN • ' + mode + ' • ' + (idea.slice(0, 70) || 'محتوى جديد');
     const mediaKind = type === 'video' ? 'video' : type === 'image' ? 'image' : 'text';
 
+    // Published media gets its own stable Firebase Storage object and a
+    // persistent download-token URL. The job output URL is intentionally
+    // treated as temporary and is never copied into the public item.
+    let publishedUrl = '';
+    let publishedStoragePath = '';
+    if (type !== 'text') {
+      const sourcePath = typeof output?.storagePath === 'string' ? output.storagePath.trim() : '';
+      if (!sourcePath || sourcePath.length > 500) {
+        throw new HttpsError('failed-precondition', 'ملف الناتج الأصلي غير متاح للنشر.');
+      }
+
+      const extension = type === 'video' ? 'mp4' : 'jpg';
+      const mimeType = type === 'video' ? 'video/mp4' : 'image/jpeg';
+      publishedStoragePath = 'published_entertainment/' + itemRef.id + '/output.' + extension;
+      const sourceFile = storage.bucket().file(sourcePath);
+      const targetFile = storage.bucket().file(publishedStoragePath);
+      const [sourceExists] = await sourceFile.exists();
+      if (!sourceExists) {
+        throw new HttpsError('failed-precondition', 'ملف الناتج الأصلي غير موجود في التخزين.');
+      }
+
+      await sourceFile.copy(targetFile);
+      const token = randomUUID();
+      await targetFile.setMetadata({
+        contentType: mimeType,
+        cacheControl: 'public,max-age=31536000,immutable',
+        metadata: { firebaseStorageDownloadTokens: token },
+      });
+      publishedUrl =
+        'https://firebasestorage.googleapis.com/v0/b/' +
+        encodeURIComponent(storage.bucket().name) +
+        '/o/' + encodeURIComponent(publishedStoragePath) +
+        '?alt=media&token=' + encodeURIComponent(token);
+    }
+
     await itemRef.set({
       title,
-      description: type === 'text' ? String(output?.text || '').slice(0, 5000) : idea.slice(0, 1000),
+      description: type === 'text' ? String(output?.text || '').slice(0, 12000) : idea.slice(0, 1000),
       type: mode,
-      imageUrl: type === 'image' ? url : '',
-      mediaUrl: type === 'video' ? url : '',
+      imageUrl: type === 'image' ? publishedUrl : '',
+      mediaUrl: type === 'video' ? publishedUrl : '',
       mediaKind,
       creatorId: uid,
       ownerId: uid,
       sourceJobId: jobId,
+      storagePath: publishedStoragePath || null,
       visibility: 'public',
+      source: 'auren_creation',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
