@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -40,6 +41,35 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
       case 'failed': return Icons.error_rounded;
       case 'cancelled': return Icons.cancel_rounded;
       default: return Icons.timelapse_rounded;
+    }
+  }
+
+  Future<void> _publish(BuildContext context, String uid) async {
+    try {
+      final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('publishEntertainmentOutput');
+      final result = await callable.call({'jobId': jobId});
+      if (!context.mounted) return;
+      final data = Map<String, dynamic>.from(result.data as Map);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            data['alreadyPublished'] == true
+                ? 'المحتوى منشور بالفعل في Entertainment.'
+                : 'تم نشر المحتوى في Entertainment.',
+          ),
+        ),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'تعذر نشر المحتوى.')),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر نشر المحتوى حالياً.')),
+      );
     }
   }
 
@@ -220,14 +250,17 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              final output = job['providerResult'] is Map
-                  ? Map<String, dynamic>.from(job['providerResult'] as Map)
-                  : <String, dynamic>{};
-              if (status == 'ready' && output.isNotEmpty) ...[
+              if (status == 'ready' && job['providerResult'] is Map &&
+                  (job['providerResult'] as Map).isNotEmpty) ...[
                 const SizedBox(height: 18),
                 _sectionTitle('الناتج'),
                 const SizedBox(height: 8),
-                _outputCard(context, output),
+                _outputCard(
+                  context,
+                  Map<String, dynamic>.from(job['providerResult'] as Map),
+                  published: job['publishedItemId']?.toString().isNotEmpty == true,
+                  onPublish: () => _publish(context, uid),
+                ),
               ],
               const SizedBox(height: 18),
               _sectionTitle('ملخص المشروع'),
@@ -259,7 +292,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _outputCard(BuildContext context, Map<String, dynamic> output) {
+  Widget _outputCard(BuildContext context, Map<String, dynamic> output, {required bool published, required VoidCallback onPublish}) {
     final type = output['type']?.toString() ?? 'output';
     final url = output['url']?.toString() ?? '';
     final text = output['text']?.toString() ?? '';
@@ -328,6 +361,25 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              if (!published)
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onPublish,
+                    icon: const Icon(Icons.public_rounded),
+                    label: const Text('نشر في Entertainment'),
+                  ),
+                )
+              else
+                const Row(
+                  children: [
+                    Icon(Icons.public_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('منشور في Entertainment',
+                        style: TextStyle(fontWeight: FontWeight.w800)),
+                  ],
+                ),
               const SizedBox(height: 6),
               Text(
                 'الناتج محفوظ في تخزين AUREN والرابط الحالي مؤقت.',
