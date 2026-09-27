@@ -44,12 +44,12 @@ class AurenTalentEngineService {
   Future<void> inviteToOpportunity({required String ownerId,required String talentUid,required String opportunityId,required String opportunityTitle}) async {
     if(ownerId.trim().isEmpty || talentUid.trim().isEmpty || opportunityId.trim().isEmpty) throw ArgumentError('بيانات الدعوة غير مكتملة.');
     if(ownerId == talentUid) throw ArgumentError('لا يمكن دعوة نفسك.');
-    final ref=_db.collection('opportunity_invitations').doc();
+    final ref=_db.collection('opportunity_invitations').doc('${opportunityId}_$talentUid');
     await ref.set({
       'ownerId': ownerId,
       'talentUid': talentUid,
       'opportunityId': opportunityId,
-      'opportunityTitle': opportunityTitle.trim().substring(0, opportunityTitle.trim().length.clamp(0,200)),
+      'opportunityTitle': opportunityTitle.trim().length > 200 ? opportunityTitle.trim().substring(0,200) : opportunityTitle.trim(),
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
     });
