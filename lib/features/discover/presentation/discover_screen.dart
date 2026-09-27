@@ -5,6 +5,7 @@ import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
 import '../../education/presentation/education_screen.dart';
+import '../../business/presentation/business_growth_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
@@ -26,6 +27,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Places', 'أماكن وتجارب حول العالم', Icons.place_outlined),
     _DiscoverItem('Creators', 'مبدعون ومحتوى يستحق المتابعة', Icons.movie_creation_outlined),
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
+    _DiscoverItem('Business Growth', 'نمو، عملاء، حملات وشراكات', Icons.trending_up),
     _DiscoverItem('Entertainment', 'Series • Music • Gaming • Live', Icons.play_circle_outline),
     _DiscoverItem('Opportunities', 'عمل • مواهب • مشاريع • تعلم', Icons.work_outline),
     _DiscoverItem('Education', 'تعلّم المهارات واربطها بالفرص', Icons.school_outlined),
@@ -68,6 +70,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       terms.any((term) => text.contains(term));
 
   void _open(BuildContext context, _DiscoverItem item) {
+    if (item.title == 'Business Growth') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const _BusinessGrowthEntryScreen()));
+      return;
+    }
     if (item.title == 'Education') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEducationScreen()));
       return;
@@ -282,4 +288,9 @@ class _DiscoverItem {
   final IconData icon;
 
   const _DiscoverItem(this.title, this.subtitle, this.icon);
+}
+
+class _BusinessGrowthEntryScreen extends StatelessWidget {
+  const _BusinessGrowthEntryScreen();
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Business Growth')),body:const Center(child:Text('افتح Business من حسابك لاختيار النشاط وتشغيل Growth Engine.')));
 }
