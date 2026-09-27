@@ -8,6 +8,30 @@ class SeriesProductionService {
   CollectionReference<Map<String, dynamic>> _projects(String uid) =>
       db.collection('users').doc(uid).collection('seriesProjects');
 
+  /// Global daily capacity for the Series Studio queue.
+  static const int dailySeriesLimit = 5;
+
+  Future<int?> reserveDailySeriesSlot(String uid) async {
+    if (uid.isEmpty) return null;
+    final now = DateTime.now().toUtc();
+    final dayKey = now.toIso8601String().substring(0, 10);
+    final ref = db.collection('seriesProductionDays').doc(dayKey);
+    return db.runTransaction<int?>((tx) async {
+      final snap = await tx.get(ref);
+      final data = snap.data() ?? <String, dynamic>{};
+      final reserved = (data['reserved'] as num?)?.toInt() ?? 0;
+      if (reserved >= dailySeriesLimit) return null;
+      final slot = reserved + 1;
+      tx.set(ref, {
+        'dayKey': dayKey,
+        'limit': dailySeriesLimit,
+        'reserved': slot,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return slot;
+    });
+  }
+
   Future<String> createSeriesProject(String uid, {
     required String title, required String idea, required String genre,
     required String tone, required int episodeCount, required String episodeLength,
