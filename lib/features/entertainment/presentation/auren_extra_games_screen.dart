@@ -490,188 +490,56 @@ class _Auren3DGamePainter extends CustomPainter{
 
 
 class _ThreeDGamePanel extends StatefulWidget {
-  final int gameIndex;
-  final bool adventure;
-  final bool core;
-  const _ThreeDGamePanel({required this.gameIndex, required this.adventure, required this.core});
-
-  @override
-  State<_ThreeDGamePanel> createState() => _ThreeDGamePanelState();
+  final int gameIndex; final bool adventure; final bool core;
+  const _ThreeDGamePanel({required this.gameIndex,required this.adventure,required this.core});
+  @override State<_ThreeDGamePanel> createState()=>_ThreeDGamePanelState();
 }
-
-class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
-  double _x = 0, _y = 0;
-  int _score = 0, _energy = 10, _health = 100, _combo = 0, _level = 1, _target = 25;
-  final _rng = Random();
-
-  static const _categoryNames = [
-    '⚔️ Arena Duel','🥊 Punch Rush','🛡️ Shield Block','🏹 Archer Aim','⚡ Battle Reflex',
-    '⚽ Penalty King','🏀 Hoops','🏃 Sprint','🎾 Tennis Rally','🚴 Cycling',
-    '🧩 Logic Grid','🔢 Number Matrix','♟️ Strategy','🧠 Pattern Logic','🔐 Code Breaker',
-    '🃏 Memory Match+','🧠 Sequence Recall','🔵 Color Memory','🧩 Pair Recall','👀 Flash Memory',
-    '🔥 AUREN Arena',
-  ];
-  static const _adventureNames = [
-    '🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City','💎 Treasure Heist','🚀 Sky Racers','🧟 Zombie Escape','🎵 Rhythm Rush','🏝️ Island Survival','⏳ Time Warp',
-  ];
-  static const _coreNames = [
-    '🧠 Memory','❓ Quiz','⚡ Reaction','🎲 Dice Duel','↕️ Higher / Lower','🔤 Word Scramble','🔢 2048',
-    '🔴 Simon','➕ Math Sprint','🎯 Number Guess','🪙 Coin Flip','🎯 Target Tap','🔤 Hangman','🔗 Word Chain','🎨 Color Match','🔷 Odd One Out','👀 Quick Count',
-  ];
-
-  String get title => widget.core
-      ? _coreNames[widget.gameIndex]
-      : widget.adventure
-          ? _adventureNames[widget.gameIndex - 21]
-          : _categoryNames[widget.gameIndex];
-
-  Auren3DWorldPreset get preset {
-    if (widget.core) {
-      if (widget.gameIndex == 0 || widget.gameIndex >= 15) return Auren3DWorldPreset.city;
-      if (widget.gameIndex >= 3 && widget.gameIndex <= 4) return Auren3DWorldPreset.arena;
-      if (widget.gameIndex == 5 || widget.gameIndex == 13) return Auren3DWorldPreset.desert;
-      return Auren3DWorldPreset.sports;
-    }
-    if (widget.adventure) {
-      switch (widget.gameIndex) {
-        case 0: return Auren3DWorldPreset.city;
-        case 1: return Auren3DWorldPreset.desert;
-        case 2: return Auren3DWorldPreset.sports;
-        case 3: return Auren3DWorldPreset.city;
-        case 4: return Auren3DWorldPreset.sports;
-        case 5: return Auren3DWorldPreset.city;
-        case 6: return Auren3DWorldPreset.city;
-        case 7: return Auren3DWorldPreset.sports;
-        case 8: return Auren3DWorldPreset.arena;
-        case 9: return Auren3DWorldPreset.sports;
-        case 10: return Auren3DWorldPreset.sports;
-        case 11: return Auren3DWorldPreset.city;
-        default: return Auren3DWorldPreset.city;
-      }
-    }
-    if (widget.gameIndex < 5 || widget.gameIndex == 20) return Auren3DWorldPreset.arena;
-    if (widget.gameIndex < 10) return Auren3DWorldPreset.sports;
-    return Auren3DWorldPreset.city;
+class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
+  final _rng=Random(); double _x=0,_y=0; int _score=0,_energy=10,_health=100,_combo=0,_level=1,_target=25;
+  int _enemy=100,_shots=5,_resource=0,_laps=0,_challenge=1; String _message='جاهز!';
+  static const _categoryNames=['⚔️ Arena Duel','🥊 Punch Rush','🛡️ Shield Block','🏹 Archer Aim','⚡ Battle Reflex','⚽ Penalty King','🏀 Hoops','🏃 Sprint','🎾 Tennis Rally','🚴 Cycling','🧩 Logic Grid','🔢 Number Matrix','♟️ Strategy','🧠 Pattern Logic','🔐 Code Breaker','🃏 Memory Match+','🧠 Sequence Recall','🔵 Color Memory','🧩 Pair Recall','👀 Flash Memory','🔥 AUREN Arena'];
+  static const _adventureNames=['🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City','💎 Treasure Heist','🚀 Sky Racers','🧟 Zombie Escape','🎵 Rhythm Rush','🏝️ Island Survival','⏳ Time Warp'];
+  String get title=>widget.adventure?_adventureNames[widget.gameIndex-21]:_categoryNames[widget.gameIndex];
+  Auren3DWorldPreset get preset{
+    if(widget.adventure){if(widget.gameIndex==1)return Auren3DWorldPreset.desert;if(widget.gameIndex==8)return Auren3DWorldPreset.arena;if(widget.gameIndex==2||widget.gameIndex==7||widget.gameIndex==9||widget.gameIndex==10)return Auren3DWorldPreset.sports;return Auren3DWorldPreset.city;}
+    if(widget.gameIndex<5||widget.gameIndex==20)return Auren3DWorldPreset.arena;if(widget.gameIndex<10)return Auren3DWorldPreset.sports;return Auren3DWorldPreset.city;
   }
-
-  bool get combat => !widget.core && !widget.adventure &&
-      (widget.gameIndex < 5 || widget.gameIndex == 20);
-  bool get sports => !widget.core && !widget.adventure &&
-      widget.gameIndex >= 5 && widget.gameIndex < 10;
-
-  String get actionLabel {
-    if (widget.adventure) return 'استكشف / اجمع';
-    if (combat) return '⚔️ نفّذ هجمة';
-    if (sports) return '🏆 نفّذ الحركة';
-    if (widget.core) return '🎯 نفّذ التحدي';
-    return '🧠 حلّ التحدي';
+  @override void initState(){super.initState();_challenge=1+_rng.nextInt(9);}
+  void _move(double dx,double dy){if(_energy<=0||_health<=0)return;setState((){_x=(_x+dx).clamp(-8.0,8.0);_y=(_y+dy).clamp(-8.0,8.0);_energy--;_score++;_combo=min(10,_combo+1);if(widget.adventure&&widget.gameIndex==8&&_rng.nextDouble()<.25)_health=max(0,_health-10);if(widget.adventure&&widget.gameIndex==10)_resource++;_checkLevel();});}
+  void _action(){if(_energy<=0||_health<=0)return;setState((){_energy--;if(widget.adventure){_adventureAction();}else if(widget.gameIndex<5||widget.gameIndex==20){_combatAction(widget.gameIndex);}else if(widget.gameIndex<10){_sportsAction(widget.gameIndex);}else{_thinkingAction(widget.gameIndex);}_checkLevel();});}
+  void _combatAction(int i){
+    if(i==2){_message='🛡️ صدّ الهجمة!';_combo=min(10,_combo+2);return;}
+    if(i==3){if(_shots<=0){_message='لا توجد سهام';return;}_shots--;final hit=_rng.nextDouble()<.72;_message=hit?'🏹 إصابة!':'❌ أخطأت';_score+=hit?18:2;return;}
+    if(i==4){final ok=_rng.nextDouble()<.65;_message=ok?'⚡ رد فعل ناجح!':'💥 تأخرت!';_score+=ok?20:0;if(!ok)_health=max(0,_health-12);return;}
+    final dmg=i==1?18+_rng.nextInt(18):22+_rng.nextInt(16);_enemy=max(0,_enemy-dmg);_score+=dmg;_combo=min(10,_combo+1);_message='⚔️ ضرر \${dmg} — العدو \${_enemy}';if(_enemy==0){_level++;_enemy=100;_energy=10;_message='🏆 فوز! عدو جديد.';}
   }
-
-  void _move(double dx, double dy) {
-    if (_energy <= 0 || _health <= 0) return;
-    setState(() {
-      _x = (_x + dx).clamp(-8.0, 8.0);
-      _y = (_y + dy).clamp(-8.0, 8.0);
-      _energy--;
-      _combo = (_combo + 1).clamp(0, 10);
-      _score += 1 + _rng.nextInt(4) + (_combo ~/ 4);
-      if (_rng.nextDouble() < .12) _health = (_health - 5).clamp(0, 100);
-      _checkLevel();
-    });
+  void _sportsAction(int i){if(i==5){final ok=_rng.nextDouble()<.62;_message=ok?'⚽ GOAL!':'🧤 تصدّى الحارس';_score+=ok?25:4;}else if(i==6){final ok=_rng.nextDouble()<.7;_message=ok?'🏀 سلة!':'❌ ضاعت';_score+=ok?20:2;}else if(i==7){_laps++;_score+=12;_energy=min(10,_energy+1);_message='🏃 اندفاعة — لفة \${_laps}';}else if(i==8){final ok=_rng.nextDouble()<.68;_message=ok?'🎾 ردّ ناجح!':'❌ خارج الملعب';_score+=ok?18:3;}else{_laps++;_score+=15;_message='🚴 لفة \${_laps}';}}
+  void _thinkingAction(int i){
+    final ok=_rng.nextDouble()<.62; if(i==14&&ok)_challenge=1+_rng.nextInt(99);
+    final labels=['','','','','','','','','','','🧩 لغز','🔢 مصفوفة','♟️ قرار','🧠 نمط','🔐 رمز','🃏 تطابق','🧠 تسلسل','🔵 لون','🧩 زوج','👀 ذاكرة'];
+    _message=ok?'\${labels[i]} صحيح!':'\${labels[i]} جرّب مرة أخرى';_score+=ok?18:2;
   }
-
-  void _action() {
-    if (_energy <= 0 || _health <= 0) return;
-    setState(() {
-      _energy--;
-      final base = combat ? 8 + _rng.nextInt(13) : sports ? 7 + _rng.nextInt(12) : 5 + _rng.nextInt(11);
-      final comboBonus = _combo * 2;
-      _score += base + comboBonus;
-      _target = (_target - (base + comboBonus)).clamp(0, 999999);
-      if (combat && _rng.nextDouble() < .20) _health = (_health - 8).clamp(0, 100);
-      if (_rng.nextDouble() < .15) _energy = (_energy + 2).clamp(0, 10);
-      _checkLevel();
-    });
+  void _adventureAction(){
+    final i=widget.gameIndex-21;
+    if(i==6){_resource++;_score+=25;_message='💎 كنز مكتشف!';}
+    else if(i==7){_laps++;_score+=20;_message='🚀 قطاع \${_laps}';}
+    else if(i==8){_health=max(0,_health-5);_score+=18;_message='🧟 هربت من الخطر!';}
+    else if(i==9){_score+=10+_combo*2;_combo=min(10,_combo+1);_message='🎵 إيقاع ناجح!';}
+    else if(i==10){_resource++;_energy=min(10,_energy+1);_score+=12;_message='🏝️ مورد \${_resource}';}
+    else if(i==11){_level++;_score+=30;_message='⏳ قفزة زمنية!';}
+    else{_score+=10+_rng.nextInt(16);_message='🗺️ منطقة جديدة اكتُشفت';}
   }
-
-  void _checkLevel() {
-    if (_target <= 0) {
-      _level++;
-      _target = 25 + (_level - 1) * 10;
-      _energy = 10;
-      _health = 100;
-      _combo = 0;
-    }
-  }
-
-  void _reset() => setState(() {
-    _x = 0; _y = 0; _score = 0; _energy = 10; _health = 100; _combo = 0; _level = 1; _target = 25;
-  });
-
-  @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(16),
-    children: [
-      Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 4),
-      Text('3D • المستوى $_level • النقاط: $_score'),
-      const SizedBox(height: 8),
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        Chip(avatar: const Icon(Icons.favorite, size: 18), label: Text('HP $_health')),
-        Chip(avatar: const Icon(Icons.bolt, size: 18), label: Text('طاقة $_energy')),
-        Chip(avatar: const Icon(Icons.local_fire_department, size: 18), label: Text('Combo $_combo')),
-        Chip(avatar: const Icon(Icons.flag, size: 18), label: Text('الهدف $_target')),
-      ]),
-      const SizedBox(height: 12),
-      SizedBox(
-        height: 330,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: CustomPaint(
-            painter: _ThreeDGameScenePainter(
-              preset: preset, x: _x, y: _y, score: _score,
-              health: _health, combo: _combo, level: _level,
-            ),
-            child: const SizedBox.expand(),
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      Text(
-        widget.adventure
-            ? 'استكشف البيئة ثلاثية الأبعاد، اجمع النقاط، وارفع المستوى.'
-            : combat
-                ? 'قتال خفيف داخل عالم 3D: الحركة والهجوم والـCombo والـHP تتفاعل مع اللعب.'
-                : sports
-                    ? 'ملعب 3D: الحركة والنتيجة والـCombo والهدف تتغير أثناء اللعب.'
-                    : 'تحدٍ 3D: حرّك الشخصية، نفّذ التحدي، وارفع المستوى.',
-        style: const TextStyle(fontWeight: FontWeight.w700),
-      ),
-      const SizedBox(height: 12),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton.filledTonal(onPressed: _energy > 0 && _health > 0 ? () => _move(0, -1) : null, icon: const Icon(Icons.arrow_upward)),
-          const SizedBox(width: 8),
-          IconButton.filledTonal(onPressed: _energy > 0 && _health > 0 ? () => _move(-1, 0) : null, icon: const Icon(Icons.arrow_back)),
-          const SizedBox(width: 8),
-          IconButton.filledTonal(onPressed: _energy > 0 && _health > 0 ? () => _move(1, 0) : null, icon: const Icon(Icons.arrow_forward)),
-          const SizedBox(width: 8),
-          IconButton.filledTonal(onPressed: _energy > 0 && _health > 0 ? () => _move(0, 1) : null, icon: const Icon(Icons.arrow_downward)),
-        ],
-      ),
-      const SizedBox(height: 4),
-      FilledButton.icon(
-        onPressed: _energy > 0 && _health > 0 ? _action : null,
-        icon: const Icon(Icons.flash_on),
-        label: Text(actionLabel),
-      ),
-      const SizedBox(height: 8),
-      OutlinedButton.icon(onPressed: _reset, icon: const Icon(Icons.refresh), label: const Text('إعادة')),
-    ],
-  );
+  void _checkLevel(){if(_score>=_target){_level++;_target=25+(_level-1)*15;_energy=10;_combo=0;}}
+  void _reset(){setState((){_x=0;_y=0;_score=0;_energy=10;_health=100;_combo=0;_level=1;_target=25;_enemy=100;_shots=5;_resource=0;_laps=0;_challenge=1+_rng.nextInt(9);_message='جاهز!';});}
+  @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(16),children:[
+    Text(title,style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),Text('3D • المستوى \${_level} • النقاط \${_score}'),
+    Wrap(spacing:8,children:[Chip(label:Text('HP \${_health}')),Chip(label:Text('⚡ \${_energy}')),Chip(label:Text('Combo \${_combo}')),Chip(label:Text('الهدف \${_target}')),if((!widget.core&&!widget.adventure&&widget.gameIndex<5)||widget.gameIndex==20)Chip(label:Text('العدو \${_enemy}')),if(widget.gameIndex==3)Chip(label:Text('سهام \${_shots}')),if(widget.adventure)Chip(label:Text('موارد \${_resource}'))]),
+    const SizedBox(height:12),SizedBox(height:300,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:CustomPaint(painter:_ThreeDGameScenePainter(preset:preset,x:_x,y:_y,score:_score,health:_health,combo:_combo,level:_level),child:const SizedBox.expand()))),
+    const SizedBox(height:12),Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_message,style:const TextStyle(fontWeight:FontWeight.w800)))),
+    Row(mainAxisAlignment:MainAxisAlignment.center,children:[IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,-1):null,icon:const Icon(Icons.arrow_upward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(-1,0):null,icon:const Icon(Icons.arrow_back)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(1,0):null,icon:const Icon(Icons.arrow_forward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,1):null,icon:const Icon(Icons.arrow_downward))]),
+    FilledButton.icon(onPressed:_energy>0&&_health>0?_action,icon:const Icon(Icons.flash_on),label:Text(widget.adventure?'استكشف / نفّذ':widget.gameIndex<10?'نفّذ الحركة':'حلّ التحدي')),OutlinedButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة')),
+  ]);
 }
-
 class _ThreeDGameScenePainter extends CustomPainter {
   final Auren3DWorldPreset preset;
   final double x, y;
