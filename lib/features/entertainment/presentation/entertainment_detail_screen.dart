@@ -155,6 +155,17 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                 VideoProgressIndicator(_controller!, allowScrubbing: true, padding: const EdgeInsets.symmetric(vertical: 10)),
               const SizedBox(height: 18),
               Text(item.type.toUpperCase(), style: Theme.of(context).textTheme.labelLarge),
+              if (item.type == 'Global Series') ...[
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, runSpacing: 6, children: [
+                  if (item.country.isNotEmpty) Chip(label: Text(item.country)),
+                  if (item.language.isNotEmpty) Chip(label: Text(item.language)),
+                  if (item.year.isNotEmpty) Chip(label: Text(item.year)),
+                  if (item.seasons > 0) Chip(label: Text('${item.seasons} موسم')),
+                  if (item.episodes > 0) Chip(label: Text('${item.episodes} حلقة')),
+                  ...item.genres.map((g) => Chip(label: Text(g))),
+                ]),
+              ],
               const SizedBox(height: 6),
               Text(item.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
