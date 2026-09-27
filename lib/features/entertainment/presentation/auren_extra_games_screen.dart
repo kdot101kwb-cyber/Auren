@@ -473,7 +473,7 @@ class _ThreeDGamePanel extends StatefulWidget {
 
 class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
   double _x = 0, _y = 0;
-  int _score = 0, _energy = 10;
+  int _score = 0, _energy = 10, _health = 100, _combo = 0, _level = 1, _target = 25;
   final _rng = Random();
 
   static const _categoryNames = [
@@ -486,7 +486,6 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
   static const _adventureNames = [
     '🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City',
   ];
-
   static const _coreNames = [
     '🧠 Memory','❓ Quiz','⚡ Reaction','🎲 Dice Duel','↕️ Higher / Lower','🔤 Word Scramble','🔢 2048',
     '🔴 Simon','➕ Math Sprint','🎯 Number Guess','🪙 Coin Flip','🎯 Target Tap','🔤 Hangman','🔗 Word Chain','🎨 Color Match','🔷 Odd One Out','👀 Quick Count',
@@ -506,45 +505,71 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
       return Auren3DWorldPreset.sports;
     }
     if (widget.adventure) {
-      return widget.gameIndex == 22 || widget.gameIndex == 25
-          ? Auren3DWorldPreset.city
-          : widget.gameIndex == 23 || widget.gameIndex == 24
-              ? Auren3DWorldPreset.desert
-              : Auren3DWorldPreset.city;
+      switch (widget.gameIndex) {
+        case 22: return Auren3DWorldPreset.city;
+        case 23: return Auren3DWorldPreset.desert;
+        case 24: return Auren3DWorldPreset.sports;
+        case 25: return Auren3DWorldPreset.city;
+        default: return Auren3DWorldPreset.desert;
+      }
     }
     if (widget.gameIndex < 5 || widget.gameIndex == 20) return Auren3DWorldPreset.arena;
     if (widget.gameIndex < 10) return Auren3DWorldPreset.sports;
     return Auren3DWorldPreset.city;
   }
 
+  bool get combat => !widget.core && !widget.adventure &&
+      (widget.gameIndex < 5 || widget.gameIndex == 20);
+  bool get sports => !widget.core && !widget.adventure &&
+      widget.gameIndex >= 5 && widget.gameIndex < 10;
+
   String get actionLabel {
-    if (widget.core) return 'العب التحدي ثلاثي الأبعاد';
-    if (widget.adventure) return 'استكشف وحرّك الشخصية';
-    if (widget.gameIndex < 5 || widget.gameIndex == 20) return 'نفّذ حركة قتالية';
-    if (widget.gameIndex < 10) return 'نفّذ الحركة الرياضية';
-    return 'نفّذ التحدي';
+    if (widget.adventure) return 'استكشف / اجمع';
+    if (combat) return '⚔️ نفّذ هجمة';
+    if (sports) return '🏆 نفّذ الحركة';
+    if (widget.core) return '🎯 نفّذ التحدي';
+    return '🧠 حلّ التحدي';
   }
 
   void _move(double dx, double dy) {
-    if (_energy <= 0) return;
+    if (_energy <= 0 || _health <= 0) return;
     setState(() {
       _x = (_x + dx).clamp(-8.0, 8.0);
       _y = (_y + dy).clamp(-8.0, 8.0);
       _energy--;
-      _score += 1 + _rng.nextInt(4);
+      _combo = (_combo + 1).clamp(0, 10);
+      _score += 1 + _rng.nextInt(4) + (_combo ~/ 4);
+      if (_rng.nextDouble() < .12) _health = (_health - 5).clamp(0, 100);
+      _checkLevel();
     });
   }
 
   void _action() {
-    if (_energy <= 0) return;
+    if (_energy <= 0 || _health <= 0) return;
     setState(() {
       _energy--;
-      _score += 5 + _rng.nextInt(11);
+      final base = combat ? 8 + _rng.nextInt(13) : sports ? 7 + _rng.nextInt(12) : 5 + _rng.nextInt(11);
+      final comboBonus = _combo * 2;
+      _score += base + comboBonus;
+      _target = (_target - (base + comboBonus)).clamp(0, 999999);
+      if (combat && _rng.nextDouble() < .20) _health = (_health - 8).clamp(0, 100);
+      if (_rng.nextDouble() < .15) _energy = (_energy + 2).clamp(0, 10);
+      _checkLevel();
     });
   }
 
+  void _checkLevel() {
+    if (_target <= 0) {
+      _level++;
+      _target = 25 + (_level - 1) * 10;
+      _energy = 10;
+      _health = 100;
+      _combo = 0;
+    }
+  }
+
   void _reset() => setState(() {
-    _x = 0; _y = 0; _score = 0; _energy = 10;
+    _x = 0; _y = 0; _score = 0; _energy = 10; _health = 100; _combo = 0; _level = 1; _target = 25;
   });
 
   @override
@@ -553,7 +578,14 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
     children: [
       Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
       const SizedBox(height: 4),
-      Text('3D • النقاط: $_score • الطاقة: $_energy'),
+      Text('3D • المستوى $_level • النقاط: $_score'),
+      const SizedBox(height: 8),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        Chip(avatar: const Icon(Icons.favorite, size: 18), label: Text('HP $_health')),
+        Chip(avatar: const Icon(Icons.bolt, size: 18), label: Text('طاقة $_energy')),
+        Chip(avatar: const Icon(Icons.local_fire_department, size: 18), label: Text('Combo $_combo')),
+        Chip(avatar: const Icon(Icons.flag, size: 18), label: Text('الهدف $_target')),
+      ]),
       const SizedBox(height: 12),
       SizedBox(
         height: 330,
@@ -562,6 +594,7 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
           child: CustomPaint(
             painter: _ThreeDGameScenePainter(
               preset: preset, x: _x, y: _y, score: _score,
+              health: _health, combo: _combo, level: _level,
             ),
             child: const SizedBox.expand(),
           ),
@@ -569,33 +602,31 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
       ),
       const SizedBox(height: 12),
       Text(
-        widget.core
-            ? 'نسخة 3D من اللعبة مع حركة وتحدي ونقاط داخل عالم AUREN.'
-            : widget.adventure
-                ? 'استكشف العالم ثلاثي الأبعاد، تحرك، وافتح نقاطاً جديدة.'
-                : widget.gameIndex < 5 || widget.gameIndex == 20
-                ? 'ساحة قتال ثلاثية الأبعاد — الحركة والنتيجة تتحدثان مع كل جولة.'
-                : widget.gameIndex < 10
-                    ? 'ملعب ثلاثي الأبعاد — نفّذ الحركة واجمع النقاط.'
-                    : 'تحدٍ ثلاثي الأبعاد — استكشف البيئة وحافظ على سلسلتك.',
+        widget.adventure
+            ? 'استكشف البيئة ثلاثية الأبعاد، اجمع النقاط، وارفع المستوى.'
+            : combat
+                ? 'قتال خفيف داخل عالم 3D: الحركة والهجوم والـCombo والـHP تتفاعل مع اللعب.'
+                : sports
+                    ? 'ملعب 3D: الحركة والنتيجة والـCombo والهدف تتغير أثناء اللعب.'
+                    : 'تحدٍ 3D: حرّك الشخصية، نفّذ التحدي، وارفع المستوى.',
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
       const SizedBox(height: 12),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          IconButton.filledTonal(onPressed: () => _move(0, -1), icon: const Icon(Icons.arrow_upward)),
+          IconButton.filledTonal(onPressed: _energy > 0 && _health > 0 ? () => _move(0, -1) : null, icon: const Icon(Icons.arrow_upward)),
           const SizedBox(width: 8),
-          IconButton.filledTonal(onPressed: () => _move(-1, 0), icon: const Icon(Icons.arrow_back)),
+          IconButton.filledTonal(onPressed: _energy > 0 && _health > 0 ? () => _move(-1, 0) : null, icon: const Icon(Icons.arrow_back)),
           const SizedBox(width: 8),
-          IconButton.filledTonal(onPressed: () => _move(1, 0), icon: const Icon(Icons.arrow_forward)),
+          IconButton.filledTonal(onPressed: _energy > 0 && _health > 0 ? () => _move(1, 0) : null, icon: const Icon(Icons.arrow_forward)),
           const SizedBox(width: 8),
-          IconButton.filledTonal(onPressed: () => _move(0, 1), icon: const Icon(Icons.arrow_downward)),
+          IconButton.filledTonal(onPressed: _energy > 0 && _health > 0 ? () => _move(0, 1) : null, icon: const Icon(Icons.arrow_downward)),
         ],
       ),
       const SizedBox(height: 4),
       FilledButton.icon(
-        onPressed: _energy > 0 ? _action : null,
+        onPressed: _energy > 0 && _health > 0 ? _action : null,
         icon: const Icon(Icons.flash_on),
         label: Text(actionLabel),
       ),
@@ -608,8 +639,11 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
 class _ThreeDGameScenePainter extends CustomPainter {
   final Auren3DWorldPreset preset;
   final double x, y;
-  final int score;
-  const _ThreeDGameScenePainter({required this.preset, required this.x, required this.y, required this.score});
+  final int score, health, combo, level;
+  const _ThreeDGameScenePainter({
+    required this.preset, required this.x, required this.y, required this.score,
+    required this.health, required this.combo, required this.level,
+  });
 
   Offset _p(Offset v, Size s, [double h = 0]) {
     final depth = (9 + v.dy).clamp(2.0, 24.0);
@@ -631,13 +665,10 @@ class _ThreeDGameScenePainter extends CustomPainter {
   @override
   void paint(Canvas c, Size s) {
     c.drawRect(Offset.zero & s, Paint()..color = const Color(0xFF070912));
-    c.drawPath(
-      Path()..addPolygon([
-        _p(const Offset(-34,-30),s), _p(const Offset(34,-30),s),
-        _p(const Offset(34,30),s), _p(const Offset(-34,30),s),
-      ], true),
-      Paint()..color = const Color(0xFF171C2C),
-    );
+    c.drawPath(Path()..addPolygon([
+      _p(const Offset(-34,-30),s), _p(const Offset(34,-30),s),
+      _p(const Offset(34,30),s), _p(const Offset(-34,30),s),
+    ], true), Paint()..color = const Color(0xFF171C2C));
 
     final grid = Paint()..color = const Color(0xFF343B58)..strokeWidth = 1;
     for (var i = -8; i <= 8; i++) {
@@ -646,23 +677,24 @@ class _ThreeDGameScenePainter extends CustomPainter {
     }
 
     if (preset == Auren3DWorldPreset.arena) {
-      final wall = Paint()..color = const Color(0xFF505879);
       for (var i = 0; i < 8; i++) {
         final a = i * pi / 4;
         _box(c,s,cos(a)*15-1.5,sin(a)*15-1.5,3,3,2.5);
       }
-      c.drawCircle(_p(Offset(0,0),s,1), 34, Paint()..style=PaintingStyle.stroke..strokeWidth=2..color=const Color(0xFF8B93C7));
+      c.drawCircle(_p(const Offset(0,0),s,1), 34, Paint()..style=PaintingStyle.stroke..strokeWidth=2..color=const Color(0xFF8B93C7));
+      if (combo > 0) {
+        final p = _p(Offset(x + 3, y - 2), s, 5);
+        c.drawCircle(p, 10 + combo.toDouble(), Paint()..style=PaintingStyle.stroke..strokeWidth=2..color=const Color(0xFFD9B7FF));
+      }
     } else if (preset == Auren3DWorldPreset.sports) {
       _box(c,s,-20,-13,40,26,.25);
       final mark = Paint()..color = const Color(0xFFE4E6EF)..style=PaintingStyle.stroke..strokeWidth=2;
       c.drawLine(_p(const Offset(-20,0),s),_p(const Offset(20,0),s),mark);
       c.drawLine(_p(const Offset(0,-13),s),_p(const Offset(0,13),s),mark);
     } else if (preset == Auren3DWorldPreset.desert) {
-      final dune = Paint()..color = const Color(0xFF6A604C);
       for (var i=0;i<7;i++) _box(c,s,-24+i*8,8-(i%2)*12,6,5,1+i%3);
       _box(c,s,4,-7,8,6,3);
     } else {
-      final building = Paint()..color = const Color(0xFF4C5378);
       for (var i=0;i<8;i++) _box(c,s,(i%4)*11-17,(i~/4)*13-13,7,6,7+(i%3)*4);
       c.drawCircle(_p(Offset(0,-8),s,1), 18, Paint()..style=PaintingStyle.stroke..strokeWidth=2..color=const Color(0xFF7078A8));
     }
@@ -672,11 +704,19 @@ class _ThreeDGameScenePainter extends CustomPainter {
     c.drawCircle(player.translate(0,-2),11,Paint()..color=const Color(0xFFE9ECFF));
     final marker = Paint()..color=const Color(0xFF9AA3E8)..style=PaintingStyle.stroke..strokeWidth=2;
     c.drawCircle(player, 18 + (score % 8), marker);
+
+    final barBg = Paint()..color=const Color(0xFF20263A);
+    final barFg = Paint()..color=const Color(0xFF9AA3E8);
+    c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(14,14,130,8),const Radius.circular(8)),barBg);
+    c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(14,14,130*(health/100),8),const Radius.circular(8)),barFg);
+    final levelText = TextPainter(text:TextSpan(text:'LV $level  •  x$combo',style:const TextStyle(color:Colors.white,fontSize:12,fontWeight:FontWeight.w800)),textDirection:TextDirection.ltr)..layout();
+    levelText.paint(c,const Offset(14,28));
   }
 
   @override
   bool shouldRepaint(covariant _ThreeDGameScenePainter old) =>
-      old.preset != preset || old.x != x || old.y != y || old.score != score;
+      old.preset != preset || old.x != x || old.y != y || old.score != score ||
+      old.health != health || old.combo != combo || old.level != level;
 }
 
 class _AdventureGamesPanel extends StatefulWidget {
