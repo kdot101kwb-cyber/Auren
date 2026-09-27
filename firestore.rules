@@ -2137,6 +2137,11 @@ service cloud.firestore {
         && request.resource.data.updatedAt is timestamp;
       allow delete: if isOwner(userId);
     }
+    match /users/{userId}/arena_history/{historyId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update, delete: if false;
+    }
+
     match /arena_rooms/{roomId} {
       allow read: if request.auth != null && request.auth.uid in resource.data.playerUids;
       allow write: if false;
