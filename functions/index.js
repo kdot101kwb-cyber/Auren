@@ -3897,6 +3897,8 @@ exports.playAurenArenaMove = require('firebase-functions/v2/https').onCall(
       if(status==='finished') update.finishedAt=FieldValue.serverTimestamp();
       tx.update(ref,update);
       if(status==='finished'){
+        tx.set(db.doc(`users/${uid}/arena_history/${ref.id}`),{roomId:ref.id,result:'win',roundsWon:Number(wins[uid]||0),character,createdAt:FieldValue.serverTimestamp()},{merge:true});
+        tx.set(db.doc(`users/${opponent}/arena_history/${ref.id}`),{roomId:ref.id,result:'loss',roundsWon:Number(wins[opponent]||0),character:characters[opponent]||'guardian',createdAt:FieldValue.serverTimestamp()},{merge:true});
         const loser=opponent;
         tx.set(db.doc(`users/${uid}/gaming_profile/stats`),{xp:FieldValue.increment(75),wins:FieldValue.increment(1),games:FieldValue.increment(1),arenaWins:FieldValue.increment(1),arenaXp:FieldValue.increment(75),seasonXp:FieldValue.increment(75),lastGameAt:FieldValue.serverTimestamp()},{merge:true});
         tx.set(db.doc(`users/${loser}/gaming_profile/stats`),{xp:FieldValue.increment(20),games:FieldValue.increment(1),arenaXp:FieldValue.increment(20),seasonXp:FieldValue.increment(20),lastGameAt:FieldValue.serverTimestamp()},{merge:true});
