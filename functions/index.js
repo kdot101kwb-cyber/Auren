@@ -21,7 +21,7 @@ const AUREN_ENTERTAINMENT_PROVIDER_URL = defineSecret(
 const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
 
 const GEMINI_MEDIA_MODELS = Object.freeze({
-  'فيديو': 'veo-3.1-fast-generate-preview',
+  'فيديو': 'veo-3.1-generate-preview',
   'أغنية': 'lyria-3.5',
   'قصة': 'gemini-3.1-flash-image',
   'بودكاست': 'gemini-3.1-flash',
@@ -88,9 +88,10 @@ async function submitGeminiEntertainmentJob({ jobId, mode, mood, length, idea, p
       accepted: true,
       provider: 'gemini',
       externalJobId,
+      inlineBody: isVideo ? null : body,
       message: isVideo
         ? 'تم إرسال الفيديو إلى Gemini/Veo 3.1.'
-        : 'تم إرسال مهمة الإنشاء إلى Gemini.',
+        : 'تم إنشاء الناتج من Gemini.',
     };
   } catch (error) {
     return {
@@ -3311,6 +3312,34 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
         queueStatus: 'waiting_provider',
         providerStatus: result.provider === 'server_provider' ? 'not_connected' : 'failed',
         providerMessage: result.message,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return;
+    }
+
+    if (result.inlineBody) {
+      const outputResult = await persistGeminiOutput({
+        uid: event.params.userId,
+        jobId: event.params.jobId,
+        body: result.inlineBody,
+      });
+      if (!outputResult.ok) {
+        await ref.set({
+          queueStatus: 'waiting_provider',
+          providerStatus: 'failed',
+          providerMessage: outputResult.message,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        return;
+      }
+      await ref.set({
+        providerStatus: 'completed',
+        status: 'ready',
+        queueStatus: 'completed',
+        progress: 100,
+        providerMessage: 'اكتملت عملية Gemini وتم حفظ الناتج.',
+        providerResult: outputResult.output,
+        workerFinishedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
       return;
