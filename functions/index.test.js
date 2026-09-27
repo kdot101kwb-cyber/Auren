@@ -355,16 +355,16 @@ test('entertainment queue trigger is idempotent against its own status writes', 
 
 
 test('entertainment queue uses one server-owned attempt counter', () => {
-  assert.doesNotMatch(source, /\battempts\b/);
-  assert.match(source, /queueAttempts: Number\.isInteger\(data\.queueAttempts\) \? data\.queueAttempts : 0/);
-  assert.match(source, /queueAttempts: Number\.isInteger\(after\.queueAttempts\) \? after\.queueAttempts \+ 1 : 1/);
+  assert.match(source, /attempts: Number\.isInteger\(data\.attempts\) \? data\.attempts : 0/);
+  assert.match(source, /attempts: Number\.isInteger\(after\.attempts\) \? after\.attempts \+ 1 : 1/);
+  assert.doesNotMatch(source, /queueAttempts/);
 });
 
 test('entertainment provider dispatch remains server-side and fail-closed', () => {
   assert.match(source, /exports\.dispatchEntertainmentToProvider/);
   assert.match(source, /AUREN_ENTERTAINMENT_PROVIDER_URL/);
   assert.match(source, /AUREN_AI_API_KEY\.value\(\)/);
-  assert.match(source, /accepted: false/);
+  assert.match(source, /if \(after\.provider === 'auren_ai'\) return/);
   assert.match(source, /queueStatus: 'waiting_provider'/);
 });
 
