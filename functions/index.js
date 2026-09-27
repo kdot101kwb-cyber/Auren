@@ -3406,11 +3406,39 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
       plan: Array.isArray(after.plan) ? after.plan : [],
       assets: Array.isArray(after.assets) ? after.assets : [],
     };
-    const result = after.provider === 'gemini'
-      ? await submitGeminiEntertainmentJob(request)
-      : after.provider === 'pollinations'
-          ? await submitPollinationsEntertainmentJob(request)
-          : await submitEntertainmentProviderJob(request);
+    // Auto routing: prefer the free-first provider, then fall back to Gemini
+    // when the selected provider is unavailable or rejects the task.
+    const providerCandidates = after.provider === 'pollinations'
+      ? ['pollinations', 'gemini']
+      : after.provider === 'gemini'
+          ? ['gemini', 'pollinations']
+          : [after.provider, 'pollinations', 'gemini];
+
+    let result = null;
+    let selectedProvider = '';
+    for (const candidate of providerCandidates) {
+      if (!candidate) continue;
+      const candidateResult = candidate === 'gemini'
+        ? await submitGeminiEntertainmentJob(request)
+        : candidate === 'pollinations'
+            ? await submitPollinationsEntertainmentJob(request)
+            : await submitEntertainmentProviderJob(request);
+      if (candidateResult.accepted) {
+        result = candidateResult;
+        selectedProvider = candidate;
+        break;
+      }
+      if (candidate === 'pollinations' && candidateResult.message) {
+        await refSetProviderFallback(event.data.after.ref, candidateResult.message);
+      }
+    }
+    if (!result) {
+      result = {
+        accepted: false,
+        provider: selectedProvider || after.provider || 'auren_ai',
+        message: 'تعذر تشغيل أي مزود متاح لهذه المهمة.',
+      };
+    }
 
     const ref = event.data.after.ref;
     if (!result.accepted) {
@@ -3462,6 +3490,13 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
   },
 );
 
+async function refSetProviderFallback(ref, message) {
+  await ref.set({
+    providerFallbackAt: FieldValue.serverTimestamp(),
+    providerFallbackMessage: String(message || '').slice(0, 500),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+}
 
 function extractGeminiOperationName(value) {
   if (typeof value !== 'string') return null;
