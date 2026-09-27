@@ -2938,7 +2938,7 @@ exports.randomJoin = onCall(async (request) => {
     }
     const rate = rateSnap.exists ? rateSnap.data() : {};
     const last = Array.isArray(rate?.joins) ? rate.joins.filter((v) => typeof v === 'number' && Date.now() - v < 10 * 60 * 1000).slice(-20) : [];
-    if (last.length >= 10) throw new HttpsError('resource-exhausted', 'Too many Random attempts. Try again later.');
+    if (last.length >= 10) throw new HttpsError('resource-exhausted', 'Too many Random queueAttempts. Try again later.');
     tx.set(requestRef, {
       uid,
       displayName: clean(input.displayName, 80),
@@ -3011,7 +3011,7 @@ exports.queueEntertainmentCreationJob = onDocumentCreated(
 
     await snap.ref.set({
       queueStatus: 'queued',
-      attempts: Number.isInteger(data.attempts) ? data.attempts : 0,
+      queueAttempts: Number.isInteger(data.queueAttempts) ? data.queueAttempts : 0,
       queuedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
@@ -3061,7 +3061,7 @@ exports.processEntertainmentCreationQueue = onDocumentUpdated(
     await jobRef.set({
       queueStatus: 'processing',
       workerStartedAt: FieldValue.serverTimestamp(),
-      attempts: Number.isInteger(after.attempts) ? after.attempts + 1 : 1,
+      queueAttempts: Number.isInteger(after.queueAttempts) ? after.queueAttempts + 1 : 1,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
 
