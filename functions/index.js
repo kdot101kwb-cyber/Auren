@@ -140,6 +140,30 @@ function inferAurenIntent(message) {
   return { intent: 'chat', confidence: 0.60, requiresApproval: false, entities: {} };
 }
 
+function actionRequiresApproval(action) {
+  return new Set(['save_memory', 'create_note', 'set_goal', 'send_message', 'purchase', 'book', 'publish']).has(action);
+}
+
+function normalizeActionRequest(intent, message) {
+  const text = String(message || '').trim();
+  const base = { intent: intent || 'chat', action: null, requiresApproval: false, payload: {} };
+  if (intent === 'save_memory') return {...base, action: 'memory.save', requiresApproval: true, payload: {text}};
+  if (intent === 'create_note') return {...base, action: 'demo.create_note', requiresApproval: true, payload: {text}};
+  if (intent === 'set_goal') return {...base, action: 'goal.create', requiresApproval: true, payload: {text}};
+  if (intent === 'plan_day') return {...base, action: 'plan.generate', payload: {text}};
+  if (intent === 'find_opportunity') return {...base, action: 'opportunity.search', payload: {text}};
+  if (intent === 'find_business') return {...base, action: 'business.search', payload: {text}};
+  if (intent === 'create_content') return {...base, action: 'content.create', requiresApproval: true, payload: {text}      actionPlan: {
+        intent: actionRequest.intent,
+        action: actionRequest.action,
+        requiresApproval: actionRequest.requiresApproval || actionRequiresApproval(actionRequest.action),
+        payload: actionRequest.payload,
+        status: actionRequest.requiresApproval ? 'awaiting_approval' : (actionRequest.action ? 'ready' : 'none'),
+      },
+};
+  return base;
+}
+
 exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB', secrets: [AUREN_AI_API_KEY, OPENROUTER_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, HF_TOKEN] },
   async (request) => {
@@ -154,6 +178,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       ? request.data.requestId.trim() : '';
     const inferredTask = inferAurenAiTask(message);
     const inferredIntent = inferAurenIntent(message);
+    const actionRequest = normalizeActionRequest(inferredIntent.intent, message);
     if (!conversationId || !message || message.length > 12000 ||
         !requestId || requestId.length > 120 ||
         !/^[A-Za-z0-9._-]+$/.test(requestId)) {
