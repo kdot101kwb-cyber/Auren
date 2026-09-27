@@ -1032,6 +1032,29 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
+    match /wallets/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.currency is string
+        && request.resource.data.currency.size() == 3
+        && request.resource.data.balanceMinor == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.keys().hasOnly(['uid','currency','balanceMinor','status','createdAt']);
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spendingLimitMinor','updatedAt'])
+        && request.resource.data.spendingLimitMinor is int
+        && request.resource.data.spendingLimitMinor >= 0
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if false;
+
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+    }
+
     match /courses/{courseId} {
       allow read: if request.auth != null && resource.data.status == 'published';
       allow create, update, delete: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
