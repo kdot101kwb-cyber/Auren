@@ -192,6 +192,30 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
     }
   }
 
+  Future<void> _cancelAction(AurenActionRequest action) async {
+    if (_uid == null || (action.status != 'pending' && action.status != 'approved')) return;
+    try {
+      await _actionRepository.cancel(action.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تم إلغاء الطلب: ${action.title}')),
+        );
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'تعذر إلغاء الطلب.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر إلغاء الطلب.')),
+        );
+      }
+    }
+  }
+
   Future<void> _executeAction(AurenActionRequest action) async {
     if (_uid == null || action.status != 'approved') return;
     try {
@@ -317,16 +341,32 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                     ],
                   )
                 else if (action.status == 'approved')
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _executeAction(action);
-                      },
-                      icon: const Icon(Icons.play_arrow),
-                      label: const Text('تأكيد التنفيذ'),
-                    ),
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _executeAction(action);
+                          },
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('تأكيد التنفيذ'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _cancelAction(action);
+                          },
+                          icon: const Icon(Icons.stop_circle_outlined),
+                          label: const Text('إلغاء الطلب'),
+                        ),
+                      ),
+                    ],
                   ),
               ],
             ),
@@ -397,6 +437,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                                       icon: Icon(pending ? Icons.visibility_outlined : Icons.play_arrow),
                                       label: Text(pending ? 'مراجعة' : 'تنفيذ'),
                                     ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    tooltip: 'إلغاء الطلب',
+                                    onPressed: () => _cancelAction(action),
+                                    icon: const Icon(Icons.stop_circle_outlined),
                                   ),
                                 ],
                               ),
