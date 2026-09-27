@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'auren_entertainment_output_screen.dart';
 import 'entertainment_detail_screen.dart';
+import 'entertainment_detail_screen.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
@@ -380,15 +381,32 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                     label: const Text('نشر في Entertainment'),
                   ),
                 )
-              else
+              else ...[
                 const Row(
                   children: [
                     Icon(Icons.public_rounded, size: 18),
                     SizedBox(width: 8),
-                    Text('منشور في Entertainment',
-                        style: TextStyle(fontWeight: FontWeight.w800)),
+                    Text('منشور في Entertainment', style: TextStyle(fontWeight: FontWeight.w800)),
                   ],
                 ),
+                if (job['publishedItemId']?.toString().isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AurenEntertainmentDetailScreen(
+                            itemId: job['publishedItemId'].toString(),
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.open_in_new_rounded),
+                      label: const Text('فتح المحتوى المنشور'),
+                    ),
+                  ),
+                ],
+              ],
               const SizedBox(height: 6),
               Text(
                 'الناتج محفوظ في تخزين AUREN والرابط الحالي مؤقت.',
