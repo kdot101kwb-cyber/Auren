@@ -360,6 +360,14 @@ test('entertainment queue uses one server-owned attempt counter', () => {
   assert.doesNotMatch(source, /queueAttempts/);
 });
 
+test('Gemini entertainment provider is server-side and uses the official API key secret', () => {
+  assert.match(source, /const GEMINI_API_KEY = defineSecret\('GEMINI_API_KEY'\)/);
+  assert.match(source, /submitGeminiEntertainmentJob/);
+  assert.match(source, /veo-3\.1-fast-generate-preview/);
+  assert.match(source, /x-goog-api-key: apiKey/);
+  assert.match(source, /after\.provider === 'gemini'/);
+});
+
 test('entertainment provider dispatch remains server-side and fail-closed', () => {
   assert.match(source, /exports\.dispatchEntertainmentToProvider/);
   assert.match(source, /AUREN_ENTERTAINMENT_PROVIDER_URL/);
