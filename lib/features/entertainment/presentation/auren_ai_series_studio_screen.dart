@@ -66,6 +66,52 @@ class _AurenAiSeriesStudioScreenState extends State<AurenAiSeriesStudioScreen> {
 ''';
   }
 
+
+  Future<void> _startBatch001() async {
+    if (_saving) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('سجّل الدخول أولاً لتشغيل Batch #001.')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      final ids = await _seriesService.createSeriesBatch001(uid);
+      if (!mounted) return;
+      if (ids.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لم يتم إنشاء Batch #001.')),
+        );
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم بدء Batch #001: خمسة مسلسلات في خط الإنتاج.')),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SeriesProductionPipelineScreen(projectId: ids.first),
+        ),
+      );
+    } on StateError catch (e) {
+      if (!mounted) return;
+      final message = e.message == 'daily_series_capacity_reached'
+          ? 'طاقة اليوم ممتلئة. الحد الأقصى 5 مسلسلات يومياً.'
+          : 'تعذر تشغيل Batch #001.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تشغيل Batch #001. حاول مرة أخرى.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   Future<void> _start() async {
     if (_saving) return;
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -209,6 +255,16 @@ class _AurenAiSeriesStudioScreenState extends State<AurenAiSeriesStudioScreen> {
               padding: EdgeInsets.symmetric(vertical: 14),
               child: Text('ابدأ بناء المسلسل',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _saving ? null : _startBatch001,
+            icon: const Icon(Icons.movie_filter_rounded),
+            label: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text('تشغيل Series Batch #001 — 5 مسلسلات',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
             ),
           ),
           const SizedBox(height: 12),
