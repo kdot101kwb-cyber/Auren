@@ -12,6 +12,7 @@ class AurenContentPlatformScreen extends StatefulWidget {
 class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>{
   String query='';
   String? selectedChannelId;
+  final Set<String> _subscribedChannels = <String>{};
   @override Widget build(BuildContext context){
     final uid=FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
@@ -26,7 +27,23 @@ class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>
           final channels=s.data??const <AurenChannel>[];
           return ListView.separated(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:12),itemCount:channels.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i){
             final c=channels[i];
-            return FilterChip(label:Text(c.name),selected:selectedChannelId==c.id,onSelected:(_)=>setState(()=>selectedChannelId=selectedChannelId==c.id?null:c.id));
+            return StreamBuilder<bool>(
+              stream: uid == null ? const Stream<bool>.empty() : AurenContentPlatformService.instance.watchSubscribed(uid, c.id),
+              builder: (context, sub) {
+                final subscribed = sub.data ?? _subscribedChannels.contains(c.id);
+                return FilterChip(
+                  avatar: const Icon(Icons.tv_outlined, size: 18),
+                  label: Text(c.name),
+                  selected: selectedChannelId == c.id,
+                  onSelected: (_) => setState(() => selectedChannelId = selectedChannelId == c.id ? null : c.id),
+                  secondarySelected: subscribed,
+                  onDeleted: uid == null ? null : () async {
+                    await AurenContentPlatformService.instance.subscribe(uid, c.id, !subscribed);
+                    if (mounted) setState(() => subscribed ? _subscribedChannels.remove(c.id) : _subscribedChannels.add(c.id));
+                  },
+                );
+              },
+            );
           });
         })),
         Expanded(child:StreamBuilder<List<AurenEntertainmentItem>>(stream:AurenContentPlatformService.instance.watchPublicVideos(query:query),builder:(context,s){
