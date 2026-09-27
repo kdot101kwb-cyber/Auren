@@ -3598,7 +3598,7 @@ exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCa
     const mode = typeof job.mode === 'string' ? job.mode : 'فيديو';
     const idea = String(job.idea || '').trim();
     const title = 'AUREN • ' + mode + ' • ' + (idea.slice(0, 70) || 'محتوى جديد');
-    const mediaKind = type === 'video' ? 'video' : type === 'image' ? 'image' : 'text';
+    const mediaKind = type === 'video' ? 'video' : type === 'image' ? 'image' : type === 'audio' ? 'audio' : 'text';
 
     // Published media gets its own stable Firebase Storage object and a
     // persistent download-token URL. The job output URL is intentionally
@@ -3611,8 +3611,8 @@ exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCa
         throw new HttpsError('failed-precondition', 'ملف الناتج الأصلي غير متاح للنشر.');
       }
 
-      const extension = type === 'video' ? 'mp4' : 'jpg';
-      const mimeType = type === 'video' ? 'video/mp4' : 'image/jpeg';
+      const extension = type === 'video' ? 'mp4' : type === 'audio' ? 'mp3' : 'jpg';
+      const mimeType = type === 'video' ? 'video/mp4' : type === 'audio' ? 'audio/mpeg' : 'image/jpeg';
       publishedStoragePath = 'published_entertainment/' + itemRef.id + '/output.' + extension;
       const sourceFile = storage.bucket().file(sourcePath);
       const targetFile = storage.bucket().file(publishedStoragePath);
@@ -3640,7 +3640,7 @@ exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCa
       description: type === 'text' ? String(output?.text || '').slice(0, 12000) : idea.slice(0, 1000),
       type: mode,
       imageUrl: type === 'image' ? publishedUrl : '',
-      mediaUrl: type === 'video' ? publishedUrl : '',
+      mediaUrl: ['video', 'audio'].includes(type) ? publishedUrl : '',
       mediaKind,
       creatorId: uid,
       ownerId: uid,
