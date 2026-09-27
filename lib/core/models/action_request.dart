@@ -16,6 +16,7 @@ class AurenActionRequest {
   final String status;
   final dynamic result;
   final DateTime createdAt;
+  final DateTime? expiresAt;
   final DateTime? executionStartedAt;
   final String? executionSpendingDay;
 
@@ -35,6 +36,7 @@ class AurenActionRequest {
     required this.status,
     this.result,
     required this.createdAt,
+    this.expiresAt,
     this.executionStartedAt,
     this.executionSpendingDay,
   });
@@ -54,6 +56,7 @@ class AurenActionRequest {
         'status': status,
         'result': result,
         'createdAt': createdAt.toUtc().toIso8601String(),
+        'expiresAt': expiresAt?.toUtc().toIso8601String(),
         'executionStartedAt': executionStartedAt?.toUtc().toIso8601String(),
         'executionSpendingDay': executionSpendingDay,
       };
@@ -87,6 +90,9 @@ class AurenActionRequest {
         status: m['status'] as String? ?? 'pending',
         result: m['result'],
         createdAt: _parseDate(m['createdAt']),
+        expiresAt: m['expiresAt'] == null
+            ? (m['expiresAtMs'] is num ? DateTime.fromMillisecondsSinceEpoch((m['expiresAtMs'] as num).toInt(), isUtc: true) : null)
+            : _parseDate(m['expiresAt']),
         executionStartedAt: m['executionStartedAt'] == null ? null : _parseDate(m['executionStartedAt']),
         executionSpendingDay: m['executionSpendingDay'] as String?,
       );
