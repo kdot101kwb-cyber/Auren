@@ -727,3 +727,41 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     return response;
   }
 );
+
+exports.claimAurenMiniGameReward = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const gameId = String(request.data?.gameId || '').trim();
+    const score = Math.max(0, Math.min(100000, Number(request.data?.score || 0)));
+    if (!gameId || gameId.length > 80) throw aurenHttpsError('invalid-argument', 'Invalid game id.');
+    const safeId = gameId.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 80);
+    const rewardRef = db.collection('users').doc(uid).collection('mini_game_rewards').doc(safeId);
+    const statsRef = db.collection('users').doc(uid).collection('gaming_profile').doc('stats');
+    const now = Date.now();
+    const cooldownMs = 5 * 60 * 1000;
+    let granted = 0;
+    await db.runTransaction(async (tx) => {
+      const rewardSnap = await tx.get(rewardRef);
+      const statsSnap = await tx.get(statsRef);
+      const previous = rewardSnap.exists ? rewardSnap.data() || {} : {};
+      const lastClaim = Number(previous.lastClaimMs || 0);
+      if (lastClaim && now - lastClaim < cooldownMs) return;
+      granted = 10 + Math.min(20, Math.floor(score / 50));
+      const stats = statsSnap.exists ? statsSnap.data() || {} : {};
+      const seasonId = currentGamingSeasonId();
+      const currentSeasonId = String(stats.seasonId || '');
+      const seasonReset = currentSeasonId && currentSeasonId !== seasonId;
+      tx.set(statsRef, {
+        xp: FieldValue.increment(granted),
+        seasonXp: seasonReset ? granted : FieldValue.increment(granted),
+        seasonId,
+        games: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge:true});
+      tx.set(rewardRef, {gameId, lastClaimMs:now, lastScore:score, lastReward:granted, updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    });
+    return {claimed:granted > 0, xp:granted};
+  }
+);
