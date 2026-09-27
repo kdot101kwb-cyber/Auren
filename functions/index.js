@@ -3745,21 +3745,60 @@ exports.playAurenArenaMove = require('firebase-functions/v2/https').onCall(
       const wins = {...(d.wins || {})};
       const damage = [22, 14, 0][action];
       const defend = action === 2;
-      hp[opponent] = Math.max(0, Number(hp[opponent] || 100) - damage);
       const round = Number(d.round || 1);
-      let status = 'ready';
+      const currentRoundWinner = Number(hp[opponent] || 100) - damage <= 0;
+      hp[opponent] = Math.max(0, Number(hp[opponent] || 100) - damage);
       let nextTurn = opponent;
       let nextRound = round;
+      let status = 'ready';
+      let matchWinnerUid = null;
       let lastAction = {uid, action, damage, at: Date.now()};
-      if (hp[opponent] <= 0) {
+
+      if (currentRoundWinner && !defend) {
         wins[uid] = Number(wins[uid] || 0) + 1;
-        hp[uid] = 100; hp[opponent] = 100;
+        hp[uid] = 100;
+        hp[opponent] = 100;
         nextRound = round + 1;
         lastAction = {uid, action, damage, winnerUid: uid, at: Date.now()};
+        nextTurn = opponent;
+        if (wins[uid] >= 3) {
+          status = 'finished';
+          matchWinnerUid = uid;
+        }
+      } else if (defend) {
+        hp[opponent] = Math.min(100, Number(hp[opponent] || 100) + damage);
+        lastAction = {uid, action, damage: 0, blocked: true, at: Date.now()};
       }
-      if (defend) lastAction = {uid, action, damage: 0, blocked: true, at: Date.now()};
-      tx.update(ref, {hp, wins, turnUid: nextTurn, round: nextRound, lastAction, updatedAt: FieldValue.serverTimestamp()});
-      return {ok: true, round: nextRound, winnerUid: lastAction.winnerUid || null};
+
+      const update = {
+        hp, wins, turnUid: nextTurn, round: nextRound, status, lastAction,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      if (status === 'finished') update.finishedAt = FieldValue.serverTimestamp();
+      tx.update(ref, update);
+
+      if (status === 'finished') {
+        const loser = players.find((p) => p !== uid);
+        const winnerStats = db.doc(`users/${uid}/gaming_profile/stats`);
+        const loserStats = db.doc(`users/${loser}/gaming_profile/stats`);
+        tx.set(winnerStats, {
+          xp: FieldValue.increment(75),
+          wins: FieldValue.increment(1),
+          games: FieldValue.increment(1),
+          arenaWins: FieldValue.increment(1),
+          arenaXp: FieldValue.increment(75),
+          seasonXp: FieldValue.increment(75),
+          lastGameAt: FieldValue.serverTimestamp(),
+        }, {merge: true});
+        tx.set(loserStats, {
+          xp: FieldValue.increment(20),
+          games: FieldValue.increment(1),
+          arenaXp: FieldValue.increment(20),
+          seasonXp: FieldValue.increment(20),
+          lastGameAt: FieldValue.serverTimestamp(),
+        }, {merge: true});
+      }
+      return {ok: true, round: nextRound, winnerUid: currentRoundWinner && !defend ? uid : null, matchWinnerUid};
     });
   },
 );
