@@ -2948,6 +2948,48 @@ exports.claimGamingDailyChallenge = onCall(
   },
 );
 
+exports.playRpsMove = onCall(
+  {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new HttpsError('unauthenticated','Sign in required.');
+    const roomId=typeof request.data?.roomId==='string'?request.data.roomId.trim():'';
+    const move=Number.isInteger(request.data?.move)?request.data.move:-1;
+    if(!roomId || roomId.length>128 || move<0 || move>2) throw new HttpsError('invalid-argument','Invalid RPS move.');
+    const roomRef=db.collection('gaming_rooms').doc(roomId);
+    let finished=null;
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(roomRef);
+      if(!snap.exists) throw new HttpsError('not-found','Game room not found.');
+      const d=snap.data()||{};
+      const players=Array.isArray(d.playerUids)?d.playerUids.filter(v=>typeof v==='string'):[];
+      if(d.gameId!=='rock_paper_scissors' || players.length!==2 || !players.includes(uid)) throw new HttpsError('permission-denied','You are not a player in this RPS game.');
+      if(d.status!=='ready') throw new HttpsError('failed-precondition','Game is not ready.');
+      const moves=d.rpsMoves&&typeof d.rpsMoves==='object'?{...d.rpsMoves}:{};
+      if(moves[uid]!==undefined) throw new HttpsError('failed-precondition','You already played this round.');
+      moves[uid]=move;
+      if(Object.keys(moves).length<2){ tx.update(roomRef,{rpsMoves:moves,updatedAt:FieldValue.serverTimestamp()}); return; }
+      const a=players[0], b=players[1], am=moves[a], bm=moves[b];
+      const aWin=(am-bm+3)%3===1;
+      const winner=aWin?a:(am===bm?null:b);
+      const draw=winner===null;
+      tx.update(roomRef,{rpsMoves:{},winnerUid:winner,draw,roundResult:draw?'draw':winner,status:'ready',updatedAt:FieldValue.serverTimestamp()});
+      finished={players,winner,draw};
+    });
+    if(finished){
+      const batch=db.batch();
+      for(const p of finished.players){
+        const win=finished.winner===p;
+        const xp=finished.draw?15:(win?50:15);
+        batch.set(db.collection('users').doc(p).collection('gaming_results').doc(roomId+'_'+Date.now()),{roomId,gameId:'rock_paper_scissors',result:finished.draw?'draw':win?'win':'loss',xp,createdAt:FieldValue.serverTimestamp()});
+        batch.set(db.collection('users').doc(p).collection('gaming_profile').doc('stats'),{xp:FieldValue.increment(xp),seasonXp:FieldValue.increment(xp),games:FieldValue.increment(1),wins:FieldValue.increment(win?1:0),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      }
+      await batch.commit();
+    }
+    return {ok:true};
+  },
+);
+
 exports.playGamingMove = onCall(
   {region:'us-central1',timeoutSeconds:15,memory:'256MiB'},
   async (request) => {
