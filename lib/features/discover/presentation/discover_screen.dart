@@ -8,6 +8,7 @@ import '../../education/presentation/education_screen.dart';
 import '../../business/presentation/business_growth_screen.dart';
 import '../../local/presentation/local_intelligence_screen.dart';
 import '../../payments/presentation/wallet_screen.dart';
+import '../../travel/presentation/travel_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
@@ -27,6 +28,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
   static const _items = <_DiscoverItem>[
     _DiscoverItem('People', 'اكتشف أشخاصًا واهتمامات جديدة', Icons.people_outline),
     _DiscoverItem('Places', 'أماكن وتجارب حول العالم', Icons.place_outlined),
+    _DiscoverItem('Travel', 'خطط رحلاتك واحفظ وجهاتك', Icons.flight_takeoff_outlined),
     _DiscoverItem('Local Intelligence', 'الأعمال والخدمات والفرص في منطقتك', Icons.location_searching_outlined),
     _DiscoverItem('Creators', 'مبدعون ومحتوى يستحق المتابعة', Icons.movie_creation_outlined),
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
@@ -56,7 +58,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       priority.addAll(['Creators', 'Entertainment', 'Communities', 'People', 'Business']);
     } else if (_hasAny(q, const ['job', 'career', 'skill', 'work', 'وظيفة', 'مهنة', 'مهارة', 'فرصة'])) {
       priority.addAll(['Opportunities', 'Talent', 'People', 'Communities', 'Business']);
-    } else if (_hasAny(q, const ['travel', 'place', 'hotel', 'سفر', 'مكان', 'فندق', 'رحلة'])) {
+    } else if (_hasAny(q, const ['travel', 'trip', 'place', 'hotel', 'سفر', 'مكان', 'فندق', 'رحلة'])) {
       priority.addAll(['Places', 'Entertainment', 'People', 'Communities', 'Business']);
     } else {
       priority.addAll(['People', 'Places', 'Creators', 'Entertainment', 'Communities', 'Opportunities', 'Talent', 'Business']);
@@ -74,6 +76,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       terms.any((term) => text.contains(term));
 
   void _open(BuildContext context, _DiscoverItem item) {
+    if (item.title == 'Travel') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen()));
+      return;
+    }
     if (item.title == 'Wallet') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWalletScreen()));
       return;
