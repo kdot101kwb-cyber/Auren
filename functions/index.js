@@ -1270,6 +1270,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     };
     await requestRef.set({
       status: 'completed',
+      provider: selectedProvider || null,
       response: responsePayload,
       completedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
