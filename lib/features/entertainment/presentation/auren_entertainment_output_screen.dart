@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 
 class AurenEntertainmentOutputScreen extends StatefulWidget {
@@ -108,6 +109,14 @@ class _AurenEntertainmentOutputScreenState
                   controller.value.isPlaying ? 'إيقاف' : 'تشغيل',
                 ),
               ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => SharePlus.instance.share(
+                  ShareParams(text: 'شاهد ناتج AUREN: ' + _url),
+                ),
+                icon: const Icon(Icons.share_rounded),
+                label: const Text('مشاركة'),
+              ),
             ],
           ),
         );
@@ -116,31 +125,63 @@ class _AurenEntertainmentOutputScreenState
   }
 
   Widget _imageBody() {
-    return InteractiveViewer(
-      minScale: 0.5,
-      maxScale: 4,
-      child: Center(
-        child: Image.network(
-          _url,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) =>
-              const Text('تعذر عرض الصورة. قد يكون الرابط المؤقت انتهت صلاحيته.'),
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return const Center(child: CircularProgressIndicator());
-          },
+    return Column(
+      children: [
+        Expanded(
+          child: InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4,
+            child: Center(
+              child: Image.network(
+                _url,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) =>
+                    const Text('تعذر عرض الصورة. قد يكون الرابط المؤقت انتهت صلاحيته.'),
+                loadingBuilder: (context, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(child: CircularProgressIndicator());
+                },
+              ),
+            ),
+          ),
         ),
-      ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          child: OutlinedButton.icon(
+            onPressed: () => SharePlus.instance.share(
+              ShareParams(text: 'شاهد ناتج AUREN: ' + _url),
+            ),
+            icon: const Icon(Icons.share_rounded),
+            label: const Text('مشاركة'),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _textBody() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: SelectableText(
-        _text,
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.7),
-      ),
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: SelectableText(
+              _text,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.7),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          child: OutlinedButton.icon(
+            onPressed: () => SharePlus.instance.share(
+              ShareParams(text: _text),
+            ),
+            icon: const Icon(Icons.share_rounded),
+            label: const Text('مشاركة النص'),
+          ),
+        ),
+      ],
     );
   }
 }
