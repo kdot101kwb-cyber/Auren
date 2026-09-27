@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../services/content/content_platform_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
-class AurenContentPlatformScreen extends StatelessWidget {
+class AurenContentPlatformScreen extends StatefulWidget {
   const AurenContentPlatformScreen({super.key});
+  @override State<AurenContentPlatformScreen> createState()=>_AurenContentPlatformScreenState();
+}
+class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>{
+  @override void initState(){super.initState(); final uid=FirebaseAuth.instance.currentUser?.uid; if(uid!=null) AurenContentPlatformService.instance.ensureStarterChannels(uid);}
   @override Widget build(BuildContext context){
     final uid=FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(appBar:AppBar(title:const Text('AUREN Content'),actions:[IconButton(icon:const Icon(Icons.auto_awesome),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ساعدني أجد قنوات ومحتوى يناسب اهتماماتي في AUREN.'))))]),body:StreamBuilder<List<AurenChannel>>(stream:AurenContentPlatformService.instance.watchChannels(),builder:(context,s){
