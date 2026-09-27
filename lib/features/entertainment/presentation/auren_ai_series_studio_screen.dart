@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
+import '../../../services/entertainment/series_production_service.dart';
+import 'series_production_pipeline_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 /// AUREN AI Series Studio
@@ -18,6 +20,7 @@ class AurenAiSeriesStudioScreen extends StatefulWidget {
 class _AurenAiSeriesStudioScreenState extends State<AurenAiSeriesStudioScreen> {
   final _idea = TextEditingController();
   final _repo = EntertainmentRepository();
+  final _seriesService = SeriesProductionService();
 
   String _genre = 'دراما';
   String _tone = 'سينمائي';
@@ -73,39 +76,28 @@ class _AurenAiSeriesStudioScreenState extends State<AurenAiSeriesStudioScreen> {
         final idea = _idea.text.trim().isEmpty
             ? 'قصة أصلية عن مجموعة شباب يكتشفون سراً يغير حياتهم.'
             : _idea.text.trim();
-        final draftId = await _repo.saveEntertainmentDraft(
-          uid,
-          mode: 'مسلسل',
-          mood: _tone,
-          length: 'موسم $_episodes حلقات',
-          idea: idea,
-        );
-        await _repo.createEntertainmentJob(
-          uid,
-          draftId: draftId,
-          mode: 'مسلسل',
-          mood: _tone,
-          length: '$_episodes × $_episodeLength',
-          idea: idea,
-        );
+        final slot = await _seriesService.reserveDailySeriesSlot(uid);
+        if (slot == null) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('اكتملت طاقة الإنتاج اليومية: 5 مسلسلات. حاول غداً.')),
+          );
+          return;
+        }
+        final draftId = await _repo.saveEntertainmentDraft(uid, mode: 'مسلسل', mood: _tone, length: 'موسم $_episodes حلقات', idea: idea);
+        await _repo.createEntertainmentJob(uid, draftId: draftId, mode: 'مسلسل', mood: _tone, length: '$_episodes × $_episodeLength', idea: idea);
+        final projectId = await _seriesService.createSeriesProject(uid, title: 'AUREN Series #$slot', idea: idea, genre: _genre, tone: _tone, episodeCount: int.parse(_episodes), episodeLength: _episodeLength);
+        if (!mounted) return;
+        Navigator.push(context, MaterialPageRoute(builder: (_) => SeriesProductionPipelineScreen(projectId: projectId)));
+        return;
       }
-
       if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: _prompt)),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: _prompt)));
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر بدء مشروع المسلسل. حاول مرة أخرى.')),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر بدء مشروع المسلسل. حاول مرة أخرى.')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
-
   Widget _chips(List<String> values, String selected, ValueChanged<String> onChanged) {
     return Wrap(
       spacing: 8,
