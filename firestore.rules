@@ -1032,6 +1032,28 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
+    match /users/{userId}/commerce_intents/{intentId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.action == 'purchase'
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 240
+        && request.resource.data.currency is string
+        && request.resource.data.currency.matches('^[A-Z]{3}$')
+        && request.resource.data.amountMinor is int
+        && request.resource.data.amountMinor > 0
+        && request.resource.data.status == 'awaiting_approval'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && resource.data.status == 'awaiting_approval'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','approvedAt','updatedAt'])
+        && request.resource.data.status in ['approved','cancelled']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId) && resource.data.status == 'awaiting_approval';
+    }
+
     match /wallets/{userId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
