@@ -942,6 +942,34 @@ exports.onAurenActionStatusChanged = onDocumentUpdated(
   },
 );
 
+async function updateAurenAiProviderHealth(provider, ok, message = '') {
+  const ref = db.collection('ai_provider_health').doc(provider);
+  const now = Date.now();
+  const snap = await ref.get();
+  const data = snap.exists ? snap.data() || {} : {};
+  const failures = Number(data.consecutiveFailures || 0);
+  const nextFailures = ok ? 0 : Math.min(20, failures + 1);
+  const cooldownMs = ok ? 0 : Math.min(15 * 60 * 1000, Math.pow(2, Math.max(0, nextFailures - 1)) * 30 * 1000);
+  await ref.set({
+    provider,
+    status: ok ? 'healthy' : 'cooldown',
+    consecutiveFailures: nextFailures,
+    lastSuccessAt: ok ? FieldValue.serverTimestamp() : (data.lastSuccessAt || null),
+    lastFailureAt: ok ? (data.lastFailureAt || null) : FieldValue.serverTimestamp(),
+    cooldownUntilMs: ok ? 0 : now + cooldownMs,
+    lastError: ok ? '' : String(message || '').slice(0, 500),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge:true});
+}
+
+async function getAurenAiProviderHealth(provider) {
+  const snap = await db.collection('ai_provider_health').doc(provider).get();
+  if (!snap.exists) return {available:true};
+  const data = snap.data() || {};
+  const until = Number(data.cooldownUntilMs || 0);
+  return {available: until <= Date.now(), data};
+}
+
 async function callAurenTextProvider(provider, messages) {
   const systemText = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
   const prompt = messages.map((m) => (m.role || 'user').toUpperCase() + ': ' + String(m.content || '')).join('\n');
@@ -1126,6 +1154,10 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     let lastProviderError = '';
 
     for (const provider of providerCandidates) {
+      if (provider !== 'legacy') {
+        const health = await getAurenAiProviderHealth(provider);
+        if (!health.available) continue;
+      }
       try {
         if (provider === 'legacy') {
           const apiKey = AUREN_AI_API_KEY.value().trim();
@@ -1153,17 +1185,24 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         } else {
           const result = await callAurenTextProvider(provider, messages);
           if (!result.ok) {
-            if (!result.unavailable) lastProviderError = result.message || provider + ' failed';
+            if (!result.unavailable) {
+              lastProviderError = result.message || provider + ' failed';
+              await updateAurenAiProviderHealth(provider, false, lastProviderError);
+            }
             continue;
           }
           rawText = typeof result.text === 'string' ? result.text : '';
         }
         if (rawText.trim()) {
           selectedProvider = provider;
+          if (provider !== 'legacy') await updateAurenAiProviderHealth(provider, true);
           break;
         }
       } catch (error) {
         lastProviderError = String(error?.message || error).slice(0,500);
+        if (provider !== 'legacy') {
+          await updateAurenAiProviderHealth(provider, false, lastProviderError);
+        }
       }
     }
 
