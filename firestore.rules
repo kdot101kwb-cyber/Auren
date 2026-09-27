@@ -1133,9 +1133,32 @@ service cloud.firestore {
       allow update: if false;
     }
     match /trips/{tripId} {
-      allow read: if request.auth != null && (resource.data.ownerId == request.auth.uid);
-      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.destination is string
+        && request.resource.data.destination.size() > 0
+        && request.resource.data.destination.size() <= 160
+        && request.resource.data.travelers is int
+        && request.resource.data.travelers >= 1
+        && request.resource.data.travelers <= 50
+        && request.resource.data.placeIds is list
+        && request.resource.data.placeIds.size() <= 100
+        && request.resource.data.status == 'planned'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.keys().hasOnly(['ownerId','title','destination','startDate','endDate','travelers','placeIds','status','createdAt','updatedAt']);
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && request.resource.data.status in ['planned','active','completed','cancelled']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
     match /users/{userId}/savedPlaces/{placeId} {
       allow read, create, delete: if isOwner(userId);
