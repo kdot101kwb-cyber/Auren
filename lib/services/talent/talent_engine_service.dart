@@ -41,6 +41,24 @@ class AurenTalentEngineService {
   Future<List<AurenTalentCandidate>> matchOpportunity({required String title,required String description,required List<String> skills,String? excludeUid,int limit=20}) async =>
       scout(query:[title,description,...skills].join(' '),excludeUid:excludeUid,limit:limit);
 
+  Future<void> inviteToOpportunity({required String ownerId,required String talentUid,required String opportunityId,required String opportunityTitle}) async {
+    if(ownerId.trim().isEmpty || talentUid.trim().isEmpty || opportunityId.trim().isEmpty) throw ArgumentError('بيانات الدعوة غير مكتملة.');
+    if(ownerId == talentUid) throw ArgumentError('لا يمكن دعوة نفسك.');
+    final ref=_db.collection('opportunity_invitations').doc();
+    await ref.set({
+      'ownerId': ownerId,
+      'talentUid': talentUid,
+      'opportunityId': opportunityId,
+      'opportunityTitle': opportunityTitle.trim().substring(0, opportunityTitle.trim().length.clamp(0,200)),
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Stream<List<Map<String,dynamic>>> watchInvitations(String talentUid) => _db.collection('opportunity_invitations')
+      .where('talentUid',isEqualTo:talentUid).limit(100).snapshots()
+      .map((s)=>s.docs.map((d)=>{'id':d.id,...d.data()}).toList());
+
   List<String> _strings(dynamic v)=>v is List?v.whereType<String>().map((x)=>x.trim()).where((x)=>x.isNotEmpty).take(30).toList():const [];
   String _normalize(String value){var s=value.toLowerCase();const marks='\u064B\u064C\u064D\u064E\u064F\u0650\u0651\u0652\u0670';for(final r in marks.runes){s=s.replaceAll(String.fromCharCode(r),'');}return s.replaceAll('أ','ا').replaceAll('إ','ا').replaceAll('آ','ا').replaceAll('ى','ي').replaceAll('ة','ه').replaceAll('ـ',' ').replaceAll(RegExp(r'\\s+'),' ').trim();}
 }
