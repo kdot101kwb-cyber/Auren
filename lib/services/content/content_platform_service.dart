@@ -23,6 +23,13 @@ class AurenContentPlatformService {
           .where((x)=>x.isVideo && x.mediaUrl.isNotEmpty && (q.isEmpty || ('${x.title} ${x.description} ${x.type}'.toLowerCase().contains(q)))).take(50).toList();
       });
 
+  Stream<List<AurenEntertainmentItem>> watchMyVideos(String uid) =>
+      _db.collection('entertainment_items')
+        .where('creatorId', isEqualTo: uid)
+        .limit(100)
+        .snapshots()
+        .map((s) => s.docs.map((d) => AurenEntertainmentItem.fromMap(d.id, d.data())).where((x) => x.isVideo).toList());
+
   Stream<List<AurenChannel>> watchChannels() =>
       _db.collection('content_channels').where('public',isEqualTo:true).limit(100).snapshots()
         .map((s)=>s.docs.map(AurenChannel.fromDoc).toList());
