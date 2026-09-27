@@ -29,9 +29,9 @@ class AurenAiProviderCatalog {
   static const providers = <AurenAiProviderInfo>[
     AurenAiProviderInfo(id:'pollinations',name:'Pollinations',tier:AurenProviderTier.freeFirst,capabilities:{'text','image','video','audio'},enabled:true,role:'Free-first media'),
     AurenAiProviderInfo(id:'gemini',name:'Gemini',tier:AurenProviderTier.freeQuota,capabilities:{'text','image','video','audio'},enabled:true,role:'General AI + media fallback'),
-    AurenAiProviderInfo(id:'openrouter',name:'OpenRouter',tier:AurenProviderTier.freeQuota,capabilities:{'text','vision'},enabled:true,role:'Multi-model router'),
-    AurenAiProviderInfo(id:'huggingface',name:'Hugging Face',tier:AurenProviderTier.freeQuota,capabilities:{'text','image','audio','video'},enabled:true,role:'Open models'),
-    AurenAiProviderInfo(id:'cloudflare_workers_ai',name:'Cloudflare Workers AI',tier:AurenProviderTier.freeQuota,capabilities:{'text','vision','audio','image'},enabled:true,role:'Daily free inference'),
+    AurenAiProviderInfo(id:'openrouter',name:'OpenRouter',tier:AurenProviderTier.freeQuota,capabilities:{'text'},enabled:true,role:'Multi-model text router'),
+    AurenAiProviderInfo(id:'huggingface',name:'Hugging Face',tier:AurenProviderTier.freeQuota,capabilities:{'text'},enabled:true,role:'Open-model text router'),
+    AurenAiProviderInfo(id:'cloudflare_workers_ai',name:'Cloudflare Workers AI',tier:AurenProviderTier.freeQuota,capabilities:{'text'},enabled:true,role:'Daily free inference'),
     AurenAiProviderInfo(id:'groq',name:'Groq',tier:AurenProviderTier.freeQuota,capabilities:{'text','audio'},enabled:false,role:'Fast inference'),
     AurenAiProviderInfo(id:'deepseek',name:'DeepSeek',tier:AurenProviderTier.freeQuota,capabilities:{'text','vision'},enabled:false,role:'Reasoning'),
     AurenAiProviderInfo(id:'mistral',name:'Mistral AI',tier:AurenProviderTier.freeQuota,capabilities:{'text','vision','audio'},enabled:false,role:'General AI'),
