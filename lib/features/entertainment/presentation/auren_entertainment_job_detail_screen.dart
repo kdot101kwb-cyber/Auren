@@ -269,6 +269,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   context,
                   Map<String, dynamic>.from(job['providerResult'] as Map),
                   published: job['publishedItemId']?.toString().isNotEmpty == true,
+                  publishedItemId: job['publishedItemId']?.toString() ?? '',
                   onPublish: () => _publish(context, uid),
                 ),
               ],
@@ -302,7 +303,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _outputCard(BuildContext context, Map<String, dynamic> output, {required bool published, required VoidCallback onPublish}) {
+  Widget _outputCard(BuildContext context, Map<String, dynamic> output, {required bool published, required String publishedItemId, required VoidCallback onPublish}) {
     final type = output['type']?.toString() ?? 'output';
     final url = output['url']?.toString() ?? '';
     final text = output['text']?.toString() ?? '';
@@ -389,7 +390,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                     Text('منشور في Entertainment', style: TextStyle(fontWeight: FontWeight.w800)),
                   ],
                 ),
-                if (job['publishedItemId']?.toString().isNotEmpty == true) ...[
+                if (publishedItemId.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
@@ -397,7 +398,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => AurenEntertainmentDetailScreen(
-                            itemId: job['publishedItemId'].toString(),
+                            itemId: publishedItemId,
                           ),
                         ),
                       ),
