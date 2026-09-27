@@ -1,5 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/opportunity.dart';
+
+class AurenOpportunityApplication {
+  final String id, opportunityId, ownerId, applicantId, title, note, status;
+  final DateTime? createdAt, updatedAt;
+  const AurenOpportunityApplication({required this.id,required this.opportunityId,required this.ownerId,required this.applicantId,required this.title,required this.note,required this.status,this.createdAt,this.updatedAt});
+  factory AurenOpportunityApplication.fromMap(String id, Map<String,dynamic> d) => AurenOpportunityApplication(id:id,opportunityId:d['opportunityId']?.toString()??'',ownerId:d['ownerId']?.toString()??'',applicantId:d['applicantId']?.toString()??'',title:d['title']?.toString()??'',note:d['note']?.toString()??'',status:d['status']?.toString()??'pending',createdAt:d['createdAt'] is Timestamp?(d['createdAt'] as Timestamp).toDate():null,updatedAt:d['updatedAt'] is Timestamp?(d['updatedAt'] as Timestamp).toDate():null);
+}
+
 class OpportunityRepository{final FirebaseFirestore db;OpportunityRepository({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
 Stream<List<AurenOpportunity>> watchOpen({String query='',String type='All'}){final q=query.trim().toLowerCase();return db.collection('opportunities').where('status',isEqualTo:'open').limit(100).snapshots().map((s){final list=s.docs.map((d)=>AurenOpportunity.fromMap(d.id,d.data())).where((o)=>type=='All'||o.type==type).where((o)=>q.isEmpty||('${o.title} ${o.description} ${o.category} ${o.city} ${o.country} ${o.skills.join(' ')}').toLowerCase().contains(q)).toList();list.sort((a,b)=>(b.createdAt??DateTime.fromMillisecondsSinceEpoch(0)).compareTo(a.createdAt??DateTime.fromMillisecondsSinceEpoch(0)));return list;});}
 Stream<List<AurenOpportunity>> watchSaved(String uid) => db.collection('users').doc(uid).collection('savedOpportunities').orderBy('createdAt', descending: true).limit(100).snapshots().map((s) => s.docs.map((d) => AurenOpportunity.fromMap(d.id, {
@@ -18,6 +26,15 @@ Stream<List<AurenOpportunity>> watchSaved(String uid) => db.collection('users').
 Stream<bool> watchInterested(String uid, String opportunityId) => db.collection('users').doc(uid).collection('savedOpportunities').doc(opportunityId).snapshots().map((d) => d.exists);
 
 Future<bool> hasApplied(String uid, String opportunityId) async => (await db.collection('users').doc(uid).collection('opportunityApplications').doc(opportunityId).get()).exists;
+
+Stream<List<AurenOpportunityApplication>> watchMyApplications(String uid) => db.collection('users').doc(uid).collection('opportunityApplications').orderBy('createdAt', descending:true).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenOpportunityApplication.fromMap(d.id,d.data())).toList());
+
+Stream<List<AurenOpportunityApplication>> watchReceived(String ownerId) => db.collectionGroup('opportunityApplications').where('ownerId',isEqualTo:ownerId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenOpportunityApplication.fromMap(d.id,d.data())).toList());
+
+Future<void> updateApplicationStatus({required String applicantId,required String opportunityId,required String status}) async {
+  if(!['accepted','rejected'].contains(status)) throw ArgumentError('حالة الطلب غير صالحة');
+  await db.collection('users').doc(applicantId).collection('opportunityApplications').doc(opportunityId).update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
+}
 
 Future<void> apply({required String uid, required AurenOpportunity opportunity, required String note}) async {
   if (uid.trim().isEmpty || opportunity.id.trim().isEmpty) throw ArgumentError('بيانات التقديم غير صالحة');
