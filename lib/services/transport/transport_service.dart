@@ -1,0 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class AurenRideRequest {
+  final String id,riderUid,pickup,destination,rideType,status; final int passengers; final DateTime? createdAt;
+  const AurenRideRequest({required this.id,required this.riderUid,required this.pickup,required this.destination,required this.rideType,required this.passengers,required this.status,required this.createdAt});
+  factory AurenRideRequest.fromDoc(DocumentSnapshot<Map<String,dynamic>> d){final x=d.data()??{};final t=x['createdAt'];return AurenRideRequest(id:d.id,riderUid:(x['riderUid']??'') as String,pickup:(x['pickup']??'') as String,destination:(x['destination']??'') as String,rideType:(x['rideType']??'standard') as String,passengers:(x['passengers']??1) as int,status:(x['status']??'requested') as String,createdAt:t is Timestamp?t.toDate():null);}
+}
+class AurenTransportService { AurenTransportService._(); static final instance=AurenTransportService._(); final _db=FirebaseFirestore.instance;
+ Future<String> requestRide({required String uid,required String pickup,required String destination,required String rideType,required int passengers}) async {if(uid.isEmpty||pickup.trim().isEmpty||destination.trim().isEmpty)throw ArgumentError('نقطة الانطلاق والوجهة مطلوبة.');if(!['standard','premium','van','bike'].contains(rideType)||passengers<1||passengers>8)throw ArgumentError('بيانات الرحلة غير صالحة.');final ref=_db.collection('ride_requests').doc();await ref.set({'riderUid':uid,'pickup':pickup.trim(),'destination':destination.trim(),'rideType':rideType,'passengers':passengers,'status':'requested','createdAt':FieldValue.serverTimestamp()});return ref.id;}
+ Stream<List<AurenRideRequest>> watchMyRides(String uid)=>_db.collection('ride_requests').where('riderUid',isEqualTo:uid).limit(50).snapshots().map((s)=>s.docs.map(AurenRideRequest.fromDoc).toList());
+ Future<void> cancel(String uid,String id) async {final r=_db.collection('ride_requests').doc(id);final s=await r.get();if(!s.exists||s.data()?['riderUid']!=uid)throw StateError('هذه الرحلة ليست لحسابك.');final status=s.data()?['status'];if(status!='requested'&&status!='matched')throw StateError('لا يمكن إلغاء الرحلة الآن.');await r.update({'status':'cancelled'});}
+}
