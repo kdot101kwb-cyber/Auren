@@ -420,6 +420,46 @@ class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
   }
 }
 
+class _Auren3DQuickPanel extends StatefulWidget {
+  final String title; final Auren3DWorldPreset preset;
+  const _Auren3DQuickPanel({required this.title, required this.preset});
+  @override State<_Auren3DQuickPanel> createState()=>_Auren3DQuickPanelState();
+}
+class _Auren3DQuickPanelState extends State<_Auren3DQuickPanel>{
+  double _x=0,_y=0; int _score=0;
+  void _move(double x,double y)=>setState(()=>{_x=(_x+x).clamp(-8,8),_y=(_y+y).clamp(-8,8),_score++});
+  @override Widget build(BuildContext context)=>Column(children:[
+    SizedBox(height:330,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:CustomPaint(painter:_Auren3DGamePainter(preset:widget.preset,x:_x,y:_y),child:const SizedBox.expand()))),
+    const SizedBox(height:10),Text(widget.title+' • نقاط: '+_score.toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+    Wrap(spacing:8,children:[
+      IconButton.filledTonal(onPressed:()=>_move(0,-1),icon:const Icon(Icons.arrow_upward)),
+      IconButton.filledTonal(onPressed:()=>_move(-1,0),icon:const Icon(Icons.arrow_back)),
+      IconButton.filledTonal(onPressed:()=>_move(1,0),icon:const Icon(Icons.arrow_forward)),
+      IconButton.filledTonal(onPressed:()=>_move(0,1),icon:const Icon(Icons.arrow_downward)),
+    ])
+  ]);
+}
+class _Auren3DGamePainter extends CustomPainter{
+ final Auren3DWorldPreset preset; final double x,y;
+ const _Auren3DGamePainter({required this.preset,required this.x,required this.y});
+ Offset p(Offset v,Size s,[double h=0]){final depth=(8+v.dy).clamp(2.0,20.0),scale=s.shortestSide*.10/depth;return Offset(s.width/2+v.dx*scale,s.height*.62-(h-v.dy*.35)*scale);}
+ void box(Canvas c,Size s,double x,double y,double w,double d,double h){
+   final q=[p(Offset(x,y),s),p(Offset(x+w,y),s),p(Offset(x+w,y+d),s),p(Offset(x,y+d),s)],t=[p(Offset(x,y),s,h),p(Offset(x+w,y),s,h),p(Offset(x+w,y+d),s,h),p(Offset(x,y+d),s,h)];
+   final a=Paint()..color=const Color(0xFF4F5680),b=Paint()..color=const Color(0xFF737BA8);
+   c.drawPath(Path()..addPolygon([q[0],q[1],t[1],t[0]],true),a);c.drawPath(Path()..addPolygon([q[1],q[2],t[2],t[1]],true),a);c.drawPath(Path()..addPolygon([q[2],q[3],t[3],t[2]],true),a);c.drawPath(Path()..addPolygon(t,true),b);
+ }
+ @override void paint(Canvas c,Size s){
+   c.drawRect(Offset.zero&s,Paint()..color=const Color(0xFF080A12)); final ground=Paint()..color=const Color(0xFF1A2030);
+   c.drawPath(Path()..addPolygon([p(const Offset(-30,-20),s),p(const Offset(30,-20),s),p(const Offset(30,20),s),p(const Offset(-30,20),s)],true),ground);
+   for(var i=-6;i<=6;i++){final g=Paint()..color=const Color(0xFF343A55);c.drawLine(p(Offset(i*4,-18),s),p(Offset(i*4,18),s),g);c.drawLine(p(Offset(-24,i*4),s),p(Offset(24,i*4),s),g);}
+   if(preset==Auren3DWorldPreset.city||preset==Auren3DWorldPreset.arena)for(var i=0;i<6;i++)box(c,s,-18+(i%3)*12,-10+(i~/3)*12,7,6,6+(i%3)*3);
+   if(preset==Auren3DWorldPreset.sports)box(c,s,-18,-10,36,20,.3);
+   if(preset==Auren3DWorldPreset.desert)for(var i=0;i<5;i++)box(c,s,-20+i*9,7-(i%2)*8,6,5,1+i%3);
+   c.drawCircle(p(Offset(x,y),s,4),9,Paint()..color=const Color(0xFFE9ECFF));
+ }
+ @override bool shouldRepaint(covariant _Auren3DGamePainter o)=>o.x!=x||o.y!=y||o.preset!=preset;
+}
+
 class _AdventureGamesPanel extends StatefulWidget {
   final int initialIndex;
   const _AdventureGamesPanel({required this.initialIndex});
