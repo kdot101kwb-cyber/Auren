@@ -6,6 +6,7 @@ import '../../social/presentation/user_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
 import '../../education/presentation/education_screen.dart';
 import '../../business/presentation/business_growth_screen.dart';
+import '../../local/presentation/local_intelligence_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
@@ -25,6 +26,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
   static const _items = <_DiscoverItem>[
     _DiscoverItem('People', 'اكتشف أشخاصًا واهتمامات جديدة', Icons.people_outline),
     _DiscoverItem('Places', 'أماكن وتجارب حول العالم', Icons.place_outlined),
+    _DiscoverItem('Local Intelligence', 'الأعمال والخدمات والفرص في منطقتك', Icons.location_searching_outlined),
     _DiscoverItem('Creators', 'مبدعون ومحتوى يستحق المتابعة', Icons.movie_creation_outlined),
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
     _DiscoverItem('Business Growth', 'نمو، عملاء، حملات وشراكات', Icons.trending_up),
@@ -70,8 +72,12 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       terms.any((term) => text.contains(term));
 
   void _open(BuildContext context, _DiscoverItem item) {
+    if (item.title == 'Local Intelligence') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenLocalIntelligenceScreen()));
+      return;
+    }
     if (item.title == 'Education') {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEducationScreen()));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEducationScreen()));
       return;
     }
     if (item.title == 'Talent') {
