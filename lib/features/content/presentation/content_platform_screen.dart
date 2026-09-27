@@ -18,6 +18,7 @@ class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>
     return Scaffold(
       appBar:AppBar(title:const Text('AUREN Content'),actions:[
         if(uid!=null) IconButton(icon:const Icon(Icons.add_box_outlined),tooltip:'نشر فيديو',onPressed:()=>_publish(uid)),
+        if(uid!=null) IconButton(icon:const Icon(Icons.video_library_outlined),tooltip:'استوديو المحتوى',onPressed:()=>_openStudio(uid)),
         if(uid!=null) IconButton(icon:const Icon(Icons.add_to_queue),tooltip:'إنشاء قناة',onPressed:()=>_createChannel(uid)),
         IconButton(icon:const Icon(Icons.auto_awesome),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ساعدني أجد قنوات ومحتوى يناسب اهتماماتي في AUREN.'))))
       ]),
@@ -78,6 +79,54 @@ class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>
           });
         }))
       ])
+    );
+  }
+
+  Future<void> _openStudio(String uid) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.72,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) => StreamBuilder<List<AurenEntertainmentItem>>(
+          stream: AurenContentPlatformService.instance.watchMyVideos(uid),
+          builder: (context, snapshot) {
+            final videos = snapshot.data ?? const <AurenEntertainmentItem>[];
+            return ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(20),
+              children: [
+                Row(children: [
+                  const Expanded(child: Text('استوديو AUREN Content', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800))),
+                  FilledButton.icon(onPressed: () { Navigator.pop(ctx); _publish(uid); }, icon: const Icon(Icons.publish), label: const Text('نشر')),
+                ]),
+                const SizedBox(height: 8),
+                Text('إدارة المحتوى المنشور من حسابك • ${videos.length} فيديو'),
+                const SizedBox(height: 16),
+                if (snapshot.hasError) const Text('تعذر تحميل مكتبة المحتوى.'),
+                if (!snapshot.hasError && videos.isEmpty) const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: Text('لسه ما نشرت محتوى. ابدأ بأول فيديو.')),
+                ),
+                ...videos.map((v) => Card(
+                  child: ListTile(
+                    leading: const CircleAvatar(child: Icon(Icons.play_arrow)),
+                    title: Text(v.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: Text(v.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    trailing: const Icon(Icons.chevron_left),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: v.id)));
+                    },
+                  ),
+                )),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
