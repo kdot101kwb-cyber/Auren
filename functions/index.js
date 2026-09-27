@@ -1,12 +1,14 @@
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
+const { getStorage } = require('firebase-admin/storage');
 const { defineSecret } = require('firebase-functions/params');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 
 initializeApp();
 const db = getFirestore();
+const storage = getStorage();
 const AUREN_AI_API_KEY = defineSecret('AUREN_AI_API_KEY');
 
 // Entertainment provider adapter.
@@ -3298,6 +3300,94 @@ function extractGeminiOperationName(value) {
   return match ? match[0] : value;
 }
 
+async function persistGeminiOutput({ uid, jobId, body }) {
+  const response = body?.response || body?.result || {};
+  const generatedVideoUri =
+    response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri || null;
+
+  if (typeof generatedVideoUri === 'string' && generatedVideoUri.startsWith('http')) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      const download = await fetch(generatedVideoUri, {
+        headers: { 'x-goog-api-key': GEMINI_API_KEY.value().trim() },
+        signal: controller.signal,
+      });
+      if (!download.ok) {
+        return { ok: false, message: `تعذر تنزيل الفيديو من Gemini (HTTP ${download.status}).` };
+      }
+      const buffer = Buffer.from(await download.arrayBuffer());
+      if (!buffer.length || buffer.length > 100 * 1024 * 1024) {
+        return { ok: false, message: 'حجم الفيديو الناتج غير صالح للحفظ.' };
+      }
+      const bucket = storage.bucket();
+      const path = `entertainment_outputs/${uid}/${jobId}/output.mp4`;
+      const file = bucket.file(path);
+      await file.save(buffer, {
+        resumable: false,
+        metadata: { contentType: 'video/mp4', cacheControl: 'private,max-age=3600' },
+      });
+      const [outputUrl] = await file.getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      });
+      return {
+        ok: true,
+        output: {
+          type: 'video',
+          mimeType: 'video/mp4',
+          storagePath: path,
+          url: outputUrl,
+        },
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error?.name === 'AbortError'
+          ? 'انتهت مهلة تنزيل فيديو Gemini.'
+          : 'تعذر حفظ فيديو Gemini في تخزين AUREN.',
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const parts = Array.isArray(response?.candidates?.[0]?.content?.parts)
+    ? response.candidates[0].content.parts : [];
+  const textParts = parts
+    .map((part) => typeof part?.text === 'string' ? part.text : '')
+    .filter(Boolean);
+  if (textParts.length) {
+    return {
+      ok: true,
+      output: { type: 'text', mimeType: 'text/plain', text: textParts.join('\n') },
+    };
+  }
+
+  const imagePart = parts.find((part) => part?.inlineData?.data && part?.inlineData?.mimeType);
+  if (imagePart) {
+    const mimeType = String(imagePart.inlineData.mimeType).slice(0, 80);
+    const buffer = Buffer.from(imagePart.inlineData.data, 'base64');
+    if (!buffer.length || buffer.length > 20 * 1024 * 1024) {
+      return { ok: false, message: 'حجم الصورة الناتجة غير صالح للحفظ.' };
+    }
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const path = `entertainment_outputs/${uid}/${jobId}/output.${ext}`;
+    const file = storage.bucket().file(path);
+    await file.save(buffer, {
+      resumable: false,
+      metadata: { contentType: mimeType, cacheControl: 'private,max-age=3600' },
+    });
+    const [outputUrl] = await file.getSignedUrl({
+      action: 'read',
+      expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    });
+    return { ok: true, output: { type: 'image', mimeType, storagePath: path, url: outputUrl } };
+  }
+
+  return { ok: true, output: { type: 'json', providerResponse: response } };
+}
+
 async function pollGeminiOperation(operationName) {
   const apiKey = GEMINI_API_KEY.value().trim();
   if (!apiKey || !operationName) return { ok: false, done: false, message: 'بيانات متابعة Gemini غير متاحة.' };
@@ -3382,13 +3472,29 @@ exports.trackEntertainmentProviderJob = onSchedule(
         continue;
       }
 
+      const outputResult = await persistGeminiOutput({
+        uid: doc.ref.parent.parent?.id || '',
+        jobId: doc.id,
+        body: result.body,
+      });
+      if (!outputResult.ok) {
+        await doc.ref.set({
+          providerStatus: 'failed',
+          status: 'failed',
+          queueStatus: 'waiting_provider',
+          providerMessage: outputResult.message,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        continue;
+      }
+
       await doc.ref.set({
         providerStatus: 'completed',
         status: 'ready',
         queueStatus: 'completed',
         progress: 100,
-        providerMessage: 'اكتملت عملية Gemini. النتيجة محفوظة في المهمة.',
-        providerResult: result.body?.response || result.body?.result || null,
+        providerMessage: 'اكتملت عملية Gemini وتم حفظ الناتج.',
+        providerResult: outputResult.output,
         workerFinishedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
