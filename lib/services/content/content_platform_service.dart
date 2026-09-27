@@ -8,7 +8,23 @@ class AurenChannel {
 }
 class AurenContentPlatformService {
   AurenContentPlatformService._(); static final instance=AurenContentPlatformService._(); final _db=FirebaseFirestore.instance;
-  Stream<List<AurenChannel>> watchChannels() => _db.collection('content_channels').where('public',isEqualTo:true).limit(50).snapshots().map((s)=>s.docs.map(AurenChannel.fromDoc).toList());
+  Stream<List<AurenChannel>> watchChannels() => _db.collection('content_channels').where('public',isEqualTo:true).limit(100).snapshots().map((s)=>s.docs.map(AurenChannel.fromDoc).toList());
+
+  Future<void> ensureStarterChannels(String uid) async {
+    if (uid.isEmpty) return;
+    final existing = await _db.collection('content_channels').where('ownerId',isEqualTo:uid).limit(1).get();
+    if (existing.docs.isNotEmpty) return;
+    final batch = _db.batch();
+    final starters = <Map<String,String>>[
+      {'name':'AUREN Discover','description':'اكتشاف ومحتوى متنوع من عالم AUREN'},
+      {'name':'AUREN Learn','description':'تعلم عملي، مهارات، معرفة وتجارب'},
+      {'name':'AUREN Creators','description':'محتوى صناع ومبدعين من مختلف المجالات'},
+      {'name':'AUREN World','description':'ثقافة، سفر، ألعاب وتجارب تفاعلية'},
+      {'name':'AUREN Stories','description':'قصص، أفكار وسلاسل أصلية داخل AUREN'},
+    ];
+    for (final s in starters) { final r=_db.collection('content_channels').doc(); batch.set(r,{'ownerId':uid,'name':s['name'],'description':s['description'],'avatarUrl':'','subscribers':0,'public':true,'createdAt':FieldValue.serverTimestamp()}); }
+    await batch.commit();
+  }
   Future<String> createChannel({required String uid,required String name,required String description}) async {
     if(uid.isEmpty||name.trim().isEmpty||name.trim().length>100||description.length>1000) throw ArgumentError('بيانات القناة غير صالحة.');
     final r=_db.collection('content_channels').doc();
