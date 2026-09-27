@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'auren_entertainment_output_screen.dart';
+import 'entertainment_detail_screen.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
@@ -51,6 +52,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
       final result = await callable.call({'jobId': jobId});
       if (!context.mounted) return;
       final data = Map<String, dynamic>.from(result.data as Map);
+      final publishedItemId = data['itemId']?.toString() ?? '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -60,6 +62,13 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
           ),
         ),
       );
+      if (publishedItemId.isNotEmpty && context.mounted) {
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        if (!context.mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: publishedItemId)),
+        );
+      }
     } on FirebaseFunctionsException catch (e) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
