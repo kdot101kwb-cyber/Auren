@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
+import 'package:just_audio/just_audio.dart';
 
 class AurenEntertainmentOutputScreen extends StatefulWidget {
   final Map<String, dynamic> output;
@@ -18,6 +19,7 @@ class AurenEntertainmentOutputScreen extends StatefulWidget {
 class _AurenEntertainmentOutputScreenState
     extends State<AurenEntertainmentOutputScreen> {
   VideoPlayerController? _controller;
+  AudioPlayer? _audioPlayer;
   Future<void>? _initializeFuture;
 
   String get _type => widget.output['type']?.toString() ?? 'output';
@@ -26,6 +28,7 @@ class _AurenEntertainmentOutputScreenState
   String get _mime => widget.output['mimeType']?.toString() ?? '';
 
   bool get _isVideo => _type == 'video' || _mime.startsWith('video/');
+  bool get _isAudio => _type == 'audio' || _mime.startsWith('audio/');
 
   @override
   void initState() {
@@ -34,12 +37,16 @@ class _AurenEntertainmentOutputScreenState
       final controller = VideoPlayerController.networkUrl(Uri.parse(_url));
       _controller = controller;
       _initializeFuture = controller.initialize();
+    } else if (_isAudio && _url.isNotEmpty) {
+      _audioPlayer = AudioPlayer();
+      _initializeFuture = _audioPlayer!.setUrl(_url).then((_) {});
     }
   }
 
   @override
   void dispose() {
     _controller?.dispose();
+    _audioPlayer?.dispose();
     super.dispose();
   }
 
@@ -47,6 +54,8 @@ class _AurenEntertainmentOutputScreenState
   Widget build(BuildContext context) {
     final title = _isVideo
         ? 'فيديو AUREN'
+        : _isAudio
+            ? 'موسيقى AUREN'
         : _type == 'image'
             ? 'صورة AUREN'
             : 'ناتج AUREN';
@@ -59,7 +68,9 @@ class _AurenEntertainmentOutputScreenState
               ? _videoBody()
               : _type == 'image'
                   ? _imageBody()
-                  : _textBody(),
+                  : _isAudio
+                      ? _audioBody()
+                      : _textBody(),
     );
   }
 
@@ -113,6 +124,66 @@ class _AurenEntertainmentOutputScreenState
               OutlinedButton.icon(
                 onPressed: () => SharePlus.instance.share(
                   ShareParams(text: 'شاهد ناتج AUREN: ' + _url),
+                ),
+                icon: const Icon(Icons.share_rounded),
+                label: const Text('مشاركة'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _audioBody() {
+    final player = _audioPlayer;
+    final future = _initializeFuture;
+    if (player == null || future == null) {
+      return const Center(child: Text('تعذر تجهيز الصوت.'));
+    }
+    return FutureBuilder<void>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return const Center(child: Text('تعذر تشغيل الصوت.'));
+        }
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.music_note_rounded, size: 96),
+              const SizedBox(height: 18),
+              Text(
+                'ناتج موسيقي تم إنشاؤه بواسطة AUREN',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 18),
+              StreamBuilder<PlayerState>(
+                stream: player.playerStateStream,
+                builder: (context, snapshot) {
+                  final playing = snapshot.data?.playing ?? player.playing;
+                  return FilledButton.icon(
+                    onPressed: () async {
+                      if (playing) {
+                        await player.pause();
+                      } else {
+                        await player.play();
+                      }
+                      if (mounted) setState(() {});
+                    },
+                    icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                    label: Text(playing ? 'إيقاف' : 'تشغيل'),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => SharePlus.instance.share(
+                  ShareParams(text: 'استمع إلى ناتج AUREN: ' + _url),
                 ),
                 icon: const Icon(Icons.share_rounded),
                 label: const Text('مشاركة'),
