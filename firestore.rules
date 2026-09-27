@@ -2225,5 +2225,15 @@ service cloud.firestore {
         && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
+    match /safety_places/{placeId} { allow read: if request.auth != null && resource.data.active == true; allow write: if false; }
+    match /users/{userId}/offline_routes/{routeId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.points is list && request.resource.data.points.size() >= 2 && request.resource.data.points.size() <= 500
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }
