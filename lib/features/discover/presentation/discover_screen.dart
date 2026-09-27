@@ -70,10 +70,6 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       terms.any((term) => text.contains(term));
 
   void _open(BuildContext context, _DiscoverItem item) {
-    if (item.title == 'Business Growth') {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const _BusinessGrowthEntryScreen()));
-      return;
-    }
     if (item.title == 'Education') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEducationScreen()));
       return;
@@ -288,9 +284,4 @@ class _DiscoverItem {
   final IconData icon;
 
   const _DiscoverItem(this.title, this.subtitle, this.icon);
-}
-
-class _BusinessGrowthEntryScreen extends StatelessWidget {
-  const _BusinessGrowthEntryScreen();
-  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Business Growth')),body:const Center(child:Text('افتح Business من حسابك لاختيار النشاط وتشغيل Growth Engine.')));
 }
