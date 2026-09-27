@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -26,6 +27,9 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   final _friendUidController = TextEditingController();
   final _friendSearchController = TextEditingController();
   String _friendSearch = '';
+  int _rpsUserScore = 0;
+  int _rpsAiScore = 0;
+  String _rpsResult = 'اختَر حركة للبدء';
 
   @override void initState() { super.initState(); _loadStats(); }
 
@@ -130,7 +134,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         _statsCard(), const SizedBox(height: 12),
         _challengeCard(context), const SizedBox(height: 12),
         _seasonCard(), const SizedBox(height: 12),
-        _achievementsCard(), const SizedBox(height: 12),
+        _achievementsCard(), const SizedBox(height: 12),        _rpsCard(context), const SizedBox(height: 12),
         if (_roomId == null) ...[_challengeCard(context), const SizedBox(height: 12)],
         _leaderboardCard(), const SizedBox(height: 12),
         if (_roomId == null) ...[_incomingChallengesCard(), const SizedBox(height: 12), _outgoingChallengesCard(), const SizedBox(height: 12)],
@@ -204,6 +208,62 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       ),
     );
   }
+
+  Widget _rpsCard(BuildContext context) {
+    const moves = <String>['حجر 🪨', 'ورق 📄', 'مقص ✂️'];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('AUREN Quick Battle', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+          const SizedBox(height: 4),
+          const Text('حجر • ورق • مقص — مباراة سريعة ضد AUREN AI.'),
+          const SizedBox(height: 12),
+          Text(_rpsResult, style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: Text('أنت: $_rpsUserScore', textAlign: TextAlign.center)),
+            Expanded(child: Text('AUREN: $_rpsAiScore', textAlign: TextAlign.center)),
+          ]),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (var i = 0; i < moves.length; i++)
+                FilledButton.tonal(onPressed: () => _playRps(i), child: Text(moves[i])),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextButton(onPressed: () => setState(() {
+            _rpsUserScore = 0;
+            _rpsAiScore = 0;
+            _rpsResult = 'تم تصفير النتيجة';
+          }), child: const Text('إعادة المباراة')),
+        ]),
+      ),
+    );
+  }
+
+  void _playRps(int userMove) {
+    final aiMove = Random().nextInt(3);
+    if (userMove == aiMove) {
+      setState(() => _rpsResult = 'تعادل — AUREN اختار ${_rpsMoveName(aiMove)}');
+      return;
+    }
+    final userWon = (userMove - aiMove + 3) % 3 == 1;
+    setState(() {
+      if (userWon) {
+        _rpsUserScore++;
+        _rpsResult = 'فزت 🎉 — AUREN اختار ${_rpsMoveName(aiMove)}';
+      } else {
+        _rpsAiScore++;
+        _rpsResult = 'AUREN فاز — اختار ${_rpsMoveName(aiMove)}';
+      }
+    });
+  }
+
+  String _rpsMoveName(int move) => const ['حجر 🪨', 'ورق 📄', 'مقص ✂️'][move];
 
   Widget _achievementsCard() {
     final achievements = <Map<String, dynamic>>[
