@@ -1827,11 +1827,11 @@ service cloud.firestore {
         && request.resource.data.playerUids is list
         && request.resource.data.playerUids.size() == 1
         && request.resource.data.playerUids[0] == request.auth.uid
-        && request.resource.data.gameId == 'tic_tac_toe'
+        && request.resource.data.gameId in ['tic_tac_toe','rock_paper_scissors']
         && request.resource.data.inviteCode is string
         && request.resource.data.inviteCode.size() == 6
         && request.resource.data.board is list
-        && request.resource.data.board.size() == 9
+        && request.resource.data.board.size() in [9,3]
         && request.resource.data.turnUid == request.auth.uid
         && request.resource.data.status == 'waiting';
       allow update: if request.auth != null
