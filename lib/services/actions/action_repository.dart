@@ -97,6 +97,26 @@ class ActionRepository {
       _db.collection('users').doc(uid).collection('agent_trust').doc('primary')
           .snapshots().map((s) => s.exists ? s.data() : null);
 
+  Future<String> approve(String actionId) async {
+    final id = actionId.trim();
+    if (id.isEmpty) throw ArgumentError('Action id is required.');
+    final result = await FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('approveAurenAction')
+        .call({'actionId': id});
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return data['status']?.toString() ?? 'approved';
+  }
+
+  Future<String> reject(String actionId) async {
+    final id = actionId.trim();
+    if (id.isEmpty) throw ArgumentError('Action id is required.');
+    final result = await FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('rejectAurenAction')
+        .call({'actionId': id});
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return data['status']?.toString() ?? 'rejected';
+  }
+
   Future<String> cancel(String actionId) async {
     final id = actionId.trim();
     if (id.isEmpty) throw ArgumentError('Action id is required.');
