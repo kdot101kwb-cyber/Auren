@@ -21,12 +21,18 @@ class _EducationState extends State<AurenAURENEducationScreen>{
         const ListTile(contentPadding:EdgeInsets.zero,leading:Icon(Icons.school,size:34),title:Text('Learn with AUREN',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold)),subtitle:Text('دورات، تقدم، ومدرس شخصي بالذكاء الاصطناعي.')),
         TextField(decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن دورة أو مهارة'),onChanged:(v)=>setState(()=>query=v)),
         const SizedBox(height:8),SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[null,...cats].map((c)=>Padding(padding:const EdgeInsets.only(right:8),child:ChoiceChip(label:Text(c??'All'),selected:category==c,onSelected:(_)=>setState(()=>category=c))).toList()))),
-        const SizedBox(height:12),...courses.map((c)=>_card(context,c,uid)),
+        const SizedBox(height:12),
+          StreamBuilder<List<AurenLearningProgress>>(stream:repo.watchMyLearning(uid),builder:(context,p){
+            final items=p.data??const <AurenLearningProgress>[];
+            if(items.isEmpty)return const SizedBox.shrink();
+            return Card(child:ListTile(leading:const Icon(Icons.insights_outlined),title:const Text('تعلمي الحالي'),subtitle:Text('${items.length} دورة مسجلة'),trailing:const Icon(Icons.chevron_right),onTap:()=>showModalBottomSheet(context:context,builder:(_)=>ListView(padding:const EdgeInsets.all(16),children:items.map((x)=>ListTile(title:Text(x.courseId),subtitle:Text('أكملت ${x.completedLessons} درس'))).toList()))));
+          }),
+        ...courses.map((c)=>_card(context,c,uid)),
       ]);
     }));
   }
   Widget _card(BuildContext context,AurenCourse c,String uid)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
-    title:Text(c.title),subtitle:Text(c.category+' • '+c.lessonCount.toString()+' lessons'),leading:const CircleAvatar(child:Icon(Icons.school)),
+    title:Text(c.title),subtitle:Text(c.category+' • '+c.lessonCount.toString()+' lessons'+(c.skills.isEmpty?'':' • '+c.skills.take(3).join(', '))),leading:const CircleAvatar(child:Icon(Icons.school)),
     trailing:StreamBuilder<Set<String>>(stream:repo.watchSavedIds(uid),builder:(context,s)=>IconButton(icon:Icon((s.data??{}).contains(c.id)?Icons.bookmark:Icons.bookmark_border),onPressed:()=>repo.toggleSaved(uid,c.id,!((s.data??{}).contains(c.id))))),
     onTap:()=>showModalBottomSheet(context:context,builder:(_)=>Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
       Text(c.title,style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text(c.description),const SizedBox(height:12),
