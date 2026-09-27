@@ -152,6 +152,8 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       ? request.data.message.trim() : '';
     const requestId = typeof request.data?.requestId === 'string'
       ? request.data.requestId.trim() : '';
+    const inferredTask = inferAurenAiTask(message);
+    const inferredIntent = inferAurenIntent(message);
     if (!conversationId || !message || message.length > 12000 ||
         !requestId || requestId.length > 120 ||
         !/^[A-Za-z0-9._-]+$/.test(requestId)) {
@@ -181,8 +183,8 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         conversationId,
         status: 'processing',
         task: typeof request.data?.task === 'string' ? request.data.task.trim().toLowerCase() : null,
-        inferredTask: inferAurenAiTask(message),
-        intent: inferredIntent?.intent || 'chat',
+        inferredTask,
+        intent: inferredIntent.intent,
         startedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
@@ -252,8 +254,6 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     const task = allowedTasks.has(requestedTask)
       ? requestedTask
       : inferAurenAiTask(message);
-    const inferredIntent = inferAurenIntent(message);
-
     const providerCandidates = [
       'openrouter',
       'cloudflare_workers_ai',
