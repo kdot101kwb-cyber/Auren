@@ -1272,9 +1272,16 @@ service cloud.firestore {
       && exists(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId))
       && get(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId)).data.ownerId == request.auth.uid;
     allow update: if request.auth != null
-      && (resource.data.talentUid == request.auth.uid || resource.data.ownerId == request.auth.uid)
-      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
-      && request.resource.data.status in ['accepted','declined','pending']
+      && (
+        (resource.data.talentUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+          && resource.data.status == 'pending'
+          && request.resource.data.status in ['accepted','declined'])
+        ||
+        (resource.data.ownerId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+          && request.resource.data.status in ['pending','declined'])
+      )
       && request.resource.data.updatedAt is timestamp;
     allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
   }
