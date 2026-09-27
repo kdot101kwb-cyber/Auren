@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'auren_entertainment_output_screen.dart';
+
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
 
@@ -263,6 +265,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     final text = output['text']?.toString() ?? '';
     final mime = output['mimeType']?.toString() ?? '';
     final isVideo = type == 'video' || mime.startsWith('video/');
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -271,12 +274,21 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(isVideo ? Icons.video_library_rounded : type == 'image'
-                    ? Icons.image_rounded : Icons.auto_awesome_rounded),
+                Icon(
+                  isVideo
+                      ? Icons.video_library_rounded
+                      : type == 'image'
+                          ? Icons.image_rounded
+                          : Icons.auto_awesome_rounded,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    isVideo ? 'فيديو جاهز' : type == 'image' ? 'صورة جاهزة' : 'ناتج جاهز',
+                    isVideo
+                        ? 'فيديو جاهز'
+                        : type == 'image'
+                            ? 'صورة جاهزة'
+                            : 'ناتج جاهز',
                     style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
@@ -287,21 +299,39 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
               SelectableText(text),
             ],
             if (url.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              SelectableText(
-                url,
-                maxLines: 3,
-                style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AurenEntertainmentOutputScreen(
+                          output: output,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    isVideo
+                        ? Icons.play_circle_fill_rounded
+                        : type == 'image'
+                            ? Icons.visibility_rounded
+                            : Icons.open_in_new_rounded,
+                  ),
+                  label: Text(
+                    isVideo
+                        ? 'تشغيل الفيديو'
+                        : type == 'image'
+                            ? 'عرض الصورة'
+                            : 'فتح الناتج',
+                  ),
+                ),
               ),
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('الناتج محفوظ في تخزين AUREN والرابط صالح مؤقتاً.')),
-                  );
-                },
-                icon: const Icon(Icons.link_rounded),
-                label: const Text('الناتج محفوظ'),
+              const SizedBox(height: 6),
+              Text(
+                'الناتج محفوظ في تخزين AUREN والرابط الحالي مؤقت.',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ],
