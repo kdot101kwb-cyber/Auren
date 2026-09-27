@@ -4035,6 +4035,8 @@ exports.playAurenArenaMove = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.claimAurenArenaAchievement = require('firebase-functions/v2/https').onCall({region:'us-central1'}, async (request) => { const uid=request.auth?.uid; const achievementId=typeof request.data?.achievementId==='string'?request.data.achievementId.trim():''; const definitions={first_arena:{games:1,wins:0,xp:25,title:'أول دخول Arena'},arena_winner:{games:0,wins:1,xp:50,title:'أول انتصار Arena'},arena_five_wins:{games:0,wins:5,xp:100,title:'5 انتصارات Arena'},arena_ten_wins:{games:0,wins:10,xp:200,title:'10 انتصارات Arena'},arena_legend:{games:0,wins:25,xp:500,title:'أسطورة Arena'}}; if(!uid||!definitions[achievementId]) throw new HttpsError('invalid-argument','إنجاز غير صالح.'); const def=definitions[achievementId]; const ref=db.doc(`users/${uid}/gaming_profile/stats`); return db.runTransaction(async(tx)=>{ const snap=await tx.get(ref); const d=snap.data()||{}; const games=Number(d.games||0),wins=Number(d.arenaWins||0); if(games<def.games||wins<def.wins) throw new HttpsError('failed-precondition','لم يكتمل الإنجاز بعد.'); const claimed={...(d.arenaAchievements||{})}; if(claimed[achievementId]===true)return {claimed:false,xp:0,title:def.title}; claimed[achievementId]=true; tx.set(ref,{arenaAchievements:claimed,xp:FieldValue.increment(def.xp),seasonXp:FieldValue.increment(def.xp),arenaSeasonXp:FieldValue.increment(def.xp),updatedAt:FieldValue.serverTimestamp()},{merge:true}); return {claimed:true,xp:def.xp,title:def.title}; }); });
+
 exports.requestAurenArenaRematch = require('firebase-functions/v2/https').onCall(
   {region:'us-central1'}, async (request) => {
     const uid=request.auth?.uid, roomId=String(request.data?.roomId||'').trim();
