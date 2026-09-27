@@ -3566,6 +3566,61 @@ exports.trackEntertainmentProviderJob = onSchedule(
 );
 
 // Health endpoint for deployment/monitoring checks.
+// v20 — explicit creator publishing of generated entertainment output.
+exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    const jobId = typeof request.data?.jobId === 'string' ? request.data.jobId.trim() : '';
+    if (!uid || !jobId) throw new HttpsError('invalid-argument', 'بيانات النشر غير مكتملة.');
+
+    const jobRef = db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc(jobId);
+    const jobSnap = await jobRef.get();
+    if (!jobSnap.exists) throw new HttpsError('not-found', 'مهمة الإنشاء غير موجودة.');
+
+    const job = jobSnap.data() || {};
+    if (job.status !== 'ready') throw new HttpsError('failed-precondition', 'الناتج غير جاهز للنشر.');
+
+    const output = job.providerResult && typeof job.providerResult === 'object' ? job.providerResult : null;
+    const url = typeof output?.url === 'string' ? output.url : '';
+    const type = typeof output?.type === 'string' ? output.type : 'output';
+    if (!url && type !== 'text') throw new HttpsError('failed-precondition', 'لا يوجد ناتج قابل للنشر.');
+
+    const existing = await db.collection('entertainment_items')
+      .where('ownerId', '==', uid).where('sourceJobId', '==', jobId).limit(1).get();
+    if (!existing.empty) return { itemId: existing.docs[0].id, alreadyPublished: true };
+
+    const itemRef = db.collection('entertainment_items').doc();
+    const mode = typeof job.mode === 'string' ? job.mode : 'فيديو';
+    const idea = String(job.idea || '').trim();
+    const title = 'AUREN • ' + mode + ' • ' + (idea.slice(0, 70) || 'محتوى جديد');
+    const mediaKind = type === 'video' ? 'video' : type === 'image' ? 'image' : 'text';
+
+    await itemRef.set({
+      title,
+      description: type === 'text' ? String(output?.text || '').slice(0, 5000) : idea.slice(0, 1000),
+      type: mode,
+      imageUrl: type === 'image' ? url : '',
+      mediaUrl: type === 'video' ? url : '',
+      mediaKind,
+      creatorId: uid,
+      ownerId: uid,
+      sourceJobId: jobId,
+      visibility: 'public',
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    await jobRef.set({
+      publishedItemId: itemRef.id,
+      publishedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    return { itemId: itemRef.id, alreadyPublished: false };
+  },
+);
+
 exports.entertainmentQueueHealth = require('firebase-functions/v2/https').onRequest(
   { region: 'us-central1' },
   async (req, res) => {
