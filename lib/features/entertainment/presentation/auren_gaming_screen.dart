@@ -131,6 +131,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         _challengeCard(context), const SizedBox(height: 12),
         _seasonCard(), const SizedBox(height: 12),
         _achievementsCard(), const SizedBox(height: 12),
+        if (_roomId == null) ...[_challengeCard(context), const SizedBox(height: 12)],
         _leaderboardCard(), const SizedBox(height: 12),
         if (_roomId == null) ...[_incomingChallengesCard(), const SizedBox(height: 12), _outgoingChallengesCard(), const SizedBox(height: 12)],
         if (_roomId == null) ...[
