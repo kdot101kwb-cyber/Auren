@@ -1959,3 +1959,38 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
 
       match /messages/{messageId} {}
+    }
+
+    match /education_courses/{courseId} {
+      allow read: if request.auth != null && resource.data.published == true;
+      allow write: if false;
+    }
+
+    match /users/{userId}/education_enrollments/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','title','progress','completedLessons','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.progress == 0
+        && request.resource.data.completedLessons is list
+        && request.resource.data.completedLessons.size() == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','title','progress','completedLessons','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == resource.data.courseId
+        && request.resource.data.progress is int
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.completedLessons is list
+        && request.resource.data.completedLessons.size() <= 100
+        && request.resource.data.status in ['active','completed']
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+  }
+}
