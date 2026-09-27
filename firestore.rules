@@ -2191,5 +2191,19 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.guestUid == request.auth.uid;
     }
 
+    match /ride_requests/{rideId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.riderUid;
+      allow create: if request.auth != null && request.resource.data.riderUid == request.auth.uid
+        && request.resource.data.pickup is string && request.resource.data.pickup.size() > 0 && request.resource.data.pickup.size() <= 500
+        && request.resource.data.destination is string && request.resource.data.destination.size() > 0 && request.resource.data.destination.size() <= 500
+        && request.resource.data.rideType in ['standard','premium','van','bike']
+        && request.resource.data.passengers is int && request.resource.data.passengers >= 1 && request.resource.data.passengers <= 8
+        && request.resource.data.status == 'requested' && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.riderUid == request.auth.uid
+        && request.resource.data.riderUid == resource.data.riderUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'cancelled';
+      allow delete: if request.auth != null && resource.data.riderUid == request.auth.uid;
+    }
   }
 }
