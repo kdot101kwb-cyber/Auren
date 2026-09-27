@@ -17,6 +17,9 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
     ('Higher / Lower', Icons.swap_vert_rounded),
     ('Word Scramble', Icons.abc_rounded),
     ('2048', Icons.apps_rounded),
+    ('Simon', Icons.pattern_rounded), ('Math Sprint', Icons.calculate_outlined), ('Number Guess', Icons.numbers_rounded),
+    ('Coin Flip', Icons.toll_outlined), ('Target Tap', Icons.my_location_outlined), ('Hangman', Icons.text_fields_rounded),
+    ('Word Chain', Icons.link_rounded), ('Color Match', Icons.palette_outlined), ('Odd One Out', Icons.filter_1_outlined), ('Quick Count', Icons.timer_outlined),
   ];
 
   @override Widget build(BuildContext context) {
@@ -340,4 +343,45 @@ class _GamePage extends StatelessWidget {
     Card(child: Padding(padding: const EdgeInsets.all(16), child: child)),
     if (action != null) ...[const SizedBox(height: 14), action!],
   ]);
+}
+
+class _TenMoreGamesPanel extends StatefulWidget {
+  const _TenMoreGamesPanel();
+  @override State<_TenMoreGamesPanel> createState()=>_TenMoreGamesPanelState();
+}
+class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
+  int _game=0,_score=0,_number=50,_target=50,_heads=0,_tails=0,_mathA=2,_mathB=3,_mathAnswer=5,_seconds=20,_targetScore=0,_hangWrong=0,_odd=0,_color=0,_count=5;
+  final _rng=Random(); final _input=TextEditingController(); String _word='AUREN',_last='AUREN',_msg='ابدأ اللعبة';
+  Timer? _timer;
+  final _words=['AUREN','SUDAN','FLUTTER','MUSIC','PLANET'];
+  void _reset(){_score=0;_number=50;_target=1+_rng.nextInt(100);_heads=0;_tails=0;_seconds=20;_targetScore=0;_hangWrong=0;_last='AUREN';_msg='ابدأ اللعبة';_newMath();_newRound();setState((){});}
+  void _newMath(){_mathA=1+_rng.nextInt(12);_mathB=1+_rng.nextInt(12);_mathAnswer=_mathA+_mathB;}
+  void _newRound(){_odd=_rng.nextInt(9);_color=_rng.nextInt(4);_count=2+_rng.nextInt(9);}
+  void _math(int n){if(n==_mathAnswer){_score++;_newMath();setState((){});}}
+  void _guess(int n){if(n==_target){_score++;_target=1+_rng.nextInt(100);_msg='🎉 صحيح!';}else{_msg=n<_target?'أعلى ↑':'أقل ↓';}setState((){});}
+  void _flip(){final h=_rng.nextBool();if(h)_heads++;else _tails++;_msg=h?'🟡 صورة':'⚪ كتابة';setState((){});}
+  void _target(){_targetScore++;setState((){});}
+  void _hang(String l){if(_word.contains(l)){_msg='حرف صحيح';}else{_hangWrong++;_msg='حرف غير صحيح';}setState((){});}
+  void _chain(){final w=_input.text.trim().toUpperCase();if(w.length>1&&w[0]==_last[_last.length-1]&&w!=_last){_last=w;_score++;_input.clear();_msg='صحيح!';}else{_msg='ابدأ بحرف '+_last[_last.length-1];}setState((){});}
+  void _pickColor(int i){if(i==_color)_score++;_newRound();setState((){});}
+  void _oddPick(int i){if(i==_odd)_score++;_newRound();setState((){});}
+  void _quick(int n){if(n==_count)_score++;_newRound();setState((){});}
+  @override void dispose(){_timer?.cancel();_input.dispose();super.dispose();}
+  @override Widget build(BuildContext context){
+    final names=['Simon','Math Sprint','Number Guess','Coin Flip','Target Tap','Hangman','Word Chain','Color Match','Odd One Out','Quick Count'];
+    Widget body;
+    switch(_game){
+      case 0: body=Column(children:[Text('النمط: '+(_score%2==0?'🔵 🟢 🟡':'🟢 🔴 🟡'),style:const TextStyle(fontSize:28)),const SizedBox(height:14),Wrap(spacing:8,children:[for(var i=0;i<4;i++)FilledButton.tonal(onPressed:(){if(i==(_score%4)){_score++;setState((){});}else{_msg='حاول مرة أخرى';setState((){});}},child:Text(['🔵','🟢','🟡','🔴'][i]))])]);break;
+      case 1: body=Column(children:[Text(_mathA.toString()+' + '+_mathB.toString()+' = ?',style:const TextStyle(fontSize:32,fontWeight:FontWeight.w900)),Wrap(spacing:8,children:[for(var n in [_mathAnswer-2,_mathAnswer-1,_mathAnswer,_mathAnswer+1])FilledButton.tonal(onPressed:()=>_math(n),child:Text(n.toString()))])]);break;
+      case 2: body=Column(children:[Text(_msg),TextField(keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'خمن 1-100',border:OutlineInputBorder()),onSubmitted:(v){final n=int.tryParse(v);if(n!=null)_guess(n);})]);break;
+      case 3: body=Column(children:[Text(_msg,style:const TextStyle(fontSize:50)),Text('صورة: '+_heads.toString()+' • كتابة: '+_tails.toString())]);break;
+      case 4: body=Column(children:[Text('🎯',style:const TextStyle(fontSize:70)),Text('النقاط: '+_targetScore.toString()),FilledButton(onPressed:_target,child:const Text('اضغط الهدف'))]);break;
+      case 5: body=Column(children:[Text(_word.split('').map((x)=>x==' '? ' ': ' _ ').join()),Text('أخطاء: '+_hangWrong.toString()+'/6'),Wrap(spacing:4,children:[for(final l in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''))OutlinedButton(onPressed:()=>_hang(l),child:Text(l))])]);break;
+      case 6: body=Column(children:[Text('آخر كلمة: '+_last),TextField(controller:_input,textCapitalization:TextCapitalization.characters,onSubmitted:(_){_chain();},decoration:const InputDecoration(labelText:'كلمة تبدأ بآخر حرف',border:OutlineInputBorder()))]);break;
+      case 7: body=Column(children:[Text(['أحمر','أخضر','أزرق','أصفر'][_color],style:const TextStyle(fontSize:30,fontWeight:FontWeight.w900)),Wrap(spacing:8,children:[for(var i=0;i<4;i++)FilledButton.tonal(onPressed:()=>_pickColor(i),child:Text(['أحمر','أخضر','أزرق','أصفر'][i]))])]);break;
+      case 8: body=GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:9,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:3,crossAxisSpacing:8,mainAxisSpacing:8),itemBuilder:(_,i)=>FilledButton.tonal(onPressed:()=>_oddPick(i),child:Text(i==_odd?'🔷':'🔹',style:const TextStyle(fontSize:28))));break;
+      default: body=Column(children:[Text('عدد النجوم: '+_count.toString(),style:const TextStyle(fontSize:26)),Wrap(spacing:8,children:[for(var n=2;n<=10;n++)FilledButton.tonal(onPressed:()=>_quick(n),child:Text(n.toString()))])]);
+    }
+    return ListView(padding:const EdgeInsets.all(16),children:[Text('10 ألعاب جديدة',style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:8),Wrap(spacing:6,runSpacing:6,children:[for(var i=0;i<names.length;i++)ChoiceChip(label:Text(names[i]),selected:_game==i,onSelected:(_){setState(()=>_game=i);})]),const SizedBox(height:16),Card(child:Padding(padding:const EdgeInsets.all(16),child:body)),const SizedBox(height:12),FilledButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة'))]);
+  }
 }
