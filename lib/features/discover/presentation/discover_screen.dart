@@ -4,6 +4,7 @@ import '../../messenger/presentation/messenger_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
+import '../../education/presentation/education_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
@@ -27,6 +28,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
     _DiscoverItem('Entertainment', 'Series • Music • Gaming • Live', Icons.play_circle_outline),
     _DiscoverItem('Opportunities', 'عمل • مواهب • مشاريع • تعلم', Icons.work_outline),
+    _DiscoverItem('Education', 'تعلّم المهارات واربطها بالفرص', Icons.school_outlined),
     _DiscoverItem('Talent', 'مواهب ووكلاء AI للمسار المهني', Icons.psychology_outlined),
     _DiscoverItem('Communities', 'مجتمعات حول الاهتمامات والأهداف والمشاريع', Icons.groups_outlined),
   ];
@@ -66,6 +68,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       terms.any((term) => text.contains(term));
 
   void _open(BuildContext context, _DiscoverItem item) {
+    if (item.title == 'Education') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEducationScreen()));
+      return;
+    }
     if (item.title == 'Talent') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
       return;
