@@ -57,10 +57,12 @@ class AurenTalentEngineService {
 
   Future<void> respondToInvitation({required String invitationId,required String talentUid,required String status}) async {
     if(!['accepted','declined'].contains(status)) throw ArgumentError('حالة الدعوة غير صالحة.');
-    await _db.collection('opportunity_invitations').doc(invitationId).update({
-      'status': status,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final ref=_db.collection('opportunity_invitations').doc(invitationId);
+    final snap=await ref.get();
+    final data=snap.data();
+    if(data==null || data['talentUid'] != talentUid) throw StateError('الدعوة غير موجودة.');
+    if(data['status'] != 'pending') throw StateError('تمت معالجة هذه الدعوة بالفعل.');
+    await ref.update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
   }
 
   Stream<List<Map<String,dynamic>>> watchInvitations(String talentUid) => _db.collection('opportunity_invitations')
