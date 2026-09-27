@@ -2235,5 +2235,7 @@ service cloud.firestore {
       allow update: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
+    match /emergency_contacts/{contactId} { allow read: if request.auth != null && resource.data.active == true; allow write: if false; }
+
   }
 }
