@@ -166,7 +166,7 @@ function inferAurenIntent(message) {
     { intent: 'find_opportunity', confidence: 0.90, patterns: ['فرصة عمل', 'وظيفة', 'وظائف', 'مشروع مناسب', 'find a job', 'job opportunity', 'find opportunities'] },
     { intent: 'find_business', confidence: 0.90, patterns: ['مطعم', 'مستشفى', 'فندق', 'متجر', 'شركة', 'مصنع', 'restaurant', 'hotel', 'store', 'company', 'factory'] },
     { intent: 'send_message', confidence: 0.91, patterns: ['ارسل رسالة', 'أرسل رسالة', 'ارسلي رسالة', 'أرسل لي رسالة', 'send a message', 'send message'] },
-    { intent: 'create_content', confidence: 0.89, patterns: ['اعمل فيديو', 'أنشئ فيديو', 'انشئ فيديو', 'اعمل صورة', 'اكتب قصة', 'اعمل أغنية', 'اعمل بودكاست', 'create a video', 'create an image', 'write a story', 'make a song', 'make a podcast'] },
+    { intent: 'create_content', confidence: 0.89, patterns: ['اعمل فيديو', 'أنشئ فيديو', 'انشئ فيديو', 'اعمل صورة', 'اكتب قصة', 'اعمل أغنية', 'اعمل بودكاست', 'اعمل مسلسل', 'أنشئ مسلسل', 'انشئ مسلسل', 'create a video', 'create an image', 'write a story', 'make a song', 'make a podcast', 'make a series', 'create a series'] },
     { intent: 'chat', confidence: 0.60, patterns: [] },
   ];
 
@@ -228,9 +228,43 @@ function inferEntertainmentMode(text) {
   const value = String(text || '').toLowerCase();
   if (value.includes('أغنية') || value.includes('اغنية') || value.includes('song') || value.includes('music')) return 'song';
   if (value.includes('بودكاست') || value.includes('podcast')) return 'podcast';
+  if (value.includes('مسلسل') || value.includes('series')) return 'series';
   if (value.includes('عالم') || value.includes('world')) return 'world';
   if (value.includes('قصة') || value.includes('story')) return 'story';
   return 'video';
+}
+
+function normalizeEntertainmentMode(mode) {
+  const value = String(mode || '').trim().toLowerCase();
+  if (['song','أغنية','اغنية'].includes(value)) return 'أغنية';
+  if (['story','قصة'].includes(value)) return 'قصة';
+  if (['video','فيديو','image','صورة'].includes(value)) return 'فيديو';
+  if (['podcast','بودكاست'].includes(value)) return 'بودكاست';
+  if (['world','عالم'].includes(value)) return 'عالم';
+  if (['series','مسلسل'].includes(value)) return 'مسلسل';
+  return 'فيديو';
+}
+
+function entertainmentCreationPlan(mode) {
+  switch (mode) {
+    case 'أغنية': return ['Concept وكلمات','لحن وتوزيع','صوت/أداء','Mix & Master','مراجعة الحقوق','Ready'];
+    case 'فيديو': return ['Concept وScript','Storyboard','الأصول البصرية','الصوت والموسيقى','المونتاج','مراجعة الحقوق','Ready'];
+    case 'بودكاست': return ['الفكرة والهيكل','Script/Notes','تسجيل الصوت','تنظيف ومكساج','غلاف ووصف','مراجعة الحقوق','Ready'];
+    case 'عالم': return ['تصميم العالم','الشخصيات والأماكن','المهام والتفاعل','الأصول الصوتية والبصرية','اختبار التجربة','Ready'];
+    case 'مسلسل': return ['Series Bible','Characters','Season Arc','Episode Bibles','Scenes & Shots','Assets','Voice/Music','Assembly','QC','Ready'];
+    default: return ['Concept','السيناريو','الشخصيات والمشاهد','الصوت والأصول','المراجعة','Ready'];
+  }
+}
+
+function entertainmentCreationAssets(mode) {
+  switch (mode) {
+    case 'أغنية': return ['lyrics','music','vocals','artwork'];
+    case 'فيديو': return ['script','storyboard','video','audio','thumbnail'];
+    case 'بودكاست': return ['script','voice','cover','description'];
+    case 'عالم': return ['world','characters','locations','missions','audio'];
+    case 'مسلسل': return ['series_bible','characters','season_arc','episode_bibles','scenes','shots','visual_assets','voices','music_sfx','renders','qc'];
+    default: return ['story','characters','scenes','artwork'];
+  }
 }
 
 function validateAurenAction(type, payload) {
@@ -362,23 +396,23 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         result={type:'message_sent',conversationId,messageId:messageRef.id};
       } else if (action.type === 'content.create') {
         const text=String(action.payload.text || '').trim().slice(0,5000);
-        const mode=String(action.payload.mode || inferEntertainmentMode(text)).trim();
+        const mode=normalizeEntertainmentMode(action.payload.mode || inferEntertainmentMode(text));
         const mood=String(action.payload.mood || 'auto').trim().slice(0,80);
         const length=String(action.payload.length || 'auto').trim().slice(0,80);
         if(!text) throw aurenHttpsError('invalid-argument', 'Content request is required.');
         const jobRef=db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc();
         await jobRef.set({
-          draftId:null,
+          draftId:'ai_action',
           mode,
           mood,
           length,
           idea:text,
-          status:'queued',
+          status:'planning',
           provider:'auren_ai',
           externalJobId:null,
           progress:0,
-          plan:null,
-          assets:[],
+          plan:entertainmentCreationPlan(mode),
+          assets:entertainmentCreationAssets(mode),
           source:'auren_ai_action',
           createdAt:FieldValue.serverTimestamp(),
           updatedAt:FieldValue.serverTimestamp(),
