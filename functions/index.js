@@ -165,7 +165,8 @@ function inferAurenIntent(message) {
     { intent: 'plan_day', confidence: 0.92, patterns: ['خطط لي يومي', 'نظم يومي', 'نظّم يومي', 'رتب يومي', 'plan my day', 'organize my day'] },
     { intent: 'find_opportunity', confidence: 0.90, patterns: ['فرصة عمل', 'وظيفة', 'وظائف', 'مشروع مناسب', 'find a job', 'job opportunity', 'find opportunities'] },
     { intent: 'find_business', confidence: 0.90, patterns: ['مطعم', 'مستشفى', 'فندق', 'متجر', 'شركة', 'مصنع', 'restaurant', 'hotel', 'store', 'company', 'factory'] },
-    { intent: 'create_content', confidence: 0.89, patterns: ['اعمل فيديو', 'أنشئ فيديو', 'انشئ فيديو', 'اعمل صورة', 'اكتب قصة', 'اعمل أغنية', 'create a video', 'create an image', 'write a story', 'make a song'] },
+    { intent: 'send_message', confidence: 0.91, patterns: ['ارسل رسالة', 'أرسل رسالة', 'ارسلي رسالة', 'أرسل لي رسالة', 'send a message', 'send message'] },
+    { intent: 'create_content', confidence: 0.89, patterns: ['اعمل فيديو', 'أنشئ فيديو', 'انشئ فيديو', 'اعمل صورة', 'اكتب قصة', 'اعمل أغنية', 'اعمل بودكاست', 'create a video', 'create an image', 'write a story', 'make a song', 'make a podcast'] },
     { intent: 'chat', confidence: 0.60, patterns: [] },
   ];
 
@@ -174,7 +175,7 @@ function inferAurenIntent(message) {
       return {
         intent: rule.intent,
         confidence: rule.confidence,
-        requiresApproval: ['save_memory', 'create_note', 'set_goal'].includes(rule.intent),
+        requiresApproval: ['save_memory', 'create_note', 'set_goal', 'send_message', 'create_content'].includes(rule.intent),
         entities: {},
       };
     }
@@ -195,16 +196,40 @@ function normalizeActionRequest(intent, message) {
   if (intent === 'plan_day') return {...base, action: 'plan.generate', payload: {text}};
   if (intent === 'find_opportunity') return {...base, action: 'opportunity.search', payload: {text}};
   if (intent === 'find_business') return {...base, action: 'business.search', payload: {text}};
-  if (intent === 'create_content') return {...base, action: 'content.create', requiresApproval: true, payload: {text}};
+  if (intent === 'send_message') return {...base, action: 'message.send', requiresApproval: true, payload: {conversationId: '', text}};
+  if (intent === 'create_content') return {...base, action: 'content.create', requiresApproval: true, payload: {text, mode: inferEntertainmentMode(text), mood: 'auto', length: 'auto'}};
   return base;
 }
 
 const AUREN_ACTION_DEFINITIONS = {
-  'demo.echo': { requiresApproval: true, keys: ['text'] },
-  'demo.create_note': { requiresApproval: true, keys: ['text'] },
-  'memory.save': { requiresApproval: true, keys: ['key', 'value'] },
-  'goal.create': { requiresApproval: true, keys: ['title'] },
+  'demo.echo': { requiresApproval: true, riskLevel: 'low', approvalLevel: 1, keys: ['text'] },
+  'demo.create_note': { requiresApproval: true, riskLevel: 'low', approvalLevel: 1, keys: ['text'] },
+  'memory.save': { requiresApproval: true, riskLevel: 'low', approvalLevel: 1, keys: ['key', 'value'] },
+  'goal.create': { requiresApproval: true, riskLevel: 'low', approvalLevel: 1, keys: ['title'] },
+  'message.send': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['conversationId', 'text'] },
+  'content.create': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['text', 'mode', 'mood', 'length'] },
 };
+
+const AUREN_ACTION_TTL_MS = 15 * 60 * 1000;
+
+function aurenHttpsError(code, message) {
+  const {HttpsError} = require('firebase-functions/v2/https');
+  return new HttpsError(code, message);
+}
+
+function actionIsExpired(data) {
+  const createdAtMs = data?.createdAt?.toMillis?.() || 0;
+  return !createdAtMs || Date.now() - createdAtMs > AUREN_ACTION_TTL_MS;
+}
+
+function inferEntertainmentMode(text) {
+  const value = String(text || '').toLowerCase();
+  if (value.includes('أغنية') || value.includes('اغنية') || value.includes('song') || value.includes('music')) return 'song';
+  if (value.includes('بودكاست') || value.includes('podcast')) return 'podcast';
+  if (value.includes('عالم') || value.includes('world')) return 'world';
+  if (value.includes('قصة') || value.includes('story')) return 'story';
+  return 'video';
+}
 
 function validateAurenAction(type, payload) {
   const definition = AUREN_ACTION_DEFINITIONS[type];
@@ -218,17 +243,27 @@ exports.approveAurenAction = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new Error('Unauthenticated');
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
     const actionId = String(request.data?.actionId || '').trim();
-    if (!actionId || actionId.length > 128) throw new Error('Invalid action id.');
+    if (!actionId || actionId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid action id.');
     const ref = db.collection('users').doc(uid).collection('actions').doc(actionId);
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
-      if (!snap.exists || snap.data()?.status !== 'pending') throw new Error('Action is not pending.');
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
       const data = snap.data() || {};
+      if (data.status !== 'pending') throw aurenHttpsError('failed-precondition', 'Action is not pending.');
+      if (actionIsExpired(data)) {
+        tx.update(ref, {status:'expired', expiredAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+        throw aurenHttpsError('deadline-exceeded', 'This action has expired. Ask AUREN to create it again.');
+      }
       const definition = validateAurenAction(String(data.actionType || ''), data.payload || {});
-      if (!definition.requiresApproval) throw new Error('Approval is not required.');
-      tx.update(ref, {status:'approved', approvedAt:FieldValue.serverTimestamp(), approvedBy:uid, updatedAt:FieldValue.serverTimestamp()});
+      if (!definition.requiresApproval) throw aurenHttpsError('failed-precondition', 'Approval is not required.');
+      tx.update(ref, {
+        status:'approved',
+        approvedAt:FieldValue.serverTimestamp(),
+        approvedBy:uid,
+        updatedAt:FieldValue.serverTimestamp(),
+      });
     });
     return {status:'approved', actionId};
   }
@@ -238,58 +273,123 @@ exports.rejectAurenAction = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new Error('Unauthenticated');
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
     const actionId = String(request.data?.actionId || '').trim();
+    if (!actionId || actionId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid action id.');
     const ref = db.collection('users').doc(uid).collection('actions').doc(actionId);
     const snap = await ref.get();
-    if (!snap.exists || snap.data()?.status !== 'pending') throw new Error('Action is not pending.');
+    if (!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
+    const data = snap.data() || {};
+    if (data.status !== 'pending') throw aurenHttpsError('failed-precondition', 'Action is not pending.');
+    if (actionIsExpired(data)) {
+      await ref.update({status:'expired', expiredAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+      throw aurenHttpsError('deadline-exceeded', 'This action has expired.');
+    }
     await ref.update({status:'rejected', rejectedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
     return {status:'rejected', actionId};
   }
 );
 
 exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  {region:'us-central1', timeoutSeconds:45, memory:'512MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new Error('Unauthenticated');
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
     const actionId = String(request.data?.actionId || '').trim();
+    if (!actionId || actionId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid action id.');
     const ref = db.collection('users').doc(uid).collection('actions').doc(actionId);
     let action;
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
-      if (!snap.exists) throw new Error('Action not found.');
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
       const data = snap.data() || {};
-      if (data.status !== 'approved' || data.requiresApproval !== true) throw new Error('Action must be approved before execution.');
+      if (data.status !== 'approved' || data.requiresApproval !== true) {
+        throw aurenHttpsError('failed-precondition', 'Action must be approved before execution.');
+      }
+      if (actionIsExpired(data)) {
+        tx.update(ref, {status:'expired', expiredAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+        throw aurenHttpsError('deadline-exceeded', 'This approved action has expired.');
+      }
       validateAurenAction(String(data.actionType || ''), data.payload || {});
-      action = {type:String(data.actionType), payload:data.payload || {}};
+      action = {type:String(data.actionType), payload:data.payload || {}, conversationId:String(data.conversationId || '')};
       tx.update(ref,{status:'executing',executionStartedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     });
+
     let result;
     try {
-      if (action.type === 'demo.echo') result={type:'echo',text:String(action.payload.text||'').slice(0,2000)};
-      else if (action.type === 'demo.create_note') {
+      if (action.type === 'demo.echo') {
+        result={type:'echo',text:String(action.payload.text||'').slice(0,2000)};
+      } else if (action.type === 'demo.create_note') {
         const text=String(action.payload.text||'').trim().slice(0,5000);
-        if(!text) throw new Error('Note text is required.');
+        if(!text) throw aurenHttpsError('invalid-argument', 'Note text is required.');
         const noteRef=db.collection('users').doc(uid).collection('notes').doc();
         await noteRef.set({text,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
         result={type:'note_created',noteId:noteRef.id};
       } else if (action.type === 'memory.save') {
         const key=String(action.payload.key||'').trim().slice(0,120);
         const value=String(action.payload.value||'').trim().slice(0,2000);
-        if(!key||!value) throw new Error('Memory key and value are required.');
+        if(!key||!value) throw aurenHttpsError('invalid-argument', 'Memory key and value are required.');
         const memoryRef=db.collection('users').doc(uid).collection('memory').doc();
         await memoryRef.set({key,value,enabled:true,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
         result={type:'memory_saved',memoryId:memoryRef.id};
       } else if (action.type === 'goal.create') {
         const title=String(action.payload.title||'').trim().slice(0,300);
-        if(!title) throw new Error('Goal title is required.');
+        if(!title) throw aurenHttpsError('invalid-argument', 'Goal title is required.');
         const goalRef=db.collection('users').doc(uid).collection('goals').doc();
         await goalRef.set({title,description:'',status:'active',progress:0,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
         result={type:'goal_created',goalId:goalRef.id};
-      } else throw new Error('Action is not executable yet.');
+      } else if (action.type === 'message.send') {
+        const conversationId=String(action.payload.conversationId || action.conversationId || '').trim();
+        const text=String(action.payload.text || '').trim().slice(0,5000);
+        if(!conversationId || !text) throw aurenHttpsError('invalid-argument', 'Conversation and message text are required.');
+        const conversationRef=db.collection('conversations').doc(conversationId);
+        const conversationSnap=await conversationRef.get();
+        const conversation=conversationSnap.data() || {};
+        if(!conversationSnap.exists || !Array.isArray(conversation.memberIds) || !conversation.memberIds.includes(uid)) {
+          throw aurenHttpsError('permission-denied', 'You do not have access to this conversation.');
+        }
+        const messageRef=conversationRef.collection('messages').doc();
+        await messageRef.set({
+          conversationId,
+          senderId:uid,
+          text,
+          isAi:false,
+          source:'auren_ai_action',
+          createdAt:FieldValue.serverTimestamp(),
+        });
+        result={type:'message_sent',conversationId,messageId:messageRef.id};
+      } else if (action.type === 'content.create') {
+        const text=String(action.payload.text || '').trim().slice(0,5000);
+        const mode=String(action.payload.mode || inferEntertainmentMode(text)).trim();
+        const mood=String(action.payload.mood || 'auto').trim().slice(0,80);
+        const length=String(action.payload.length || 'auto').trim().slice(0,80);
+        if(!text) throw aurenHttpsError('invalid-argument', 'Content request is required.');
+        const jobRef=db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc();
+        await jobRef.set({
+          draftId:null,
+          mode,
+          mood,
+          length,
+          idea:text,
+          status:'queued',
+          provider:'auren_ai',
+          externalJobId:null,
+          progress:0,
+          plan:null,
+          assets:[],
+          source:'auren_ai_action',
+          createdAt:FieldValue.serverTimestamp(),
+          updatedAt:FieldValue.serverTimestamp(),
+        });
+        result={type:'content_job_created',jobId:jobRef.id,mode,status:'queued'};
+      } else {
+        throw aurenHttpsError('failed-precondition', 'Action is not executable.');
+      }
+
       await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
-      await db.collection('users').doc(uid).collection('action_audit').doc().set({actionId,actionType:action.type,status:'completed',createdAt:FieldValue.serverTimestamp()});
+      await db.collection('users').doc(uid).collection('action_audit').doc().set({
+        actionId,actionType:action.type,status:'completed',createdAt:FieldValue.serverTimestamp(),
+      });
       return {status:'completed',actionId,result};
     } catch(error) {
       const message=String(error?.message||error).slice(0,500);
@@ -303,11 +403,14 @@ exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     const uid=request.auth?.uid;
-    if(!uid) throw new Error('Unauthenticated');
+    if(!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
     const actionId=String(request.data?.actionId||'').trim();
+    if(!actionId) throw aurenHttpsError('invalid-argument', 'Invalid action id.');
     const ref=db.collection('users').doc(uid).collection('actions').doc(actionId);
     const snap=await ref.get();
-    if(!snap.exists || !['pending','approved'].includes(snap.data()?.status)) throw new Error('Action cannot be cancelled.');
+    if(!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
+    const data=snap.data() || {};
+    if(!['pending','approved'].includes(data.status)) throw aurenHttpsError('failed-precondition', 'Action cannot be cancelled.');
     await ref.update({status:'cancelled',cancelledAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     return {status:'cancelled',actionId};
   }
@@ -523,31 +626,41 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     }, {merge:true});
 
     let persistedAction = null;
-    const executableActions = new Set(['memory.save', 'demo.create_note', 'goal.create']);
+    const executableActions = new Set([
+      'memory.save', 'demo.create_note', 'goal.create', 'message.send', 'content.create',
+    ]);
     if (actionProposal.action && executableActions.has(actionProposal.action) && actionProposal.requiresApproval) {
       const actionRef = db.collection('users').doc(uid).collection('actions').doc();
+      const definition = AUREN_ACTION_DEFINITIONS[actionProposal.action];
       const actionTitle = {
         'memory.save': 'حفظ معلومة في ذاكرة AUREN',
         'demo.create_note': 'إنشاء ملاحظة',
         'goal.create': 'إنشاء هدف',
+        'message.send': 'إرسال رسالة',
+        'content.create': 'إنشاء محتوى',
       }[actionProposal.action] || 'إجراء من AUREN AI';
       const actionDescription = {
-        'memory.save': 'AUREN يقترح حفظ هذه المعلومة في ذاكرتك. لن يتم الحفظ قبل موافقتك.',
-        'demo.create_note': 'AUREN يقترح إنشاء ملاحظة بالنص المحدد. لن يتم الإنشاء قبل موافقتك.',
-        'goal.create': 'AUREN يقترح إضافة هذا الهدف إلى أهدافك. لن يتم الإنشاء قبل موافقتك.',
+        'memory.save': 'AUREN يقترح حفظ هذه المعلومة في ذاكرتك.',
+        'demo.create_note': 'AUREN يقترح إنشاء ملاحظة بالنص المحدد.',
+        'goal.create': 'AUREN يقترح إضافة هذا الهدف إلى أهدافك.',
+        'message.send': 'AUREN يقترح إرسال الرسالة بعد موافقتك.',
+        'content.create': 'AUREN يقترح بدء مهمة إنشاء محتوى بعد موافقتك.',
       }[actionProposal.action] || 'AUREN يقترح تنفيذ هذا الإجراء بعد موافقتك.';
+      const payload = {...(actionProposal.payload || {})};
+      if (actionProposal.action === 'message.send') payload.conversationId = conversationId;
       await actionRef.set({
         conversationId,
         actionType: actionProposal.action,
         title: actionTitle,
         description: actionDescription,
-        payload: actionProposal.payload || {},
+        payload,
         permission: 'standard',
-        riskLevel: 'low',
-        approvalLevel: 1,
+        riskLevel: definition?.riskLevel || 'low',
+        approvalLevel: definition?.approvalLevel || 1,
         requiresApproval: true,
         status: 'pending',
         createdAt: FieldValue.serverTimestamp(),
+        expiresAt: Timestamp.fromMillis(Date.now() + AUREN_ACTION_TTL_MS),
         updatedAt: FieldValue.serverTimestamp(),
         source: 'auren_ai_gateway',
         requestId,
