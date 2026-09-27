@@ -3230,6 +3230,104 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
   },
 );
 
+
+function extractGeminiOperationName(value) {
+  if (typeof value !== 'string') return null;
+  const match = value.match(/operations\\/[^\\s]+$/);
+  return match ? match[0] : value;
+}
+
+async function pollGeminiOperation(operationName) {
+  const apiKey = GEMINI_API_KEY.value().trim();
+  if (!apiKey || !operationName) return { ok: false, done: false, message: 'بيانات متابعة Gemini غير متاحة.' };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/${extractGeminiOperationName(operationName)}`,
+      { headers: { 'x-goog-api-key': apiKey }, signal: controller.signal },
+    );
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { ok: false, done: false, message: typeof body.error?.message === 'string'
+        ? body.error.message.slice(0, 500) : `Gemini HTTP ${response.status}` };
+    }
+    return { ok: true, done: body.done === true, body };
+  } catch (error) {
+    return { ok: false, done: false, message: error?.name === 'AbortError'
+      ? 'انتهت مهلة متابعة Gemini.' : 'تعذر متابعة عملية Gemini.' };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+exports.trackEntertainmentProviderJob = onDocumentUpdated(
+  'users/{userId}/entertainmentCreationJobs/{jobId}',
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!before || !after) return;
+    if (after.provider !== 'gemini' || after.providerStatus !== 'submitted') return;
+    if (before.providerStatus === 'submitted' && before.updatedAt?.seconds === after.updatedAt?.seconds) return;
+
+    const operationName = after.externalJobId;
+    if (!operationName) {
+      await event.data.after.ref.set({
+        providerStatus: 'failed',
+        status: 'failed',
+        queueStatus: 'waiting_provider',
+        providerMessage: 'لم يُرجع Gemini رقم عملية يمكن متابعته.',
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return;
+    }
+
+    const result = await pollGeminiOperation(operationName);
+    if (!result.ok) {
+      await event.data.after.ref.set({
+        providerMessage: result.message,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return;
+    }
+
+    if (!result.done) {
+      await event.data.after.ref.set({
+        providerStatus: 'processing',
+        status: 'processing',
+        progress: Math.max(1, Math.min(95, Number(after.progress || 1) + 5)),
+        providerMessage: 'Gemini يعمل على إنشاء المحتوى.',
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return;
+    }
+
+    const errorMessage = typeof result.body?.error?.message === 'string'
+      ? result.body.error.message.slice(0, 500) : null;
+    if (errorMessage) {
+      await event.data.after.ref.set({
+        providerStatus: 'failed',
+        status: 'failed',
+        queueStatus: 'waiting_provider',
+        providerMessage: errorMessage,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+      return;
+    }
+
+    await event.data.after.ref.set({
+      providerStatus: 'completed',
+      status: 'ready',
+      queueStatus: 'completed',
+      progress: 100,
+      providerMessage: 'اكتملت عملية Gemini. نتيجة العملية محفوظة لدى مزوّد الخدمة.',
+      providerResult: result.body?.response || result.body?.result || null,
+      workerFinishedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  },
+);
+
 // Health endpoint for deployment/monitoring checks.
 exports.entertainmentQueueHealth = require('firebase-functions/v2/https').onRequest(
   { region: 'us-central1' },
