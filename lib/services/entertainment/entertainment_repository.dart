@@ -281,7 +281,7 @@ class EntertainmentRepository {
       'length': length,
       'idea': idea,
       'status': 'planning',
-      'provider': 'auren_ai',
+      'provider': 'pollinations',
       'progress': 0,
       'plan': _creationPlan(mode),
       'assets': _creationAssets(mode),
