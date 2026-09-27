@@ -2205,5 +2205,20 @@ service cloud.firestore {
         && request.resource.data.status == 'cancelled';
       allow delete: if request.auth != null && resource.data.riderUid == request.auth.uid;
     }
+    match /food_items/{itemId} {
+      allow read: if request.auth != null && resource.data.status == 'active';
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.category is string && request.resource.data.category.size() > 0 && request.resource.data.category.size() <= 100
+        && request.resource.data.city is string && request.resource.data.city.size() > 0 && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() > 0 && request.resource.data.country.size() <= 100
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0
+        && request.resource.data.halal is bool && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
   }
 }
