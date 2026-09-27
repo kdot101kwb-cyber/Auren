@@ -218,6 +218,15 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              final output = job['providerResult'] is Map
+                  ? Map<String, dynamic>.from(job['providerResult'] as Map)
+                  : <String, dynamic>{};
+              if (status == 'ready' && output.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                _sectionTitle('الناتج'),
+                const SizedBox(height: 8),
+                _outputCard(context, output),
+              ],
               const SizedBox(height: 18),
               _sectionTitle('ملخص المشروع'),
               const SizedBox(height: 8),
@@ -235,7 +244,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                       Text('المزوّد: ${job['provider'] ?? 'auren_ai'}',
                           style: Theme.of(context).textTheme.bodySmall),
                       const SizedBox(height: 4),
-                      Text('المهمة الحالية لا تدّعي توليد الوسائط فعلياً؛ هذه الشاشة تدير خطة الإنتاج إلى أن يتم ربط مزوّد حقيقي.',
+                      Text('تم تنفيذ المهمة عبر طبقة المزوّد الآمنة. الناتج الظاهر هنا محفوظ من خادم AUREN.',
                           style: Theme.of(context).textTheme.bodySmall),
                     ],
                   ),
@@ -244,6 +253,59 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _outputCard(BuildContext context, Map<String, dynamic> output) {
+    final type = output['type']?.toString() ?? 'output';
+    final url = output['url']?.toString() ?? '';
+    final text = output['text']?.toString() ?? '';
+    final mime = output['mimeType']?.toString() ?? '';
+    final isVideo = type == 'video' || mime.startsWith('video/');
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(isVideo ? Icons.video_library_rounded : type == 'image'
+                    ? Icons.image_rounded : Icons.auto_awesome_rounded),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isVideo ? 'فيديو جاهز' : type == 'image' ? 'صورة جاهزة' : 'ناتج جاهز',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ],
+            ),
+            if (text.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SelectableText(text),
+            ],
+            if (url.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SelectableText(
+                url,
+                maxLines: 3,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('الناتج محفوظ في تخزين AUREN والرابط صالح مؤقتاً.')),
+                  );
+                },
+                icon: const Icon(Icons.link_rounded),
+                label: const Text('الناتج محفوظ'),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
