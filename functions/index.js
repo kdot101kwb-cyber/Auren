@@ -3700,130 +3700,102 @@ exports.entertainmentQueueHealth = require('firebase-functions/v2/https').onRequ
 
 
 exports.createAurenArenaRoom = require('firebase-functions/v2/https').onCall(
-  { region: 'us-central1' },
-  async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'يجب تسجيل الدخول.');
-    const ref = db.collection('arena_rooms').doc();
-    const code = randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
+  {region:'us-central1'}, async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw new HttpsError('unauthenticated','يجب تسجيل الدخول.');
+    const character=['guardian','striker','ranger'].includes(request.data?.character) ? request.data.character : 'guardian';
+    const ref=db.collection('arena_rooms').doc();
+    const code=randomUUID().replace(/-/g,'').slice(0,6).toUpperCase();
     await ref.set({
-      gameId: 'arena_duel', hostUid: uid, playerUids: [uid],
-      hp: {[uid]: 100}, wins: {[uid]: 0}, turnUid: uid,
-      status: 'waiting', inviteCode: code, round: 1, lastAction: null,
-      createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+      gameId:'arena_duel',hostUid:uid,playerUids:[uid],
+      characters:{[uid]:character},hp:{[uid]:100},wins:{[uid]:0},
+      energy:{[uid]:3},combo:{[uid]:0},turnUid:uid,status:'waiting',
+      inviteCode:code,round:1,lastAction:null,
+      createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp(),
     });
     await db.collection('arena_invites').doc(code).set({
-      roomId: ref.id, hostUid: uid, inviteCode: code, gameId: 'arena_duel',
-      createdAt: FieldValue.serverTimestamp(),
+      roomId:ref.id,hostUid:uid,inviteCode:code,gameId:'arena_duel',
+      createdAt:FieldValue.serverTimestamp(),
     });
-    return {roomId: ref.id, inviteCode: code};
+    return {roomId:ref.id,inviteCode:code};
   },
 );
 
 exports.joinAurenArenaRoom = require('firebase-functions/v2/https').onCall(
-  { region: 'us-central1' },
-  async (request) => {
-    const uid = request.auth?.uid;
-    const code = typeof request.data?.inviteCode === 'string' ? request.data.inviteCode.trim().toUpperCase() : '';
-    if (!uid || code.length !== 6) throw new HttpsError('invalid-argument', 'رمز الغرفة غير صحيح.');
-    const invite = await db.collection('arena_invites').doc(code).get();
-    if (!invite.exists || invite.data()?.gameId !== 'arena_duel') throw new HttpsError('not-found', 'الغرفة غير موجودة.');
-    const ref = db.collection('arena_rooms').doc(String(invite.data()?.roomId || ''));
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(ref);
-      if (!snap.exists) throw new HttpsError('not-found', 'الغرفة غير موجودة.');
-      const d = snap.data() || {};
-      const players = Array.isArray(d.playerUids) ? d.playerUids.map(String) : [];
-      if (players.includes(uid)) return;
-      if (players.length >= 2 || d.status !== 'waiting') throw new HttpsError('failed-precondition', 'الغرفة ممتلئة.');
+  {region:'us-central1'}, async (request) => {
+    const uid=request.auth?.uid;
+    const code=typeof request.data?.inviteCode==='string'?request.data.inviteCode.trim().toUpperCase():'';
+    const character=['guardian','striker','ranger'].includes(request.data?.character)?request.data.character:'guardian';
+    if(!uid||code.length!==6) throw new HttpsError('invalid-argument','رمز الغرفة غير صحيح.');
+    const invite=await db.collection('arena_invites').doc(code).get();
+    if(!invite.exists||invite.data()?.gameId!=='arena_duel') throw new HttpsError('not-found','الغرفة غير موجودة.');
+    const ref=db.collection('arena_rooms').doc(String(invite.data()?.roomId||''));
+    await db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref); if(!snap.exists) throw new HttpsError('not-found','الغرفة غير موجودة.');
+      const d=snap.data()||{}; const players=Array.isArray(d.playerUids)?d.playerUids.map(String):[];
+      if(players.includes(uid)) return;
+      if(players.length>=2||d.status!=='waiting') throw new HttpsError('failed-precondition','الغرفة ممتلئة.');
       players.push(uid);
-      tx.update(ref, {
-        playerUids: players,
-        hp: {...(d.hp || {}), [uid]: 100},
-        wins: {...(d.wins || {}), [uid]: 0},
-        status: 'ready',
-        updatedAt: FieldValue.serverTimestamp(),
+      tx.update(ref,{
+        playerUids:players,characters:{...(d.characters||{}),[uid]:character},
+        hp:{...(d.hp||{}),[uid]:100},wins:{...(d.wins||{}),[uid]:0},
+        energy:{...(d.energy||{}),[uid]:3},combo:{...(d.combo||{}),[uid]:0},
+        status:'ready',updatedAt:FieldValue.serverTimestamp()
       });
     });
-    return {roomId: ref.id, inviteCode: code};
+    return {roomId:ref.id,inviteCode:code};
   },
 );
 
 exports.playAurenArenaMove = require('firebase-functions/v2/https').onCall(
-  { region: 'us-central1' },
-  async (request) => {
-    const uid = request.auth?.uid;
-    const roomId = typeof request.data?.roomId === 'string' ? request.data.roomId.trim() : '';
-    const action = Number(request.data?.action);
-    if (!uid || !roomId || !Number.isInteger(action) || action < 0 || action > 2) {
-      throw new HttpsError('invalid-argument', 'حركة غير صالحة.');
-    }
-    const ref = db.collection('arena_rooms').doc(roomId);
-    return db.runTransaction(async (tx) => {
-      const snap = await tx.get(ref);
-      if (!snap.exists) throw new HttpsError('not-found', 'الغرفة غير موجودة.');
-      const d = snap.data() || {};
-      const players = Array.isArray(d.playerUids) ? d.playerUids.map(String) : [];
-      if (!players.includes(uid) || players.length !== 2 || d.status !== 'ready') {
-        throw new HttpsError('failed-precondition', 'اللعبة ليست جاهزة.');
+  {region:'us-central1'}, async (request) => {
+    const uid=request.auth?.uid;
+    const roomId=typeof request.data?.roomId==='string'?request.data.roomId.trim():'';
+    const action=Number(request.data?.action);
+    if(!uid||!roomId||!Number.isInteger(action)||action<0||action>4) throw new HttpsError('invalid-argument','حركة غير صالحة.');
+    const ref=db.collection('arena_rooms').doc(roomId);
+    return db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref); if(!snap.exists) throw new HttpsError('not-found','الغرفة غير موجودة.');
+      const d=snap.data()||{}; const players=Array.isArray(d.playerUids)?d.playerUids.map(String):[];
+      if(!players.includes(uid)||players.length!==2||d.status!=='ready') throw new HttpsError('failed-precondition','اللعبة ليست جاهزة.');
+      if(d.turnUid!==uid) throw new HttpsError('failed-precondition','ليس دورك.');
+      const opponent=players.find(p=>p!==uid);
+      const characters=d.characters||{}; const character=characters[uid]||'guardian';
+      const hp={...(d.hp||{})}; const wins={...(d.wins||{})};
+      const energy={...(d.energy||{})}; const combo={...(d.combo||{})};
+      const round=Number(d.round||1); const oldCombo=Number(combo[uid]||0);
+      const oldEnergy=Number(energy[uid]??3);
+      if(action===3&&oldEnergy<3) throw new HttpsError('failed-precondition','الطاقة غير كافية للقدرة الخاصة.');
+      if(action===4&&oldEnergy<1) throw new HttpsError('failed-precondition','الطاقة غير كافية للـCombo.');
+      let damage=0; let blocked=false;
+      if(action===0) damage=character==='striker'?26:22;
+      if(action===1) damage=character==='ranger'?38:32;
+      if(action===2) blocked=true;
+      if(action===3){damage=character==='guardian'?50:character==='striker'?45:42;energy[uid]=oldEnergy-3;}
+      if(action===4){damage=Math.min(60,20+oldCombo*12);energy[uid]=oldEnergy-1;}
+      if(action!==3&&action!==4) energy[uid]=Math.min(3,oldEnergy+1);
+      const newCombo=action===0||action===1||action===3||action===4?oldCombo+1:0;
+      combo[uid]=Math.min(3,newCombo);
+      const opponentHp=Number(hp[opponent]||100);
+      const newHp=blocked?opponentHp:Math.max(0,opponentHp-damage);
+      hp[opponent]=newHp;
+      let nextRound=round,status='ready',nextTurn=opponent,matchWinnerUid=null,roundWinnerUid=null;
+      let lastAction={uid,action,damage:blocked?0:damage,character,combo:combo[uid],energy:energy[uid],blocked,at:Date.now()};
+      if(newHp<=0){
+        wins[uid]=Number(wins[uid]||0)+1; roundWinnerUid=uid; nextRound=round+1;
+        hp[uid]=100;hp[opponent]=100;energy[uid]=3;energy[opponent]=3;combo[uid]=0;combo[opponent]=0;
+        if(Number(wins[uid])>=3){status='finished';matchWinnerUid=uid;}
+        lastAction={...lastAction,winnerUid:uid};
+      } else if(blocked){combo[uid]=0;lastAction={...lastAction,combo:0};}
+      const update={hp,wins,energy,combo,turnUid:nextTurn,round:nextRound,status,lastAction,updatedAt:FieldValue.serverTimestamp()};
+      if(status==='finished') update.finishedAt=FieldValue.serverTimestamp();
+      tx.update(ref,update);
+      if(status==='finished'){
+        const loser=opponent;
+        tx.set(db.doc(`users/${uid}/gaming_profile/stats`),{xp:FieldValue.increment(75),wins:FieldValue.increment(1),games:FieldValue.increment(1),arenaWins:FieldValue.increment(1),arenaXp:FieldValue.increment(75),seasonXp:FieldValue.increment(75),lastGameAt:FieldValue.serverTimestamp()},{merge:true});
+        tx.set(db.doc(`users/${loser}/gaming_profile/stats`),{xp:FieldValue.increment(20),games:FieldValue.increment(1),arenaXp:FieldValue.increment(20),seasonXp:FieldValue.increment(20),lastGameAt:FieldValue.serverTimestamp()},{merge:true});
       }
-      if (d.turnUid !== uid) throw new HttpsError('failed-precondition', 'ليس دورك.');
-      const opponent = players.find((p) => p !== uid);
-      const hp = {...(d.hp || {})};
-      const wins = {...(d.wins || {})};
-      const round = Number(d.round || 1);
-      const myHp = Number(hp[uid] || 100);
-      const opponentHp = Number(hp[opponent] || 100);
-
-      // Round action model: quick is reliable, heavy is stronger, shield protects.
-      const damage = action === 0 ? 22 : action === 1 ? 32 : 0;
-      const newOpponentHp = action === 2 ? opponentHp : Math.max(0, opponentHp - damage);
-      hp[opponent] = newOpponentHp;
-
-      let nextRound = round;
-      let status = 'ready';
-      let nextTurn = opponent;
-      let matchWinnerUid = null;
-      let roundWinnerUid = null;
-      let lastAction = {uid, action, damage: action === 2 ? 0 : damage, at: Date.now()};
-
-      if (newOpponentHp <= 0) {
-        wins[uid] = Number(wins[uid] || 0) + 1;
-        roundWinnerUid = uid;
-        nextRound = round + 1;
-        hp[uid] = 100;
-        hp[opponent] = 100;
-        if (Number(wins[uid]) >= 3) {
-          status = 'finished';
-          matchWinnerUid = uid;
-        }
-        lastAction = {uid, action, damage, winnerUid: uid, at: Date.now()};
-      } else if (action === 2) {
-        // Shield consumes the turn and leaves both HP unchanged.
-        lastAction = {uid, action, damage: 0, blocked: true, at: Date.now()};
-      }
-
-      const update = {
-        hp, wins, turnUid: nextTurn, round: nextRound, status, lastAction,
-        updatedAt: FieldValue.serverTimestamp(),
-      };
-      if (status === 'finished') update.finishedAt = FieldValue.serverTimestamp();
-      tx.update(ref, update);
-
-      if (status === 'finished') {
-        const loser = opponent;
-        tx.set(db.doc(`users/${uid}/gaming_profile/stats`), {
-          xp: FieldValue.increment(75), wins: FieldValue.increment(1), games: FieldValue.increment(1),
-          arenaWins: FieldValue.increment(1), arenaXp: FieldValue.increment(75),
-          seasonXp: FieldValue.increment(75), lastGameAt: FieldValue.serverTimestamp(),
-        }, {merge: true});
-        tx.set(db.doc(`users/${loser}/gaming_profile/stats`), {
-          xp: FieldValue.increment(20), games: FieldValue.increment(1),
-          arenaXp: FieldValue.increment(20), seasonXp: FieldValue.increment(20),
-          lastGameAt: FieldValue.serverTimestamp(),
-        }, {merge: true});
-      }
-      return {ok: true, round: nextRound, roundWinnerUid, matchWinnerUid};
+      return {ok:true,round:nextRound,roundWinnerUid,matchWinnerUid,energy:energy[uid],combo:combo[uid]};
     });
   },
 );
