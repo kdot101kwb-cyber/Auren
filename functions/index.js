@@ -215,7 +215,7 @@ function validateAurenAction(type, payload) {
 }
 
 exports.approveAurenAction = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new Error('Unauthenticated');
@@ -235,7 +235,7 @@ exports.approveAurenAction = require('firebase-functions/v2/https').onCall(
 );
 
 exports.rejectAurenAction = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new Error('Unauthenticated');
@@ -249,7 +249,7 @@ exports.rejectAurenAction = require('firebase-functions/v2/https').onCall(
 );
 
 exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1', timeoutSeconds:30, memory:'256MiB'},
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new Error('Unauthenticated');
@@ -300,7 +300,7 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
 );
 
 exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1', timeoutSeconds:15, memory:'256MiB'},
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     const uid=request.auth?.uid;
     if(!uid) throw new Error('Unauthenticated');
