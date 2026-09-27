@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../emergency/presentation/emergency_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
@@ -36,6 +37,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Transport', 'تاكسي وتنقل داخل المدن', Icons.local_taxi_outlined),
     _DiscoverItem('Food + Home', 'طعام، بقالة ومستلزمات المنزل', Icons.restaurant_outlined),
     _DiscoverItem('Offline Safety', 'تنقل وأمان عند ضعف الإنترنت', Icons.shield_outlined),
+    _DiscoverItem('Emergency Services', 'أرقام وخدمات الطوارئ الموثقة حسب المنطقة', Icons.emergency_outlined),
     _DiscoverItem('Travel', 'خطط رحلاتك واحفظ وجهاتك', Icons.flight_takeoff_outlined),
     _DiscoverItem('Local Intelligence', 'الأعمال والخدمات والفرص في منطقتك', Icons.location_searching_outlined),
     _DiscoverItem('Creators', 'مبدعون ومحتوى يستحق المتابعة', Icons.movie_creation_outlined),
@@ -88,6 +90,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen()));
       return;
     }
+    if (item.title == 'Emergency Services') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEmergencyScreen())); return; }
     if (item.title == 'Offline Safety') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenOfflineSafetyScreen()));
       return;
