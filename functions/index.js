@@ -2829,7 +2829,14 @@ exports.claimGamingDailyChallenge = onCall(
       const room=roomSnap.data()||{};
       const players=Array.isArray(room.playerUids)?room.playerUids:[];
       const finished=room.status==='finished'||room.winner!=null||room.draw===true;
-      if(!finished||!players.includes(uid)) throw new HttpsError('failed-precondition','Finish a Tic-Tac-Toe game first.');
+      const finishedAt=room.finishedAt;
+      const finishedAtMillis=finishedAt && typeof finishedAt.toMillis==='function' ? finishedAt.toMillis() : 0;
+      const finishedDay=finishedAtMillis
+        ? new Date(finishedAtMillis).toISOString().slice(0,10)
+        : '';
+      if(!finished||!players.includes(uid)||finishedDay!==key) {
+        throw new HttpsError('failed-precondition','Finish a Tic-Tac-Toe game today first.');
+      }
       if(challengeSnap.exists) return false;
       const stats=statsSnap.exists?statsSnap.data()||{}:{};
       const games=Number(stats.games||0);
@@ -2881,7 +2888,9 @@ exports.playGamingMove = onCall(
       const nextUid=winner || isDraw ? '' : players.find((p)=>p!==uid)||uid;
       tx.update(roomRef,{
         board,winner: winner || null,draw:isDraw,turnUid:nextUid,
-        status:'ready',updatedAt:FieldValue.serverTimestamp()
+        status: winner || isDraw ? 'finished' : 'ready',
+        finishedAt: winner || isDraw ? FieldValue.serverTimestamp() : null,
+        updatedAt:FieldValue.serverTimestamp()
       });
       if(winner || isDraw) result={players,marks, winner, draw:isDraw};
     });
