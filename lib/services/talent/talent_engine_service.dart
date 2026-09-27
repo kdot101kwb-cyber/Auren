@@ -55,6 +55,14 @@ class AurenTalentEngineService {
     });
   }
 
+  Future<void> respondToInvitation({required String invitationId,required String talentUid,required String status}) async {
+    if(!['accepted','declined'].contains(status)) throw ArgumentError('حالة الدعوة غير صالحة.');
+    await _db.collection('opportunity_invitations').doc(invitationId).update({
+      'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Stream<List<Map<String,dynamic>>> watchInvitations(String talentUid) => _db.collection('opportunity_invitations')
       .where('talentUid',isEqualTo:talentUid).limit(100).snapshots()
       .map((s)=>s.docs.map((d)=>{'id':d.id,...d.data()}).toList());
