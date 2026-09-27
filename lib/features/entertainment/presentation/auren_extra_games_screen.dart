@@ -26,7 +26,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
     ('🧩 Logic Grid', Icons.extension), ('🔢 Number Matrix', Icons.grid_4x4), ('♟️ Strategy', Icons.psychology), ('🧠 Pattern Logic', Icons.hub), ('🔐 Code Breaker', Icons.lock_outline),
     ('🃏 Memory Match+', Icons.style), ('🧠 Sequence Recall', Icons.psychology_alt), ('🔵 Color Memory', Icons.circle), ('🧩 Pair Recall', Icons.grid_view), ('👀 Flash Memory', Icons.visibility),
     ('🔥 AUREN Arena', Icons.local_fire_department),
-    ('🗺️ Lost World', Icons.explore), ('🏜️ Desert Quest', Icons.landscape), ('🌊 Ocean Explorer', Icons.water), ('🌲 Wild Trails', Icons.forest), ('🚀 Beyond Earth', Icons.rocket_launch), ('🏙️ AUREN City', Icons.location_city),
+    ('🗺️ Lost World', Icons.explore), ('🏜️ Desert Quest', Icons.landscape), ('🌊 Ocean Explorer', Icons.water), ('🌲 Wild Trails', Icons.forest), ('🚀 Beyond Earth', Icons.rocket_launch), ('🏙️ AUREN City', Icons.location_city), ('💎 Treasure Heist', Icons.diamond), ('🚀 Sky Racers', Icons.flight), ('🧟 Zombie Escape', Icons.directions_run), ('🎵 Rhythm Rush', Icons.music_note), ('🏝️ Island Survival', Icons.surfing), ('⏳ Time Warp', Icons.history),
   ];
 
   @override Widget build(BuildContext context) {
@@ -484,7 +484,7 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
     '🔥 AUREN Arena',
   ];
   static const _adventureNames = [
-    '🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City',
+    '🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City','💎 Treasure Heist','🚀 Sky Racers','🧟 Zombie Escape','🎵 Rhythm Rush','🏝️ Island Survival','⏳ Time Warp',
   ];
   static const _coreNames = [
     '🧠 Memory','❓ Quiz','⚡ Reaction','🎲 Dice Duel','↕️ Higher / Lower','🔤 Word Scramble','🔢 2048',
@@ -506,11 +506,19 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
     }
     if (widget.adventure) {
       switch (widget.gameIndex) {
-        case 22: return Auren3DWorldPreset.city;
-        case 23: return Auren3DWorldPreset.desert;
-        case 24: return Auren3DWorldPreset.sports;
-        case 25: return Auren3DWorldPreset.city;
-        default: return Auren3DWorldPreset.desert;
+        case 0: return Auren3DWorldPreset.city;
+        case 1: return Auren3DWorldPreset.desert;
+        case 2: return Auren3DWorldPreset.sports;
+        case 3: return Auren3DWorldPreset.city;
+        case 4: return Auren3DWorldPreset.sports;
+        case 5: return Auren3DWorldPreset.city;
+        case 6: return Auren3DWorldPreset.city;
+        case 7: return Auren3DWorldPreset.sports;
+        case 8: return Auren3DWorldPreset.arena;
+        case 9: return Auren3DWorldPreset.sports;
+        case 10: return Auren3DWorldPreset.sports;
+        case 11: return Auren3DWorldPreset.city;
+        default: return Auren3DWorldPreset.city;
       }
     }
     if (widget.gameIndex < 5 || widget.gameIndex == 20) return Auren3DWorldPreset.arena;
