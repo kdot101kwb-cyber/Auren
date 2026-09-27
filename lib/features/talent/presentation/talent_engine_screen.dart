@@ -20,6 +20,12 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
     catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تشغيل الكشاف: $e')));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
+  Future<void> _respond(String id,String status) async {
+    final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;
+    try{await _service.respondToInvitation(invitationId:id,talentUid:uid,status:status);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(status=='accepted'?'تم قبول الدعوة.':'تم رفض الدعوة.')));}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحديث الدعوة: $e')));}
+  }
+
   Future<void> _invite(AurenTalentCandidate candidate) async {
     final uid=FirebaseAuth.instance.currentUser?.uid;
     final oid=widget.opportunityId; final title=widget.opportunityTitle;
@@ -38,6 +44,26 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
         const SizedBox(height:14),TextField(controller:_query,onSubmitted:(_)=>_scout(),maxLines:2,decoration:const InputDecoration(border:OutlineInputBorder(),hintText:'مثال: Flutter developer • مصمم • مدرس لغة')),
         const SizedBox(height:12),SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_loading?null:_scout,icon:_loading?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.search),label:Text(_loading?'جاري البحث...':'ابحث عن المواهب'))),
       ]))),
+      if(widget.opportunityId==null) ...[
+        const SizedBox(height:18),
+        Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          const Text('دعوات الفرص',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
+          const SizedBox(height:8),
+          StreamBuilder<List<Map<String,dynamic>>>(stream: _service.watchInvitations(FirebaseAuth.instance.currentUser?.uid??''),builder:(context,snap){
+            if(!snap.hasData)return const Padding(padding:EdgeInsets.all(8),child:CircularProgressIndicator());
+            final items=snap.data!;
+            if(items.isEmpty)return const Text('لا توجد دعوات جديدة.');
+            return Column(children:items.map((inv)=>ListTile(
+              title:Text(inv['opportunityTitle']?.toString()??'فرصة'),
+              subtitle:Text(inv['status']?.toString()??'pending'),
+              trailing:inv['status']=='pending'?Wrap(children:[
+                IconButton(tooltip:'قبول',icon:const Icon(Icons.check),onPressed:()=>_respond(inv['id'].toString(),'accepted')),
+                IconButton(tooltip:'رفض',icon:const Icon(Icons.close),onPressed:()=>_respond(inv['id'].toString(),'declined')),
+              ]):null,
+            )).toList());
+          }),
+        ]))),
+      ],
       const SizedBox(height:10),
       if(!_loading&&_results.isEmpty) const Padding(padding:EdgeInsets.all(20),child:Text('ابدأ بمهارة أو دور محدد.')),
       ..._results.map((candidate)=>Card(child:ListTile(
