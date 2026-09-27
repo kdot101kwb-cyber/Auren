@@ -297,6 +297,7 @@ class EntertainmentRepository {
       case 'فيديو': return ['Concept وScript','Storyboard','الأصول البصرية','الصوت والموسيقى','المونتاج','مراجعة الحقوق','Ready'];
       case 'بودكاست': return ['الفكرة والهيكل','Script/Notes','تسجيل الصوت','تنظيف ومكساج','غلاف ووصف','مراجعة الحقوق','Ready'];
       case 'عالم': return ['تصميم العالم','الشخصيات والأماكن','المهام والتفاعل','الأصول الصوتية والبصرية','اختبار التجربة','Ready'];
+      case 'مسلسل': return ['Series Bible','Characters','Season Arc','Episode Bibles','Scenes & Shots','Assets','Voice/Music','Assembly','QC','Ready'];
       default: return ['Concept','السيناريو','الشخصيات والمشاهد','الصوت والأصول','المراجعة','Ready'];
     }
   }
@@ -307,6 +308,7 @@ class EntertainmentRepository {
       case 'فيديو': return ['script','storyboard','video','audio','thumbnail'];
       case 'بودكاست': return ['script','voice','cover','description'];
       case 'عالم': return ['world','characters','locations','missions','audio'];
+      case 'مسلسل': return ['series_bible','characters','season_arc','episode_bibles','scenes','shots','visual_assets','voices','music_sfx','renders','qc'];
       default: return ['story','characters','scenes','artwork'];
     }
   }
