@@ -3709,15 +3709,14 @@ exports.createAurenArenaRoom = require('firebase-functions/v2/https').onCall(
     await ref.set({
       gameId: 'arena_duel', hostUid: uid, playerUids: [uid],
       hp: {[uid]: 100}, wins: {[uid]: 0}, turnUid: uid,
-      status: 'waiting', inviteCode: code,
-      round: 1, lastAction: null, createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+      status: 'waiting', inviteCode: code, round: 1, lastAction: null,
+      createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
     });
     await db.collection('arena_invites').doc(code).set({
-      roomId: ref.id, hostUid: uid, inviteCode: code,
-      gameId: 'arena_duel', createdAt: FieldValue.serverTimestamp(),
+      roomId: ref.id, hostUid: uid, inviteCode: code, gameId: 'arena_duel',
+      createdAt: FieldValue.serverTimestamp(),
     });
-    return { roomId: ref.id, inviteCode: code };
+    return {roomId: ref.id, inviteCode: code};
   },
 );
 
@@ -3738,9 +3737,13 @@ exports.joinAurenArenaRoom = require('firebase-functions/v2/https').onCall(
       if (players.includes(uid)) return;
       if (players.length >= 2 || d.status !== 'waiting') throw new HttpsError('failed-precondition', 'الغرفة ممتلئة.');
       players.push(uid);
-      const hp = {...(d.hp || {}), [uid]: 100};
-      const wins = {...(d.wins || {}), [uid]: 0};
-      tx.update(ref, {playerUids: players, hp, wins, status: 'ready', updatedAt: FieldValue.serverTimestamp()});
+      tx.update(ref, {
+        playerUids: players,
+        hp: {...(d.hp || {}), [uid]: 100},
+        wins: {...(d.wins || {}), [uid]: 0},
+        status: 'ready',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
     });
     return {roomId: ref.id, inviteCode: code};
   },
@@ -3768,30 +3771,35 @@ exports.playAurenArenaMove = require('firebase-functions/v2/https').onCall(
       const opponent = players.find((p) => p !== uid);
       const hp = {...(d.hp || {})};
       const wins = {...(d.wins || {})};
-      const damage = [22, 14, 0][action];
-      const defend = action === 2;
       const round = Number(d.round || 1);
-      const currentRoundWinner = Number(hp[opponent] || 100) - damage <= 0;
-      hp[opponent] = Math.max(0, Number(hp[opponent] || 100) - damage);
-      let nextTurn = opponent;
+      const myHp = Number(hp[uid] || 100);
+      const opponentHp = Number(hp[opponent] || 100);
+
+      // Round action model: quick is reliable, heavy is stronger, shield protects.
+      const damage = action === 0 ? 22 : action === 1 ? 32 : 0;
+      const newOpponentHp = action === 2 ? opponentHp : Math.max(0, opponentHp - damage);
+      hp[opponent] = newOpponentHp;
+
       let nextRound = round;
       let status = 'ready';
+      let nextTurn = opponent;
       let matchWinnerUid = null;
-      let lastAction = {uid, action, damage, at: Date.now()};
+      let roundWinnerUid = null;
+      let lastAction = {uid, action, damage: action === 2 ? 0 : damage, at: Date.now()};
 
-      if (currentRoundWinner && !defend) {
+      if (newOpponentHp <= 0) {
         wins[uid] = Number(wins[uid] || 0) + 1;
+        roundWinnerUid = uid;
+        nextRound = round + 1;
         hp[uid] = 100;
         hp[opponent] = 100;
-        nextRound = round + 1;
-        lastAction = {uid, action, damage, winnerUid: uid, at: Date.now()};
-        nextTurn = opponent;
-        if (wins[uid] >= 3) {
+        if (Number(wins[uid]) >= 3) {
           status = 'finished';
           matchWinnerUid = uid;
         }
-      } else if (defend) {
-        hp[opponent] = Math.min(100, Number(hp[opponent] || 100) + damage);
+        lastAction = {uid, action, damage, winnerUid: uid, at: Date.now()};
+      } else if (action === 2) {
+        // Shield consumes the turn and leaves both HP unchanged.
         lastAction = {uid, action, damage: 0, blocked: true, at: Date.now()};
       }
 
@@ -3803,27 +3811,19 @@ exports.playAurenArenaMove = require('firebase-functions/v2/https').onCall(
       tx.update(ref, update);
 
       if (status === 'finished') {
-        const loser = players.find((p) => p !== uid);
-        const winnerStats = db.doc(`users/${uid}/gaming_profile/stats`);
-        const loserStats = db.doc(`users/${loser}/gaming_profile/stats`);
-        tx.set(winnerStats, {
-          xp: FieldValue.increment(75),
-          wins: FieldValue.increment(1),
-          games: FieldValue.increment(1),
-          arenaWins: FieldValue.increment(1),
-          arenaXp: FieldValue.increment(75),
-          seasonXp: FieldValue.increment(75),
-          lastGameAt: FieldValue.serverTimestamp(),
+        const loser = opponent;
+        tx.set(db.doc(`users/${uid}/gaming_profile/stats`), {
+          xp: FieldValue.increment(75), wins: FieldValue.increment(1), games: FieldValue.increment(1),
+          arenaWins: FieldValue.increment(1), arenaXp: FieldValue.increment(75),
+          seasonXp: FieldValue.increment(75), lastGameAt: FieldValue.serverTimestamp(),
         }, {merge: true});
-        tx.set(loserStats, {
-          xp: FieldValue.increment(20),
-          games: FieldValue.increment(1),
-          arenaXp: FieldValue.increment(20),
-          seasonXp: FieldValue.increment(20),
+        tx.set(db.doc(`users/${loser}/gaming_profile/stats`), {
+          xp: FieldValue.increment(20), games: FieldValue.increment(1),
+          arenaXp: FieldValue.increment(20), seasonXp: FieldValue.increment(20),
           lastGameAt: FieldValue.serverTimestamp(),
         }, {merge: true});
       }
-      return {ok: true, round: nextRound, winnerUid: currentRoundWinner && !defend ? uid : null, matchWinnerUid};
+      return {ok: true, round: nextRound, roundWinnerUid, matchWinnerUid};
     });
   },
 );
