@@ -246,6 +246,15 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     if(_arenaRoomId==null)return;
     try{await FirebaseFunctions.instance.httpsCallable('playAurenArenaMove').call({'roomId':_arenaRoomId,'action':action});if(mounted)setState(()=>_arenaAction=action);}catch(_){if(mounted)_snack('ليست حركتك أو تعذر تسجيل الحركة.');}
   }
+  Widget _arenaRankingCard() => Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+    const Text('🏆 Arena Ranking',style:TextStyle(fontWeight:FontWeight.w900,fontSize:18)),const SizedBox(height:8),
+    StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(stream:FirebaseFirestore.instance.collectionGroup('gaming_profile').orderBy('arenaWins',descending:true).limit(10).snapshots(),builder:(context,snap){
+      if(snap.hasError)return const Text('تعذر تحميل ترتيب Arena.'); final docs=snap.data?.docs??const [];
+      if(docs.isEmpty)return const Text('ابدأ Arena لتظهر هنا.');
+      return Column(children:[for(var i=0;i<docs.length;i++)ListTile(dense:true,leading:CircleAvatar(child:Text((i+1).toString())),title:Text(docs[i].data()['displayName']?.toString()??'لاعب AUREN'),trailing:Text(((docs[i].data()['arenaWins'] as num?)?.toInt()??0).toString()+' 🏆'))]);
+    }),
+  ]));
+
   Widget _arenaCard(){
     if(_arenaRoomId==null)return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       const Text('🔥 AUREN Arena',style:TextStyle(fontWeight:FontWeight.w900,fontSize:20)),
@@ -391,6 +400,17 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   }
 
   String _rpsMoveName(int move) => const ['حجر 🪨', 'ورق 📄', 'مقص ✂️'][move];
+
+  Widget _arenaHistoryCard(){
+    final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null)return const SizedBox.shrink();
+    return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      const Text('⚔️ سجل Arena',style:TextStyle(fontWeight:FontWeight.w900,fontSize:18)),const SizedBox(height:8),
+      StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(stream:FirebaseFirestore.instance.collection('users').doc(uid).collection('arena_history').orderBy('createdAt',descending:true).limit(5).snapshots(),builder:(context,snap){
+        if(snap.hasError)return const Text('تعذر تحميل السجل.'); final docs=snap.data?.docs??const []; if(docs.isEmpty)return const Text('لا توجد مباريات مكتملة بعد.');
+        return Column(children:docs.map((d){final x=d.data();final win=x['result']=='win';return ListTile(dense:true,leading:Icon(win?Icons.emoji_events:Icons.shield_outlined),title:Text(win?'🏆 فوز':'خسارة'),subtitle:Text('الشخصية: '+(x['character']?.toString()??'guardian')));}).toList());
+      }),
+    ])));
+  }
 
   Widget _achievementsCard() {
     final achievements = <Map<String, dynamic>>[
@@ -967,6 +987,8 @@ class AurenGamingService {
         'text': text,
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+  Stream<QuerySnapshot<Map<String,dynamic>>> watchArenaHistory(String uid) => _db.collection('users').doc(uid).collection('arena_history').orderBy('createdAt',descending:true).limit(20).snapshots();
 
   Future<AurenGamingStats> getStats(String uid) async {
     final snap = await _db.collection('users').doc(uid).collection('gaming_profile').doc('stats').get();
