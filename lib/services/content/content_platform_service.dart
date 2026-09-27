@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/models/entertainment.dart';
 
 class AurenChannel {
   final String id, ownerId, name, description, avatarUrl;
@@ -8,6 +9,7 @@ class AurenChannel {
 }
 class AurenContentPlatformService {
   AurenContentPlatformService._(); static final instance=AurenContentPlatformService._(); final _db=FirebaseFirestore.instance;
+  Stream<List<AurenEntertainmentItem>> watchPublicVideos({String query=''}) => _db.collection('entertainment_items').where('visibility',isEqualTo:'public').limit(100).snapshots().map((s){ final q=query.trim().toLowerCase(); return s.docs.map((d)=>AurenEntertainmentItem.fromMap(d.id,d.data())).where((x)=>x.isVideo && x.mediaUrl.isNotEmpty && (q.isEmpty || ('${x.title} ${x.description} ${x.type}'.toLowerCase().contains(q)))).take(50).toList(); });
   Stream<List<AurenChannel>> watchChannels() => _db.collection('content_channels').where('public',isEqualTo:true).limit(100).snapshots().map((s)=>s.docs.map(AurenChannel.fromDoc).toList());
 
   Future<void> ensureStarterChannels(String uid) async {
