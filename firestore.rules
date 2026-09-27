@@ -1196,7 +1196,33 @@ service cloud.firestore {
 
         match /entertainment_items/{itemId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
-      allow write: if false;
+      allow create: if request.auth != null
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.channelId is string
+        && request.resource.data.channelId.size() > 0
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 3000
+        && request.resource.data.mediaUrl is string
+        && request.resource.data.mediaUrl.size() > 0
+        && request.resource.data.mediaUrl.size() <= 2000
+        && request.resource.data.mediaKind == 'video'
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.size() <= 2000
+        && request.resource.data.type is string
+        && request.resource.data.type.size() > 0
+        && request.resource.data.type.size() <= 80
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.createdAt is timestamp
+        && get(/databases/$(database)/documents/content_channels/$(request.resource.data.channelId)).data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.creatorId == request.auth.uid
+        && request.resource.data.creatorId == resource.data.creatorId
+        && request.resource.data.channelId == resource.data.channelId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
     }
     match /entertainment_items/{itemId}/likes/{userId} {
       allow read: if request.auth != null;
