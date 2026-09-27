@@ -2146,5 +2146,50 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+
+    match /stays/{stayId} {
+      allow read: if request.auth != null && resource.data.status == 'active';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.city is string && request.resource.data.city.size() > 0 && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() > 0 && request.resource.data.country.size() <= 100
+        && request.resource.data.type in ['hotel','apartment','villa','hostel','resort','guesthouse']
+        && request.resource.data.description is string && request.resource.data.description.size() <= 3000
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0
+        && request.resource.data.guests is int && request.resource.data.guests >= 1 && request.resource.data.guests <= 50
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /stay_bookings/{bookingId} {
+      allow read: if request.auth != null
+        && (resource.data.guestUid == request.auth.uid || resource.data.ownerId == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.guestUid == request.auth.uid
+        && request.resource.data.ownerId is string
+        && request.resource.data.stayId is string
+        && request.resource.data.name is string
+        && request.resource.data.city is string
+        && request.resource.data.checkIn is timestamp
+        && request.resource.data.checkOut is timestamp
+        && request.resource.data.checkOut > request.resource.data.checkIn
+        && request.resource.data.guests is int && request.resource.data.guests >= 1 && request.resource.data.guests <= 50
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinorPerNight is int && request.resource.data.priceMinorPerNight >= 0
+        && request.resource.data.status == 'requested'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['accepted','rejected','cancelled'];
+      allow delete: if request.auth != null && resource.data.guestUid == request.auth.uid;
+    }
+
   }
 }
