@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -159,7 +158,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   Future<void> _approveAction(AurenActionRequest action) async {
     if (_uid == null) return;
     try {
-      await FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('decideAurenAction').call({'actionId': action.id, 'decision': 'approved'});
+      await _actionRepository.approve(action.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('تمت الموافقة: ${action.title}')),
@@ -177,7 +176,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   Future<void> _rejectAction(AurenActionRequest action) async {
     if (_uid == null || action.status != 'pending') return;
     try {
-      await FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('decideAurenAction').call({'actionId': action.id, 'decision': 'rejected'});
+      await _actionRepository.reject(action.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('تم رفض الطلب: ${action.title}')),
