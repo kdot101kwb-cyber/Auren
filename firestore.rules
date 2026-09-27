@@ -1235,6 +1235,9 @@ service cloud.firestore {
       allow create: if isOwner(userId)
         && request.resource.data.keys().hasOnly(['opportunityId','ownerId','applicantId','title','note','status','createdAt','updatedAt'])
         && request.resource.data.opportunityId == opportunityId
+        && exists(/databases/$(database)/documents/opportunities/$(opportunityId))
+        && get(/databases/$(database)/documents/opportunities/$(opportunityId)).data.status == 'open'
+        && get(/databases/$(database)/documents/opportunities/$(opportunityId)).data.ownerId == request.resource.data.ownerId
         && request.resource.data.ownerId is string
         && request.resource.data.applicantId == request.auth.uid
         && request.resource.data.title is string
@@ -1261,6 +1264,8 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.applicantUid == request.auth.uid
         && request.resource.data.recipientUid is string
+        && exists(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId))
+        && get(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId)).data.ownerId == request.resource.data.recipientUid
         && request.resource.data.opportunityId is string
         && request.resource.data.title is string
         && request.resource.data.read == false
