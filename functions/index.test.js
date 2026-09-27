@@ -352,3 +352,24 @@ test('entertainment queue trigger is idempotent against its own status writes', 
   assert.match(fn, /after\.queueStatus !== 'queued'/);
   assert.match(fn, /before\.queueStatus === 'queued'/);
 });
+
+
+test('entertainment queue uses one server-owned attempt counter', () => {
+  assert.doesNotMatch(source, /\battempts\b/);
+  assert.match(source, /queueAttempts: Number\.isInteger\(data\.queueAttempts\) \? data\.queueAttempts : 0/);
+  assert.match(source, /queueAttempts: Number\.isInteger\(after\.queueAttempts\) \? after\.queueAttempts \+ 1 : 1/);
+});
+
+test('entertainment provider dispatch remains server-side and fail-closed', () => {
+  assert.match(source, /exports\.dispatchEntertainmentToProvider/);
+  assert.match(source, /AUREN_ENTERTAINMENT_PROVIDER_URL/);
+  assert.match(source, /AUREN_AI_API_KEY\.value\(\)/);
+  assert.match(source, /accepted: false/);
+  assert.match(source, /queueStatus: 'waiting_provider'/);
+});
+
+test('entertainment job client updates are restricted to retry/cancel lifecycle fields', () => {
+  assert.match(rules, /Clients may only request a lifecycle action/);
+  assert.match(rules, /affectedKeys\(\)\.hasOnly\(\['status','progress','updatedAt'\]\)/);
+  assert.doesNotMatch(rules, /affectedKeys\(\)\.hasOnly\(\['status','provider','externalJobId','progress','queueStatus'/);
+});
