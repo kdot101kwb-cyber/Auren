@@ -168,26 +168,17 @@ service cloud.firestore {
       && request.resource.data.assets.size() <= 10
       && request.resource.data.createdAt is timestamp
       && request.resource.data.updatedAt is timestamp;
+    // Clients may only request a lifecycle action (retry/cancel). All queue,
+    // provider, progress and worker metadata is server-owned.
     allow update: if isOwner(userId)
-      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','provider','externalJobId','progress','queueStatus','queueAttempts','queuedAt','workerStartedAt','workerFinishedAt','providerStatus','providerMessage','updatedAt'])
-      && request.resource.data.status in ['planning','queued','generating','processing','ready','failed','cancelled']
-      && request.resource.data.provider is string
-      && request.resource.data.provider.size() <= 80
-      && (!('externalJobId' in request.resource.data) || (request.resource.data.externalJobId is string && request.resource.data.externalJobId.size() <= 256))
-      && request.resource.data.progress is int
-      && request.resource.data.progress >= 0
-      && request.resource.data.progress <= 100
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','progress','updatedAt'])
+      && request.resource.data.status in ['planning','cancelled']
+      && request.resource.data.progress == 0
       && (
-        request.resource.data.status == resource.data.status
-        || (
-          resource.data.status in ['planning','generating','processing']
-          && request.resource.data.status in ['planning','generating','processing','failed','cancelled']
-        )
-        || (
-          resource.data.status in ['failed','cancelled']
-          && request.resource.data.status == 'planning'
-          && request.resource.data.progress == 0
-        )
+        (resource.data.status in ['planning','generating','processing','waiting_provider','failed','cancelled']
+          && request.resource.data.status == 'planning')
+        || (resource.data.status in ['planning','generating','processing','waiting_provider']
+          && request.resource.data.status == 'cancelled')
       )
       && request.resource.data.updatedAt is timestamp;
     allow delete: if isOwner(userId);
