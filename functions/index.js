@@ -328,6 +328,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     const inferredTask = inferAurenAiTask(message);
     const inferredIntent = inferAurenIntent(message);
     const actionPlan = buildAurenActionPlan(inferredIntent.intent);
+    const actionProposal = buildAurenActionProposal(inferredIntent.intent, message);
     const actionRequest = normalizeActionRequest(inferredIntent.intent, message);
     if (!conversationId || !message || message.length > 12000 ||
         !requestId || requestId.length > 120 ||
@@ -431,8 +432,6 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     const task = allowedTasks.has(requestedTask)
       ? requestedTask
       : inferAurenAiTask(message);
-    const inferredIntent = inferAurenIntent(message);
-    const actionProposal = buildAurenActionProposal(inferredIntent.intent, message);
     const providerCandidates = [
       'openrouter',
       'cloudflare_workers_ai',
