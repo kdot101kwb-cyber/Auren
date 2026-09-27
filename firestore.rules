@@ -1197,6 +1197,7 @@ service cloud.firestore {
         match /entertainment_items/{itemId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
       allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['title','description','mediaUrl','mediaKind','imageUrl','type','creatorId','channelId','visibility','createdAt'])
         && request.resource.data.creatorId == request.auth.uid
         && request.resource.data.channelId is string
         && request.resource.data.channelId.size() > 0
@@ -1221,7 +1222,9 @@ service cloud.firestore {
         && resource.data.creatorId == request.auth.uid
         && request.resource.data.creatorId == resource.data.creatorId
         && request.resource.data.channelId == resource.data.channelId
-        && request.resource.data.createdAt == resource.data.createdAt;
+        && request.resource.data.visibility == resource.data.visibility
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','description','mediaUrl','imageUrl','type']);
       allow delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
     }
     match /entertainment_items/{itemId}/likes/{userId} {
