@@ -124,7 +124,7 @@ service cloud.firestore {
     allow read, delete: if isOwner(userId);
     allow create: if isOwner(userId)
       && request.resource.data.keys().hasOnly(['mode','mood','length','idea','status','createdAt','updatedAt'])
-      && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم']
+      && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم','مسلسل']
       && request.resource.data.mood is string
       && request.resource.data.mood.size() <= 40
       && request.resource.data.length in ['قصير','متوسط','طويل']
@@ -135,7 +135,7 @@ service cloud.firestore {
       && request.resource.data.updatedAt is timestamp;
     allow update: if isOwner(userId)
       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mode','mood','length','idea','status','updatedAt'])
-      && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم']
+      && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم','مسلسل']
       && request.resource.data.mood is string
       && request.resource.data.mood.size() <= 40
       && request.resource.data.length in ['قصير','متوسط','طويل']
@@ -151,7 +151,7 @@ service cloud.firestore {
       && request.resource.data.keys().hasOnly(['draftId','mode','mood','length','idea','status','provider','externalJobId','progress','plan','assets','createdAt','updatedAt'])
       && request.resource.data.draftId is string
       && request.resource.data.draftId.size() <= 128
-      && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم']
+      && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم','مسلسل']
       && request.resource.data.mood is string
       && request.resource.data.mood.size() <= 40
       && request.resource.data.length in ['قصير','متوسط','طويل']
