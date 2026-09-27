@@ -18,11 +18,20 @@ class _AurenWalletScreenState extends State<AurenWalletScreen>{
    return ListView(padding:const EdgeInsets.all(16),children:[
     Card(child:ListTile(leading:const Icon(Icons.account_balance_wallet_outlined),title:Text(w==null?'المحفظة غير مفعّلة':w.currency),subtitle:Text(w==null?'أنشئ محفظتك للبدء':'الرصيد: ${((w.balanceMinor)/100).toStringAsFixed(2)} ${w.currency}'))),
     if(w==null)FilledButton.icon(onPressed:()async{try{await service.initialize(uid:uid,currency:currency.text);if(mounted)setState((){});}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}},icon:const Icon(Icons.add),label:const Text('إنشاء المحفظة')),
-    if(w!=null)ListTile(title:const Text('حد الإنفاق'),subtitle:const Text('حماية إضافية قبل ربط بوابات الدفع'),trailing:TextButton(onPressed:()=>_limit(context,uid),child:const Text('تعديل'))),
+    if(w!=null)...[
+      ListTile(title:const Text('العملات'),subtitle:Text(w.balancesMinor.keys.join(' • ')),trailing:TextButton(onPressed:()=>_currency(context,uid),child:const Text('إضافة'))),
+      ListTile(title:const Text('حد الإنفاق'),subtitle:const Text('حماية إضافية قبل ربط بوابات الدفع'),trailing:TextButton(onPressed:()=>_limit(context,uid),child:const Text('تعديل'))),
+    ],
     const SizedBox(height:12),const Text('المعاملات',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
     StreamBuilder<List<Map<String,dynamic>>>(stream:service.watchTransactions(uid),builder:(context,t){final items=t.data??const [];if(items.isEmpty)return const Card(child:Padding(padding:EdgeInsets.all(18),child:Text('لا توجد معاملات بعد.')));return Column(children:items.map((x)=>Card(child:ListTile(title:Text(x['type']?.toString()??'Transaction'),subtitle:Text(x['currency']?.toString()??''),trailing:Text(x['amountMinor']?.toString()??'0')))).toList());})
    ]);
   }));
+ }
+ Future<void> _currency(BuildContext context,String uid)async{
+  final c=TextEditingController();
+  final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('إضافة عملة'),content:TextField(controller:c,textCapitalization:TextCapitalization.characters,decoration:const InputDecoration(hintText:'EUR')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('إضافة'))]));
+  if(ok==true&&c.text.trim().isNotEmpty)try{await service.addCurrency(uid:uid,currency:c.text);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}
+  c.dispose();
  }
  Future<void> _limit(BuildContext context,String uid)async{
   final c=TextEditingController();
