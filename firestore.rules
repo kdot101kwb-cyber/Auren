@@ -2254,18 +2254,10 @@ service cloud.firestore {
 
     match /users/{userId}/actions/{actionId} {
       allow read: if isOwner(userId);
-      allow create: if isOwner(userId)
-        && request.resource.data.actionType is string
-        && request.resource.data.actionType.size() <= 80
-        && request.resource.data.title is string
-        && request.resource.data.title.size() <= 200
-        && request.resource.data.description is string
-        && request.resource.data.description.size() <= 2000
-        && request.resource.data.payload is map
-        && request.resource.data.status == 'pending'
-        && request.resource.data.requiresApproval is bool
-        && request.resource.data.createdAt is string;
-      allow update, delete: if false;
+      // Action requests are created and mutated by trusted server code.
+      // Clients may read their own requests and use callable functions for
+      // approve/reject/cancel/execute decisions.
+      allow create, update, delete: if false;
     }
     match /users/{userId}/notes/{noteId} {
       allow read: if isOwner(userId);
