@@ -77,7 +77,7 @@ service cloud.firestore {
 
   match /{path=**}/profile_modes/{modeId} {
     allow list: if request.auth != null && resource.data.discoverable == true;
-    allow get: if request.auth != null && (resource.data.discoverable == true || request.auth.uid == resource.data.modeOwnerUid);
+    allow get: if request.auth != null && resource.data.discoverable == true;
   }
 
   match /users/{userId}/profile_modes/{modeId} {
