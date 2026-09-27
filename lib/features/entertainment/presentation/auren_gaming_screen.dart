@@ -596,51 +596,23 @@ class AurenGamingService {
   }
 
   Future<AurenGamingRoom?> respondToFriendChallenge(String uid, String challengeId, bool accept) async {
-    final challengeRef = _db.collection('gaming_friend_challenges').doc(challengeId);
-    final snap = await challengeRef.get();
-    if (!snap.exists) throw StateError('Challenge not found.');
-    final data = snap.data() ?? {};
-    if (data['toUid']?.toString() != uid || data['status']?.toString() != 'pending') throw StateError('Challenge is no longer available.');
-    if (!accept) { await challengeRef.update({'status': 'declined'}); return null; }
-    final fromUid = data['fromUid']?.toString() ?? '';
-    if (fromUid.isEmpty || fromUid == uid) throw StateError('Invalid challenger.');
-
-    final roomRef = _db.collection('gaming_rooms').doc();
-    final inviteCode = _makeCode();
-    final roomData = {
-      'gameId': 'tic_tac_toe',
-      'hostUid': fromUid,
-      'playerUids': [fromUid, uid],
-      'marks': {fromUid: 'X', uid: 'O'},
-      'board': List<String>.filled(9, ''),
-      'turnUid': fromUid,
-      'winner': null,
-      'draw': false,
-      'status': 'ready',
-      'inviteCode': inviteCode,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-    final inviteRef = _db.collection('gaming_invites').doc(inviteCode);
-    await _db.runTransaction((tx) async {
-      final challengeSnap = await tx.get(challengeRef);
-      if (!challengeSnap.exists || challengeSnap.data()?['status']?.toString() != 'pending') {
-        throw StateError('Challenge already handled.');
-      }
-      tx.set(roomRef, roomData);
-      tx.set(inviteRef, {
-        'roomId': roomRef.id,
-        'hostUid': fromUid,
-        'inviteCode': inviteCode,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      tx.update(challengeRef, {
-        'status': 'accepted',
-        'roomId': roomRef.id,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+    if (uid.isEmpty || challengeId.isEmpty) throw ArgumentError('Invalid challenge.');
+    final callable = FirebaseFunctions.instance.httpsCallable('respondGamingFriendChallenge');
+    final result = await callable.call(<String, dynamic>{
+      'challengeId': challengeId,
+      'accept': accept,
     });
-    return AurenGamingRoom(roomRef.id, inviteCode, roomData);
+    if (!accept) return null;
+    final data = Map<String, dynamic>.from(result.data as Map);
+    final roomId = data['roomId']?.toString() ?? '';
+    final inviteCode = data['inviteCode']?.toString() ?? '';
+    if (roomId.isEmpty || inviteCode.isEmpty) {
+      throw StateError('Game room was not created.');
+    }
+    return AurenGamingRoom(roomId, inviteCode, {
+      'gameId': 'tic_tac_toe',
+      'inviteCode': inviteCode,
+    });
   }
   Stream<QuerySnapshot<Map<String, dynamic>>> watchFriendChallenges(String uid) =>
       _db.collection('gaming_friend_challenges').where('toUid', isEqualTo: uid).where('status', isEqualTo: 'pending').limit(20).snapshots();
