@@ -48,13 +48,41 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
             ),
           ),
         ),
-        Expanded(child: _selected < 17
-            ? _ThreeDGamePanel(gameIndex: _selected, adventure: false, core: true)
-            : _ThreeDGamePanel(gameIndex: _selected - 17, adventure: _selected >= 38, core: false)),
+        Expanded(child: _buildSelectedGame()),
       ]),
     );
   }
 }
+
+  Widget _buildSelectedGame() {
+    if (_selected < 17) {
+      switch (_selected) {
+        case 0: return const _MemoryGame();
+        case 1: return const _QuizGame();
+        case 2: return const _ReactionGame();
+        case 3: return const _DiceDuelGame();
+        case 4: return const _HigherLowerGame();
+        case 5: return const _WordScrambleGame();
+        case 6: return const _TwentyFortyEightGame();
+        case 7: return const _SimonGame();
+        case 8: return const _MathSprintGame();
+        case 9: return const _NumberGuessGame();
+        case 10: return const _CoinFlipGame();
+        case 11: return const _TargetTapGame();
+        case 12: return const _HangmanGame();
+        case 13: return const _WordChainGame();
+        case 14: return const _ColorMatchGame();
+        case 15: return const _OddOneOutGame();
+        case 16: return const _QuickCountGame();
+        default: return const _MemoryGame();
+      }
+    }
+    return _ThreeDGamePanel(
+      gameIndex: _selected - 17,
+      adventure: _selected >= 38,
+      core: false,
+    );
+  }
 
 class _MemoryGame extends StatefulWidget {
   const _MemoryGame();
