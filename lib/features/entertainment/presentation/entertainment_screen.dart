@@ -14,6 +14,7 @@ import 'watch_together_screen.dart';
 import 'auren_gaming_screen.dart';
 import 'auren_radio_screen.dart';
 import 'auren_entertainment_create_screen.dart';
+import 'auren_ai_series_studio_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../core/models/entertainment.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -39,6 +40,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.live_tv_rounded, 'Live', 'Channels, live events & radio'),
     _EntertainmentAction(Icons.sports_esports_rounded, 'Gaming', 'Games, challenges & social play'),
     _EntertainmentAction(Icons.auto_awesome_rounded, 'Create', 'Create music, stories & shows'),
+    _EntertainmentAction(Icons.tv_rounded, 'AI Series', 'Build an original season with AI'),
     _EntertainmentAction(Icons.public_rounded, 'AUREN World', 'Explore interactive worlds'),
     _EntertainmentAction(Icons.download_rounded, 'Offline', 'Save entertainment for low-data use'),
   ];
@@ -387,6 +389,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()));
                   } else if (action.title == 'Create') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentCreateScreen()));
+                  } else if (action.title == 'AI Series') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAiSeriesStudioScreen()));
                   } else {
                     _openAI();
                   }
