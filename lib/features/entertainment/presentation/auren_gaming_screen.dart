@@ -20,6 +20,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   String? _inviteCode;
   String _roomGameId = 'tic_tac_toe';
   String? _arenaRoomId;
+  String _arenaCharacter = 'guardian';
   String? _arenaCode;
   final _arenaCodeController = TextEditingController();
   int _arenaAction = -1;
@@ -240,8 +241,13 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   Widget _arenaCard(){
     if(_arenaRoomId==null)return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       const Text('🔥 AUREN Arena',style:TextStyle(fontWeight:FontWeight.w900,fontSize:20)),
-      const SizedBox(height:6),
-      const Text('قتال سريع 1 ضد 1 — أول لاعب يصل إلى 3 جولات يفوز بالمباراة.'),
+      const Text('اختر مقاتلك، اجمع الطاقة، وابنِ Combo للفوز.'),
+      const SizedBox(height:10),
+      Wrap(spacing:8,children:[
+        ChoiceChip(label:const Text('🛡️ Guardian'),selected:_arenaCharacter=='guardian',onSelected:(_){setState(()=>_arenaCharacter='guardian');}),
+        ChoiceChip(label:const Text('⚡ Striker'),selected:_arenaCharacter=='striker',onSelected:(_){setState(()=>_arenaCharacter='striker');}),
+        ChoiceChip(label:const Text('🏹 Ranger'),selected:_arenaCharacter=='ranger',onSelected:(_){setState(()=>_arenaCharacter='ranger');}),
+      ]),
       const SizedBox(height:10),
       Row(children:[
         Expanded(child:FilledButton.icon(onPressed:_createArena,icon:const Icon(Icons.add),label:const Text('إنشاء'))),
@@ -259,31 +265,36 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         final players=List<String>.from((d['playerUids'] as List<dynamic>? ?? const []).map((e)=>e.toString()));
         final hp=Map<String,dynamic>.from(d['hp'] as Map? ?? {});
         final wins=Map<String,dynamic>.from(d['wins'] as Map? ?? {});
+        final energy=Map<String,dynamic>.from(d['energy'] as Map? ?? {});
+        final combo=Map<String,dynamic>.from(d['combo'] as Map? ?? {});
         final uid=FirebaseAuth.instance.currentUser?.uid;
         final opponent=players.where((p)=>p!=uid).isEmpty?null:players.where((p)=>p!=uid).first;
         final myHp=(hp[uid] as num?)?.toInt()??100;
         final enemyHp=(hp[opponent] as num?)?.toInt()??100;
         final myWins=(wins[uid] as num?)?.toInt()??0;
         final enemyWins=(wins[opponent] as num?)?.toInt()??0;
+        final myEnergy=(energy[uid] as num?)?.toInt()??3;
+        final myCombo=(combo[uid] as num?)?.toInt()??0;
         final ready=players.length==2&&d['status']=='ready'&&d['turnUid']==uid;
         final finished=d['status']=='finished';
-        final matchWinner=d['lastAction'] is Map ? (d['lastAction'] as Map)['winnerUid']?.toString() : null;
+        final matchWinner=d['lastAction'] is Map?(d['lastAction'] as Map)['winnerUid']?.toString():null;
         return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(children:[
           const Text('🔥 AUREN Arena',style:TextStyle(fontSize:26,fontWeight:FontWeight.w900)),
           Text('الجولة '+(d['round']??1).toString()+' • أنت '+myHp.toString()+' HP • الخصم '+enemyHp.toString()+' HP'),
-          const SizedBox(height:6),
-          Text('النتيجة: '+myWins.toString()+' - '+enemyWins.toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+          Text('🏆 '+myWins.toString()+' - '+enemyWins.toString()+'   ⚡ الطاقة '+myEnergy.toString()+'   🔥 Combo '+myCombo.toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
           const SizedBox(height:12),
-          Wrap(spacing:8,children:[
-            FilledButton.tonal(onPressed:ready?()=>_arenaMove(0):null,child:const Text('⚔️ ضربة')),
+          Wrap(spacing:8,runSpacing:8,children:[
+            FilledButton.tonal(onPressed:ready?()=>_arenaMove(0):null,child:const Text('⚔️ سريعة')),
             FilledButton.tonal(onPressed:ready?()=>_arenaMove(1):null,child:const Text('💥 قوية')),
             FilledButton.tonal(onPressed:ready?()=>_arenaMove(2):null,child:const Text('🛡️ صد')),
+            FilledButton(onPressed:ready&&myEnergy>=3?()=>_arenaMove(3):null,child:const Text('✨ Special')),
+            FilledButton(onPressed:ready&&myEnergy>=1&&myCombo>0?()=>_arenaMove(4):null,child:const Text('🔥 Combo')),
           ]),
           const SizedBox(height:8),
-          if(players.length<2) const Text('بانتظار لاعب آخر…'),
-          if(players.length==2&&!finished&&!ready) const Text('دور الخصم…'),
-          if(finished) Text(matchWinner==uid?'🏆 فزت بالمباراة!':'🏆 انتهت المباراة — حظ أوفر!',style:const TextStyle(fontWeight:FontWeight.w900)),
-          if(_arenaAction>=0&&!finished) const Text('تم إرسال الحركة • انتظر الخصم'),
+          if(players.length<2)const Text('بانتظار لاعب آخر…'),
+          if(players.length==2&&!finished&&!ready)const Text('دور الخصم…'),
+          if(finished)Text(matchWinner==uid?'🏆 فزت بالمباراة!':'🏆 انتهت المباراة — حظ أوفر!',style:const TextStyle(fontWeight:FontWeight.w900)),
+          if(_arenaAction>=0&&!finished)const Text('تم إرسال الحركة • انتظر الخصم'),
           if(_arenaCode!=null)Text('رمز الدعوة: '+_arenaCode!),
           OutlinedButton(onPressed:()=>setState((){_arenaRoomId=null;_arenaCode=null;_arenaAction=-1;}),child:const Text('الخروج')),
         ])));
