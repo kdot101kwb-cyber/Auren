@@ -3303,70 +3303,77 @@ async function pollGeminiOperation(operationName) {
   }
 }
 
-exports.trackEntertainmentProviderJob = onDocumentUpdated(
-  'users/{userId}/entertainmentCreationJobs/{jobId}',
-  async (event) => {
-    const before = event.data?.before?.data();
-    const after = event.data?.after?.data();
-    if (!before || !after) return;
-    if (after.provider !== 'gemini' || after.providerStatus !== 'submitted') return;
-    if (before.providerStatus === 'submitted' && before.updatedAt?.seconds === after.updatedAt?.seconds) return;
+exports.trackEntertainmentProviderJob = onSchedule(
+  {
+    schedule: 'every 1 minutes',
+    timeZone: 'UTC',
+    region: 'us-central1',
+    timeoutSeconds: 60,
+  },
+  async () => {
+    const snap = await db.collectionGroup('entertainmentCreationJobs')
+      .where('provider', '==', 'gemini')
+      .where('providerStatus', 'in', ['submitted', 'processing'])
+      .limit(50)
+      .get();
 
-    const operationName = after.externalJobId;
-    if (!operationName) {
-      await event.data.after.ref.set({
-        providerStatus: 'failed',
-        status: 'failed',
-        queueStatus: 'waiting_provider',
-        providerMessage: 'لم يُرجع Gemini رقم عملية يمكن متابعته.',
+    for (const doc of snap.docs) {
+      const after = doc.data() || {};
+      const operationName = after.externalJobId;
+      if (!operationName) {
+        await doc.ref.set({
+          providerStatus: 'failed',
+          status: 'failed',
+          queueStatus: 'waiting_provider',
+          providerMessage: 'لم يُرجع Gemini رقم عملية يمكن متابعته.',
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        continue;
+      }
+
+      const result = await pollGeminiOperation(operationName);
+      if (!result.ok) {
+        await doc.ref.set({
+          providerMessage: result.message,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        continue;
+      }
+
+      if (!result.done) {
+        await doc.ref.set({
+          providerStatus: 'processing',
+          status: 'processing',
+          providerMessage: 'Gemini يعمل على إنشاء المحتوى.',
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        continue;
+      }
+
+      const errorMessage = typeof result.body?.error?.message === 'string'
+        ? result.body.error.message.slice(0, 500) : null;
+      if (errorMessage) {
+        await doc.ref.set({
+          providerStatus: 'failed',
+          status: 'failed',
+          queueStatus: 'waiting_provider',
+          providerMessage: errorMessage,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+        continue;
+      }
+
+      await doc.ref.set({
+        providerStatus: 'completed',
+        status: 'ready',
+        queueStatus: 'completed',
+        progress: 100,
+        providerMessage: 'اكتملت عملية Gemini. النتيجة محفوظة في المهمة.',
+        providerResult: result.body?.response || result.body?.result || null,
+        workerFinishedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
-      return;
     }
-
-    const result = await pollGeminiOperation(operationName);
-    if (!result.ok) {
-      await event.data.after.ref.set({
-        providerMessage: result.message,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-      return;
-    }
-
-    if (!result.done) {
-      await event.data.after.ref.set({
-        providerStatus: 'processing',
-        status: 'processing',
-        progress: Math.max(1, Math.min(95, Number(after.progress || 1) + 5)),
-        providerMessage: 'Gemini يعمل على إنشاء المحتوى.',
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-      return;
-    }
-
-    const errorMessage = typeof result.body?.error?.message === 'string'
-      ? result.body.error.message.slice(0, 500) : null;
-    if (errorMessage) {
-      await event.data.after.ref.set({
-        providerStatus: 'failed',
-        status: 'failed',
-        queueStatus: 'waiting_provider',
-        providerMessage: errorMessage,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-      return;
-    }
-
-    await event.data.after.ref.set({
-      providerStatus: 'completed',
-      status: 'ready',
-      queueStatus: 'completed',
-      progress: 100,
-      providerMessage: 'اكتملت عملية Gemini. نتيجة العملية محفوظة لدى مزوّد الخدمة.',
-      providerResult: result.body?.response || result.body?.result || null,
-      workerFinishedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
   },
 );
 
