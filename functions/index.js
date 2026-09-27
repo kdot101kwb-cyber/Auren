@@ -3035,7 +3035,6 @@ exports.requeueEntertainmentCreationJob = onDocumentUpdated(
 
     await event.data.after.ref.set({
       queueStatus: 'queued',
-      attempts: Number.isInteger(after.attempts) ? after.attempts + 1 : 1,
       queuedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
@@ -3079,15 +3078,9 @@ exports.processEntertainmentCreationQueue = onDocumentUpdated(
       return;
     }
 
-    // Future real providers will be routed here. Until registered server-side,
-    // fail closed and keep the job waiting for configuration.
-    await jobRef.set({
-      queueStatus: 'waiting_provider',
-      providerStatus: 'unavailable',
-      providerMessage: 'المزوّد المطلوب غير مفعّل في طبقة الخادم.',
-      workerFinishedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
+    // A non-built-in provider continues through the server-side provider
+    // adapter. Do not mark it unavailable here; the adapter owns that decision.
+    return;
   },
 );
 
@@ -3101,6 +3094,7 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
     const after = event.data?.after?.data();
     if (!before || !after) return;
     if (after.queueStatus !== 'processing' || before.queueStatus === 'processing') return;
+    if (after.provider === 'auren_ai') return;
     if (after.providerStatus === 'submitted' || after.providerStatus === 'completed') return;
 
     const result = await submitEntertainmentProviderJob({
@@ -3117,7 +3111,7 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
     if (!result.accepted) {
       await ref.set({
         queueStatus: 'waiting_provider',
-        providerStatus: 'not_connected',
+        providerStatus: result.provider === 'server_provider' ? 'not_connected' : 'failed',
         providerMessage: result.message,
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
