@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'auren_3d_world_screen.dart';
 
 class AurenExtraGamesScreen extends StatefulWidget {
   const AurenExtraGamesScreen({super.key});
@@ -49,8 +50,8 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
         ),
         Expanded(child: _selected < 7 ? IndexedStack(index: _selected, children: const [
           _MemoryGame(), _QuizGame(), _ReactionGame(), _DiceDuelGame(),
-          _HigherLowerGame(), _WordScrambleGame(), _TwentyFortyEightGame(),
-        ]) : _selected < 17 ? _TenMoreGamesPanel(initialIndex: _selected - 7) : _selected < 38 ? _CategoryGamesPanel(initialIndex: _selected - 17) : _AdventureGamesPanel(initialIndex: _selected - 38)),
+          _HigherLowerGame(), _WordScrambleGame(), _TwentyFortEightGame(),
+        ]) : _selected < 17 ? _TenMoreGamesPanel(initialIndex: _selected - 7) : _ThreeDGamePanel(gameIndex: _selected - 17, adventure: _selected >= 38)),
       ]),
     );
   }
@@ -458,6 +459,208 @@ class _Auren3DGamePainter extends CustomPainter{
    c.drawCircle(p(Offset(x,y),s,4),9,Paint()..color=const Color(0xFFE9ECFF));
  }
  @override bool shouldRepaint(covariant _Auren3DGamePainter o)=>o.x!=x||o.y!=y||o.preset!=preset;
+}
+
+
+class _ThreeDGamePanel extends StatefulWidget {
+  final int gameIndex;
+  final bool adventure;
+  const _ThreeDGamePanel({required this.gameIndex, required this.adventure});
+
+  @override
+  State<_ThreeDGamePanel> createState() => _ThreeDGamePanelState();
+}
+
+class _ThreeDGamePanelState extends State<_ThreeDGamePanel> {
+  double _x = 0, _y = 0;
+  int _score = 0, _energy = 10;
+  final _rng = Random();
+
+  static const _categoryNames = [
+    '⚔️ Arena Duel','🥊 Punch Rush','🛡️ Shield Block','🏹 Archer Aim','⚡ Battle Reflex',
+    '⚽ Penalty King','🏀 Hoops','🏃 Sprint','🎾 Tennis Rally','🚴 Cycling',
+    '🧩 Logic Grid','🔢 Number Matrix','♟️ Strategy','🧠 Pattern Logic','🔐 Code Breaker',
+    '🃏 Memory Match+','🧠 Sequence Recall','🔵 Color Memory','🧩 Pair Recall','👀 Flash Memory',
+    '🔥 AUREN Arena',
+  ];
+  static const _adventureNames = [
+    '🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City',
+  ];
+
+  String get title => widget.adventure
+      ? _adventureNames[widget.gameIndex - 21]
+      : _categoryNames[widget.gameIndex];
+
+  Auren3DWorldPreset get preset {
+    if (widget.adventure) {
+      return widget.gameIndex == 22 || widget.gameIndex == 25
+          ? Auren3DWorldPreset.city
+          : widget.gameIndex == 23 || widget.gameIndex == 24
+              ? Auren3DWorldPreset.desert
+              : Auren3DWorldPreset.city;
+    }
+    if (widget.gameIndex < 5 || widget.gameIndex == 20) return Auren3DWorldPreset.arena;
+    if (widget.gameIndex < 10) return Auren3DWorldPreset.sports;
+    return Auren3DWorldPreset.city;
+  }
+
+  String get actionLabel {
+    if (widget.adventure) return 'استكشف وحرّك الشخصية';
+    if (widget.gameIndex < 5 || widget.gameIndex == 20) return 'نفّذ حركة قتالية';
+    if (widget.gameIndex < 10) return 'نفّذ الحركة الرياضية';
+    return 'نفّذ التحدي';
+  }
+
+  void _move(double dx, double dy) {
+    if (_energy <= 0) return;
+    setState(() {
+      _x = (_x + dx).clamp(-8.0, 8.0);
+      _y = (_y + dy).clamp(-8.0, 8.0);
+      _energy--;
+      _score += 1 + _rng.nextInt(4);
+    });
+  }
+
+  void _action() {
+    if (_energy <= 0) return;
+    setState(() {
+      _energy--;
+      _score += 5 + _rng.nextInt(11);
+    });
+  }
+
+  void _reset() => setState(() {
+    _x = 0; _y = 0; _score = 0; _energy = 10;
+  });
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(16),
+    children: [
+      Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 4),
+      Text('3D • النقاط: $_score • الطاقة: $_energy'),
+      const SizedBox(height: 12),
+      SizedBox(
+        height: 330,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: CustomPaint(
+            painter: _ThreeDGameScenePainter(
+              preset: preset, x: _x, y: _y, score: _score,
+            ),
+            child: const SizedBox.expand(),
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        widget.adventure
+            ? 'استكشف العالم ثلاثي الأبعاد، تحرك، وافتح نقاطاً جديدة.'
+            : widget.gameIndex < 5 || widget.gameIndex == 20
+                ? 'ساحة قتال ثلاثية الأبعاد — الحركة والنتيجة تتحدثان مع كل جولة.'
+                : widget.gameIndex < 10
+                    ? 'ملعب ثلاثي الأبعاد — نفّذ الحركة واجمع النقاط.'
+                    : 'تحدٍ ثلاثي الأبعاد — استكشف البيئة وحافظ على سلسلتك.',
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      const SizedBox(height: 12),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton.filledTonal(onPressed: () => _move(0, -1), icon: const Icon(Icons.arrow_upward)),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(onPressed: () => _move(-1, 0), icon: const Icon(Icons.arrow_back)),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(onPressed: () => _move(1, 0), icon: const Icon(Icons.arrow_forward)),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(onPressed: () => _move(0, 1), icon: const Icon(Icons.arrow_downward)),
+        ],
+      ),
+      const SizedBox(height: 4),
+      FilledButton.icon(
+        onPressed: _energy > 0 ? _action : null,
+        icon: const Icon(Icons.flash_on),
+        label: Text(actionLabel),
+      ),
+      const SizedBox(height: 8),
+      OutlinedButton.icon(onPressed: _reset, icon: const Icon(Icons.refresh), label: const Text('إعادة')),
+    ],
+  );
+}
+
+class _ThreeDGameScenePainter extends CustomPainter {
+  final Auren3DWorldPreset preset;
+  final double x, y;
+  final int score;
+  const _ThreeDGameScenePainter({required this.preset, required this.x, required this.y, required this.score});
+
+  Offset _p(Offset v, Size s, [double h = 0]) {
+    final depth = (9 + v.dy).clamp(2.0, 24.0);
+    final scale = s.shortestSide * .085 / depth;
+    return Offset(s.width / 2 + v.dx * scale, s.height * .62 - (h - v.dy * .32) * scale);
+  }
+
+  void _box(Canvas c, Size s, double x, double y, double w, double d, double h) {
+    final base = [_p(Offset(x,y),s), _p(Offset(x+w,y),s), _p(Offset(x+w,y+d),s), _p(Offset(x,y+d),s)];
+    final top = [_p(Offset(x,y),s,h), _p(Offset(x+w,y),s,h), _p(Offset(x+w,y+d),s,h), _p(Offset(x,y+d),s,h)];
+    final side = Paint()..color = const Color(0xFF4D557D);
+    final roof = Paint()..color = const Color(0xFF7881B2);
+    c.drawPath(Path()..addPolygon([base[0],base[1],top[1],top[0]],true), side);
+    c.drawPath(Path()..addPolygon([base[1],base[2],top[2],top[1]],true), side);
+    c.drawPath(Path()..addPolygon([base[2],base[3],top[3],top[2]],true), side);
+    c.drawPath(Path()..addPolygon(top,true), roof);
+  }
+
+  @override
+  void paint(Canvas c, Size s) {
+    c.drawRect(Offset.zero & s, Paint()..color = const Color(0xFF070912));
+    c.drawPath(
+      Path()..addPolygon([
+        _p(const Offset(-34,-30),s), _p(const Offset(34,-30),s),
+        _p(const Offset(34,30),s), _p(const Offset(-34,30),s),
+      ], true),
+      Paint()..color = const Color(0xFF171C2C),
+    );
+
+    final grid = Paint()..color = const Color(0xFF343B58)..strokeWidth = 1;
+    for (var i = -8; i <= 8; i++) {
+      c.drawLine(_p(Offset(i*4,-30),s), _p(Offset(i*4,30),s), grid);
+      c.drawLine(_p(Offset(-30,i*4),s), _p(Offset(30,i*4),s), grid);
+    }
+
+    if (preset == Auren3DWorldPreset.arena) {
+      final wall = Paint()..color = const Color(0xFF505879);
+      for (var i = 0; i < 8; i++) {
+        final a = i * pi / 4;
+        _box(c,s,cos(a)*15-1.5,sin(a)*15-1.5,3,3,2.5);
+      }
+      c.drawCircle(_p(Offset(0,0),s,1), 34, Paint()..style=PaintingStyle.stroke..strokeWidth=2..color=const Color(0xFF8B93C7));
+    } else if (preset == Auren3DWorldPreset.sports) {
+      _box(c,s,-20,-13,40,26,.25);
+      final mark = Paint()..color = const Color(0xFFE4E6EF)..style=PaintingStyle.stroke..strokeWidth=2;
+      c.drawLine(_p(const Offset(-20,0),s),_p(const Offset(20,0),s),mark);
+      c.drawLine(_p(const Offset(0,-13),s),_p(const Offset(0,13),s),mark);
+    } else if (preset == Auren3DWorldPreset.desert) {
+      final dune = Paint()..color = const Color(0xFF6A604C);
+      for (var i=0;i<7;i++) _box(c,s,-24+i*8,8-(i%2)*12,6,5,1+i%3);
+      _box(c,s,4,-7,8,6,3);
+    } else {
+      final building = Paint()..color = const Color(0xFF4C5378);
+      for (var i=0;i<8;i++) _box(c,s,(i%4)*11-17,(i~/4)*13-13,7,6,7+(i%3)*4);
+      c.drawCircle(_p(Offset(0,-8),s,1), 18, Paint()..style=PaintingStyle.stroke..strokeWidth=2..color=const Color(0xFF7078A8));
+    }
+
+    final player = _p(Offset(x,y),s,4);
+    c.drawCircle(player.translate(0,-12),7,Paint()..color=const Color(0xFFE9ECFF));
+    c.drawCircle(player.translate(0,-2),11,Paint()..color=const Color(0xFFE9ECFF));
+    final marker = Paint()..color=const Color(0xFF9AA3E8)..style=PaintingStyle.stroke..strokeWidth=2;
+    c.drawCircle(player, 18 + (score % 8), marker);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ThreeDGameScenePainter old) =>
+      old.preset != preset || old.x != x || old.y != y || old.score != score;
 }
 
 class _AdventureGamesPanel extends StatefulWidget {
