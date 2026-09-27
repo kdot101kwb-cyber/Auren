@@ -229,6 +229,8 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('لوحة المتصدرين', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        const SizedBox(height: 8),
+        const Text('أفضل لاعبي AUREN حسب XP'),
         const SizedBox(height: 10),
         StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: _service.watchLeaderboard(),
@@ -236,9 +238,17 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
             if (snap.hasError) return const Text('تعذر تحميل لوحة المتصدرين.');
             final docs = snap.data?.docs ?? const [];
             if (docs.isEmpty) return const Text('ابدأ اللعب لتظهر في لوحة المتصدرين.');
+            final top = docs.take(10).toList();
             return Column(children: [
-              for (var i = 0; i < docs.length; i++)
-                ListTile(dense: true, leading: CircleAvatar(child: Text('${i + 1}')), title: Text(docs[i].data()['displayName']?.toString() ?? 'لاعب AUREN'), trailing: Text('${(docs[i].data()['xp'] as num?)?.toInt() ?? 0} XP')),
+              for (var i = 0; i < top.length; i++) ...[
+                ListTile(
+                  dense: true,
+                  leading: CircleAvatar(child: Text('${i + 1}')),
+                  title: Text(top[i].data()['displayName']?.toString() ?? 'لاعب AUREN'),
+                  trailing: Text('${(top[i].data()['xp'] as num?)?.toInt() ?? 0} XP'),
+                ),
+                if (i < top.length - 1) const Divider(height: 1),
+              ],
             ]);
           },
         ),
