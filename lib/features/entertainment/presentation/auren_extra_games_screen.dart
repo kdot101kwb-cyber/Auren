@@ -20,6 +20,11 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
     ('Simon', Icons.pattern_rounded), ('Math Sprint', Icons.calculate_outlined), ('Number Guess', Icons.numbers_rounded),
     ('Coin Flip', Icons.toll_outlined), ('Target Tap', Icons.my_location_outlined), ('Hangman', Icons.text_fields_rounded),
     ('Word Chain', Icons.link_rounded), ('Color Match', Icons.palette_outlined), ('Odd One Out', Icons.filter_1_outlined), ('Quick Count', Icons.timer_outlined),
+    ('⚔️ Arena Duel', Icons.sports_kabaddi), ('🥊 Punch Rush', Icons.sports_mma), ('🛡️ Shield Block', Icons.shield_outlined), ('🏹 Archer Aim', Icons.gps_fixed), ('⚡ Battle Reflex', Icons.flash_on),
+    ('⚽ Penalty King', Icons.sports_soccer), ('🏀 Hoops', Icons.sports_basketball), ('🏃 Sprint', Icons.directions_run), ('🎾 Tennis Rally', Icons.sports_tennis), ('🚴 Cycling', Icons.directions_bike),
+    ('🧩 Logic Grid', Icons.extension), ('🔢 Number Matrix', Icons.grid_4x4), ('♟️ Strategy', Icons.psychology), ('🧠 Pattern Logic', Icons.hub), ('🔐 Code Breaker', Icons.lock_outline),
+    ('🃏 Memory Match+', Icons.style), ('🧠 Sequence Recall', Icons.psychology_alt), ('🔵 Color Memory', Icons.circle), ('🧩 Pair Recall', Icons.grid_view), ('👀 Flash Memory', Icons.visibility),
+    ('🔥 AUREN Arena', Icons.local_fire_department),
   ];
 
   @override Widget build(BuildContext context) {
@@ -44,7 +49,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
         Expanded(child: _selected < 7 ? IndexedStack(index: _selected, children: const [
           _MemoryGame(), _QuizGame(), _ReactionGame(), _DiceDuelGame(),
           _HigherLowerGame(), _WordScrambleGame(), _TwentyFortyEightGame(),
-        ]) : _TenMoreGamesPanel(initialIndex: _selected - 7)),
+        ]) : _selected < 17 ? _TenMoreGamesPanel(initialIndex: _selected - 7) : _CategoryGamesPanel(initialIndex: _selected - 17)),
       ]),
     );
   }
@@ -345,6 +350,32 @@ class _GamePage extends StatelessWidget {
   ]);
 }
 
+class _CategoryGamesPanel extends StatefulWidget {
+  final int initialIndex;
+  const _CategoryGamesPanel({required this.initialIndex});
+  @override State<_CategoryGamesPanel> createState()=>_CategoryGamesPanelState();
+}
+class _CategoryGamesPanelState extends State<_CategoryGamesPanel>{
+  final _rng=Random(); late int _game; int _score=0,_streak=0,_a=0,_b=0,_target=0; List<int> _memory=[]; String _message='ابدأ!';
+  @override void initState(){super.initState();_game=widget.initialIndex;_newRound();}
+  void _newRound(){_a=1+_rng.nextInt(9);_b=1+_rng.nextInt(9);_target=1+_rng.nextInt(9);_memory=List.generate(6,(_)=>_rng.nextInt(4));_message='اختبر نفسك';}
+  void _hit(bool ok){setState((){if(ok){_score++;_streak++;_message='ممتاز! 🔥';}else{_streak=0;_message='حاول مرة أخرى';}_newRound();});}
+  @override Widget build(BuildContext context){
+    final names=['Arena Duel','Punch Rush','Shield Block','Archer Aim','Battle Reflex','Penalty King','Hoops','Sprint','Tennis Rally','Cycling','Logic Grid','Number Matrix','Strategy','Pattern Logic','Code Breaker','Memory Match+','Sequence Recall','Color Memory','Pair Recall','Flash Memory','AUREN Arena'];
+    Widget body; String cat;
+    if(_game<5){cat='⚔️ ألعاب قتالية';body=_combat();}else if(_game<10){cat='🏆 ألعاب رياضية';body=_sport();}else if(_game<15){cat='🧠 ألعاب تفكير';body=_thinking();}else if(_game<20){cat='👀 ألعاب ذاكرة';body=_memory();}else{cat='🔥 اللعبة الجاذبة';body=_arena();}
+    return ListView(padding:const EdgeInsets.all(16),children:[Text(cat,style:const TextStyle(fontSize:25,fontWeight:FontWeight.w900)),const SizedBox(height:6),Text('النقاط: $_score • السلسلة: $_streak'),const SizedBox(height:14),
+      Wrap(spacing:6,runSpacing:6,children:[for(var i=0;i<names.length;i++)ChoiceChip(label:Text(names[i]),selected:_game==i,onSelected:(_)=>setState((){_game=i;_newRound();}))]),const SizedBox(height:16),
+      Card(child:Padding(padding:const EdgeInsets.all(18),child:body)),const SizedBox(height:12),FilledButton.icon(onPressed:()=>setState((){_score=0;_streak=0;_newRound();}),icon:const Icon(Icons.refresh),label:const Text('إعادة'))]);
+  }
+  Widget _combat(){final l=['ضربة سريعة','ضربة قوية','تفادي','صد'];return Column(children:[const Text('🥊',style:TextStyle(fontSize:62)),const Text('اقرأ الهجمة واختر الرد الصحيح'),const SizedBox(height:12),Wrap(spacing:8,children:[for(var i=0;i<4;i++)FilledButton.tonal(onPressed:()=>_hit(i==(_a%4)),child:Text(l[i]))]),Text(_message)]);}
+  Widget _sport(){final s=_game-5;final l=s==0?['يسار','وسط','يمين']:s==1?['رمي بعيد','رمي متوسط','رمي قريب']:s==2?['انطلق','قفزة','اندفاع']:s==3?['يسار','وسط','يمين']:['دواسة سريعة','دواسة ثابتة','تغيير مسار'];return Column(children:[Text(['⚽','🏀','🏃','🎾','🚴'][s],style:const TextStyle(fontSize:60)),Text(_message),Wrap(spacing:8,children:[for(var i=0;i<3;i++)FilledButton.tonal(onPressed:()=>_hit(i==(_a%3)),child:Text(l[i]))])]);}
+  Widget _thinking(){final t=_game-10;if(t==0)return _choice('أكمل النمط: ${_a} → ${(_a+2)%10} → ${(_a+4)%10} → ?',['${(_a+6)%10}','${(_a+5)%10}','${(_a+3)%10}'],0);if(t==1)return _choice('اختر الرقم الأكبر',[_a,_b,_a+_b],2);if(t==2)return _choice('أي خطة تكسب؟',['هجوم','دفاع','تفادي'],_a%3);if(t==3)return _choice('أين المختلف؟',['●●●','●○●','●●●'],1);return _choice('فك الشفرة: ${_a} + ${_b} = ?',[_a+_b,_a+_b+1,_a+_b-1],0);}
+  Widget _choice(String title,List<dynamic> v,int c)=>Column(children:[Text(title,textAlign:TextAlign.center,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:10),Wrap(spacing:8,children:[for(var i=0;i<v.length;i++)FilledButton.tonal(onPressed:()=>_hit(i==c),child:Text('${v[i]}'))])]);
+  Widget _memory(){final k=_game-15;if(k==0)return Column(children:[const Text('احفظ التسلسل ثم اختر آخر رقم'),Text(_memory.map((e)=>e+1).join(' • '),style:const TextStyle(fontSize:27,fontWeight:FontWeight.w900)),Wrap(spacing:8,children:[for(var n=1;n<=4;n++)FilledButton.tonal(onPressed:()=>_hit(n==_memory.last+1),child:Text('${n}'))])]);if(k==1)return _choice('ما الرقم الأول؟',[1,2,3,4],_memory.first);if(k==2)return _choice('تذكر اللون الأول',['🔴','🟢','🔵','🟡'],_memory.first);if(k==3)return _choice('تذكر الموضع',['1','2','3'],_memory[2]%3);return Column(children:[const Text('FLASH MEMORY',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),Text('احفظ الرقم: $_target',style:const TextStyle(fontSize:30)),FilledButton(onPressed:()=>_hit(true),child:const Text('أتذكره!'))]);}
+  Widget _arena(){final a=['⚔️ هجوم','🛡️ دفاع','⚡ تفادي','🎯 ضربة دقيقة'];return Column(children:[const Text('🔥 AUREN ARENA',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),const Text('جولة سريعة ضد AUREN — اصنع أطول سلسلة.'),const SizedBox(height:12),Text('هجمة الخصم: ${a[_a%4]}'),Wrap(spacing:8,children:[for(var i=0;i<4;i++)FilledButton.tonal(onPressed:()=>_hit(i==((_a+1)%4)),child:Text(a[i]))]),Text(_message)]);}
+}
+
 class _TenMoreGamesPanel extends StatefulWidget {
   final int initialIndex;
   const _TenMoreGamesPanel({required this.initialIndex});
@@ -384,6 +415,6 @@ class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
       case 8: body=GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:9,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:3,crossAxisSpacing:8,mainAxisSpacing:8),itemBuilder:(_,i)=>FilledButton.tonal(onPressed:()=>_oddPick(i),child:Text(i==_odd?'🔷':'🔹',style:const TextStyle(fontSize:28))));break;
       default: body=Column(children:[Text('عدد النجوم: '+_count.toString(),style:const TextStyle(fontSize:26)),Wrap(spacing:8,children:[for(var n=2;n<=10;n++)FilledButton.tonal(onPressed:()=>_quick(n),child:Text(n.toString()))])]);
     }
-    return ListView(padding:const EdgeInsets.all(16),children:[Text('10 ألعاب جديدة',style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:8),Wrap(spacing:6,runSpacing:6,children:[for(var i=0;i<names.length;i++)ChoiceChip(label:Text(names[i]),selected:_game==i,onSelected:(_){setState(()=>_game=i);})]),const SizedBox(height:16),Card(child:Padding(padding:const EdgeInsets.all(16),child:body)),const SizedBox(height:12),FilledButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة'))]);
+    return ListView(padding:const EdgeInsets.all(16),children:[Text('21 لعبة جديدة',style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:8),Wrap(spacing:6,runSpacing:6,children:[for(var i=0;i<names.length;i++)ChoiceChip(label:Text(names[i]),selected:_game==i,onSelected:(_){setState(()=>_game=i);})]),const SizedBox(height:16),Card(child:Padding(padding:const EdgeInsets.all(16),child:body)),const SizedBox(height:12),FilledButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة'))]);
   }
 }
