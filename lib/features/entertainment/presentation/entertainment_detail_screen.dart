@@ -19,6 +19,35 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
   String? _uid;
   Duration _lastSavedPosition = Duration.zero;
 
+  Future<void> _toggleSave(String uid, String itemId, bool saved) async {
+    if (saved) {
+      await EntertainmentRepository().unsave(uid, itemId);
+    } else {
+      await EntertainmentRepository().save(uid, itemId);
+    }
+  }
+
+  Future<void> _showCommentComposer(String uid, String itemId) async {
+    final controller = TextEditingController();
+    final text = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+        child: Row(children: [
+          Expanded(child: TextField(controller: controller, autofocus: true, maxLength: 1000,
+            decoration: const InputDecoration(hintText: 'اكتب تعليقك…', border: OutlineInputBorder()))),
+          const SizedBox(width: 8),
+          IconButton.filled(onPressed: () => Navigator.pop(context, controller.text.trim()), icon: const Icon(Icons.send_rounded)),
+        ]),
+      ),
+    );
+    controller.dispose();
+    if (text != null && text.isNotEmpty) {
+      await EntertainmentRepository().addShortComment(uid, itemId, text);
+    }
+  }
+
   @override
   void dispose() { _saveProgress(); _controller?.dispose(); super.dispose(); }
 
@@ -130,6 +159,64 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
               Text(item.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Text(item.description, style: Theme.of(context).textTheme.bodyLarge),
+              const SizedBox(height: 14),
+              Row(children: [
+                StreamBuilder<bool>(
+                  stream: uid == null ? const Stream<bool>.empty() : repo.watchLiked(uid, item.id),
+                  builder: (context, likeSnapshot) {
+                    final liked = likeSnapshot.data ?? false;
+                    return IconButton.filledTonal(
+                      tooltip: liked ? 'إلغاء الإعجاب' : 'إعجاب',
+                      onPressed: uid == null ? null : () => repo.toggleLike(uid, item.id, !liked),
+                      icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                if (uid != null)
+                  StreamBuilder<Set<String>>(
+                    stream: repo.watchSavedIds(uid),
+                    builder: (context, savedSnapshot) {
+                      final saved = savedSnapshot.data?.contains(item.id) ?? false;
+                      return IconButton.filledTonal(
+                        tooltip: saved ? 'إزالة من المحفوظات' : 'حفظ',
+                        onPressed: () => _toggleSave(uid, item.id, saved),
+                        icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
+                      );
+                    },
+                  ),
+                const SizedBox(width: 8),
+                if (uid != null)
+                  OutlinedButton.icon(onPressed: () => _showCommentComposer(uid, item.id), icon: const Icon(Icons.comment_outlined), label: const Text('تعليق')),
+              ]),
+              const SizedBox(height: 16),
+              if (item.creatorId.isNotEmpty) ...[
+                Card(child: ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                  title: const Text('منشئ المحتوى'),
+                  subtitle: Text(item.creatorId, maxLines: 1, overflow: TextOverflow.ellipsis),
+                )),
+                const SizedBox(height: 10),
+              ],
+              const SizedBox(height: 6),
+              const Text('التعليقات', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              StreamBuilder(
+                stream: repo.watchShortComments(item.id),
+                builder: (context, commentSnapshot) {
+                  if (commentSnapshot.connectionState == ConnectionState.waiting) return const Padding(padding: EdgeInsets.all(12), child: Center(child: CircularProgressIndicator()));
+                  final comments = commentSnapshot.data ?? const [];
+                  if (comments.isEmpty) return const Text('لسه ما في تعليقات. كن أول من يعلّق.');
+                  return Column(children: comments.take(20).map<Widget>((comment) {
+                    final data = comment.data() as Map<String, dynamic>;
+                    return Card(child: ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                      title: Text(data['uid']?.toString() ?? 'مستخدم'),
+                      subtitle: Text(data['text']?.toString() ?? ''),
+                    ));
+                  }).toList());
+                },
+              ),
               const SizedBox(height: 22),
               FilledButton.icon(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد معرفة المزيد عن ' + item.title + '، واقترح لي محتوى مشابهًا له.'))),
