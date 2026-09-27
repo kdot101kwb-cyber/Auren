@@ -131,6 +131,29 @@ function buildAurenActionPlan(intent) {
   };
 }
 
+function buildAurenActionProposal(intent, message) {
+  const text = String(message || '').trim();
+  const safe = (value, max = 1000) => String(value || '').trim().slice(0, max);
+  switch (intent) {
+    case 'save_memory':
+      return { action: 'memory.save', requiresApproval: true, payload: { key: 'user_note', value: safe(text) } };
+    case 'create_note':
+      return { action: 'demo.create_note', requiresApproval: true, payload: { text: safe(text) } };
+    case 'set_goal':
+      return { action: 'goal.create', requiresApproval: true, payload: { title: safe(text, 300) } };
+    case 'plan_day':
+      return { action: 'plan.day', requiresApproval: false, payload: { request: safe(text) } };
+    case 'find_opportunity':
+      return { action: 'opportunity.search', requiresApproval: false, payload: { query: safe(text) } };
+    case 'find_business':
+      return { action: 'business.search', requiresApproval: false, payload: { query: safe(text) } };
+    case 'create_content':
+      return { action: 'entertainment.create', requiresApproval: true, payload: { request: safe(text) } };
+    default:
+      return { action: null, requiresApproval: false, payload: {} };
+  }
+}
+
 function inferAurenIntent(message) {
   const text = String(message || '').trim().toLowerCase();
   if (!text) return { intent: 'chat', confidence: 1, requiresApproval: false, entities: {} };
@@ -230,6 +253,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         task: typeof request.data?.task === 'string' ? request.data.task.trim().toLowerCase() : null,
         inferredTask,
         intent: inferredIntent.intent,
+        actionProposal,
         actionPlan,
         startedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
@@ -300,6 +324,8 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     const task = allowedTasks.has(requestedTask)
       ? requestedTask
       : inferAurenAiTask(message);
+    const inferredIntent = inferAurenIntent(message);
+    const actionProposal = buildAurenActionProposal(inferredIntent.intent, message);
     const providerCandidates = [
       'openrouter',
       'cloudflare_workers_ai',
