@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'auren_extra_games_screen.dart';
 import '../../../services/social/follow_repository.dart';
 
 class AurenGamingScreen extends StatefulWidget {
@@ -144,6 +145,8 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       appBar: AppBar(title: const Text('AUREN Gaming')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         _hero(context), const SizedBox(height: 12),
+        _extraGamesCard(context),
+        const SizedBox(height: 12),
         _statsCard(), const SizedBox(height: 12),
         _challengeCard(context), const SizedBox(height: 12),
         _seasonCard(), const SizedBox(height: 12),
@@ -582,6 +585,14 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       Text('Play. Connect. Challenge.', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
       SizedBox(height: 8), Text('ألعاب خفيفة داخل AUREN مرتبطة بالأصدقاء والتحديات والهوية الاجتماعية.')
     ]));
+
+  Widget _extraGamesCard(BuildContext context) => Card(child: ListTile(
+    leading: const CircleAvatar(child: Icon(Icons.extension_outlined)),
+    title: const Text('7 ألعاب إضافية'),
+    subtitle: const Text('Memory • Quiz • Reaction • Dice Duel • Higher/Lower • Word Scramble • 2048'),
+    trailing: const Icon(Icons.chevron_right),
+    onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenExtraGamesScreen())),
+  ));
 
   Widget _gameCard(BuildContext context, IconData icon, String title, String subtitle, Widget action) => Card(
     child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
