@@ -234,6 +234,14 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     final code=_arenaCodeController.text.trim().toUpperCase();if(code.length!=6)return;
     try{final r=await FirebaseFunctions.instance.httpsCallable('joinAurenArenaRoom').call({'inviteCode':code});if(!mounted)return;setState((){_arenaRoomId=r.data['roomId'];_arenaCode=r.data['inviteCode'];});}catch(_){if(mounted)_snack('رمز Arena غير صحيح أو الغرفة ممتلئة.');}
   }
+  Future<void> _arenaRematch() async {
+    if(_arenaRoomId==null)return;
+    try{
+      await FirebaseFunctions.instance.httpsCallable('requestAurenArenaRematch').call({'roomId':_arenaRoomId});
+      if(mounted)_snack('تم طلب إعادة المباراة.');
+    }catch(_){if(mounted)_snack('تعذر طلب إعادة المباراة.');}
+  }
+
   Future<void> _arenaMove(int action) async {
     if(_arenaRoomId==null)return;
     try{await FirebaseFunctions.instance.httpsCallable('playAurenArenaMove').call({'roomId':_arenaRoomId,'action':action});if(mounted)setState(()=>_arenaAction=action);}catch(_){if(mounted)_snack('ليست حركتك أو تعذر تسجيل الحركة.');}
@@ -294,6 +302,8 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
           if(players.length<2)const Text('بانتظار لاعب آخر…'),
           if(players.length==2&&!finished&&!ready)const Text('دور الخصم…'),
           if(finished)Text(matchWinner==uid?'🏆 فزت بالمباراة!':'🏆 انتهت المباراة — حظ أوفر!',style:const TextStyle(fontWeight:FontWeight.w900)),
+          if(finished)FilledButton.icon(onPressed:()=>_arenaRematch(),icon:const Icon(Icons.replay),label:const Text('إعادة المباراة')),
+          if(finished&&d['rematchReady'] is Map&&((d['rematchReady'] as Map)[uid] == true))const Text('تم طلب الإعادة • ننتظر الخصم…'),
           if(_arenaAction>=0&&!finished)const Text('تم إرسال الحركة • انتظر الخصم'),
           if(_arenaCode!=null)Text('رمز الدعوة: '+_arenaCode!),
           OutlinedButton(onPressed:()=>setState((){_arenaRoomId=null;_arenaCode=null;_arenaAction=-1;}),child:const Text('الخروج')),
