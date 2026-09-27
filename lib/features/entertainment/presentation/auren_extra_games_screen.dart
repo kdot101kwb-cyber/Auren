@@ -1,5 +1,7 @@
 import 'dart:math';
 import 'dart:async';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'auren_3d_world_screen.dart';
 
@@ -13,6 +15,8 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
   int _gamingXp = 0;
   int _gamesPlayed = 0;
   final Set<String> _gameBadges = {};
+  bool _rewardBusy = false;
+  String? _rewardMessage;
   final _games = const [
     ('Memory', Icons.grid_view_rounded),
     ('Quiz', Icons.quiz_outlined),
@@ -56,7 +60,10 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
           Expanded(child: _statTile(Icons.sports_esports, 'جولات', '\$_gamesPlayed')), const SizedBox(width: 8),
           Expanded(child: _statTile(Icons.workspace_premium, 'جوائز', '\${_gameBadges.length}')),
         ])),
-        Expanded(child: _buildSelectedGame()),
+        Expanded(child: Column(children: [
+          Expanded(child: _buildSelectedGame()),
+          _miniGameRewardCard(),
+        ])),
       ]),
     );
   }
@@ -76,6 +83,51 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
 
   void _awardGamingXp({int base = 10, String? badge}) {
     setState(() { _gamingXp += base; _gamesPlayed++; if (badge != null) _gameBadges.add(badge); });
+  }
+
+  String get _selectedGameId => _games[_selected].$1.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_').toLowerCase();
+
+  Future<void> _claimMiniGameReward() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || _rewardBusy) return;
+    setState(() { _rewardBusy = true; _rewardMessage = null; });
+    try {
+      final result = await FirebaseFunctions.instance.httpsCallable('claimAurenMiniGameReward').call(<String, dynamic>{
+        'gameId': _selectedGameId,
+        'score': 0,
+      });
+      final data = result.data is Map ? Map<String, dynamic>.from(result.data as Map) : <String, dynamic>{};
+      final claimed = data['claimed'] == true;
+      final xp = (data['xp'] as num?)?.toInt() ?? 0;
+      if (!mounted) return;
+      setState(() {
+        if (claimed) { _gamingXp += xp; _gamesPlayed++; }
+        _rewardMessage = claimed ? '🎉 +$xp XP — المكافأة اتسجلت.' : '⏳ جرّب بعد 5 دقائق لهذا النوع.';
+      });
+    } catch (_) {
+      if (mounted) setState(() => _rewardMessage = 'تعذر تسجيل المكافأة الآن.');
+    } finally {
+      if (mounted) setState(() => _rewardBusy = false);
+    }
+  }
+
+  Widget _miniGameRewardCard() {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(children: [
+          const Icon(Icons.workspace_premium_outlined, size: 20),
+          const SizedBox(width: 8),
+          Expanded(child: Text(_rewardMessage ?? 'أنهي جولة ثم استلم XP.')),
+          const SizedBox(width: 8),
+          FilledButton.tonal(
+            onPressed: _rewardBusy ? null : _claimMiniGameReward,
+            child: Text(_rewardBusy ? '...' : 'استلم XP'),
+          ),
+        ]),
+      ),
+    );
   }
 
   Widget _buildSelectedGame() {
