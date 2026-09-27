@@ -3428,6 +3428,31 @@ async function persistGeminiOutput({ uid, jobId, body }) {
     };
   }
 
+  const audioPart = parts.find((part) =>
+    part?.inlineData?.data &&
+    typeof part?.inlineData?.mimeType === 'string' &&
+    part.inlineData.mimeType.startsWith('audio/'),
+  );
+  if (audioPart) {
+    const mimeType = String(audioPart.inlineData.mimeType).slice(0, 80);
+    const buffer = Buffer.from(audioPart.inlineData.data, 'base64');
+    if (!buffer.length || buffer.length > 50 * 1024 * 1024) {
+      return { ok: false, message: 'حجم الصوت الناتج غير صالح للحفظ.' };
+    }
+    const ext = mimeType.includes('wav') ? 'wav' : mimeType.includes('ogg') ? 'ogg' : 'mp3';
+    const path = `entertainment_outputs/${uid}/${jobId}/output.${ext}`;
+    const file = storage.bucket().file(path);
+    await file.save(buffer, {
+      resumable: false,
+      metadata: { contentType: mimeType, cacheControl: 'private,max-age=3600' },
+    });
+    const [outputUrl] = await file.getSignedUrl({
+      action: 'read',
+      expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    });
+    return { ok: true, output: { type: 'audio', mimeType, storagePath: path, url: outputUrl } };
+  }
+
   const imagePart = parts.find((part) => part?.inlineData?.data && part?.inlineData?.mimeType);
   if (imagePart) {
     const mimeType = String(imagePart.inlineData.mimeType).slice(0, 80);
