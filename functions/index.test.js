@@ -411,3 +411,12 @@ test('Gaming move completion is server-owned and records finishedAt', () => {
   assert.match(fn, /finishedAt: winner \|\| isDraw \? FieldValue\.serverTimestamp\(\) : null/);
   assert.match(fn, /lastGameAt:Date\.now\(\)/);
 });
+
+
+test('Gemini operation tracker uses a scheduled server worker and never fabricates numeric progress', () => {
+  assert.match(source, /exports\.trackEntertainmentProviderJob = onSchedule/);
+  assert.match(source, /collectionGroup\('entertainmentCreationJobs'\)/);
+  assert.match(source, /providerStatus', 'in', \['submitted', 'processing'\]/);
+  assert.match(source, /providerResult: result\.body\?\.response \|\| result\.body\?\.result/);
+  assert.doesNotMatch(source, /progress: Math\.max\(1, Math\.min\(95/);
+});
