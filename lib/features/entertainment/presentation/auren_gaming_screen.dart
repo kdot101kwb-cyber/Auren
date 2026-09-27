@@ -18,6 +18,18 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   String? _roomId;
   String? _inviteCode;
   String _roomGameId = 'tic_tac_toe';
+  Future<void> _createConnectFourRoom() async {
+    final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null)return; setState(()=>_busy=true);
+    try{final room=await _service.createConnectFourRoom(uid);if(!mounted)return;setState(()=>{_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='connect_four';});}
+    catch(_){if(mounted)_snack('تعذر إنشاء غرفة Connect Four.');}finally{if(mounted)setState(()=>_busy=false);}
+  }
+  Future<void> _joinConnectFourRoom() async {
+    final uid=FirebaseAuth.instance.currentUser?.uid; final code=_codeController.text.trim().toUpperCase(); if(uid==null||code.length!=6)return; setState(()=>_busy=true);
+    try{final room=await _service.joinConnectFourRoom(uid,code);if(!mounted)return;setState(()=>{_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='connect_four';});}
+    catch(_){if(mounted)_snack('تعذر الانضمام إلى Connect Four.');}finally{if(mounted)setState(()=>_busy=false);}
+  }
+  Future<void> _playConnectFour(int column) async { if(_roomId==null)return; try{await _service.playConnectFourMove(roomId:_roomId!,column:column);}catch(_){if(mounted)_snack('تعذر تسجيل الحركة.');} }
+
   bool _busy = false;
   int _xp = 0;
   int _wins = 0;
@@ -137,7 +149,8 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         _seasonCard(), const SizedBox(height: 12),
         _achievementsCard(), const SizedBox(height: 12),        _rpsCard(context), const SizedBox(height: 12),
         if (_roomId == null) ...[_challengeCard(context), const SizedBox(height: 12)],
-        _leaderboardCard(), const SizedBox(height: 12),        if (_roomId == null) ...[_gameCard(context, Icons.sports_esports, 'RPS Multiplayer', 'حجر ورق مقص ضد لاعب حقيقي بنفس نظام غرف AUREN.', FilledButton.icon(onPressed: _busy ? null : _createRpsRoom, icon: const Icon(Icons.add), label: const Text('إنشاء غرفة RPS'))), const SizedBox(height: 12)],
+        _leaderboardCard(), const SizedBox(height: 12),        if (_roomId == null) ...[_gameCard(context, Icons.view_column, 'Connect Four Multiplayer', 'أربع قطع متتالية — تنافس مع لاعب حقيقي.', FilledButton.icon(onPressed: _busy ? null : _createConnectFourRoom, icon: const Icon(Icons.add), label: const Text('إنشاء غرفة'))), const SizedBox(height: 12)],
+        if (_roomId == null) ...[_gameCard(context, Icons.sports_esports, 'RPS Multiplayer', 'حجر ورق مقص ضد لاعب حقيقي بنفس نظام غرف AUREN.', FilledButton.icon(onPressed: _busy ? null : _createRpsRoom, icon: const Icon(Icons.add), label: const Text('إنشاء غرفة RPS'))), const SizedBox(height: 12)],
         if (_roomId == null) ...[_incomingChallengesCard(), const SizedBox(height: 12), _outgoingChallengesCard(), const SizedBox(height: 12)],
         if (_roomId == null) ...[
           _gameCard(context, Icons.grid_3x3_rounded, 'Tic-Tac-Toe',
@@ -172,7 +185,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
               final data = snap.data?.data();
               if (data == null) return const Text('الغرفة غير متاحة.');
               return Column(children: [
-                if (_roomGameId == 'rock_paper_scissors') _buildRpsRoom(context, data, uid) else _buildBoard(context, data, uid),
+                if (_roomGameId == 'rock_paper_scissors') _buildRpsRoom(context, data, uid) else if (_roomGameId == 'connect_four') _buildConnectFour(context, data, uid) else _buildBoard(context, data, uid),
                 const SizedBox(height: 10),
                 if (data['winner'] != null || data['draw'] == true)
                   FilledButton.icon(onPressed: () => _claimDailyChallenge(data), icon: const Icon(Icons.workspace_premium), label: const Text('استلام 25 XP')),
@@ -645,6 +658,23 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     }
   }
 
+  Widget _buildConnectFour(BuildContext context, Map<String,dynamic> data, String? uid) {
+    final board=List<String>.from((data['board'] as List<dynamic>? ?? const []).map((e)=>e.toString()));
+    final players=List<String>.from((data['playerUids'] as List<dynamic>? ?? const []).map((e)=>e.toString()));
+    final marks=data['marks'] is Map?Map<String,dynamic>.from(data['marks'] as Map):<String,dynamic>{};
+    final ready=players.length==2, mine=players.contains(uid), myMark=marks[uid]?.toString();
+    final winner=data['winnerUid']?.toString();
+    final status=winner!=null?(winner==uid?'فزت 🎉':'اللاعب الآخر فاز'):data['draw']==true?'تعادل 🤝':!ready?'في انتظار لاعب آخر':!mine?'أنت متفرج':data['turnUid']==uid?'دورك — '+(myMark??''): 'انتظر دور اللاعب الآخر';
+    return Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(children:[
+      Text(status,style:const TextStyle(fontWeight:FontWeight.w800,fontSize:18)),const SizedBox(height:10),
+      GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:42,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:7,crossAxisSpacing:4,mainAxisSpacing:4),itemBuilder:(context,i){
+        final v=i<board.length?board[i]:'';
+        return FilledButton(onPressed:ready&&winner==null&&data['draw']!=true?()=>_playConnectFour(i%7):null,style:FilledButton.styleFrom(padding:EdgeInsets.zero),child:Text(v=='R'?'🔴':v=='Y'?'🟡':'',style:const TextStyle(fontSize:20)));
+      }),
+      const SizedBox(height:8),const Text('اضغط أي خانة في العمود لإسقاط القطعة.')
+    ])));
+  }
+
   Widget _buildRpsRoom(BuildContext context, Map<String,dynamic> data, String? uid) {
     final players=List<String>.from((data['playerUids'] as List<dynamic>?? const []).map((e)=>e.toString()));
     final moves=data['rpsMoves'] is Map?Map<String,dynamic>.from(data['rpsMoves'] as Map):<String,dynamic>{};
@@ -750,6 +780,21 @@ class AurenGamingService {
       _db.collection('gaming_friend_challenges').where('toUid', isEqualTo: uid).where('status', isEqualTo: 'pending').limit(20).snapshots();
   Stream<QuerySnapshot<Map<String, dynamic>>> watchOutgoingFriendChallenges(String uid) =>
       _db.collection('gaming_friend_challenges').where('fromUid', isEqualTo: uid).limit(30).snapshots();
+
+  Future<AurenGamingRoom> createConnectFourRoom(String uid) async {
+    final ref=_db.collection('gaming_rooms').doc(); final invite=_makeCode();
+    final data={'gameId':'connect_four','hostUid':uid,'playerUids':[uid],'marks':{uid:'R'},'board':List<String>.filled(42,''),'rpsMoves':{},'winnerUid':null,'draw':false,'turnUid':uid,'status':'waiting','inviteCode':invite,'createdAt':FieldValue.serverTimestamp(),'updatedAt':FieldValue.serverTimestamp()};
+    await ref.set(data); await _db.collection('gaming_invites').doc(invite).set({'roomId':ref.id,'hostUid':uid,'inviteCode':invite,'gameId':'connect_four','createdAt':FieldValue.serverTimestamp()});
+    return AurenGamingRoom(ref.id,invite,data);
+  }
+  Future<AurenGamingRoom> joinConnectFourRoom(String uid,String code) async {
+    final inv=await _db.collection('gaming_invites').doc(code).get();
+    if(!inv.exists||inv.data()?['gameId']!='connect_four')throw StateError('رمز Connect Four غير صحيح.');
+    final roomId=inv.data()?['roomId']?.toString()??''; final ref=_db.collection('gaming_rooms').doc(roomId);
+    await _db.runTransaction((tx)async{final snap=await tx.get(ref);if(!snap.exists)throw StateError('الغرفة غير موجودة.');final d=snap.data()??{};final ps=List<String>.from((d['playerUids'] as List<dynamic>? ?? const []).map((e)=>e.toString()));if(ps.contains(uid))return;if(ps.length>=2)throw StateError('الغرفة ممتلئة.');ps.add(uid);tx.update(ref,{'playerUids':ps,'marks.$uid':'Y','status':'ready','updatedAt':FieldValue.serverTimestamp()});});
+    final snap=await ref.get();return AurenGamingRoom(roomId,code,snap.data()??{});
+  }
+  Future<void> playConnectFourMove({required String roomId,required int column})async{final callable=FirebaseFunctions.instance.httpsCallable('playConnectFourMove');await callable.call({'roomId':roomId,'column':column});}
 
   Future<AurenGamingRoom> createRpsRoom(String uid) async {
     final ref = _db.collection('gaming_rooms').doc();
