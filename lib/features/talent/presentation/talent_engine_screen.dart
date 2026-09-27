@@ -4,7 +4,8 @@ import '../../../services/talent/talent_engine_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenTalentEngineScreen extends StatefulWidget{
-  const AurenTalentEngineScreen({super.key});
+  final String? opportunityId; final String? opportunityTitle; final String? opportunityDescription; final List<String> opportunitySkills;
+  const AurenTalentEngineScreen({super.key,this.opportunityId,this.opportunityTitle,this.opportunityDescription,this.opportunitySkills=const []});
   @override State<AurenTalentEngineScreen> createState()=>_AurenTalentEngineScreenState();
 }
 class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
