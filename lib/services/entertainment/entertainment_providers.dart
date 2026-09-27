@@ -53,6 +53,33 @@ abstract class AurenEntertainmentProvider {
   Future<void> cancel(String externalJobId);
 }
 
+class AurenGeminiProvider implements AurenEntertainmentProvider {
+  @override
+  String get id => 'gemini';
+
+  @override
+  Set<AurenCreationCapability> get capabilities => {
+        AurenCreationCapability.video,
+        AurenCreationCapability.music,
+        AurenCreationCapability.voice,
+        AurenCreationCapability.image,
+        AurenCreationCapability.podcast,
+        AurenCreationCapability.world,
+      };
+
+  @override
+  Future<AurenGenerationResult> submit(AurenGenerationRequest request) async {
+    return const AurenGenerationResult(
+      accepted: true,
+      provider: 'gemini',
+      message: 'تم تجهيز المهمة للإرسال الآمن إلى Gemini عبر الخادم.',
+    );
+  }
+
+  @override
+  Future<void> cancel(String externalJobId) async {}
+}
+
 class AurenPlanningProvider implements AurenEntertainmentProvider {
   @override
   String get id => 'auren_ai';
@@ -79,6 +106,8 @@ class AurenEntertainmentProviderRegistry {
   AurenEntertainmentProviderRegistry({
     Iterable<AurenEntertainmentProvider> providers = const [],
   }) : _providers = {
+          'auren_ai': AurenPlanningProvider(),
+          'gemini': AurenGeminiProvider(),
           for (final provider in providers) provider.id: provider,
         };
 
