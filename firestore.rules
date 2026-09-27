@@ -75,6 +75,11 @@ service cloud.firestore {
     allow delete: if isOwner(userId);
   }
 
+  match /{path=**}/profile_modes/{modeId} {
+    allow list: if request.auth != null && resource.data.discoverable == true;
+    allow get: if request.auth != null && (resource.data.discoverable == true || request.auth.uid == resource.data.modeOwnerUid);
+  }
+
   match /users/{userId}/profile_modes/{modeId} {
     allow read: if request.auth != null
       && (request.auth.uid == userId || resource.data.discoverable == true);
