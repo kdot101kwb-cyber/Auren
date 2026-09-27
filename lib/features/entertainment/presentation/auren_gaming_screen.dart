@@ -156,8 +156,8 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
         const SizedBox(height: 12),
         _arenaSeasonCard(), const SizedBox(height: 12),
         _arenaRankingCard(), const SizedBox(height: 12),
-        _arenaHistoryCard(),
-        const SizedBox(height: 12),
+        _arenaHistoryCard(), const SizedBox(height: 12),
+        _arenaAchievementsCard(), const SizedBox(height: 12),
         _statsCard(), const SizedBox(height: 12),
         _challengeCard(context), const SizedBox(height: 12),
         _seasonCard(), const SizedBox(height: 12),
@@ -273,9 +273,11 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       });
   }
 
+  Widget _arenaAchievementsCard() { final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null)return const SizedBox.shrink(); const defs=[{'id':'first_arena','title':'أول دخول Arena','games':1,'wins':0,'reward':25,'icon':Icons.sports_martial_arts},{'id':'arena_winner','title':'أول انتصار Arena','games':0,'wins':1,'reward':50,'icon':Icons.emoji_events},{'id':'arena_five_wins','title':'5 انتصارات Arena','games':0,'wins':5,'reward':100,'icon':Icons.military_tech},{'id':'arena_ten_wins','title':'10 انتصارات Arena','games':0,'wins':10,'reward':200,'icon':Icons.local_fire_department},{'id':'arena_legend','title':'أسطورة Arena','games':0,'wins':25,'reward':500,'icon':Icons.workspace_premium}]; return StreamBuilder<DocumentSnapshot<Map<String,dynamic>>>(stream:FirebaseFirestore.instance.collection('users').doc(uid).collection('gaming_profile').doc('stats').snapshots(),builder:(context,snap){final d=snap.data?.data()??<String,dynamic>{};final games=(d['games'] as num?)?.toInt()??0;final wins=(d['arenaWins'] as num?)?.toInt()??0;final claimed=Map<String,dynamic>.from(d['arenaAchievements'] as Map? ?? {});return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('🎖️ Arena Achievements',style:TextStyle(fontWeight:FontWeight.w900,fontSize:18)),const SizedBox(height:8),...defs.map((a){final id=a['id'] as String,done=games>=(a['games'] as int)&&wins>=(a['wins'] as int),isClaimed=claimed[id]==true;return ListTile(contentPadding:EdgeInsets.zero,leading:CircleAvatar(child:Icon(a['icon'] as IconData,size:20)),title:Text(a['title'] as String),subtitle:Text('الجائزة: +${a['reward']} XP'),trailing:isClaimed?const Icon(Icons.verified_rounded):FilledButton.tonal(onPressed:done?()async{try{final r=await FirebaseFunctions.instance.httpsCallable('claimAurenArenaAchievement').call({'achievementId':id});if(mounted)_snack(r.data is Map&&r.data['claimed']==true?'🎉 تم استلام +${a['reward']} XP':'تم استلام الإنجاز مسبقاً.');}catch(_){if(mounted)_snack('تعذر استلام الجائزة الآن.');}}:null,child:Text(done?'استلام':'مقفل'));}).toList()] )));}); }
+
   Widget _arenaRankingCard() => Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     const Text('🏆 Arena Ranking',style:TextStyle(fontWeight:FontWeight.w900,fontSize:18)),const SizedBox(height:8),
-    StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(stream:FirebaseFirestore.instance.collectionGroup('gaming_profile').orderBy('arenaWins',descending:true).limit(10).snapshots(),builder:(context,snap){
+    StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(stream:FirebaseFirestore.instance.collectionGroup('stats').orderBy('arenaWins',descending:true).limit(10).snapshots(),builder:(context,snap){
       if(snap.hasError)return const Text('تعذر تحميل ترتيب Arena.'); final docs=snap.data?.docs??const [];
       if(docs.isEmpty)return const Text('ابدأ Arena لتظهر هنا.');
       return Column(children:[for(var i=0;i<docs.length;i++)ListTile(dense:true,leading:CircleAvatar(child:Text((i+1).toString())),title:Text(docs[i].data()['displayName']?.toString()??'لاعب AUREN'),trailing:Text(((docs[i].data()['arenaWins'] as num?)?.toInt()??0).toString()+' 🏆'))]);
