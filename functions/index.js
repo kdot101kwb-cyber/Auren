@@ -218,6 +218,8 @@ function aurenHttpsError(code, message) {
 }
 
 function actionIsExpired(data) {
+  const expiresAtMs = Number(data?.expiresAtMs || 0);
+  if (expiresAtMs > 0) return Date.now() >= expiresAtMs;
   const createdAtMs = data?.createdAt?.toMillis?.() || 0;
   return !createdAtMs || Date.now() - createdAtMs > AUREN_ACTION_TTL_MS;
 }
@@ -660,7 +662,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         requiresApproval: true,
         status: 'pending',
         createdAt: FieldValue.serverTimestamp(),
-        expiresAt: Timestamp.fromMillis(Date.now() + AUREN_ACTION_TTL_MS),
+        expiresAtMs: Date.now() + AUREN_ACTION_TTL_MS,
         updatedAt: FieldValue.serverTimestamp(),
         source: 'auren_ai_gateway',
         requestId,
