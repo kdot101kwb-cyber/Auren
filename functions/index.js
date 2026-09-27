@@ -3905,3 +3905,22 @@ exports.playAurenArenaMove = require('firebase-functions/v2/https').onCall(
     });
   },
 );
+
+exports.requestAurenArenaRematch = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1'}, async (request) => {
+    const uid=request.auth?.uid, roomId=String(request.data?.roomId||'').trim();
+    if(!uid||!roomId) throw new HttpsError('invalid-argument','بيانات غير صالحة.');
+    const ref=db.collection('arena_rooms').doc(roomId);
+    return db.runTransaction(async(tx)=>{
+      const snap=await tx.get(ref); if(!snap.exists) throw new HttpsError('not-found','الغرفة غير موجودة.');
+      const d=snap.data()||{}, players=Array.isArray(d.playerUids)?d.playerUids.map(String):[];
+      if(!players.includes(uid)||players.length!==2||d.status!=='finished') throw new HttpsError('failed-precondition','المباراة ليست جاهزة لإعادة اللعب.');
+      const ready={...(d.rematchReady||{}),[uid]:true};
+      const both=players.every(p=>ready[p]===true);
+      const update={rematchReady:ready,updatedAt:FieldValue.serverTimestamp()};
+      if(both) Object.assign(update,{hp:Object.fromEntries(players.map(p=>[p,100])),wins:Object.fromEntries(players.map(p=>[p,0])),energy:Object.fromEntries(players.map(p=>[p,3])),combo:Object.fromEntries(players.map(p=>[p,0])),round:1,turnUid:d.hostUid||players[0],status:'ready',lastAction:null,finishedAt:FieldValue.delete()});
+      tx.update(ref,update);
+      return {ok:true,waitingForOpponent:!both};
+    });
+  },
+);
