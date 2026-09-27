@@ -3672,3 +3672,94 @@ exports.entertainmentQueueHealth = require('firebase-functions/v2/https').onRequ
     });
   },
 );
+
+
+exports.createAurenArenaRoom = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'يجب تسجيل الدخول.');
+    const ref = db.collection('arena_rooms').doc();
+    const code = randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
+    await ref.set({
+      gameId: 'arena_duel', hostUid: uid, playerUids: [uid],
+      hp: {[uid]: 100}, wins: {[uid]: 0}, turnUid: uid,
+      status: 'waiting', inviteCode: code,
+      round: 1, lastAction: null, createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    await db.collection('arena_invites').doc(code).set({
+      roomId: ref.id, hostUid: uid, inviteCode: code,
+      gameId: 'arena_duel', createdAt: FieldValue.serverTimestamp(),
+    });
+    return { roomId: ref.id, inviteCode: code };
+  },
+);
+
+exports.joinAurenArenaRoom = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    const code = typeof request.data?.inviteCode === 'string' ? request.data.inviteCode.trim().toUpperCase() : '';
+    if (!uid || code.length !== 6) throw new HttpsError('invalid-argument', 'رمز الغرفة غير صحيح.');
+    const invite = await db.collection('arena_invites').doc(code).get();
+    if (!invite.exists || invite.data()?.gameId !== 'arena_duel') throw new HttpsError('not-found', 'الغرفة غير موجودة.');
+    const ref = db.collection('arena_rooms').doc(String(invite.data()?.roomId || ''));
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new HttpsError('not-found', 'الغرفة غير موجودة.');
+      const d = snap.data() || {};
+      const players = Array.isArray(d.playerUids) ? d.playerUids.map(String) : [];
+      if (players.includes(uid)) return;
+      if (players.length >= 2 || d.status !== 'waiting') throw new HttpsError('failed-precondition', 'الغرفة ممتلئة.');
+      players.push(uid);
+      const hp = {...(d.hp || {}), [uid]: 100};
+      const wins = {...(d.wins || {}), [uid]: 0};
+      tx.update(ref, {playerUids: players, hp, wins, status: 'ready', updatedAt: FieldValue.serverTimestamp()});
+    });
+    return {roomId: ref.id, inviteCode: code};
+  },
+);
+
+exports.playAurenArenaMove = require('firebase-functions/v2/https').onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    const roomId = typeof request.data?.roomId === 'string' ? request.data.roomId.trim() : '';
+    const action = Number(request.data?.action);
+    if (!uid || !roomId || !Number.isInteger(action) || action < 0 || action > 2) {
+      throw new HttpsError('invalid-argument', 'حركة غير صالحة.');
+    }
+    const ref = db.collection('arena_rooms').doc(roomId);
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new HttpsError('not-found', 'الغرفة غير موجودة.');
+      const d = snap.data() || {};
+      const players = Array.isArray(d.playerUids) ? d.playerUids.map(String) : [];
+      if (!players.includes(uid) || players.length !== 2 || d.status !== 'ready') {
+        throw new HttpsError('failed-precondition', 'اللعبة ليست جاهزة.');
+      }
+      if (d.turnUid !== uid) throw new HttpsError('failed-precondition', 'ليس دورك.');
+      const opponent = players.find((p) => p !== uid);
+      const hp = {...(d.hp || {})};
+      const wins = {...(d.wins || {})};
+      const damage = [22, 14, 0][action];
+      const defend = action === 2;
+      hp[opponent] = Math.max(0, Number(hp[opponent] || 100) - damage);
+      const round = Number(d.round || 1);
+      let status = 'ready';
+      let nextTurn = opponent;
+      let nextRound = round;
+      let lastAction = {uid, action, damage, at: Date.now()};
+      if (hp[opponent] <= 0) {
+        wins[uid] = Number(wins[uid] || 0) + 1;
+        hp[uid] = 100; hp[opponent] = 100;
+        nextRound = round + 1;
+        lastAction = {uid, action, damage, winnerUid: uid, at: Date.now()};
+      }
+      if (defend) lastAction = {uid, action, damage: 0, blocked: true, at: Date.now()};
+      tx.update(ref, {hp, wins, turnUid: nextTurn, round: nextRound, lastAction, updatedAt: FieldValue.serverTimestamp()});
+      return {ok: true, round: nextRound, winnerUid: lastAction.winnerUid || null};
+    });
+  },
+);
