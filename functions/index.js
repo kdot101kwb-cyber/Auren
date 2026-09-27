@@ -16,6 +16,92 @@ const AUREN_AI_API_KEY = defineSecret('AUREN_AI_API_KEY');
 const AUREN_ENTERTAINMENT_PROVIDER_URL = defineSecret(
   'AUREN_ENTERTAINMENT_PROVIDER_URL',
 );
+const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
+
+const GEMINI_MEDIA_MODELS = Object.freeze({
+  'فيديو': 'veo-3.1-fast-generate-preview',
+  'أغنية': 'lyria-3.5',
+  'قصة': 'gemini-3.1-flash-image',
+  'بودكاست': 'gemini-3.1-flash',
+  'عالم': 'gemini-3.1-flash-image',
+});
+
+function buildGeminiPrompt({ mode, mood, length, idea, plan, assets }) {
+  const steps = Array.isArray(plan) ? plan.join(' → ') : '';
+  const assetList = Array.isArray(assets) ? assets.join(', ') : '';
+  return [
+    'AUREN Entertainment production request.',
+    `Mode: ${mode}. Mood: ${mood}. Length: ${length}.`,
+    `Idea: ${idea}.`,
+    steps ? `Production plan: ${steps}.` : '',
+    assetList ? `Required assets: ${assetList}.` : '',
+    'Create original content. Do not imitate a living artist or copyrighted work style.',
+  ].filter(Boolean).join('\\n');
+}
+
+async function submitGeminiEntertainmentJob({ jobId, mode, mood, length, idea, plan, assets }) {
+  const apiKey = GEMINI_API_KEY.value().trim();
+  if (!apiKey) {
+    return { accepted: false, provider: 'gemini', message: 'مفتاح Gemini غير مفعّل بعد.' };
+  }
+
+  const model = GEMINI_MEDIA_MODELS[mode];
+  if (!model) {
+    return { accepted: false, provider: 'gemini', message: 'نوع إنشاء غير مدعوم حالياً.' };
+  }
+
+  const prompt = buildGeminiPrompt({ mode, mood, length, idea, plan, assets });
+  const isVideo = mode === 'فيديو';
+  const url = isVideo
+    ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:predictLongRunning`
+    : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-goog-api-key': apiKey,
+        'x-auren-job-id': jobId,
+      },
+      body: JSON.stringify(isVideo
+        ? { instances: [{ prompt }], parameters: { aspectRatio: '9:16', durationSeconds: '8', resolution: '720p' } }
+        : { contents: [{ parts: [{ text: prompt }] }] }),
+      signal: controller.signal,
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        accepted: false,
+        provider: 'gemini',
+        message: typeof body.error?.message === 'string'
+          ? body.error.message.slice(0, 500)
+          : `Gemini HTTP ${response.status}`,
+      };
+    }
+    const externalJobId = typeof body.name === 'string' ? body.name.slice(0, 256) : null;
+    return {
+      accepted: true,
+      provider: 'gemini',
+      externalJobId,
+      message: isVideo
+        ? 'تم إرسال الفيديو إلى Gemini/Veo 3.1.'
+        : 'تم إرسال مهمة الإنشاء إلى Gemini.',
+    };
+  } catch (error) {
+    return {
+      accepted: false,
+      provider: 'gemini',
+      message: error?.name === 'AbortError'
+        ? 'انتهت مهلة الاتصال بـ Gemini.'
+        : 'تعذر الاتصال بـ Gemini.',
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 async function submitEntertainmentProviderJob({ jobId, mode, mood, length, idea, plan, assets }) {
   const url = AUREN_ENTERTAINMENT_PROVIDER_URL.value().trim();
@@ -3109,7 +3195,7 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
     if (after.provider === 'auren_ai') return;
     if (after.providerStatus === 'submitted' || after.providerStatus === 'completed') return;
 
-    const result = await submitEntertainmentProviderJob({
+    const request = {
       jobId: event.params.jobId,
       mode: after.mode || '',
       mood: after.mood || '',
@@ -3117,7 +3203,10 @@ exports.dispatchEntertainmentToProvider = onDocumentUpdated(
       idea: after.idea || '',
       plan: Array.isArray(after.plan) ? after.plan : [],
       assets: Array.isArray(after.assets) ? after.assets : [],
-    });
+    };
+    const result = after.provider === 'gemini'
+      ? await submitGeminiEntertainmentJob(request)
+      : await submitEntertainmentProviderJob(request);
 
     const ref = event.data.after.ref;
     if (!result.accepted) {
