@@ -25,6 +25,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
     ('🧩 Logic Grid', Icons.extension), ('🔢 Number Matrix', Icons.grid_4x4), ('♟️ Strategy', Icons.psychology), ('🧠 Pattern Logic', Icons.hub), ('🔐 Code Breaker', Icons.lock_outline),
     ('🃏 Memory Match+', Icons.style), ('🧠 Sequence Recall', Icons.psychology_alt), ('🔵 Color Memory', Icons.circle), ('🧩 Pair Recall', Icons.grid_view), ('👀 Flash Memory', Icons.visibility),
     ('🔥 AUREN Arena', Icons.local_fire_department),
+    ('🗺️ Lost World', Icons.explore), ('🏜️ Desert Quest', Icons.landscape), ('🌊 Ocean Explorer', Icons.water), ('🌲 Wild Trails', Icons.forest), ('🚀 Beyond Earth', Icons.rocket_launch), ('🏙️ AUREN City', Icons.location_city),
   ];
 
   @override Widget build(BuildContext context) {
@@ -49,7 +50,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
         Expanded(child: _selected < 7 ? IndexedStack(index: _selected, children: const [
           _MemoryGame(), _QuizGame(), _ReactionGame(), _DiceDuelGame(),
           _HigherLowerGame(), _WordScrambleGame(), _TwentyFortyEightGame(),
-        ]) : _selected < 17 ? _TenMoreGamesPanel(initialIndex: _selected - 7) : _CategoryGamesPanel(initialIndex: _selected - 17)),
+        ]) : _selected < 17 ? _TenMoreGamesPanel(initialIndex: _selected - 7) : _selected < 38 ? _CategoryGamesPanel(initialIndex: _selected - 17) : _AdventureGamesPanel(initialIndex: _selected - 38)),
       ]),
     );
   }
@@ -416,5 +417,58 @@ class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
       default: body=Column(children:[Text('عدد النجوم: '+_count.toString(),style:const TextStyle(fontSize:26)),Wrap(spacing:8,children:[for(var n=2;n<=10;n++)FilledButton.tonal(onPressed:()=>_quick(n),child:Text(n.toString()))])]);
     }
     return ListView(padding:const EdgeInsets.all(16),children:[Text('21 لعبة جديدة',style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:8),Wrap(spacing:6,runSpacing:6,children:[for(var i=0;i<names.length;i++)ChoiceChip(label:Text(names[i]),selected:_game==i,onSelected:(_){setState(()=>_game=i);})]),const SizedBox(height:16),Card(child:Padding(padding:const EdgeInsets.all(16),child:body)),const SizedBox(height:12),FilledButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة'))]);
+  }
+}
+
+class _AdventureGamesPanel extends StatefulWidget {
+  final int initialIndex;
+  const _AdventureGamesPanel({required this.initialIndex});
+  @override State<_AdventureGamesPanel> createState() => _AdventureGamesPanelState();
+}
+
+class _AdventureGamesPanelState extends State<_AdventureGamesPanel> {
+  late int _game;
+  int _step = 0, _coins = 0, _energy = 10;
+  final _rng = Random();
+  @override void initState() { super.initState(); _game = widget.initialIndex; }
+  void _reset() => setState(() { _step = 0; _coins = 0; _energy = 10; });
+  void _act() { if (_energy <= 0) return; setState(() { _step++; _energy--; _coins += 10 + _rng.nextInt(21); }); }
+  @override Widget build(BuildContext context) {
+    const names = ['🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City'];
+    return ListView(padding: const EdgeInsets.all(16), children: [
+      Text(names[_game], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+      Text('المستوى ${1 + _step ~/ 5} • 🪙 $_coins • ⚡ $_energy'),
+      const SizedBox(height: 14),
+      Wrap(spacing: 6, runSpacing: 6, children: [for (var i=0;i<names.length;i++) ChoiceChip(label: Text(names[i]), selected: _game==i, onSelected: (_) => setState(() { _game=i; _step=0; }))]),
+      const SizedBox(height: 16),
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: _body())),
+      const SizedBox(height: 12),
+      FilledButton.icon(onPressed: _act, icon: const Icon(Icons.explore), label: Text(_button())),
+      const SizedBox(height: 8),
+      OutlinedButton.icon(onPressed: _reset, icon: const Icon(Icons.refresh), label: const Text('رحلة جديدة')),
+    ]);
+  }
+  String _button() {
+    if (_energy <= 0) return 'استرح وأعد الرحلة';
+    const b=['استكشف المنطقة','اعبر الصحراء','اكتشف المحيط','تتبع الدرب','استكشف الكوكب','تحرك داخل المدينة'];
+    return b[_game];
+  }
+  Widget _body() {
+    const titles=['العالم المفقود','رحلة الصحراء','مستكشف المحيط','دروب البرية','ما وراء الأرض'];
+    const desc=['استكشف الجزر، اعثر على الآثار وافتح المناطق السرية.','أوصل القافلة إلى الواحة واجمع الأدلة عن المدينة الأثرية.','أبحر ثم غص لاكتشاف الجزر والآثار الغارقة.','اتبع آثار الحيوانات واعثر على القمة والمناطق النادرة.','اجمع الموارد، طوّر المركبة واكتشف كوكباً مجهولاً.'];
+    const places=[['🏝️ جزيرة البداية','🏺 معبد قديم','💎 كهف البلور','🗿 المدينة المفقودة'],['🏕️ المخيم','💧 الواحة','🐪 طريق القافلة','🏺 المدينة المدفونة'],['🚤 الميناء','🏝️ الجزيرة','🤿 موقع الغوص','🗿 المدينة الغارقة'],['🌲 الغابة','🦌 مسار الحياة البرية','🏕️ المخيم','🏔️ القمة'],['🚀 محطة الإطلاق','🪐 الكوكب','⛏️ حقل الموارد','🛰️ القاعدة']];
+    if (_game < 5) return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(titles[_game], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)), const SizedBox(height: 6), Text(desc[_game]), const SizedBox(height: 12),
+      ...List.generate(4,(i)=>ListTile(contentPadding:EdgeInsets.zero,leading:Icon(_step>i?Icons.check_circle:Icons.radio_button_unchecked),title:Text(places[_game][i]),subtitle:Text(_step>i?'تم اكتشافها':'اكتشفها في الرحلة'))),
+    ]);
+    final x=_step%5,y=(_step~/5)%5;
+    return Column(children: [
+      const Text('🏙️ AUREN CITY',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),
+      const Text('مدينة مفتوحة مصغرة: استكشف، اعمل، اجمع المال وافتح مناطق جديدة.'),
+      const SizedBox(height:12),
+      GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:25,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:5,crossAxisSpacing:5,mainAxisSpacing:5),itemBuilder:(_,i){final px=i%5,py=i~/5;final player=px==x&&py==y;final mark=i==6?'🏢':i==18?'🏪':i==22?'🏦':i==12?'🏠':'·';return Container(alignment:Alignment.center,decoration:BoxDecoration(borderRadius:BorderRadius.circular(10),color:Theme.of(context).colorScheme.surfaceContainerHighest),child:Text(player?'🧑':mark,style:const TextStyle(fontSize:24)));}),
+      const SizedBox(height:10),
+      Wrap(spacing:8,children:[FilledButton.tonal(onPressed:_energy>0?_act:null,child:const Text('🚶 تحرك')),FilledButton.tonal(onPressed:_energy>0?()=>setState((){_coins+=50;_energy--;}):null,child:const Text('💼 مهمة')),FilledButton.tonal(onPressed:()=>setState(()=>_coins+=20),child:const Text('💰 دخل'))]),
+    ]);
   }
 }
