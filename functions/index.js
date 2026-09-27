@@ -391,6 +391,7 @@ exports.respondGamingFriendChallenge = onCall(
     }
 
     const challengeRef = db.collection('gaming_friend_challenges').doc(challengeId);
+    const challengeKeyRef = db.collection('gaming_friend_challenge_keys').doc();
 
     if (!accept) {
       await db.runTransaction(async (tx) => {
@@ -398,11 +399,19 @@ exports.respondGamingFriendChallenge = onCall(
         if (!snap.exists) throw new HttpsError('not-found', 'Challenge not found.');
         const data = snap.data() || {};
         if (data.toUid !== uid) throw new HttpsError('permission-denied', 'You cannot respond to this challenge.');
+        const keyRef = db.collection('gaming_friend_challenge_keys').doc(String(data.fromUid) + '_' + uid);
         if (data.status !== 'pending') throw new HttpsError('failed-precondition', 'Challenge is no longer available.');
         tx.update(challengeRef, {
           status: 'declined',
           updatedAt: FieldValue.serverTimestamp(),
         });
+        tx.set(keyRef, {
+          fromUid: data.fromUid,
+          toUid: uid,
+          status: 'declined',
+          challengeId,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, {merge: true});
       });
       return {accepted:false};
     }
@@ -427,6 +436,7 @@ exports.respondGamingFriendChallenge = onCall(
           if (data.toUid !== uid) {
             throw new HttpsError('permission-denied', 'You cannot respond to this challenge.');
           }
+          const keyRef = db.collection('gaming_friend_challenge_keys').doc(String(data.fromUid) + '_' + uid);
           if (data.status !== 'pending') {
             throw new HttpsError('failed-precondition', 'Challenge is no longer available.');
           }
@@ -467,6 +477,14 @@ exports.respondGamingFriendChallenge = onCall(
             roomId: roomRef.id,
             updatedAt: FieldValue.serverTimestamp(),
           });
+          tx.set(keyRef, {
+            fromUid,
+            toUid: uid,
+            status: 'accepted',
+            challengeId,
+            roomId: roomRef.id,
+            updatedAt: FieldValue.serverTimestamp(),
+          }, {merge: true});
         });
 
         return {
