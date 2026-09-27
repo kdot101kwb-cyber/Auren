@@ -89,7 +89,7 @@ function inferAurenAiTask(message) {
   if (!text) return 'chat';
 
   const translation = [
-    'ترجم', 'ترجمة', 'ترجم لي', 'translate', 'translation',
+    'ترجم', 'ترجمة', 'translate', 'translation',
     'بالانجليزي', 'بالإنجليزي', 'بالفرنسي', 'بالفرنسية',
     'بالعربي', 'بالعربية', 'باللغة',
   ];
@@ -110,6 +110,34 @@ function inferAurenAiTask(message) {
   if (has(summary)) return 'summarization';
   if (has(planning)) return 'planning';
   return 'chat';
+}
+
+function inferAurenIntent(message) {
+  const text = String(message || '').trim().toLowerCase();
+  if (!text) return { intent: 'chat', confidence: 1, requiresApproval: false, entities: {} };
+
+  const rules = [
+    { intent: 'save_memory', confidence: 0.96, patterns: ['احفظ في ذاكرتي', 'تذكر أن', 'تذكّر أن', 'remember that', 'save this to memory'] },
+    { intent: 'create_note', confidence: 0.94, patterns: ['اكتب ملاحظة', 'احفظ ملاحظة', 'create a note', 'save a note'] },
+    { intent: 'set_goal', confidence: 0.93, patterns: ['أضف هدف', 'اضف هدف', 'اعمل لي هدف', 'set a goal', 'create a goal'] },
+    { intent: 'plan_day', confidence: 0.92, patterns: ['خطط لي يومي', 'نظم يومي', 'نظّم يومي', 'رتب يومي', 'plan my day', 'organize my day'] },
+    { intent: 'find_opportunity', confidence: 0.90, patterns: ['فرصة عمل', 'وظيفة', 'وظائف', 'مشروع مناسب', 'find a job', 'job opportunity', 'find opportunities'] },
+    { intent: 'find_business', confidence: 0.90, patterns: ['مطعم', 'مستشفى', 'فندق', 'متجر', 'شركة', 'مصنع', 'restaurant', 'hotel', 'store', 'company', 'factory'] },
+    { intent: 'create_content', confidence: 0.89, patterns: ['اعمل فيديو', 'أنشئ فيديو', 'انشئ فيديو', 'اعمل صورة', 'اكتب قصة', 'اعمل أغنية', 'create a video', 'create an image', 'write a story', 'make a song'] },
+    { intent: 'chat', confidence: 0.60, patterns: [] },
+  ];
+
+  for (const rule of rules) {
+    if (rule.patterns.some((pattern) => text.includes(pattern))) {
+      return {
+        intent: rule.intent,
+        confidence: rule.confidence,
+        requiresApproval: ['save_memory', 'create_note', 'set_goal'].includes(rule.intent),
+        entities: {},
+      };
+    }
+  }
+  return { intent: 'chat', confidence: 0.60, requiresApproval: false, entities: {} };
 }
 
 exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
@@ -152,6 +180,9 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       tx.set(requestRef, {
         conversationId,
         status: 'processing',
+        task: typeof request.data?.task === 'string' ? request.data.task.trim().toLowerCase() : null,
+        inferredTask: inferAurenAiTask(message),
+        intent: inferredIntent?.intent || 'chat',
         startedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
@@ -221,6 +252,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     const task = allowedTasks.has(requestedTask)
       ? requestedTask
       : inferAurenAiTask(message);
+    const inferredIntent = inferAurenIntent(message);
 
     const providerCandidates = [
       'openrouter',
