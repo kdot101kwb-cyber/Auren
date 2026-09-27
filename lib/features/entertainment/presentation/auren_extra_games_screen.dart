@@ -41,10 +41,10 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
             ),
           ),
         ),
-        Expanded(child: IndexedStack(index: _selected, children: const [
+        Expanded(child: _selected < 7 ? IndexedStack(index: _selected, children: const [
           _MemoryGame(), _QuizGame(), _ReactionGame(), _DiceDuelGame(),
           _HigherLowerGame(), _WordScrambleGame(), _TwentyFortyEightGame(),
-        ])),
+        ]) : _TenMoreGamesPanel(initialIndex: _selected - 7)),
       ]),
     );
   }
@@ -346,12 +346,14 @@ class _GamePage extends StatelessWidget {
 }
 
 class _TenMoreGamesPanel extends StatefulWidget {
-  const _TenMoreGamesPanel();
+  final int initialIndex;
+  const _TenMoreGamesPanel({required this.initialIndex});
   @override State<_TenMoreGamesPanel> createState()=>_TenMoreGamesPanelState();
 }
 class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
   int _game=0,_score=0,_number=50,_target=50,_heads=0,_tails=0,_mathA=2,_mathB=3,_mathAnswer=5,_seconds=20,_targetScore=0,_hangWrong=0,_odd=0,_color=0,_count=5;
-  final _rng=Random(); final _input=TextEditingController(); String _word='AUREN',_last='AUREN',_msg='ابدأ اللعبة';
+  final _rng=Random(); final _input=TextEditingController();
+  @override void initState(){super.initState();_game=widget.initialIndex;} String _word='AUREN',_last='AUREN',_msg='ابدأ اللعبة';
   Timer? _timer;
   final _words=['AUREN','SUDAN','FLUTTER','MUSIC','PLANET'];
   void _reset(){_score=0;_number=50;_target=1+_rng.nextInt(100);_heads=0;_tails=0;_seconds=20;_targetScore=0;_hangWrong=0;_last='AUREN';_msg='ابدأ اللعبة';_newMath();_newRound();setState((){});}
