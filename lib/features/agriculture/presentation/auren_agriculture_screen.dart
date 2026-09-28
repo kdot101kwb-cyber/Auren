@@ -66,6 +66,11 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               ]),
             ),
           ),
+          FilledButton.icon(
+            onPressed: () => _askAi(context),
+            icon: const Icon(Icons.auto_awesome_rounded),
+            label: const Text('اسأل AUREN AI عن الحالة'),
+          ),
           const SizedBox(height: 16),
           const Text('السوق والفرص', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
@@ -118,6 +123,51 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
         subtitle: Text([r.type, r.location, r.status].where((x) => x.isNotEmpty).join(' • '), maxLines: 2, overflow: TextOverflow.ellipsis),
       ),
     )).toList());
+  }
+
+  Future<void> _askAi(BuildContext context) async {
+    final observations = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تحليل AUREN AI'),
+        content: TextField(
+          controller: observations,
+          minLines: 4,
+          maxLines: 8,
+          decoration: const InputDecoration(
+            hintText: 'اكتب الأعراض أو حالة المحصول/الحيوان أو المشكلة التي لاحظتها...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(onPressed: () async {
+            if (observations.text.trim().isEmpty) return;
+            try {
+              final advice = await _repo.requestAiAdvice(
+                type: _type == 'all' ? 'farm' : _type,
+                location: _location.text,
+                observations: observations.text,
+              );
+              if (context.mounted) Navigator.pop(context, advice);
+            } catch (_) {
+              if (context.mounted) Navigator.pop(context, 'تعذر الوصول إلى المستشار حالياً. حاول مرة أخرى.');
+            }
+          }, child: const Text('تحليل')),
+        ],
+      ),
+    );
+    observations.dispose();
+    if (!mounted || result == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('نتيجة AUREN AI'),
+        content: SingleChildScrollView(child: Text(result)),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('تم'))],
+      ),
+    );
   }
 
   Future<void> _addNote(BuildContext context, String uid) async {
