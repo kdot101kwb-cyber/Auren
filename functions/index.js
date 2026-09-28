@@ -3215,3 +3215,21 @@ exports.getAurenLiveSpectators = require('firebase-functions/v2/https').onCall({
  const snap=await db.collection('auren_game_lobbies').where('status','==','active').limit(20).get();
  return {matches:snap.docs.map(d=>({lobbyId:d.id,gameIndex:d.data().gameIndex,players:d.data().players||[],stateVersion:d.data().stateVersion||0}))};
 });
+
+exports.getAurenGamingMatchHistory = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
+ if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+ const snap=await db.collection('auren_game_match_history').where('players','array-contains',request.auth.uid).limit(50).get();
+ return {matches:snap.docs.map(d=>({id:d.id,...d.data()}))};
+});
+exports.createAurenGamingNotification = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
+ if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+ const to=String(request.data?.playerId||''); if(!to)throw aurenHttpsError('invalid-argument','playerId is required.');
+ const ref=db.collection('users').doc(to).collection('gaming_notifications').doc();
+ await ref.set({type:String(request.data?.type||'match'),title:String(request.data?.title||'Gaming'),body:String(request.data?.body||''),createdAt:FieldValue.serverTimestamp(),read:false});
+ return {id:ref.id};
+});
+exports.getAurenGamingNotifications = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
+ if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+ const snap=await db.collection('users').doc(request.auth.uid).collection('gaming_notifications').orderBy('createdAt','desc').limit(50).get();
+ return {notifications:snap.docs.map(d=>({id:d.id,...d.data()}))};
+});
