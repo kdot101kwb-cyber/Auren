@@ -195,6 +195,16 @@ class AurenTvService {
     return changed;
   }
 
+  Future<int> refreshEpgAndSyncReminders({AurenTvSource? source, int hours = 48}) async {
+    if (source != null) {
+      final url = source.epgUrl.trim().isNotEmpty ? source.epgUrl.trim() : (_sourceEpgUrls[source.id] ?? '');
+      if (url.isNotEmpty) _sourceEpgCaches[source.id] = await _loadEpg(url, metadataKey: source.id);
+    } else if (_epgUrl != null && _epgUrl!.isNotEmpty) {
+      _epgCache = await _loadEpg(_epgUrl!, metadataKey: 'global');
+    }
+    return syncAllEpgReminders(source: source);
+  }
+
   Future<bool> updateEpgReminder(AurenTvEpgSearchResult item, {required Duration before}) async {
     await removeEpgReminder(item);
     return addEpgReminder(item, before: before);
