@@ -3,6 +3,13 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+class AurenTvHealth {
+  final String status;
+  final int? latencyMs;
+  final DateTime checkedAt;
+  const AurenTvHealth({required this.status, required this.latencyMs, required this.checkedAt});
+}
+
 class AurenTvChannel {
   final String id, name, logo, country, language, category, url, tvgId;
   const AurenTvChannel({required this.id, required this.name, required this.logo, required this.country, required this.language, required this.category, required this.url, this.tvgId = ''});
@@ -115,6 +122,59 @@ class AurenTvService {
     _sourceEpgCaches.remove(id);
     final p2 = await SharedPreferences.getInstance();
     if (p2.getString(_defaultSourceKey) == id) await p2.remove(_defaultSourceKey);
+  }
+
+  static const _healthKey = 'auren_tv_channel_health';
+  final Map<String, AurenTvHealth> _healthCache = <String, AurenTvHealth>{};
+
+  Future<AurenTvHealth> checkChannelHealth(AurenTvChannel channel, {Duration timeout = const Duration(seconds: 6)}) async {
+    final started = DateTime.now();
+    try {
+      final r = await http.head(Uri.parse(channel.url), followRedirects: true).timeout(timeout);
+      final ms = DateTime.now().difference(started).inMilliseconds;
+      final ok = r.statusCode >= 200 && r.statusCode < 500;
+      final health = AurenTvHealth(status: ok ? 'online' : 'offline', latencyMs: ms, checkedAt: DateTime.now());
+      _healthCache[channel.id] = health;
+      await _saveHealth(channel.id, health);
+      return health;
+    } catch (_) {
+      final health = AurenTvHealth(status: 'offline', latencyMs: null, checkedAt: DateTime.now());
+      _healthCache[channel.id] = health;
+      await _saveHealth(channel.id, health);
+      return health;
+    }
+  }
+
+  Future<AurenTvHealth?> channelHealth(String channelId) async {
+    if (_healthCache.containsKey(channelId)) return _healthCache[channelId];
+    final p = await SharedPreferences.getInstance();
+    final raw = p.getString(_healthKey);
+    if (raw == null) return null;
+    try {
+      final all = jsonDecode(raw) as Map<String, dynamic>;
+      final m = all[channelId] as Map<String, dynamic>?;
+      if (m == null) return null;
+      return _healthCache[channelId] = AurenTvHealth(status: m['status']?.toString() ?? 'unknown', latencyMs: m['latencyMs'] is int ? m['latencyMs'] as int : null, checkedAt: DateTime.tryParse(m['checkedAt']?.toString() ?? '') ?? DateTime.now());
+    } catch (_) { return null; }
+  }
+
+  Future<void> _saveHealth(String id, AurenTvHealth health) async {
+    final p = await SharedPreferences.getInstance();
+    Map<String, dynamic> all = {};
+    try { all = (jsonDecode(p.getString(_healthKey) ?? '{}') as Map).cast<String, dynamic>(); } catch (_) {}
+    all[id] = {'status': health.status, 'latencyMs': health.latencyMs, 'checkedAt': health.checkedAt.toIso8601String()};
+    if (all.length > 300) all.remove(all.keys.first);
+    await p.setString(_healthKey, jsonEncode(all));
+  }
+
+  Future<void> autoRefreshSources({int limit = 500}) async {
+    final all = await sources();
+    for (final source in all.where((x) => x.enabled)) {
+      final cachedAt = _sourceChannelCacheTimes[source.id];
+      if (cachedAt == null || DateTime.now().difference(cachedAt) >= _sourceChannelCacheTtl) {
+        try { await loadSource(source, limit: limit); } catch (_) {}
+      }
+    }
   }
 
   Future<int> testSource(AurenTvSource source) async {
