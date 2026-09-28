@@ -119,7 +119,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   String _nextMoveId() => '${_multiplayer.playerId}-${++_localMoveCounter}';
 
   Map<String, dynamic> _gameState() => {
-    'gameIndex': widget.gameIndex,
+    'gameIndex': _gameId,
     'score': _score, 'round': _round, 'hp': _hp, 'streak': _streak,
     'energy': _energy, 'distance': _distance, 'message': _message,
     'ludo': _ludo, 'cpuLudo': _cpuLudo, 'ludoDice': _ludoDice, 'ludoPendingDice': _ludoPendingDice,
@@ -268,7 +268,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       await _multiplayer.initializeDominoMatch();
     } else if (widget.gameIndex == 2) {
       await _multiplayer.initializeUnoMatch();
-    } else if (widget.gameIndex >= 53 && widget.gameIndex <= 59) {
+    } else if (_gameId >= 53 && _gameId <= 59) {
       await _multiplayer.initializeFlagshipMatch();
     }
   }
@@ -312,7 +312,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         await _multiplayer.initializeDominoMatch();
       } else if (widget.gameIndex == 2) {
         await _multiplayer.initializeUnoMatch();
-      } else if (widget.gameIndex >= 3 && widget.gameIndex <= 9) {
+      } else if (_localIndex >= 3 && _localIndex <= 9) {
         await _multiplayer.initializeFlagshipMatch();
       }
       if (mounted) setState(() => _onlineStatus = 'Connected • ' + code.substring(0, min(6, code.length)).toUpperCase());
@@ -761,7 +761,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   void _samuraiTurn() { const m = ['سحب السيف','صدّ الضربة','خطوة جانبية','ضربة دقيقة']; final ok = _rng.nextDouble() > .25; _round++; if (ok) { _score += 25; _streak++; _message = '🥷 ' + m[_rng.nextInt(m.length)] + ' • ناجحة'; } else { _hp = max(0, _hp - 8); _streak = 0; _message = '🥷 تم صدّ الهجمة • -8 HP'; } }
   void _racingTurn() { final speed = 60 + _rng.nextInt(41), drift = _rng.nextDouble() > .35; _distance += speed ~/ 4; _energy = max(0, _energy - (drift ? 8 : 4)); _round++; _score += drift ? 25 : 10; _streak = drift ? _streak + 1 : 0; _message = '🏎️ سرعة ' + speed.toString() + ' km/h • ' + (drift ? 'انجراف مضبوط' : 'حافظ على المسار'); }
 
-  String get _button => ['ارمِ النرد','اسحب قطعة','اسحب بطاقة','تقدم في القضية','سدّد','ارمِ الكرة','هاجم','نفّذ المهمة','نفّذ الحركة','سباق!'][widget.gameIndex];
+  String get _button => ['ارمِ النرد','اسحب قطعة','اسحب بطاقة','تقدم في القضية','سدّد','ارمِ الكرة','هاجم','نفّذ المهمة','نفّذ الحركة','سباق!'][_localIndex];
 
   @override
   Widget build(BuildContext context) {
