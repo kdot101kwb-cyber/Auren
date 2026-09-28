@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
+import '../../../services/entertainment/auren_offline_media_service.dart';
 import 'auren_entertainment_job_detail_screen.dart';
 
 class AurenEntertainmentLibraryScreen extends StatelessWidget {
@@ -29,6 +30,22 @@ class AurenEntertainmentLibraryScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16,12,16,32),
         children: [
+          const Text('Offline', style: TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
+          const SizedBox(height:8),
+          FutureBuilder<List<AurenOfflineMedia>>(
+            future: AurenOfflineMediaService.instance.list(),
+            builder:(context,snapshot){
+              final items=snapshot.data??const <AurenOfflineMedia>[];
+              if(items.isEmpty)return const Card(child:ListTile(leading:Icon(Icons.download_for_offline_rounded),title:Text('لا توجد ملفات Offline بعد'),subtitle:Text('التنزيل يحفظ نسخة حقيقية داخل مساحة AUREN الخاصة بالتطبيق.')));
+              return Card(child:Column(children:items.map((item)=>ListTile(
+                leading:Icon(item.type=='audio'?Icons.music_note_rounded:Icons.movie_rounded),
+                title:Text(item.title,maxLines:1,overflow:TextOverflow.ellipsis),
+                subtitle:Text(item.type+' • '+(item.bytes/(1024*1024)).toStringAsFixed(1)+' MB'),
+                trailing:IconButton(icon:const Icon(Icons.delete_outline_rounded),onPressed:() async{await AurenOfflineMediaService.instance.delete(item.id);if(context.mounted)(context as Element).markNeedsBuild();}),
+              )).toList()));
+            },
+          ),
+          const SizedBox(height:18),
           const Text('إنتاجاتك', style: TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
           const SizedBox(height:8),
           StreamBuilder<List<Map<String,dynamic>>>(
