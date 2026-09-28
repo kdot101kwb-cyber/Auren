@@ -11,11 +11,11 @@ const db=admin.firestore(),LOCK_MS=6*60*1000,MAX_ATTEMPTS=5;
 const hasOutput=o=>Boolean(o&&(o.url||o.storagePath||o.externalId));
 
 async function claim(){
- const snap=await db.collectionGroup('entertainmentCreationJobs').where('mode','==','أغنية').where('musicProductionStage','in',['blueprint_ready','generation','processing']).orderBy('updatedAt','asc').limit(10).get();
+ const snap=await db.collectionGroup('entertainmentCreationJobs').where('mode','==','أغنية').where('musicProductionStage','in',['music_blueprint_ready','blueprint_ready','generation','processing']).limit(10).get();
  for(const item of snap.docs){
   const ok=await db.runTransaction(async tx=>{
    const fresh=await tx.get(item.ref);if(!fresh.exists)return false;const d=fresh.data()||{};
-   if(!['blueprint_ready','generation','processing'].includes(String(d.musicProductionStage||''))||Number(d.musicWorkerLockUntilMs||0)>Date.now()||Number(d.musicWorkerAttempts||0)>=MAX_ATTEMPTS)return false;
+   if(!['music_blueprint_ready','blueprint_ready','generation','processing'].includes(String(d.musicProductionStage||''))||Number(d.musicWorkerLockUntilMs||0)>Date.now()||Number(d.musicWorkerAttempts||0)>=MAX_ATTEMPTS)return false;
    tx.update(item.ref,{musicProductionStage:'processing',musicWorkerLockUntilMs:Date.now()+LOCK_MS,musicWorkerAttempts:admin.firestore.FieldValue.increment(1),updatedAt:admin.firestore.FieldValue.serverTimestamp()});return true;
   }); if(ok)return item.ref;
  }
@@ -23,6 +23,9 @@ async function claim(){
 }
 async function run(ref){
  const snap=await ref.get();if(!snap.exists)return;const job=snap.data()||{},bp=job.musicBlueprint||{};
+ if (String(job.musicProductionStage||'') === 'music_blueprint_ready') {
+  await ref.set({musicProductionStage:'blueprint_ready',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+ }
  if(!bp.title||!bp.concept)throw new Error('Music blueprint is incomplete.');
  const version=String(REPLICATE_MUSIC_CREATION_MODEL_VERSION.value()||'').trim();
  if(!version){await ref.set({musicProductionStage:'waiting_provider',musicProviderState:'model_configuration_required',musicWorkerLockUntilMs:0,lastError:'No backend music model version configured.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
@@ -37,7 +40,13 @@ async function run(ref){
  if(d.status==='output'){await ref.set({musicProductionStage:'ready',musicProductionStatus:'ready',musicWorkerLockUntilMs:0,musicArtifact:d.output,musicProductionQc:{version:1,result:'passed',taskCount:1},progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
  if(d.status==='failed'||Number(d.lockUntilMs||0)>Date.now())return;
  const token=String(REPLICATE_API_TOKEN.value()||'').trim();if(!token)throw new Error('No Replicate token configured.');
- await taskRef.set({status:'processing',attempts:admin.firestore.FieldValue.increment(1),lockUntilMs:Date.now()+LOCK_MS,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+ const locked=await db.runTransaction(async tx=>{
+  const fresh=await tx.get(taskRef),x=fresh.data()||{};
+  if(!fresh.exists||x.status==='failed'||Number(x.lockUntilMs||0)>Date.now())return false;
+  tx.set(taskRef,{status:'processing',lockUntilMs:Date.now()+LOCK_MS,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  return true;
+ });
+ if(!locked)return;
  const fresh=(await taskRef.get()).data()||{};
  if(fresh.externalJobId&&fresh.providerId){
   const p=await pollAurenProviderJob({provider:fresh.providerId,credentials:{token},externalJobId:String(fresh.externalJobId)});
