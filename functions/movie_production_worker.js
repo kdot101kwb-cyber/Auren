@@ -15,6 +15,21 @@ const MAX_ATTEMPTS = 5;
 
 function taskId(sceneNumber) { return 'movie_sc_' + Math.max(1, Number(sceneNumber || 1)); }
 function hasOutput(o) { return Boolean(o && (o.url || o.storagePath || o.externalId)); }
+async function validateArtifact(o) {
+  if (!hasOutput(o)) return {ok:false, reason:'missing_artifact'};
+  if (o.storagePath || o.externalId) return {ok:true,referenceOnly:true};
+  const url=String(o.url||'');
+  if (!/^https?:\\/\\//i.test(url)) return {ok:false,reason:'invalid_url'};
+  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),10000);
+  try {
+    const r=await fetch(url,{method:'HEAD',signal:controller.signal});
+    if(!r.ok)return {ok:false,reason:'http_'+r.status};
+    const type=String(r.headers.get('content-type')||'').toLowerCase();
+    if(type && !type.startsWith('video/'))return {ok:false,reason:'not_video',contentType:type};
+    return {ok:true,contentType:type||null};
+  } catch(e){ return {ok:false,reason:'artifact_unreachable'}; }
+  finally{clearTimeout(timer);}
+}
 
 function sceneInput(job, scene) {
   const blueprint = job.movieBlueprint || {};
@@ -88,9 +103,25 @@ async function run(ref) {
       await ref.set({movieProductionStage:'failed',status:'failed',movieWorkerLockUntilMs:0,lastError:'One or more movie scene tasks failed.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
     } else if(outputs.length===tasks.length) {
       const artifacts=outputs.sort((a,b)=>Number(a.data.sceneNumber||0)-Number(b.data.sceneNumber||0)).map(t=>({sceneNumber:t.data.sceneNumber,output:t.data.output||null}));
-      await ref.set({movieProductionStage:'ready',status:'ready',movieProductionStatus:'ready',movieWorkerLockUntilMs:0,
-        movieArtifacts:artifacts,movieProductionQc:{version:1,result:'passed',taskCount:tasks.length},
-        progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+      const checks=[];
+      for(const artifact of artifacts){ checks.push({sceneNumber:artifact.sceneNumber,check:await validateArtifact(artifact.output)}); }
+      const bad=checks.find(x=>!x.check.ok);
+      if(bad){
+        await ref.set({movieProductionStage:'qc_failed',movieProductionStatus:'qc_failed',movieWorkerLockUntilMs:0,
+          movieProductionQc:{version:2,result:'failed',taskCount:tasks.length,artifactChecks:checks},
+          lastError:'Movie artifact QC failed for scene '+bad.sceneNumber,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+      } else {
+        const assemblyId='movie_assembly_'+ref.id;
+        const manifest={version:1,format:'scene_sequence_v1',assemblyId,jobId:ref.id,sceneCount:artifacts.length,
+          scenes:artifacts.map(a=>({sceneNumber:a.sceneNumber,output:a.output}))};
+        await ref.collection('movieAssemblies').doc(assemblyId).set({
+          ...manifest,status:'manifest_ready',createdAt:admin.firestore.FieldValue.serverTimestamp(),updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+        },{merge:true});
+        await ref.set({movieProductionStage:'ready',status:'ready',movieProductionStatus:'ready',movieWorkerLockUntilMs:0,
+          movieArtifacts:artifacts,movieAssemblyId:assemblyId,movieAssemblyManifest:manifest,
+          movieProductionQc:{version:2,result:'passed',taskCount:tasks.length,artifactChecks:checks},
+          progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+      }
     }
     return;
   }
