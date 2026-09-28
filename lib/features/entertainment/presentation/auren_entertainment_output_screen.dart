@@ -5,10 +5,16 @@ import 'package:just_audio/just_audio.dart';
 
 class AurenEntertainmentOutputScreen extends StatefulWidget {
   final Map<String, dynamic> output;
+  final String? title;
+  final String? episodeLabel;
+  final VoidCallback? onNextEpisode;
 
   const AurenEntertainmentOutputScreen({
     super.key,
     required this.output,
+    this.title,
+    this.episodeLabel,
+    this.onNextEpisode,
   });
 
   @override
@@ -21,6 +27,7 @@ class _AurenEntertainmentOutputScreenState
   VideoPlayerController? _controller;
   AudioPlayer? _audioPlayer;
   Future<void>? _initializeFuture;
+  bool _muted = false;
 
   String get _type => widget.output['type']?.toString() ?? 'output';
   String get _url => widget.output['url']?.toString() ?? '';
@@ -52,8 +59,10 @@ class _AurenEntertainmentOutputScreenState
 
   @override
   Widget build(BuildContext context) {
-    final title = _isVideo
-        ? 'فيديو AUREN'
+    final title = widget.title?.isNotEmpty == true
+        ? widget.title!
+        : _isVideo
+            ? 'فيديو AUREN'
         : _isAudio
             ? 'موسيقى AUREN'
         : _type == 'image'
@@ -102,6 +111,9 @@ class _AurenEntertainmentOutputScreenState
                 child: VideoPlayer(controller),
               ),
               const SizedBox(height: 18),
+              if (widget.episodeLabel != null)
+                Text(widget.episodeLabel!, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 10),
               FilledButton.icon(
                 onPressed: () async {
                   if (controller.value.isPlaying) {
@@ -111,15 +123,28 @@ class _AurenEntertainmentOutputScreenState
                   }
                   if (mounted) setState(() {});
                 },
-                icon: Icon(
-                  controller.value.isPlaying
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                ),
-                label: Text(
-                  controller.value.isPlaying ? 'إيقاف' : 'تشغيل',
-                ),
+                icon: Icon(controller.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                label: Text(controller.value.isPlaying ? 'إيقاف' : 'تشغيل'),
               ),
+              const SizedBox(height: 8),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                IconButton(
+                  tooltip: _muted ? 'تشغيل الصوت' : 'كتم الصوت',
+                  onPressed: () {
+                    setState(() {
+                      _muted = !_muted;
+                      controller.setVolume(_muted ? 0 : 1);
+                    });
+                  },
+                  icon: Icon(_muted ? Icons.volume_off_rounded : Icons.volume_up_rounded),
+                ),
+                if (widget.onNextEpisode != null)
+                  IconButton(
+                    tooltip: 'الحلقة التالية',
+                    onPressed: widget.onNextEpisode,
+                    icon: const Icon(Icons.skip_next_rounded),
+                  ),
+              ]),
               const SizedBox(height: 10),
               OutlinedButton.icon(
                 onPressed: () => SharePlus.instance.share(
