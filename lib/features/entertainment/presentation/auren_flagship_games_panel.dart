@@ -104,7 +104,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   Map<String, dynamic> _gameState() => {
     'score': _score, 'round': _round, 'hp': _hp, 'streak': _streak,
     'energy': _energy, 'distance': _distance, 'message': _message,
-    'ludo': _ludo, 'cpuLudo': _cpuLudo, 'ludoDice': _ludoDice,
+    'ludo': _ludo, 'cpuLudo': _cpuLudo, 'ludoDice': _ludoDice, 'ludoPendingDice': _ludoPendingDice,
     'dominoHand': _dominoHand, 'dominoCpu': _dominoCpu,
     'dominoPool': _dominoPool, 'dominoBoard': _dominoBoard,
     'dominoPlayerTurn': _dominoPlayerTurn, 'dominoLeft': _dominoLeft,
@@ -134,6 +134,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       final cl = state['cpuLudo'];
       if (cl is List) for (var i = 0; i < min(4, cl.length); i++) _cpuLudo[i] = (cl[i] as num).toInt();
       _ludoDice = (state['ludoDice'] as num?)?.toInt() ?? _ludoDice;
+      _ludoPendingDice = (state['ludoPendingDice'] as num?)?.toInt();
       _dominoHand = List<String>.from(state['dominoHand'] ?? _dominoHand);
       _dominoCpu = List<String>.from(state['dominoCpu'] ?? _dominoCpu);
       _dominoPool = List<String>.from(state['dominoPool'] ?? _dominoPool);
