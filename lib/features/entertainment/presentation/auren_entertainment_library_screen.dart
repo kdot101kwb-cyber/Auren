@@ -49,12 +49,15 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
       final package=await EntertainmentRepository().getFinalEpisodePackage(jobId);
       final raw=package?['finalizedEpisodes'];
       if(raw is! Map || raw.isEmpty) throw Exception('package');
-      final result=await AurenOfflineMediaService.instance.downloadSeriesPackage(
+      await AurenOfflineMediaService.instance.enqueueSeriesPackage(
         finalizedEpisodes:Map<String,dynamic>.from(raw),
         jobId:jobId,
       );
+      await AurenOfflineMediaService.instance.processQueue(
+        onChanged:(_) { if(mounted) setState(() {}); },
+      );
       if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content:Text('تم تنزيل ${result.length} حلقة من «$title» للحفظ Offline.')),
+        SnackBar(content:Text('تمت إضافة حلقات «$title» لطابور التنزيل.')),
       );
     } catch (_) {
       if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -89,10 +92,11 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
         if(value is Map) value=value['url'] ?? value['output'];
         if(value is Map) value=value['url'];
         if(value is String && value.startsWith(RegExp(r'https?://'))) {
-          await _download(context,value,'$title • المشهد '+(i+1).toString(),'video',job['id']?.toString()??'');
+          await AurenOfflineMediaService.instance.enqueue(url:value,title:'$title • المشهد '+(i+1).toString(),type:'video',id:(job['id']?.toString()??'')+'_scene_'+i.toString());
           count++;
         }
       }
+      await AurenOfflineMediaService.instance.processQueue(onChanged:(_) { if(mounted) setState(() {}); });
       if(context.mounted && count>0) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تمت معالجة تنزيل $count مشهداً للحفظ Offline.')));
       }
@@ -100,7 +104,8 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
     }
     final url=_jobMediaUrl(job);
     if(url==null)return;
-    await _download(context,url,title,mode=='أغنية'?'audio':'video',job['id']?.toString()??'');
+    await AurenOfflineMediaService.instance.enqueue(url:url,title:title,type:mode=='أغنية'?'audio':'video',id:job['id']?.toString());
+    await AurenOfflineMediaService.instance.processQueue(onChanged:(_) { if(mounted) setState(() {}); });
   }
 
   @override
@@ -127,6 +132,28 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
                 subtitle:Text(item.type+' • '+(item.bytes/(1024*1024)).toStringAsFixed(1)+' MB'),
                 trailing:IconButton(icon:const Icon(Icons.delete_outline_rounded),onPressed:() async{await AurenOfflineMediaService.instance.delete(item.id);if(context.mounted)(context as Element).markNeedsBuild();}),
               )).toList()));
+            },
+          ),
+          const SizedBox(height:12),
+          FutureBuilder<List<Map<String,dynamic>>>(
+            future:AurenOfflineMediaService.instance.queue(),
+            builder:(context,snapshot){
+              final q=snapshot.data??const <Map<String,dynamic>>[];
+              final active=q.where((e)=>e['status']=='queued'||e['status']=='downloading'||e['status']=='failed').toList();
+              if(active.isEmpty)return const SizedBox.shrink();
+              return Card(child:Column(children:[
+                const ListTile(leading:Icon(Icons.downloading_rounded),title:Text('طابور التنزيل',style:TextStyle(fontWeight:FontWeight.w800))),
+                ...active.map((e){
+                  final p=((e['progress'] as num?)?.toDouble()??0).clamp(0,100);
+                  final id=e['id']?.toString()??'';
+                  return ListTile(
+                    title:Text(e['title']?.toString()??'AUREN Media',maxLines:1,overflow:TextOverflow.ellipsis),
+                    subtitle:Text((e['status']=='failed'?'فشل — سيُستأنف عند إعادة الطلب':e['status']=='downloading'?'جارٍ التنزيل':'في الانتظار')+' • '+p.toStringAsFixed(0)+'%'),
+                    leading:SizedBox(width:42,height:42,child:CircularProgressIndicator(value:p>0?p/100:null)),
+                    trailing:IconButton(icon:const Icon(Icons.close_rounded),onPressed:()=>AurenOfflineMediaService.instance.cancelQueued(id).then((_) {if(mounted)setState((){});})),
+                  );
+                })
+              ]));
             },
           ),
           const SizedBox(height:18),
