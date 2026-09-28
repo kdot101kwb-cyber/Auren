@@ -28,7 +28,9 @@ class AurenTvWatchTogetherService {
     final u=FirebaseAuth.instance.currentUser;if(u==null)return null;
     final q=await _rooms.where('inviteCode',isEqualTo:code.trim().toUpperCase()).limit(1).get();if(q.docs.isEmpty)return null;final ref=q.docs.first.reference;
     await _db.runTransaction((tx) async {final s=await tx.get(ref);if(!s.exists)throw StateError('Room unavailable');final d=s.data()!;final m=List<String>.from(d['memberIds'] as List?const []);if(!m.contains(u.uid)){if(m.length>=8)throw StateError('Room full');m.add(u.uid);tx.update(ref,{'memberIds':m,'status':'ready','updatedAt':FieldValue.serverTimestamp()});}});
-    return AurenTvWatchTogetherRoom.fromDoc(await ref.get());
+    final room = AurenTvWatchTogetherRoom.fromDoc(await ref.get());
+    try { await notifyActivity(room.id, type: 'joined'); } catch (_) {}
+    return room;
   }
   Stream<AurenTvWatchTogetherRoom> watch(String roomId)=>_rooms.doc(roomId).snapshots().where((s)=>s.exists).map(AurenTvWatchTogetherRoom.fromDoc);
 
