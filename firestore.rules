@@ -185,6 +185,30 @@ service cloud.firestore {
     allow delete: if isOwner(userId);
   }
 
+  match /watchTogetherRooms/{roomId} {
+    allow read: if request.auth != null;
+    allow create: if request.auth != null
+      && request.resource.data.hostUid == request.auth.uid
+      && request.resource.data.itemId is string
+      && request.resource.data.itemId.size() > 0
+      && request.resource.data.title is string
+      && request.resource.data.title.size() <= 200;
+    allow update: if request.auth != null
+      && (resource.data.hostUid == request.auth.uid
+          || request.auth.uid in resource.data.memberUids)
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['positionSeconds','isPlaying','status','updatedAt','memberUids'])
+      && request.resource.data.positionSeconds is number
+      && request.resource.data.positionSeconds >= 0;
+    allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+    match /members/{uid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role in ['host','viewer'];
+      allow update, delete: if request.auth != null && uid == request.auth.uid;
+    }
+  }
+
   match /users/{userId} {
     match /future_simulator/{scenarioId} { allow read: if isOwner(userId); allow create, update: if isOwner(userId) && scenarioId == 'current' && request.resource.data.keys().hasOnly(['scenarios','updatedAt']) && request.resource.data.scenarios is list && request.resource.data.scenarios.size() <= 10; allow delete: if isOwner(userId); }
 
