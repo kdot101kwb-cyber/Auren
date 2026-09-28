@@ -205,6 +205,9 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     try {
       final id = await _multiplayer.createLobby(gameIndex: widget.gameIndex);
       _watchLobby(id);
+      if (widget.gameIndex == 1) {
+        // Initialization is completed by the second player after the lobby becomes playable.
+      }
       if (!mounted) return;
       setState(() => _onlineStatus = 'Waiting • ' + id.substring(0, min(6, id.length)).toUpperCase());
     } catch (_) {
@@ -233,6 +236,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _watchLobby(code);
       if (widget.gameIndex == 0) {
         await _multiplayer.initializeLudoMatch();
+      } else if (widget.gameIndex == 1) {
+        await _multiplayer.initializeDominoMatch();
       }
       if (mounted) setState(() => _onlineStatus = 'Connected • ' + code.substring(0, min(6, code.length)).toUpperCase());
     } catch (_) {
@@ -307,7 +312,13 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       case 0:
         _ludoRoll();
         return;
-      case 1: _dominoDrawOrPlay(); break;
+      case 1:
+        if (_onlineMatch) {
+          _dominoOnlineDrawOrPlay();
+          return;
+        }
+        _dominoDrawOrPlay();
+        break;
       case 2: _unoDraw(); break;
       case 3: _crimeAdvance(); break;
       case 4: _footballTurn(); break;
@@ -451,7 +462,20 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         p[0] == _dominoRight || p[1] == _dominoRight;
   }
 
+  void _dominoPlayOnline(int index) {
+    if (!_isMyTurn || index < 0 || index >= _dominoHand.length) return;
+    if (!_dominoLegal(_dominoHand[index])) {
+      setState(() => _message = '🚫 هذه القطعة لا تطابق أي طرف');
+      return;
+    }
+    _multiplayer.submitDominoAction(
+      action: {'type':'play','pieceIndex':index},
+      expectedVersion:_stateVersion, moveId:_nextMoveId(),
+    );
+  }
+
   void _dominoPlay(int index) {
+    if (_onlineMatch) { _dominoPlayOnline(index); return; }
     if (!_isMyTurn || !_dominoPlayerTurn || index < 0 || index >= _dominoHand.length) return;
     final piece = _dominoHand[index];
     if (!_dominoLegal(piece)) {
@@ -501,6 +525,18 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     }
     if (_dominoCpu.isEmpty) _message = '🤖 الخصم أنهى يده — الجولة للخصم';
     _dominoPlayerTurn = true;
+  }
+
+  void _dominoOnlineDrawOrPlay() {
+    if (!_isMyTurn || !_dominoPlayerTurn) return;
+    final expectedVersion = _stateVersion;
+    if (_dominoHand.any(_dominoLegal)) {
+      setState(() => _message = '🁫 لديك قطعة قانونية — اخترها من يدك');
+      return;
+    }
+    _multiplayer.submitDominoAction(
+      action: {'type': 'draw'}, expectedVersion: expectedVersion, moveId: _nextMoveId(),
+    );
   }
 
   void _dominoDrawOrPlay() {
