@@ -2013,9 +2013,24 @@ service cloud.firestore {
         && request.resource.data.stateVersion == 0
         && request.resource.data.state is map
         && request.resource.data.state.size() == 0;
-      // Multiplayer writes are transactionally validated by the trusted game
-      // backend path. Clients cannot directly overwrite the authoritative state.
-      allow update: if false;
+      // Only the second player may transition a waiting lobby to playing.
+      // Match state itself remains immutable from clients; game moves go through
+      // the trusted Cloud Function.
+      allow update: if request.auth != null
+        && resource.data.status == 'waiting'
+        && resource.data.players is list
+        && resource.data.players.size() == 1
+        && request.resource.data.players is list
+        && request.resource.data.players.size() == 2
+        && request.resource.data.players[0] == resource.data.players[0]
+        && request.resource.data.players[1] == request.auth.uid
+        && request.resource.data.guestId == request.auth.uid
+        && request.resource.data.hostId == resource.data.hostId
+        && request.resource.data.gameIndex == resource.data.gameIndex
+        && request.resource.data.status == 'playing'
+        && request.resource.data.turnPlayerId == resource.data.turnPlayerId
+        && request.resource.data.stateVersion == resource.data.stateVersion
+        && request.resource.data.state == resource.data.state;
       allow delete: if request.auth != null
         && resource.data.hostId == request.auth.uid
         && resource.data.status != 'playing';
