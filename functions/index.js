@@ -852,6 +852,8 @@ exports.generateAurenSeriesBlueprint = require('firebase-functions/v2/https').on
       seriesBlueprint:generated,
       productionStage:'series_blueprint_ready',
       productionProvider:selectedProvider,
+      productionWorkerVersion:2,
+      productionStage:'series_blueprint_ready',
       progress:10,
       lastError:'',
       updatedAt:FieldValue.serverTimestamp(),
@@ -937,6 +939,7 @@ async function claimNextAurenSeriesJob() {
       const fresh = await tx.get(ref);
       if (!fresh.exists) return false;
       const data = fresh.data() || {};
+      if (Number(data.productionWorkerVersion || 0) === 2) return false;
       const stage = String(data.productionStage || '');
       const plan = aurenSeriesStagePlan(stage);
       if (plan.index < 0 || !plan.next || data.status === 'cancelled') return false;
@@ -1141,5 +1144,190 @@ exports.claimAurenSeriesRenderTask = onSchedule(
       lastError: '',
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge:true});
+  }
+);
+
+
+// AUREN Entertainment Production Worker v2.
+// Durable lifecycle: Planning -> Queue -> Generation -> Output -> QC.
+// Every stage is claimed transactionally and uses deterministic ids so a
+// retried/scheduled invocation cannot create duplicate work.
+const AUREN_PRODUCTION_V2_STAGES = Object.freeze([
+  'series_blueprint_ready',
+  'queued',
+  'generation',
+  'output',
+  'qc',
+  'ready',
+]);
+const AUREN_PRODUCTION_V2_LOCK_MS = 6 * 60 * 1000;
+const AUREN_PRODUCTION_V2_MAX_ATTEMPTS = 5;
+
+function aurenProductionV2TaskId(episodeNumber, sceneNumber) {
+  return 'ep' + Math.max(1, Number(episodeNumber || 1)) + '_sc' + Math.max(1, Number(sceneNumber || 1));
+}
+
+function aurenProductionV2BuildTasks(job) {
+  const scenes = Array.isArray(job?.scenes) ? job.scenes : [];
+  const style = String(job?.seriesBlueprint?.visualStyle || '').slice(0, 600);
+  return scenes.slice(0, 240).map((scene) => {
+    const episodeNumber = Math.max(1, Number(scene?.episodeNumber || 1));
+    const sceneNumber = Math.max(1, Number(scene?.sceneNumber || 1));
+    const id = aurenProductionV2TaskId(episodeNumber, sceneNumber);
+    const prompt = ('Original AUREN series scene. ' + String(scene?.beat || '').slice(0, 800) +
+      (style ? ' Visual direction: ' + style : '')).slice(0, 3000);
+    return {id, episodeNumber, sceneNumber, prompt};
+  });
+}
+
+async function claimAurenProductionV2Job() {
+  const snapshot = await db.collectionGroup('entertainmentCreationJobs')
+    .where('productionWorkerVersion', '==', 2)
+    .where('productionStage', 'in', ['series_blueprint_ready','queued','generation','output','qc'])
+    .orderBy('updatedAt', 'asc').limit(10).get();
+  for (const snap of snapshot.docs) {
+    const claimed = await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(snap.ref);
+      if (!fresh.exists) return false;
+      const data = fresh.data() || {};
+      const stage = String(data.productionStage || '');
+      if (!AUREN_PRODUCTION_V2_STAGES.includes(stage) || stage === 'ready' || data.status === 'cancelled') return false;
+      const lockUntil = Number(data.productionWorkerLockUntilMs || 0);
+      if (lockUntil > Date.now()) return false;
+      const attempts = Number(data.productionWorkerAttempts || 0);
+      if (attempts >= AUREN_PRODUCTION_V2_MAX_ATTEMPTS) return false;
+      tx.update(snap.ref, {
+        status: 'processing',
+        productionWorkerStage: stage,
+        productionWorkerLockUntilMs: Date.now() + AUREN_PRODUCTION_V2_LOCK_MS,
+        productionWorkerAttempts: FieldValue.increment(1),
+        productionWorkerClaimedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return true;
+    });
+    if (claimed) return snap.ref;
+  }
+  return null;
+}
+
+async function aurenProductionV2Run(ref) {
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const job = snap.data() || {};
+  const stage = String(job.productionWorkerStage || job.productionStage || '');
+  const common = {productionWorkerLockUntilMs: 0, updatedAt: FieldValue.serverTimestamp(), lastError: ''};
+
+  if (stage === 'series_blueprint_ready') {
+    const tasks = aurenProductionV2BuildTasks(job);
+    if (!tasks.length) throw new Error('No deterministic scene tasks are available.');
+    const batch = db.batch();
+    const tasksRef = ref.collection('productionTasks');
+    for (const task of tasks) {
+      batch.set(tasksRef.doc(task.id), {
+        jobId: ref.id, idempotencyKey: ref.id + ':' + task.id,
+        episodeNumber: task.episodeNumber, sceneNumber: task.sceneNumber,
+        type: 'video_clip', prompt: task.prompt, status: 'queued',
+        generationAttempts: 0, output: null, qc: null,
+        createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+      }, {merge:true});
+    }
+    batch.update(ref, {...common, productionStage:'queued', queueStatus:'queued', productionProgress:20,
+      productionTaskCount:tasks.length, generatedTaskCount:0, outputTaskCount:0, qcTaskCount:0});
+    await batch.commit();
+    return;
+  }
+
+  if (stage === 'queued') {
+    const taskSnap = await ref.collection('productionTasks').where('status','==','queued').limit(50).get();
+    if (!taskSnap.docs.length) {
+      await ref.set({...common, productionStage:'generation', queueStatus:'ready', productionProgress:35}, {merge:true});
+      return;
+    }
+    const batch = db.batch();
+    taskSnap.docs.forEach((doc) => batch.update(doc.ref, {
+      status:'generation', generationClaimedAt:FieldValue.serverTimestamp(),
+      generationLockUntilMs:Date.now()+AUREN_PRODUCTION_V2_LOCK_MS, updatedAt:FieldValue.serverTimestamp(),
+    }));
+    batch.update(ref, {...common, productionStage:'generation', queueStatus:'dispatched', productionProgress:35});
+    await batch.commit();
+    return;
+  }
+
+  if (stage === 'generation') {
+    const taskSnap = await ref.collection('productionTasks').where('status','==','generation').limit(50).get();
+    if (taskSnap.docs.length) {
+      // Generation is intentionally fail-closed: a task only becomes output
+      // after a real provider writes an output URL/id. No fake media is created.
+      await ref.set({...common, productionStage:'generation', productionProgress:40,
+        generationStatus:'waiting_provider', providerRequired:true}, {merge:true});
+      return;
+    }
+    const outputSnap = await ref.collection('productionTasks').where('status','==','output').limit(1).get();
+    if (outputSnap.empty) {
+      await ref.set({...common, productionStage:'generation', generationStatus:'waiting_provider'}, {merge:true});
+      return;
+    }
+    await ref.set({...common, productionStage:'output', productionProgress:75}, {merge:true});
+    return;
+  }
+
+  if (stage === 'output') {
+    const tasks = await ref.collection('productionTasks').limit(240).get();
+    if (!tasks.docs.length) throw new Error('Production output task set is empty.');
+    const allOutput = tasks.docs.every((doc) => {
+      const data = doc.data() || {};
+      return data.status === 'output' && data.output && (data.output.url || data.output.storagePath || data.output.externalId);
+    });
+    if (!allOutput) {
+      await ref.set({...common, productionStage:'output', outputStatus:'waiting_outputs', productionProgress:75}, {merge:true});
+      return;
+    }
+    await ref.set({...common, productionStage:'qc', outputStatus:'complete', productionProgress:88}, {merge:true});
+    return;
+  }
+
+  if (stage === 'qc') {
+    const tasks = await ref.collection('productionTasks').limit(240).get();
+    if (!tasks.docs.length) throw new Error('QC cannot run without production tasks.');
+    const failures = [];
+    tasks.docs.forEach((doc) => {
+      const data = doc.data() || {};
+      if (data.status !== 'output' || !data.output || !(data.output.url || data.output.storagePath || data.output.externalId)) {
+        failures.push(doc.id);
+      }
+    });
+    if (failures.length) {
+      await ref.set({...common, status:'failed', productionStage:'qc_failed', qcStatus:'failed',
+        qcFailures:failures.slice(0,50), productionProgress:88}, {merge:true});
+      return;
+    }
+    const qcId = 'qc_' + ref.id;
+    await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(ref);
+      if (!fresh.exists) return;
+      const data = fresh.data() || {};
+      if (data.productionStage !== 'qc') return;
+      tx.set(ref, {...common, status:'ready', productionStage:'ready', qcStatus:'passed',
+        qcId, productionProgress:100, readyAt:FieldValue.serverTimestamp()}, {merge:true});
+      tx.set(ref.collection('productionAudits').doc(qcId), {
+        idempotencyKey:qcId, result:'passed', taskCount:tasks.docs.length,
+        createdAt:FieldValue.serverTimestamp(),
+      }, {merge:true});
+    });
+  }
+}
+
+exports.runAurenSeriesProductionWorker = onSchedule(
+  {schedule:'every 2 minutes', timeZone:'UTC', region:'us-central1', timeoutSeconds:120, memory:'512MiB', concurrency:1},
+  async () => {
+    const ref = await claimAurenProductionV2Job();
+    if (!ref) return;
+    try {
+      await aurenProductionV2Run(ref);
+    } catch (error) {
+      await ref.set({status:'failed', productionStage:'production_failed', productionWorkerLockUntilMs:0,
+        lastError:String(error?.message || error).slice(0,700), updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    }
   }
 );
