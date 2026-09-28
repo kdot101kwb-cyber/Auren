@@ -420,3 +420,33 @@ test('Gemini operation tracker uses a scheduled server worker and never fabricat
   assert.match(source, /providerResult: result\.body\?\.response \|\| result\.body\?\.result/);
   assert.doesNotMatch(source, /progress: Math\.max\(1, Math\.min\(95/);
 });
+
+
+test('series production worker v2 has the durable Planning -> Queue -> Generation -> Output -> QC lifecycle', () => {
+  assert.match(source, /exports\\.runAurenSeriesProductionWorker/);
+  assert.match(source, /productionWorkerVersion:2/);
+  assert.match(source, /productionStage:'queued'/);
+  assert.match(source, /productionStage:'generation'/);
+  assert.match(source, /productionStage:'output'/);
+  assert.match(source, /productionStage:'qc'/);
+  assert.match(source, /productionStage:'ready'/);
+});
+
+test('series production worker claims are transactional and bounded against concurrent retries', () => {
+  assert.match(source, /const claimed = await db\\.runTransaction/);
+  assert.match(source, /productionWorkerLockUntilMs/);
+  assert.match(source, /productionWorkerAttempts/);
+  assert.match(source, /AUREN_PRODUCTION_V2_MAX_ATTEMPTS/);
+  assert.match(source, /concurrency:1/);
+});
+
+test('series production tasks use deterministic idempotency keys and never fabricate output', () => {
+  assert.match(source, /idempotencyKey:ref\\.id \+ ':' \+ task\\.id/);
+  assert.match(source, /status:'waiting_provider'/);
+  assert.match(source, /a real provider writes an output URL\/id/);
+  assert.match(source, /data\\.output\\.url \|\| data\\.output\\.storagePath \|\| data\\.output\\.externalId/);
+});
+
+test('legacy series worker does not claim v2 jobs', () => {
+  assert.match(source, /if \(Number\\(data\\.productionWorkerVersion \|\| 0\\) === 2\) return false/);
+});
