@@ -1418,9 +1418,13 @@ exports.initializeAurenUnoMatch = require('firebase-functions/v2/https').onCall(
    const snap=await tx.get(ref);if(!snap.exists)throw aurenHttpsError('not-found','Lobby not found.');
    const d=snap.data()||{},p=Array.isArray(d.players)?d.players.map(String):[];
    if(d.gameIndex!==52||d.status!=='playing'||p.length!==2||!p.includes(uid))throw aurenHttpsError('failed-precondition','UNO lobby is not ready.');
-   if(d.state&&Object.keys(d.state).length)return {accepted:true,initialized:false,stateVersion:Number(d.stateVersion||0)};
-   const host=String(d.hostId||p[0]),guest=String(d.guestId||p[1]);
-   tx.update(ref,{state:initialUno(host,guest),stateVersion:0,turnPlayerId:host,lastMoveId:null,updatedAt:FieldValue.serverTimestamp()});
+   const host=String(d.hostId||p[0]),guest=String(d.guestId||p[1]),serverRef=serverPath(db,id),serverSnap=await tx.get(serverRef);
+   if(serverSnap.exists)return {accepted:true,initialized:false,stateVersion:Number(d.stateVersion||0)};
+   const state=initialUno(host,guest),pub=publicState(52,state);
+   tx.set(serverRef,{state,updatedAt:FieldValue.serverTimestamp()});
+   tx.set(privatePath(db,id,host),{hand:state.unoHands[host],updatedAt:FieldValue.serverTimestamp()});
+   tx.set(privatePath(db,id,guest),{hand:state.unoHands[guest],updatedAt:FieldValue.serverTimestamp()});
+   tx.update(ref,{state:pub,stateVersion:0,turnPlayerId:host,lastMoveId:null,updatedAt:FieldValue.serverTimestamp()});
    return {accepted:true,initialized:true,stateVersion:0};
   });
  }
@@ -1440,8 +1444,13 @@ exports.submitAurenUnoAction = require('firebase-functions/v2/https').onCall(
    if(String(d.lastMoveId||'')===moveId)return {accepted:true,duplicate:true,stateVersion:v,turnPlayerId:d.turnPlayerId||null};
    if(d.turnPlayerId!==uid)throw aurenHttpsError('failed-precondition','It is not your turn.');
    if(v!==expected)throw aurenHttpsError('aborted','Game state is out of date.');
-   const next=applyUno(d.state,action,uid),turn=next.matchFinished?null:next.nextTurnPlayerId;delete next.nextTurnPlayerId;
-   tx.update(ref,{state:next,stateVersion:v+1,turnPlayerId:turn,lastMoveId:moveId,status:next.matchFinished?'finished':'playing',updatedAt:FieldValue.serverTimestamp()});
+   const serverRef=serverPath(db,id),serverSnap=await tx.get(serverRef);
+   if(!serverSnap.exists)throw aurenHttpsError('failed-precondition','UNO server state is missing.');
+   const next=applyUno(serverSnap.data().state,action,uid),turn=next.matchFinished?null:next.nextTurnPlayerId;delete next.nextTurnPlayerId;
+   const pub=publicState(52,next);
+   tx.set(serverRef,{state:next,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+   for(const player of p)tx.set(privatePath(db,id,player),{hand:Array.isArray(next.unoHands?.[player])?next.unoHands[player]:[],updatedAt:FieldValue.serverTimestamp()},{merge:true});
+   tx.update(ref,{state:pub,stateVersion:v+1,turnPlayerId:turn,lastMoveId:moveId,status:next.matchFinished?'finished':'playing',updatedAt:FieldValue.serverTimestamp()});
    return {accepted:true,duplicate:false,stateVersion:v+1,turnPlayerId:turn};
   });}catch(e){if(e?.code)throw e;throw aurenHttpsError('failed-precondition',String(e?.message||'UNO action rejected.'));}
  }
@@ -1461,9 +1470,16 @@ exports.initializeAurenDominoMatch = require('firebase-functions/v2/https').onCa
       const d=snap.data()||{}, players=Array.isArray(d.players)?d.players.map(String):[];
       if(d.gameIndex!==51||d.status!=='playing'||players.length!==2||!players.includes(uid))
         throw aurenHttpsError('failed-precondition','Domino lobby is not ready.');
-      if(d.state&&Object.keys(d.state).length) return {accepted:true,initialized:false,stateVersion:Number(d.stateVersion||0)};
       const host=String(d.hostId||players[0]), guest=String(d.guestId||players[1]);
-      tx.update(ref,{state:initialDomino(host,guest),stateVersion:0,turnPlayerId:host,lastMoveId:null,updatedAt:FieldValue.serverTimestamp()});
+      const serverRef=serverPath(db,id);
+      const serverSnap=await tx.get(serverRef);
+      if(serverSnap.exists) return {accepted:true,initialized:false,stateVersion:Number(d.stateVersion||0)};
+      const state=initialDomino(host,guest);
+      const pub=publicState(51,state);
+      tx.set(serverRef,{state,updatedAt:FieldValue.serverTimestamp()});
+      tx.set(privatePath(db,id,host),{hand:state.dominoHands[host],updatedAt:FieldValue.serverTimestamp()});
+      tx.set(privatePath(db,id,guest),{hand:state.dominoHands[guest],updatedAt:FieldValue.serverTimestamp()});
+      tx.update(ref,{state:pub,stateVersion:0,turnPlayerId:host,lastMoveId:null,updatedAt:FieldValue.serverTimestamp()});
       return {accepted:true,initialized:true,stateVersion:0};
     });
   }
@@ -1485,9 +1501,14 @@ exports.submitAurenDominoAction = require('firebase-functions/v2/https').onCall(
       if(String(d.lastMoveId||'')===moveId) return {accepted:true,duplicate:true,stateVersion:v,turnPlayerId:d.turnPlayerId||null};
       if(d.turnPlayerId!==uid) throw aurenHttpsError('failed-precondition','It is not your turn.');
       if(v!==expected) throw aurenHttpsError('aborted','Game state is out of date.');
-      const next=applyDomino(d.state,action,uid),turn=next.matchFinished?null:next.nextTurnPlayerId;
+      const serverRef=serverPath(db,id), serverSnap=await tx.get(serverRef);
+      if(!serverSnap.exists) throw aurenHttpsError('failed-precondition','Domino server state is missing.');
+      const next=applyDomino(serverSnap.data().state,action,uid),turn=next.matchFinished?null:next.nextTurnPlayerId;
       delete next.nextTurnPlayerId;
-      tx.update(ref,{state:next,stateVersion:v+1,turnPlayerId:turn,lastMoveId:moveId,status:next.matchFinished?'finished':'playing',updatedAt:FieldValue.serverTimestamp()});
+      const publicNext=publicState(51,next);
+      tx.set(serverRef,{state:next,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      for(const p of players) tx.set(privatePath(db,id,p),{hand:Array.isArray(next.dominoHands?.[p])?next.dominoHands[p]:[],updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      tx.update(ref,{state:publicNext,stateVersion:v+1,turnPlayerId:turn,lastMoveId:moveId,status:next.matchFinished?'finished':'playing',updatedAt:FieldValue.serverTimestamp()});
       return {accepted:true,duplicate:false,stateVersion:v+1,turnPlayerId:turn};
     });}catch(e){if(e?.code)throw e;throw aurenHttpsError('failed-precondition',String(e?.message||'Domino action rejected.'));}
   }
