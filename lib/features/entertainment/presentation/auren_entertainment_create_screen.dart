@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
 import 'auren_entertainment_job_detail_screen.dart';
+import 'auren_entertainment_library_screen.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
 
@@ -175,6 +176,14 @@ class _AurenEntertainmentCreateScreenState
       appBar: AppBar(
         title: Text(_editingDraftId == null ? 'AUREN Create Studio' : 'تعديل المسودة'),
         actions: [
+          IconButton(
+            tooltip: 'مكتبة إنتاجاتك',
+            icon: const Icon(Icons.video_library_rounded),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AurenEntertainmentLibraryScreen()),
+            ),
+          ),
           IconButton(
             tooltip: 'إنشاء مهمة إنتاج',
             icon: const Icon(Icons.rocket_launch_rounded),
