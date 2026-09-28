@@ -1445,7 +1445,7 @@ exports.runAurenSeriesProductionWorker = onSchedule(
   }
 );
 
-// Live provider execution bridge for Production Worker v2.
+// Post-assembly audio/music/subtitle provider worker.\nObject.assign(exports, require('./post_assembly_worker'));\n\n// Live provider execution bridge for Production Worker v2.
 Object.assign(exports, require('./live_production_worker'));
 
 
