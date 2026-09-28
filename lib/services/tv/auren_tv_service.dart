@@ -162,6 +162,39 @@ class AurenTvService {
     return true;
   }
 
+  Future<bool> syncEpgReminder(AurenTvEpgReminder reminder, {AurenTvSource? source}) async {
+    final oldStart = DateTime.tryParse(reminder.startIso);
+    if (oldStart == null) return false;
+    final schedule = await findChannelForEpgId(reminder.channelId, source: source);
+    if (schedule == null) return false;
+    final items = await smartScheduleForChannel(schedule, source: source, hours: 48);
+    final titleKey = _normalizeIdentity(reminder.title);
+    Map<String, String>? match;
+    for (final item in items) {
+      if (_normalizeIdentity(item['title'] ?? '') == titleKey) {
+        final candidate = DateTime.tryParse(item['startIso'] ?? '');
+        if (candidate != null && candidate.isAfter(DateTime.now().toUtc().subtract(const Duration(minutes: 30)))) {
+          match = item;
+          break;
+        }
+      }
+    }
+    if (match == null) return false;
+    final newStart = match['startIso'] ?? '';
+    if (newStart == reminder.startIso) return true;
+    await removeEpgReminder(AurenTvEpgSearchResult(channelId: reminder.channelId, title: reminder.title, startIso: reminder.startIso, stopIso: reminder.startIso, state: 'next'));
+    return addEpgReminder(AurenTvEpgSearchResult(channelId: reminder.channelId, title: match['title'] ?? reminder.title, startIso: newStart, stopIso: match['stopIso'] ?? newStart, state: match['state'] ?? 'next'));
+  }
+
+  Future<int> syncAllEpgReminders({AurenTvSource? source}) async {
+    final reminders = await epgReminders();
+    var changed = 0;
+    for (final reminder in reminders) {
+      if (await syncEpgReminder(reminder, source: source)) changed++;
+    }
+    return changed;
+  }
+
   Future<bool> updateEpgReminder(AurenTvEpgSearchResult item, {required Duration before}) async {
     await removeEpgReminder(item);
     return addEpgReminder(item, before: before);
