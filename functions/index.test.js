@@ -511,7 +511,7 @@ test('post-assembly plan covers audio, music, subtitles, thumbnail and trailer p
   assert.match(source,/audio: \{status:'waiting_provider'/);
   assert.match(source,/music: \{status:'waiting_provider'/);
   assert.match(source,/subtitles: \{status:'waiting_provider'/);
-  assert.match(source,/languages:\['ar','en'\]/);
+  assert.match(source,/languages:\['ar','en','fr','es','pt','de','it','tr','zh','ja','ko','hi'\]/);
   assert.match(source,/postAssemblyPlan/);
 });
 
