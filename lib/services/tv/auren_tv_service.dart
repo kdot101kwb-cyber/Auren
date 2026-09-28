@@ -41,6 +41,7 @@ class AurenTvService {
   Map<String, List<Map<String, String>>>? _epgCache;
   final Map<String, String> _sourceEpgUrls = <String, String>{};
   final Map<String, Map<String, List<Map<String, String>>>> _sourceEpgCaches = <String, Map<String, List<Map<String, String>>>>{};
+  final Map<String, List<AurenTvChannel>> _sourceChannelCaches = <String, List<AurenTvChannel>>{};
 
   static const _sourcesKey = 'auren_tv_sources';
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
@@ -78,17 +79,35 @@ class AurenTvService {
     await p.setStringList(_sourcesKey, current.map((x) => jsonEncode({'id': x.id, 'name': x.name, 'type': x.type, 'url': x.url, 'epgUrl': x.epgUrl, 'username': x.username})).toList());
     await _secure.delete(key: 'auren_tv_source_password_$id');
     _sourcesCache = current;
+    _sourceChannelCaches.remove(id);
+    _sourceEpgUrls.remove(id);
+    _sourceEpgCaches.remove(id);
   }
 
-  Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500}) async {
+  Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500, bool forceRefresh = false}) async {
+    if (!forceRefresh && _sourceChannelCaches.containsKey(source.id)) {
+      return _sourceChannelCaches[source.id]!.take(limit).toList();
+    }
     if (source.epgUrl.trim().isNotEmpty) {
       _sourceEpgUrls[source.id] = source.epgUrl.trim();
     }
-    if (source.type.toLowerCase() == 'xtream') {
-      return _fetchXtream(source, limit: limit);
-    }
+    final channels = source.type.toLowerCase() == 'xtream'
+        ? await _fetchXtream(source, limit: 500)
+        : await _loadM3uSource(source, limit: 500);
+    _sourceChannelCaches[source.id] = channels;
+    return channels.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> _loadM3uSource(AurenTvSource source, {int limit = 500}) async {
     if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
     return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV', limit: limit, sourceId: source.id);
+  }
+
+  Future<List<AurenTvChannel>> refreshSource(AurenTvSource source, {int limit = 500}) async {
+    _sourceChannelCaches.remove(source.id);
+    _sourceEpgCaches.remove(source.id);
+    _sourceEpgUrls.remove(source.id);
+    return loadSource(source, limit: limit, forceRefresh: true);
   }
 
 
@@ -118,7 +137,7 @@ class AurenTvService {
       final name = item['name']?.toString() ?? 'Channel';
       final ext = item['container_extension']?.toString() ?? 'ts';
       final logo = item['stream_icon']?.toString() ?? '';
-      final category = item['category_name']?.toString() ?? 'IPTV';
+      final category = _classifyCategory(name: name, category: item['category_name']?.toString() ?? 'IPTV');
       final tvgId = item['epg_channel_id']?.toString() ?? item['epg_id']?.toString() ?? '';
       final url = base + '/live/' + Uri.encodeComponent(source.username) + '/' + Uri.encodeComponent(source.password) + '/' + id + '.' + ext;
       out.add(AurenTvChannel(id: 'xtream-' + source.id + '-' + id, name: name, logo: logo, country: '', language: '', category: category, tvgId: tvgId, url: url));
@@ -360,6 +379,21 @@ class AurenTvService {
       }
       return result;
     } catch (_) { return {}; }
+  }
+
+  static String _classifyCategory({required String name, required String category}) {
+    final value = '$name $category'.toLowerCase();
+    if (RegExp(r'news|breaking|24/7|اخبار').hasMatch(value)) return 'News';
+    if (RegExp(r'sport|football|soccer|fifa|uefa|nba|fiba|tennis|espn').hasMatch(value)) return 'Sports';
+    if (RegExp(r'movie|film|cinema|movies').hasMatch(value)) return 'Movies';
+    if (RegExp(r'series|serial|drama|soap').hasMatch(value)) return 'Series';
+    if (RegExp(r'music|musical|mtv|vh1').hasMatch(value)) return 'Music';
+    if (RegExp(r'kids|children|nickelodeon|cartoon').hasMatch(value)) return 'Kids';
+    if (RegExp(r'anime|animation').hasMatch(value)) return 'Animation';
+    if (RegExp(r'documentary|documentaries').hasMatch(value)) return 'Documentary';
+    if (RegExp(r'comedy|humor|funny').hasMatch(value)) return 'Comedy';
+    if (RegExp(r'entertainment|variety|culture|lifestyle').hasMatch(value)) return 'Entertainment';
+    return category.trim().isEmpty ? 'General' : category.trim();
   }
 
   static DateTime? _epgDate(String value) {
