@@ -3149,6 +3149,7 @@ exports.getAurenSeasonChampion = require('firebase-functions/v2/https').onCall(
 exports.processAurenGamingSeasonRewards = require('firebase-functions/v2/https').onCall(
  {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true},
  async(request)=>{
+  if(!request.auth?.token?.admin)throw aurenHttpsError('permission-denied','Gaming season administration requires admin privileges.');
   if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
   const s=aurenGamingSeasonMeta(), gameIndex=Number(request.data?.gameIndex||53);
   if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex))throw aurenHttpsError('invalid-argument','Unsupported game.');
@@ -3238,7 +3239,7 @@ exports.getAurenGamingNotifications = require('firebase-functions/v2/https').onC
 
 exports.markAurenGamingNotificationsRead = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
- const uid=request.auth.uid, snap=await db.collection('auren_gaming_season_rewards').where('read','==',false).limit(50).get();
+ const uid=request.auth.uid, snap=await db.collection('users').doc(uid).collection('gaming_notifications').where('read','==',false).limit(50).get();
  const batch=db.batch(); snap.docs.forEach(d=>batch.set(d.ref,{read:true,readAt:FieldValue.serverTimestamp()},{merge:true})); await batch.commit();
  return {ok:true,count:snap.size};
 });
