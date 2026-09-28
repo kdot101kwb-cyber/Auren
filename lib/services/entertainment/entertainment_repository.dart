@@ -364,6 +364,24 @@ class EntertainmentRepository {
     }
   }
   /// Generates and persists the server-owned series blueprint for a creation job.
+  Future<Map<String, dynamic>> generateMovieBlueprint(String jobId) async {
+    final id = jobId.trim();
+    if (id.isEmpty) throw ArgumentError('jobId is required');
+    final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('generateAurenMovieBlueprint');
+    final response = await callable.call({'jobId': id});
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> generateMusicBlueprint(String jobId) async {
+    final id = jobId.trim();
+    if (id.isEmpty) throw ArgumentError('jobId is required');
+    final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('generateAurenMusicBlueprint');
+    final response = await callable.call({'jobId': id});
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, dynamic>> generateSeriesBlueprint(String jobId) async {
     final id = jobId.trim();
     if (id.isEmpty) throw ArgumentError('jobId is required');
