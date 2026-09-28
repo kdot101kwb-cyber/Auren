@@ -194,7 +194,6 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _watchLobby(id);
       if (!mounted) return;
       setState(() => _onlineStatus = 'Waiting • ' + id.substring(0, min(6, id.length)).toUpperCase());
-      await _multiplayer.seedState(_gameState());
     } catch (_) {
       if (mounted) setState(() => _onlineStatus = 'Online unavailable');
     }
@@ -219,6 +218,9 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         return;
       }
       _watchLobby(code);
+      if (widget.gameIndex == 0) {
+        await _multiplayer.initializeLudoMatch();
+      }
       if (mounted) setState(() => _onlineStatus = 'Connected • ' + code.substring(0, min(6, code.length)).toUpperCase());
     } catch (_) {
       if (mounted) setState(() => _onlineStatus = 'Online unavailable');
@@ -306,11 +308,23 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   void _ludoRoll() {
     if (!_isMyTurn || _ludoPendingDice != null || _ludoWinner() != null) return;
+    if (_onlineMatch) {
+      final expectedVersion = _stateVersion;
+      _multiplayer.submitLudoAction(
+        action: {'type': 'roll'},
+        expectedVersion: expectedVersion,
+        moveId: _nextMoveId(),
+      ).then((accepted) {
+        if (!accepted && mounted) {
+          setState(() => _message = '⚠️ رمية Ludo رفضها الخادم — حدّث المباراة وحاول مرة أخرى');
+        }
+      });
+      return;
+    }
     _ludoDice = 1 + _rng.nextInt(6);
     _ludoPendingDice = _ludoDice;
     _message = '🎲 رميت ' + _ludoDice.toString() + ' • اختر قطعة قانونية';
     setState(() {});
-    _syncGameState();
   }
 
   bool _ludoCanMove(int i, int dice) {
@@ -322,6 +336,20 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   void _ludoMove(int i) {
     if (!_isMyTurn) return;
+    if (_onlineMatch) {
+      if (_ludoPendingDice == null) return;
+      final expectedVersion = _stateVersion;
+      _multiplayer.submitLudoAction(
+        action: {'type': 'move', 'pieceIndex': i},
+        expectedVersion: expectedVersion,
+        moveId: _nextMoveId(),
+      ).then((accepted) {
+        if (!accepted && mounted) {
+          setState(() => _message = '⚠️ الحركة رفضها الخادم — قد تكون غير قانونية أو انتهى الدور');
+        }
+      });
+      return;
+    }
     final dice = _ludoPendingDice;
     if (dice == null || !_ludoCanMove(i, dice)) {
       _message = dice == null ? '🎲 ارمِ النرد أولاً' : '🚫 هذه القطعة لا يمكنها التحرك';
