@@ -3139,20 +3139,7 @@ exports.leaveAurenTournament = require('firebase-functions/v2/https').onCall(
 );
 
 
-function buildTournamentBracket(players) {
-  const p=[...players].slice(0,8);
-  while(p.length<8)p.push(null);
-  const makeMatch=(id,round,p1,p2)=>{
-    if(p1 && !p2)return {id,round,p1,p2:null,status:'finished',winnerId:p1,bye:true};
-    return {id,round,p1:p1||null,p2:p2||null,status:'pending',winnerId:null};
-  };
-  return {round:'quarterfinals',matches:[
-    makeMatch('qf1','quarterfinals',p[0],p[1]),
-    makeMatch('qf2','quarterfinals',p[2],p[3]),
-    makeMatch('qf3','quarterfinals',p[4],p[5]),
-    makeMatch('qf4','quarterfinals',p[6],p[7]),
-  ]};
-}
+const {buildTournamentBracket,createTournamentNextRound}=require('./tournament_rules');
 
 exports.startAurenTournament = require('firebase-functions/v2/https').onCall(
  {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
@@ -3167,9 +3154,12 @@ exports.startAurenTournament = require('firebase-functions/v2/https').onCall(
    if(d.status!=='bracket_ready'&&d.status!=='registration')return {started:false,status:d.status};
    if(players.length<2)throw aurenHttpsError('failed-precondition','At least two players are required.');
    const bracket=buildTournamentBracket(players);
-   const matches=bracket.matches;
-   tx.update(ref,{status:'active',round:'quarterfinals',bracket,matches,updatedAt:FieldValue.serverTimestamp()});
-   return {started:true,status:'active',round:'quarterfinals',matches};
+   const matches=players.length===2
+     ? [{id:'final_1',round:'final',p1:players[0],p2:players[1],status:'pending',winnerId:null}]
+     : bracket.matches;
+   const round=players.length===2?'final':'quarterfinals';
+   tx.update(ref,{status:'active',round,bracket:{...bracket,round,matches},matches,updatedAt:FieldValue.serverTimestamp()});
+   return {started:true,status:'active',round,matches};
   });
  }
 );
@@ -3241,8 +3231,7 @@ exports.submitAurenTournamentMatchResult = require('firebase-functions/v2/https'
      return {accepted:true,status:'completed',round:'champion',championId:winners[0]||null,matches};
     }
     const nextRound=round==='quarterfinals'?'semifinals':'final';
-    const generated=[];
-    for(let i=0;i<winners.length;i+=2)generated.push({id:nextRound.slice(0,2)+'_'+(i/2+1),round:nextRound,p1:winners[i],p2:winners[i+1]||null,status:winners[i+1]?'pending':'finished',winnerId:winners[i+1]?null:winners[i]});
+    const generated=createTournamentNextRound(round,winners);
     nextMatches=matches.concat(generated);
     round=nextRound;
    }
