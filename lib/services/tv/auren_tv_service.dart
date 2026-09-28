@@ -406,6 +406,40 @@ class AurenTvService {
   Future<Set<String>> favorites() async =>
       (await SharedPreferences.getInstance()).getStringList('auren_tv_favorites')?.toSet() ?? <String>{};
 
+  static String _normalizeIdentity(String value) {
+    return value.toLowerCase()
+        .replaceAll('أ', 'ا').replaceAll('إ', 'ا').replaceAll('آ', 'ا')
+        .replaceAll('ة', 'ه').replaceAll('ى', 'ي')
+        .replaceAll(RegExp(r'[ًٌٍَُِّْـ]'), '')
+        .replaceAll(RegExp(r'[^a-z0-9\\u0600-\\u06ff]+'), '')
+        .trim();
+  }
+
+  static String favoriteKey(AurenTvChannel channel) {
+    final tvg = _normalizeIdentity(channel.tvgId);
+    if (tvg.isNotEmpty) return 'tvg:$tvg';
+    return 'name:${_normalizeIdentity(channel.name)}|country:${_normalizeIdentity(channel.country)}';
+  }
+
+  Future<bool> isFavorite(AurenTvChannel channel) async {
+    final ids = await favorites();
+    return ids.contains(favoriteKey(channel)) || ids.contains(channel.id);
+  }
+
+  Future<void> setChannelFavorite(AurenTvChannel channel, bool value) async {
+    final p = await SharedPreferences.getInstance();
+    final ids = p.getStringList('auren_tv_favorites')?.toSet() ?? <String>{};
+    final key = favoriteKey(channel);
+    if (value) {
+      ids.add(key);
+      ids.remove(channel.id);
+    } else {
+      ids.remove(key);
+      ids.remove(channel.id);
+    }
+    await p.setStringList('auren_tv_favorites', ids.toList());
+  }
+
   Future<void> setFavorite(String id, bool value) async {
     final p = await SharedPreferences.getInstance();
     final ids = p.getStringList('auren_tv_favorites')?.toSet() ?? <String>{};
