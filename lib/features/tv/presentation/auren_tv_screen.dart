@@ -309,6 +309,77 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     }
   }
 
+  Future<void> _showWatchTogetherChat(AurenTvWatchTogetherRoom room) async {
+    final service = AurenTvWatchTogetherService.instance;
+    final controller = TextEditingController();
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (ctx) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(ctx).size.height * .72,
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(children: [
+                    Icon(Icons.chat_bubble_outline),
+                    SizedBox(width: 8),
+                    Text('Watch Together Chat', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ]),
+                ),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+                    stream: service.messages(room.id),
+                    builder: (ctx, snap) {
+                      final docs = snap.data?.docs ?? const <QueryDocumentSnapshot<Map<String,dynamic>>>[];
+                      if (docs.isEmpty) return const Center(child: Text('ابدأ المحادثة أثناء المشاهدة'));
+                      return ListView.builder(
+                        reverse: true,
+                        itemCount: docs.length,
+                        itemBuilder: (_, index) {
+                          final d = docs[index].data();
+                          final mine = d['senderUid'] == FirebaseAuth.instance.currentUser?.uid;
+                          return Align(
+                            alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: mine ? Theme.of(ctx).colorScheme.primaryContainer : Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(d['text'] as String? ?? ''),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(ctx).viewInsets.bottom + 8),
+                  child: Row(children: [
+                    Expanded(child: TextField(controller: controller, maxLength: 500, textInputAction: TextInputAction.send,
+                      onSubmitted: (_) async { final v=controller.text; controller.clear(); await service.sendMessage(room.id, v); },
+                      decoration: const InputDecoration(hintText: 'اكتب رسالة…', counterText: ''))),
+                    IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: () async { final v=controller.text; controller.clear(); await service.sendMessage(room.id, v); },
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
   Future<void> _showWatchTogetherStatus(AurenTvWatchTogetherRoom initial) async {
     final service = AurenTvWatchTogetherService.instance;
     if (!mounted) return;
@@ -330,6 +401,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 title: Text(room.title, style: const TextStyle(fontWeight: FontWeight.w800)),
                 subtitle: Text('الكود: ${room.inviteCode} • ${room.memberIds.length}/8 • ${room.status}'),
               ),
+              ListTile(leading: const Icon(Icons.chat_bubble_outline), title: const Text('الدردشة'), onTap: () { Navigator.pop(context); _showWatchTogetherChat(room); }),
               const Divider(),
               StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
                 stream: service.activity(room.id),
