@@ -130,10 +130,23 @@ class _AurenAiSeriesStudioScreenState extends State<AurenAiSeriesStudioScreen> {
           return;
         }
         final draftId = await _repo.saveEntertainmentDraft(uid, mode: 'مسلسل', mood: _tone, length: 'موسم $_episodes حلقات', idea: idea);
-        await _repo.createEntertainmentJob(uid, draftId: draftId, mode: 'مسلسل', mood: _tone, length: '$_episodes × $_episodeLength', idea: idea);
+        final jobId = await _repo.createEntertainmentJob(uid, draftId: draftId, mode: 'مسلسل', mood: _tone, length: '$_episodes × $_episodeLength', idea: idea);
+        var blueprintReady = false;
+        try {
+          final result = await _repo.generateSeriesBlueprint(jobId);
+          blueprintReady = result['status'] == 'series_blueprint_ready' ||
+              result['status'] == 'already_ready';
+        } catch (_) {
+          // Keep the durable job/project even when a provider is unavailable.
+        }
         final projectId = await _seriesService.createSeriesProject(uid, title: 'AUREN Series #$slot', idea: idea, genre: _genre, tone: _tone, episodeCount: int.parse(_episodes), episodeLength: _episodeLength);
         if (!mounted) return;
         Navigator.push(context, MaterialPageRoute(builder: (_) => SeriesProductionPipelineScreen(projectId: projectId)));
+        if (!blueprintReady && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم حفظ المشروع. تعذر توليد الـ Series Bible الآن؛ يمكنك إعادة المحاولة بعد ضبط مزود AI.')),
+          );
+        }
         return;
       }
       if (!mounted) return;
