@@ -1076,7 +1076,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           icon: const Icon(Icons.refresh),
         ),
     ]),
-    body: Column(children: [
+    body: Stack(children: [
+      Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
         child: SizedBox(
@@ -1231,7 +1232,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           child: Row(children: [Icon(Icons.wifi_off, size: 16), SizedBox(width: 6), Text('لا يوجد اتصال بالإنترنت حالياً.')]),
         ),
       if (loading) const LinearProgressIndicator(),
-      if (player?.value.isInitialized == true)
+      if (player?.value.isInitialized == true && !_pipMode)
         Column(children: [
           AspectRatio(aspectRatio: player!.value.aspectRatio, child: VideoPlayer(player!)),
           Row(children: [
@@ -1331,6 +1332,29 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           );
         },
       )),
+      ),
+      if (_pipMode && player?.value.isInitialized == true)
+        Positioned(
+          right: 12,
+          bottom: 18,
+          width: MediaQuery.of(context).size.width * .62,
+          child: Material(
+            elevation: 12,
+            borderRadius: BorderRadius.circular(14),
+            clipBehavior: Clip.antiAlias,
+            child: Container(
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), color: Theme.of(context).colorScheme.surface),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                AspectRatio(aspectRatio: player!.value.aspectRatio, child: VideoPlayer(player!)),
+                Row(children: [
+                  Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Text(playing?.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)))),
+                  IconButton(tooltip: 'إغلاق Mini Player', icon: const Icon(Icons.close, size: 18), onPressed: () => setState(() => _pipMode = false)),
+                  IconButton(icon: Icon(player!.value.isPlaying ? Icons.pause : Icons.play_arrow, size: 20), onPressed: () async { if (player!.value.isPlaying) { await player!.pause(); } else if (!lowData) { await player!.play(); } if (_watchTogetherRoom != null) await AurenTvWatchTogetherService.instance.sync(_watchTogetherRoom!, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying); if (mounted) setState(() {}); }),
+                ]),
+              ]),
+            ),
+          ),
+        ),
     ]),
   );
 }
