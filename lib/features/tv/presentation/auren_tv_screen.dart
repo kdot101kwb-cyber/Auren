@@ -19,6 +19,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String countryLabel = 'الدول';
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
+  bool autoLowData = true;
+  ConnectivityResult _connectionType = ConnectivityResult.wifi;
   bool _networkAvailable = true;
   DateTime? _lastRecoveryAt;
   int _bufferEvents = 0;
@@ -51,10 +53,21 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
     AurenTvService.instance.autoRefreshSources(limit: 150).catchError((_) {});
     _recoveryTimer = Timer.periodic(const Duration(seconds: 3), (_) => _monitorPlayback());
+    Connectivity().checkConnectivity().then((results) {
+      if (!mounted) return;
+      final type = results.isEmpty ? ConnectivityResult.none : results.first;
+      setState(() { _connectionType = type; if (autoLowData && (type == ConnectivityResult.mobile || type == ConnectivityResult.none)) lowData = true; });
+    });
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
       if (!mounted) return;
       final available = results.any((r) => r != ConnectivityResult.none);
-      setState(() => _networkAvailable = available);
+      final type = results.isEmpty ? ConnectivityResult.none : results.first;
+      setState(() {
+        _networkAvailable = available;
+        _connectionType = type;
+        if (autoLowData && (type == ConnectivityResult.mobile || type == ConnectivityResult.none)) lowData = true;
+        if (autoLowData && type == ConnectivityResult.wifi) lowData = false;
+      });
       if (available && player?.value.isInitialized == true && player!.value.isBuffering && !_recovering) {
         _recoverPlayback(reason: 'عاد الاتصال بالإنترنت');
       }
@@ -107,6 +120,11 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     final resolved = await AurenTvService.instance.bestAvailableChannel(c);
     if (!mounted || generation != _playerGeneration) return;
     final channel = resolved ?? c;
+    if (lowData) {
+      // Low Data mode avoids automatic playback and keeps the player from
+      // starting until the user explicitly taps Play.
+      if (mounted) setState(() => loading = false);
+    }
     await player?.dispose();
     if (!mounted || generation != _playerGeneration) return;
     final p = VideoPlayerController.networkUrl(Uri.parse(channel.url));
@@ -626,9 +644,13 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
           child: Align(alignment: AlignmentDirectional.centerStart, child: Text('Smart Buffer • $_bufferEvents توقف • ${_totalBuffering.inSeconds}s', style: const TextStyle(fontSize: 11))),
         ),
-      if (lowData) const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Text('وضع توفير البيانات: لا يبدأ التشغيل تلقائياً. جودة البث تعتمد على رابط القناة.', style: TextStyle(fontSize: 12)),
+      if (lowData) Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(children: [
+          const Icon(Icons.data_saver_on, size: 16), const SizedBox(width: 6),
+          Expanded(child: Text(autoLowData ? 'Low Data تلقائي • ${_connectionType == ConnectivityResult.mobile ? 'بيانات الهاتف' : 'اتصال محدود'} • التشغيل يبدأ عند الطلب' : 'Low Data • التشغيل يبدأ عند الطلب', style: const TextStyle(fontSize: 12))),
+          TextButton(onPressed: () => setState(() => autoLowData = !autoLowData), child: Text(autoLowData ? 'يدوي' : 'تلقائي')),
+        ]),
       ),
       if (!_networkAvailable)
         const Padding(
@@ -641,7 +663,11 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           AspectRatio(aspectRatio: player!.value.aspectRatio, child: VideoPlayer(player!)),
           Row(children: [
             Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(playing?.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis))),
-            IconButton(onPressed: () => setState(() => player!.value.isPlaying ? player!.pause() : player!.play()), icon: Icon(player!.value.isPlaying ? Icons.pause : Icons.play_arrow)),
+            IconButton(onPressed: () async {
+              if (player!.value.isPlaying) { await player!.pause(); }
+              else { await player!.play(); }
+              if (mounted) setState(() {});
+            }, icon: Icon(player!.value.isPlaying ? Icons.pause : Icons.play_arrow)),
           ]),
           if (playing != null)
             FutureBuilder<Map<String, String>?>(
