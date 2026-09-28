@@ -108,6 +108,23 @@ class AurenTvWatchTogetherService {
     return 'عضو';
   }
 
+  Future<void> sendSystemMessage(String roomId, String text) async {
+    final u = FirebaseAuth.instance.currentUser;
+    final value = text.trim();
+    if (u == null || value.isEmpty || value.length > 160) return;
+    final room = await _rooms.doc(roomId).get();
+    if (!room.exists) return;
+    final members = List<String>.from(room.data()?['memberIds'] as List? ?? const []);
+    if (!members.contains(u.uid)) return;
+    await _rooms.doc(roomId).collection('messages').add({
+      'type': 'system',
+      'senderUid': u.uid,
+      'senderName': 'AUREN',
+      'text': value,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> sendMessage(String roomId, String text) async {
     final u = FirebaseAuth.instance.currentUser;
     final value = text.trim();
@@ -117,6 +134,7 @@ class AurenTvWatchTogetherService {
     final members = List<String>.from(room.data()?['memberIds'] as List? ?? const []);
     if (!members.contains(u.uid)) return;
     await _rooms.doc(roomId).collection('messages').add({
+      'type': 'user',
       'senderUid': u.uid,
       'senderName': _displayName(),
       'text': value,
