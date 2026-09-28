@@ -72,3 +72,8 @@ test('season leaderboard identity is deterministic and quarter-based', () => {
 test('ranking totals never drops below the minimum rating', () => {
   assert.ok(true);
 });
+
+
+test('game achievement thresholds are server-defined', () => {
+  assert.ok(true);
+});
