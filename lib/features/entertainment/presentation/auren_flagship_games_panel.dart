@@ -131,9 +131,22 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _distance = (state['distance'] as num?)?.toInt() ?? _distance;
       _message = state['message']?.toString() ?? _message;
       final l = state['ludo'];
-      if (l is List) for (var i = 0; i < min(4, l.length); i++) _ludo[i] = (l[i] as num).toInt();
       final cl = state['cpuLudo'];
-      if (cl is List) for (var i = 0; i < min(4, cl.length); i++) _cpuLudo[i] = (cl[i] as num).toInt();
+      final hostId = state['ludoHostId']?.toString();
+      final guestId = state['ludoGuestId']?.toString();
+      final me = _multiplayer.playerId;
+      final myPieces = me == hostId ? l : cl;
+      final opponentPieces = me == hostId ? cl : l;
+      if (myPieces is List) {
+        for (var i = 0; i < min(4, myPieces.length); i++) {
+          _ludo[i] = (myPieces[i] as num).toInt();
+        }
+      }
+      if (opponentPieces is List) {
+        for (var i = 0; i < min(4, opponentPieces.length); i++) {
+          _cpuLudo[i] = (opponentPieces[i] as num).toInt();
+        }
+      }
       _ludoDice = (state['ludoDice'] as num?)?.toInt() ?? _ludoDice;
       _ludoPendingDice = (state['ludoPendingDice'] as num?)?.toInt();
       _dominoHand = List<String>.from(state['dominoHand'] ?? _dominoHand);
