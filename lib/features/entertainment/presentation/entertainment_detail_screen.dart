@@ -155,14 +155,14 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                 VideoProgressIndicator(_controller!, allowScrubbing: true, padding: const EdgeInsets.symmetric(vertical: 10)),
               const SizedBox(height: 18),
               Text(item.type.toUpperCase(), style: Theme.of(context).textTheme.labelLarge),
-              if (item.type == 'Global Series') ...[
+              if (item.type == 'Movie' || item.type == 'Global Series') ...[
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 6, children: [
                   if (item.country.isNotEmpty) Chip(label: Text(item.country)),
                   if (item.language.isNotEmpty) Chip(label: Text(item.language)),
                   if (item.year.isNotEmpty) Chip(label: Text(item.year)),
-                  if (item.seasons > 0) Chip(label: Text('${item.seasons} موسم')),
-                  if (item.episodes > 0) Chip(label: Text('${item.episodes} حلقة')),
+                  if (item.type == 'Global Series' && item.seasons > 0) Chip(label: Text('${item.seasons} موسم')),
+                  if (item.type == 'Global Series' && item.episodes > 0) Chip(label: Text('${item.episodes} حلقة')),
                   ...item.genres.map((g) => Chip(label: Text(g))),
                 ]),
               ],
@@ -170,6 +170,14 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
               Text(item.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Text(item.description, style: Theme.of(context).textTheme.bodyLarge),
+              if (item.type == 'Movie' && item.trailerUrl.isNotEmpty && item.trailerUrl != item.mediaUrl) ...[
+                OutlinedButton.icon(
+                  onPressed: _starting ? null : () => _openPlayer(item.trailerUrl, item),
+                  icon: const Icon(Icons.movie_filter_outlined),
+                  label: const Text('شاهد الـ Trailer'),
+                ),
+                const SizedBox(height: 12),
+              ],
               const SizedBox(height: 14),
               Row(children: [
                 StreamBuilder<bool>(
@@ -228,6 +236,33 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                   }).toList());
                 },
               ),
+              if (item.type == 'Movie') ...[
+                const SizedBox(height: 22),
+                const Text('أفلام مشابهة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 8),
+                StreamBuilder<List<AurenEntertainmentItem>>(
+                  stream: repo.watchItems(type: 'Movie'),
+                  builder: (context, recSnapshot) {
+                    final sourceGenres = item.genres.map((g) => g.toLowerCase()).toSet();
+                    final recommendations = (recSnapshot.data ?? const <AurenEntertainmentItem>[])
+                        .where((x) => x.id != item.id)
+                        .map((x) => MapEntry(x, x.genres.map((g) => g.toLowerCase()).toSet().intersection(sourceGenres).length))
+                        .where((x) => sourceGenres.isEmpty || x.value > 0)
+                        .toList()
+                      ..sort((a, b) => b.value.compareTo(a.value));
+                    return Column(children: recommendations.take(6).map((entry) {
+                      final x = entry.key;
+                      return Card(child: ListTile(
+                        leading: x.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie)) : CircleAvatar(backgroundImage: NetworkImage(x.imageUrl)),
+                        title: Text(x.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text([x.year, x.country].where((v) => v.isNotEmpty).join(' • ')),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: x.id))),
+                      ));
+                    }).toList());
+                  },
+                ),
+              ],
               const SizedBox(height: 22),
               FilledButton.icon(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد معرفة المزيد عن ' + item.title + '، واقترح لي محتوى مشابهًا له.'))),
