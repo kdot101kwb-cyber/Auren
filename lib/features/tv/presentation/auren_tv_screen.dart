@@ -53,7 +53,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override void initState() {
     super.initState();
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
-    AurenTvService.instance.autoRefreshSources(limit: 150).catchError((_) {});
+    AurenTvService.instance.autoRefreshSources(limit: 150).then((_) => AurenTvService.instance.refreshEpgAndSyncReminders()).catchError((_) {});
     _recoveryTimer = Timer.periodic(const Duration(seconds: 3), (_) => _monitorPlayback());
     Connectivity().checkConnectivity().then((results) {
       if (!mounted) return;
@@ -673,6 +673,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           onPressed: () async {
             try {
               await AurenTvService.instance.refreshSource(activeSource!, limit: lowData ? 150 : 500);
+              await AurenTvService.instance.refreshEpgAndSyncReminders(source: activeSource);
               if (mounted) setState(() {});
             } catch (_) {
               if (!mounted) return;
