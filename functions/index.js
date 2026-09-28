@@ -3203,3 +3203,15 @@ exports.finalizeAurenGamingSeason = require('firebase-functions/v2/https').onCal
   await badge.set({seasonChampion:true,seasonId:s.seasonId,seasonChampionGame:gameIndex,seasonChampionAt:FieldValue.serverTimestamp()},{merge:true});
   return {seasonId:s.seasonId,gameIndex,champion};
  });
+
+exports.getAurenGamingRivals = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
+ if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+ const snap=await db.collection('auren_game_rankings').get(), uid=request.auth.uid, rows=[];
+ snap.docs.forEach(g=>{const p=g.data()?.players?.[uid]; if(p)rows.push({gameIndex:Number(g.id),rating:p.rating||1000,wins:p.wins||0,matches:p.matches||0});});
+ rows.sort((a,b)=>b.rating-a.rating); return {playerId:uid,rivals:rows.slice(0,10)};
+});
+exports.getAurenLiveSpectators = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
+ if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+ const snap=await db.collection('auren_game_lobbies').where('status','==','active').limit(20).get();
+ return {matches:snap.docs.map(d=>({lobbyId:d.id,gameIndex:d.data().gameIndex,players:d.data().players||[],stateVersion:d.data().stateVersion||0}))};
+});
