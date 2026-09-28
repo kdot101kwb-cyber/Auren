@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:just_audio/just_audio.dart';
@@ -62,6 +63,8 @@ class _AurenEntertainmentOutputScreenState
   Timer? _controlsTimer;
   bool _showControls = true;
   bool _isFullscreen = false;
+  bool _lastPlayingState = false;
+  static const _speedPreferenceKey = 'auren_entertainment_playback_speed';
 
   void _resetControlsTimer() {
     _controlsTimer?.cancel();
@@ -75,6 +78,20 @@ class _AurenEntertainmentOutputScreenState
         }
       });
     }
+  }
+
+  Future<void> _loadPlaybackSpeed(VideoPlayerController controller) async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getDouble(_speedPreferenceKey);
+    final allowed = <double>[0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    final speed = saved != null && allowed.contains(saved) ? saved : 1.0;
+    await controller.setPlaybackSpeed(speed);
+    if (mounted) setState(() => _playbackSpeed = speed);
+  }
+
+  Future<void> _savePlaybackSpeed(double speed) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_speedPreferenceKey, speed);
   }
 
   Future<void> _toggleFullscreen() async {
@@ -199,12 +216,17 @@ class _AurenEntertainmentOutputScreenState
       final controller = VideoPlayerController.networkUrl(Uri.parse(_url));
       _controller = controller;
       controller.addListener(() {
-        if (controller.value.isPlaying) {
+        final playing = controller.value.isPlaying;
+        if (playing != _lastPlayingState) {
+          _lastPlayingState = playing;
           _resetControlsTimer();
         }
       });
       controller.addListener(_onVideoProgress);
-      _initializeFuture = controller.initialize().then((_) => _loadWatchProgress(controller));
+      _initializeFuture = controller.initialize().then((_) async {
+        await _loadPlaybackSpeed(controller);
+        await _loadWatchProgress(controller);
+      });
     } else if (_isAudio && _url.isNotEmpty) {
       _audioPlayer = AudioPlayer();
       _initializeFuture = _audioPlayer!.setUrl(_url).then((_) {});
@@ -216,7 +238,12 @@ class _AurenEntertainmentOutputScreenState
     _nextTimer?.cancel();
     _controlsTimer?.cancel();
     _saveWatchProgress(force: true);
-    _exitFullscreenIfNeeded();
+    _controlsTimer?.cancel();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     _controller?.removeListener(_onVideoProgress);
     _controller?.dispose();
     _audioPlayer?.dispose();
@@ -300,6 +327,7 @@ class _AurenEntertainmentOutputScreenState
     );
     if (speed != null && _controller != null) {
       await _controller!.setPlaybackSpeed(speed);
+      await _savePlaybackSpeed(speed);
       if (mounted) setState(() => _playbackSpeed = speed);
     }
   }
