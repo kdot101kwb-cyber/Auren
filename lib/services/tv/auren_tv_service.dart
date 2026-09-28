@@ -77,6 +77,10 @@ class AurenTvService {
   }
 
   Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500}) async {
+    if (source.epgUrl.trim().isNotEmpty) {
+      _epgUrl = source.epgUrl.trim();
+      _epgCache = null;
+    }
     if (source.type == 'xtream') return _fetchXtream(source, limit: limit);
     if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
     return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV');
