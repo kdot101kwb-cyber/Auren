@@ -136,7 +136,9 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
   Future<void> _showSchedule(AurenTvChannel channel) async {
-    final items = await AurenTvService.instance.schedule(channel.tvgId, hours: 24);
+    final items = activeSource != null
+        ? await AurenTvService.instance.scheduleForSourceChannel(activeSource!, channel, hours: 24)
+        : await AurenTvService.instance.scheduleForChannel(channel, hours: 24);
     if (!mounted) return;
     showModalBottomSheet<void>(
       context: context,
@@ -443,7 +445,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           ]),
           if (playing != null)
             FutureBuilder<Map<String, String>?>(
-              future: activeSource != null ? AurenTvService.instance.nowNextForSource(activeSource!, playing!.tvgId) : AurenTvService.instance.nowNext(playing!.tvgId),
+              future: AurenTvService.instance.nowNextForChannel(playing!, source: activeSource),
               builder: (context, snapshot) {
                 final guide = snapshot.data;
                 if (guide == null) return const Padding(padding: EdgeInsets.all(6), child: Text('دليل البرامج غير متاح لهذه القناة حالياً.'));
