@@ -2010,6 +2010,44 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
   }
 );
 
+/**
+ * Read-only serving layer for finalized AI-series packages.
+ * Only the owner of the creation job can retrieve the package.
+ */
+exports.getAurenFinalEpisodePackage = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const jobId = String(request.data?.jobId || '').trim();
+    if (!jobId || jobId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid jobId.');
+
+    const jobRef = db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc(jobId);
+    const jobSnap = await jobRef.get();
+    if (!jobSnap.exists) throw aurenHttpsError('not-found', 'Entertainment job not found.');
+
+    const assemblyId = 'assembly_' + jobId;
+    const assemblyRef = jobRef.collection('episodeAssemblies').doc(assemblyId);
+    const assemblySnap = await assemblyRef.get();
+    if (!assemblySnap.exists) throw aurenHttpsError('not-found', 'Final episode package is not available.');
+
+    const assembly = assemblySnap.data() || {};
+    if (assembly.finalPackageStatus !== 'ready' || assembly.postAssemblyStatus !== 'ready' ||
+        !assembly.finalPackage || typeof assembly.finalPackage !== 'object') {
+      throw aurenHttpsError('failed-precondition', 'Final episode package is not ready.');
+    }
+
+    return {
+      jobId,
+      assemblyId,
+      package: assembly.finalPackage,
+      finalizedEpisodes: assembly.finalizedEpisodes || {},
+      qcVersion: Number(assembly.postAssemblyQcVersion || 0),
+      packageVersion: Number(assembly.finalPackageVersion || 0),
+    };
+  }
+);
+
 
 // Legacy gateway for non-Ludo games. Ludo is action-authoritative.
 function validateAurenGameState(gameIndex, state) {
