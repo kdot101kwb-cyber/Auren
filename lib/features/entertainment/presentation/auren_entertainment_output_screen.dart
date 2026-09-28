@@ -70,6 +70,8 @@ class _AurenEntertainmentOutputScreenState
   String _quality = 'auto';
   bool _lowData = false;
   bool _switchingQuality = false;
+  bool _isBuffering = false;
+  bool _didBufferError = false;
 
   void _resetControlsTimer() {
     _controlsTimer?.cancel();
@@ -141,6 +143,9 @@ class _AurenEntertainmentOutputScreenState
                 await _saveLowDataPreference(v);
                 if (mounted) setState(() => _lowData = v);
                 Navigator.pop(sheetContext);
+                if (v && urls.containsKey('480p') && urls['480p'] != _url) {
+                  await _switchVideoQuality(urls['480p']!);
+                }
               },
             ),
           ],
@@ -175,7 +180,12 @@ class _AurenEntertainmentOutputScreenState
       }
       if (wasPlaying) await next.play();
       next.addListener(_onVideoProgress);
+      next.addListener(() {
+        if (!mounted) return;
+        setState(() => _isBuffering = next.value.isBuffering);
+      });
       _controller = next;
+      _didBufferError = false;
       await old.pause();
       await old.dispose();
       if (mounted) {
@@ -330,6 +340,16 @@ class _AurenEntertainmentOutputScreenState
       _controller = controller;
       controller.addListener(() {
         final playing = controller.value.isPlaying;
+        final buffering = controller.value.isBuffering;
+        if (buffering != _isBuffering && mounted) {
+          setState(() => _isBuffering = buffering);
+        }
+        if (controller.value.hasError && !_didBufferError && mounted) {
+          _didBufferError = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(controller.value.errorDescription ?? 'حدث خطأ أثناء تشغيل الفيديو.')),
+          );
+        }
         if (playing != _lastPlayingState) {
           _lastPlayingState = playing;
           _resetControlsTimer();
@@ -505,11 +525,23 @@ class _AurenEntertainmentOutputScreenState
                     icon: Icon(_isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded),
                   ),
                 ),
-              if (_switchingQuality)
-                const Positioned.fill(
+              if (_switchingQuality || _isBuffering)
+                Positioned.fill(
                   child: ColoredBox(
                     color: Color(0x55000000),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 10),
+                          Text(
+                            _switchingQuality ? 'تغيير الجودة…' : 'جاري تحميل الفيديو…',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               if (_showControls)
@@ -624,6 +656,14 @@ class _AurenEntertainmentOutputScreenState
                 IconButton(onPressed: () => _skipBy(-10), icon: const Icon(Icons.replay_10_rounded)),
                 IconButton(onPressed: () => _skipBy(30), icon: const Icon(Icons.forward_30_rounded)),
                 IconButton(onPressed: _changeSpeed, icon: const Icon(Icons.speed_rounded)),
+                if (_qualityUrls.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      _lowData ? 'Low Data' : (_quality == 'auto' ? 'Auto' : _quality),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
                 if (_qualityUrls.isNotEmpty)
                   IconButton(
                     tooltip: 'الجودة والبيانات',
