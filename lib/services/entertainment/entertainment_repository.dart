@@ -400,6 +400,29 @@ class EntertainmentRepository {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
+  Future<Map<String, dynamic>> createMusicProductionJob(
+    String uid, {
+    required String title,
+    required String prompt,
+    required String genre,
+    required String mood,
+    required String language,
+    int durationSeconds = 30,
+  }) async {
+    if (uid.trim().isEmpty) throw ArgumentError('uid is required');
+    final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('createAurenMusicProductionJob');
+    final response = await callable.call({
+      'title': title.trim().isEmpty ? 'AUREN Original Track' : title.trim(),
+      'prompt': prompt.trim(),
+      'genre': genre,
+      'mood': mood,
+      'language': language,
+      'durationSeconds': durationSeconds.clamp(10, 300),
+    });
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, dynamic>> generateMusicBlueprint(String jobId) async {
     final id = jobId.trim();
     if (id.isEmpty) throw ArgumentError('jobId is required');
