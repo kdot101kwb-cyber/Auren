@@ -34,13 +34,13 @@ function sceneInput(job, scene) {
 
 async function claim() {
   const snap = await db.collectionGroup('entertainmentCreationJobs')
-    .where('mode','==','فيلم').where('movieProductionStage','in',['blueprint_ready','generation','processing'])
-    .orderBy('updatedAt','asc').limit(10).get();
+    .where('mode','==','فيلم').where('movieProductionStage','in',['movie_blueprint_ready','blueprint_ready','generation','processing'])
+    .limit(10).get();
   for (const item of snap.docs) {
     const ok = await db.runTransaction(async tx => {
       const fresh=await tx.get(item.ref); if(!fresh.exists)return false;
       const d=fresh.data()||{}, stage=String(d.movieProductionStage||'');
-      if(!['blueprint_ready','generation','processing'].includes(stage))return false;
+      if(!['movie_blueprint_ready','blueprint_ready','generation','processing'].includes(stage))return false;
       if(Number(d.movieWorkerLockUntilMs||0)>Date.now())return false;
       if(Number(d.movieWorkerAttempts||0)>=MAX_ATTEMPTS)return false;
       tx.update(item.ref,{movieProductionStage:'processing',movieWorkerLockUntilMs:Date.now()+LOCK_MS,
@@ -55,6 +55,9 @@ async function claim() {
 async function run(ref) {
   const snap=await ref.get(); if(!snap.exists)return;
   const job=snap.data()||{}, blueprint=job.movieBlueprint||{};
+  if (String(job.movieProductionStage||'') === 'movie_blueprint_ready') {
+    await ref.set({movieProductionStage:'blueprint_ready',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  }
   const scenes=Array.isArray(blueprint.scenes)?blueprint.scenes.slice(0,60):[];
   if(!scenes.length) throw new Error('Movie blueprint has no scenes.');
   const version=String(REPLICATE_MOVIE_MODEL_VERSION.value()||'').trim();
