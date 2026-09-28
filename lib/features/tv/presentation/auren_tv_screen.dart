@@ -385,6 +385,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     Timer? typingTimer;
     if (_watchTogetherRoom == room.id) {
       setState(() => _watchTogetherUnreadCount = 0);
+      unawaited(service.markMessagesRead(room.id, lastMessageId: _watchTogetherLastMessageId));
     }
     try {
       await showModalBottomSheet(
@@ -419,10 +420,18 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 ),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+                    stream: service.readReceipts(room.id),
+                    builder: (ctx, receiptsSnap) {
+                      final receipts = receiptsSnap.data?.docs ?? const <QueryDocumentSnapshot<Map<String,dynamic>>>[];
+                      final myUid = FirebaseAuth.instance.currentUser?.uid;
+                      final otherReceipts = receipts.where((d) => d.id != myUid).map((d) => d.data()['lastReadAt']).whereType<Timestamp>().toList();
+                      final hasSeen = (Timestamp? createdAt) => createdAt != null && otherReceipts.any((r) => !r.toDate().isBefore(createdAt.toDate()));
+                      return StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
                     stream: service.messages(room.id),
                     builder: (ctx, snap) {
                       final docs = snap.data?.docs ?? const <QueryDocumentSnapshot<Map<String,dynamic>>>[];
                       if (docs.isEmpty) return const Center(child: Text('ابدأ المحادثة أثناء المشاهدة'));
+                      unawaited(service.markMessagesRead(room.id, lastMessageId: docs.isEmpty ? _watchTogetherLastMessageId : docs.first.id));
                       return ListView.builder(
                         reverse: true,
                         itemCount: docs.length,
@@ -449,13 +458,20 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                                 color: mine ? Theme.of(ctx).colorScheme.primaryContainer : Theme.of(ctx).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              child: Column(\n                                crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,\n                                children: [\n                                  Text(d['text'] as String? ?? ''),\n                                  const SizedBox(height: 2),\n                                  Text(_watchChatTime(d['createdAt']), style: TextStyle(fontSize: 10, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),\n                                ],\n                              ),
+                              child: Column(\n                                crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,\n                                children: [\n                                  Text(d['text'] as String? ?? ''),\n                                  const SizedBox(height: 2),\n                                  Row(mainAxisSize: MainAxisSize.min, children: [
+                                    Text(_watchChatTime(d['createdAt']), style: TextStyle(fontSize: 10, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                                    if (mine) ...[
+                                      const SizedBox(width: 5),
+                                      Text(hasSeen(d['createdAt'] is Timestamp ? d['createdAt'] as Timestamp : null) ? '✓✓' : '✓', style: TextStyle(fontSize: 10, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                                    ],
+                                  ]),\n                                ],\n                              ),
                             ),
                           );
                         },
                       );
-                    },
-                  ),
+                      },
+                    );
+                  },
                 ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(ctx).viewInsets.bottom + 8),
