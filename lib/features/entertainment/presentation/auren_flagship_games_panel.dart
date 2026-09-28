@@ -29,6 +29,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   int _serverRating = 1000, _serverMatches = 0, _serverLosses = 0, _serverDraws = 0;
   String? _matchWinnerId;
   String _matchResult = 'in_progress';
+  bool _tournamentResultSent = false;
   String _message = 'ابدأ الجولة';
 
   final List<int> _ludo = [-1, -1, -1, -1];
@@ -374,6 +375,29 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     setState(() {
       resetState();
     });
+  }
+
+  Future<void> _submitTournamentResultIfNeeded() async {
+    if (_tournamentResultSent || _lobbyId == null || _matchWinnerId == null || _matchResult == 'in_progress') return;
+    final tournament = await _multiplayer.getTournament(gameIndex: widget.gameIndex);
+    final matches = tournament?['matches'];
+    if (matches is! List) return;
+    final me = _multiplayer.playerId;
+    Map<String,dynamic>? target;
+    for (final raw in matches) {
+      if (raw is! Map) continue;
+      final m = Map<String,dynamic>.from(raw);
+      if (m['status'] == 'pending' && (m['p1'] == me || m['p2'] == me)) { target = m; break; }
+    }
+    if (target == null) return;
+    final id = target['id']?.toString();
+    if (id == null) return;
+    final result = await _multiplayer.submitTournamentMatchResult(
+      gameIndex: widget.gameIndex, matchId: id, winnerId: _matchWinnerId!);
+    if (result != null) {
+      _tournamentResultSent = true;
+      if (mounted) setState(() => _message = '🏆 تم تسجيل نتيجة البطولة والتأهل تلقائياً');
+    }
   }
 
   Future<void> _submitFlagshipAction(String type, Map<String, dynamic> payload) async {
@@ -753,6 +777,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         ]),
         if (_lobbyId == null && !_matchmaking) const SizedBox(height: 8),
         if (_lobbyId == null && !_matchmaking) OutlinedButton(onPressed: _joinLobby, child: const Text('Join Match')),
+        if (_lobbyId == null && !_matchmaking) OutlinedButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenGamingTournamentScreen(initialGameIndex: widget.gameIndex))), icon: const Icon(Icons.emoji_events), label: const Text('Tournament')),
         if (_lobbyId == null && _matchmaking) FilledButton.tonal(onPressed: _cancelMatchmaking, child: const Text('Cancel Search')),
         const SizedBox(height: 8),
         Row(
