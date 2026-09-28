@@ -164,7 +164,7 @@ service cloud.firestore {
       && request.resource.data.plan.size() >= 2
       && request.resource.data.plan.size() <= 10
       && request.resource.data.assets is list
-      && request.resource.data.assets.size() <= 10
+      && request.resource.data.assets.size() <= 20
       && request.resource.data.createdAt is timestamp
       && request.resource.data.updatedAt is timestamp;
     // Clients may only request a lifecycle action (retry/cancel). All queue,
