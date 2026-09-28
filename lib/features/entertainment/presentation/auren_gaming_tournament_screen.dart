@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/auren_game_multiplayer.dart';
 
-class AurenGamingTournamentScreen extends StatefulWidget { const AurenGamingTournamentScreen({super.key}); @override State<AurenGamingTournamentScreen> createState()=>_AurenGamingTournamentScreenState(); }
+class AurenGamingTournamentScreen extends StatefulWidget { final int? initialGameIndex; const AurenGamingTournamentScreen({super.key, this.initialGameIndex}); @override State<AurenGamingTournamentScreen> createState()=>_AurenGamingTournamentScreenState(); }
 class _AurenGamingTournamentScreenState extends State<AurenGamingTournamentScreen>{
  final _api=AurenGameMultiplayer(); bool _loading=true; String? _actionMessage; Map<String,dynamic>? _data; Map<String,dynamic>? _bracket; int _game=53;
  @override void didChangeDependencies(){super.didChangeDependencies(); final g=widget.initialGameIndex; if(g!=null && g>=53 && g<=59 && _game!=g){_game=g; _load();}}
