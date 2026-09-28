@@ -59,6 +59,40 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       }
     }
   }
+  Future<void> _showSchedule(AurenTvChannel channel) async {
+    final items = await AurenTvService.instance.schedule(channel.tvgId, hours: 8);
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * .72,
+          child: Column(children: [
+            Padding(padding: const EdgeInsets.all(16), child: Row(children: [
+              if (channel.logo.isNotEmpty) CircleAvatar(backgroundImage: NetworkImage(channel.logo)),
+              const SizedBox(width: 10),
+              Expanded(child: Text(channel.name + ' • EPG', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18))),
+            ])),
+            const Divider(height: 1),
+            if (items.isEmpty) const Expanded(child: Center(child: Text('دليل البرامج غير متاح لهذه القناة حالياً.')))
+            else Expanded(child: ListView.separated(
+              padding: const EdgeInsets.all(12), itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 6),
+              itemBuilder: (_, i) {
+                final x = items[i];
+                final start = DateTime.tryParse(x['startIso'] ?? '')?.toLocal();
+                final stop = DateTime.tryParse(x['stopIso'] ?? '')?.toLocal();
+                final time = start == null || stop == null ? '' : '${TimeOfDay.fromDateTime(start).format(ctx)} — ${TimeOfDay.fromDateTime(stop).format(ctx)}';
+                final isNow = x['state'] == 'now';
+                return Card(child: ListTile(leading: CircleAvatar(child: Icon(isNow ? Icons.play_arrow : Icons.schedule)), title: Text(x['title'] ?? 'برنامج'), subtitle: Text(time), trailing: isNow ? const Chip(label: Text('الآن')) : null));
+              },
+            )),
+          ]),
+        ),
+      ),
+    );
+  }
 
   String _regionLabel(AurenTvChannel c) {
     final code = c.country.toUpperCase();
@@ -157,7 +191,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 leading: c.logo.isEmpty ? const CircleAvatar(child: Icon(Icons.tv)) : CircleAvatar(backgroundImage: NetworkImage(c.logo)),
                 title: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text('${c.country} • ${c.language} • ${c.category}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                trailing: IconButton(tooltip: favorites.contains(c.id) ? 'إزالة من المفضلة' : 'أضف للمفضلة', onPressed: () => toggleFavorite(c), icon: Icon(favorites.contains(c.id) ? Icons.star : Icons.star_border)),
+                trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [
+                  IconButton(tooltip: 'جدول البرامج', onPressed: () => _showSchedule(c), icon: const Icon(Icons.calendar_month_outlined)),
+                  IconButton(tooltip: favorites.contains(c.id) ? 'إزالة من المفضلة' : 'أضف للمفضلة', onPressed: () => toggleFavorite(c), icon: Icon(favorites.contains(c.id) ? Icons.star : Icons.star_border)),
+                ]),
                 onTap: () => play(c),
               ));
             },
