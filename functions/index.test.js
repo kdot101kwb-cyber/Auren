@@ -475,3 +475,21 @@ test('Production Worker v2 does not embed client-controlled executable provider 
   assert.doesNotMatch(production,/providerVersion:/);
   assert.doesNotMatch(production,/replicateVersion:/);
 });
+
+
+test('Entertainment QC verifies reachable video artifacts before Ready',()=>{
+  const start=source.indexOf('async function validateAurenProductionArtifact');
+  const end=source.indexOf('async function aurenProductionV2Run',start);
+  const helper=source.slice(start,end);
+  assert.match(helper,/method:'HEAD'/);
+  assert.match(helper,/content-type/);
+  assert.match(helper,/startsWith\('video\/'\)/);
+  assert.match(source,/artifactChecks/);
+  assert.match(source,/verificationVersion:1/);
+});
+
+test('Entertainment QC fails closed for non-video or unreachable artifacts',()=>{
+  assert.match(source,/artifact_not_video/);
+  assert.match(source,/artifact_unreachable/);
+  assert.match(source,/productionStage:'qc_failed'/);
+});
