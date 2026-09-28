@@ -10,15 +10,15 @@ class _AurenGamingProfileScreenState extends State<AurenGamingProfileScreen> {
   final _api = AurenGameMultiplayer();
   bool _season = false, _loading = true;
   Map<String,dynamic>? _profile, _gameStats;
-  List<Map<String,dynamic>> _achievements = const [];
+  List<Map<String,dynamic>> _achievements = const []; List<Map<String,dynamic>> _seasonRewards = const [];
   int _gameIndex = 53;
 
   @override void initState(){super.initState();_load();}
   Future<void> _load() async {
     setState(()=>_loading=true);
-    final r=await Future.wait([_api.getPlayerGamingProfile(season:_season),_api.getGamingAchievements(season:_season),_api.getGamingGameStats(gameIndex:_gameIndex,season:_season)]);
+    final r=await Future.wait([_api.getPlayerGamingProfile(season:_season),_api.getGamingAchievements(season:_season),_api.getGamingGameStats(gameIndex:_gameIndex,season:_season),_api.getGamingSeasonRewards()]);
     if(!mounted)return;
-    setState(()=>({_profile=r[0] as Map<String,dynamic>?,_achievements=r[1] as List<Map<String,dynamic>>,_gameStats=r[2] as Map<String,dynamic>?,_loading=false});
+    setState(()=>({_profile=r[0] as Map<String,dynamic>?,_achievements=r[1] as List<Map<String,dynamic>>,_gameStats=r[2] as Map<String,dynamic>?,_seasonRewards=r[3] as List<Map<String,dynamic>>,_loading=false});
   }
 
   Future<void> _showTournamentHistory() async { final items=await _api.getTournamentHistory(); if(!mounted)return; showModalBottomSheet(context:context,builder:(_)=>ListView(padding:const EdgeInsets.all(16),children:[const Text('🏆 Tournament History',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold)),const SizedBox(height:12),if(items.isEmpty)const Text('لا توجد بطولات مسجلة بعد'),...items.map((x){final placement=(x['placement'] as num?)?.toInt()??0;return ListTile(leading:Text(placement==1?'🥇':placement==2?'🥈':'🏆',style:const TextStyle(fontSize:24)),title:Text('Game #${x['gameIndex']??'—'} • ${placement==1?'Champion':'Placement $placement'}'),subtitle:Text('+${x['coins']??0} coins • +${x['xp']??0} XP'));})])); }
@@ -30,7 +30,7 @@ class _AurenGamingProfileScreenState extends State<AurenGamingProfileScreen> {
         Card(child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Player ${p['playerId']??'—'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.bold)),const SizedBox(height:12),Text('⭐ Rating ${p['rating']??1000} • 🏆 ${p['wins']??0} wins'),Text('🎮 ${p['matches']??0} matches • 📈 ${p['winRate']??0}% win rate')]))),
         const SizedBox(height:12),const Text('Game Stats',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),Wrap(spacing:8,children:[for(final g in games)ChoiceChip(label:Text(g.$2),selected:_gameIndex==g.$1,onSelected:(_){setState(()=>_gameIndex=g.$1);_load();})]),
         if(_gameStats!=null)Card(child:ListTile(title:Text('Game $_gameIndex'),subtitle:Text('⭐ ${_gameStats!['rating']??1000} • 🏆 ${_gameStats!['wins']??0} • ❌ ${_gameStats!['losses']??0} • ➖ ${_gameStats!['draws']??0}'),trailing:Text('${_gameStats!['winRate']??0}%'))),
-        const SizedBox(height:12),FilledButton.icon(onPressed:_showTournamentHistory,icon:const Icon(Icons.emoji_events),label:const Text('Tournament History')),const SizedBox(height:12),Text('Achievements ${_achievements.where((x)=>x['unlocked']==true).length}/${_achievements.length}',style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
+        const SizedBox(height:12),FilledButton.icon(onPressed:_showTournamentHistory,icon:const Icon(Icons.emoji_events),label:const Text('Tournament History')),const SizedBox(height:12),const Text('Season Rewards',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),for(final r in _seasonRewards)Card(child:ListTile(leading:Icon(r['claimed']==true?Icons.check_circle:Icons.card_giftcard),title:Text('Rank ${r['rank']??'—'} • ${r['reward']??0} Coins'),subtitle:Text('${r['seasonId']??''} • Game ${r['gameIndex']??''}'),trailing:r['claimed']==true?const Text('Claimed'):TextButton(onPressed:()async{if(await _api.claimGamingSeasonReward(r['id'].toString()))_load();},child:const Text('Claim')))),const SizedBox(height:12),Text('Achievements' ${_achievements.where((x)=>x['unlocked']==true).length}/${_achievements.length}',style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
         for(final a in _achievements)Card(child:ListTile(leading:Icon(a['unlocked']==true?Icons.emoji_events:Icons.lock_outline),title:Text(a['title']?.toString()??'Achievement'),subtitle:Text('${a['description']??''} ${a['progress']??0}/${a['target']??1}'))),
       ])));
   }
