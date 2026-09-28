@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../data/auren_game_progress.dart';
 import '../data/auren_game_multiplayer.dart';
+import 'auren_global_gaming_leaderboard_screen.dart';
 
 class AurenFlagshipGamesPanel extends StatefulWidget {
   final int gameIndex;
@@ -732,6 +733,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(16), children: [
       Text(_names[widget.gameIndex], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 8),
+      Align(alignment: AlignmentDirectional.centerStart, child: OutlinedButton.icon(onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenGlobalGamingLeaderboardScreen())); }, icon: const Icon(Icons.leaderboard), label: const Text('🌍 Global Gaming Leaderboard'))),
       const SizedBox(height: 6), Text('جولة ' + _round.toString() + ' • ⭐ ' + _score.toString() + ' • 🔥 Combo ' + _streak.toString()),
       const SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
