@@ -260,6 +260,54 @@ class EntertainmentRepository {
     return db.collection('users').doc(uid).collection('entertainmentDrafts').doc(draftId).delete();
   }
 
+  Stream<List<Map<String, dynamic>>> watchSeriesWatchProgress(String uid) {
+    return db.collection('users').doc(uid).collection('seriesWatchProgress')
+        .orderBy('updatedAt', descending: true).limit(50).snapshots()
+        .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
+  }
+
+  Future<Map<String, dynamic>?> getSeriesWatchProgress(
+    String uid,
+    String jobId,
+    int episodeNumber,
+  ) async {
+    final id = 'job_${jobId}_ep_${episodeNumber}';
+    final d = await db.collection('users').doc(uid).collection('seriesWatchProgress').doc(id).get();
+    if (!d.exists) return null;
+    return {'id': d.id, ...?d.data()};
+  }
+
+  Future<void> saveSeriesWatchProgress(
+    String uid,
+    String jobId,
+    int episodeNumber, {
+    required int positionSeconds,
+    required int durationSeconds,
+    String? title,
+    String? videoUrl,
+    bool completed = false,
+  }) async {
+    if (uid.isEmpty || jobId.isEmpty || episodeNumber < 1) return;
+    final id = 'job_${jobId}_ep_${episodeNumber}';
+    final position = positionSeconds.clamp(0, durationSeconds > 0 ? durationSeconds : positionSeconds);
+    await db.collection('users').doc(uid).collection('seriesWatchProgress').doc(id).set({
+      'jobId': jobId,
+      'episodeNumber': episodeNumber,
+      'title': title ?? '',
+      'videoUrl': videoUrl ?? '',
+      'positionSeconds': position,
+      'durationSeconds': durationSeconds,
+      'progress': durationSeconds > 0 ? (position / durationSeconds).clamp(0.0, 1.0) : 0.0,
+      'completed': completed,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> clearSeriesWatchProgress(String uid, String jobId, int episodeNumber) {
+    return db.collection('users').doc(uid).collection('seriesWatchProgress')
+        .doc('job_${jobId}_ep_${episodeNumber}').delete();
+  }
+
   Stream<List<Map<String, dynamic>>> watchEntertainmentCreationJobs(String uid) {
     return db.collection('users').doc(uid).collection('entertainmentCreationJobs')
         .orderBy('updatedAt', descending: true).limit(20).snapshots()
