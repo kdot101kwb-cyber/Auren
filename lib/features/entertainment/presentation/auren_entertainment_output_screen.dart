@@ -41,6 +41,7 @@ class _AurenEntertainmentOutputScreenState
   Duration _savedPosition = Duration.zero;
   DateTime _lastProgressSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _progressLoaded = false;
+  bool _didAutoAdvance = false;
 
   bool get _canSaveWatchProgress => widget.watchUid?.isNotEmpty == true &&
       widget.watchJobId?.isNotEmpty == true &&
@@ -83,6 +84,12 @@ class _AurenEntertainmentOutputScreenState
     if (controller == null || !controller.value.isInitialized) return;
     if (controller.value.position >= controller.value.duration && controller.value.duration > Duration.zero) {
       _saveWatchProgress(completed: true, force: true);
+      if (!_didAutoAdvance && widget.onNextEpisode != null) {
+        _didAutoAdvance = true;
+        Future<void>.delayed(const Duration(milliseconds: 700), () {
+          if (mounted) widget.onNextEpisode!();
+        });
+      }
     } else if (!controller.value.isPlaying) {
       _saveWatchProgress(force: true);
     } else {
