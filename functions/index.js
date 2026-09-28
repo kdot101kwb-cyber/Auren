@@ -1999,6 +1999,68 @@ exports.getAurenPlayerGamingProfile = require('firebase-functions/v2/https').onC
   }
 );
 
+const AUREN_GAMING_GAMES = [53,54,55,56,57,58,59];
+
+function achievementCatalog(stats) {
+  const matches = Number(stats.matches) || 0;
+  const wins = Number(stats.wins) || 0;
+  const rating = Number(stats.rating) || 1000;
+  return [
+    {id:'first_match', title:'First Match', description:'Complete your first multiplayer match.', unlocked:matches >= 1, progress:Math.min(matches,1), target:1},
+    {id:'first_win', title:'First Victory', description:'Win your first multiplayer match.', unlocked:wins >= 1, progress:Math.min(wins,1), target:1},
+    {id:'veteran', title:'Veteran', description:'Complete 10 multiplayer matches.', unlocked:matches >= 10, progress:Math.min(matches,10), target:10},
+    {id:'champion', title:'Champion', description:'Win 10 multiplayer matches.', unlocked:wins >= 10, progress:Math.min(wins,10), target:10},
+    {id:'elite_rating', title:'Elite Rating', description:'Reach a 1200 rating in at least one game.', unlocked:rating >= 1200, progress:Math.min(rating,1200), target:1200},
+    {id:'gaming_legend', title:'Gaming Legend', description:'Complete 100 multiplayer matches.', unlocked:matches >= 100, progress:Math.min(matches,100), target:100},
+  ];
+}
+
+exports.getAurenGameStats = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const gameIndex = Number(request.data?.gameIndex);
+    if (!AUREN_GAMING_GAMES.includes(gameIndex)) throw aurenHttpsError('invalid-argument', 'Unsupported game.');
+    const season = request.data?.season === true;
+    const seasonId = currentAurenGamingSeasonId();
+    const base = db.collection('auren_game_rankings').doc(String(gameIndex));
+    const refs = [base.collection(season ? 'seasons/'+seasonId+'/players' : 'players').doc(uid)];
+    const snap = await refs[0].get();
+    const x = snap.exists ? snap.data() || {} : {};
+    const matches = Math.max(0, Number(x.matches)||0);
+    const wins = Math.max(0, Number(x.wins)||0);
+    const losses = Math.max(0, Number(x.losses)||0);
+    const draws = Math.max(0, Number(x.draws)||0);
+    return {gameIndex, seasonId, scope:season?'season':'lifetime', playerId:uid, wins, losses, draws, matches, rating:Math.max(100,Number(x.rating)||1000), winRate:matches?Math.round(wins/matches*1000)/10:0};
+  }
+);
+
+exports.getAurenGamingAchievements = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const season = request.data?.season === true;
+    const seasonId = currentAurenGamingSeasonId();
+    const snapshots = await Promise.all(AUREN_GAMING_GAMES.map((gameIndex) => {
+      const base = db.collection('auren_game_rankings').doc(String(gameIndex));
+      const ref = season ? base.collection('seasons').doc(seasonId).collection('players').doc(uid) : base.collection('players').doc(uid);
+      return ref.get();
+    }));
+    const stats = snapshots.reduce((a,s) => {
+      if (!s.exists) return a;
+      const x=s.data()||{};
+      a.matches += Math.max(0,Number(x.matches)||0);
+      a.wins += Math.max(0,Number(x.wins)||0);
+      a.rating = Math.max(a.rating, Math.max(100,Number(x.rating)||1000));
+      return a;
+    }, {matches:0,wins:0,rating:1000});
+    const achievements=achievementCatalog(stats);
+    return {seasonId,scope:season?'season':'lifetime',unlocked:achievements.filter(x=>x.unlocked).length,total:achievements.length,achievements};
+  }
+);
+
 exports.getAurenFlagshipLeaderboard = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
