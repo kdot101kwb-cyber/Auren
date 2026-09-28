@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class AurenGameMultiplayer {
   AurenGameMultiplayer({
@@ -10,6 +11,7 @@ class AurenGameMultiplayer {
 
   final FirebaseFirestore _db;
   final FirebaseAuth _auth;
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'us-central1');
   String? _lobbyId;
 
   String? get lobbyId => _lobbyId;
@@ -91,33 +93,19 @@ class AurenGameMultiplayer {
   }) async {
     final id = _lobbyId;
     if (id == null) return false;
-    final ref = _db.collection('auren_game_lobbies').doc(id);
-    return _db.runTransaction<bool>((tx) async {
-      final snapshot = await tx.get(ref);
-      if (!snapshot.exists) return false;
-      final data = snapshot.data() ?? <String, dynamic>{};
-      final status = data['status']?.toString();
-      final turn = data['turnPlayerId']?.toString();
-      final version = (data['stateVersion'] as num?)?.toInt() ?? 0;
-      if (status != 'playing' || turn != playerId || version != expectedVersion) return false;
-      if (data['lastMoveId']?.toString() == moveId) return true;
-
-      final players = List<String>.from(data['players'] ?? const <String>[]);
-      final opponent = players.firstWhere(
-        (id) => id != playerId,
-        orElse: () => playerId,
-      );
-      final finished = state['matchFinished'] == true;
-      tx.update(ref, {
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('submitAurenGameMove').call({
+        'lobbyId': id,
+        'gameIndex': state['gameIndex'] ?? 50,
         'state': state,
-        'stateVersion': version + 1,
-        'turnPlayerId': finished ? null : opponent,
-        'lastMoveId': moveId,
-        'updatedAt': FieldValue.serverTimestamp(),
-        if (finished) 'status': 'finished',
+        'expectedVersion': expectedVersion,
+        'moveId': moveId,
       });
-      return true;
-    });
+      return result.data is Map && result.data['accepted'] == true;
+    } on FirebaseFunctionsException {
+      return false;
+    }
   }
 
   Future<void> seedState(Map<String, dynamic> state) async {
