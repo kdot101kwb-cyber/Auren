@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
+import 'dart:io';
+import '../../../services/entertainment/auren_offline_media_service.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -619,7 +621,10 @@ class _AurenEntertainmentOutputScreenState
     _loadPlaybackPreferences();
     if (_isVideo && _url.isNotEmpty) {
       _currentUrl = _url;
-      final controller = VideoPlayerController.networkUrl(Uri.parse(_currentUrl));
+      final localPath = await AurenOfflineMediaService.instance.localPathForUrl(_currentUrl);
+      final controller = localPath != null
+          ? VideoPlayerController.file(File(localPath))
+          : VideoPlayerController.networkUrl(Uri.parse(_currentUrl));
       _controller = controller;
       controller.addListener(() {
         final playing = controller.value.isPlaying;
