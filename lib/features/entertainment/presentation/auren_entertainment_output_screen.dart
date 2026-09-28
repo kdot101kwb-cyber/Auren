@@ -136,7 +136,16 @@ class _AurenEntertainmentOutputScreenState
   Map<String, String> get _subtitleUrls {
     final direct = widget.output['subtitleUrls'];
     final nested = widget.output['languageUrls'];
-    final raw = direct is Map ? direct : (nested is Map ? nested : null);
+    final subtitles = widget.output['subtitles'];
+    final nestedSubtitles = subtitles is Map ? subtitles['languageUrls'] : null;
+    final nestedSubtitleUrls = subtitles is Map ? subtitles['subtitleUrls'] : null;
+    final raw = direct is Map
+        ? direct
+        : (nested is Map
+            ? nested
+            : (nestedSubtitles is Map
+                ? nestedSubtitles
+                : (nestedSubtitleUrls is Map ? nestedSubtitleUrls : null)));
     if (raw is! Map) return const {};
     return raw
         .map((key, value) => MapEntry(key.toString().toLowerCase(), value.toString()))
