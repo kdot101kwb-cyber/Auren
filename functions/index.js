@@ -1240,8 +1240,8 @@ function buildAurenPostAssemblyPlan(assemblyManifest) {
     audio: {status:'waiting_provider', providerRequired:true},
     music: {status:'waiting_provider', providerRequired:true},
     subtitles: {status:'waiting_provider', providerRequired:true, languages:['ar','en']},
-    thumbnail: {status:'planned'},
-    trailer: {status:'planned'},
+    thumbnail: {status:'waiting_provider', providerRequired:true},
+    trailer: {status:'waiting_provider', providerRequired:true},
   }));
 }
 
