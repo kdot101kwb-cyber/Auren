@@ -17,7 +17,6 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String countryLabel = 'الدول';
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
-  bool sourceRefreshing = false;
   List<AurenTvSource> sources = const [];
   AurenTvSource? activeSource;
   Set<String> favorites = {};
@@ -204,19 +203,6 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         .trim();
   }
 
-  Future<void> _refreshActiveSource() async {
-    final source = activeSource;
-    if (source == null || sourceRefreshing) return;
-    setState(() => sourceRefreshing = true);
-    try {
-      await AurenTvService.instance.refreshSource(source);
-      if (mounted) setState(() {});
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر تحديث مصدر IPTV.')));
-    } finally {
-      if (mounted) setState(() => sourceRefreshing = false);
-    }
-  }
   String _regionLabel(AurenTvChannel c) {
     final code = c.country.toUpperCase();
     for (final entry in regions.entries) { if (entry.value.contains(code)) return entry.key; }
@@ -225,7 +211,6 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV'), actions: [
-      if (activeSource != null) IconButton(tooltip: 'تحديث المصدر الحالي', onPressed: sourceRefreshing ? null : _refreshActiveSource, icon: sourceRefreshing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh)),
       IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
     ]),
     body: Column(children: [
