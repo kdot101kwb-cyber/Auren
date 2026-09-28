@@ -94,6 +94,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     setState(() { _epgResults = results; _epgSearching = false; });
   }
 
+  Future<void> _showEpgWatchlist() async { final items = await AurenTvService.instance.watchlistPrograms(); if (!mounted) return; showModalBottomSheet<void>(context: context, builder: (ctx) => SafeArea(child: ListView(padding: const EdgeInsets.all(12), children: [const ListTile(title: Text('برامجي المحفوظة • EPG')), ...items.map((x) => ListTile(title: Text(x.title), subtitle: Text(x.startIso), onTap: () async { final c = await AurenTvService.instance.findChannelForEpgId(x.channelId, source: activeSource); if (ctx.mounted) Navigator.pop(ctx); if (c != null) await play(c); }))]))); }
+
   void _showEpgSearchResults() {
     showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => SafeArea(child: SizedBox(
       height: MediaQuery.of(ctx).size.height * .72,
@@ -110,7 +112,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
               leading: CircleAvatar(child: Icon(x.state == 'now' ? Icons.play_arrow : Icons.schedule)),
               title: Text(x.title),
               subtitle: Text(time),
-              trailing: x.state == 'now' ? const Chip(label: Text('الآن')) : null,
+              trailing: IconButton(onPressed: () async { await AurenTvService.instance.addEpgWatchlist(x); }, icon: const Icon(Icons.bookmark_add_outlined)),
               onTap: () async {
                 final channel = await AurenTvService.instance.findChannelForEpgId(x.channelId, source: activeSource);
                 if (!ctx.mounted) return;
@@ -551,6 +553,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV'), actions: [
+      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)),
       IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
       if (activeSource != null)
         IconButton(
