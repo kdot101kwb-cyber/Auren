@@ -266,7 +266,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       await _multiplayer.initializeDominoMatch();
     } else if (widget.gameIndex == 2) {
       await _multiplayer.initializeUnoMatch();
-    } else if (widget.gameIndex >= 3 && widget.gameIndex <= 9) {
+    } else if (widget.gameIndex >= 53 && widget.gameIndex <= 59) {
       await _multiplayer.initializeFlagshipMatch();
     }
   }
