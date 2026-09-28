@@ -181,6 +181,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     child: Row(
                       children: [
                         null,
+                        'Movie',
                         'Global Series',
                         'Anime',
                         'Podcast',
