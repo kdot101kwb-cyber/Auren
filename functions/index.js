@@ -3086,6 +3086,15 @@ exports.submitAurenTournamentMatchResult = require('firebase-functions/v2/https'
    const activeRound=matches.filter(x=>x.round===round);
    if(activeRound.length>0&&activeRound.every(x=>x.status==='finished')){
     const winners=activeRound.map(x=>x.winnerId).filter(Boolean);
+    if(round==='final'){
+     const champion=winners[0]||null; const runnerUp=activeRound[0]?.loserId||null;
+     tx.update(ref,{status:'completed',round:'champion',championId:champion,matches,updatedAt:FieldValue.serverTimestamp()});
+     if(champion) await recordTournamentReward(tx,ref.id,champion,gameIndex,1);
+     if(runnerUp) await recordTournamentReward(tx,ref.id,runnerUp,gameIndex,2);
+     const semi=matches.filter(x=>x.round==='semifinals'&&x.loserId&&x.loserId!==runnerUp);
+     for(const m of semi) await recordTournamentReward(tx,ref.id,m.loserId,gameIndex,3);
+     return {accepted:true,status:'completed',round:'champion',championId:champion,matches};
+    }
     if(winners.length<=1){
      tx.update(ref,{status:'completed',round:'champion',championId:winners[0]||null,matches,updatedAt:FieldValue.serverTimestamp()});
      if(winners[0]) await recordTournamentReward(tx, ref.id, winners[0], gameIndex, 1);
