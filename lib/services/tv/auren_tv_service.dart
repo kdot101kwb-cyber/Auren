@@ -106,7 +106,7 @@ class AurenTvService {
   Future<void> deleteSource(String id) async {
     final current = (await sources()).where((x) => x.id != id).toList();
     final p = await SharedPreferences.getInstance();
-    await p.setStringList(_sourcesKey, current.map((x) => jsonEncode({'id': x.id, 'name': x.name, 'type': x.type, 'url': x.url, 'epgUrl': x.epgUrl, 'username': x.username})).toList());
+    await p.setStringList(_sourcesKey, current.map((x) => jsonEncode({'id': x.id, 'name': x.name, 'type': x.type, 'url': x.url, 'epgUrl': x.epgUrl, 'username': x.username, 'enabled': x.enabled})).toList());
     await _secure.delete(key: 'auren_tv_source_password_$id');
     _sourcesCache = current;
     _sourceChannelCaches.remove(id);
