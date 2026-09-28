@@ -130,6 +130,11 @@ class AurenTvService {
     return true;
   }
 
+  Future<bool> updateEpgReminder(AurenTvEpgSearchResult item, {required Duration before}) async {
+    await removeEpgReminder(item);
+    return addEpgReminder(item, before: before);
+  }
+
   Future<void> removeEpgReminder(AurenTvEpgSearchResult item) async {
     await _initEpgNotifications();
     await _notifications.cancel(_reminderId(item).hashCode & 0x7fffffff);
