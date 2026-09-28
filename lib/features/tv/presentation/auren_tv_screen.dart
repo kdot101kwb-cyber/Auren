@@ -174,7 +174,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     final action = await showDialog<String>(context: context, builder: (ctx) {
       final input = TextEditingController();
       return AlertDialog(
-        title: const Text('Watch Together'),
+        title: Text(_watchTogetherRoom == null ? 'Watch Together' : 'Watch Together • متصل'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           if (playing != null) Text('القناة: ' + playing!.name),
           TextField(controller: input, decoration: const InputDecoration(labelText: 'اسم الغرفة')),
@@ -230,10 +230,60 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         if (!remote.isPlaying && p.value.isPlaying) await p.pause();
         _applyingRemoteWatchState = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الغرفة جاهزة • الكود: ' + room.inviteCode)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الغرفة جاهزة • الكود: ' + room.inviteCode + ' • الأعضاء: ' + room.memberIds.length.toString())));
+      await _showWatchTogetherStatus(room);
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر إنشاء أو دخول الغرفة.')));
     }
+  }
+
+  Future<void> _showWatchTogetherStatus(AurenTvWatchTogetherRoom initial) async {
+    final service = AurenTvWatchTogetherService.instance;
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => StreamBuilder<AurenTvWatchTogetherRoom>(
+        stream: service.watch(initial.id),
+        initialData: initial,
+        builder: (ctx, snap) {
+          final room = snap.data ?? initial;
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          final isHost = uid != null && uid == room.hostUid;
+          return SafeArea(child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              ListTile(
+                leading: Icon(isHost ? Icons.star : Icons.groups),
+                title: Text(room.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                subtitle: Text('الكود: ${room.inviteCode} • ${room.memberIds.length}/8 • ${room.status}'),
+              ),
+              const Divider(),
+              for (final id in room.memberIds)
+                ListTile(
+                  dense: true,
+                  leading: Icon(id == room.hostUid ? Icons.workspace_premium : Icons.person_outline),
+                  title: Text(id == uid ? 'أنت' : 'عضو'),
+                  subtitle: Text(id == room.hostUid ? 'Host' : 'Member'),
+                ),
+              Row(children: [
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: () async { await service.leave(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
+                  icon: const Icon(Icons.exit_to_app), label: const Text('مغادرة'),
+                )),
+                if (isHost) ...[
+                  const SizedBox(width: 8),
+                  Expanded(child: FilledButton.icon(
+                    onPressed: () async { await service.close(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
+                    icon: const Icon(Icons.close), label: const Text('إغلاق'),
+                  )),
+                ],
+              ]),
+            ]),
+          ));
+        },
+      ),
+    );
   }
 
   Future<void> _showTvAssistant() async {
