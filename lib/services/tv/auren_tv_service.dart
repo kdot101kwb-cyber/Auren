@@ -13,8 +13,10 @@ class AurenTvService {
   static const playlist = 'https://iptv-org.github.io/iptv/index.country.m3u';
   static const entertainmentPlaylist = 'https://iptv-org.github.io/iptv/categories/entertainment.m3u';
   static const sportsPlaylist = 'https://iptv-org.github.io/iptv/categories/sports.m3u';
+  static const newsPlaylist = 'https://iptv-org.github.io/iptv/categories/news.m3u';
   List<AurenTvChannel>? _entertainmentCache;
   List<AurenTvChannel>? _sportsCache;
+  List<AurenTvChannel>? _newsCache;
   List<AurenTvChannel>? _cache;
   String? _epgUrl;
   Map<String, List<Map<String, String>>>? _epgCache;
@@ -57,6 +59,11 @@ class AurenTvService {
   Future<List<AurenTvChannel>> loadSports({int limit = 500}) async {
     _sportsCache ??= await _fetchPlaylist(sportsPlaylist, fallbackCategory: 'Sports');
     return _sportsCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> loadNews({int limit = 500}) async {
+    _newsCache ??= await _fetchPlaylist(newsPlaylist, fallbackCategory: 'News');
+    return _newsCache!.take(limit).toList();
   }
 
   Future<List<AurenTvChannel>> _fetchPlaylist(String source, {String fallbackCategory = ''}) async {
