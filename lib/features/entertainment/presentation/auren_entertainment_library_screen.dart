@@ -4,8 +4,15 @@ import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_offline_media_service.dart';
 import 'auren_entertainment_job_detail_screen.dart';
 
-class AurenEntertainmentLibraryScreen extends StatelessWidget {
+class AurenEntertainmentLibraryScreen extends StatefulWidget {
   const AurenEntertainmentLibraryScreen({super.key});
+  @override State<AurenEntertainmentLibraryScreen> createState()=>_AurenEntertainmentLibraryScreenState();
+}
+class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibraryScreen> {
+  bool _lowData=false;
+  @override void initState(){super.initState(); _loadLowData();}
+  Future<void> _loadLowData() async { final v=await AurenOfflineMediaService.instance.lowDataEnabled(); if(mounted)setState(()=>_lowData=v); }
+  Future<void> _toggleLowData(bool value) async { await AurenOfflineMediaService.instance.setLowData(value); if(mounted)setState(()=>_lowData=value); }
   String _status(String value) {
     const labels = {'planning':'التخطيط','generating':'التوليد','processing':'المعالجة','ready':'جاهز','failed':'فشل','cancelled':'ملغاة'};
     return labels[value] ?? value;
@@ -91,7 +98,8 @@ class AurenEntertainmentLibraryScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16,12,16,32),
         children: [
-          const Text('Offline', style: TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
+          Row(children:[const Expanded(child:Text('Offline',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900))),Switch(value:_lowData,onChanged:_toggleLowData)]),
+          const Text('Low Data: عند التفعيل لا يوجد تنزيل تلقائي؛ AUREN يحفظ فقط الوسائط التي تختار تنزيلها.',style:TextStyle(fontSize:12)),
           const SizedBox(height:8),
           FutureBuilder<List<AurenOfflineMedia>>(
             future: AurenOfflineMediaService.instance.list(),
@@ -167,6 +175,11 @@ class AurenEntertainmentLibraryScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height:18),
+          Card(child:ListTile(
+            leading:Icon(_lowData?Icons.data_saver_on_rounded:Icons.data_saver_off_rounded),
+            title:Text(_lowData?'Low Data مفعّل':'Low Data غير مفعّل',style:const TextStyle(fontWeight:FontWeight.w800)),
+            subtitle:Text(_lowData?'التنزيلات اختيارية لتقليل استهلاك البيانات.':'يمكنك تنزيل الوسائط يدوياً للحفظ Offline.'),
+          )),
           const Card(child:ListTile(
             leading:Icon(Icons.info_outline_rounded),
             title:Text('الحفظ والتنزيل',style:TextStyle(fontWeight:FontWeight.w800)),
