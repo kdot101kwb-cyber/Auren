@@ -106,6 +106,32 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       return Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.notifications_active_outlined)), title: Text(r.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(label), trailing: Wrap(children: [IconButton(tooltip: 'تعديل التذكير', onPressed: () async { final before = await showModalBottomSheet<Duration>(context: ctx, builder: (s) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [const ListTile(title: Text('تعديل وقت التذكير')), for (final m in const [5, 10, 15, 30, 60]) ListTile(title: Text('قبل $m دقيقة'), onTap: () => Navigator.pop(s, Duration(minutes: m)))]))); if (before == null || !ctx.mounted) return; final ok = await AurenTvService.instance.updateEpgReminder(item, before: before); if (ctx.mounted) { Navigator.pop(ctx); if (ok) await _showEpgReminderCenter(); } }, icon: const Icon(Icons.edit_notifications_outlined)), IconButton(tooltip: 'إلغاء التذكير', onPressed: () async { await AurenTvService.instance.removeEpgReminder(item); if (ctx.mounted) { Navigator.pop(ctx); await _showEpgReminderCenter(); } }, icon: const Icon(Icons.notifications_off_outlined))));
     }))));
   }
+  Future<void> _showEpgCalendar() async {
+    if (playing == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شغّل قناة أولاً لعرض جدولها.'))); return; }
+    final channel = playing!;
+    final items = await AurenTvService.instance.smartScheduleForChannel(channel, source: activeSource, hours: 48);
+    if (!mounted) return;
+    DateTime day = DateTime.now();
+    await showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
+      final filtered = items.where((x) { final d = DateTime.tryParse(x['startIso'] ?? '')?.toLocal(); return d != null && d.year == day.year && d.month == day.month && d.day == day.day; }).toList();
+      return SafeArea(child: SizedBox(height: MediaQuery.of(ctx).size.height * .78, child: Column(children: [
+        ListTile(title: Text('EPG Calendar • ' + channel.name), subtitle: Text('اليوم: ' + day.day.toString() + '/' + day.month.toString() + '/' + day.year.toString())),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [TextButton(onPressed: () => setSheetState(() => day = DateTime.now()), child: const Text('اليوم')), TextButton(onPressed: () => setSheetState(() => day = DateTime.now().add(const Duration(days: 1))), child: const Text('غداً'))]),
+        Expanded(child: filtered.isEmpty ? const Center(child: Text('لا توجد بيانات EPG لهذا اليوم.')) : ListView.separated(padding: const EdgeInsets.all(12), itemCount: filtered.length, separatorBuilder: (_, __) => const SizedBox(height: 4), itemBuilder: (_, i) { final x = filtered[i]; final s = DateTime.tryParse(x['startIso'] ?? '')?.toLocal(); final e = DateTime.tryParse(x['stopIso'] ?? '')?.toLocal(); return Card(child: ListTile(leading: Icon(x['state'] == 'now' ? Icons.play_circle : Icons.schedule), title: Text(x['title'] ?? ''), subtitle: Text(s == null || e == null ? '' : TimeOfDay.fromDateTime(s).format(ctx) + ' — ' + TimeOfDay.fromDateTime(e).format(ctx)), onTap: () { Navigator.pop(ctx); play(channel); })); })),
+      ])));
+    }));
+  }
+
+  Future<void> _showEpgTimeline() async {
+    if (playing == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شغّل قناة أولاً لعرض الخط الزمني.'))); return; }
+    final channel = playing!;
+    final items = await AurenTvService.instance.smartScheduleForChannel(channel, source: activeSource, hours: 48);
+    if (!mounted) return;
+    showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => SafeArea(child: SizedBox(height: MediaQuery.of(ctx).size.height * .72, child: Column(children: [
+      ListTile(title: Text('Live EPG Timeline • ' + channel.name), subtitle: const Text('البرنامج الحالي والقادم')),
+      Expanded(child: ListView.separated(padding: const EdgeInsets.all(12), itemCount: items.length, separatorBuilder: (_, __) => const SizedBox(height: 5), itemBuilder: (_, i) { final x = items[i]; final s = DateTime.tryParse(x['startIso'] ?? '')?.toLocal(); final e = DateTime.tryParse(x['stopIso'] ?? '')?.toLocal(); final now = DateTime.now(); final progress = s == null || e == null || !e.isAfter(s) ? 0.0 : now.isBefore(s) ? 0.0 : now.isAfter(e) ? 1.0 : now.difference(s).inMilliseconds / e.difference(s).inMilliseconds; return Card(child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(x['state'] == 'now' ? Icons.play_circle : Icons.schedule), const SizedBox(width: 8), Expanded(child: Text(x['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700))), if (s != null) Text(TimeOfDay.fromDateTime(s).format(ctx))]), const SizedBox(height: 8), LinearProgressIndicator(value: progress.clamp(0.0, 1.0))]))); })),
+    ]))));
+  }
   Future<void> _showEpgWatchlist() async {
     final items = await AurenTvService.instance.watchlistPrograms();
     if (!mounted) return;
@@ -639,7 +665,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV'), actions: [
-      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)),
+      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)), IconButton(tooltip: 'تقويم EPG', onPressed: _showEpgCalendar, icon: const Icon(Icons.calendar_month_outlined)), IconButton(tooltip: 'خط EPG الزمني', onPressed: _showEpgTimeline, icon: const Icon(Icons.timeline)),
       IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
       if (activeSource != null)
         IconButton(
