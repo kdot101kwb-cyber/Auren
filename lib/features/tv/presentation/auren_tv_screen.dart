@@ -172,7 +172,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
               leading: CircleAvatar(child: Icon(x.state == 'now' ? Icons.play_arrow : Icons.schedule)),
               title: Text(x.title),
               subtitle: Text(time),
-              trailing: IconButton(onPressed: () async { await AurenTvService.instance.addEpgWatchlist(x); }, icon: const Icon(Icons.bookmark_add_outlined)),
+              trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [IconButton(tooltip: 'حفظ البرنامج', onPressed: () async { await AurenTvService.instance.addEpgWatchlist(x); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ البرنامج في EPG.'))); }, icon: const Icon(Icons.bookmark_add_outlined)), IconButton(tooltip: 'تذكير قبل 10 دقائق', onPressed: () async { final ok = await AurenTvService.instance.addEpgReminder(x); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'تم ضبط تذكير قبل 10 دقائق.' : 'البرنامج بدأ بالفعل أو بيانات الوقت غير صالحة.'))); }, icon: const Icon(Icons.notifications_none))]),
               onTap: () async {
                 final channel = await AurenTvService.instance.findChannelForEpgId(x.channelId, source: activeSource);
                 if (!ctx.mounted) return;
