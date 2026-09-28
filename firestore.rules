@@ -2596,5 +2596,10 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    match /users/{userId}/agricultureAdvisories/{advisoryId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
   }
 }
