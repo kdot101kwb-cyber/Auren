@@ -3168,6 +3168,35 @@ exports.startAurenTournament = require('firebase-functions/v2/https').onCall(
  }
 );
 
+exports.createAurenTournamentMatchLobby = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async(request)=>{
+  const uid=request.auth?.uid;if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const gameIndex=Number(request.data?.gameIndex);if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex))throw aurenHttpsError('invalid-argument','Unsupported tournament game.');
+  const tournamentRef=db.collection('auren_game_tournaments').doc(tournamentId(gameIndex));
+  return db.runTransaction(async tx=>{
+   const snap=await tx.get(tournamentRef);if(!snap.exists)throw aurenHttpsError('not-found','Tournament not found.');
+   const d=snap.data()||{};const players=(d.players||[]).map(String);
+   if(!players.includes(uid))throw aurenHttpsError('permission-denied','Tournament access denied.');
+   if(d.status!=='active')throw aurenHttpsError('failed-precondition','Tournament is not active.');
+   const matches=Array.isArray(d.matches)?d.matches:[];
+   const match=matches.find(m=>m.status==='pending'&&(m.p1===uid||m.p2===uid));
+   if(!match)throw aurenHttpsError('failed-precondition','No playable tournament match is ready.');
+   const lobbyId='tournament_'+tournamentRef.id+'_'+match.id;
+   const lobbyRef=db.collection('auren_game_lobbies').doc(lobbyId);
+   const lobbySnap=await tx.get(lobbyRef);
+   if(lobbySnap.exists)return {created:false,lobbyId,matchId:match.id,gameIndex,players:[match.p1,match.p2]};
+   const lobbyData={
+    gameIndex,status:'waiting',hostId:match.p1,guestId:null,players:[match.p1],
+    turnPlayerId:match.p1,stateVersion:0,lastMoveId:null,createdAt:FieldValue.serverTimestamp(),
+    updatedAt:FieldValue.serverTimestamp(),state:{},tournamentId:tournamentRef.id,tournamentMatchId:match.id,
+   };
+   tx.create(lobbyRef,lobbyData);
+   return {created:true,lobbyId,matchId:match.id,gameIndex,players:[match.p1,match.p2]};
+  });
+ }
+);
+
 exports.getAurenTournamentBracket = require('firebase-functions/v2/https').onCall(
  {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
  async(request)=>{
