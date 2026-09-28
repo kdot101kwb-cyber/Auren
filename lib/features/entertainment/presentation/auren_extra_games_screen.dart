@@ -73,6 +73,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
     ('🃏 Memory Match+', Icons.style), ('🧠 Sequence Recall', Icons.psychology_alt), ('🔵 Color Memory', Icons.circle), ('🧩 Pair Recall', Icons.grid_view), ('👀 Flash Memory', Icons.visibility),
     ('🔥 AUREN Arena', Icons.local_fire_department),
     ('🗺️ Lost World', Icons.explore), ('🏜️ Desert Quest', Icons.landscape), ('🌊 Ocean Explorer', Icons.water), ('🌲 Wild Trails', Icons.forest), ('🚀 Beyond Earth', Icons.rocket_launch), ('🏙️ AUREN City', Icons.location_city), ('💎 Treasure Heist', Icons.diamond), ('🚀 Sky Racers', Icons.flight), ('🧟 Zombie Escape', Icons.directions_run), ('🎵 Rhythm Rush', Icons.music_note), ('🏝️ Island Survival', Icons.surfing), ('⏳ Time Warp', Icons.history),
+    ('🎲 Ludo', Icons.casino), ('🁫 Dominoes', Icons.view_week), ('🃏 UNO', Icons.style), ('🕵️ Crime Files', Icons.manage_search), ('⚽ AUREN Football Pro', Icons.sports_soccer), ('🏀 Basketball Pro', Icons.sports_basketball), ('🥊 Boxing Champion', Icons.sports_mma), ('⚔️ Ancient & Modern Wars', Icons.shield), ('🥷 Samurai Legacy', Icons.gpp_good), ('🏎️ AUREN Street Racing', Icons.speed),
   ];
 
   @override Widget build(BuildContext context) {
@@ -193,7 +194,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
     }
     return _ThreeDGamePanel(
       gameIndex: _selected - 17,
-      adventure: _selected >= 38,
+      adventure: _selected >= 38 && _selected < 50,
       core: false,
     );
   }
@@ -615,14 +616,18 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
   int _enemy=100,_shots=5,_resource=0,_laps=0,_challenge=1; String _message='جاهز!';
   static const _categoryNames=['⚔️ Arena Duel','🥊 Punch Rush','🛡️ Shield Block','🏹 Archer Aim','⚡ Battle Reflex','⚽ Penalty King','🏀 Hoops','🏃 Sprint','🎾 Tennis Rally','🚴 Cycling','🧩 Logic Grid','🔢 Number Matrix','♟️ Strategy','🧠 Pattern Logic','🔐 Code Breaker','🃏 Memory Match+','🧠 Sequence Recall','🔵 Color Memory','🧩 Pair Recall','👀 Flash Memory','🔥 AUREN Arena'];
   static const _adventureNames=['🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City','💎 Treasure Heist','🚀 Sky Racers','🧟 Zombie Escape','🎵 Rhythm Rush','🏝️ Island Survival','⏳ Time Warp'];
-  String get title=>widget.adventure?_adventureNames[widget.gameIndex-21]:_categoryNames[widget.gameIndex];
+  static const _newGameNames=['🎲 Ludo','🁫 Dominoes','🃏 UNO','🕵️ Crime Files','⚽ AUREN Football Pro','🏀 Basketball Pro','🥊 Boxing Champion','⚔️ Ancient & Modern Wars','🥷 Samurai Legacy','🏎️ AUREN Street Racing'];
+  bool get _newGame=>widget.gameIndex>=33;
+  int get _newIndex=>widget.gameIndex-33;
+  String get title=>widget.adventure?_adventureNames[widget.gameIndex-21]:_newGame?_newGameNames[_newIndex]:_categoryNames[widget.gameIndex];
   Auren3DWorldPreset get preset{
+    if(_newGame){if(_newIndex==4||_newIndex==5||_newIndex==9)return Auren3DWorldPreset.sports;if(_newIndex==3||_newIndex==6||_newIndex==7||_newIndex==8)return Auren3DWorldPreset.arena;return Auren3DWorldPreset.city;}
     if(widget.adventure){if(widget.gameIndex==1)return Auren3DWorldPreset.desert;if(widget.gameIndex==8)return Auren3DWorldPreset.arena;if(widget.gameIndex==2||widget.gameIndex==7||widget.gameIndex==9||widget.gameIndex==10)return Auren3DWorldPreset.sports;return Auren3DWorldPreset.city;}
     if(widget.gameIndex<5||widget.gameIndex==20)return Auren3DWorldPreset.arena;if(widget.gameIndex<10)return Auren3DWorldPreset.sports;return Auren3DWorldPreset.city;
   }
   @override void initState(){super.initState();_challenge=1+_rng.nextInt(9);}
   void _move(double dx,double dy){if(_energy<=0||_health<=0)return;setState((){_x=(_x+dx).clamp(-8.0,8.0);_y=(_y+dy).clamp(-8.0,8.0);_energy--;_score++;_combo=min(10,_combo+1);if(widget.adventure&&widget.gameIndex==8&&_rng.nextDouble()<.25)_health=max(0,_health-10);if(widget.adventure&&widget.gameIndex==10)_resource++;_checkLevel();});}
-  void _action(){if(_energy<=0||_health<=0)return;setState((){_energy--;if(widget.adventure){_adventureAction();}else if(widget.gameIndex<5||widget.gameIndex==20){_combatAction(widget.gameIndex);}else if(widget.gameIndex<10){_sportsAction(widget.gameIndex);}else{_thinkingAction(widget.gameIndex);}_checkLevel();});}
+  void _action(){if(_energy<=0||_health<=0)return;setState((){_energy--;if(widget.adventure){_adventureAction();}else if(_newGame){_newGameAction();}else if(widget.gameIndex<5||widget.gameIndex==20){_combatAction(widget.gameIndex);}else if(widget.gameIndex<10){_sportsAction(widget.gameIndex);}else{_thinkingAction(widget.gameIndex);}_checkLevel();});}
   void _combatAction(int i){
     if(i==2){_message='🛡️ صدّ الهجمة!';_combo=min(10,_combo+2);return;}
     if(i==3){if(_shots<=0){_message='لا توجد سهام';return;}_shots--;final hit=_rng.nextDouble()<.72;_message=hit?'🏹 إصابة!':'❌ أخطأت';_score+=hit?18:2;return;}
@@ -634,6 +639,20 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
     final ok=_rng.nextDouble()<.62; if(i==14&&ok)_challenge=1+_rng.nextInt(99);
     final labels=['','','','','','','','','','','🧩 لغز','🔢 مصفوفة','♟️ قرار','🧠 نمط','🔐 رمز','🃏 تطابق','🧠 تسلسل','🔵 لون','🧩 زوج','👀 ذاكرة'];
     _message=ok?'\${labels[i]} صحيح!':'\${labels[i]} جرّب مرة أخرى';_score+=ok?18:2;
+  }
+  void _newGameAction(){
+    switch(_newIndex){
+      case 0: final roll=1+_rng.nextInt(6); _message='🎲 رميت $roll • حرّك قطعتك $roll خطوة'; _score+=roll*2; _resource=(_resource+roll)%4; break;
+      case 1: final points=1+_rng.nextInt(6); _message='🁫 قطعة بقيمة $points • طابق الرقم التالي'; _score+=points*3; _enemy=max(0,_enemy-points*4); break;
+      case 2: final cards=['أحمر 5','أزرق +2','أخضر عكس','أصفر 7','Wild']; final card=cards[_rng.nextInt(cards.length)]; _message='🃏 لعبت $card • طابق اللون أو الرقم'; _score+=12; _resource++; break;
+      case 3: final clues=['بصمة قرب النافذة','كاميرا انقطعت 3 دقائق','إيصال يحمل توقيتاً','شاهد غيّر أقواله']; _message='🕵️ دليل: ${clues[_rng.nextInt(clues.length)]}. اربط الأدلة وحدد المشتبه به.'; _score+=15; _challenge++; break;
+      case 4: final goal=_rng.nextDouble()<.38; _message='⚽ ${goal?'هدف!':'استحواذ وتمريرات — حاول مجدداً'}'; _score+=goal?30:10; if(goal)_laps++; break;
+      case 5: final made=_rng.nextDouble()<.58; _message='🏀 ${made?'سلة!':'الكرة ارتدت من الحلقة'}'; _score+=made?28:5; if(made)_laps++; break;
+      case 6: final hit=_rng.nextDouble()<.62; _message='🥊 ${hit?'لكمة دقيقة':'تفاديت الضربة'}'; _score+=hit?18:8; if(hit)_enemy=max(0,_enemy-15); break;
+      case 7: final missions=['احمِ القافلة في العصور القديمة','أمّن نقطة إمداد حديثة','أنقذ المدنيين من منطقة الخطر','عطّل الإمداد دون استهداف المدنيين']; _message='⚔️ مهمة: ${missions[_challenge%missions.length]}'; _score+=16; _resource++; _challenge++; break;
+      case 8: final moves=['سحب السيف','صدّ الضربة','خطوة جانبية','ضربة تدريبية']; _message='🥷 ${moves[_rng.nextInt(moves.length)]} • أكمل التحدي'; _score+=20; if(_rng.nextDouble()<.25)_health=max(0,_health-8); break;
+      case 9: _laps++; final drift=_rng.nextDouble()<.55; _message='🏎️ القطاع $_laps • ${drift?'انجراف مضبوط!':'حافظ على خط السباق'}'; _score+=drift?25:12; _energy=min(10,_energy+1); break;
+    }
   }
   void _adventureAction(){
     final i=widget.gameIndex-21;
@@ -653,7 +672,7 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
     const SizedBox(height:12),SizedBox(height:300,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:CustomPaint(painter:_ThreeDGameScenePainter(preset:preset,x:_x,y:_y,score:_score,health:_health,combo:_combo,level:_level),child:const SizedBox.expand()))),
     const SizedBox(height:12),Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_message,style:const TextStyle(fontWeight:FontWeight.w800)))),
     Row(mainAxisAlignment:MainAxisAlignment.center,children:[IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,-1):null,icon:const Icon(Icons.arrow_upward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(-1,0):null,icon:const Icon(Icons.arrow_back)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(1,0):null,icon:const Icon(Icons.arrow_forward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,1):null,icon:const Icon(Icons.arrow_downward))]),
-    FilledButton.icon(onPressed:_energy>0&&_health>0?_action,icon:const Icon(Icons.flash_on),label:Text(widget.adventure?'استكشف / نفّذ':widget.gameIndex<10?'نفّذ الحركة':'حلّ التحدي')),OutlinedButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة')),
+    FilledButton.icon(onPressed:_energy>0&&_health>0?_action,icon:const Icon(Icons.flash_on),label:Text(widget.adventure?'نفّذ المهمة':_newGame?'العب / نفّذ المهمة':widget.gameIndex<10?'نفّذ الحركة':'حلّ التحدي')),OutlinedButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة')),
   ]);
 }
 class _ThreeDGameScenePainter extends CustomPainter {
