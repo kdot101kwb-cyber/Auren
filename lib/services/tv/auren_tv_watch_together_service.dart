@@ -3,14 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class AurenTvWatchTogetherRoom {
   final String id,title,inviteCode,status;
+  final String? hostUid;
   final List<String> memberIds;
   final String? channelId,channelName;
   final double positionSeconds;
   final bool isPlaying;
-  const AurenTvWatchTogetherRoom({required this.id,required this.title,required this.inviteCode,required this.memberIds,required this.channelId,required this.channelName,required this.positionSeconds,required this.isPlaying,required this.status});
+  const AurenTvWatchTogetherRoom({required this.id,required this.title,required this.inviteCode,required this.memberIds,required this.hostUid,required this.channelId,required this.channelName,required this.positionSeconds,required this.isPlaying,required this.status});
   factory AurenTvWatchTogetherRoom.fromDoc(DocumentSnapshot<Map<String,dynamic>> doc){
     final d=doc.data()??const <String,dynamic>{};
-    return AurenTvWatchTogetherRoom(id:doc.id,title:d['title'] as String?'AUREN TV Room',inviteCode:d['inviteCode'] as String?'',memberIds:List<String>.from(d['memberIds'] as List?const []),channelId:d['channelId'] as String?,channelName:d['channelName'] as String?,positionSeconds:(d['positionSeconds'] as num?)?.toDouble()??0,isPlaying:d['isPlaying'] as bool?false,status:d['status'] as String?'waiting');
+    return AurenTvWatchTogetherRoom(id:doc.id,title:d['title'] as String? ?? 'AUREN TV Room',inviteCode:d['inviteCode'] as String? ?? '',hostUid:d['hostUid'] as String?,memberIds:List<String>.from(d['memberIds'] as List? ?? const []),channelId:d['channelId'] as String?,channelName:d['channelName'] as String?,positionSeconds:(d['positionSeconds'] as num?)?.toDouble()??0,isPlaying:d['isPlaying'] as bool?false,status:d['status'] as String?'waiting');
   }
 }
 class AurenTvWatchTogetherService {
