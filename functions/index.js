@@ -3144,3 +3144,17 @@ exports.getAurenSeasonChampion = require('firebase-functions/v2/https').onCall(
   return {seasonId:s.seasonId,gameIndex,champion:top?{playerId:top.id,...top.data()}:null};
  }
 );
+
+exports.processAurenGamingSeasonRewards = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true},
+ async(request)=>{
+  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const s=aurenGamingSeasonMeta(), gameIndex=Number(request.data?.gameIndex||53);
+  if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex))throw aurenHttpsError('invalid-argument','Unsupported game.');
+  const ref=db.collection('auren_game_rankings').doc(String(gameIndex)).collection('seasons').doc(s.seasonId).collection('players');
+  const snap=await ref.orderBy('rating','desc').limit(10).get();
+  const batch=db.batch(); const rewards=[];
+  snap.docs.forEach((d,i)=>{const reward=i===0?1000:i===1?600:i===2?400:100; const id=s.seasonId+'_'+gameIndex+'_'+d.id; const rr=db.collection('auren_gaming_season_rewards').doc(id); batch.set(rr,{seasonId:s.seasonId,gameIndex,playerId:d.id,rank:i+1,reward,createdAt:FieldValue.serverTimestamp()},{merge:true}); rewards.push({playerId:d.id,rank:i+1,reward});});
+  await batch.commit(); return {seasonId:s.seasonId,gameIndex,rewards};
+ }
+);
