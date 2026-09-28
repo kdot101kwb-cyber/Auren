@@ -350,7 +350,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           ]),
           if (playing != null)
             FutureBuilder<Map<String, String>?>(
-              future: AurenTvService.instance.nowNext(playing!.tvgId),
+              future: activeSource != null ? AurenTvService.instance.nowNextForSource(activeSource!, playing!.tvgId) : AurenTvService.instance.nowNext(playing!.tvgId),
               builder: (context, snapshot) {
                 final guide = snapshot.data;
                 if (guide == null) return const Padding(padding: EdgeInsets.all(6), child: Text('دليل البرامج غير متاح لهذه القناة حالياً.'));
