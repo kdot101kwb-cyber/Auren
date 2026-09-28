@@ -640,6 +640,21 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
     final labels=['','','','','','','','','','','🧩 لغز','🔢 مصفوفة','♟️ قرار','🧠 نمط','🔐 رمز','🃏 تطابق','🧠 تسلسل','🔵 لون','🧩 زوج','👀 ذاكرة'];
     _message=ok?'\${labels[i]} صحيح!':'\${labels[i]} جرّب مرة أخرى';_score+=ok?18:2;
   }
+  void _advancedMission(){
+    final missions=[
+      'استكشف القلعة واعثر على المفتاح قبل نفاد الطاقة.',
+      'تتبّع الآثار عبر الغابة وتجاوز الحارس ثم افتح البوابة.',
+      'أنقذ الفريق من المنطقة المحاصرة واجمع 3 موارد.',
+      'اعثر على الأدلة الأربعة ثم أكمل ملف القضية.',
+      'اعبر آخر قطاع في السباق مع أقل ضرر ممكن.',
+    ];
+    final m=missions[_challenge%missions.length];
+    _message='🎯 مهمة $_challenge: $m';
+    _challenge++;
+    _score+=25;
+    _resource++;
+  }
+
   void _newGameAction(){
     switch(_newIndex){
       case 10: _message='♟️ خطة تكتيكية: سيطر على الوسط ثم نفّذ نقلة هجومية'; _score+=20; _challenge++; break;
@@ -686,7 +701,7 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
     const SizedBox(height:12),SizedBox(height:300,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:CustomPaint(painter:_ThreeDGameScenePainter(preset:preset,x:_x,y:_y,score:_score,health:_health,combo:_combo,level:_level),child:const SizedBox.expand()))),
     const SizedBox(height:12),Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_message,style:const TextStyle(fontWeight:FontWeight.w800)))),
     Row(mainAxisAlignment:MainAxisAlignment.center,children:[IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,-1):null,icon:const Icon(Icons.arrow_upward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(-1,0):null,icon:const Icon(Icons.arrow_back)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(1,0):null,icon:const Icon(Icons.arrow_forward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,1):null,icon:const Icon(Icons.arrow_downward))]),
-    FilledButton.icon(onPressed:_energy>0&&_health>0?_action,icon:const Icon(Icons.flash_on),label:Text(widget.adventure?'نفّذ المهمة':_newGame?'العب / نفّذ المهمة':widget.gameIndex<10?'نفّذ الحركة':'حلّ التحدي')),OutlinedButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة')),
+    Row(children:[Expanded(child:FilledButton.icon(onPressed:_energy>0&&_health>0?_action,icon:const Icon(Icons.flash_on),label:Text(widget.adventure?'نفّذ المهمة':_newGame?'العب / نفّذ المهمة':widget.gameIndex<10?'نفّذ الحركة':'حلّ التحدي'))),const SizedBox(width:8),Expanded(child:OutlinedButton.icon(onPressed:_energy>0&&_health>0?_advancedMission,icon:const Icon(Icons.flag),label:const Text('مهمة جديدة')))]),OutlinedButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة')),
   ]);
 }
 class _ThreeDGameScenePainter extends CustomPainter {
