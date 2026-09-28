@@ -12,7 +12,11 @@ class AurenMoviesHubScreen extends StatefulWidget {
 class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
   final _repo = EntertainmentRepository();
   String _genre = 'الكل';
+  String _country = 'الكل';
+  String _language = 'الكل';
+  String _search = '';
   static const _genres = ['الكل','Action','Comedy','Drama','Romance','Thriller','Documentary','Animation'];
+  String _norm(String v) => v.trim().toLowerCase();
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('🎬 AUREN Movies'), actions: [
@@ -22,7 +26,16 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
       stream: _repo.watchItems(type: 'Movie'),
       builder: (context, snapshot) {
         final items = snapshot.data ?? const <AurenEntertainmentItem>[];
-        final filtered = _genre == 'الكل' ? items : items.where((x) => ('${x.title} ${x.description}').toLowerCase().contains(_genre.toLowerCase())).toList();
+        final countries = ['الكل', ...{for (final x in items) if (x.country.trim().isNotEmpty) x.country.trim()}];
+        final languages = ['الكل', ...{for (final x in items) if (x.language.trim().isNotEmpty) x.language.trim()}];
+        final filtered = items.where((x) {
+          final text = _norm('${x.title} ${x.description} ${x.genres.join(' ')}');
+          final genreOk = _genre == 'الكل' || x.genres.any((g) => _norm(g) == _norm(_genre)) || text.contains(_norm(_genre));
+          final countryOk = _country == 'الكل' || _norm(x.country) == _norm(_country);
+          final languageOk = _language == 'الكل' || _norm(x.language) == _norm(_language);
+          final searchOk = _search.isEmpty || text.contains(_norm(_search)) || _norm(x.country).contains(_norm(_search)) || _norm(x.language).contains(_norm(_search));
+          return genreOk && countryOk && languageOk && searchOk;
+        }).toList();
         return ListView(padding: const EdgeInsets.all(16), children: [
           Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Movie Universe', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
@@ -30,6 +43,12 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
             Text('${items.length} فيلم متاح • اكتشاف عالمي + توصيات ذكية'),
           ]))),
           const SizedBox(height: 14),
+          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فيلم، دولة أو لغة'), onChanged: (v) => setState(() => _search = v)),
+          const SizedBox(height: 12),
+          SizedBox(height: 42, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: countries.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(countries[i]), selected: _country == countries[i], onSelected: (_) => setState(() => _country = countries[i])))),
+          const SizedBox(height: 8),
+          SizedBox(height: 42, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: languages.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(languages[i]), selected: _language == languages[i], onSelected: (_) => setState(() => _language = languages[i])))),
+          const SizedBox(height: 12),
           SizedBox(height: 42, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: _genres.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(_genres[i]), selected: _genre == _genres[i], onSelected: (_) => setState(() => _genre = _genres[i])))),
           const SizedBox(height: 16),
           if (snapshot.hasError) Text('تعذر تحميل الأفلام: ${snapshot.error}'),
