@@ -1996,6 +1996,31 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
     }
 
+    match /auren_game_lobbies/{lobbyId} {
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.players;
+      allow create: if request.auth != null
+        && request.resource.data.hostId == request.auth.uid
+        && request.resource.data.guestId == null
+        && request.resource.data.players is list
+        && request.resource.data.players.size() == 1
+        && request.resource.data.players[0] == request.auth.uid
+        && request.resource.data.gameIndex is int
+        && request.resource.data.gameIndex >= 0
+        && request.resource.data.gameIndex <= 59
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.turnPlayerId == request.auth.uid
+        && request.resource.data.stateVersion == 0
+        && request.resource.data.state is map
+        && request.resource.data.state.size() == 0;
+      // Multiplayer writes are transactionally validated by the trusted game
+      // backend path. Clients cannot directly overwrite the authoritative state.
+      allow update: if false;
+      allow delete: if request.auth != null
+        && resource.data.hostId == request.auth.uid
+        && resource.data.status != 'playing';
+    }
+
     match /gaming_rooms/{roomId} {
       allow read: if request.auth != null && request.auth.uid in resource.data.playerUids;
       allow create: if request.auth != null
