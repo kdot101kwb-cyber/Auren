@@ -1,5 +1,6 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
 const {buildTournamentBracket,createTournamentNextRound}=require('./tournament_rules');
 
 test('8-player bracket creates four playable quarterfinal matches', () => {
@@ -46,16 +47,14 @@ test('next round generates a final from two semifinal winners', () => {
 });
 
 test('tournament backend source validates winner membership and rejects non-players', async () => {
-  const {readFile} = await import('node:fs/promises');
-  const source=await readFile(new URL('./index.js',import.meta.url),'utf8');
+  const source=fs.readFileSync(require.resolve('./index.js'),'utf8');
   assert.match(source,/winnerId!==m\.p1&&winnerId!==m\.p2/);
   assert.match(source,/Only match players can submit the result/);
   assert.match(source,/Winner must be a match player/);
 });
 
 test('finished tournament results are idempotent', async () => {
-  const {readFile} = await import('node:fs/promises');
-  const source=await readFile(new URL('./index.js',import.meta.url),'utf8');
+  const source=fs.readFileSync(require.resolve('./index.js'),'utf8');
   assert.match(source,/if\(m\.status==='finished'\)return \{accepted:true,duplicate:true/);
 });
 
