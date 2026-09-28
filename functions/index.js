@@ -3233,3 +3233,10 @@ exports.getAurenGamingNotifications = require('firebase-functions/v2/https').onC
  const snap=await db.collection('users').doc(request.auth.uid).collection('gaming_notifications').orderBy('createdAt','desc').limit(50).get();
  return {notifications:snap.docs.map(d=>({id:d.id,...d.data()}))};
 });
+
+exports.markAurenGamingNotificationsRead = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
+ if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+ const uid=request.auth.uid, snap=await db.collection('auren_gaming_season_rewards').where('playerId','==',uid).limit(50).get();
+ const batch=db.batch(); snap.docs.forEach(d=>batch.set(d.ref,{readAt:FieldValue.serverTimestamp()},{merge:true})); await batch.commit();
+ return {ok:true,count:snap.size};
+});
