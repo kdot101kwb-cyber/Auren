@@ -766,7 +766,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   Widget _choiceCard(String title, List<String> options, void Function(int) onTap) => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 8),
-    Wrap(spacing: 8, children: List.generate(options.length, (i) => FilledButton.tonal(onPressed: _hp > 0 && _isMyTurn ? () { onTap(i); _saveProgress(); _syncGameState(); } : null, child: Text(options[i])))),
+    Wrap(spacing: 8, children: List.generate(options.length, (i) => FilledButton.tonal(onPressed: _hp > 0 && _isMyTurn ? () { onTap(i); if (!_onlineMatch) { _saveProgress(); _syncGameState(); } } : null, child: Text(options[i])))),
   ])));
 
   Widget _actionBoard() {
