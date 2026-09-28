@@ -18,5 +18,11 @@ Novita, Nscale and others. It also exposes text-to-video models such as
 Wan, LTX-Video, HunyuanVideo and CogVideoX. See the official documentation
 before enabling each adapter.
 
+Live adapter foundation is now in `live_provider_adapters.js`. It provides a
+normalized contract for Hugging Face chat and Replicate asynchronous jobs,
+including external job IDs and real output URLs. These adapters are not wired
+into Production Worker v2 yet because provider credentials must be explicitly
+bound to the worker; Firebase requires secrets to be bound per function.
+
 Next integration rule: $0-first -> free/open-source path -> low-cost path ->
 paid fallback, while preserving the task idempotency key.
