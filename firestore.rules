@@ -2293,6 +2293,18 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
+      match /typing/{uid} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.typing is bool
+          && request.resource.data.updatedAt is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+
       match /reactions/{reactionId} {
         allow read: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
