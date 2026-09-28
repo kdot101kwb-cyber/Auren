@@ -31,7 +31,7 @@ class AurenTvService {
     Map<String, String>? meta;
     for (final line in const LineSplitter().convert(r.body)) {
       if (line.startsWith('#EXTM3U')) {
-        _epgUrl = _attr(line, 'x-tvg-url') ?? _attr(line, 'url-tvg');
+        _epgUrl = ((_attr(line, 'x-tvg-url') ?? _attr(line, 'url-tvg')) ?? '').split(',').map((x) => x.trim()).firstWhere((x) => x.isNotEmpty, orElse: () => '');
       } else if (line.startsWith('#EXTINF:')) {
         meta = {
           'name': _attr(line, 'tvg-name') ?? line.split(',').last.trim(),
