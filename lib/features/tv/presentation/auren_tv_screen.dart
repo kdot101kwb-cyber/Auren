@@ -309,6 +309,24 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     }
   }
 
+  Widget _watchTogetherReactions(AurenTvWatchTogetherRoom room) {
+    const emojis = ['❤️','😂','🔥','👏','😍','😮','👍','🎉'];
+    final service = AurenTvWatchTogetherService.instance;
+    return StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+      stream: service.reactions(room.id),
+      builder: (ctx, snap) {
+        final docs = snap.data?.docs ?? const <QueryDocumentSnapshot<Map<String,dynamic>>>[];
+        return Wrap(
+          spacing: 4,
+          children: emojis.map((emoji) => ActionChip(
+            label: Text(emoji, style: const TextStyle(fontSize: 18)),
+            onPressed: () => service.sendReaction(room.id, emoji),
+          )).toList(),
+        );
+      },
+    );
+  }
+
   Future<void> _showWatchTogetherChat(AurenTvWatchTogetherRoom room) async {
     final service = AurenTvWatchTogetherService.instance;
     final controller = TextEditingController();
@@ -329,6 +347,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                     Text('Watch Together Chat', style: TextStyle(fontWeight: FontWeight.bold)),
                   ]),
                 ),
+                Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: _watchTogetherReactions(room)),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
                     stream: service.messages(room.id),
