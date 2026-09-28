@@ -1672,12 +1672,72 @@ exports.submitAurenLudoAction = require('firebase-functions/v2/https').onCall(
   }
 );
 
+
+const { createInitialFlagshipState, validateAndApplyFlagshipAction } = require('./flagship_server');
+
+exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    const moveId = String(request.data?.moveId || '').trim();
+    const expectedVersion = Number(request.data?.expectedVersion);
+    const action = request.data?.action;
+    if (!lobbyId || lobbyId.length > 128 || !moveId || moveId.length > 160 ||
+        !Number.isInteger(expectedVersion) || expectedVersion < 0 ||
+        !action || typeof action !== 'object' || Array.isArray(action)) {
+      throw aurenHttpsError('invalid-argument', 'Invalid flagship action request.');
+    }
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    try {
+      return await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+        const data = snap.data() || {};
+        const players = Array.isArray(data.players) ? data.players.map(String) : [];
+        const version = Number(data.stateVersion || 0);
+        const gameIndex = Number(data.gameIndex);
+        if (gameIndex < 53 || gameIndex > 59 || data.status !== 'playing' || !players.includes(uid) || players.length !== 2) {
+          throw aurenHttpsError('failed-precondition', 'Flagship lobby is not ready.');
+        }
+        if (String(data.lastMoveId || '') === moveId) {
+          return {accepted:true, duplicate:true, stateVersion:version, turnPlayerId:data.turnPlayerId || null};
+        }
+        if (data.turnPlayerId !== uid) throw aurenHttpsError('failed-precondition', 'It is not your turn.');
+        if (version !== expectedVersion) throw aurenHttpsError('aborted', 'Game state is out of date.');
+
+        let current = data.state;
+        if (!current || typeof current !== 'object' || Number(current.gameIndex) !== gameIndex) {
+          current = createInitialFlagshipState(gameIndex, players[0], players[1]);
+        }
+        const next = validateAndApplyFlagshipAction(current, action, uid);
+        const nextTurn = next.matchFinished ? null : players.find((id) => id !== uid);
+        delete next.nextTurnPlayerId;
+        tx.update(ref, {
+          state: next,
+          stateVersion: version + 1,
+          turnPlayerId: nextTurn,
+          lastMoveId: moveId,
+          status: next.matchFinished ? 'finished' : 'playing',
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        return {accepted:true, duplicate:false, stateVersion:version + 1, turnPlayerId:nextTurn};
+      });
+    } catch (error) {
+      if (error?.code) throw error;
+      throw aurenHttpsError('failed-precondition', String(error?.message || 'Flagship action rejected.'));
+    }
+  }
+);
+
 // Legacy gateway for non-Ludo games. Ludo is action-authoritative.
 function validateAurenGameState(gameIndex, state) {
   if (!state || typeof state !== 'object' || Array.isArray(state)) throw aurenHttpsError('invalid-argument', 'Invalid game state.');
   if (JSON.stringify(state).length > 45000) throw aurenHttpsError('invalid-argument', 'Game state is too large.');
   if (typeof state.matchFinished !== 'boolean') throw aurenHttpsError('invalid-argument', 'matchFinished is required.');
   if (gameIndex === 50) throw aurenHttpsError('failed-precondition', 'Ludo must use the authoritative action gateway.');
+  if (gameIndex >= 53 && gameIndex <= 59) throw aurenHttpsError('failed-precondition', 'Flagship games must use the authoritative action gateway.');
   return state;
 }
 
