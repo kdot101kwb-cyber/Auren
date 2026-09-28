@@ -17,6 +17,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String countryLabel = 'الدول';
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
+  List<AurenTvSource> sources = const [];
+  AurenTvSource? activeSource;
   Set<String> favorites = {};
   VideoPlayerController? player;
   AurenTvChannel? playing;
@@ -32,6 +34,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override void initState() {
     super.initState();
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
+    AurenTvService.instance.sources().then((v) { if (mounted) setState(() => sources = v); });
   }
 
   @override void dispose() {
@@ -145,6 +148,51 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     );
   }
 
+
+  Future<void> _showSources() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context, showDragHandle: true,
+      builder: (ctx) => SafeArea(child: ListView(
+        padding: const EdgeInsets.only(bottom: 16),
+        children: [
+          const ListTile(title: Text('مصادر IPTV الخاصة بي', style: TextStyle(fontWeight: FontWeight.w800)), subtitle: Text('أضف M3U أو Xtream من اشتراك تملكه أو لديك حق استخدامه.')),
+          ListTile(leading: const Icon(Icons.add_link), title: const Text('إضافة مصدر'), onTap: () => Navigator.pop(ctx, '__add__')),
+          ...sources.map((source) => ListTile(leading: Icon(source.type == 'xtream' ? Icons.cloud : Icons.link), title: Text(source.name), subtitle: Text(source.type == 'xtream' ? 'Xtream' : 'M3U'), trailing: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () async { await AurenTvService.instance.deleteSource(source.id); if (ctx.mounted) Navigator.pop(ctx); if (mounted) setState(() => sources = sources.where((x) => x.id != source.id).toList()); } ), onTap: () => Navigator.pop(ctx, source.id))),
+        ],
+      )),
+    );
+    if (!mounted || choice == null) return;
+    if (choice == '__add__') { await _addSource(); return; }
+    final selected = sources.where((x) => x.id == choice).firstOrNull;
+    if (selected == null) return;
+    setState(() { activeSource = selected; tvMode = 'world'; country = ''; continent = ''; quickRegion = ''; });
+  }
+
+  Future<void> _addSource() async {
+    String type = 'm3u';
+    final name = TextEditingController(text: 'IPTV الخاص بي');
+    final url = TextEditingController();
+    final epg = TextEditingController();
+    final user = TextEditingController();
+    final pass = TextEditingController();
+    final ok = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) => AlertDialog(
+      title: const Text('إضافة مصدر IPTV'),
+      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        DropdownButtonFormField<String>(value: type, decoration: const InputDecoration(labelText: 'النوع'), items: const [DropdownMenuItem(value: 'm3u', child: Text('M3U URL')), DropdownMenuItem(value: 'xtream', child: Text('Xtream API'))], onChanged: (v) => setLocal(() => type = v ?? 'm3u')),
+        TextField(controller: name, decoration: const InputDecoration(labelText: 'اسم المصدر')),
+        TextField(controller: url, decoration: InputDecoration(labelText: type == 'xtream' ? 'رابط السيرفر / Base URL' : 'رابط M3U'), keyboardType: TextInputType.url),
+        if (type == 'xtream') ...[TextField(controller: user, decoration: const InputDecoration(labelText: 'Username')), TextField(controller: pass, decoration: const InputDecoration(labelText: 'Password'), obscureText: true)],
+        TextField(controller: epg, decoration: const InputDecoration(labelText: 'EPG URL (اختياري)'), keyboardType: TextInputType.url),
+        const SizedBox(height: 8), const Text('بيانات الدخول تُحفظ محلياً في التخزين الآمن للجهاز.', style: TextStyle(fontSize: 12)),
+      ])),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('حفظ'))],
+    )));
+    if (ok != true) { name.dispose(); url.dispose(); epg.dispose(); user.dispose(); pass.dispose(); return; }
+    final source = AurenTvSource(id: 'src-${DateTime.now().microsecondsSinceEpoch}', name: name.text.trim().isEmpty ? 'IPTV الخاص بي' : name.text.trim(), type: type, url: url.text.trim(), epgUrl: epg.text.trim(), username: user.text.trim(), password: pass.text);
+    await AurenTvService.instance.saveSource(source);
+    if (mounted) setState(() { sources = [...sources, source]; activeSource = source; });
+    name.dispose(); url.dispose(); epg.dispose(); user.dispose(); pass.dispose();
+  }
   String _regionLabel(AurenTvChannel c) {
     final code = c.country.toUpperCase();
     for (final entry in regions.entries) { if (entry.value.contains(code)) return entry.key; }
@@ -152,7 +200,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
   @override Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('AUREN TV')),
+    appBar: AppBar(title: const Text('AUREN TV'), actions: [IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link))]),
     body: Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
@@ -298,7 +346,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             ),
         ]),
       Expanded(child: FutureBuilder<List<AurenTvChannel>>(
-        future: tvMode == 'entertainment' ? AurenTvService.instance.loadEntertainment(limit: lowData ? 150 : 500) : tvMode == 'sports' ? AurenTvService.instance.loadSports(limit: lowData ? 150 : 500) : tvMode == 'news' ? AurenTvService.instance.loadNews(limit: lowData ? 150 : 500) : tvMode == 'movies' ? AurenTvService.instance.loadMovies(limit: lowData ? 150 : 500) : tvMode == 'music' ? AurenTvService.instance.loadMusic(limit: lowData ? 150 : 500) : tvMode == 'kids' ? AurenTvService.instance.loadKids(limit: lowData ? 150 : 500) : tvMode == 'animation' ? AurenTvService.instance.loadAnimation(limit: lowData ? 150 : 500) : tvMode == 'documentary' ? AurenTvService.instance.loadDocumentary(limit: lowData ? 150 : 500) : tvMode == 'series' ? AurenTvService.instance.loadSeries(limit: lowData ? 150 : 500) : continent.isNotEmpty ? AurenTvService.instance.loadFeaturedByCountries(regions[continent]!.toSet(), limit: 20) : AurenTvService.instance.load(country: country, category: category),
+        future: activeSource != null ? AurenTvService.instance.loadSource(activeSource!, limit: lowData ? 150 : 500) : tvMode == 'entertainment' ? AurenTvService.instance.loadEntertainment(limit: lowData ? 150 : 500) : tvMode == 'sports' ? AurenTvService.instance.loadSports(limit: lowData ? 150 : 500) : tvMode == 'news' ? AurenTvService.instance.loadNews(limit: lowData ? 150 : 500) : tvMode == 'movies' ? AurenTvService.instance.loadMovies(limit: lowData ? 150 : 500) : tvMode == 'music' ? AurenTvService.instance.loadMusic(limit: lowData ? 150 : 500) : tvMode == 'kids' ? AurenTvService.instance.loadKids(limit: lowData ? 150 : 500) : tvMode == 'animation' ? AurenTvService.instance.loadAnimation(limit: lowData ? 150 : 500) : tvMode == 'documentary' ? AurenTvService.instance.loadDocumentary(limit: lowData ? 150 : 500) : tvMode == 'series' ? AurenTvService.instance.loadSeries(limit: lowData ? 150 : 500) : continent.isNotEmpty ? AurenTvService.instance.loadFeaturedByCountries(regions[continent]!.toSet(), limit: 20) : AurenTvService.instance.load(country: country, category: category),
         builder: (context, snapshot) {
           if (snapshot.hasError) return Center(child: Text('تعذر تحميل القنوات: ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
