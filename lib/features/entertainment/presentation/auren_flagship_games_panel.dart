@@ -238,6 +238,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         await _multiplayer.initializeLudoMatch();
       } else if (widget.gameIndex == 1) {
         await _multiplayer.initializeDominoMatch();
+      } else if (widget.gameIndex == 2) {
+        await _multiplayer.initializeUnoMatch();
       }
       if (mounted) setState(() => _onlineStatus = 'Connected • ' + code.substring(0, min(6, code.length)).toUpperCase());
     } catch (_) {
