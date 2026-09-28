@@ -515,6 +515,14 @@ test('post-assembly plan covers audio, music, subtitles, thumbnail and trailer p
   assert.match(source,/postAssemblyPlan/);
 });
 
+test('post-assembly subtitle generation supports the canonical 12 languages and sanitizes requests',()=>{
+  const worker=fs.readFileSync(new URL('./post_assembly_worker.js', import.meta.url), 'utf8');
+  assert.match(worker,/const AUREN_SUBTITLE_LANGUAGES = \['ar', 'en', 'fr', 'es', 'pt', 'de', 'it', 'tr', 'zh', 'ja', 'ko', 'hi'\]/);
+  assert.match(worker,/AUREN_SUBTITLE_LANGUAGES\.includes\(v\)/);
+  assert.match(worker,/a\.indexOf\(v\) === i/);
+  assert.match(worker,/AUREN_SUBTITLE_LANGUAGES\.slice\(\)/);
+});
+
 test('post-assembly tasks include thumbnail and trailer and final package assets',()=>{
   assert.match(source,/for \(const type of \['audio','music','subtitles','thumbnail','trailer'\]\)/);
   assert.match(source,/finalPackageVersion:1/);
