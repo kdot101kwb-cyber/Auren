@@ -706,6 +706,23 @@ class AurenTvService {
     return null;
   }
 
+  Future<List<AurenTvEpgSearchResult>> watchlistPrograms() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('auren_tv_epg_watchlist') ?? <String>[];
+    final out = <AurenTvEpgSearchResult>[];
+    for (final value in raw) { final parts = value.split('|'); if (parts.length < 4) continue; out.add(AurenTvEpgSearchResult(channelId: parts[0], title: parts[1], startIso: parts[2], stopIso: parts[3], state: parts.length > 4 ? parts[4] : 'upcoming')); }
+    out.sort((a,b) => (DateTime.tryParse(a.startIso) ?? DateTime(2100)).compareTo(DateTime.tryParse(b.startIso) ?? DateTime(2100)));
+    return out;
+  }
+  Future<void> addEpgWatchlist(AurenTvEpgSearchResult item) async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance(); final list = prefs.getStringList('auren_tv_epg_watchlist') ?? <String>[];
+    final key = item.channelId + '|' + item.title + '|' + item.startIso + '|' + item.stopIso + '|' + item.state; if (!list.contains(key)) list.add(key); await prefs.setStringList('auren_tv_epg_watchlist', list.take(100).toList());
+  }
+  Future<void> removeEpgWatchlist(AurenTvEpgSearchResult item) async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance(); final list = prefs.getStringList('auren_tv_epg_watchlist') ?? <String>[];
+    list.removeWhere((x) => x.startsWith(item.channelId + '|' + item.title + '|' + item.startIso + '|')); await prefs.setStringList('auren_tv_epg_watchlist', list);
+  }
+
   Future<Map<String, String>?> nowNextForChannel(AurenTvChannel channel, {AurenTvSource? source}) async {
     final list = await smartScheduleForChannel(channel, source: source, hours: 48);
     if (list.isEmpty) return null;
