@@ -450,7 +450,8 @@ class AurenTvService {
     final wanted = _normalizeIdentity(tvgId);
     if (wanted.isEmpty) return const [];
     for (final entry in cache.entries) {
-      if (_normalizeIdentity(entry.key) == wanted) return entry.value;
+      final key = _normalizeIdentity(entry.key);
+      if (key == wanted || key.contains(wanted) || wanted.contains(key)) return entry.value;
     }
     return const [];
   }
