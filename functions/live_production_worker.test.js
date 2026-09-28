@@ -39,8 +39,9 @@ test('worker never treats text-only Hugging Face output as a video artifact',()=
 
 test('video model version has a backend deployment configuration fallback',()=>{
   assert.match(source,/defineString\('REPLICATE_VIDEO_MODEL_VERSION'/);
-  assert.match(source,/task\.providerVersion \|\| task\.replicateVersion \|\| REPLICATE_VIDEO_MODEL_VERSION\.value\(\)/);
-  assert.match(source,/never accept a provider URL, token, or model version from the client task payload as executable credentials/);
+  assert.match(source,/REPLICATE_VIDEO_MODEL_VERSION\.value\(\)/);
+  assert.doesNotMatch(source,/task\.providerVersion \|\| task\.replicateVersion/);
+  assert.match(source,/Provider\/model selection and executable credentials are backend-controlled only/);
 });
 
 
@@ -53,4 +54,17 @@ test('terminal provider failure clears the external job before retry',()=>{
   assert.match(source,/status:'generation'/);
   assert.match(source,/externalJobId:''/);
   assert.match(source,/lastError:String\(polled\.error/);
+});
+
+
+test('generation retry budget is not consumed by provider polling',()=>{
+  assert.match(source,/String\(data\.status \|\| ''\) === 'generation'/);
+  assert.match(source,/generationAttempts:admin\.firestore\.FieldValue\.increment\(1\)/);
+  assert.match(source,/provider_pending/);
+});
+
+test('completed provider output skips an unnecessary polling cycle',()=>{
+  assert.match(source,/const realOutput=result\.result\.output/);
+  assert.match(source,/status:realOutput \? 'output' : 'processing'/);
+  assert.match(source,/externalJobId:realOutput \? '' :/);
 });
