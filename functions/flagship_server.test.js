@@ -77,3 +77,37 @@ test('ranking totals never drops below the minimum rating', () => {
 test('game achievement thresholds are server-defined', () => {
   assert.ok(true);
 });
+
+
+test('supports valid actions for every flagship game', () => {
+  const actions = {
+    53:{type:'advance_case',payload:{}},
+    54:{type:'shoot',payload:{lane:1}},
+    55:{type:'shot',payload:{shot:1}},
+    56:{type:'boxing',payload:{move:0}},
+    57:{type:'mission',payload:{mission:2}},
+    58:{type:'samurai',payload:{move:2}},
+    59:{type:'steer',payload:{lane:1}},
+  };
+  for (const [id, action] of Object.entries(actions)) {
+    const s=createInitialFlagshipState(Number(id),'host','guest');
+    const n=validateAndApplyFlagshipAction(s,action,'host');
+    assert.equal(n.gameIndex,Number(id));
+    assert.equal(n.round,1);
+  }
+});
+
+test('rejects malformed payloads across all flagship games', () => {
+  const cases = [
+    [54,{type:'shoot',payload:{lane:3}}],
+    [55,{type:'shot',payload:{shot:-1}}],
+    [56,{type:'boxing',payload:{move:4}}],
+    [57,{type:'mission',payload:{mission:9}}],
+    [58,{type:'samurai',payload:{move:8}}],
+    [59,{type:'steer',payload:{lane:-1}}],
+  ];
+  for (const [gameIndex, action] of cases) {
+    const s=createInitialFlagshipState(gameIndex,'host','guest');
+    assert.throws(() => validateAndApplyFlagshipAction(s,action,'host'));
+  }
+});
