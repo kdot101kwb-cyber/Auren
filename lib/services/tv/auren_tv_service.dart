@@ -91,7 +91,7 @@ class AurenTvService {
     return {'current': current['title'] ?? '', 'next': next['title'] ?? ''};
   }
 
-  Future<List<Map<String, String>>> schedule(String tvgId, {int hours = 8}) async {
+  Future<List<Map<String, String>>> schedule(String tvgId, {int hours = 24}) async {
     if (tvgId.isEmpty || _epgUrl == null || _epgUrl!.isEmpty) return const [];
     _epgCache ??= await _loadEpg();
     final now = DateTime.now().toUtc();
@@ -109,7 +109,7 @@ class AurenTvService {
       if (r.statusCode != 200) return {};
       final result = <String, List<Map<String, String>>>{};
       final now = DateTime.now().toUtc();
-      final pattern = RegExp(r'<programme\\b([^>]*)>([\\s\\S]*?)</programme>', caseSensitive: false);
+      final pattern = RegExp(r'<programme\b([^>]*)>([\s\S]*?)</programme>', caseSensitive: false);
       for (final m in pattern.allMatches(r.body).take(30000)) {
         final attrs = m.group(1)!;
         final body = m.group(2)!;
@@ -119,7 +119,7 @@ class AurenTvService {
         if (channel.isEmpty || start.isEmpty || stop.isEmpty) continue;
         final from = _epgDate(start), until = _epgDate(stop);
         if (from == null || until == null || until.isBefore(now)) continue;
-        final titleMatch = RegExp(r'<title[^>]*>([\\s\\S]*?)</title>', caseSensitive: false).firstMatch(body);
+        final titleMatch = RegExp(r'<title[^>]*>([\s\S]*?)</title>', caseSensitive: false).firstMatch(body);
         final title = _decodeXml(titleMatch?.group(1) ?? '');
         final state = from.isBefore(now) && until.isAfter(now) ? 'now' : 'next';
         result.putIfAbsent(channel, () => <Map<String,String>>[]).add({
