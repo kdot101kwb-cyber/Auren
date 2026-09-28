@@ -17,14 +17,14 @@ const MAX_ATTEMPTS = 5;
 async function claimMusicTask() {
   const snap = await db.collectionGroup('productionTasks')
     .where('type', '==', 'music_generation')
-    .where('status', 'in', ['generation', 'provider_pending', 'processing'])
+    .where('status', 'in', ['generation', 'provider_pending', 'processing', 'waiting_provider'])
     .orderBy('updatedAt', 'asc').limit(10).get();
   for (const item of snap.docs) {
     const claimed = await db.runTransaction(async tx => {
       const fresh = await tx.get(item.ref);
       if (!fresh.exists) return false;
       const d = fresh.data() || {};
-      if (!['generation','provider_pending','processing'].includes(String(d.status || ''))) return false;
+      if (!['generation','provider_pending','processing','waiting_provider'].includes(String(d.status || ''))) return false;
       if (Number(d.providerLockUntilMs || 0) > Date.now()) return false;
       if (Number(d.generationAttempts || 0) >= MAX_ATTEMPTS) return false;
       tx.update(item.ref, {
@@ -148,6 +148,8 @@ exports.runAurenMusicProductionWorker = onSchedule({
   if (!ref) return;
   try { await processMusicTask(ref); }
   catch (error) {
-    await ref.set({status:'generation',providerLockUntilMs:0,lastError:String(error?.message || error).slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    const message=String(error?.message || error).slice(0,700);
+    await ref.set({status:'generation',providerLockUntilMs:0,lastError:message,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    await updateMusicParentJob(ref,{status:'generation',productionStage:'generation',progress:10,lastError:message});
   }
 });
