@@ -13,8 +13,15 @@ import 'auren_smart_music_screen.dart';
 import 'auren_saved_music_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 
-class AurenMusicHubScreen extends StatelessWidget {
+class AurenMusicHubScreen extends StatefulWidget {
   const AurenMusicHubScreen({super.key});
+  @override State<AurenMusicHubScreen> createState() => _AurenMusicHubState();
+}
+
+class _AurenMusicHubState extends State<AurenMusicHubScreen> {
+  String _query = '';
+  String _genre = 'الكل';
+  static const _genres = ['الكل', 'Pop', 'Hip Hop', 'Afrobeat', 'R&B', 'Rock', 'Classical', 'Chill'];
 
   void _ai(BuildContext context, String prompt) {
     Navigator.push(
@@ -56,6 +63,12 @@ class AurenMusicHubScreen extends StatelessWidget {
         stream: repo.watchItems(type: 'Music'),
         builder: (context, snapshot) {
           final items = snapshot.data ?? const <AurenEntertainmentItem>[];
+          final filtered = items.where((item) {
+            final haystack = (item.title + ' ' + item.description + ' ' + item.artistName + ' ' + item.albumName + ' ' + item.genres.join(' ')).toLowerCase();
+            final searchOk = _query.trim().isEmpty || haystack.contains(_query.trim().toLowerCase());
+            final genreOk = _genre == 'الكل' || item.genres.any((g) => g.toLowerCase() == _genre.toLowerCase()) || haystack.contains(_genre.toLowerCase());
+            return searchOk && genreOk;
+          }).toList();
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -64,7 +77,11 @@ class AurenMusicHubScreen extends StatelessWidget {
               _sectionTitle('استمع بطريقتك'),
               _actions(context),
               const SizedBox(height: 20),
-              _intelligentHome(context, items, repo, uid),
+              TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن أغنية، فنان أو ألبوم'), onChanged: (v) => setState(() => _query = v)),
+              const SizedBox(height: 10),
+              SizedBox(height: 42, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: _genres.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(_genres[i]), selected: _genre == _genres[i], onSelected: (_) => setState(() => _genre = _genres[i])))),
+              const SizedBox(height: 12),
+              _intelligentHome(context, filtered, repo, uid),
 
               _sectionTitle('Music & Podcasts'),
 
