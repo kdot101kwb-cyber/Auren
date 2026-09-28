@@ -3485,3 +3485,7 @@ exports.submitAurenEntertainmentRightsReview = require('firebase-functions/v2/ht
   await ref.set({rightsReview:{status:'submitted',declaration:claim,submittedAt:FieldValue.serverTimestamp(),reviewVersion:1}}, {merge:true});
   return {status:'submitted',reviewVersion:1};
 });
+
+// Real provider-backed music generation worker.
+const {runAurenMusicProductionWorker} = require('./music_production_worker');
+exports.runAurenMusicProductionWorker = runAurenMusicProductionWorker;
