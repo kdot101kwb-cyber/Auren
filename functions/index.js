@@ -1675,6 +1675,35 @@ exports.submitAurenLudoAction = require('firebase-functions/v2/https').onCall(
 
 const { createInitialFlagshipState, validateAndApplyFlagshipAction } = require('./flagship_server');
 
+function normalizePlayers(players) {
+  return Array.isArray(players) ? players.map(String).filter(Boolean).slice(0, 2) : [];
+}
+
+function buildPlayerStats(players, state) {
+  const ids = normalizePlayers(players);
+  const existing = state?.playerStats && typeof state.playerStats === 'object' ? state.playerStats : {};
+  const stats = {};
+  for (const id of ids) {
+    const old = existing[id] && typeof existing[id] === 'object' ? existing[id] : {};
+    stats[id] = {
+      score: Math.max(0, Number.isFinite(Number(old.score)) ? Number(old.score) : 0),
+      rounds: Math.max(0, Number.isFinite(Number(old.rounds)) ? Number(old.rounds) : 0),
+      actions: Math.max(0, Number.isFinite(Number(old.actions)) ? Number(old.actions) : 0),
+    };
+  }
+  return stats;
+}
+
+function determineMatchResult(players, stats, state) {
+  const ids = normalizePlayers(players);
+  if (!state?.matchFinished) return {status:'playing', winnerId:null, result:'in_progress'};
+  const scores = ids.map((id) => Number(stats[id]?.score || 0));
+  const max = Math.max(...scores);
+  const winners = ids.filter((_, i) => scores[i] === max);
+  if (winners.length !== 1) return {status:'finished', winnerId:null, result:'draw'};
+  return {status:'finished', winnerId:winners[0], result:'win'};
+}
+
 exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
@@ -1687,7 +1716,7 @@ exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').on
       const snap = await tx.get(ref);
       if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
       const data = snap.data() || {};
-      const players = Array.isArray(data.players) ? data.players.map(String) : [];
+      const players = normalizePlayers(data.players);
       const gameIndex = Number(data.gameIndex);
       if (gameIndex < 53 || gameIndex > 59 || data.status !== 'playing' || players.length !== 2 || !players.includes(uid)) {
         throw aurenHttpsError('failed-precondition', 'Flagship lobby is not ready.');
@@ -1698,6 +1727,8 @@ exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').on
       const host = String(data.hostId || players[0]);
       const guest = String(data.guestId || players.find((p) => p !== host) || players[1]);
       const state = createInitialFlagshipState(gameIndex, host, guest);
+      state.playerStats = buildPlayerStats(players, state);
+      state.matchResult = {status:'playing', winnerId:null, result:'in_progress'};
       tx.update(ref, {
         state,
         stateVersion: 0,
@@ -1731,7 +1762,7 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
         const snap = await tx.get(ref);
         if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
         const data = snap.data() || {};
-        const players = Array.isArray(data.players) ? data.players.map(String) : [];
+        const players = normalizePlayers(data.players);
         const version = Number(data.stateVersion || 0);
         const gameIndex = Number(data.gameIndex);
         if (gameIndex < 53 || gameIndex > 59 || data.status !== 'playing' || !players.includes(uid) || players.length !== 2) {
@@ -1747,18 +1778,36 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
         if (!current || typeof current !== 'object' || Number(current.gameIndex) !== gameIndex) {
           current = createInitialFlagshipState(gameIndex, players[0], players[1]);
         }
+        current.playerStats = buildPlayerStats(players, current);
+        const beforeScore = Number(current.score) || 0;
         const next = validateAndApplyFlagshipAction(current, action, uid);
+        const delta = Math.max(0, (Number(next.score) || 0) - beforeScore);
+        next.playerStats[uid].score += delta;
+        next.playerStats[uid].rounds += Math.max(0, (Number(next.round) || 0) - (Number(current.round) || 0));
+        next.playerStats[uid].actions += 1;
+
+        const result = determineMatchResult(players, next.playerStats, next);
+        next.matchResult = result;
         const nextTurn = next.matchFinished ? null : players.find((id) => id !== uid);
-        delete next.nextTurnPlayerId;
+
         tx.update(ref, {
           state: next,
+          playerStats: next.playerStats,
+          matchResult: result,
           stateVersion: version + 1,
           turnPlayerId: nextTurn,
           lastMoveId: moveId,
-          status: next.matchFinished ? 'finished' : 'playing',
+          status: result.status,
           updatedAt: FieldValue.serverTimestamp(),
         });
-        return {accepted:true, duplicate:false, stateVersion:version + 1, turnPlayerId:nextTurn};
+        return {
+          accepted:true,
+          duplicate:false,
+          stateVersion:version + 1,
+          turnPlayerId:nextTurn,
+          matchResult:result,
+          playerScores:next.playerStats,
+        };
       });
     } catch (error) {
       if (error?.code) throw error;
@@ -1766,6 +1815,7 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
     }
   }
 );
+
 
 // Legacy gateway for non-Ludo games. Ludo is action-authoritative.
 function validateAurenGameState(gameIndex, state) {
