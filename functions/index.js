@@ -166,7 +166,7 @@ function inferAurenIntent(message) {
     { intent: 'find_opportunity', confidence: 0.90, patterns: ['فرصة عمل', 'وظيفة', 'وظائف', 'مشروع مناسب', 'find a job', 'job opportunity', 'find opportunities'] },
     { intent: 'find_business', confidence: 0.90, patterns: ['مطعم', 'مستشفى', 'فندق', 'متجر', 'شركة', 'مصنع', 'restaurant', 'hotel', 'store', 'company', 'factory'] },
     { intent: 'send_message', confidence: 0.91, patterns: ['ارسل رسالة', 'أرسل رسالة', 'ارسلي رسالة', 'أرسل لي رسالة', 'send a message', 'send message'] },
-    { intent: 'create_content', confidence: 0.89, patterns: ['اعمل فيديو', 'أنشئ فيديو', 'انشئ فيديو', 'اعمل صورة', 'اكتب قصة', 'اعمل أغنية', 'اعمل بودكاست', 'اعمل مسلسل', 'أنشئ مسلسل', 'انشئ مسلسل', 'create a video', 'create an image', 'write a story', 'make a song', 'make a podcast', 'make a series', 'create a series'] },
+    { intent: 'create_content', confidence: 0.89, patterns: ['اعمل فيديو', 'أنشئ فيديو', 'انشئ فيديو', 'اعمل صورة', 'اكتب قصة', 'اعمل أغنية', 'اعمل بودكاست', 'اعمل مسلسل', 'أنشئ مسلسل', 'انشئ مسلسل', 'اعمل فيلم', 'أنشئ فيلم', 'انشئ فيلم', 'create a video', 'create an image', 'write a story', 'make a song', 'make a podcast', 'make a series', 'create a series'] },
     { intent: 'chat', confidence: 0.60, patterns: [] },
   ];
 
@@ -228,6 +228,7 @@ function inferEntertainmentMode(text) {
   const value = String(text || '').toLowerCase();
   if (value.includes('أغنية') || value.includes('اغنية') || value.includes('song') || value.includes('music')) return 'song';
   if (value.includes('بودكاست') || value.includes('podcast')) return 'podcast';
+  if (value.includes('فيلم') || value.includes('movie') || value.includes('film')) return 'movie';
   if (value.includes('مسلسل') || value.includes('series')) return 'series';
   if (value.includes('عالم') || value.includes('world')) return 'world';
   if (value.includes('قصة') || value.includes('story')) return 'story';
@@ -241,6 +242,7 @@ function normalizeEntertainmentMode(mode) {
   if (['video','فيديو','image','صورة'].includes(value)) return 'فيديو';
   if (['podcast','بودكاست'].includes(value)) return 'بودكاست';
   if (['world','عالم'].includes(value)) return 'عالم';
+  if (['movie','film','فيلم'].includes(value)) return 'فيلم';
   if (['series','مسلسل'].includes(value)) return 'مسلسل';
   return 'فيديو';
 }
@@ -859,6 +861,140 @@ exports.generateAurenSeriesBlueprint = require('firebase-functions/v2/https').on
       updatedAt:FieldValue.serverTimestamp(),
     }, {merge:true});
     return {status:'series_blueprint_ready', provider:selectedProvider, blueprint:generated};
+  }
+);
+
+
+// Generates durable development blueprints for films and original music.
+// These endpoints create plans only; they never fabricate rendered media.
+exports.generateAurenMovieBlueprint = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:120, memory:'512MiB',
+    enforceAppCheck:true,
+    secrets:[OPENROUTER_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, HF_TOKEN]},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const jobId = String(request.data?.jobId || '').trim();
+    if (!jobId || jobId.length > 128 || !/^[A-Za-z0-9_-]+$/.test(jobId)) {
+      throw aurenHttpsError('invalid-argument', 'Invalid creation job id.');
+    }
+    const jobRef = db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc(jobId);
+    const jobSnap = await jobRef.get();
+    if (!jobSnap.exists) throw aurenHttpsError('not-found', 'Creation job not found.');
+    const job = jobSnap.data() || {};
+    if (job.mode !== 'فيلم') throw aurenHttpsError('failed-precondition', 'This job is not a film.');
+    if (job.status === 'cancelled') throw aurenHttpsError('failed-precondition', 'This job was cancelled.');
+    if (job.movieBlueprint && job.productionStage === 'movie_blueprint_ready') {
+      return {status:'already_ready', blueprint:job.movieBlueprint};
+    }
+    const idea = String(job.idea || '').trim();
+    if (!idea) throw aurenHttpsError('invalid-argument', 'Film idea is empty.');
+    const system = [
+      'You are AUREN Film Studio, an original film development editor.',
+      'Return ONLY valid JSON and never claim media has been rendered.',
+      'Avoid copyrighted characters, existing franchise worlds, and imitation of real artists.',
+      'Schema: {title, logline, genre, audience, format, runtimeMinutes, visualStyle,',
+      'characters:[{name,role,ageRange,goal,flaw,arc}],',
+      'story:{beginning,turningPoint,middle,climax,resolution},',
+      'scenes:[{number,location,time,beat,visualDirection,durationSeconds}],',
+      'productionPlan:{visuals,voices,music,sound,editing,qc},',
+      'rightsAndSafety:[string]}',
+      'Create a coherent original feature-film blueprint with 12-30 concise scenes.'
+    ].join(' ');
+    const messages = [
+      {role:'system', content:system},
+      {role:'user', content:'Film brief: ' + idea.slice(0,5000) +
+        '\nMood: ' + String(job.mood || 'auto').slice(0,40) +
+        '\nLength: ' + String(job.length || 'auto').slice(0,40)}
+    ];
+    const providers = ['openrouter','cloudflare_workers_ai','huggingface'];
+    let generated = null, selectedProvider = '';
+    const errors = [];
+    for (const provider of providers) {
+      try {
+        const result = await callAurenTextProvider(provider, messages, {task:'planning'});
+        if (!result?.ok || !String(result.text || '').trim()) {
+          errors.push(provider + ': ' + String(result?.message || 'empty response').slice(0,180));
+          continue;
+        }
+        let raw = String(result.text).trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'');
+        const start = raw.indexOf('{'), end = raw.lastIndexOf('}');
+        if (start < 0 || end <= start) throw new Error('Provider did not return JSON.');
+        const parsed = JSON.parse(raw.slice(start,end + 1));
+        if (!parsed.title || !parsed.story || !Array.isArray(parsed.scenes)) throw new Error('Film blueprint is missing required sections.');
+        generated = parsed; selectedProvider = provider; break;
+      } catch (error) {
+        errors.push(provider + ': ' + String(error?.message || error).slice(0,180));
+      }
+    }
+    if (!generated) {
+      await jobRef.set({productionStage:'movie_blueprint_failed', lastError:errors.join(' | ').slice(0,700), updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+      throw aurenHttpsError('unavailable', 'Film blueprint generation failed.');
+    }
+    await jobRef.set({movieBlueprint:generated, productionStage:'movie_blueprint_ready', productionProvider:selectedProvider, productionWorkerVersion:2, progress:10, lastError:'', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    return {status:'movie_blueprint_ready', provider:selectedProvider, blueprint:generated};
+  }
+);
+
+exports.generateAurenMusicBlueprint = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:120, memory:'512MiB',
+    enforceAppCheck:true,
+    secrets:[OPENROUTER_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, HF_TOKEN]},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const jobId = String(request.data?.jobId || '').trim();
+    if (!jobId || jobId.length > 128 || !/^[A-Za-z0-9_-]+$/.test(jobId)) {
+      throw aurenHttpsError('invalid-argument', 'Invalid creation job id.');
+    }
+    const jobRef = db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc(jobId);
+    const jobSnap = await jobRef.get();
+    if (!jobSnap.exists) throw aurenHttpsError('not-found', 'Creation job not found.');
+    const job = jobSnap.data() || {};
+    if (job.mode !== 'أغنية') throw aurenHttpsError('failed-precondition', 'This job is not music.');
+    if (job.status === 'cancelled') throw aurenHttpsError('failed-precondition', 'This job was cancelled.');
+    if (job.musicBlueprint && job.productionStage === 'music_blueprint_ready') return {status:'already_ready', blueprint:job.musicBlueprint};
+    const idea = String(job.idea || '').trim();
+    if (!idea) throw aurenHttpsError('invalid-argument', 'Music idea is empty.');
+    const system = [
+      'You are AUREN Music Studio, an original music development producer.',
+      'Return ONLY valid JSON. Do not generate or claim an audio file exists.',
+      'Do not imitate a real artist voice or identity without permission.',
+      'Schema: {title, language, genre, mood, tempoBpm, concept, lyrics:{verses,chorus,bridge},',
+      'arrangement:{intro,verse,chorus,bridge,outro,instruments},',
+      'vocalDirection,productionPlan:{music,vocals,mix,master,artwork},rightsAndSafety:[string]}.',
+      'Keep lyrics original and concise.'
+    ].join(' ');
+    const messages = [
+      {role:'system', content:system},
+      {role:'user', content:'Music brief: ' + idea.slice(0,5000) + '\nMood: ' + String(job.mood || 'auto').slice(0,40)}
+    ];
+    const providers = ['openrouter','cloudflare_workers_ai','huggingface'];
+    let generated = null, selectedProvider = '';
+    const errors = [];
+    for (const provider of providers) {
+      try {
+        const result = await callAurenTextProvider(provider, messages, {task:'planning'});
+        if (!result?.ok || !String(result.text || '').trim()) {
+          errors.push(provider + ': ' + String(result?.message || 'empty response').slice(0,180));
+          continue;
+        }
+        let raw = String(result.text).trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'');
+        const start = raw.indexOf('{'), end = raw.lastIndexOf('}');
+        if (start < 0 || end <= start) throw new Error('Provider did not return JSON.');
+        const parsed = JSON.parse(raw.slice(start,end + 1));
+        if (!parsed.title || !parsed.concept || !parsed.lyrics) throw new Error('Music blueprint is missing required sections.');
+        generated = parsed; selectedProvider = provider; break;
+      } catch (error) {
+        errors.push(provider + ': ' + String(error?.message || error).slice(0,180));
+      }
+    }
+    if (!generated) {
+      await jobRef.set({productionStage:'music_blueprint_failed', lastError:errors.join(' | ').slice(0,700), updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+      throw aurenHttpsError('unavailable', 'Music blueprint generation failed.');
+    }
+    await jobRef.set({musicBlueprint:generated, productionStage:'music_blueprint_ready', productionProvider:selectedProvider, progress:10, lastError:'', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    return {status:'music_blueprint_ready', provider:selectedProvider, blueprint:generated};
   }
 );
 
