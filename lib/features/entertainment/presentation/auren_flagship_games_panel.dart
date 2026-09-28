@@ -291,7 +291,9 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   void _act() {
     if (!_isMyTurn) { setState(() => _message = '⏳ انتظر دورك'); return; }
     switch (widget.gameIndex) {
-      case 0: _ludoRoll(); break;
+      case 0:
+        _ludoRoll();
+        return;
       case 1: _dominoDrawOrPlay(); break;
       case 2: _unoDraw(); break;
       case 3: _crimeAdvance(); break;
