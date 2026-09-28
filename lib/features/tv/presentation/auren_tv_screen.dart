@@ -335,6 +335,12 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     );
   }
 
+  String _watchMemberName(Map<String,dynamic>? data, String uid) {
+    final name = data?['displayName'] as String?;
+    if (name != null && name.trim().isNotEmpty) return name.trim();
+    return 'عضو ${uid.substring(0, uid.length > 6 ? 6 : uid.length)}';
+  }
+
   String _watchChatTime(dynamic value) {\n    if (value is! Timestamp) return '';\n    final d = value.toDate().toLocal();\n    final h = d.hour.toString().padLeft(2, '0');\n    final m = d.minute.toString().padLeft(2, '0');\n    return '\${h}:\${m}';\n  }\n\n  Future<void> _showWatchTogetherChat(AurenTvWatchTogetherRoom room) async {
     final service = AurenTvWatchTogetherService.instance;
     final controller = TextEditingController();
@@ -477,7 +483,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                       ListTile(
                         dense: true,
                         leading: Icon(id == room.hostUid ? Icons.workspace_premium : Icons.person_outline),
-                        title: Text(id == uid ? 'أنت' : 'عضو'),
+                        title: Text(id == uid ? 'أنت' : _watchMemberName(docs[id], id)),
                         subtitle: Text(id == room.hostUid ? 'Host • '+_presenceLabel(docs[id], now) : 'Member • '+_presenceLabel(docs[id], now)),
                       ),
                   ]);
