@@ -20,7 +20,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final type = _type == 'all' ? null : _type;
     return Scaffold(
-      appBar: AppBar(title: const Text('AUREN Agriculture & Livestock AI')),
+      appBar: AppBar(title: const Text('AUREN AgriTech, Industry & Innovation AI')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -28,9 +28,9 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('مساعد الزراعة والثروة الحيوانية', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                const Text('AUREN AgriTech, Industry & Innovation', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 8),
-                const Text('ابحث عن المحاصيل، المزارع، المواشي والفرص المحلية.'),
+                const Text('من الزراعة والثروة الحيوانية إلى التصنيع والاختراعات والبحث والطاقة وإعادة التدوير.'),
                 const SizedBox(height: 14),
                 TextField(
                   controller: _location,
@@ -43,7 +43,10 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
                 ),
                 const SizedBox(height: 10),
                 Wrap(spacing: 8, children: [
-                  for (final item in const {'all':'الكل','crop':'محاصيل','livestock':'مواشي','farm':'مزارع'}.entries)
+                  for (final item in const {
+                    'all':'الكل','crop':'محاصيل','livestock':'مواشي','farm':'مزارع',
+                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير'
+                  }.entries)
                     ChoiceChip(label: Text(item.value), selected: _type == item.key, onSelected: (_) => setState(() => _type = item.key)),
                 ]),
               ]),
@@ -107,8 +110,18 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
         return 'المواشي: راقب الشهية، النشاط، التنفس، الحرارة وأي تغير مفاجئ، واعزل الحيوان المشتبه بإصابته واطلب مختصاً عند الحاجة.';
       case 'farm':
         return 'المزرعة: اجمع بيانات الماء والتربة والمحاصيل والمخزون والتكاليف، ثم استخدمها لاتخاذ قرارات أدق.';
+      case 'manufacturing':
+        return 'التصنيع: ابدأ بالمواصفات والمواد والعملية، ثم النموذج الأولي والاختبارات والسلامة قبل الإنتاج.';
+      case 'invention':
+        return 'الاختراعات: وثّق المشكلة والحل، ارسم النموذج، اختبر الفكرة، ثم راجع قابلية التصنيع والملكية الفكرية.';
+      case 'research':
+        return 'البحث: حدد السؤال والفرضية والبيانات وطريقة الاختبار، وميّز النتائج المقاسة عن الافتراضات.';
+      case 'energy':
+        return 'الطاقة: قِس الاستهلاك والقدرة المطلوبة ومصدر الطاقة والتخزين والسلامة قبل اختيار النظام.';
+      case 'recycling':
+        return 'إعادة التدوير: صنّف المواد، افصلها، قيّم إمكانية إعادة الاستخدام والتدوير، وراعِ السلامة والتخلص النظامي.';
       default:
-        return 'ابدأ بتحديد نوع النشاط والموقع والمحصول أو الحيوان، ثم سجّل الملاحظات والصور والبيانات بانتظام ليصبح التحليل أكثر فائدة.';
+        return 'حدد المجال والمشكلة والموقع، ثم سجّل الملاحظات والبيانات والصور والمواد أو المواصفات بانتظام ليصبح التحليل أكثر فائدة.';
     }
   }
 
@@ -149,6 +162,8 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
                 type: _type == 'all' ? 'farm' : _type,
                 location: _location.text,
                 observations: observations.text,
+                material: '',
+                invention: _type == 'invention' ? observations.text : '',
               );
               if (context.mounted) Navigator.pop(context, advice);
             } catch (_) {
