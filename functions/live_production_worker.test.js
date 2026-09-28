@@ -42,3 +42,15 @@ test('video model version has a backend deployment configuration fallback',()=>{
   assert.match(source,/task\.providerVersion \|\| task\.replicateVersion \|\| REPLICATE_VIDEO_MODEL_VERSION\.value\(\)/);
   assert.match(source,/never accept a provider URL, token, or model version from the client task payload as executable credentials/);
 });
+
+
+test('provider-pending tasks remain claimable for later polling',()=>{
+  assert.match(source,/\['generation','provider_pending','processing'\]/);
+  assert.match(source,/if \(!\['generation','provider_pending','processing'\]\.includes/);
+});
+
+test('terminal provider failure clears the external job before retry',()=>{
+  assert.match(source,/status:'generation'/);
+  assert.match(source,/externalJobId:''/);
+  assert.match(source,/lastError:String\(polled\.error/);
+});
