@@ -361,6 +361,44 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     });
   }
 
+  Future<void> _showLiveSpectator() async {
+    final data = await _multiplayer.getLiveSpectatorMatches();
+    if (!mounted) return;
+    final matches = List<Map<String, dynamic>>.from(
+      (data?['matches'] as List? ?? const []).map((x) => Map<String, dynamic>.from(x)),
+    );
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: matches.isEmpty
+              ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد مباريات مباشرة الآن. حاول لاحقاً.')))
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: matches.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, i) {
+                    final m = matches[i];
+                    final players = List<String>.from(m['players'] ?? const <String>[]);
+                    return ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.live_tv)),
+                      title: Text('🎮 ' + _gameNameForId((m['gameIndex'] as num?)?.toInt() ?? 53)),
+                      subtitle: Text('👥 ' + players.length.toString() + '/2 • Version ' + (m['stateVersion'] ?? 0).toString()),
+                      trailing: const Text('LIVE', style: TextStyle(fontWeight: FontWeight.w900)),
+                    );
+                  },
+                ),
+        ),
+      ),
+    );
+  }
+
+  String _gameNameForId(int id) {
+    const names = <int, String>{53: 'Crime Files', 54: 'Football Pro', 55: 'Basketball Pro', 56: 'Boxing Champion', 57: 'Ancient & Modern Wars', 58: 'Samurai Legacy', 59: 'Street Racing'};
+    return names[id] ?? 'AUREN Game';
+  }
   Future<void> _leaveLobby() async {
     await _lobbySubscription?.cancel();
     _lobbySubscription = null;
@@ -783,7 +821,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     return ListView(padding: const EdgeInsets.all(16), children: [
       Text(_names[_localIndex], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
       const SizedBox(height: 8),
-      Align(alignment: AlignmentDirectional.centerStart, child: OutlinedButton.icon(onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenGlobalGamingLeaderboardScreen())); }, icon: const Icon(Icons.leaderboard), label: const Text('🌍 Spectate Live Matches • Global Gaming Leaderboard'))),
+      Align(alignment: AlignmentDirectional.centerStart, child: OutlinedButton.icon(onPressed: _showLiveSpectator, icon: const Icon(Icons.live_tv), label: const Text('🔴 Live Matches'))),
       const SizedBox(width: 8),
       OutlinedButton.icon(onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenGamingProfileScreen())); }, icon: const Icon(Icons.person), label: const Text('Gaming Profile')),
       const SizedBox(height: 6), Text('جولة ' + _round.toString() + ' • ⭐ ' + _score.toString() + ' • 🔥 Combo ' + _streak.toString()),
