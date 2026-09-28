@@ -34,7 +34,15 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override void initState() {
     super.initState();
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
-    AurenTvService.instance.sources().then((v) { if (mounted) setState(() => sources = v); });
+    AurenTvService.instance.sources().then((v) async {
+      final defaultId = await AurenTvService.instance.defaultSourceId();
+      if (!mounted) return;
+      setState(() {
+        sources = v;
+        final matches = v.where((x) => x.id == defaultId && x.enabled).toList();
+        activeSource = matches.isEmpty ? null : matches.first;
+      });
+    });
   }
 
   @override void dispose() {
@@ -149,6 +157,35 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
 
+  Future<void> _testSource(AurenTvSource source) async {
+    try {
+      final count = await AurenTvService.instance.testSource(source);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الاتصال ناجح • $count قناة متاحة')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل اختبار الاتصال: $e')));
+    }
+  }
+
+  Future<void> _toggleSource(AurenTvSource source) async {
+    final enabled = !source.enabled;
+    await AurenTvService.instance.setSourceEnabled(source.id, enabled);
+    if (!mounted) return;
+    final updated = AurenTvSource(id: source.id, name: source.name, type: source.type, url: source.url, epgUrl: source.epgUrl, username: source.username, password: source.password, enabled: enabled);
+    setState(() {
+      sources = sources.map((x) => x.id == source.id ? updated : x).toList();
+      if (!enabled && activeSource?.id == source.id) activeSource = null;
+    });
+  }
+
+  Future<void> _makeDefault(AurenTvSource source) async {
+    await AurenTvService.instance.setDefaultSource(source.id);
+    if (!mounted) return;
+    setState(() => activeSource = source);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تعيين المصدر الافتراضي.')));
+  }
+
   Future<void> _showSources() async {
     final choice = await showModalBottomSheet<String>(
       context: context, showDragHandle: true,
@@ -157,7 +194,25 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         children: [
           const ListTile(title: Text('مصادر IPTV الخاصة بي', style: TextStyle(fontWeight: FontWeight.w800)), subtitle: Text('أضف M3U أو Xtream من اشتراك تملكه أو لديك حق استخدامه.')),
           ListTile(leading: const Icon(Icons.add_link), title: const Text('إضافة مصدر'), onTap: () => Navigator.pop(ctx, '__add__')),
-          ...sources.map((source) => ListTile(leading: Icon(source.type == 'xtream' ? Icons.cloud : Icons.link), title: Text(source.name), subtitle: Text(source.type == 'xtream' ? 'Xtream' : 'M3U'), trailing: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () async { await AurenTvService.instance.deleteSource(source.id); if (ctx.mounted) Navigator.pop(ctx); if (mounted) setState(() => sources = sources.where((x) => x.id != source.id).toList()); } ), onTap: () => Navigator.pop(ctx, source.id))),
+          ...sources.map((source) => ListTile(
+            leading: Icon(source.type == 'xtream' ? Icons.cloud : Icons.link),
+            title: Text(source.name),
+            subtitle: Text('${source.type == 'xtream' ? 'Xtream' : 'M3U'} • ${source.enabled ? 'مفعّل' : 'متوقف'}${activeSource?.id == source.id ? ' • نشط' : ''}'),
+            trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [
+              IconButton(tooltip: 'اختبار الاتصال', icon: const Icon(Icons.network_check), onPressed: source.enabled ? () => _testSource(source) : null),
+              IconButton(tooltip: source.enabled ? 'تعطيل المصدر' : 'تفعيل المصدر', icon: Icon(source.enabled ? Icons.toggle_on : Icons.toggle_off), onPressed: () => _toggleSource(source)),
+              IconButton(tooltip: 'جعله افتراضي', icon: const Icon(Icons.star_border), onPressed: source.enabled ? () => _makeDefault(source) : null),
+              IconButton(icon: const Icon(Icons.delete_outline), onPressed: () async {
+                await AurenTvService.instance.deleteSource(source.id);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) setState(() {
+                  sources = sources.where((x) => x.id != source.id).toList();
+                  if (activeSource?.id == source.id) activeSource = null;
+                });
+              }),
+            ]),
+            onTap: source.enabled ? () => Navigator.pop(ctx, source.id) : null,
+          )),
         ],
       )),
     );
@@ -165,7 +220,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     if (choice == '__add__') { await _addSource(); return; }
     final matches = sources.where((x) => x.id == choice).toList();
     final selected = matches.isEmpty ? null : matches.first;
-    if (selected == null) return;
+    if (selected == null || !selected.enabled) return;
     setState(() { activeSource = selected; tvMode = 'world'; country = ''; continent = ''; quickRegion = ''; });
   }
 
@@ -191,6 +246,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     if (ok != true) { name.dispose(); url.dispose(); epg.dispose(); user.dispose(); pass.dispose(); return; }
     final source = AurenTvSource(id: 'src-${DateTime.now().microsecondsSinceEpoch}', name: name.text.trim().isEmpty ? 'IPTV الخاص بي' : name.text.trim(), type: type, url: url.text.trim(), epgUrl: epg.text.trim(), username: user.text.trim(), password: pass.text);
     await AurenTvService.instance.saveSource(source);
+    await AurenTvService.instance.setDefaultSource(source.id);
     if (mounted) setState(() { sources = [...sources, source]; activeSource = source; });
     name.dispose(); url.dispose(); epg.dispose(); user.dispose(); pass.dispose();
   }
