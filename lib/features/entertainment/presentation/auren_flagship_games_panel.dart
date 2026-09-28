@@ -757,10 +757,10 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   ])));
 
   Widget _controls() {
-    if (widget.gameIndex == 4) return _choiceCard('اختر زاوية التسديد', ['يسار','وسط','يمين'], (i) { setState(() { _round++; if (_rng.nextInt(3) != i) { _score += 30; _message = '⚽ تسديدة ناجحة'; } else { _message = '🧤 الحارس تصدى'; } }); });
-    if (widget.gameIndex == 5) return _choiceCard('اختر الرمية', ['2 نقاط','3 نقاط','Fadeaway'], (i) { setState(() { _round++; final chance = i == 1 ? .55 : .72; if (_rng.nextDouble() < chance) { final p = i == 1 ? 3 : 2; _score += p * 10; _message = '🏀 رمية ناجحة: ' + p.toString(); } else { _message = '🏀 ضاعت الرمية'; } }); });
-    if (widget.gameIndex == 6) return _choiceCard('اختر حركة الملاكمة', ['Jab','Hook','Dodge'], (i) { setState(() { if (i == 2) { _energy = min(100, _energy + 12); _message = '🥊 مراوغة +12 طاقة'; } else { _boxingTurn(); } }); });
-    if (widget.gameIndex == 9) return _choiceCard('اختر المسار', ['يسار','وسط','يمين'], (i) { setState(() { _distance += i == 1 ? 8 : 5; _racingTurn(); }); });
+    if (widget.gameIndex == 4) return _choiceCard('اختر زاوية التسديد', ['يسار','وسط','يمين'], (i) { if (_onlineMatch) { _submitFlagshipAction('shoot', {'lane': i}); return; } setState(() { _round++; if (_rng.nextInt(3) != i) { _score += 30; _message = '⚽ تسديدة ناجحة'; } else { _message = '🧤 الحارس تصدى'; } }); });
+    if (widget.gameIndex == 5) return _choiceCard('اختر الرمية', ['2 نقاط','3 نقاط','Fadeaway'], (i) { if (_onlineMatch) { _submitFlagshipAction('shot', {'shot': i}); return; } setState(() { _round++; final chance = i == 1 ? .55 : .72; if (_rng.nextDouble() < chance) { final p = i == 1 ? 3 : 2; _score += p * 10; _message = '🏀 رمية ناجحة: ' + p.toString(); } else { _message = '🏀 ضاعت الرمية'; } }); });
+    if (widget.gameIndex == 6) return _choiceCard('اختر حركة الملاكمة', ['Jab','Hook','Dodge'], (i) { if (_onlineMatch) { _submitFlagshipAction('boxing', {'move': i}); return; } setState(() { if (i == 2) { _energy = min(100, _energy + 12); _message = '🥊 مراوغة +12 طاقة'; } else { _boxingTurn(); } }); });
+    if (widget.gameIndex == 9) return _choiceCard('اختر المسار', ['يسار','وسط','يمين'], (i) { if (_onlineMatch) { _submitFlagshipAction('steer', {'lane': i}); return; } setState(() { _distance += i == 1 ? 8 : 5; _racingTurn(); }); });
     return const SizedBox.shrink();
   }
 
