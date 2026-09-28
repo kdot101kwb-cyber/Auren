@@ -14,6 +14,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   final _rng = Random();
   final _multiplayer = AurenGameMultiplayer();
   StreamSubscription<Map<String, dynamic>?>? _lobbySubscription;
+  Timer? _matchmakingTimer;
+  bool _matchmaking = false;
   String? _lobbyId;
   String _onlineStatus = 'Offline';
   String? _turnPlayerId;
@@ -95,6 +97,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   @override
   void dispose() {
+    _matchmakingTimer?.cancel();
     _lobbySubscription?.cancel();
     _multiplayer.leaveLobby();
     super.dispose();
@@ -212,6 +215,50 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     final data = await _multiplayer.getFlagshipRanking(gameIndex: widget.gameIndex);
     if (!mounted || data == null) return;
     setState(() { _wins = (data['wins'] as num?)?.toInt() ?? _wins; _serverLosses = (data['losses'] as num?)?.toInt() ?? _serverLosses; _serverDraws = (data['draws'] as num?)?.toInt() ?? _serverDraws; _serverMatches = (data['matches'] as num?)?.toInt() ?? _serverMatches; _serverRating = (data['rating'] as num?)?.toInt() ?? _serverRating; });
+  }
+
+  Future<void> _startMatchmaking() async {
+    _matchmakingTimer?.cancel();
+    setState(() => _matchmaking = true);
+    final result = await _multiplayer.enqueueMatchmaking(gameIndex: widget.gameIndex);
+    if (!mounted) return;
+    if (result?['status'] == 'matched' && result?['matchId'] is String) {
+      final id = result!['matchId'].toString();
+      _watchLobby(id);
+      await _initializeOnlineMatch();
+      setState(() { _matchmaking = false; _onlineStatus = 'Matched • ' + id.substring(0, min(6, id.length)).toUpperCase(); });
+      return;
+    }
+    setState(() => _onlineStatus = 'Searching for opponent…');
+    _matchmakingTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      final status = await _multiplayer.getMatchmakingStatus();
+      if (!mounted || status == null) return;
+      if (status['status'] == 'matched' && status['matchId'] is String) {
+        _matchmakingTimer?.cancel();
+        final id = status['matchId'].toString();
+        _watchLobby(id);
+        await _initializeOnlineMatch();
+        if (mounted) setState(() { _matchmaking = false; _onlineStatus = 'Matched • ' + id.substring(0, min(6, id.length)).toUpperCase(); });
+      }
+    });
+  }
+
+  Future<void> _cancelMatchmaking() async {
+    _matchmakingTimer?.cancel();
+    await _multiplayer.cancelMatchmaking();
+    if (mounted) setState(() { _matchmaking = false; _onlineStatus = 'Offline'; });
+  }
+
+  Future<void> _initializeOnlineMatch() async {
+    if (widget.gameIndex == 0) {
+      await _multiplayer.initializeLudoMatch();
+    } else if (widget.gameIndex == 1) {
+      await _multiplayer.initializeDominoMatch();
+    } else if (widget.gameIndex == 2) {
+      await _multiplayer.initializeUnoMatch();
+    } else if (widget.gameIndex >= 3 && widget.gameIndex <= 9) {
+      await _multiplayer.initializeFlagshipMatch();
+    }
   }
 
   Future<void> _createLobby() async {
@@ -692,11 +739,20 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
           Text('🌐 ' + _onlineStatus, style: const TextStyle(fontWeight: FontWeight.w800)),
           if (_lobbyId != null) IconButton(onPressed: _leaveLobby, icon: const Icon(Icons.close)),
         ]),
-        if (_lobbyId == null) Row(children: [
+        if (_lobbyId == null && !_matchmaking) Row(children: [
+          Expanded(child: FilledButton.icon(onPressed: _startMatchmaking, icon: const Icon(Icons.sports_esports), label: const Text('Find Opponent'))),
+          const SizedBox(width: 8),
+          Expanded(child: OutlinedButton(onPressed: _createLobby, child: const Text('Create Match'))),
+        ]),
+        if (_lobbyId == null && !_matchmaking) const SizedBox(height: 8),
+        if (_lobbyId == null && !_matchmaking) OutlinedButton(onPressed: _joinLobby, child: const Text('Join Match')),
+        if (_lobbyId == null && _matchmaking) FilledButton.tonal(onPressed: _cancelMatchmaking, child: const Text('Cancel Search')),
+        /*
+        /*
           Expanded(child: FilledButton.tonal(onPressed: _createLobby, child: const Text('Create Match'))),
           const SizedBox(width: 8),
           Expanded(child: OutlinedButton(onPressed: _joinLobby, child: const Text('Join Match'))),
-        ]),
+        */
         const SizedBox(height: 8),
         Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
