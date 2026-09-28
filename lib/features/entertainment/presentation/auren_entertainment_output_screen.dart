@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
@@ -42,6 +44,9 @@ class _AurenEntertainmentOutputScreenState
   DateTime _lastProgressSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _progressLoaded = false;
   bool _didAutoAdvance = false;
+  bool _showNextCountdown = false;
+  int _nextCountdown = 10;
+  Timer? _nextTimer;
 
   bool get _canSaveWatchProgress => widget.watchUid?.isNotEmpty == true &&
       widget.watchJobId?.isNotEmpty == true &&
@@ -86,15 +91,40 @@ class _AurenEntertainmentOutputScreenState
       _saveWatchProgress(completed: true, force: true);
       if (!_didAutoAdvance && widget.onNextEpisode != null) {
         _didAutoAdvance = true;
-        Future<void>.delayed(const Duration(milliseconds: 700), () {
-          if (mounted) widget.onNextEpisode!();
-        });
+        _startNextCountdown();
       }
     } else if (!controller.value.isPlaying) {
       _saveWatchProgress(force: true);
     } else {
       _saveWatchProgress();
     }
+  }
+
+  void _startNextCountdown() {
+    if (!mounted || widget.onNextEpisode == null) return;
+    _nextTimer?.cancel();
+    setState(() {
+      _showNextCountdown = true;
+      _nextCountdown = 10;
+    });
+    _nextTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_nextCountdown <= 1) {
+        timer.cancel();
+        setState(() => _showNextCountdown = false);
+        widget.onNextEpisode!();
+        return;
+      }
+      setState(() => _nextCountdown--);
+    });
+  }
+
+  void _cancelNextEpisode() {
+    _nextTimer?.cancel();
+    if (mounted) setState(() => _showNextCountdown = false);
   }
 
   String get _type => widget.output['type']?.toString() ?? 'output';
@@ -121,6 +151,7 @@ class _AurenEntertainmentOutputScreenState
 
   @override
   void dispose() {
+    _nextTimer?.cancel();
     _saveWatchProgress(force: true);
     _controller?.removeListener(_onVideoProgress);
     _controller?.dispose();
@@ -181,6 +212,28 @@ class _AurenEntertainmentOutputScreenState
                     : controller.value.aspectRatio,
                 child: VideoPlayer(controller),
               ),
+              if (_showNextCountdown && widget.onNextEpisode != null)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.skip_next_rounded),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'الحلقة التالية تبدأ تلقائياً خلال $_nextCountdown ثوانٍ',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _cancelNextEpisode,
+                          child: const Text('إلغاء'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               const SizedBox(height: 18),
               if (widget.episodeLabel != null)
                 Text(widget.episodeLabel!, style: Theme.of(context).textTheme.titleMedium),
