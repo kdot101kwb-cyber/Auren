@@ -83,6 +83,11 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     });
   }
 
+  void _smartSearch(String value) {
+    final normalized = _normalizeSearch(value);
+    setState(() => query = normalized);
+  }
+
   @override void dispose() {
     _search.dispose();
     _recoveryTimer?.cancel();
@@ -706,7 +711,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           final maxChannels = lowData ? 150 : 500;
           final channels = snapshot.data!.where((c) {
             final searchable = _normalizeSearch('${c.name} ${c.country} ${c.language} ${c.category}');
-            final matchesQuery = query.isEmpty || searchable.contains(query);
+            final searchableTokens = searchable.split(RegExp(r'\\s+')).where((x) => x.isNotEmpty).toList();
+            final matchesQuery = query.isEmpty || searchable.contains(query) || query.split(RegExp(r'\\s+')).every((q) => searchableTokens.any((token) => token.contains(q) || q.contains(token)));
             final matchesRegion = continent.isEmpty || _regionLabel(c) == continent;
             final n = '${c.name} ${c.category} ${c.language} ${c.country}'.toLowerCase();
             final matchesNewsRegion = tvMode != 'news' || newsRegion == 'all' || (newsRegion == 'SD' && c.country.toUpperCase() == 'SD') || (newsRegion == 'Arab' && arabCountries.contains(c.country.toUpperCase())) || (newsRegion == 'Africa' && _regionLabel(c) == 'Africa') || (newsRegion == 'World' && _regionLabel(c) != 'Africa' && !arabCountries.contains(c.country.toUpperCase())) || (newsRegion == 'Business' && RegExp(r'business|finance|economy|market|money', caseSensitive: false).hasMatch(n)) || (newsRegion == 'Sports' && RegExp(r'sport|football|soccer|basketball|tennis|espn', caseSensitive: false).hasMatch(n));
