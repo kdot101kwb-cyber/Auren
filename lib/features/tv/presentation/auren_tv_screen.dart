@@ -48,6 +48,11 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   final Map<String, String> _tvProfiles = <String, String>{'main': 'Main'};
   String _activeTvProfile = 'main';
   StreamSubscription<AurenTvWatchTogetherRoom>? _watchTogetherSubscription;
+  StreamSubscription<QuerySnapshot<Map<String,dynamic>>>? _watchTogetherMessageSubscription;
+  int _watchTogetherUnreadCount = 0;
+  String _watchTogetherLastMessage = '';
+  String? _watchTogetherLastMessageId;
+  bool _watchTogetherMessagesInitialized = false;
 
   Timer? _recoveryTimer;
   Timer? _watchTogetherSyncTimer;
@@ -270,6 +275,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         if (_watchTogetherRoom != roomId || _applyingRemoteWatchState || player == null || !player!.value.isInitialized) return;
         await service.sync(roomId, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying);
       });
+      _startWatchTogetherMessageTracking(roomId);
       _watchTogetherSubscription = service.watch(roomId).listen((remote) async {
         if (!mounted) return;
         final current = playing;
@@ -341,10 +347,45 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     return 'عضو ${uid.substring(0, uid.length > 6 ? 6 : uid.length)}';
   }
 
-  String _watchChatTime(dynamic value) {\n    if (value is! Timestamp) return '';\n    final d = value.toDate().toLocal();\n    final h = d.hour.toString().padLeft(2, '0');\n    final m = d.minute.toString().padLeft(2, '0');\n    return '\${h}:\${m}';\n  }\n\n  Future<void> _showWatchTogetherChat(AurenTvWatchTogetherRoom room) async {
+  String _watchChatTime(dynamic value) {\n    if (value is! Timestamp) return '';\n    final d = value.toDate().toLocal();\n    final h = d.hour.toString().padLeft(2, '0');\n    final m = d.minute.toString().padLeft(2, '0');\n    return '\${h}:\${m}';\n  }\n\n  void _startWatchTogetherMessageTracking(String roomId) {
+    _watchTogetherMessageSubscription?.cancel();
+    _watchTogetherUnreadCount = 0;
+    _watchTogetherLastMessage = '';
+    _watchTogetherLastMessageId = null;
+    _watchTogetherMessagesInitialized = false;
+    final service = AurenTvWatchTogetherService.instance;
+    _watchTogetherMessageSubscription = service.messages(roomId).listen((snap) {
+      if (!mounted || _watchTogetherRoom != roomId) return;
+      final docs = snap.docs;
+      if (docs.isEmpty) return;
+      final newest = docs.first;
+      final data = newest.data();
+      final textValue = (data['text'] as String? ?? '').trim();
+      final sender = (data['type'] == 'system') ? 'AUREN' : ((data['senderName'] as String?)?.trim().isNotEmpty == true ? data['senderName'] as String : 'عضو');
+      final preview = textValue.isEmpty ? '' : '$sender: $textValue';
+      final isNew = _watchTogetherLastMessageId != newest.id;
+      if (!_watchTogetherMessagesInitialized) {
+        _watchTogetherMessagesInitialized = true;
+        _watchTogetherLastMessageId = newest.id;
+        if (mounted) setState(() => _watchTogetherLastMessage = preview);
+        return;
+      }
+      if (!isNew) return;
+      _watchTogetherLastMessageId = newest.id;
+      if (mounted) setState(() {
+        _watchTogetherLastMessage = preview;
+        _watchTogetherUnreadCount += 1;
+      });
+    });
+  }
+
+  Future<void> _showWatchTogetherChat(AurenTvWatchTogetherRoom room) async {
     final service = AurenTvWatchTogetherService.instance;
     final controller = TextEditingController();
     Timer? typingTimer;
+    if (_watchTogetherRoom == room.id) {
+      setState(() => _watchTogetherUnreadCount = 0);
+    }
     try {
       await showModalBottomSheet(
         context: context,
@@ -508,13 +549,13 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 ),
               Row(children: [
                 Expanded(child: OutlinedButton.icon(
-                  onPressed: () async { await service.leave(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); _watchTogetherPresenceTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
+                  onPressed: () async { await service.leave(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherMessageSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); _watchTogetherPresenceTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
                   icon: const Icon(Icons.exit_to_app), label: const Text('مغادرة'),
                 )),
                 if (isHost) ...[
                   const SizedBox(width: 8),
                   Expanded(child: FilledButton.icon(
-                    onPressed: () async { await service.close(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
+                    onPressed: () async { await service.close(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherMessageSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
                     icon: const Icon(Icons.close), label: const Text('إغلاق'),
                   )),
                 ],
@@ -935,6 +976,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override void dispose() {
     _watchTogetherSubscription?.cancel();
+    _watchTogetherMessageSubscription?.cancel();
     _watchTogetherSyncTimer?.cancel();
     _watchTogetherPresenceTimer?.cancel();
     if (_watchTogetherRoom != null) unawaited(AurenTvWatchTogetherService.instance.heartbeat(_watchTogetherRoom!, online: false));
