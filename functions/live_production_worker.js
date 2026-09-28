@@ -31,7 +31,9 @@ async function claimTask() {
       if (Number(data.generationAttempts || 0) >= MAX_ATTEMPTS) return false;
       tx.update(item.ref,{
         status:'provider_pending',
-        generationAttempts:admin.firestore.FieldValue.increment(1),
+        ...(String(data.status || '') === 'generation'
+          ? {generationAttempts:admin.firestore.FieldValue.increment(1)}
+          : {}),
         providerLockUntilMs:Date.now()+LOCK_MS,
         providerClaimedAt:admin.firestore.FieldValue.serverTimestamp(),
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
@@ -100,13 +102,12 @@ async function processTask(ref) {
     ? task.providerCandidates.map((id)=>String(id || '').trim()).filter(Boolean)
     : ['replicate'];
 
-  // The current live video adapter is Replicate. Keep provider/model selection
-  // backend-controlled; never accept a provider URL, token, or model version
-  // from the client task payload as executable credentials.
+  // The current live video adapter is Replicate. Provider/model selection and
+  // executable credentials are backend-controlled only.
 
-  // A video task must supply a Replicate model version. The catalog alone is
-  // never treated as an executable integration.
-  const version=String(task.providerVersion || task.replicateVersion || REPLICATE_VIDEO_MODEL_VERSION.value() || '').trim();
+  // A video task must use the backend deployment configuration. The catalog
+  // alone is never treated as an executable integration.
+  const version=String(REPLICATE_VIDEO_MODEL_VERSION.value() || '').trim();
   if (!version) {
     await ref.set({
       status:'waiting_provider',
@@ -142,13 +143,16 @@ async function processTask(ref) {
     return;
   }
 
+  const realOutput=result.result.output &&
+    (result.result.output.url || result.result.output.storagePath || result.result.output.externalId)
+    ? result.result.output : null;
   await ref.set({
-    status:'processing',
+    status:realOutput ? 'output' : 'processing',
     providerId:result.providerId,
-    providerState:result.result.state || 'starting',
-    externalJobId:result.result.externalJobId || '',
+    providerState:result.result.state || (realOutput ? 'completed' : 'starting'),
+    externalJobId:realOutput ? '' : (result.result.externalJobId || ''),
     idempotencyKey,
-    output:result.result.output || null,
+    output:realOutput,
     providerAttempts:result.attempts || [],
     providerLockUntilMs:0,
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
