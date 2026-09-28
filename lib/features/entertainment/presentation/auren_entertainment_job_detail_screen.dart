@@ -421,7 +421,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     if (!context.mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => AurenEntertainmentOutputScreen(
+        builder: (playerContext) => AurenEntertainmentOutputScreen(
           output: output,
           title: seriesTitle,
           episodeLabel: 'الحلقة $number',
@@ -431,10 +431,10 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
               final e = item is Map ? Map<String, dynamic>.from(item as Map) : <String, dynamic>{};
               return int.tryParse(e['episodeNumber']?.toString() ?? '') == selected;
             });
-            _openEpisode(context, uid, seriesTitle, episodes, index);
+            _openEpisode(playerContext, uid, seriesTitle, episodes, index);
           },
           onNextEpisode: nextIndex >= 0
-              ? () => _openEpisode(context, uid, seriesTitle, episodes, nextIndex)
+              ? () => _openEpisode(playerContext, uid, seriesTitle, episodes, nextIndex)
               : null,
           nextEpisodeLabel: nextIndex >= 0 ? 'الحلقة $nextNumber' : null,
           nextPreviewUrl: nextPreview.isNotEmpty ? nextPreview : null,
