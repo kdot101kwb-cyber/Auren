@@ -188,6 +188,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       final result = state['matchResult'];
       if (result is Map) { _matchWinnerId = result['winnerId']?.toString(); _matchResult = result['result']?.toString() ?? _matchResult; }
     });
+    if (_matchWinnerId != null && _matchResult != 'in_progress') { await _submitTournamentResultIfNeeded(); }
   }
 
   Future<void> _syncGameState() async {
