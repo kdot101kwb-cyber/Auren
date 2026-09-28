@@ -89,6 +89,12 @@ class AurenTvService {
 
   Future<List<AurenTvEpgReminder>> epgReminders() async {
     final prefs = _prefs ??= await SharedPreferences.getInstance();
+    reminders.removeWhere((x) {
+      final start = DateTime.tryParse(x.startIso);
+      return start != null && start.isBefore(DateTime.now().toUtc().subtract(const Duration(hours: 6)));
+    });
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    await prefs.setStringList('auren_tv_epg_reminders', reminders.map((x) => x.id + '|' + x.channelId + '|' + x.title + '|' + x.startIso).toList());
     return (prefs.getStringList('auren_tv_epg_reminders') ?? const <String>[]).map((x) {
       final p = x.split('|');
       if (p.length < 4) return null;
