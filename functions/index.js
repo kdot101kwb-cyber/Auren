@@ -1334,3 +1334,55 @@ exports.runAurenSeriesProductionWorker = onSchedule(
 
 // Live provider execution bridge for Production Worker v2.
 Object.assign(exports, require('./live_production_worker'));
+
+
+// AUREN Gaming authoritative move gateway v1.
+// Firestore rules keep lobby state server-only; clients submit proposed moves here.
+function validateAurenGameState(gameIndex, state) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) throw aurenHttpsError('invalid-argument', 'Invalid game state.');
+  if (JSON.stringify(state).length > 45000) throw aurenHttpsError('invalid-argument', 'Game state is too large.');
+  if (typeof state.matchFinished !== 'boolean') throw aurenHttpsError('invalid-argument', 'matchFinished is required.');
+  if (gameIndex === 50) {
+    if (!Array.isArray(state.ludo) || state.ludo.length !== 4) throw aurenHttpsError('invalid-argument', 'Invalid Ludo state.');
+    for (const p of state.ludo) if (!Number.isInteger(p) || p < -1 || p > 56) throw aurenHttpsError('invalid-argument', 'Invalid Ludo piece position.');
+    if (Array.isArray(state.cpuLudo)) for (const p of state.cpuLudo) if (!Number.isInteger(p) || p < -1 || p > 56) throw aurenHttpsError('invalid-argument', 'Invalid CPU Ludo piece position.');
+  }
+  if (gameIndex === 51 || gameIndex === 52) {
+    for (const key of ['hand','cpuHand']) {
+      if (state[key] != null && !Array.isArray(state[key])) throw aurenHttpsError('invalid-argument', 'Invalid card state.');
+      if (Array.isArray(state[key]) && state[key].length > 30) throw aurenHttpsError('invalid-argument', 'Card hand is too large.');
+    }
+  }
+  return state;
+}
+
+exports.submitAurenGameMove = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    const moveId = String(request.data?.moveId || '').trim();
+    const expectedVersion = Number(request.data?.expectedVersion);
+    const gameIndex = Number(request.data?.gameIndex);
+    if (!lobbyId || lobbyId.length > 128 || !moveId || moveId.length > 160 || !Number.isInteger(expectedVersion) || expectedVersion < 0 || !Number.isInteger(gameIndex) || gameIndex < 0 || gameIndex > 59) throw aurenHttpsError('invalid-argument', 'Invalid multiplayer move request.');
+    const state = validateAurenGameState(gameIndex, request.data?.state);
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+      const data = snap.data() || {};
+      const players = Array.isArray(data.players) ? data.players.map(String) : [];
+      const version = Number(data.stateVersion || 0);
+      if (data.gameIndex !== gameIndex || data.status !== 'playing' || !players.includes(uid)) throw aurenHttpsError('failed-precondition', 'You are not an active player in this lobby.');
+      if (data.turnPlayerId !== uid) throw aurenHttpsError('failed-precondition', 'It is not your turn.');
+      if (version !== expectedVersion) throw aurenHttpsError('aborted', 'Game state is out of date.');
+      if (String(data.lastMoveId || '') === moveId) return {accepted:true, duplicate:true, stateVersion:version};
+      const opponent = players.find((id) => id !== uid) || uid;
+      const finished = state.matchFinished === true;
+      const nextVersion = version + 1;
+      tx.update(ref, {state, stateVersion:nextVersion, turnPlayerId:finished ? null : opponent, lastMoveId:moveId, status:finished ? 'finished' : 'playing', updatedAt:FieldValue.serverTimestamp()});
+      return {accepted:true, duplicate:false, stateVersion:nextVersion, turnPlayerId:finished ? null : opponent};
+    });
+  }
+);
