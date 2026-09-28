@@ -235,7 +235,8 @@ function validateAndApplyFlagshipAction(input, action, uid) {
   }
 
   state.gameIndex = gameIndex;
-  state.matchFinished = state.hp <= 0;
+  // Online matches have a server-defined endpoint; the client cannot extend the match indefinitely.
+  state.matchFinished = state.hp <= 0 || (Number(state.round) || 0) >= 20;
   if (state.matchFinished) state.message = cleanText(state.message + ' • انتهت المباراة');
   return state;
 }
