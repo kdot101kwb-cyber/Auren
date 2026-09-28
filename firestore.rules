@@ -2140,7 +2140,9 @@ service cloud.firestore {
     }
 
     match /watch_together_rooms/{roomId} {
-      allow read: if request.auth != null && request.auth.uid in resource.data.memberIds;
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.memberIds;
+
       allow create: if request.auth != null
         && request.resource.data.hostUid == request.auth.uid
         && request.resource.data.memberIds is list
@@ -2149,48 +2151,103 @@ service cloud.firestore {
         && request.resource.data.inviteCode is string
         && request.resource.data.inviteCode.size() == 6
         && request.resource.data.title is string
-        && request.resource.data.status in ['waiting','ready']
-        && request.resource.data.positionSeconds is number
-        && request.resource.data.isPlaying is bool;
-      allow update: if request.auth != null
-        && request.auth.uid in resource.data.memberIds
-        && request.resource.data.hostUid == resource.data.hostUid
-        && request.resource.data.inviteCode == resource.data.inviteCode
-        && request.resource.data.memberIds is list
-        && request.resource.data.memberIds.size() <= 8
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds','status','positionSeconds','isPlaying','updatedAt'])
-        && request.resource.data.status in ['waiting','ready']
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.channelId is string
+        && request.resource.data.channelId.size() > 0
+        && request.resource.data.channelName is string
+        && request.resource.data.channelName.size() > 0
         && request.resource.data.positionSeconds is number
         && request.resource.data.positionSeconds >= 0
         && request.resource.data.positionSeconds <= 86400
-        && (
-          request.resource.data.memberIds == resource.data.memberIds
-          || (
-            request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
-            && request.resource.data.memberIds.hasAll(resource.data.memberIds)
-            && request.auth.uid in request.resource.data.memberIds
-          )
-          || (
-            request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
-            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
-            && !(request.auth.uid in request.resource.data.memberIds)
-            && resource.data.memberIds.hasAll([request.auth.uid])
-          )
-        )
         && request.resource.data.isPlaying is bool
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.updatedAt is timestamp;
+
+      // Playback/channel state is host-authoritative.
+      // Membership changes are separately constrained below.
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.memberIds
+        && request.resource.data.inviteCode == resource.data.inviteCode
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() <= 8
         && request.resource.data.updatedAt is timestamp
         && (
-          (request.resource.data.memberIds.size() >= resource.data.memberIds.size()
+          // Host can update playback/channel state, but cannot alter membership.
+          (
+            request.auth.uid == resource.data.hostUid
+            && request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.memberIds == resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'channelId','channelName','positionSeconds','isPlaying','updatedAt'
+            ])
+            && request.resource.data.channelId is string
+            && request.resource.data.channelId.size() > 0
+            && request.resource.data.channelName is string
+            && request.resource.data.channelName.size() > 0
+            && request.resource.data.positionSeconds is number
+            && request.resource.data.positionSeconds >= 0
+            && request.resource.data.positionSeconds <= 86400
+            && request.resource.data.isPlaying is bool
+            && request.resource.data.status == resource.data.status
+          )
+          ||
+          // A member can join; only the host can change hostUid.
+          (
+            request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.status in ['waiting','ready']
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
             && request.resource.data.memberIds.hasAll(resource.data.memberIds)
-            && request.auth.uid in request.resource.data.memberIds)
-          || (request.resource.data.memberIds.size() + 1 == resource.data.memberIds.size()
+            && request.auth.uid in request.resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'memberIds','status','updatedAt'
+            ])
+          )
+          ||
+          // A member can leave themselves.
+          (
+            request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.status in ['waiting','ready']
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
             && !(request.auth.uid in request.resource.data.memberIds)
-            && request.auth.uid in resource.data.memberIds
-            && resource.data.memberIds.hasAll(request.resource.data.memberIds))
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'memberIds','status','updatedAt'
+            ])
+          )
+          ||
+          // The current host can leave and transfer host ownership to a remaining member.
+          (
+            request.auth.uid == resource.data.hostUid
+            && request.resource.data.hostUid is string
+            && request.resource.data.hostUid != resource.data.hostUid
+            && request.resource.data.hostUid in request.resource.data.memberIds
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && request.resource.data.status in ['waiting','ready']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'hostUid','memberIds','status','updatedAt'
+            ])
+          )
         );
-      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
 
-      match /messages/{messageId} {}
+      // Only the host can delete a room.
+      allow delete: if request.auth != null
+        && resource.data.hostUid == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
     }
 
     match /education_courses/{courseId} {
