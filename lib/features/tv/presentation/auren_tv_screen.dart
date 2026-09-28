@@ -338,6 +338,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   Future<void> _showWatchTogetherChat(AurenTvWatchTogetherRoom room) async {
     final service = AurenTvWatchTogetherService.instance;
     final controller = TextEditingController();
+    Timer? typingTimer;
     try {
       await showModalBottomSheet(
         context: context,
@@ -356,6 +357,19 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                   ]),
                 ),
                 Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: _watchTogetherReactions(room)),
+                StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+                  stream: service.typing(room.id),
+                  builder: (ctx, snap) {
+                    final active = (snap.data?.docs ?? const <QueryDocumentSnapshot<Map<String,dynamic>>>[])
+                        .where((d) => d.data()['typing'] == true && d.id != FirebaseAuth.instance.currentUser?.uid)
+                        .length;
+                    if (active == 0) return const SizedBox(height: 2);
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      child: Align(alignment: Alignment.centerLeft, child: Text('عضو يكتب…', style: TextStyle(fontSize: 12))),
+                    );
+                  },
+                ),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
                     stream: service.messages(room.id),
@@ -388,12 +402,12 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 Padding(
                   padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(ctx).viewInsets.bottom + 8),
                   child: Row(children: [
-                    Expanded(child: TextField(controller: controller, maxLength: 500, textInputAction: TextInputAction.send,
-                      onSubmitted: (_) async { final v=controller.text; controller.clear(); await service.sendMessage(room.id, v); },
+                    Expanded(child: TextField(controller: controller, maxLength: 500, onChanged: (_) { typingTimer?.cancel(); service.setTyping(room.id, true); typingTimer = Timer(const Duration(seconds: 2), () { service.setTyping(room.id, false); }); }, textInputAction: TextInputAction.send,
+                      onSubmitted: (_) async { final v=controller.text; controller.clear(); typingTimer?.cancel(); await service.setTyping(room.id, false); await service.sendMessage(room.id, v); },
                       decoration: const InputDecoration(hintText: 'اكتب رسالة…', counterText: ''))),
                     IconButton(
                       icon: const Icon(Icons.send),
-                      onPressed: () async { final v=controller.text; controller.clear(); await service.sendMessage(room.id, v); },
+                      onPressed: () async { final v=controller.text; controller.clear(); typingTimer?.cancel(); await service.setTyping(room.id, false); await service.sendMessage(room.id, v); },
                     ),
                   ]),
                 ),
