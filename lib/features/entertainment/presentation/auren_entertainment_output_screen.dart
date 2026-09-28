@@ -134,9 +134,17 @@ class _AurenEntertainmentOutputScreenState
   }
 
   Map<String, String> get _subtitleUrls {
-    final raw = widget.output['subtitleUrls'];
+    final direct = widget.output['subtitleUrls'];
+    final nested = widget.output['languageUrls'];
+    final raw = direct is Map ? direct : (nested is Map ? nested : null);
     if (raw is! Map) return const {};
-    return raw.map((key, value) => MapEntry(key.toString(), value.toString()));
+    return raw
+        .map((key, value) => MapEntry(key.toString().toLowerCase(), value.toString()))
+        .where((entry) => entry.value.trim().isNotEmpty)
+        .fold<Map<String, String>>({}, (result, entry) {
+          result[entry.key] = entry.value;
+          return result;
+        });
   }
 
   Future<void> _loadSubtitle(String language) async {
