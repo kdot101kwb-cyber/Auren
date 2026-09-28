@@ -4,6 +4,7 @@ import '../data/auren_game_multiplayer.dart';
 class AurenGamingTournamentScreen extends StatefulWidget { const AurenGamingTournamentScreen({super.key}); @override State<AurenGamingTournamentScreen> createState()=>_AurenGamingTournamentScreenState(); }
 class _AurenGamingTournamentScreenState extends State<AurenGamingTournamentScreen>{
  final _api=AurenGameMultiplayer(); bool _loading=true; String? _actionMessage; Map<String,dynamic>? _data; Map<String,dynamic>? _bracket; int _game=53;
+ @override void didChangeDependencies(){super.didChangeDependencies(); final g=widget.initialGameIndex; if(g!=null && g>=53 && g<=59 && _game!=g){_game=g; _load();}}
  @override void initState(){super.initState();_load();}
  String _gameName(int g)=>const {53:'🕵️ Crime Files',54:'⚽ Football Pro',55:'🏀 Basketball Pro',56:'🥊 Boxing Champion',57:'⚔️ Wars',58:'🥷 Samurai Legacy',59:'🏎️ Street Racing'}[g]??'Game';
  Future<void> _load() async { setState(()=>_loading=true); final d=await _api.getTournament(gameIndex:_game); final b=await _api.getTournamentBracket(gameIndex:_game); if(mounted)setState(()=>{_data=d,_bracket=b,_loading=false}); }
