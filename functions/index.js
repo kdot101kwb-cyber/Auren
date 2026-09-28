@@ -3047,6 +3047,21 @@ exports.getAurenTournamentBracket = require('firebase-functions/v2/https').onCal
  }
 );
 
+
+function tournamentRewardForPlacement(placement) {
+  return placement===1 ? {coins:500,xp:1000,badge:'tournament_champion'} :
+    placement===2 ? {coins:250,xp:600,badge:null} :
+    placement===3 ? {coins:100,xp:300,badge:null} : {coins:50,xp:100,badge:null};
+}
+async function recordTournamentReward(tx, tournamentIdValue, uid, gameIndex, placement) {
+  const reward=tournamentRewardForPlacement(placement);
+  const ref=db.collection('auren_game_tournament_rewards').doc(tournamentIdValue+'_'+uid);
+  tx.set(ref,{tournamentId:tournamentIdValue,playerId:uid,gameIndex,placement,...reward,createdAt:FieldValue.serverTimestamp()},{merge:true});
+  if(placement===1) {
+    tx.set(db.collection('auren_gaming_badges').doc(uid),{tournamentChampion:true,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+  }
+}
+
 exports.submitAurenTournamentMatchResult = require('firebase-functions/v2/https').onCall(
  {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
  async(request)=>{
@@ -3073,6 +3088,7 @@ exports.submitAurenTournamentMatchResult = require('firebase-functions/v2/https'
     const winners=activeRound.map(x=>x.winnerId).filter(Boolean);
     if(winners.length<=1){
      tx.update(ref,{status:'completed',round:'champion',championId:winners[0]||null,matches,updatedAt:FieldValue.serverTimestamp()});
+     if(winners[0]) await recordTournamentReward(tx, ref.id, winners[0], gameIndex, 1);
      return {accepted:true,status:'completed',round:'champion',championId:winners[0]||null,matches};
     }
     const nextRound=round==='quarterfinals'?'semifinals':'final';
