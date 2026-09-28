@@ -18,7 +18,7 @@ Novita, Nscale and others. It also exposes text-to-video models such as
 Wan, LTX-Video, HunyuanVideo and CogVideoX. See the official documentation
 before enabling each adapter.
 
-Live adapter foundation is now in `live_provider_adapters.js`. It provides a
+Live adapter foundation is now in `live_provider_adapters.js`. The deterministic runtime fallback is in `provider_runtime.js`, with Hugging Face first and Replicate as the next configured route. It provides a
 normalized contract for Hugging Face chat and Replicate asynchronous jobs,
 including external job IDs and real output URLs. These adapters are not wired
 into Production Worker v2 yet because provider credentials must be explicitly
