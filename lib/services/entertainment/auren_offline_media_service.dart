@@ -53,6 +53,15 @@ class AurenOfflineMediaService {
     return out;
   }
 
+  Future<void> setLowData(bool enabled) async {
+    final p=await SharedPreferences.getInstance();
+    await p.setBool('auren_offline_low_data_v1',enabled);
+  }
+  Future<bool> lowDataEnabled() async {
+    final p=await SharedPreferences.getInstance();
+    return p.getBool('auren_offline_low_data_v1') ?? false;
+  }
+
   Future<AurenOfflineMedia> download({required String url,required String title,required String type,String? id,void Function(int,int)? onProgress}) async {
     final source=url.trim(); final uri=Uri.tryParse(source);
     if(uri==null||(uri.scheme!='http'&&uri.scheme!='https'))throw ArgumentError('Only HTTP(S) media URLs can be downloaded.');
@@ -63,9 +72,17 @@ class AurenOfflineMediaService {
     final file=File(dir.path+'/'+_safe(mediaId)+'.'+_safe(ext)); final temp=File(file.path+'.part');
     final client=http.Client();
     try{
-      final response=await client.send(http.Request('GET',uri));
+      final existingPart=await temp.length();
+      final request=http.Request('GET',uri);
+      if(existingPart>0) request.headers['Range']='bytes=$existingPart-';
+      final response=await client.send(request);
+      if(response.statusCode==416 && await temp.exists()){await temp.delete(); return download(url:url,title:title,type:type,id:id,onProgress:onProgress);}
       if(response.statusCode<200||response.statusCode>=300)throw HttpException('HTTP ${response.statusCode}');
-      final total=response.contentLength??0; var received=0; final sink=temp.openWrite();
+      final total=(response.contentLength??0)+(response.statusCode==206?existingPart:0);
+      var received=existingPart;
+      if(response.statusCode==200 && existingPart>0){received=0;}
+      final sink=temp.openWrite(mode: response.statusCode==206 ? FileMode.append : FileMode.write);
+      if(response.statusCode<200||response.statusCode>=300)throw HttpException('HTTP ${response.statusCode}');
       await response.stream.forEach((chunk){sink.add(chunk);received+=chunk.length;onProgress?.call(received,total);});
       await sink.close(); await temp.rename(file.path);
       final media=AurenOfflineMedia(id:mediaId,title:title.trim().isEmpty?'AUREN Media':title.trim(),type:type,path:file.path,sourceUrl:source,bytes:received,savedAt:DateTime.now());
