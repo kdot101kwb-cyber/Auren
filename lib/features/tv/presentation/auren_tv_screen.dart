@@ -282,7 +282,14 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         if (remote.isPlaying && !p.value.isPlaying && !lowData) await p.play();
         if (!remote.isPlaying && p.value.isPlaying) await p.pause();
         _applyingRemoteWatchState = false;
+      });      service.reactions(roomId).listen((snap) {
+        if (!mounted) return;
+        for (final doc in snap.docChanges.where((change) => change.type == DocumentChangeType.added)) {
+          final emoji = doc.doc.data()['emoji'] as String?;
+          if (emoji != null && emoji.isNotEmpty) _showFloatingReaction(emoji);
+        }
       });
+
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الغرفة جاهزة • الكود: ' + room.inviteCode + ' • الأعضاء: ' + room.memberIds.length.toString())));
       await _showWatchTogetherStatus(room);
     } catch (_) {
