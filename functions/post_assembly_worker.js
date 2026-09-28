@@ -189,6 +189,14 @@ async function finalizeEpisodeAssembly(ref) {
     if (!episodes[n]) episodes[n] = {};
     episodes[n][String(task.type)] = task.output;
   }
+  const jobRef = assemblyRef.parent && assemblyRef.parent.parent;
+  const jobSnap = jobRef ? await jobRef.get() : null;
+  const job = jobSnap && jobSnap.exists ? (jobSnap.data() || {}) : {};
+  const packageEpisodes = Object.keys(episodes).sort((a,b)=>Number(a)-Number(b)).map((n) => ({
+    episodeNumber:Number(n),
+    media:episodes[n],
+    status:'ready',
+  }));
   await assemblyRef.set({
     postAssemblyStatus:'ready',
     postAssemblyQcVersion:1,
@@ -196,6 +204,15 @@ async function finalizeEpisodeAssembly(ref) {
     finalPackageStatus:'ready',
     postAssemblyArtifactChecks:checks,
     finalizedEpisodes:episodes,
+    finalPackage:{
+      version:1,
+      status:'ready',
+      seriesId:assemblyRef.parent.parent.id,
+      title:String(job.title || job.name || job.seriesTitle || '').slice(0,300),
+      episodeCount:packageEpisodes.length,
+      episodes:packageEpisodes,
+      availableAssets:['video','audio','music','subtitles','thumbnail','trailer'],
+    },
     finalizedAt:admin.firestore.FieldValue.serverTimestamp(),
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
   }, {merge:true});
