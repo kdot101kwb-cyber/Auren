@@ -684,6 +684,9 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     final p = VideoPlayerController.networkUrl(Uri.parse(channel.url));
     player = p;
     playing = channel;
+    if (_watchTogetherRoom != null) {
+      await AurenTvWatchTogetherService.instance.sync(_watchTogetherRoom!, channelId: channel.id, channelName: channel.name);
+    }
     p.addListener(_onPlayerValueChanged);
     try {
       await p.initialize();
@@ -1234,8 +1237,14 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           Row(children: [
             Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text(playing?.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis))),
             IconButton(onPressed: () async {
-              if (player!.value.isPlaying) { await player!.pause(); }
-              else { await player!.play(); }
+              if (player!.value.isPlaying) {
+                await player!.pause();
+              } else {
+                await player!.play();
+              }
+              if (_watchTogetherRoom != null && player != null) {
+                await AurenTvWatchTogetherService.instance.sync(_watchTogetherRoom!, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying);
+              }
               if (mounted) setState(() {});
             }, icon: Icon(player!.value.isPlaying ? Icons.pause : Icons.play_arrow)),
           ]),
