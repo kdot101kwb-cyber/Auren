@@ -1775,7 +1775,448 @@ exports.enqueueAurenGameMatchmaking = require('firebase-functions/v2/https').onC
   }
 );
 
+
+exports.getAurenGameMatchmakingStatus = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const snap = await db.collection('auren_game_matchmaking').doc(uid).get();
+    if (!snap.exists) return {status:'idle', matchId:null};
+    const data = snap.data() || {};
+    return {status:String(data.status || 'idle'), gameIndex:Number(data.gameIndex), matchId:data.matchId ? String(data.matchId) : null};
+  }
+);
+
 exports.cancelAurenGameMatchmaking = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const ref = db.collection('auren_game_matchmaking').doc(uid);
+    const snap = await ref.get();
+    if (!snap.exists) return {cancelled:true};
+    const data = snap.data() || {};
+    if (data.status === 'waiting') await ref.set({status:'cancelled', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    return {cancelled:true};
+  }
+);
+
+exports.getAurenFlagshipRanking = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const gameIndex = Number(request.data?.gameIndex);
+    if (!Number.isInteger(gameIndex) || gameIndex < 53 || gameIndex > 59) {
+      throw aurenHttpsError('invalid-argument', 'Invalid game index.');
+    }
+    const ref = db.collection('auren_game_rankings').doc(String(gameIndex)).collection('players').doc(uid);
+    const snap = await ref.get();
+    const data = snap.exists ? (snap.data() || {}) : {};
+    return {
+      gameIndex,
+      wins: Math.max(0, Number(data.wins) || 0),
+      losses: Math.max(0, Number(data.losses) || 0),
+      draws: Math.max(0, Number(data.draws) || 0),
+      matches: Math.max(0, Number(data.matches) || 0),
+      rating: Math.max(100, Number(data.rating) || 1000),
+    };
+  }
+);
+
+exports.getAurenFlagshipLeaderboard = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const gameIndex = Number(request.data?.gameIndex);
+    const limit = Math.min(50, Math.max(1, Number(request.data?.limit) || 20));
+    if (!Number.isInteger(gameIndex) || gameIndex < 53 || gameIndex > 59) {
+      throw aurenHttpsError('invalid-argument', 'Invalid game index.');
+    }
+    const snap = await db.collection('auren_game_rankings').doc(String(gameIndex))
+      .collection('players').orderBy('rating', 'desc').limit(limit).get();
+    return {
+      gameIndex,
+      entries: snap.docs.map((d, i) => {
+        const x = d.data() || {};
+        return {rank:i + 1, playerId:d.id, wins:Number(x.wins)||0, losses:Number(x.losses)||0, draws:Number(x.draws)||0, matches:Number(x.matches)||0, rating:Math.max(100, Number(x.rating)||1000)};
+      }),
+    };
+  }
+);
+
+
+exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    if (!lobbyId || lobbyId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid lobby ID.');
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+      const data = snap.data() || {};
+      const players = normalizePlayers(data.players);
+      const gameIndex = Number(data.gameIndex);
+      if (gameIndex < 53 || gameIndex > 59 || data.status !== 'playing' || players.length !== 2 || !players.includes(uid)) {
+        throw aurenHttpsError('failed-precondition', 'Flagship lobby is not ready.');
+      }
+      if (data.state && typeof data.state === 'object' && Object.keys(data.state).length > 0) {
+        return {accepted:true, initialized:false, stateVersion:Number(data.stateVersion || 0)};
+      }
+      const host = String(data.hostId || players[0]);
+      const guest = String(data.guestId || players.find((p) => p !== host) || players[1]);
+      const state = createInitialFlagshipState(gameIndex, host, guest);
+      state.playerStats = buildPlayerStats(players, state);
+      state.matchResult = {status:'playing', winnerId:null, result:'in_progress'};
+      tx.update(ref, {
+        state,
+        stateVersion: 0,
+        turnPlayerId: host,
+        lastMoveId: null,
+        status: 'playing',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return {accepted:true, initialized:true, stateVersion:0};
+    });
+  }
+);
+
+exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    const moveId = String(request.data?.moveId || '').trim();
+    const expectedVersion = Number(request.data?.expectedVersion);
+    const action = request.data?.action;
+    if (!lobbyId || lobbyId.length > 128 || !moveId || moveId.length > 160 ||
+        !Number.isInteger(expectedVersion) || expectedVersion < 0 ||
+        !action || typeof action !== 'object' || Array.isArray(action)) {
+      throw aurenHttpsError('invalid-argument', 'Invalid flagship action request.');
+    }
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    try {
+      return await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+        const data = snap.data() || {};
+        const players = normalizePlayers(data.players);
+        const version = Number(data.stateVersion || 0);
+        const gameIndex = Number(data.gameIndex);
+        if (gameIndex < 53 || gameIndex > 59 || data.status !== 'playing' || !players.includes(uid) || players.length !== 2) {
+          throw aurenHttpsError('failed-precondition', 'Flagship lobby is not ready.');
+        }
+        if (String(data.lastMoveId || '') === moveId) {
+          return {accepted:true, duplicate:true, stateVersion:version, turnPlayerId:data.turnPlayerId || null};
+        }
+        if (data.turnPlayerId !== uid) throw aurenHttpsError('failed-precondition', 'It is not your turn.');
+        if (version !== expectedVersion) throw aurenHttpsError('aborted', 'Game state is out of date.');
+
+        let current = data.state;
+        if (!current || typeof current !== 'object' || Number(current.gameIndex) !== gameIndex) {
+          current = createInitialFlagshipState(gameIndex, players[0], players[1]);
+        }
+        current.playerStats = buildPlayerStats(players, current);
+        const beforeScore = Number(current.score) || 0;
+        const next = validateAndApplyFlagshipAction(current, action, uid);
+        const delta = Math.max(0, (Number(next.score) || 0) - beforeScore);
+        next.playerStats[uid].score += delta;
+        next.playerStats[uid].rounds += Math.max(0, (Number(next.round) || 0) - (Number(current.round) || 0));
+        next.playerStats[uid].actions += 1;
+
+        const result = determineMatchResult(players, next.playerStats, next);
+        next.winnerId = result.winnerId;
+        next.loserId = result.winnerId ? players.find((id) => id !== result.winnerId) || null : null;
+        next.matchResult = result;
+        const nextTurn = next.matchFinished ? null : players.find((id) => id !== uid);
+        if (next.matchFinished && !data.matchResult?.recorded) {
+          await recordFlagshipRanking(tx, players, result, gameIndex);
+          result.recorded = true;
+          next.matchResult = result;
+        }
+
+        tx.update(ref, {
+          state: next,
+          playerStats: next.playerStats,
+          matchResult: result,
+          stateVersion: version + 1,
+          turnPlayerId: nextTurn,
+          lastMoveId: moveId,
+          status: result.status,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        return {
+          accepted:true,
+          duplicate:false,
+          stateVersion:version + 1,
+          turnPlayerId:nextTurn,
+          matchResult:result,
+          playerScores:next.playerStats,
+        };
+      });
+    } catch (error) {
+      if (error?.code) throw error;
+      throw aurenHttpsError('failed-precondition', String(error?.message || 'Flagship action rejected.'));
+    }
+  }
+);
+
+
+// Legacy gateway for non-Ludo games. Ludo is action-authoritative.
+function validateAurenGameState(gameIndex, state) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) throw aurenHttpsError('invalid-argument', 'Invalid game state.');
+  if (JSON.stringify(state).length > 45000) throw aurenHttpsError('invalid-argument', 'Game state is too large.');
+  if (typeof state.matchFinished !== 'boolean') throw aurenHttpsError('invalid-argument', 'matchFinished is required.');
+  if (gameIndex === 50) throw aurenHttpsError('failed-precondition', 'Ludo must use the authoritative action gateway.');
+  if (gameIndex >= 53 && gameIndex <= 59) throw aurenHttpsError('failed-precondition', 'Flagship games must use the authoritative action gateway.');
+  return state;
+}
+
+exports.submitAurenGameMove = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    const moveId = String(request.data?.moveId || '').trim();
+    const expectedVersion = Number(request.data?.expectedVersion);
+    const gameIndex = Number(request.data?.gameIndex);
+    if (!lobbyId || lobbyId.length > 128 || !moveId || moveId.length > 160 || !Number.isInteger(expectedVersion) || expectedVersion < 0 || !Number.isInteger(gameIndex) || gameIndex < 0 || gameIndex > 59) throw aurenHttpsError('invalid-argument', 'Invalid multiplayer move request.');
+    const state = validateAurenGameState(gameIndex, request.data?.state);
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+      const data = snap.data() || {};
+      const players = Array.isArray(data.players) ? data.players.map(String) : [];
+      const version = Number(data.stateVersion || 0);
+      if (data.gameIndex !== gameIndex || data.status !== 'playing' || !players.includes(uid)) throw aurenHttpsError('failed-precondition', 'You are not an active player in this lobby.');
+      if (data.turnPlayerId !== uid) throw aurenHttpsError('failed-precondition', 'It is not your turn.');
+      if (version !== expectedVersion) throw aurenHttpsError('aborted', 'Game state is out of date.');
+      if (String(data.lastMoveId || '') === moveId) return {accepted:true, duplicate:true, stateVersion:version};
+      const opponent = players.find((id) => id !== uid) || uid;
+      const finished = state.matchFinished === true;
+      const nextVersion = version + 1;
+      tx.update(ref, {state, stateVersion:nextVersion, turnPlayerId:finished ? null : opponent, lastMoveId:moveId, status:finished ? 'finished' : 'playing', updatedAt:FieldValue.serverTimestamp()});
+      return {accepted:true, duplicate:false, stateVersion:nextVersion, turnPlayerId:finished ? null : opponent};
+    });
+  }
+);
+
+ require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const gameIndex = Number(request.data?.gameIndex);
+    if (!Number.isInteger(gameIndex) || gameIndex < 53 || gameIndex > 59) {
+      throw aurenHttpsError('invalid-argument', 'Invalid game index.');
+    }
+    const ref = db.collection('auren_game_rankings').doc(String(gameIndex)).collection('players').doc(uid);
+    const snap = await ref.get();
+    const data = snap.exists ? (snap.data() || {}) : {};
+    return {
+      gameIndex,
+      wins: Math.max(0, Number(data.wins) || 0),
+      losses: Math.max(0, Number(data.losses) || 0),
+      draws: Math.max(0, Number(data.draws) || 0),
+      matches: Math.max(0, Number(data.matches) || 0),
+      rating: Math.max(100, Number(data.rating) || 1000),
+    };
+  }
+);
+
+exports.getAurenFlagshipLeaderboard = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const gameIndex = Number(request.data?.gameIndex);
+    const limit = Math.min(50, Math.max(1, Number(request.data?.limit) || 20));
+    if (!Number.isInteger(gameIndex) || gameIndex < 53 || gameIndex > 59) {
+      throw aurenHttpsError('invalid-argument', 'Invalid game index.');
+    }
+    const snap = await db.collection('auren_game_rankings').doc(String(gameIndex))
+      .collection('players').orderBy('rating', 'desc').limit(limit).get();
+    return {
+      gameIndex,
+      entries: snap.docs.map((d, i) => {
+        const x = d.data() || {};
+        return {rank:i + 1, playerId:d.id, wins:Number(x.wins)||0, losses:Number(x.losses)||0, draws:Number(x.draws)||0, matches:Number(x.matches)||0, rating:Math.max(100, Number(x.rating)||1000)};
+      }),
+    };
+  }
+);
+
+
+exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    if (!lobbyId || lobbyId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid lobby ID.');
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+      const data = snap.data() || {};
+      const players = normalizePlayers(data.players);
+      const gameIndex = Number(data.gameIndex);
+      if (gameIndex < 53 || gameIndex > 59 || data.status !== 'playing' || players.length !== 2 || !players.includes(uid)) {
+        throw aurenHttpsError('failed-precondition', 'Flagship lobby is not ready.');
+      }
+      if (data.state && typeof data.state === 'object' && Object.keys(data.state).length > 0) {
+        return {accepted:true, initialized:false, stateVersion:Number(data.stateVersion || 0)};
+      }
+      const host = String(data.hostId || players[0]);
+      const guest = String(data.guestId || players.find((p) => p !== host) || players[1]);
+      const state = createInitialFlagshipState(gameIndex, host, guest);
+      state.playerStats = buildPlayerStats(players, state);
+      state.matchResult = {status:'playing', winnerId:null, result:'in_progress'};
+      tx.update(ref, {
+        state,
+        stateVersion: 0,
+        turnPlayerId: host,
+        lastMoveId: null,
+        status: 'playing',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return {accepted:true, initialized:true, stateVersion:0};
+    });
+  }
+);
+
+exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    const moveId = String(request.data?.moveId || '').trim();
+    const expectedVersion = Number(request.data?.expectedVersion);
+    const action = request.data?.action;
+    if (!lobbyId || lobbyId.length > 128 || !moveId || moveId.length > 160 ||
+        !Number.isInteger(expectedVersion) || expectedVersion < 0 ||
+        !action || typeof action !== 'object' || Array.isArray(action)) {
+      throw aurenHttpsError('invalid-argument', 'Invalid flagship action request.');
+    }
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    try {
+      return await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+        const data = snap.data() || {};
+        const players = normalizePlayers(data.players);
+        const version = Number(data.stateVersion || 0);
+        const gameIndex = Number(data.gameIndex);
+        if (gameIndex < 53 || gameIndex > 59 || data.status !== 'playing' || !players.includes(uid) || players.length !== 2) {
+          throw aurenHttpsError('failed-precondition', 'Flagship lobby is not ready.');
+        }
+        if (String(data.lastMoveId || '') === moveId) {
+          return {accepted:true, duplicate:true, stateVersion:version, turnPlayerId:data.turnPlayerId || null};
+        }
+        if (data.turnPlayerId !== uid) throw aurenHttpsError('failed-precondition', 'It is not your turn.');
+        if (version !== expectedVersion) throw aurenHttpsError('aborted', 'Game state is out of date.');
+
+        let current = data.state;
+        if (!current || typeof current !== 'object' || Number(current.gameIndex) !== gameIndex) {
+          current = createInitialFlagshipState(gameIndex, players[0], players[1]);
+        }
+        current.playerStats = buildPlayerStats(players, current);
+        const beforeScore = Number(current.score) || 0;
+        const next = validateAndApplyFlagshipAction(current, action, uid);
+        const delta = Math.max(0, (Number(next.score) || 0) - beforeScore);
+        next.playerStats[uid].score += delta;
+        next.playerStats[uid].rounds += Math.max(0, (Number(next.round) || 0) - (Number(current.round) || 0));
+        next.playerStats[uid].actions += 1;
+
+        const result = determineMatchResult(players, next.playerStats, next);
+        next.winnerId = result.winnerId;
+        next.loserId = result.winnerId ? players.find((id) => id !== result.winnerId) || null : null;
+        next.matchResult = result;
+        const nextTurn = next.matchFinished ? null : players.find((id) => id !== uid);
+        if (next.matchFinished && !data.matchResult?.recorded) {
+          await recordFlagshipRanking(tx, players, result, gameIndex);
+          result.recorded = true;
+          next.matchResult = result;
+        }
+
+        tx.update(ref, {
+          state: next,
+          playerStats: next.playerStats,
+          matchResult: result,
+          stateVersion: version + 1,
+          turnPlayerId: nextTurn,
+          lastMoveId: moveId,
+          status: result.status,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        return {
+          accepted:true,
+          duplicate:false,
+          stateVersion:version + 1,
+          turnPlayerId:nextTurn,
+          matchResult:result,
+          playerScores:next.playerStats,
+        };
+      });
+    } catch (error) {
+      if (error?.code) throw error;
+      throw aurenHttpsError('failed-precondition', String(error?.message || 'Flagship action rejected.'));
+    }
+  }
+);
+
+
+// Legacy gateway for non-Ludo games. Ludo is action-authoritative.
+function validateAurenGameState(gameIndex, state) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) throw aurenHttpsError('invalid-argument', 'Invalid game state.');
+  if (JSON.stringify(state).length > 45000) throw aurenHttpsError('invalid-argument', 'Game state is too large.');
+  if (typeof state.matchFinished !== 'boolean') throw aurenHttpsError('invalid-argument', 'matchFinished is required.');
+  if (gameIndex === 50) throw aurenHttpsError('failed-precondition', 'Ludo must use the authoritative action gateway.');
+  if (gameIndex >= 53 && gameIndex <= 59) throw aurenHttpsError('failed-precondition', 'Flagship games must use the authoritative action gateway.');
+  return state;
+}
+
+exports.submitAurenGameMove = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    const moveId = String(request.data?.moveId || '').trim();
+    const expectedVersion = Number(request.data?.expectedVersion);
+    const gameIndex = Number(request.data?.gameIndex);
+    if (!lobbyId || lobbyId.length > 128 || !moveId || moveId.length > 160 || !Number.isInteger(expectedVersion) || expectedVersion < 0 || !Number.isInteger(gameIndex) || gameIndex < 0 || gameIndex > 59) throw aurenHttpsError('invalid-argument', 'Invalid multiplayer move request.');
+    const state = validateAurenGameState(gameIndex, request.data?.state);
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+      const data = snap.data() || {};
+      const players = Array.isArray(data.players) ? data.players.map(String) : [];
+      const version = Number(data.stateVersion || 0);
+      if (data.gameIndex !== gameIndex || data.status !== 'playing' || !players.includes(uid)) throw aurenHttpsError('failed-precondition', 'You are not an active player in this lobby.');
+      if (data.turnPlayerId !== uid) throw aurenHttpsError('failed-precondition', 'It is not your turn.');
+      if (version !== expectedVersion) throw aurenHttpsError('aborted', 'Game state is out of date.');
+      if (String(data.lastMoveId || '') === moveId) return {accepted:true, duplicate:true, stateVersion:version};
+      const opponent = players.find((id) => id !== uid) || uid;
+      const finished = state.matchFinished === true;
+      const nextVersion = version + 1;
+      tx.update(ref, {state, stateVersion:nextVersion, turnPlayerId:finished ? null : opponent, lastMoveId:moveId, status:finished ? 'finished' : 'playing', updatedAt:FieldValue.serverTimestamp()});
+      return {accepted:true, duplicate:false, stateVersion:nextVersion, turnPlayerId:finished ? null : opponent};
+    });
+  }
+);
+
+ require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
     const uid = request.auth?.uid;
