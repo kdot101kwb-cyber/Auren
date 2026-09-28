@@ -1337,6 +1337,46 @@ Object.assign(exports, require('./live_production_worker'));
 
 
 // AUREN Gaming authoritative move gateways.
+const { initialUno, applyUno } = require('./uno_server');
+
+exports.initializeAurenUnoMatch = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async request=>{
+  const uid=request.auth?.uid;if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const id=String(request.data?.lobbyId||'').trim(),ref=db.collection('auren_game_lobbies').doc(id);
+  return db.runTransaction(async tx=>{
+   const snap=await tx.get(ref);if(!snap.exists)throw aurenHttpsError('not-found','Lobby not found.');
+   const d=snap.data()||{},p=Array.isArray(d.players)?d.players.map(String):[];
+   if(d.gameIndex!==52||d.status!=='playing'||p.length!==2||!p.includes(uid))throw aurenHttpsError('failed-precondition','UNO lobby is not ready.');
+   if(d.state&&Object.keys(d.state).length)return {accepted:true,initialized:false,stateVersion:Number(d.stateVersion||0)};
+   const host=String(d.hostId||p[0]),guest=String(d.guestId||p[1]);
+   tx.update(ref,{state:initialUno(host,guest),stateVersion:0,turnPlayerId:host,lastMoveId:null,updatedAt:FieldValue.serverTimestamp()});
+   return {accepted:true,initialized:true,stateVersion:0};
+  });
+ }
+);
+exports.submitAurenUnoAction = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async request=>{
+  const uid=request.auth?.uid,id=String(request.data?.lobbyId||'').trim(),moveId=String(request.data?.moveId||'').trim();
+  const expected=Number(request.data?.expectedVersion),action=request.data?.action;
+  if(!uid||!id||!moveId||!Number.isInteger(expected)||expected<0||!action||typeof action!=='object')
+    throw aurenHttpsError('invalid-argument','Invalid UNO action request.');
+  const ref=db.collection('auren_game_lobbies').doc(id);
+  try{return await db.runTransaction(async tx=>{
+   const snap=await tx.get(ref);if(!snap.exists)throw aurenHttpsError('not-found','Lobby not found.');
+   const d=snap.data()||{},v=Number(d.stateVersion||0),p=Array.isArray(d.players)?d.players.map(String):[];
+   if(d.gameIndex!==52||d.status!=='playing'||!p.includes(uid))throw aurenHttpsError('failed-precondition','Not an active UNO player.');
+   if(String(d.lastMoveId||'')===moveId)return {accepted:true,duplicate:true,stateVersion:v,turnPlayerId:d.turnPlayerId||null};
+   if(d.turnPlayerId!==uid)throw aurenHttpsError('failed-precondition','It is not your turn.');
+   if(v!==expected)throw aurenHttpsError('aborted','Game state is out of date.');
+   const next=applyUno(d.state,action,uid),turn=next.matchFinished?null:next.nextTurnPlayerId;delete next.nextTurnPlayerId;
+   tx.update(ref,{state:next,stateVersion:v+1,turnPlayerId:turn,lastMoveId:moveId,status:next.matchFinished?'finished':'playing',updatedAt:FieldValue.serverTimestamp()});
+   return {accepted:true,duplicate:false,stateVersion:v+1,turnPlayerId:turn};
+  });}catch(e){if(e?.code)throw e;throw aurenHttpsError('failed-precondition',String(e?.message||'UNO action rejected.'));}
+ }
+);
+
 const { initialDomino, applyDomino } = require('./domino_server');
 
 exports.initializeAurenDominoMatch = require('firebase-functions/v2/https').onCall(
