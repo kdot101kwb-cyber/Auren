@@ -3189,3 +3189,17 @@ exports.claimAurenGamingSeasonReward = require('firebase-functions/v2/https').on
 );
 
 exports.getAurenSeasonChampionBadge = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');const snap=await db.collection('auren_gaming_badges').doc(request.auth.uid).get();return {tournamentChampion:snap.exists&&snap.data()?.tournamentChampion===true,seasonChampion:snap.exists&&snap.data()?.seasonChampion===true};});
+
+exports.finalizeAurenGamingSeason = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true},
+ async(request)=>{
+  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const s=aurenGamingSeasonMeta(), gameIndex=Number(request.data?.gameIndex||53);
+  if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex))throw aurenHttpsError('invalid-argument','Unsupported game.');
+  const snap=await db.collection('auren_game_rankings').doc(String(gameIndex)).collection('seasons').doc(s.seasonId).collection('players').orderBy('rating','desc').limit(1).get();
+  if(snap.empty)return {seasonId:s.seasonId,champion:null};
+  const champion=snap.docs[0].id;
+  const badge=db.collection('auren_gaming_badges').doc(champion);
+  await badge.set({seasonChampion:true,seasonId:s.seasonId,seasonChampionGame:gameIndex,seasonChampionAt:FieldValue.serverTimestamp()},{merge:true});
+  return {seasonId:s.seasonId,gameIndex,champion};
+ });
