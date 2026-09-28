@@ -12,6 +12,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String country = '', category = '', query = '', continent = '';
   String tvMode = 'world';
   String newsRegion = 'all';
+  String sportCategory = 'all';
+  String entertainmentCategory = 'all';
   String countryLabel = 'الدول';
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
@@ -163,7 +165,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         ButtonSegment(value: 'animation', label: Text('أنمي/كرتون'), icon: Icon(Icons.animation)),
         ButtonSegment(value: 'documentary', label: Text('وثائقي'), icon: Icon(Icons.menu_book_outlined)),
         ButtonSegment(value: 'series', label: Text('مسلسلات'), icon: Icon(Icons.tv_outlined)),
-      ], selected: {tvMode}, onSelectionChanged: (v) => setState(() { tvMode = v.first; country = ''; continent = ''; quickRegion = ''; category = ''; newsRegion = 'all'; }))),
+      ], selected: {tvMode}, onSelectionChanged: (v) => setState(() { tvMode = v.first; country = ''; continent = ''; quickRegion = ''; category = ''; newsRegion = 'all'; sportCategory = 'all'; entertainmentCategory = 'all'; }))),
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
         child: TextField(
@@ -184,6 +186,30 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           Expanded(child: TextField(decoration: const InputDecoration(labelText: 'الفئة'), onChanged: (v) => setState(() => category = v))),
         ]),
       ),
+      if (tvMode == 'sports' || tvMode == 'entertainment')
+        SizedBox(
+          height: 48,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            children: [
+              for (final item in (tvMode == 'sports'
+                  ? const [['all', 'كل الرياضات'], ['football', '⚽ كرة القدم'], ['basketball', '🏀 كرة السلة'], ['tennis', '🎾 التنس'], ['motorsport', '🏎️ سباقات'], ['combat', '🥊 قتال'], ['golf', '🏌️ غولف'], ['other', '🏆 أخرى']]
+                  : const [['all', 'كل الترفيه'], ['movies', '🎬 أفلام'], ['series', '📺 مسلسلات'], ['comedy', '😂 كوميديا'], ['music', '🎵 موسيقى'], ['kids', '👶 أطفال'], ['animation', '🎨 أنمي/كرتون'], ['culture', '🌍 ثقافة'], ['documentary', '📚 وثائقي']]))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: ChoiceChip(
+                    label: Text(item[1]),
+                    selected: (tvMode == 'sports' ? sportCategory : entertainmentCategory) == item[0],
+                    onSelected: (_) => setState(() {
+                      if (tvMode == 'sports') { sportCategory = item[0]; } else { entertainmentCategory = item[0]; }
+                      category = '';
+                    }),
+                  ),
+                ),
+            ],
+          ),
+        ),
       if (tvMode == 'news')
         SizedBox(
           height: 44,
@@ -275,7 +301,25 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             final n = '${c.name} ${c.category} ${c.language} ${c.country}'.toLowerCase();
             final matchesNewsRegion = tvMode != 'news' || newsRegion == 'all' || (newsRegion == 'SD' && c.country.toUpperCase() == 'SD') || (newsRegion == 'Arab' && arabCountries.contains(c.country.toUpperCase())) || (newsRegion == 'Africa' && _regionLabel(c) == 'Africa') || (newsRegion == 'World' && _regionLabel(c) != 'Africa' && !arabCountries.contains(c.country.toUpperCase())) || (newsRegion == 'Business' && RegExp(r'business|finance|economy|market|money', caseSensitive: false).hasMatch(n)) || (newsRegion == 'Sports' && RegExp(r'sport|football|soccer|basketball|tennis|espn', caseSensitive: false).hasMatch(n));
             final matchesQuick = quickRegion == 'Sudan' ? c.country.toUpperCase() == 'SD' : quickRegion == 'Arab' ? arabCountries.contains(c.country.toUpperCase()) : true;
-            return matchesQuery && matchesRegion && matchesQuick && matchesNewsRegion && (!onlyFavorites || favorites.contains(c.id));
+            final sportText = n;
+            final matchesSportCategory = tvMode != 'sports' || sportCategory == 'all' ||
+              (sportCategory == 'football' && RegExp(r'football|soccer|fifa|uefa|premier|league|cup', caseSensitive: false).hasMatch(sportText)) ||
+              (sportCategory == 'basketball' && RegExp(r'basketball|nba|fiba', caseSensitive: false).hasMatch(sportText)) ||
+              (sportCategory == 'tennis' && RegExp(r'tennis|atp|wta', caseSensitive: false).hasMatch(sportText)) ||
+              (sportCategory == 'motorsport' && RegExp(r'formula|f1|motorsport|nascar|racing|motogp', caseSensitive: false).hasMatch(sportText)) ||
+              (sportCategory == 'combat' && RegExp(r'boxing|mma|ufc|wrestling|fight', caseSensitive: false).hasMatch(sportText)) ||
+              (sportCategory == 'golf' && RegExp(r'golf', caseSensitive: false).hasMatch(sportText)) ||
+              (sportCategory == 'other' && !RegExp(r'football|soccer|basketball|tennis|formula|f1|motorsport|nascar|racing|motogp|boxing|mma|ufc|wrestling|fight|golf', caseSensitive: false).hasMatch(sportText));
+            final matchesEntertainmentCategory = tvMode != 'entertainment' || entertainmentCategory == 'all' ||
+              (entertainmentCategory == 'movies' && RegExp(r'movie|film|cinema', caseSensitive: false).hasMatch(n)) ||
+              (entertainmentCategory == 'series' && RegExp(r'series|serial|drama|soap', caseSensitive: false).hasMatch(n)) ||
+              (entertainmentCategory == 'comedy' && RegExp(r'comedy|humor|funny', caseSensitive: false).hasMatch(n)) ||
+              (entertainmentCategory == 'music' && RegExp(r'music|musical|mtv|vh1', caseSensitive: false).hasMatch(n)) ||
+              (entertainmentCategory == 'kids' && RegExp(r'kids|children|nickelodeon|cartoon', caseSensitive: false).hasMatch(n)) ||
+              (entertainmentCategory == 'animation' && RegExp(r'anime|animation|cartoon', caseSensitive: false).hasMatch(n)) ||
+              (entertainmentCategory == 'culture' && RegExp(r'culture|cultural|travel', caseSensitive: false).hasMatch(n)) ||
+              (entertainmentCategory == 'documentary' && RegExp(r'documentary|documentaries', caseSensitive: false).hasMatch(n));
+            return matchesQuery && matchesRegion && matchesQuick && matchesNewsRegion && matchesSportCategory && matchesEntertainmentCategory && (!onlyFavorites || favorites.contains(c.id));
           }).toList();
           if (channels.isEmpty) return const Center(child: Text('ما لقينا قنوات مطابقة. جرّب تغيير البحث أو الدولة.'));
           return ListView.separated(
