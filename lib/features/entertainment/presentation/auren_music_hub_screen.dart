@@ -10,7 +10,7 @@ import 'auren_podcasts_screen.dart';
 import 'auren_radio_screen.dart';
 import 'auren_music_queue_screen.dart';
 import 'auren_smart_music_screen.dart';
-import 'auren_saved_music_screen.dart';
+import 'auren_saved_music_screen.dart';\nimport 'auren_music_collection_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 
 class AurenMusicHubScreen extends StatefulWidget {
@@ -83,6 +83,10 @@ class _AurenMusicHubState extends State<AurenMusicHubScreen> {
               const SizedBox(height: 12),
               _intelligentHome(context, filtered, repo, uid),
 
+              if (items.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _artistAlbumSection(context, filtered),
+              ],
               _sectionTitle('Music & Podcasts'),
 
             ],
@@ -231,6 +235,70 @@ class _AurenMusicHubState extends State<AurenMusicHubScreen> {
           );
         },
       );
+
+  Widget _artistAlbumSection(BuildContext context, List<AurenEntertainmentItem> items) {
+    final artists = <String, List<AurenEntertainmentItem>>{};
+    final albums = <String, List<AurenEntertainmentItem>>{};
+    for (final item in items) {
+      if (item.artistName.trim().isNotEmpty) artists.putIfAbsent(item.artistName.trim(), () => []).add(item);
+      if (item.albumName.trim().isNotEmpty) albums.putIfAbsent(item.albumName.trim(), () => []).add(item);
+    }
+    if (artists.isEmpty && albums.isEmpty) return const SizedBox.shrink();
+    final entries = <Widget>[];
+    if (artists.isNotEmpty) {
+      entries.add(_sectionTitle('الفنانون'));
+      entries.add(SizedBox(
+        height: 116,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: artists.length.clamp(0, 8),
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final name = artists.keys.elementAt(i);
+            return SizedBox(width: 150, child: Card(
+              child: InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>
+                  AurenMusicCollectionScreen(title: name, subtitle: artists[name]!.length.toString() + ' أغنية', items: artists[name]!))),
+                child: Padding(padding: const EdgeInsets.all(12), child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [const Icon(Icons.person_rounded, size: 30), const SizedBox(height: 6),
+                    Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)],
+                )),
+              ),
+            ));
+          },
+        ),
+      ));
+    }
+    if (albums.isNotEmpty) {
+      entries.add(const SizedBox(height: 14));
+      entries.add(_sectionTitle('الألبومات'));
+      entries.add(SizedBox(
+        height: 116,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: albums.length.clamp(0, 8),
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final name = albums.keys.elementAt(i);
+            final albumItems = albums[name]!;
+            return SizedBox(width: 170, child: Card(
+              child: InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) =>
+                  AurenMusicCollectionScreen(title: name, subtitle: albumItems.first.artistName, items: albumItems, album: true))),
+                child: Padding(padding: const EdgeInsets.all(12), child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [const Icon(Icons.album_rounded, size: 30), const SizedBox(height: 6),
+                    Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)],
+                )),
+              ),
+            ));
+          },
+        ),
+      ));
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: entries);
+  }
 
   Widget _musicTile(BuildContext context, AurenEntertainmentItem item, EntertainmentRepository repo, String? uid) => Card(
         margin: const EdgeInsets.only(bottom: 6),
