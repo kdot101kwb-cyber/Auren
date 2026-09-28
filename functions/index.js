@@ -765,3 +765,97 @@ exports.claimAurenMiniGameReward = require('firebase-functions/v2/https').onCall
     return {claimed:granted > 0, xp:granted};
   }
 );
+
+
+// Generates the first durable production artifact for a series job.
+// This is deliberately a planning step: it does not claim that video/audio
+// assets have been rendered or published.
+exports.generateAurenSeriesBlueprint = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:120, memory:'512MiB',
+    enforceAppCheck:true,
+    secrets:[OPENROUTER_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, HF_TOKEN]},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const jobId = String(request.data?.jobId || '').trim();
+    if (!jobId || jobId.length > 128 || !/^[A-Za-z0-9_-]+$/.test(jobId)) {
+      throw aurenHttpsError('invalid-argument', 'Invalid creation job id.');
+    }
+    const jobRef = db.collection('users').doc(uid)
+      .collection('entertainmentCreationJobs').doc(jobId);
+    const jobSnap = await jobRef.get();
+    if (!jobSnap.exists) throw aurenHttpsError('not-found', 'Creation job not found.');
+    const job = jobSnap.data() || {};
+    if (job.mode !== 'مسلسل') throw aurenHttpsError('failed-precondition', 'This job is not a series.');
+    if (job.status === 'cancelled') throw aurenHttpsError('failed-precondition', 'This job was cancelled.');
+    if (job.seriesBlueprint && job.productionStage === 'series_blueprint_ready') {
+      return {status:'already_ready', blueprint:job.seriesBlueprint};
+    }
+    const idea = String(job.idea || '').trim();
+    if (!idea) throw aurenHttpsError('invalid-argument', 'Series idea is empty.');
+
+    const system = [
+      'You are AUREN Series Studio, a development editor.',
+      'Create an original, production-ready series development blueprint.',
+      'Return ONLY valid JSON. Do not claim any video, audio, image, or episode has been rendered.',
+      'Use the user\'s language. Avoid copyrighted characters and existing franchise worlds.',
+      'Schema: {title, logline, genre, audience, format, visualStyle, themes,',
+      'characters:[{name,role,ageRange,goal,flaw,arc}],',
+      'seasonArc:{summary,beginning,middle,finale},',
+      'episodes:[{number,title,logline,beats:[string]}],',
+      'productionNotes:{locations,props,voiceDirection,musicDirection,continuityRules},',
+      'rightsAndSafety:[string]}',
+      'Create 6 episodes if the user did not specify a count. Keep each episode concise.'
+    ].join(' ');
+    const messages = [
+      {role:'system', content:system},
+      {role:'user', content:'Series brief: ' + idea.slice(0,5000) +
+        '\nMood: ' + String(job.mood || 'auto').slice(0,40) +
+        '\nLength: ' + String(job.length || 'auto').slice(0,40)}
+    ];
+    const providers = ['openrouter','cloudflare_workers_ai','huggingface'];
+    let generated = null;
+    let selectedProvider = '';
+    const errors = [];
+    for (const provider of providers) {
+      try {
+        const result = await callAurenTextProvider(provider, messages, {task:'planning'});
+        if (!result?.ok || !String(result.text || '').trim()) {
+          errors.push(provider + ': ' + String(result?.message || 'empty response').slice(0,180));
+          continue;
+        }
+        let raw = String(result.text).trim();
+        raw = raw.replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'');
+        const start = raw.indexOf('{');
+        const end = raw.lastIndexOf('}');
+        if (start < 0 || end <= start) throw new Error('Provider did not return JSON.');
+        const parsed = JSON.parse(raw.slice(start,end + 1));
+        if (!parsed.title || !Array.isArray(parsed.characters) || !Array.isArray(parsed.episodes)) {
+          throw new Error('Blueprint is missing required sections.');
+        }
+        generated = parsed;
+        selectedProvider = provider;
+        break;
+      } catch (error) {
+        errors.push(provider + ': ' + String(error?.message || error).slice(0,180));
+      }
+    }
+    if (!generated) {
+      await jobRef.set({
+        productionStage:'series_blueprint_failed',
+        lastError:errors.join(' | ').slice(0,700),
+        updatedAt:FieldValue.serverTimestamp(),
+      }, {merge:true});
+      throw aurenHttpsError('unavailable', 'Series blueprint generation failed. Check configured AI provider credentials and try again.');
+    }
+    await jobRef.set({
+      seriesBlueprint:generated,
+      productionStage:'series_blueprint_ready',
+      productionProvider:selectedProvider,
+      progress:10,
+      lastError:'',
+      updatedAt:FieldValue.serverTimestamp(),
+    }, {merge:true});
+    return {status:'series_blueprint_ready', provider:selectedProvider, blueprint:generated};
+  }
+);
