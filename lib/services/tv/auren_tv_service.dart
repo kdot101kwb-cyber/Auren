@@ -128,7 +128,85 @@ class AurenTvService {
   }
 
   static const _healthKey = 'auren_tv_channel_health';
+  static const _reliabilityKey = 'auren_tv_channel_reliability';
   final Map<String, AurenTvHealth> _healthCache = <String, AurenTvHealth>{};
+  final Map<String, Map<String, dynamic>> _reliabilityCache = <String, Map<String, dynamic>>{};
+
+  String _reliabilityId(AurenTvChannel c) =>
+      channelIdentity(c) + '|source:' + (c.sourceId ?? 'public');
+
+  Future<Map<String, dynamic>> _reliability(AurenTvChannel c) async {
+    final key = _reliabilityId(c);
+    final cached = _reliabilityCache[key];
+    if (cached != null) return cached;
+    final p = await SharedPreferences.getInstance();
+    Map<String, dynamic> all = {};
+    try { all = (jsonDecode(p.getString(_reliabilityKey) ?? '{}') as Map).cast<String, dynamic>(); } catch (_) {}
+    final raw = all[key];
+    final value = raw is Map ? raw.cast<String, dynamic>() : <String, dynamic>{};
+    value.putIfAbsent('successes', () => 0);
+    value.putIfAbsent('failures', () => 0);
+    value.putIfAbsent('consecutiveFailures', () => 0);
+    value.putIfAbsent('avgLatencyMs', () => 0);
+    _reliabilityCache[key] = value;
+    return value;
+  }
+
+  Future<void> _recordReliability(AurenTvChannel c, {required bool success, int? latencyMs}) async {
+    final key = _reliabilityId(c);
+    final value = await _reliability(c);
+    final successes = (value['successes'] as num?)?.toInt() ?? 0;
+    final failures = (value['failures'] as num?)?.toInt() ?? 0;
+    final consecutive = (value['consecutiveFailures'] as num?)?.toInt() ?? 0;
+    final oldAvg = (value['avgLatencyMs'] as num?)?.toDouble() ?? 0;
+    if (success) {
+      value['successes'] = successes + 1;
+      value['failures'] = failures;
+      value['consecutiveFailures'] = 0;
+      if (latencyMs != null) value['avgLatencyMs'] = oldAvg <= 0 ? latencyMs : (oldAvg * 0.7) + (latencyMs * 0.3);
+      value['lastSuccess'] = DateTime.now().toUtc().toIso8601String();
+    } else {
+      value['successes'] = successes;
+      value['failures'] = failures + 1;
+      value['consecutiveFailures'] = consecutive + 1;
+      value['lastFailure'] = DateTime.now().toUtc().toIso8601String();
+    }
+    _reliabilityCache[key] = value;
+    final p = await SharedPreferences.getInstance();
+    Map<String, dynamic> all = {};
+    try { all = (jsonDecode(p.getString(_reliabilityKey) ?? '{}') as Map).cast<String, dynamic>(); } catch (_) {}
+    all[key] = value;
+    if (all.length > 500) {
+      final entries = all.entries.toList()..sort((a,b) => ((a.value is Map ? a.value['lastSuccess']?.toString() : '') ?? '').compareTo(((b.value is Map ? b.value['lastSuccess']?.toString() : '') ?? '')));
+      all.remove(entries.first.key);
+    }
+    await p.setString(_reliabilityKey, jsonEncode(all));
+  }
+
+  Future<double> _failoverScore(AurenTvChannel c) async {
+    final r = await _reliability(c);
+    final successes = (r['successes'] as num?)?.toDouble() ?? 0;
+    final failures = (r['failures'] as num?)?.toDouble() ?? 0;
+    final total = successes + failures;
+    final successRate = total == 0 ? 0.5 : successes / total;
+    final avgLatency = (r['avgLatencyMs'] as num?)?.toDouble() ?? 0;
+    final consecutive = (r['consecutiveFailures'] as num?)?.toDouble() ?? 0;
+    var score = successRate * 100;
+    if (avgLatency > 0) score += 25 / (1 + avgLatency / 1000);
+    score -= consecutive * 12;
+    score += _channelPreference(c).toDouble();
+    if (c.sourceId != null) {
+      final source = (await sources()).where((x) => x.id == c.sourceId).toList();
+      if (source.isNotEmpty) {
+        final id = await defaultSourceId();
+        if (id == c.sourceId) score += 3;
+      }
+    }
+    return score;
+  }
+
+  Future<Map<String, dynamic>> reliabilityForChannel(AurenTvChannel c) async =>
+      Map<String, dynamic>.unmodifiable(await _reliability(c));
 
   Future<AurenTvHealth> checkChannelHealth(AurenTvChannel channel, {Duration timeout = const Duration(seconds: 6)}) async {
     final uri = Uri.tryParse(channel.url);
@@ -149,6 +227,7 @@ class AurenTvService {
         final health = AurenTvHealth(status: 'online', latencyMs: ms, checkedAt: DateTime.now());
         _healthCache[channel.id] = health;
         await _saveHealth(channel.id, health);
+        await _recordReliability(channel, success: true, latencyMs: ms);
         return health;
       }
     } catch (_) {}
@@ -168,6 +247,7 @@ class AurenTvService {
         final health = AurenTvHealth(status: 'online', latencyMs: ms, checkedAt: DateTime.now());
         _healthCache[channel.id] = health;
         await _saveHealth(channel.id, health);
+        await _recordReliability(channel, success: true, latencyMs: ms);
         return health;
       }
     } catch (_) {}
@@ -175,6 +255,7 @@ class AurenTvService {
     final health = AurenTvHealth(status: 'offline', latencyMs: null, checkedAt: DateTime.now());
     _healthCache[channel.id] = health;
     await _saveHealth(channel.id, health);
+    await _recordReliability(channel, success: false);
     return health;
   }
 
@@ -284,7 +365,14 @@ class AurenTvService {
       } catch (_) {}
     }
     if (candidates.isEmpty) return null;
-    candidates.sort((a, b) => _channelPreference(b).compareTo(_channelPreference(a)));
+    final scored = <MapEntry<AurenTvChannel, double>>[];
+    for (final candidate in candidates) {
+      scored.add(MapEntry(candidate, await _failoverScore(candidate)));
+    }
+    scored.sort((a, b) => b.value.compareTo(a.value));
+    candidates
+      ..clear()
+      ..addAll(scored.map((e) => e.key));
     for (final candidate in candidates) {
       final health = await checkChannelHealth(candidate, timeout: timeout);
       if (health.status == 'online') return candidate;
@@ -339,7 +427,7 @@ class AurenTvService {
       final category = _classifyCategory(name: name, category: item['category_name']?.toString() ?? 'IPTV');
       final tvgId = item['epg_channel_id']?.toString() ?? item['epg_id']?.toString() ?? '';
       final url = base + '/live/' + Uri.encodeComponent(source.username) + '/' + Uri.encodeComponent(source.password) + '/' + id + '.' + ext;
-      out.add(AurenTvChannel(id: 'xtream-' + source.id + '-' + id, name: name, logo: logo, country: '', language: '', category: category, tvgId: tvgId, url: url));
+      out.add(AurenTvChannel(id: 'xtream-' + source.id + '-' + id, name: name, logo: logo, country: '', language: '', category: category, tvgId: tvgId, url: url, sourceId: source.id));
       if (out.length >= limit) break;
     }
     return out;
