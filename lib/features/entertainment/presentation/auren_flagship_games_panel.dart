@@ -6,6 +6,7 @@ import '../data/auren_game_multiplayer.dart';
 import 'auren_global_gaming_leaderboard_screen.dart';
 import 'auren_gaming_profile_screen.dart';
 import 'auren_gaming_tournament_screen.dart';
+import 'auren_live_spectator_screen.dart';
 
 class AurenFlagshipGamesPanel extends StatefulWidget {
   final int gameIndex;
@@ -387,6 +388,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
                       title: Text('🎮 ' + _gameNameForId((m['gameIndex'] as num?)?.toInt() ?? 53)),
                       subtitle: Text('👥 ' + players.length.toString() + '/2 • Version ' + (m['stateVersion'] ?? 0).toString()),
                       trailing: const Text('LIVE', style: TextStyle(fontWeight: FontWeight.w900)),
+                      onTap: () { Navigator.of(context).pop(); Navigator.of(this.context).push(MaterialPageRoute(builder: (_) => AurenLiveSpectatorScreen(lobbyId: m['lobbyId'].toString(), gameIndex: (m['gameIndex'] as num?)?.toInt() ?? 53))); },
                     );
                   },
                 ),
