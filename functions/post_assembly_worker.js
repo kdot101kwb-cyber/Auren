@@ -54,7 +54,7 @@ function inputForTask(data) {
     return {
       ...base,
       sourceLanguage: 'auto',
-      targetLanguages: Array.isArray(data.targetLanguages) ? data.targetLanguages : ['ar', 'en'],
+      targetLanguages: Array.isArray(data.targetLanguages) && data.targetLanguages.length > 0 ? data.targetLanguages : ['ar', 'en', 'fr', 'es', 'pt', 'de', 'it', 'tr', 'zh', 'ja', 'ko', 'hi'],
     };
   }
   if (type === 'music') return {...base, mode: 'original', instrumental: true};
