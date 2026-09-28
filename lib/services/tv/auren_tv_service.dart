@@ -12,7 +12,8 @@ class AurenTvHealth {
 
 class AurenTvChannel {
   final String id, name, logo, country, language, category, url, tvgId;
-  const AurenTvChannel({required this.id, required this.name, required this.logo, required this.country, required this.language, required this.category, required this.url, this.tvgId = ''});
+  final String? sourceId;
+  const AurenTvChannel({required this.id, required this.name, required this.logo, required this.country, required this.language, required this.category, required this.url, this.tvgId = '', this.sourceId});
 }
 
 class AurenTvSource {
@@ -207,6 +208,61 @@ class AurenTvService {
     return channels.take(limit).toList();
   }
 
+  Future<List<AurenTvChannel>> loadAllEnabledSources({int limitPerSource = 500}) async {
+    final all = <AurenTvChannel>[];
+    for (final source in (await sources()).where((x) => x.enabled)) {
+      try { all.addAll(await loadSource(source, limit: limitPerSource)); } catch (_) {}
+    }
+    return deduplicateChannels(all);
+  }
+
+  List<AurenTvChannel> deduplicateChannels(List<AurenTvChannel> channels) {
+    final groups = <String, List<AurenTvChannel>>{};
+    for (final c in channels) { groups.putIfAbsent(channelIdentity(c), () => []).add(c); }
+    return groups.values.map((group) {
+      group.sort((a, b) => _channelPreference(b).compareTo(_channelPreference(a)));
+      return group.first;
+    }).toList();
+  }
+
+  static String channelIdentity(AurenTvChannel c) {
+    final tvg = _normalizeIdentity(c.tvgId);
+    if (tvg.isNotEmpty) return 'tvg:' + tvg;
+    return 'name:' + _normalizeIdentity(c.name) + '|country:' + _normalizeIdentity(c.country) + '|language:' + _normalizeIdentity(c.language);
+  }
+
+  int _channelPreference(AurenTvChannel c) {
+    var score = 0;
+    if (c.url.startsWith('https://')) score += 2;
+    if (c.tvgId.isNotEmpty) score += 2;
+    if (c.logo.isNotEmpty) score++;
+    if (c.country.isNotEmpty) score++;
+    if (c.language.isNotEmpty) score++;
+    return score;
+  }
+
+  Future<AurenTvChannel?> resolveFailover(AurenTvChannel channel, {Duration timeout = const Duration(seconds: 6)}) async {
+    final identity = channelIdentity(channel);
+    final candidates = <AurenTvChannel>[];
+    for (final source in (await sources()).where((x) => x.enabled)) {
+      try {
+        final list = await loadSource(source, limit: 500);
+        candidates.addAll(list.where((c) => channelIdentity(c) == identity));
+      } catch (_) {}
+    }
+    if (candidates.isEmpty) return null;
+    candidates.sort((a, b) => _channelPreference(b).compareTo(_channelPreference(a)));
+    for (final candidate in candidates) {
+      final health = await checkChannelHealth(candidate, timeout: timeout);
+      if (health.status == 'online') return candidate;
+    }
+    return candidates.first;
+  }
+
+  Future<AurenTvChannel?> bestAvailableChannel(AurenTvChannel channel, {Duration timeout = const Duration(seconds: 6)}) async {
+    return resolveFailover(channel, timeout: timeout);
+  }
+
   Future<List<AurenTvChannel>> _loadM3uSource(AurenTvSource source, {int limit = 500}) async {
     if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
     return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV', limit: limit, sourceId: source.id);
@@ -367,7 +423,7 @@ class AurenTvService {
         out.add(AurenTvChannel(
           id: 'tv-' + source.hashCode.toString() + '-' + out.length.toString(),
           name: meta['name']!, logo: meta['logo']!, country: meta['country']!, language: meta['language']!,
-          category: meta['category']!, tvgId: meta['tvgId']!, url: line.trim(),
+          category: meta['category']!, tvgId: meta['tvgId']!, url: line.trim(), sourceId: sourceId,
         ));
         meta = null;
         if (out.length >= limit) break;
