@@ -17,6 +17,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String countryLabel = 'الدول';
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
+  bool sourceRefreshing = false;
   List<AurenTvSource> sources = const [];
   AurenTvSource? activeSource;
   Set<String> favorites = {};
@@ -163,7 +164,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     );
     if (!mounted || choice == null) return;
     if (choice == '__add__') { await _addSource(); return; }
-    final selected = sources.where((x) => x.id == choice).firstOrNull;
+    final matches = sources.where((x) => x.id == choice).toList();
+    final selected = matches.isEmpty ? null : matches.first;
     if (selected == null) return;
     setState(() { activeSource = selected; tvMode = 'world'; country = ''; continent = ''; quickRegion = ''; });
   }
@@ -193,6 +195,28 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     if (mounted) setState(() { sources = [...sources, source]; activeSource = source; });
     name.dispose(); url.dispose(); epg.dispose(); user.dispose(); pass.dispose();
   }
+  String _normalizeSearch(String value) {
+    return value.toLowerCase()
+        .replaceAll('أ', 'ا').replaceAll('إ', 'ا').replaceAll('آ', 'ا')
+        .replaceAll('ة', 'ه').replaceAll('ى', 'ي')
+        .replaceAll(RegExp(r'[ًٌٍَُِّْـ]'), '')
+        .replaceAll(RegExp(r'[^a-z0-9A-Za-z0-9\u0600-\u06ff ]+'), ' ')
+        .trim();
+  }
+
+  Future<void> _refreshActiveSource() async {
+    final source = activeSource;
+    if (source == null || sourceRefreshing) return;
+    setState(() => sourceRefreshing = true);
+    try {
+      await AurenTvService.instance.refreshSource(source);
+      if (mounted) setState(() {});
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر تحديث مصدر IPTV.')));
+    } finally {
+      if (mounted) setState(() => sourceRefreshing = false);
+    }
+  }
   String _regionLabel(AurenTvChannel c) {
     final code = c.country.toUpperCase();
     for (final entry in regions.entries) { if (entry.value.contains(code)) return entry.key; }
@@ -200,7 +224,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
   @override Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('AUREN TV'), actions: [IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link))]),
+    appBar: AppBar(title: const Text('AUREN TV'), actions: [
+      if (activeSource != null) IconButton(tooltip: 'تحديث المصدر الحالي', onPressed: sourceRefreshing ? null : _refreshActiveSource, icon: sourceRefreshing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh)),
+      IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
+    ]),
     body: Column(children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
@@ -223,6 +250,14 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           ),
         ),
       ),
+      if (activeSource != null) Padding(
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+        child: Align(alignment: AlignmentDirectional.centerStart, child: Chip(
+          avatar: Icon(activeSource!.type == 'xtream' ? Icons.cloud : Icons.link, size: 18),
+          label: Text('المصدر: ' + activeSource!.name),
+          onDeleted: () => setState(() => activeSource = null),
+        )),
+      ),
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
         child: TextField(
@@ -232,7 +267,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             hintText: 'ابحث بذكاء: قناة، دولة، لغة أو فئة',
             suffixIcon: query.isEmpty ? null : IconButton(onPressed: () { _search.clear(); setState(() => query = ''); }, icon: const Icon(Icons.clear)),
           ),
-          onChanged: (v) => setState(() { query = v.trim().toLowerCase(); }),
+          onChanged: (v) => setState(() { query = _normalizeSearch(v); }),
         ),
       ),
       Padding(
@@ -353,7 +388,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           final arabCountries = {'DZ','BH','KM','DJ','EG','IQ','JO','KW','LB','LY','MR','MA','OM','PS','QA','SA','SO','SD','SY','TN','AE','YE'};
           final maxChannels = lowData ? 150 : 500;
           final channels = snapshot.data!.where((c) {
-            final matchesQuery = query.isEmpty || '${c.name} ${c.country} ${c.language} ${c.category}'.toLowerCase().contains(query);
+            final searchable = _normalizeSearch('${c.name} ${c.country} ${c.language} ${c.category}');
+            final matchesQuery = query.isEmpty || searchable.contains(query);
             final matchesRegion = continent.isEmpty || _regionLabel(c) == continent;
             final n = '${c.name} ${c.category} ${c.language} ${c.country}'.toLowerCase();
             final matchesNewsRegion = tvMode != 'news' || newsRegion == 'all' || (newsRegion == 'SD' && c.country.toUpperCase() == 'SD') || (newsRegion == 'Arab' && arabCountries.contains(c.country.toUpperCase())) || (newsRegion == 'Africa' && _regionLabel(c) == 'Africa') || (newsRegion == 'World' && _regionLabel(c) != 'Africa' && !arabCountries.contains(c.country.toUpperCase())) || (newsRegion == 'Business' && RegExp(r'business|finance|economy|market|money', caseSensitive: false).hasMatch(n)) || (newsRegion == 'Sports' && RegExp(r'sport|football|soccer|basketball|tennis|espn', caseSensitive: false).hasMatch(n));
