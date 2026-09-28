@@ -222,7 +222,10 @@ class _AurenEntertainmentOutputScreenState
   }
 
   Future<void> _changeSubtitle() async {
-    final options = ['off', ..._subtitleUrls.keys];
+    const preferredLanguages = ['ar', 'en', 'fr', 'es', 'pt', 'de', 'it', 'tr', 'zh', 'ja', 'ko', 'hi'];
+    final ordered = preferredLanguages.where(_subtitleUrls.containsKey).toList();
+    final extras = _subtitleUrls.keys.where((key) => !preferredLanguages.contains(key));
+    final options = ['off', ...ordered, ...extras];
     if (options.length <= 1) return;
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -231,7 +234,7 @@ class _AurenEntertainmentOutputScreenState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: options.map((lang) => ListTile(
-            title: Text(lang == 'off' ? 'بدون ترجمة' : lang.toUpperCase()),
+            title: Text(lang == 'off' ? 'بدون ترجمة' : _subtitleLanguageName(lang)),
             trailing: lang == _subtitleLanguage ? const Icon(Icons.check_rounded) : null,
             onTap: () => Navigator.pop(sheetContext, lang),
           )).toList(),
@@ -239,6 +242,24 @@ class _AurenEntertainmentOutputScreenState
       ),
     );
     if (selected != null) await _loadSubtitle(selected);
+  }
+
+  String _subtitleLanguageName(String code) {
+    const names = {
+      'ar': 'العربية',
+      'en': 'English',
+      'fr': 'Français',
+      'es': 'Español',
+      'pt': 'Português',
+      'de': 'Deutsch',
+      'it': 'Italiano',
+      'tr': 'Türkçe',
+      'zh': '中文',
+      'ja': '日本語',
+      'ko': '한국어',
+      'hi': 'हिन्दी',
+    };
+    return names[code] ?? code.toUpperCase();
   }
 
   Future<void> _changeAudioTrack() async {
