@@ -3046,3 +3046,43 @@ exports.getAurenTournamentBracket = require('firebase-functions/v2/https').onCal
   return {exists:true,tournamentId:snap.id,gameIndex,status:d.status,round:d.round,bracket:d.bracket||null,matches:d.matches||[]};
  }
 );
+
+exports.submitAurenTournamentMatchResult = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async(request)=>{
+  const uid=request.auth?.uid;if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const gameIndex=Number(request.data?.gameIndex), matchId=String(request.data?.matchId||''), winnerId=String(request.data?.winnerId||'');
+  if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex)||!matchId||!winnerId)throw aurenHttpsError('invalid-argument','Invalid tournament result.');
+  const ref=db.collection('auren_game_tournaments').doc(tournamentId(gameIndex));
+  return db.runTransaction(async tx=>{
+   const snap=await tx.get(ref);if(!snap.exists)throw aurenHttpsError('not-found','Tournament not found.');
+   const d=snap.data()||{};const players=(d.players||[]).map(String);
+   if(!players.includes(uid)||!players.includes(winnerId))throw aurenHttpsError('permission-denied','Tournament access denied.');
+   if(d.status!=='active')throw aurenHttpsError('failed-precondition','Tournament is not active.');
+   const matches=Array.isArray(d.matches)?d.matches.map(x=>({...x})):[];
+   const idx=matches.findIndex(m=>String(m.id)===matchId);
+   if(idx<0)throw aurenHttpsError('not-found','Match not found.');
+   const m=matches[idx];if(m.status==='finished')return {accepted:true,duplicate:true,round:d.round,matches};
+   if(m.p1!==uid&&m.p2!==uid)throw aurenHttpsError('permission-denied','Only match players can submit the result.');
+   if(winnerId!==m.p1&&winnerId!==m.p2)throw aurenHttpsError('invalid-argument','Winner must be a match player.');
+   m.winnerId=winnerId;m.loserId=winnerId===m.p1?m.p2:m.p1;m.status='finished';
+   const finished=matches.filter(x=>x.status==='finished').length;
+   let round=d.round||'quarterfinals', nextMatches=matches;
+   const activeRound=matches.filter(x=>x.round===round);
+   if(activeRound.length>0&&activeRound.every(x=>x.status==='finished')){
+    const winners=activeRound.map(x=>x.winnerId).filter(Boolean);
+    if(winners.length<=1){
+     tx.update(ref,{status:'completed',round:'champion',championId:winners[0]||null,matches,updatedAt:FieldValue.serverTimestamp()});
+     return {accepted:true,status:'completed',round:'champion',championId:winners[0]||null,matches};
+    }
+    const nextRound=round==='quarterfinals'?'semifinals':'final';
+    const generated=[];
+    for(let i=0;i<winners.length;i+=2)generated.push({id:nextRound.slice(0,2)+'_'+(i/2+1),round:nextRound,p1:winners[i],p2:winners[i+1]||null,status:winners[i+1]?'pending':'finished',winnerId:winners[i+1]?null:winners[i]});
+    nextMatches=matches.concat(generated);
+    round=nextRound;
+   }
+   tx.update(ref,{matches:nextMatches,round,status:'active',updatedAt:FieldValue.serverTimestamp()});
+   return {accepted:true,status:'active',round,matches:nextMatches};
+  });
+ }
+);
