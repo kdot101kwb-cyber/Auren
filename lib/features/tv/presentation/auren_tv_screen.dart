@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../services/tv/auren_tv_service.dart';
 import '../../../services/tv/auren_tv_epg_smart_service.dart';
@@ -40,6 +41,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   AurenTvChannel? playing;
   bool _pipMode = false;
   bool _watchTogether = false;
+  bool _watchTogetherReconnectPending = false;
+  bool _watchTogetherWasOffline = false;
   String? _watchTogetherRoom;
   final Map<String, String> _tvProfiles = <String, String>{'main': 'Main'};
   String _activeTvProfile = 'main';
@@ -87,6 +90,11 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         if (autoLowData && (type == ConnectivityResult.mobile || type == ConnectivityResult.none)) lowData = true;
         if (autoLowData && type == ConnectivityResult.wifi) lowData = false;
       });
+      if (!available && _watchTogether && _watchTogetherRoom != null) {
+        _watchTogetherWasOffline = true;
+        unawaited(AurenTvWatchTogetherService.instance.heartbeat(_watchTogetherRoom!, online: false));
+      }
+      if (available && _watchTogetherWasOffline) unawaited(_handleWatchTogetherReconnect());
       if (available && player?.value.isInitialized == true && player!.value.isBuffering && !_recovering) {
         _recoverPlayback(reason: 'عاد الاتصال بالإنترنت');
       }
