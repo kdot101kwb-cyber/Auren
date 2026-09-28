@@ -73,10 +73,12 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   Future<void> play(AurenTvChannel c) async {
     setState(() { loading = true; });
+    final resolved = await AurenTvService.instance.bestAvailableChannel(c);
+    final channel = resolved ?? c;
     await player?.dispose();
-    final p = VideoPlayerController.networkUrl(Uri.parse(c.url));
+    final p = VideoPlayerController.networkUrl(Uri.parse(channel.url));
     player = p;
-    playing = c;
+    playing = channel;
     try {
       await p.initialize();
       if (!mounted) return;
