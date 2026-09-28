@@ -19,6 +19,7 @@ class AurenOfflineMedia {
 }
 class AurenOfflineMediaService {
   static const _key='auren_offline_media_v1';
+  static const _queueKey='auren_offline_download_queue_v1';
   static final instance=AurenOfflineMediaService._();
   AurenOfflineMediaService._();
   Future<Directory> _directory() async {
@@ -28,6 +29,38 @@ class AurenOfflineMediaService {
     return dir;
   }
   String _safe(String v){final s=v.trim().replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'),'_'); return s.isEmpty?'media':s.substring(0,s.length.clamp(1,80));}
+  Future<void> _saveQueue(List<Map<String,dynamic>> items) async {
+    final p=await SharedPreferences.getInstance();
+    await p.setStringList(_queueKey,items.map(jsonEncode).toList());
+  }
+  Future<List<Map<String,dynamic>>> queue() async {
+    final p=await SharedPreferences.getInstance();
+    return (p.getStringList(_queueKey)??const []).map((e){try{return Map<String,dynamic>.from(jsonDecode(e) as Map);}catch(_){return <String,dynamic>{};}}).where((e)=>e.isNotEmpty).toList();
+  }
+  Future<void> enqueue({required String url,required String title,required String type,String? id}) async {
+    final q=await queue(); final source=url.trim();
+    if(source.isEmpty || q.any((e)=>e['url']==source && e['status']!='ready')) return;
+    q.add({'id':id?.trim().isNotEmpty==true?id:'QUEUE_' + DateTime.now().millisecondsSinceEpoch.toString() + '_' + source.hashCode.abs().toString(),'url':source,'title':title,'type':type,'status':'queued','progress':0,'received':0,'total':0,'updatedAt':DateTime.now().toIso8601String()});
+    await _saveQueue(q);
+  }
+  Future<void> cancelQueued(String id) async {
+    final q=await queue(); for(final e in q.where((e)=>e['id']==id)){e['status']='cancelled';e['updatedAt']=DateTime.now().toIso8601String();} await _saveQueue(q);
+  }
+  Future<void> processQueue({void Function(Map<String,dynamic>)? onChanged}) async {
+    final q=await queue();
+    for(final e in q){
+      if(e['status']=='ready'||e['status']=='cancelled') continue;
+      e['status']='downloading'; await _saveQueue(q); onChanged?.call(Map.from(e));
+      try {
+        await download(url:e['url'].toString(),title:e['title'].toString(),type:e['type']?.toString()??'media',id:e['id']?.toString(),onProgress:(received,total) async {
+          e['received']=received;e['total']=total;e['progress']=total>0?(received/total*100).clamp(0,100):0;e['updatedAt']=DateTime.now().toIso8601String();await _saveQueue(q);onChanged?.call(Map.from(e));
+        });
+        e['status']='ready';e['progress']=100;e['updatedAt']=DateTime.now().toIso8601String();await _saveQueue(q);onChanged?.call(Map.from(e));
+      } catch (_) {
+        e['status']='failed';e['updatedAt']=DateTime.now().toIso8601String();await _saveQueue(q);onChanged?.call(Map.from(e));
+      }
+    }
+  }
   Future<void> _save(List<AurenOfflineMedia> items) async {
     final p=await SharedPreferences.getInstance();
     await p.setStringList(_key,items.map((e)=>jsonEncode(e.toJson())).toList());
@@ -87,7 +120,7 @@ class AurenOfflineMediaService {
       await sink.close(); await temp.rename(file.path);
       final media=AurenOfflineMedia(id:mediaId,title:title.trim().isEmpty?'AUREN Media':title.trim(),type:type,path:file.path,sourceUrl:source,bytes:received,savedAt:DateTime.now());
       final items=await list(); items.removeWhere((e)=>e.sourceUrl==source||e.id==mediaId); items.add(media); await _save(items); return media;
-    }catch(_){if(await temp.exists())await temp.delete();rethrow;}finally{client.close();}
+    }catch(_){rethrow;}finally{client.close();}
   }
   Future<void> delete(String id) async {final items=await list();for(final m in items.where((e)=>e.id==id)){final f=File(m.path);if(await f.exists())await f.delete();}items.removeWhere((e)=>e.id==id);await _save(items);}
 }
