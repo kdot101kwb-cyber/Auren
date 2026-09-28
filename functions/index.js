@@ -1367,9 +1367,18 @@ async function aurenProductionV2Run(ref) {
       const data = fresh.data() || {};
       if (data.productionStage !== 'qc') return;
       const assemblyManifest = buildAurenEpisodeAssemblyManifest(tasks.docs);
+      const episodeMedia = assemblyManifest.episodes;
+      const episodeCount = assemblyManifest.episodeCount;
+      const sceneCount = assemblyManifest.sceneCount;
+      const assemblyId = 'assembly_' + ref.id;
       tx.set(ref, {...common, status:'ready', productionStage:'ready', qcStatus:'passed',
-        qcId, assemblyManifest, assemblyStatus:'manifest_ready', productionProgress:100,
-        readyAt:FieldValue.serverTimestamp()}, {merge:true});
+        qcId, assemblyId, assemblyManifest, assemblyStatus:'manifest_ready',
+        assemblyFormat:'scene_sequence_v1', episodeMedia, episodeCount, sceneCount,
+        productionProgress:100, readyAt:FieldValue.serverTimestamp()}, {merge:true});
+      tx.set(ref.collection('episodeAssemblies').doc(assemblyId), {
+        id:assemblyId, version:1, status:'ready', episodeCount, sceneCount,
+        episodes:episodeMedia, sourceQcId:qcId, createdAt:FieldValue.serverTimestamp(),
+      }, {merge:true});
       tx.set(ref.collection('productionAudits').doc(qcId), {
         idempotencyKey:qcId, result:'passed', taskCount:tasks.docs.length,
         artifactChecks, verificationVersion:1,
