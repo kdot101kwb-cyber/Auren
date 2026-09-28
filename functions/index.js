@@ -3137,7 +3137,6 @@ exports.getAurenSeasonChampion = require('firebase-functions/v2/https').onCall(
  {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
  async(request)=>{
   if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
-  if(!request.auth?.token?.admin)throw aurenHttpsError('permission-denied','Gaming season administration requires admin privileges.');
   const s=aurenGamingSeasonMeta(), gameIndex=Number(request.data?.gameIndex||53);
   if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex))throw aurenHttpsError('invalid-argument','Unsupported game.');
   const snap=await db.collection('auren_game_rankings').doc(String(gameIndex)).collection('seasons').doc(s.seasonId).collection('players').orderBy('rating','desc').limit(1).get();
@@ -3209,9 +3208,20 @@ exports.finalizeAurenGamingSeason = require('firebase-functions/v2/https').onCal
 
 exports.getAurenGamingRivals = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
- const snap=await db.collection('auren_game_rankings').get(), uid=request.auth.uid, rows=[];
- snap.docs.forEach(g=>{const p=g.data()?.players?.[uid]; if(p)rows.push({gameIndex:Number(g.id),rating:p.rating||1000,wins:p.wins||0,matches:p.matches||0});});
- rows.sort((a,b)=>b.rating-a.rating); return {playerId:uid,rivals:rows.slice(0,10)};
+ const uid=request.auth.uid;
+ const gamesSnap=await db.collection('auren_game_rankings').get();
+ const rivals=[];
+ for(const game of gamesSnap.docs){
+  const gameIndex=Number(game.id), data=game.data()||{}, players=data.players||{};
+  const me=players[uid]; if(!me)continue;
+  for(const [playerId,stats] of Object.entries(players)){
+   if(playerId===uid)continue;
+   const rating=Number(stats?.rating||1000);
+   rivals.push({gameIndex,playerId,rating,wins:Number(stats?.wins||0),matches:Number(stats?.matches||0),ratingGap:Math.abs(rating-Number(me.rating||1000))});
+  }
+ }
+ rivals.sort((a,b)=>a.ratingGap-b.ratingGap||b.rating-a.rating);
+ return {playerId:uid,rivals:rivals.slice(0,20)};
 });
 exports.getAurenLiveSpectators = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
