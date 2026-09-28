@@ -20,6 +20,7 @@ class AurenOfflineMedia {
 class AurenOfflineMediaService {
   static const _key='auren_offline_media_v1';
   static const _queueKey='auren_offline_download_queue_v1';
+  final Set<String> _pauseRequested=<String>{};
   static final instance=AurenOfflineMediaService._();
   AurenOfflineMediaService._();
   Future<Directory> _directory() async {
@@ -43,21 +44,24 @@ class AurenOfflineMediaService {
     q.add({'id':id?.trim().isNotEmpty==true?id:'QUEUE_' + DateTime.now().millisecondsSinceEpoch.toString() + '_' + source.hashCode.abs().toString(),'url':source,'title':title,'type':type,'status':'queued','progress':0,'received':0,'total':0,'updatedAt':DateTime.now().toIso8601String()});
     await _saveQueue(q);
   }
+  Future<void> pauseQueued(String id) async { final q=await queue(); _pauseRequested.add(id); for(final e in q.where((e)=>e['id']==id)){e['status']='paused';e['updatedAt']=DateTime.now().toIso8601String();} await _saveQueue(q); }
+  Future<void> resumeQueued(String id) async { final q=await queue(); _pauseRequested.remove(id); for(final e in q.where((e)=>e['id']==id)){e['status']='queued';e['updatedAt']=DateTime.now().toIso8601String();} await _saveQueue(q); await processQueue(); }
   Future<void> cancelQueued(String id) async {
     final q=await queue(); for(final e in q.where((e)=>e['id']==id)){e['status']='cancelled';e['updatedAt']=DateTime.now().toIso8601String();} await _saveQueue(q);
   }
   Future<void> processQueue({void Function(Map<String,dynamic>)? onChanged}) async {
     final q=await queue();
     for(final e in q){
-      if(e['status']=='ready'||e['status']=='cancelled') continue;
+      if(e['status']=='ready'||e['status']=='cancelled'||e['status']=='paused') continue;
       e['status']='downloading'; await _saveQueue(q); onChanged?.call(Map.from(e));
       try {
         await download(url:e['url'].toString(),title:e['title'].toString(),type:e['type']?.toString()??'media',id:e['id']?.toString(),onProgress:(received,total) async {
+          if(_pauseRequested.contains(e['id']?.toString())) throw StateError('download_paused');
           e['received']=received;e['total']=total;e['progress']=total>0?(received/total*100).clamp(0,100):0;e['updatedAt']=DateTime.now().toIso8601String();await _saveQueue(q);onChanged?.call(Map.from(e));
         });
         e['status']='ready';e['progress']=100;e['updatedAt']=DateTime.now().toIso8601String();await _saveQueue(q);onChanged?.call(Map.from(e));
       } catch (_) {
-        e['status']='failed';e['updatedAt']=DateTime.now().toIso8601String();await _saveQueue(q);onChanged?.call(Map.from(e));
+        e['status']=_pauseRequested.contains(e['id']?.toString())?'paused':'failed';e['updatedAt']=DateTime.now().toIso8601String();await _saveQueue(q);onChanged?.call(Map.from(e));
       }
     }
   }
