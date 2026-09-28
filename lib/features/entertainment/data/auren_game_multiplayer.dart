@@ -200,6 +200,18 @@ class AurenGameMultiplayer {
   }
 
 
+  Future<List<Map<String, dynamic>>> getFlagshipLeaderboard({required int gameIndex, int limit = 20}) async {
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('getAurenFlagshipLeaderboard').call({
+        'gameIndex': gameIndex, 'limit': limit,
+      });
+      final entries = result.data is Map ? result.data['entries'] : null;
+      if (entries is List) return entries.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    } on FirebaseFunctionsException {}
+    return const [];
+  }
+
   Future<Map<String, dynamic>?> getFlagshipRanking({required int gameIndex}) async {
     await _ensureSignedIn();
     try {
