@@ -1675,6 +1675,42 @@ exports.submitAurenLudoAction = require('firebase-functions/v2/https').onCall(
 
 const { createInitialFlagshipState, validateAndApplyFlagshipAction } = require('./flagship_server');
 
+exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const lobbyId = String(request.data?.lobbyId || '').trim();
+    if (!lobbyId || lobbyId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid lobby ID.');
+    const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Lobby not found.');
+      const data = snap.data() || {};
+      const players = Array.isArray(data.players) ? data.players.map(String) : [];
+      const gameIndex = Number(data.gameIndex);
+      if (gameIndex < 53 || gameIndex > 59 || data.status !== 'playing' || players.length !== 2 || !players.includes(uid)) {
+        throw aurenHttpsError('failed-precondition', 'Flagship lobby is not ready.');
+      }
+      if (data.state && typeof data.state === 'object' && Object.keys(data.state).length > 0) {
+        return {accepted:true, initialized:false, stateVersion:Number(data.stateVersion || 0)};
+      }
+      const host = String(data.hostId || players[0]);
+      const guest = String(data.guestId || players.find((p) => p !== host) || players[1]);
+      const state = createInitialFlagshipState(gameIndex, host, guest);
+      tx.update(ref, {
+        state,
+        stateVersion: 0,
+        turnPlayerId: host,
+        lastMoveId: null,
+        status: 'playing',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return {accepted:true, initialized:true, stateVersion:0};
+    });
+  }
+);
+
 exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
