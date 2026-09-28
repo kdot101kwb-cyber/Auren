@@ -1,9 +1,9 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
 
-const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
-const rules = fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+const source = fs.readFileSync(require.resolve('./index.js'), 'utf8');
+const rules = fs.readFileSync(require.resolve('../firestore.rules'), 'utf8');
 
 test('action lifecycle endpoints are present', () => {
   assert.match(source, /exports\.decideAurenAction\s*=\s*require\('firebase-functions\/v2\/https'\)/);
@@ -83,7 +83,7 @@ test('permission ledger parsing filters malformed actions and currency', () => {
 
 
 test('action rules include execution metadata and keep action updates server-only', () => {
-  const rules = fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+  const rules = fs.readFileSync(require.resolve('../firestore.rules'), 'utf8');
   assert.match(rules, /'executionStartedAt', 'executionSpendingDay'/);
   assert.match(rules, /match \/actions\/\\{actionId\\}/);
   assert.match(rules, /allow update: if false;/);
@@ -91,20 +91,20 @@ test('action rules include execution metadata and keep action updates server-onl
 
 
 test('AI gateway finalizes missing-key and provider-failure idempotency states', () => {
-  const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  const source = fs.readFileSync(require.resolve('./index.js'), 'utf8');
   assert.match(source, /status: 'completed',[\s\S]*response: unavailable/);
   assert.match(source, /status: 'failed',[\s\S]*failedAt: FieldValue\.serverTimestamp\(\)/);
 });
 
 
 test('AI gateway marks empty provider content as failed', () => {
-  const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  const source = fs.readFileSync(require.resolve('./index.js'), 'utf8');
   assert.match(source, /errorCode: 'empty_provider_response'/);
 });
 
 
 test('AI gateway terminal-state hardening covers provider failure and empty content', () => {
-  const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  const source = fs.readFileSync(require.resolve('./index.js'), 'utf8');
   assert.match(source, /status: 'failed'/);
   assert.match(source, /errorCode: 'empty_provider_response'/);
   assert.match(source, /status: 'completed',[\s\S]*response: unavailable/);
@@ -112,7 +112,7 @@ test('AI gateway terminal-state hardening covers provider failure and empty cont
 
 
 test('plugin invocation quota is transactionally day-scoped and reports remaining quota', () => {
-  const source = fs.readFileSync(new URL('./index.js', import.meta.url), 'utf8');
+  const source = fs.readFileSync(require.resolve('./index.js'), 'utf8');
   assert.match(source, /const quotaRemaining=0/);
   assert.match(source, /const nextUsed=used\+1/);
   assert.match(source, /quotaRemaining=limit-nextUsed/);
