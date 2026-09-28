@@ -21,6 +21,9 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   int _localMoveCounter = 0;
   int _score = 0, _round = 0, _hp = 100, _streak = 0, _energy = 100, _distance = 0;
   int _bestScore = 0, _wins = 0, _savedRounds = 0;
+  int _serverRating = 1000, _serverMatches = 0, _serverLosses = 0, _serverDraws = 0;
+  String? _matchWinnerId;
+  String _matchResult = 'in_progress';
   String _message = 'ابدأ الجولة';
 
   final List<int> _ludo = [-1, -1, -1, -1];
@@ -173,6 +176,10 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         ..clear()
         ..addAll(List<String>.from(state['crimeCollected'] ?? const <String>[]));
       _crimeSuspect = state['crimeSuspect']?.toString() ?? _crimeSuspect;
+      final stats = state['playerStats'];
+      if (stats is Map) { final mine = stats[_multiplayer.playerId]; if (mine is Map) { _score = (mine['score'] as num?)?.toInt() ?? _score; } }
+      final result = state['matchResult'];
+      if (result is Map) { _matchWinnerId = result['winnerId']?.toString(); _matchResult = result['result']?.toString() ?? _matchResult; }
     });
   }
 
@@ -199,6 +206,12 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     } catch (_) {
       if (mounted) setState(() => _onlineStatus = 'Match sync unavailable');
     }
+  }
+
+  Future<void> _loadServerRanking() async {
+    final data = await _multiplayer.getFlagshipRanking(gameIndex: widget.gameIndex);
+    if (!mounted || data == null) return;
+    setState(() { _wins = (data['wins'] as num?)?.toInt() ?? _wins; _serverLosses = (data['losses'] as num?)?.toInt() ?? _serverLosses; _serverDraws = (data['draws'] as num?)?.toInt() ?? _serverDraws; _serverMatches = (data['matches'] as num?)?.toInt() ?? _serverMatches; _serverRating = (data['rating'] as num?)?.toInt() ?? _serverRating; });
   }
 
   Future<void> _createLobby() async {
@@ -267,9 +280,12 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         _stateVersion = remoteVersion;
       }
       _turnPlayerId = remoteTurn;
+      final matchResult = data['matchResult'];
+      if (matchResult is Map) { _matchWinnerId = matchResult['winnerId']?.toString(); _matchResult = matchResult['result']?.toString() ?? _matchResult; }
       final status = data['status']?.toString() ?? 'waiting';
       final turnText = status == 'playing' ? (_isMyTurn ? 'Your turn' : 'Opponent turn') : 'Waiting';
       setState(() => _onlineStatus = status == 'playing' ? '2 Players • ' + turnText : turnText + ' • ' + players.length.toString() + '/2');
+      if (status == 'finished') unawaited(_loadServerRanking());
     });
   }
 
@@ -687,7 +703,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         children: [
           _stat('Best', _bestScore.toString()),
           _stat('Wins', _wins.toString()),
-          _stat('Saved Rounds', _savedRounds.toString()),
+          _stat('Rating', _serverRating.toString()),
+          _stat('Matches', _serverMatches.toString()),
         ]),
       ]))),
       const SizedBox(height: 12),
@@ -698,6 +715,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       if (widget.gameIndex >= 4) _actionBoard(),
       if (widget.gameIndex >= 4) _controls(),
       const SizedBox(height: 12),
+      if (_onlineMatch && _matchResult != 'in_progress') Card(child: Padding(padding: const EdgeInsets.all(14), child: Text(_matchResult == 'draw' ? '🤝 تعادل • النتيجة محفوظة من الخادم' : (_matchWinnerId == _multiplayer.playerId ? '🏆 فوز مسجل من الخادم' : '📊 انتهت المباراة'), style: const TextStyle(fontWeight: FontWeight.w900)))),
       Card(child: Padding(padding: const EdgeInsets.all(14), child: Text(_message, style: const TextStyle(fontWeight: FontWeight.w800)))),
       const SizedBox(height: 12),
       FilledButton.icon(onPressed: _hp > 0 ? _act : _reset, icon: Icon(_hp > 0 ? Icons.play_arrow : Icons.refresh), label: Text(_hp > 0 ? _button : 'إعادة المباراة')),
