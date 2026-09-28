@@ -6,6 +6,8 @@ import '../../../services/tv/auren_tv_service.dart';
 import '../../../services/tv/auren_tv_epg_smart_service.dart';
 import '../../../services/tv/auren_tv_home_service.dart';
 import '../../../services/tv/auren_tv_assistant_service.dart';
+import '../../../services/tv/auren_tv_profile_service.dart';
+import '../../../services/tv/auren_tv_watch_together_service.dart';
 
 class AurenTvScreen extends StatefulWidget {
   const AurenTvScreen({super.key});
@@ -38,7 +40,9 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   bool _pipMode = false;
   bool _watchTogether = false;
   String? _watchTogetherRoom;
-  final Map<String, String> _tvProfiles = <String, String>{'Main': 'Main'};
+  final Map<String, String> _tvProfiles = <String, String>{'main': 'Main'};
+  String _activeTvProfile = 'main';
+  StreamSubscription<AurenTvWatchTogetherRoom>? _watchTogetherSubscription;
 
   Timer? _recoveryTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -61,6 +65,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override void initState() {
     super.initState();
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
+    Future.wait([AurenTvProfileService.instance.profiles(), AurenTvProfileService.instance.activeProfileId()]).then((v) { if (!mounted) return; final ps=v[0] as List<AurenTvProfile>; final active=v[1] as String; setState(() { _activeTvProfile=active; _tvProfiles..clear()..addEntries(ps.map((p)=>MapEntry(p.id,p.name))); }); });
     AurenTvService.instance.autoRefreshSources(limit: 150).then((_) => AurenTvService.instance.refreshEpgAndSyncReminders()).catchError((_) {});
     _recoveryTimer = Timer.periodic(const Duration(seconds: 3), (_) => _monitorPlayback());
     Connectivity().checkConnectivity().then((results) {
@@ -121,37 +126,105 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
   Future<void> _showTvProfiles() async {
-    final name = await showDialog<String>(context: context, builder: (ctx) {
-      final controller = TextEditingController();
-      return AlertDialog(
-        title: const Text('TV Profiles'),
-        content: TextField(controller: controller, decoration: const InputDecoration(hintText: 'اسم الملف الشخصي')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-          FilledButton(onPressed: () { final v = controller.text.trim(); if (v.isNotEmpty) Navigator.pop(ctx, v); }, child: const Text('إضافة')),
+    final profiles = await AurenTvProfileService.instance.profiles();
+    final active = await AurenTvProfileService.instance.activeProfileId();
+    if (!mounted) return;
+    final action = await showModalBottomSheet<String>(context: context, isScrollControlled: true, builder: (ctx) => SafeArea(
+      child: SizedBox(height: MediaQuery.of(ctx).size.height * .55, child: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          const ListTile(title: Text('TV Profiles', style: TextStyle(fontWeight: FontWeight.w800)), subtitle: Text('ملفات مشاهدة منفصلة على هذا الجهاز.')),
+          for (final p in profiles) ListTile(
+            leading: Icon(p.id == active ? Icons.radio_button_checked : Icons.radio_button_off),
+            title: Text(p.name), subtitle: Text(p.id == active ? 'نشط الآن' : ''),
+            onTap: () => Navigator.pop(ctx, 'select:' + p.id),
+            trailing: p.id == 'main' ? null : IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => Navigator.pop(ctx, 'delete:' + p.id)),
+          ),
+          ListTile(leading: const Icon(Icons.add), title: const Text('إضافة ملف'), onTap: () => Navigator.pop(ctx, 'add')),
         ],
-      );
-    });
-    if (name != null && name.isNotEmpty && mounted) setState(() => _tvProfiles[name] = name);
+      )),
+    ));
+    if (!mounted || action == null) return;
+    if (action == 'add') {
+      final name = await showDialog<String>(context: context, builder: (ctx) {
+        final input = TextEditingController();
+        return AlertDialog(title: const Text('إضافة TV Profile'), content: TextField(controller: input, autofocus: true, decoration: const InputDecoration(hintText: 'اسم الملف')), actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, input.text.trim()), child: const Text('حفظ')),
+        ]);
+      });
+      if (name != null && name.isNotEmpty) {
+        await AurenTvProfileService.instance.saveProfile(name);
+        final ps = await AurenTvProfileService.instance.profiles();
+        if (mounted) setState(() { _tvProfiles..clear()..addEntries(ps.map((p) => MapEntry(p.id, p.name))); });
+      }
+    } else if (action.startsWith('select:')) {
+      final id = action.substring(7);
+      await AurenTvProfileService.instance.setActiveProfile(id);
+      if (mounted) setState(() => _activeTvProfile = id);
+    } else if (action.startsWith('delete:')) {
+      await AurenTvProfileService.instance.deleteProfile(action.substring(7));
+    }
   }
 
   Future<void> _showWatchTogether() async {
-    if (playing == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شغّل قناة أولاً لبدء Watch Together.')));
-      return;
+    final service = AurenTvWatchTogetherService.instance;
+    final action = await showDialog<String>(context: context, builder: (ctx) {
+      final input = TextEditingController();
+      return AlertDialog(
+        title: const Text('Watch Together'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (playing != null) Text('القناة: ' + playing!.name),
+          TextField(controller: input, decoration: const InputDecoration(labelText: 'اسم الغرفة')),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.pop(ctx, 'join'), child: const Text('دخول')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, 'create'), child: const Text('إنشاء')),
+        ],
+      );
+    });
+    if (!mounted || action == null) return;
+    try {
+      AurenTvWatchTogetherRoom? room;
+      if (action == 'create') {
+        if (playing == null) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شغّل قناة أولاً لإنشاء غرفة.')));
+          return;
+        }
+        room = await service.create(title: 'AUREN TV • ' + playing!.name, channelId: playing!.id, channelName: playing!.name);
+      } else {
+        final code = await showDialog<String>(context: context, builder: (ctx) {
+          final input = TextEditingController();
+          return AlertDialog(title: const Text('Invite Code'), content: TextField(controller: input, textCapitalization: TextCapitalization.characters), actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, input.text.trim()), child: const Text('دخول')),
+          ]);
+        });
+        if (code != null && code.isNotEmpty) room = await service.join(code);
+      }
+      if (room == null || !mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تأكد من تسجيل الدخول وبيانات الغرفة.')));
+        return;
+      }
+      await _watchTogetherSubscription?.cancel();
+      final roomId = room.id;
+      setState(() { _watchTogether = true; _watchTogetherRoom = roomId; });
+      _watchTogetherSubscription = service.watch(roomId).listen((remote) async {
+        if (!mounted) return;
+        final current = playing;
+        if (current == null || remote.channelId != current.id) return;
+        final p = player;
+        if (p == null || !p.value.isInitialized) return;
+        final remotePos = Duration(milliseconds: (remote.positionSeconds * 1000).round());
+        if ((p.value.position - remotePos).abs() > const Duration(seconds: 3)) await p.seekTo(remotePos);
+        if (remote.isPlaying && !p.value.isPlaying && !lowData) await p.play();
+        if (!remote.isPlaying && p.value.isPlaying) await p.pause();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الغرفة جاهزة • الكود: ' + room.inviteCode)));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر إنشاء أو دخول الغرفة.')));
     }
-    final controller = TextEditingController();
-    final room = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('Watch Together'),
-      content: TextField(controller: controller, decoration: const InputDecoration(hintText: 'اسم الغرفة')),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-        FilledButton(onPressed: () { final v = controller.text.trim(); Navigator.pop(ctx, v.isEmpty ? 'AUREN TV Room' : v); }, child: const Text('إنشاء')),
-      ],
-    ));
-    if (room == null || !mounted) return;
-    setState(() { _watchTogether = true; _watchTogetherRoom = room; });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم إنشاء غرفة $room. مزامنة المشاركين تحتاج طبقة Firestore/Realtime التالية.')));
   }
 
   Future<void> _showTvAssistant() async {
@@ -562,6 +635,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
   @override void dispose() {
+    _watchTogetherSubscription?.cancel();
     _search.dispose();
     _recoveryTimer?.cancel();
     _connectivitySubscription?.cancel();
