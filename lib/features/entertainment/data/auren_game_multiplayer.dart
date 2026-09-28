@@ -313,6 +313,12 @@ class AurenGameMultiplayer {
     } on FirebaseFunctionsException { return []; }
   }
 
+  Future<Map<String,dynamic>?> getSeasonChampion({required int gameIndex}) async {
+    await _ensureSignedIn();
+    try { final r=await _functions.httpsCallable('getAurenSeasonChampion').call({'gameIndex':gameIndex}); if(r.data is Map)return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException {}
+    return null;
+  }
+
   Future<Map<String,dynamic>?> getGamingSeason() async {
     await _ensureSignedIn();
     try { final r=await _functions.httpsCallable('getAurenGamingSeason').call(); if(r.data is Map)return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException {}
