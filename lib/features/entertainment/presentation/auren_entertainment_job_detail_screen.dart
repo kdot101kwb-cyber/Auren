@@ -294,17 +294,40 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                             final media = e['media'] is Map ? Map<String, dynamic>.from(e['media'] as Map) : <String, dynamic>{};
                             final hasVideo = media['video'] is Map || media['video']?.toString().isNotEmpty == true;
                             final hasTrailer = media['trailer'] is Map || media['trailer']?.toString().isNotEmpty == true;
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: CircleAvatar(child: Text('$n')),
-                              title: Text('الحلقة $n', style: const TextStyle(fontWeight: FontWeight.w800)),
-                              subtitle: Text([if (hasVideo) 'فيديو', if (media['audio'] != null) 'صوت', if (media['subtitles'] != null) 'AR/EN', if (hasTrailer) 'Trailer'].join(' • ')),
-                              trailing: hasVideo ? const Icon(Icons.play_circle_fill_rounded) : null,
-                              onTap: hasVideo ? () {
-                                final video = media['video'];
-                                final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
-                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(output: output)));
-                              } : null,
+                            final episodeNumber = int.tryParse(n.toString()) ?? 1;
+                            final seriesTitle = pkg['title']?.toString() ?? '';
+                            final baseSubtitle = [if (hasVideo) 'فيديو', if (media['audio'] != null) 'صوت', if (media['subtitles'] != null) 'AR/EN', if (hasTrailer) 'Trailer'].join(' • ');
+                            return FutureBuilder<Map<String, dynamic>?>(
+                              future: EntertainmentRepository().getSeriesWatchProgress(uid, jobId, episodeNumber),
+                              builder: (context, progressSnapshot) {
+                                final saved = progressSnapshot.data;
+                                final progress = (saved?['progress'] as num?)?.toDouble() ?? 0;
+                                final position = (saved?['positionSeconds'] as num?)?.toInt() ?? 0;
+                                final hasResume = hasVideo && position > 5 && progress > 0.02 && progress < 0.98;
+                                final subtitle = hasResume
+                                    ? '$baseSubtitle • متابعة من ${_formatSeconds(position)} (${(progress * 100).round()}%)'
+                                    : baseSubtitle;
+                                return ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: CircleAvatar(child: Text('$n')),
+                                  title: Text('الحلقة $n', style: const TextStyle(fontWeight: FontWeight.w800)),
+                                  subtitle: subtitle.isEmpty ? null : Text(subtitle),
+                                  trailing: hasVideo ? const Icon(Icons.play_circle_fill_rounded) : null,
+                                  onTap: hasVideo ? () {
+                                    final video = media['video'];
+                                    final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
+                                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
+                                      output: output,
+                                      title: seriesTitle,
+                                      episodeLabel: 'الحلقة $episodeNumber',
+                                      watchUid: uid,
+                                      watchJobId: jobId,
+                                      watchEpisodeNumber: episodeNumber,
+                                      watchTitle: seriesTitle,
+                                    )));
+                                  } : null,
+                                );
+                              },
                             );
                           }),
                         ]),
@@ -540,6 +563,13 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
         trailing: Text('${index + 1}', style: Theme.of(context).textTheme.labelLarge),
       ),
     );
+  }
+
+  String _formatSeconds(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final secs = (seconds % 60).toString().padLeft(2, '0');
+    return hours > 0 ? '$hours:$minutes:$secs' : '$minutes:$secs';
   }
 
   String _assetLabel(String asset) {
