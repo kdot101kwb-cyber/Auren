@@ -37,6 +37,25 @@ class AurenEntertainmentLibraryScreen extends StatelessWidget {
     return null;
   }
 
+  Future<void> _downloadSeries(BuildContext context, String jobId, String title) async {
+    try {
+      final package=await EntertainmentRepository().getFinalEpisodePackage(jobId);
+      final raw=package?['finalizedEpisodes'];
+      if(raw is! Map || raw.isEmpty) throw Exception('package');
+      final result=await AurenOfflineMediaService.instance.downloadSeriesPackage(
+        finalizedEpisodes:Map<String,dynamic>.from(raw),
+        jobId:jobId,
+      );
+      if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('تم تنزيل ${result.length} حلقة من «$title» للحفظ Offline.')),
+      );
+    } catch (_) {
+      if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('الحزمة النهائية للمسلسل غير جاهزة أو لا تحتوي روابط وسائط حقيقية.')),
+      );
+    }
+  }
+
   Future<void> _downloadJob(BuildContext context, Map<String,dynamic> job) async {
     final mode=job['mode']?.toString()??'media';
     final title=job['title']?.toString().trim().isNotEmpty==true?job['title'].toString():job['idea']?.toString()??'AUREN Media';
@@ -109,10 +128,12 @@ class AurenEntertainmentLibraryScreen extends StatelessWidget {
                     subtitle: Text(mode+' • '+_status(status)+' • '+progress.toString()+'%'),
                     trailing: status=='ready'
                       ? Row(mainAxisSize:MainAxisSize.min,children:[
-                          if(_jobMediaUrl(job)!=null) IconButton(
+                          if(_jobMediaUrl(job)!=null || mode=='مسلسل') IconButton(
                             tooltip:'تنزيل Offline',
                             icon:const Icon(Icons.download_for_offline_rounded),
-                            onPressed:()=>_downloadJob(context,job),
+                            onPressed:mode=='مسلسل'
+                              ? ()=>_downloadSeries(context,id,title)
+                              : ()=>_downloadJob(context,job),
                           ),
                           const Icon(Icons.play_circle_fill_rounded),
                         ])
