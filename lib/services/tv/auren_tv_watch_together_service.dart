@@ -87,9 +87,15 @@ class AurenTvWatchTogetherService {
     if (!members.contains(u.uid)) return;
     await _rooms.doc(roomId).collection('typing').doc(u.uid).set({
       'uid': u.uid,
-      'isTyping': isTyping,
+      'typing': isTyping,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  Future<void> clearTyping(String roomId) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return;
+    try { await _rooms.doc(roomId).collection('typing').doc(u.uid).delete(); } catch (_) {}
   }
 
   Future<void> sendMessage(String roomId, String text) async {
