@@ -922,3 +922,6 @@ class AurenGameMultiplayer {
     _lobbyId = null;
   }
 }
+
+  Future<Map<String,dynamic>?> getGamingRivals() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenGamingRivals').call(); return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException { return null; } }
+  Future<Map<String,dynamic>?> getLiveSpectatorMatches() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenLiveSpectators').call(); return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException { return null; } }
