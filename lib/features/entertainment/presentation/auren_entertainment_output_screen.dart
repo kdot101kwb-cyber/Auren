@@ -3,11 +3,17 @@ import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../../../services/entertainment/entertainment_repository.dart';
+
 class AurenEntertainmentOutputScreen extends StatefulWidget {
   final Map<String, dynamic> output;
   final String? title;
   final String? episodeLabel;
   final VoidCallback? onNextEpisode;
+  final String? watchUid;
+  final String? watchJobId;
+  final int? watchEpisodeNumber;
+  final String? watchTitle;
 
   const AurenEntertainmentOutputScreen({
     super.key,
@@ -15,6 +21,10 @@ class AurenEntertainmentOutputScreen extends StatefulWidget {
     this.title,
     this.episodeLabel,
     this.onNextEpisode,
+    this.watchUid,
+    this.watchJobId,
+    this.watchEpisodeNumber,
+    this.watchTitle,
   });
 
   @override
@@ -28,6 +38,57 @@ class _AurenEntertainmentOutputScreenState
   AudioPlayer? _audioPlayer;
   Future<void>? _initializeFuture;
   bool _muted = false;
+  Duration _savedPosition = Duration.zero;
+  DateTime _lastProgressSave = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _progressLoaded = false;
+
+  bool get _canSaveWatchProgress => widget.watchUid?.isNotEmpty == true &&
+      widget.watchJobId?.isNotEmpty == true &&
+      (widget.watchEpisodeNumber ?? 0) > 0;
+
+  Future<void> _loadWatchProgress(VideoPlayerController controller) async {
+    if (!_canSaveWatchProgress || _progressLoaded) return;
+    _progressLoaded = true;
+    final saved = await EntertainmentRepository().getSeriesWatchProgress(
+      widget.watchUid!, widget.watchJobId!, widget.watchEpisodeNumber!,
+    );
+    if (!mounted || !controller.value.isInitialized || saved == null) return;
+    final seconds = (saved['positionSeconds'] as num?)?.toInt() ?? 0;
+    final duration = controller.value.duration.inSeconds;
+    if (seconds <= 5 || (duration > 0 && seconds >= duration - 5)) return;
+    _savedPosition = Duration(seconds: seconds.clamp(0, duration > 0 ? duration - 1 : seconds));
+    await controller.seekTo(_savedPosition);
+  }
+
+  Future<void> _saveWatchProgress({bool completed = false, bool force = false}) async {
+    final controller = _controller;
+    if (!_canSaveWatchProgress || controller == null || !controller.value.isInitialized) return;
+    final now = DateTime.now();
+    if (!force && now.difference(_lastProgressSave) < const Duration(seconds: 5)) return;
+    _lastProgressSave = now;
+    final position = controller.value.position;
+    final duration = controller.value.duration;
+    await EntertainmentRepository().saveSeriesWatchProgress(
+      widget.watchUid!, widget.watchJobId!, widget.watchEpisodeNumber!,
+      positionSeconds: position.inSeconds,
+      durationSeconds: duration.inSeconds,
+      title: widget.watchTitle ?? widget.title,
+      videoUrl: _url,
+      completed: completed,
+    );
+  }
+
+  void _onVideoProgress() {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    if (controller.value.position >= controller.value.duration && controller.value.duration > Duration.zero) {
+      _saveWatchProgress(completed: true, force: true);
+    } else if (!controller.value.isPlaying) {
+      _saveWatchProgress(force: true);
+    } else {
+      _saveWatchProgress();
+    }
+  }
 
   String get _type => widget.output['type']?.toString() ?? 'output';
   String get _url => widget.output['url']?.toString() ?? '';
@@ -43,7 +104,8 @@ class _AurenEntertainmentOutputScreenState
     if (_isVideo && _url.isNotEmpty) {
       final controller = VideoPlayerController.networkUrl(Uri.parse(_url));
       _controller = controller;
-      _initializeFuture = controller.initialize();
+      controller.addListener(_onVideoProgress);
+      _initializeFuture = controller.initialize().then((_) => _loadWatchProgress(controller));
     } else if (_isAudio && _url.isNotEmpty) {
       _audioPlayer = AudioPlayer();
       _initializeFuture = _audioPlayer!.setUrl(_url).then((_) {});
@@ -52,6 +114,8 @@ class _AurenEntertainmentOutputScreenState
 
   @override
   void dispose() {
+    _saveWatchProgress(force: true);
+    _controller?.removeListener(_onVideoProgress);
     _controller?.dispose();
     _audioPlayer?.dispose();
     super.dispose();
@@ -114,6 +178,16 @@ class _AurenEntertainmentOutputScreenState
               if (widget.episodeLabel != null)
                 Text(widget.episodeLabel!, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 10),
+              if (_savedPosition > Duration.zero)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text('استئناف من ${_formatDuration(_savedPosition)}', style: Theme.of(context).textTheme.bodySmall),
+                ),
+              if (_canSaveWatchProgress)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: VideoProgressIndicator(controller, allowScrubbing: true, padding: const EdgeInsets.symmetric(vertical: 6)),
+                ),
               FilledButton.icon(
                 onPressed: () async {
                   if (controller.value.isPlaying) {
@@ -158,6 +232,13 @@ class _AurenEntertainmentOutputScreenState
         );
       },
     );
+  }
+
+  String _formatDuration(Duration value) {
+    final hours = value.inHours;
+    final minutes = value.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return hours > 0 ? '$hours:$minutes:$seconds' : '$minutes:$seconds';
   }
 
   Widget _audioBody() {
