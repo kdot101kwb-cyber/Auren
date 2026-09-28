@@ -3,7 +3,7 @@
 /**
  * AUREN 100-provider catalog.
  * 
- * IMPORTANT: this is a provider catalog, not 100 live integrations.
+ * IMPORTANT: this is a provider catalog of exactly 100 entries, not 100 live integrations.
  * Only providers with an adapter/credentials are allowed to execute jobs.
  * freeTier means a free tier/open-source path may exist; it does NOT mean
  * unlimited free compute or unlimited production generation.
@@ -110,20 +110,6 @@ const PROVIDERS_100 = Object.freeze([
   {rank:98, id:"udio", label:"Udio", capabilities:["music","audio"], freeTier:false, integration:'catalog_only'},
   {rank:99, id:"audiocraft", label:"Meta AudioCraft", capabilities:["music","audio"], freeTier:true, integration:'catalog_only'},
   {rank:100, id:"demucs", label:"Meta Demucs", capabilities:["audio","music"], freeTier:true, integration:'catalog_only'},
-  {rank:101, id:"descript", label:"Descript", capabilities:["audio","video"], freeTier:false, integration:'catalog_only'},
-  {rank:102, id:"kapwing", label:"Kapwing", capabilities:["video","image"], freeTier:true, integration:'catalog_only'},
-  {rank:103, id:"veed", label:"VEED", capabilities:["video","audio"], freeTier:false, integration:'catalog_only'},
-  {rank:104, id:"heygen", label:"HeyGen", capabilities:["video","avatar","voice"], freeTier:false, integration:'catalog_only'},
-  {rank:105, id:"synthesia", label:"Synthesia", capabilities:["video","avatar","voice"], freeTier:false, integration:'catalog_only'},
-  {rank:106, id:"d_id", label:"D-ID", capabilities:["video","avatar","voice"], freeTier:false, integration:'catalog_only'},
-  {rank:107, id:"twelve_labs", label:"Twelve Labs", capabilities:["video","search","vision"], freeTier:true, integration:'catalog_only'},
-  {rank:108, id:"assembly_video", label:"AssemblyAI Video Intelligence", capabilities:["video","audio","stt"], freeTier:true, integration:'catalog_only'},
-  {rank:109, id:"aws_transcribe", label:"AWS Transcribe", capabilities:["audio","stt"], freeTier:true, integration:'catalog_only'},
-  {rank:110, id:"aws_polly", label:"AWS Polly", capabilities:["audio","tts"], freeTier:true, integration:'catalog_only'},
-  {rank:111, id:"azure_speech", label:"Azure Speech", capabilities:["audio","stt","tts"], freeTier:true, integration:'catalog_only'},
-  {rank:112, id:"google_cloud_speech", label:"Google Cloud Speech", capabilities:["audio","stt","tts"], freeTier:true, integration:'catalog_only'},
-  {rank:113, id:"google_cloud_tts", label:"Google Cloud TTS", capabilities:["audio","tts"], freeTier:true, integration:'catalog_only'},
-  {rank:114, id:"elevenlabs_music", label:"ElevenLabs Music", capabilities:["music","audio"], freeTier:false, integration:'catalog_only'},
 ]);
 
 const PROVIDER_MAP = new Map(PROVIDERS_100.map((p) => [p.id, p]));
