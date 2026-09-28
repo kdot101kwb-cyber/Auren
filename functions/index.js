@@ -3140,13 +3140,17 @@ exports.leaveAurenTournament = require('firebase-functions/v2/https').onCall(
 
 
 function buildTournamentBracket(players) {
-  const p=[...players];
+  const p=[...players].slice(0,8);
   while(p.length<8)p.push(null);
+  const makeMatch=(id,round,p1,p2)=>{
+    if(p1 && !p2)return {id,round,p1,p2:null,status:'finished',winnerId:p1,bye:true};
+    return {id,round,p1:p1||null,p2:p2||null,status:'pending',winnerId:null};
+  };
   return {round:'quarterfinals',matches:[
-    {id:'qf1',round:'quarterfinals',p1:p[0],p2:p[1],status:'pending'},
-    {id:'qf2',round:'quarterfinals',p1:p[2],p2:p[3],status:'pending'},
-    {id:'qf3',round:'quarterfinals',p1:p[4],p2:p[5],status:'pending'},
-    {id:'qf4',round:'quarterfinals',p1:p[6],p2:p[7],status:'pending'},
+    makeMatch('qf1','quarterfinals',p[0],p[1]),
+    makeMatch('qf2','quarterfinals',p[2],p[3]),
+    makeMatch('qf3','quarterfinals',p[4],p[5]),
+    makeMatch('qf4','quarterfinals',p[6],p[7]),
   ]};
 }
 
@@ -3163,7 +3167,7 @@ exports.startAurenTournament = require('firebase-functions/v2/https').onCall(
    if(d.status!=='bracket_ready'&&d.status!=='registration')return {started:false,status:d.status};
    if(players.length<2)throw aurenHttpsError('failed-precondition','At least two players are required.');
    const bracket=buildTournamentBracket(players);
-   const matches=bracket.matches.filter(m=>m.p1&&m.p2);
+   const matches=bracket.matches;
    tx.update(ref,{status:'active',round:'quarterfinals',bracket,matches,updatedAt:FieldValue.serverTimestamp()});
    return {started:true,status:'active',round:'quarterfinals',matches};
   });
@@ -3231,7 +3235,7 @@ exports.submitAurenTournamentMatchResult = require('firebase-functions/v2/https'
      for(const m of semi) await recordTournamentReward(tx,ref.id,m.loserId,gameIndex,3);
      return {accepted:true,status:'completed',round:'champion',championId:champion,matches};
     }
-    if(winners.length<=1){
+    if(winners.length<=1 && round==='final'){
      tx.update(ref,{status:'completed',round:'champion',championId:winners[0]||null,matches,updatedAt:FieldValue.serverTimestamp()});
      if(winners[0]) await recordTournamentReward(tx, ref.id, winners[0], gameIndex, 1);
      return {accepted:true,status:'completed',round:'champion',championId:winners[0]||null,matches};
