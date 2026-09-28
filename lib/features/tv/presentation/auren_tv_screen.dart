@@ -135,7 +135,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             ),
         ]),
       Expanded(child: FutureBuilder<List<AurenTvChannel>>(
-        future: AurenTvService.instance.load(country: country, category: category),
+        future: continent.isNotEmpty ? AurenTvService.instance.loadFeaturedByCountries(regions[continent]!.toSet(), limit: 20) : AurenTvService.instance.load(country: country, category: category),
         builder: (context, snapshot) {
           if (snapshot.hasError) return Center(child: Text('تعذر تحميل القنوات: ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
