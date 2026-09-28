@@ -282,9 +282,9 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   void didUpdateWidget(covariant AurenFlagshipGamesPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.gameIndex != widget.gameIndex) {
-      _leaveLobby();
+      unawaited(_leaveLobby());
       _reset();
-      _loadProgress();
+      unawaited(_loadProgress());
     }
   }
 
