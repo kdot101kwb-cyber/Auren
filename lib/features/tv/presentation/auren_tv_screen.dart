@@ -34,6 +34,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override void initState() {
     super.initState();
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
+    AurenTvService.instance.autoRefreshSources(limit: 150).catchError((_) {});
     AurenTvService.instance.sources().then((v) async {
       final defaultId = await AurenTvService.instance.defaultSourceId();
       if (!mounted) return;
@@ -156,6 +157,13 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     );
   }
 
+
+  Future<void> _checkChannel(AurenTvChannel channel) async {
+    final health = await AurenTvService.instance.checkChannelHealth(channel);
+    if (!mounted) return;
+    final detail = health.latencyMs == null ? health.status : '${health.status} • ${health.latencyMs}ms';
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('حالة ${channel.name}: $detail')));
+  }
 
   Future<void> _testSource(AurenTvSource source) async {
     try {
