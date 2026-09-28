@@ -432,7 +432,7 @@ class AurenTvService {
   Future<List<Map<String, String>>> schedule(String tvgId, {int hours = 24}) async {
     if (tvgId.isEmpty || _epgUrl == null || _epgUrl!.isEmpty) return const [];
     _epgCache ??= await _loadEpg(_epgUrl!);
-    return _filterSchedule(_epgCache![tvgId] ?? const [], hours);
+    return _filterSchedule(_matchEpg(_epgCache!, tvgId), hours);
   }
 
   Future<List<Map<String, String>>> scheduleForSource(AurenTvSource source, String tvgId, {int hours = 24}) async {
@@ -440,7 +440,19 @@ class AurenTvService {
     final epgUrl = source.epgUrl.trim().isNotEmpty ? source.epgUrl.trim() : (_sourceEpgUrls[source.id] ?? '');
     if (epgUrl.isEmpty) return const [];
     final cache = _sourceEpgCaches[source.id] ??= await _loadEpg(epgUrl);
-    return _filterSchedule(cache[tvgId] ?? const [], hours);
+    return _filterSchedule(_matchEpg(cache, tvgId), hours);
+  }
+
+  List<Map<String, String>> _matchEpg(Map<String, List<Map<String, String>>> cache, String tvgId) {
+    if (cache.isEmpty || tvgId.isEmpty) return const [];
+    final exact = cache[tvgId];
+    if (exact != null && exact.isNotEmpty) return exact;
+    final wanted = _normalizeIdentity(tvgId);
+    if (wanted.isEmpty) return const [];
+    for (final entry in cache.entries) {
+      if (_normalizeIdentity(entry.key) == wanted) return entry.value;
+    }
+    return const [];
   }
 
   List<Map<String, String>> _filterSchedule(List<Map<String, String>> programs, int hours) {
