@@ -305,6 +305,14 @@ class AurenGameMultiplayer {
     return null;
   }
 
+  Future<List<Map<String,dynamic>>> getTournamentHistory() async {
+    await _ensureSignedIn();
+    try { final r=await _functions.httpsCallable('getAurenTournamentHistory').call();
+      final items=r.data is Map ? (r.data['items'] as List? ?? const []) : const [];
+      return items.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
+    } on FirebaseFunctionsException { return []; }
+  }
+
   Future<Map<String,dynamic>?> startTournament({required int gameIndex}) async {
     await _ensureSignedIn();
     try { final r=await _functions.httpsCallable('startAurenTournament').call({'gameIndex':gameIndex});
