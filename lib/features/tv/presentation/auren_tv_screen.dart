@@ -402,8 +402,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 Padding(
                   padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(ctx).viewInsets.bottom + 8),
                   child: Row(children: [
-                    Expanded(child: TextField(controller: controller, maxLength: 500, onChanged: (_) { typingTimer?.cancel(); service.setTyping(room.id, true); typingTimer = Timer(const Duration(seconds: 2), () { service.setTyping(room.id, false); }); }, textInputAction: TextInputAction.send,
-                      onSubmitted: (_) async { final v=controller.text; controller.clear(); typingTimer?.cancel(); await service.setTyping(room.id, false); await service.sendMessage(room.id, v); },
+                    Expanded(child: TextField(controller: controller, maxLength: 500, onChanged: (_) { typingTimer?.cancel(); service.setTyping(room.id, true); typingTimer = Timer(const Duration(seconds: 2), () { service.clearTyping(room.id); }); }, textInputAction: TextInputAction.send,
+                      onSubmitted: (_) async { final v=controller.text; controller.clear(); typingTimer?.cancel(); await service.clearTyping(room.id); await service.sendMessage(room.id, v); },
                       decoration: const InputDecoration(hintText: 'اكتب رسالة…', counterText: ''))),
                     IconButton(
                       icon: const Icon(Icons.send),
@@ -417,6 +417,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         ),
       );
     } finally {
+      typingTimer?.cancel();
+      await service.clearTyping(room.id);
       controller.dispose();
     }
   }
