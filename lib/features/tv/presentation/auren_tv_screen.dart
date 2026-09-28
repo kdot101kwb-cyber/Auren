@@ -388,6 +388,17 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                         itemBuilder: (_, index) {
                           final d = docs[index].data();
                           final mine = d['senderUid'] == FirebaseAuth.instance.currentUser?.uid;
+                          final system = d['type'] == 'system';
+                          if (system) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                              child: Center(child: Text(
+                                d['text'] as String? ?? '',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                              )),
+                            );
+                          }
                           return Align(
                             alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
                             child: Container(
