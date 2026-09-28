@@ -265,15 +265,17 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     if (_onlineInitializationRequested) return;
     _onlineInitializationRequested = true;
     try {
+    bool accepted = false;
     if (_localIndex == 0) {
-      await _multiplayer.initializeLudoMatch();
+      accepted = await _multiplayer.initializeLudoMatch();
     } else if (_localIndex == 1) {
-      await _multiplayer.initializeDominoMatch();
+      accepted = await _multiplayer.initializeDominoMatch();
     } else if (_localIndex == 2) {
-      await _multiplayer.initializeUnoMatch();
+      accepted = await _multiplayer.initializeUnoMatch();
     } else if (_gameId >= 53 && _gameId <= 59) {
-      await _multiplayer.initializeFlagshipMatch();
+      accepted = await _multiplayer.initializeFlagshipMatch();
     }
+    if (!accepted) _onlineInitializationRequested = false;
     } catch (_) {
       _onlineInitializationRequested = false;
       rethrow;
