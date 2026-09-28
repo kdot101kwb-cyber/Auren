@@ -54,6 +54,24 @@ class AurenTvWatchTogetherService {
   Stream<QuerySnapshot<Map<String,dynamic>>> presence(String roomId) =>
       _presence(roomId).snapshots();
 
+  Stream<QuerySnapshot<Map<String,dynamic>>> messages(String roomId) =>
+      _rooms.doc(roomId).collection('messages').orderBy('createdAt', descending: true).limit(100).snapshots();
+
+  Future<void> sendMessage(String roomId, String text) async {
+    final u = FirebaseAuth.instance.currentUser;
+    final value = text.trim();
+    if (u == null || value.isEmpty || value.length > 500) return;
+    final room = await _rooms.doc(roomId).get();
+    if (!room.exists) return;
+    final members = List<String>.from(room.data()?['memberIds'] as List? ?? const []);
+    if (!members.contains(u.uid)) return;
+    await _rooms.doc(roomId).collection('messages').add({
+      'senderUid': u.uid,
+      'text': value,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Stream<QuerySnapshot<Map<String,dynamic>>> activity(String roomId) =>
       _rooms.doc(roomId).collection('activity').orderBy('createdAt', descending: true).limit(20).snapshots();
 
