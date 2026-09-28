@@ -35,9 +35,36 @@ class _OriginalMusicCreationScreenState extends State<_OriginalMusicCreationScre
         'النوع: $genre. المزاج: $mood. اللغة: $language. '
         'أنشئ لي أولاً Creative Brief يتضمن العنوان المقترح، الفكرة، بنية الأغنية، كلمات أصلية، وصف التوزيع والموسيقى والمؤثرات، '
         'مع التأكيد على عدم تقليد صوت أو أسلوب فنان حقيقي وعدم استخدام مادة محمية دون ترخيص.';
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => MessengerScreen(initialPrompt: prompt),
-    ));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)));
+  }
+
+  Future<void> startRealProduction() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('سجّل الدخول أولاً لبدء الإنتاج.')));
+      return;
+    }
+    final text = idea.text.trim().isEmpty ? 'أغنية أصلية عن الأمل وبداية جديدة' : idea.text.trim();
+    try {
+      final result = await EntertainmentRepository().createMusicProductionJob(
+        uid,
+        title: text.length > 60 ? text.substring(0, 60) : text,
+        prompt: text,
+        genre: genre,
+        mood: mood,
+        language: language,
+        durationSeconds: 30,
+      );
+      if (!mounted) return;
+      final jobId = String(result['jobId'] ?? '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تم إرسال الأغنية للإنتاج الفعلي • Job: $jobId')),
+      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => _MusicProductionStatusScreen(jobId: jobId)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر بدء الإنتاج: $e')));
+    }
   }
 
   @override
@@ -86,7 +113,13 @@ class _OriginalMusicCreationScreenState extends State<_OriginalMusicCreationScre
         FilledButton.icon(
           onPressed: createBrief,
           icon: const Icon(Icons.auto_awesome),
-          label: const Text('ابدأ إنشاء الأغنية'),
+          label: const Text('اكتب Creative Brief مع AUREN AI'),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: startRealProduction,
+          icon: const Icon(Icons.graphic_eq_rounded),
+          label: const Text('ابدأ الإنتاج الفعلي'),
         ),
         const SizedBox(height: 10),
         const Text('حقوق آمنة: المحتوى المقترح أصلي، ولا يُفترض تقليد أصوات فنانين حقيقيين أو استخدام مواد محمية بلا ترخيص.',
@@ -418,6 +451,60 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
             ],
               );
             },
+          );
+        },
+      ),
+    );
+  }
+}
+
+
+class _MusicProductionStatusScreen extends StatelessWidget {
+  final String jobId;
+  const _MusicProductionStatusScreen({required this.jobId});
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const Scaffold(body: Center(child: Text('تسجيل الدخول مطلوب.')));
+    return Scaffold(
+      appBar: AppBar(title: const Text('AUREN Music Production')),
+      body: StreamBuilder<Map<String, dynamic>?>(
+        stream: EntertainmentRepository().watchMusicProductionJob(uid, jobId),
+        builder: (context, snapshot) {
+          final data = snapshot.data;
+          if (data == null) return const Center(child: CircularProgressIndicator());
+          final status = String(data['status'] ?? 'queued');
+          final progress = ((Number.tryParse(String(data['progress'] ?? '0')) ?? 0) / 100).clamp(0.0, 1.0);
+          final output = data['output'];
+          final url = output is Map ? String(output['url'] ?? '') : '';
+          return ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              const Icon(Icons.graphic_eq_rounded, size: 60),
+              const SizedBox(height: 12),
+              Text(String(data['title'] ?? 'Original Track'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 18),
+              LinearProgressIndicator(value: progress),
+              const SizedBox(height: 10),
+              Text('الحالة: $status', textAlign: TextAlign.center),
+              if (url.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(
+                    item: AurenEntertainmentItem(
+                      id: jobId, title: String(data['title'] ?? 'AUREN Original Track'),
+                      description: 'Original AUREN AI Music', imageUrl: '', mediaUrl: url,
+                      mediaKind: 'audio', creatorId: uid, type: 'Music',
+                    ),
+                  ))),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('استمع إلى الناتج'),
+                ),
+              ],
+              const SizedBox(height: 16),
+              const Text('الإنتاج الحقيقي يعتمد على مزود صوت مُفعّل في الخادم. لا يتم إنشاء ملف وهمي عند عدم توفر المزود.', style: TextStyle(fontSize: 12)),
+            ],
           );
         },
       ),
