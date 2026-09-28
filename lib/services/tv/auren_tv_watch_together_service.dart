@@ -1,0 +1,35 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class AurenTvWatchTogetherRoom {
+  final String id,title,inviteCode,status;
+  final List<String> memberIds;
+  final String? channelId,channelName;
+  final double positionSeconds;
+  final bool isPlaying;
+  const AurenTvWatchTogetherRoom({required this.id,required this.title,required this.inviteCode,required this.memberIds,required this.channelId,required this.channelName,required this.positionSeconds,required this.isPlaying,required this.status});
+  factory AurenTvWatchTogetherRoom.fromDoc(DocumentSnapshot<Map<String,dynamic>> doc){
+    final d=doc.data()??const <String,dynamic>{};
+    return AurenTvWatchTogetherRoom(id:doc.id,title:d['title'] as String???'AUREN TV Room',inviteCode:d['inviteCode'] as String???'',memberIds:List<String>.from(d['memberIds'] as List???const []),channelId:d['channelId'] as String?,channelName:d['channelName'] as String?,positionSeconds:(d['positionSeconds'] as num?)?.toDouble()??0,isPlaying:d['isPlaying'] as bool???false,status:d['status'] as String???'waiting');
+  }
+}
+class AurenTvWatchTogetherService {
+  static final instance=AurenTvWatchTogetherService._(); AurenTvWatchTogetherService._();
+  final _db=FirebaseFirestore.instance;
+  CollectionReference<Map<String,dynamic>> get _rooms=>_db.collection('watch_together_rooms');
+  String _code(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';var n=DateTime.now().microsecondsSinceEpoch;var o='';for(var i=0;i<6;i++){o+=chars[n%chars.length];n=n~/chars.length;}return o;}
+  Future<AurenTvWatchTogetherRoom?> create({required String title,required String channelId,required String channelName}) async {
+    final u=FirebaseAuth.instance.currentUser;if(u==null)return null;final ref=_rooms.doc();
+    await ref.set({'hostUid':u.uid,'memberIds':[u.uid],'inviteCode':_code(),'title':title.trim().isEmpty?'AUREN TV Room':title.trim(),'channelId':channelId,'channelName':channelName,'positionSeconds':0,'isPlaying':false,'status':'waiting','updatedAt':FieldValue.serverTimestamp()});
+    final s=await ref.get();return s.exists?AurenTvWatchTogetherRoom.fromDoc(s):null;
+  }
+  Future<AurenTvWatchTogetherRoom?> join(String code) async {
+    final u=FirebaseAuth.instance.currentUser;if(u==null)return null;
+    final q=await _rooms.where('inviteCode',isEqualTo:code.trim().toUpperCase()).limit(1).get();if(q.docs.isEmpty)return null;final ref=q.docs.first.reference;
+    await _db.runTransaction((tx) async {final s=await tx.get(ref);if(!s.exists)throw StateError('Room unavailable');final d=s.data()!;final m=List<String>.from(d['memberIds'] as List???const []);if(!m.contains(u.uid)){if(m.length>=8)throw StateError('Room full');m.add(u.uid);tx.update(ref,{'memberIds':m,'status':'ready','updatedAt':FieldValue.serverTimestamp()});}});
+    return AurenTvWatchTogetherRoom.fromDoc(await ref.get());
+  }
+  Stream<AurenTvWatchTogetherRoom> watch(String roomId)=>_rooms.doc(roomId).snapshots().where((s)=>s.exists).map(AurenTvWatchTogetherRoom.fromDoc);
+  Future<void> sync(String roomId,{String? channelId,String? channelName,double? positionSeconds,bool? isPlaying}) async {final d=<String,dynamic>{'updatedAt':FieldValue.serverTimestamp()};if(channelId!=null)d['channelId']=channelId;if(channelName!=null)d['channelName']=channelName;if(positionSeconds!=null)d['positionSeconds']=positionSeconds.clamp(0,86400);if(isPlaying!=null)d['isPlaying']=isPlaying;await _rooms.doc(roomId).update(d);}
+  Future<void> leave(String roomId) async {final u=FirebaseAuth.instance.currentUser;if(u==null)return;final ref=_rooms.doc(roomId);await _db.runTransaction((tx)async{final s=await tx.get(ref);if(!s.exists)return;final d=s.data()!;final m=List<String>.from(d['memberIds'] as List???const []);m.remove(u.uid);if(m.isEmpty){tx.delete(ref);return;}tx.update(ref,{'memberIds':m,'status':m.length>1?'ready':'waiting','updatedAt':FieldValue.serverTimestamp()});});}
+}
