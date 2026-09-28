@@ -75,6 +75,23 @@ class AurenTvWatchTogetherService {
   Stream<QuerySnapshot<Map<String,dynamic>>> reactions(String roomId) =>
       _rooms.doc(roomId).collection('reactions').orderBy('createdAt', descending: true).limit(50).snapshots();
 
+  Stream<QuerySnapshot<Map<String,dynamic>>> typing(String roomId) =>
+      _rooms.doc(roomId).collection('typing').snapshots();
+
+  Future<void> setTyping(String roomId, bool isTyping) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return;
+    final room = await _rooms.doc(roomId).get();
+    if (!room.exists) return;
+    final members = List<String>.from(room.data()?['memberIds'] as List? ?? const []);
+    if (!members.contains(u.uid)) return;
+    await _rooms.doc(roomId).collection('typing').doc(u.uid).set({
+      'uid': u.uid,
+      'isTyping': isTyping,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> sendMessage(String roomId, String text) async {
     final u = FirebaseAuth.instance.currentUser;
     final value = text.trim();
