@@ -31,7 +31,32 @@ class AurenTvWatchTogetherService {
     return AurenTvWatchTogetherRoom.fromDoc(await ref.get());
   }
   Stream<AurenTvWatchTogetherRoom> watch(String roomId)=>_rooms.doc(roomId).snapshots().where((s)=>s.exists).map(AurenTvWatchTogetherRoom.fromDoc);
-  Future<void> sync(String roomId,{String? channelId,String? channelName,double? positionSeconds,bool? isPlaying}) async {final u=FirebaseAuth.instance.currentUser;if(u==null)return;final d=<String,dynamic>{'updatedAt':FieldValue.serverTimestamp(),'lastActorUid':u.uid};if(channelId!=null)d['channelId']=channelId;if(channelName!=null)d['channelName']=channelName;if(positionSeconds!=null)d['positionSeconds']=positionSeconds.clamp(0,86400);if(isPlaying!=null)d['isPlaying']=isPlaying;await _rooms.doc(roomId).update(d);}
+  Future<bool> isHost(String roomId) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return false;
+    final s = await _rooms.doc(roomId).get();
+    if (!s.exists) return false;
+    return s.data()?['hostUid'] == u.uid;
+  }
+
+  Future<bool> sync(String roomId,{String? channelId,String? channelName,double? positionSeconds,bool? isPlaying}) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return false;
+    final ref = _rooms.doc(roomId);
+    final s = await ref.get();
+    if (!s.exists) return false;
+    final data = s.data()!;
+    // Playback and channel state are host-authoritative.
+    if (data['hostUid'] != u.uid) return false;
+    final d = <String,dynamic>{'updatedAt':FieldValue.serverTimestamp()};
+    if (channelId != null) d['channelId']=channelId;
+    if (channelName != null) d['channelName']=channelName;
+    if (positionSeconds != null) d['positionSeconds']=positionSeconds.clamp(0,86400);
+    if (isPlaying != null) d['isPlaying']=isPlaying;
+    await ref.update(d);
+    return true;
+  }
+
   Future<void> close(String roomId) async {final u=FirebaseAuth.instance.currentUser;if(u==null)return;final ref=_rooms.doc(roomId);final s=await ref.get();if(!s.exists)return;final d=s.data()!;if(d['hostUid']!=u.uid)throw StateError('Only the host can close the room');await ref.update({'status':'closed','updatedAt':FieldValue.serverTimestamp()});await ref.delete();}
   Future<void> leave(String roomId) async {final u=FirebaseAuth.instance.currentUser;if(u==null)return;final ref=_rooms.doc(roomId);await _db.runTransaction((tx)async{final s=await tx.get(ref);if(!s.exists)return;final d=s.data()!;final m=List<String>.from(d['memberIds'] as List?const []);m.remove(u.uid);if(u.uid==d['hostUid']){if(m.length>1){final next=m.firstWhere((id)=>id!=u.uid);tx.update(ref,{'hostUid':next,'memberIds':m..remove(u.uid),'status':'ready','updatedAt':FieldValue.serverTimestamp()});}else{tx.delete(ref);}return;}if(m.isEmpty){tx.delete(ref);return;}tx.update(ref,{'memberIds':m,'status':m.length>1?'ready':'waiting','updatedAt':FieldValue.serverTimestamp()});});}
 }
