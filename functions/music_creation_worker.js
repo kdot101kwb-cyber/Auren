@@ -39,11 +39,15 @@ async function run(ref){
  const d=existing.data()||{};
  if(d.status==='output'){await ref.set({musicProductionStage:'ready',musicProductionStatus:'ready',musicWorkerLockUntilMs:0,musicArtifact:d.output,musicProductionQc:{version:1,result:'passed',taskCount:1},progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
  if(d.status==='failed'||Number(d.lockUntilMs||0)>Date.now())return;
+ if(Number(d.attempts||0)>=MAX_ATTEMPTS&&!d.externalJobId){
+  await taskRef.set({status:'failed',lockUntilMs:0,lastError:'Maximum music generation attempts reached.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  return;
+ }
  const token=String(REPLICATE_API_TOKEN.value()||'').trim();if(!token)throw new Error('No Replicate token configured.');
  const locked=await db.runTransaction(async tx=>{
   const fresh=await tx.get(taskRef),x=fresh.data()||{};
   if(!fresh.exists||x.status==='failed'||Number(x.lockUntilMs||0)>Date.now())return false;
-  tx.set(taskRef,{status:'processing',lockUntilMs:Date.now()+LOCK_MS,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  tx.set(taskRef,{status:'processing',lockUntilMs:Date.now()+LOCK_MS,attempts:x.externalJobId?Number(x.attempts||0):admin.firestore.FieldValue.increment(1),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
   return true;
  });
  if(!locked)return;
