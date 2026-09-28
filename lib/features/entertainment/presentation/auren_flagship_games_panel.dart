@@ -554,100 +554,57 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   void _initUno() {
     _unoDeck = [
-      for (final c in ['R','B','G','Y'])
-        for (var n = 0; n <= 9; n++) c + n.toString(),
-      for (final c in ['R','B','G','Y']) ...[c + '+2', c + '+2', c + 'S', c + 'S', c + 'R', c + 'R']
-    ];
+      for (final c in ['R','B','G','Y']) for (var n=0;n<=9;n++) c+n.toString(),
+      for (final c in ['R','B','G','Y']) ...[c+'+2',c+'+2',c+'S',c+'S',c+'R',c+'R']
+    ]..shuffle(_rng);
     _unoDeck.addAll(['W','W','W+4','W+4']);
-    _unoDeck.shuffle(_rng);
-    _unoHand = List<String>.from(_unoDeck.take(7)); _unoDeck = _unoDeck.skip(7).toList();
-    _unoCpu = List<String>.from(_unoDeck.take(7)); _unoDeck = _unoDeck.skip(7).toList();
-    _unoDiscard = [_unoDeck.removeLast()];
-    _unoColor = _unoColorOf(_unoDiscard.last) == 'W'
-        ? ['R','B','G','Y'][_rng.nextInt(4)] : _unoColorOf(_unoDiscard.last);
-    _unoSelected = 0; _unoPlayerTurn = true; _unoPendingDraw = 0; _unoSkipNext = false;
+    _unoHand=List<String>.from(_unoDeck.take(7)); _unoDeck=_unoDeck.skip(7).toList();
+    _unoCpu=List<String>.from(_unoDeck.take(7)); _unoDeck=_unoDeck.skip(7).toList();
+    _unoDiscard=[_unoDeck.removeLast()];
+    _unoColor=_unoColorOf(_unoDiscard.last)=='W'?['R','B','G','Y'][_rng.nextInt(4)]:_unoColorOf(_unoDiscard.last);
+    _unoSelected=0; _unoPlayerTurn=true; _unoPendingDraw=0; _unoSkipNext=false;
   }
 
-  String _unoColorOf(String card) => card.startsWith('W') ? 'W' : card[0];
-  String _unoRankOf(String card) => card.startsWith('W') ? card : card.substring(1);
-
-  bool _unoPlayable(String card) {
-    return _unoColorOf(card) == _unoColor ||
-        _unoRankOf(card) == _unoRankOf(_unoDiscard.last) ||
-        card.startsWith('W');
-  }
+  String _unoColorOf(String card)=>card.startsWith('W')?'W':card[0];
+  String _unoRankOf(String card)=>card.startsWith('W')?card:card.substring(1);
+  bool _unoPlayable(String card)=>_unoColorOf(card)==_unoColor||_unoRankOf(card)==_unoRankOf(_unoDiscard.last)||card.startsWith('W');
 
   void _unoPlay(int index) {
-    if (!_isMyTurn || !_unoPlayerTurn || index < 0 || index >= _unoHand.length) return;
-    final card = _unoHand[index];
-    if (!_unoPlayable(card)) {
-      _message = '🚫 ' + card + ' غير صالح على اللون ' + _unoColor;
-      setState(() {}); return;
-    }
+    if (_onlineMatch) { _unoPlayOnline(index); return; }
+    if (!_isMyTurn || !_unoPlayerTurn || index<0 || index>=_unoHand.length) return;
+    final card=_unoHand[index];
+    if (!_unoPlayable(card)) { _message='🚫 '+card+' غير صالح على اللون '+_unoColor; setState((){}); return; }
     _unoHand.removeAt(index); _unoDiscard.add(card);
-    _unoColor = card.startsWith('W') ? ['R','B','G','Y'][_rng.nextInt(4)] : card[0];
-    final rank = _unoRankOf(card);
-    _score += 25; _round++; _streak++;
-    if (_unoHand.isEmpty) {
-      _score += 300; _message = '🏆 فوز UNO! تخلّصت من كل بطاقاتك';
-      _saveProgress(won: true);
-      setState(() {}); return;
-    }
-    if (rank == '+2') _unoPendingDraw = 2;
-    if (rank == 'S' || rank == 'R') _unoSkipNext = true;
-    _message = '🃏 لعبت ' + card + ' • اللون الحالي ' + _unoColor;
-    _unoPlayerTurn = false; _unoCpuMove(); setState(() {});
+    _unoColor=card.startsWith('W')?['R','B','G','Y'][_rng.nextInt(4)]:card[0];
+    final rank=_unoRankOf(card); _score+=25; _round++; _streak++;
+    if (_unoHand.isEmpty) { _score+=300; _message='🏆 فوز UNO! تخلّصت من كل بطاقاتك'; _saveProgress(won:true); setState((){}); return; }
+    if(rank=='+2')_unoPendingDraw=2; if(rank=='S'||rank=='R')_unoSkipNext=true;
+    _message='🃏 لعبت '+card+' • اللون الحالي '+_unoColor; _unoPlayerTurn=false; _unoCpuMove(); setState((){});
+  }
+
+  void _unoPlayOnline(int index) {
+    if (!_isMyTurn || index<0 || index>=_unoHand.length) return;
+    final card=_unoHand[index];
+    if (!_unoPlayable(card)) { setState(()=>_message='🚫 '+card+' غير صالح'); return; }
+    _multiplayer.submitUnoAction(action:{'type':'play','card':card},expectedVersion:_stateVersion,moveId:_nextMoveId());
   }
 
   void _unoDraw() {
+    if (_onlineMatch) { _unoDrawOnline(); return; }
     if (!_isMyTurn || !_unoPlayerTurn) return;
-    if (_unoPendingDraw > 0) {
-      for (var i = 0; i < _unoPendingDraw; i++) _unoDrawOne(_unoHand);
-      _unoPendingDraw = 0; _message = '🃏 سحبت عقوبة — دور الخصم';
-      _unoPlayerTurn = false; _unoCpuMove();
-    } else {
-      _unoDrawOne(_unoHand); _message = '🃏 سحبت بطاقة';
-    }
-    setState(() {});
-    _syncGameState();
+    if (_unoPendingDraw>0) { for(var i=0;i<_unoPendingDraw;i++)_unoDrawOne(_unoHand); _unoPendingDraw=0; _message='🃏 سحبت عقوبة — دور الخصم'; _unoPlayerTurn=false; _unoCpuMove(); }
+    else { _unoDrawOne(_unoHand); _message='🃏 سحبت بطاقة'; }
+    setState((){}); _syncGameState();
   }
 
-  void _unoDrawOne(List<String> hand) {
-    if (_unoDeck.isEmpty) _unoRecycle();
-    if (_unoDeck.isNotEmpty) hand.add(_unoDeck.removeLast());
+  void _unoDrawOnline() {
+    if (!_isMyTurn) return;
+    _multiplayer.submitUnoAction(action:{'type':'draw'},expectedVersion:_stateVersion,moveId:_nextMoveId());
   }
 
-  void _unoRecycle() {
-    if (_unoDiscard.length <= 1) return;
-    final keep = _unoDiscard.removeLast();
-    _unoDeck = List<String>.from(_unoDiscard)..shuffle(_rng);
-    _unoDiscard = [keep];
-  }
-
-  void _unoCpuMove() {
-    if (_unoCpu.isEmpty) return;
-    if (_unoPendingDraw > 0) {
-      for (var i = 0; i < _unoPendingDraw; i++) _unoDrawOne(_unoCpu);
-      _unoPendingDraw = 0; _unoPlayerTurn = true; _message = '🤖 الخصم سحب العقوبة • دورك'; return;
-    }
-    if (_unoSkipNext) {
-      _unoSkipNext = false; _unoPlayerTurn = true; _message = '⏭️ تخطّي الخصم • دورك'; return;
-    }
-    final legal = _unoCpu.where(_unoPlayable).toList();
-    if (legal.isEmpty) {
-      _unoDrawOne(_unoCpu); _message = '🤖 الخصم سحب بطاقة • دورك';
-    } else {
-      final card = legal[_rng.nextInt(legal.length)];
-      _unoCpu.remove(card); _unoDiscard.add(card);
-      _unoColor = card.startsWith('W') ? ['R','B','G','Y'][_rng.nextInt(4)] : card[0];
-      final rank = _unoRankOf(card);
-      if (rank == '+2') _unoPendingDraw = 2;
-      if (rank == 'S' || rank == 'R') _unoSkipNext = true;
-      _message = '🤖 الخصم لعب ' + card + ' • دورك';
-    }
-    if (_unoCpu.isEmpty) { _message = '🤖 الخصم فاز بالجولة'; _hp = max(1, _hp - 20); }
-    _unoPlayerTurn = true;
-  }
+  void _unoDrawOne(List<String> hand){if(_unoDeck.isEmpty)_unoRecycle();if(_unoDeck.isNotEmpty)hand.add(_unoDeck.removeLast());}
+  void _unoRecycle(){if(_unoDiscard.length<=1)return;final keep=_unoDiscard.removeLast();_unoDeck=List<String>.from(_unoDiscard)..shuffle(_rng);_unoDiscard=[keep];}
+  void _unoCpuMove(){if(_unoCpu.isEmpty)return;if(_unoPendingDraw>0){for(var i=0;i<_unoPendingDraw;i++)_unoDrawOne(_unoCpu);_unoPendingDraw=0;_unoPlayerTurn=true;_message='🤖 الخصم سحب العقوبة • دورك';return;}if(_unoSkipNext){_unoSkipNext=false;_unoPlayerTurn=true;_message='⏭️ تخطّي الخصم • دورك';return;}final legal=_unoCpu.where(_unoPlayable).toList();if(legal.isEmpty){_unoDrawOne(_unoCpu);_message='🤖 الخصم سحب بطاقة • دورك';}else{final card=legal[_rng.nextInt(legal.length)];_unoCpu.remove(card);_unoDiscard.add(card);_unoColor=card.startsWith('W')?['R','B','G','Y'][_rng.nextInt(4)]:card[0];final rank=_unoRankOf(card);if(rank=='+2')_unoPendingDraw=2;if(rank=='S'||rank=='R')_unoSkipNext=true;_message='🤖 الخصم لعب '+card+' • دورك';}if(_unoCpu.isEmpty){_message='🤖 الخصم فاز بالجولة';_hp=max(1,_hp-20);}_unoPlayerTurn=true;}
 
   void _crimeAdvance() {
     if (!_isMyTurn) return;
