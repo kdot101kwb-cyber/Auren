@@ -50,6 +50,23 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Row(children: [
+                  Icon(Icons.auto_awesome_rounded),
+                  SizedBox(width: 8),
+                  Text('AUREN AI الزراعي', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+                ]),
+                const SizedBox(height: 8),
+                const Text('إرشادات أولية حسب نوع النشاط. لا تستبدل فحص المختص أو الطبيب البيطري.'),
+                const SizedBox(height: 10),
+                Text(_aiAdvice(_type), style: const TextStyle(height: 1.45)),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 16),
           const Text('السوق والفرص', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
           StreamBuilder<List<AurenAgricultureRecord>>(
@@ -74,6 +91,20 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
         ],
       ),
     );
+  }
+
+
+  String _aiAdvice(String type) {
+    switch (type) {
+      case 'crop':
+        return 'المحاصيل: راقب رطوبة التربة، حالة الأوراق، الآفات والطقس قبل قرار الري أو المعالجة.';
+      case 'livestock':
+        return 'المواشي: راقب الشهية، النشاط، التنفس، الحرارة وأي تغير مفاجئ، واعزل الحيوان المشتبه بإصابته واطلب مختصاً عند الحاجة.';
+      case 'farm':
+        return 'المزرعة: اجمع بيانات الماء والتربة والمحاصيل والمخزون والتكاليف، ثم استخدمها لاتخاذ قرارات أدق.';
+      default:
+        return 'ابدأ بتحديد نوع النشاط والموقع والمحصول أو الحيوان، ثم سجّل الملاحظات والصور والبيانات بانتظام ليصبح التحليل أكثر فائدة.';
+    }
   }
 
   Widget _records(List<AurenAgricultureRecord> rows, IconData icon) {
