@@ -450,3 +450,28 @@ test('series production tasks use deterministic idempotency keys and never fabri
 test('legacy series worker does not claim v2 jobs', () => {
   assert.match(source, /if \(Number\\(data\\.productionWorkerVersion \|\| 0\\) === 2\) return false/);
 });
+
+
+test('Production Worker v2 creates tasks consumed by the live video provider worker',()=>{
+  const productionStart=source.indexOf('function aurenProductionV2BuildTasks');
+  const productionEnd=source.indexOf('exports.runAurenSeriesProductionWorker',productionStart);
+  const production=source.slice(productionStart,productionEnd);
+  assert.match(production,/collection\('productionTasks'\)/);
+  assert.match(production,/type: 'video_clip'/);
+  assert.match(production,/idempotencyKey: ref\.id \+ ':' \+ task\.id/);
+  assert.match(production,/status: 'queued'/);
+  assert.match(production,/status:'generation'/);
+  assert.match(production,/providerRequired:true/);
+  const live=fs.readFileSync(new URL('./live_production_worker.js', import.meta.url), 'utf8');
+  assert.match(live,/collectionGroup\('productionTasks'\)/);
+  assert.match(live,/status:'output'/);
+});
+
+test('Production Worker v2 does not embed client-controlled executable provider credentials',()=>{
+  const productionStart=source.indexOf('function aurenProductionV2BuildTasks');
+  const productionEnd=source.indexOf('exports.runAurenSeriesProductionWorker',productionStart);
+  const production=source.slice(productionStart,productionEnd);
+  assert.doesNotMatch(production,/REPLICATE_API_TOKEN/);
+  assert.doesNotMatch(production,/providerVersion:/);
+  assert.doesNotMatch(production,/replicateVersion:/);
+});
