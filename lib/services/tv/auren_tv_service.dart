@@ -43,6 +43,7 @@ class AurenTvService {
   static const _sourcesKey = 'auren_tv_sources';
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
   List<AurenTvSource>? _sourcesCache;
+  final Map<String, List<AurenTvChannel>> _sourceChannelCache = {};
 
   Future<List<AurenTvSource>> sources() async {
     if (_sourcesCache != null) return List.unmodifiable(_sourcesCache!);
@@ -68,6 +69,7 @@ class AurenTvService {
     await p.setStringList(_sourcesKey, current.map((x) => jsonEncode({'id': x.id, 'name': x.name, 'type': x.type, 'url': x.url, 'epgUrl': x.epgUrl, 'username': x.username})).toList());
     await _secure.write(key: 'auren_tv_source_password_${source.id}', value: source.password);
     _sourcesCache = current;
+    _sourceChannelCache.remove(source.id);
   }
 
   Future<void> deleteSource(String id) async {
@@ -76,13 +78,31 @@ class AurenTvService {
     await p.setStringList(_sourcesKey, current.map((x) => jsonEncode({'id': x.id, 'name': x.name, 'type': x.type, 'url': x.url, 'epgUrl': x.epgUrl, 'username': x.username})).toList());
     await _secure.delete(key: 'auren_tv_source_password_$id');
     _sourcesCache = current;
+    _sourceChannelCache.remove(id);
   }
 
-  Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500}) async {
+  Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500, bool forceRefresh = false}) async {
     if (source.epgUrl.trim().isNotEmpty) { _epgUrl = source.epgUrl.trim(); _epgCache = null; }
-    if (source.type == 'xtream') return _fetchXtream(source, limit: limit);
-    if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
-    return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV');
+    if (!forceRefresh && _sourceChannelCache.containsKey(source.id)) {
+      return _sourceChannelCache[source.id]!.take(limit).toList();
+    }
+    final List<AurenTvChannel> channels;
+    if (source.type == 'xtream') {
+      channels = await _fetchXtream(source, limit: 500);
+    } else {
+      if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
+      channels = await _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV');
+    }
+    _sourceChannelCache[source.id] = channels;
+    return channels.take(limit).toList();
+  }
+
+  Future<void> refreshSource(AurenTvSource source) async {
+    _sourceChannelCache.remove(source.id);
+    if (source.epgUrl.trim().isNotEmpty) {
+      _epgUrl = source.epgUrl.trim();
+      _epgCache = null;
+    }
   }
 
   Future<List<AurenTvChannel>> _fetchXtream(AurenTvSource source, {int limit = 500}) async {
