@@ -3458,3 +3458,30 @@ exports.markAurenGamingNotificationsRead = require('firebase-functions/v2/https'
  const batch=db.batch(); snap.docs.forEach(d=>batch.set(d.ref,{read:true,readAt:FieldValue.serverTimestamp()},{merge:true})); await batch.commit();
  return {ok:true,count:snap.size};
 });\nexports.getAurenLiveMatch = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{\n if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');\n const lobbyId=String(request.data?.lobbyId||''); if(!lobbyId)throw aurenHttpsError('invalid-argument','lobbyId is required.');\n const snap=await db.collection('auren_game_lobbies').doc(lobbyId).get();\n if(!snap.exists)throw aurenHttpsError('not-found','Live match not found.');\n const d=snap.data()||{}; const gameIndex=Number(d.gameIndex);\n if(gameIndex<53||gameIndex>59||d.status!=='playing')throw aurenHttpsError('failed-precondition','Match is not live.');\n return {lobbyId,gameIndex,players:d.players||[],turnPlayerId:d.turnPlayerId||null,stateVersion:Number(d.stateVersion||0),state:d.state||{}};\n});
+
+exports.recordAurenEntertainmentAnalytics = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async(request)=>{
+  const uid=request.auth?.uid;if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const event=String(request.data?.event||'').trim();
+  const itemId=String(request.data?.itemId||'').trim();
+  const type=String(request.data?.contentType||'').trim();
+  const allowed=['impression','open','play','pause','complete','like','save','share','search','watch_together'];
+  if(!allowed.includes(event)||itemId.length>128||type.length>40)throw aurenHttpsError('invalid-argument','Invalid entertainment analytics event.');
+  await db.collection('users').doc(uid).collection('entertainmentAnalytics').doc(itemId).set({
+   itemId,contentType:type,eventCount:{[event]:FieldValue.increment(1)},lastEventAt:FieldValue.serverTimestamp()
+  },{merge:true});
+  return {ok:true};
+ });
+exports.submitAurenEntertainmentRightsReview = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async(request)=>{
+  const uid=request.auth?.uid;if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const jobId=String(request.data?.jobId||'').trim(); if(!jobId||jobId.length>128)throw aurenHttpsError('invalid-argument','Invalid jobId.');
+  const claim=String(request.data?.rightsDeclaration||'').trim();
+  if(claim.length<10||claim.length>2000)throw aurenHttpsError('invalid-argument','Rights declaration is required.');
+  const ref=db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc(jobId);
+  const snap=await ref.get();if(!snap.exists)throw aurenHttpsError('not-found','Entertainment job not found.');
+  await ref.set({rightsReview:{status:'submitted',declaration:claim,submittedAt:FieldValue.serverTimestamp(),reviewVersion:1}}, {merge:true});
+  return {status:'submitted',reviewVersion:1};
+});
