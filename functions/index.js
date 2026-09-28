@@ -2922,3 +2922,82 @@ exports.submitAurenGameMove = require('firebase-functions/v2/https').onCall(
   }
 );
 
+
+
+const AUREN_TOURNAMENT_GAMES = [53,54,55,56,57,58,59];
+
+function tournamentId(gameIndex) {
+  const now = new Date();
+  return now.getUTCFullYear() + '-W' + String(Math.ceil((((now - new Date(Date.UTC(now.getUTCFullYear(),0,1))) / 86400000) + new Date(Date.UTC(now.getUTCFullYear(),0,1)).getUTCDay() + 1) / 7)).padStart(2,'0') + '-' + gameIndex;
+}
+
+exports.createAurenTournament = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw aurenHttpsError('unauthenticated','Authentication is required.');
+    const gameIndex=Number(request.data?.gameIndex);
+    if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex)) throw aurenHttpsError('invalid-argument','Unsupported tournament game.');
+    const id=tournamentId(gameIndex);
+    const ref=db.collection('auren_game_tournaments').doc(id);
+    const snap=await ref.get();
+    if(snap.exists) return {created:false,tournamentId:id,...snap.data()};
+    const data={tournamentId:id,gameIndex,status:'registration',players:[],matches:[],maxPlayers:8,round:'quarterfinals',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()};
+    await ref.create(data);
+    return {created:true,...data};
+  }
+);
+
+exports.getAurenTournament = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw aurenHttpsError('unauthenticated','Authentication is required.');
+    const gameIndex=Number(request.data?.gameIndex);
+    if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex)) throw aurenHttpsError('invalid-argument','Unsupported tournament game.');
+    const id=tournamentId(gameIndex);
+    const snap=await db.collection('auren_game_tournaments').doc(id).get();
+    if(!snap.exists) return {exists:false,tournamentId:id,gameIndex};
+    return {exists:true,...snap.data()};
+  }
+);
+
+exports.joinAurenTournament = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw aurenHttpsError('unauthenticated','Authentication is required.');
+    const gameIndex=Number(request.data?.gameIndex);
+    if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex)) throw aurenHttpsError('invalid-argument','Unsupported tournament game.');
+    const ref=db.collection('auren_game_tournaments').doc(tournamentId(gameIndex));
+    return db.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      const data=snap.exists?snap.data()||{}:{tournamentId:ref.id,gameIndex,status:'registration',players:[],matches:[],maxPlayers:8,round:'quarterfinals'};
+      const players=Array.isArray(data.players)?data.players.map(String):[];
+      if(data.status!=='registration') return {joined:false,status:data.status,players};
+      if(players.includes(uid)) return {joined:true,alreadyJoined:true,players};
+      if(players.length>=Number(data.maxPlayers||8)) return {joined:false,full:true,players};
+      players.push(uid);
+      const status=players.length===Number(data.maxPlayers||8)?'bracket_ready':'registration';
+      tx.set(ref,{...data,players,status,updatedAt:FieldValue.serverTimestamp()},{merge:true});
+      return {joined:true,status,players};
+    });
+  }
+);
+
+exports.leaveAurenTournament = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw aurenHttpsError('unauthenticated','Authentication is required.');
+    const gameIndex=Number(request.data?.gameIndex);
+    if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex)) throw aurenHttpsError('invalid-argument','Unsupported tournament game.');
+    const ref=db.collection('auren_game_tournaments').doc(tournamentId(gameIndex));
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(ref); if(!snap.exists)return;
+      const data=snap.data()||{}; if(data.status!=='registration')return;
+      tx.update(ref,{players:(data.players||[]).map(String).filter(id=>id!==uid),updatedAt:FieldValue.serverTimestamp()});
+    });
+    return {left:true};
+  }
+);
