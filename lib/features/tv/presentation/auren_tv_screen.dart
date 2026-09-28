@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../services/tv/auren_tv_service.dart';
 import '../../../services/tv/auren_tv_epg_smart_service.dart';
 import '../../../services/tv/auren_tv_home_service.dart';
+import '../../../services/tv/auren_tv_assistant_service.dart';
 
 class AurenTvScreen extends StatefulWidget {
   const AurenTvScreen({super.key});
@@ -108,6 +109,86 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       return Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.notifications_active_outlined)), title: Text(r.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(label), trailing: Wrap(children: [IconButton(tooltip: 'تعديل التذكير', onPressed: () async { final before = await showModalBottomSheet<Duration>(context: ctx, builder: (s) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [const ListTile(title: Text('تعديل وقت التذكير')), for (final m in const [5, 10, 15, 30, 60]) ListTile(title: Text('قبل $m دقيقة'), onTap: () => Navigator.pop(s, Duration(minutes: m)))]))); if (before == null || !ctx.mounted) return; final ok = await AurenTvService.instance.updateEpgReminder(item, before: before); if (ctx.mounted) { Navigator.pop(ctx); if (ok) await _showEpgReminderCenter(); } }, icon: const Icon(Icons.edit_notifications_outlined)), IconButton(tooltip: 'إلغاء التذكير', onPressed: () async { await AurenTvService.instance.removeEpgReminder(item); if (ctx.mounted) { Navigator.pop(ctx); await _showEpgReminderCenter(); } }, icon: const Icon(Icons.notifications_off_outlined))));
     }))));
   }
+  Future<void> _showTvAssistant() async {
+    final controller = TextEditingController();
+    AurenTvAssistantResult? result;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * .82,
+          child: Column(children: [
+            const ListTile(
+              leading: Icon(Icons.auto_awesome),
+              title: Text('AUREN TV Assistant', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+              subtitle: Text('اكتب طلبك بلغة طبيعية: قنوات السودان، رياضة، أو برنامج معين.'),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'مثلاً: مباريات كرة القدم أو قنوات السودان',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: () async {
+                      final q = controller.text.trim();
+                      if (q.length < 2) return;
+                      final r = await AurenTvAssistantService.instance.ask(q, source: activeSource);
+                      if (ctx.mounted) setSheetState(() => result = r);
+                    },
+                  ),
+                ),
+                onSubmitted: (_) async {
+                  final q = controller.text.trim();
+                  if (q.length < 2) return;
+                  final r = await AurenTvAssistantService.instance.ask(q, source: activeSource);
+                  if (ctx.mounted) setSheetState(() => result = r);
+                },
+              ),
+            ),
+            Expanded(
+              child: result == null
+                  ? const Center(child: Text('جرّب: "قنوات السودان" أو "أفلام" أو اسم برنامج.'))
+                  : ListView(
+                      padding: const EdgeInsets.all(12),
+                      children: [
+                        Card(child: ListTile(leading: const Icon(Icons.auto_awesome), title: Text(result!.message))),
+                        if (result!.programs.isNotEmpty)
+                          const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('نتائج EPG', style: TextStyle(fontWeight: FontWeight.w800))),
+                        for (final p in result!.programs)
+                          Card(child: ListTile(
+                            leading: Icon(p.state == 'now' ? Icons.play_circle : Icons.schedule),
+                            title: Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                            subtitle: Text(DateTime.tryParse(p.startIso)?.toLocal().toString() ?? p.startIso),
+                            onTap: () async {
+                              final ch = await AurenTvService.instance.findChannelForEpgId(p.channelId, source: activeSource);
+                              if (ch != null && ctx.mounted) { Navigator.pop(ctx); play(ch); }
+                            },
+                          )),
+                        if (result!.channels.isNotEmpty)
+                          const Padding(padding: EdgeInsets.only(top: 8, bottom: 4), child: Text('القنوات', style: TextStyle(fontWeight: FontWeight.w800))),
+                        for (final ch in result!.channels)
+                          Card(child: ListTile(
+                            leading: ch.logo.isEmpty ? const CircleAvatar(child: Icon(Icons.tv)) : CircleAvatar(backgroundImage: NetworkImage(ch.logo)),
+                            title: Text(ch.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Text('${ch.country} • ${ch.language} • ${ch.category}'),
+                            trailing: const Icon(Icons.play_circle_outline),
+                            onTap: () { Navigator.pop(ctx); play(ch); },
+                          )),
+                      ],
+                    ),
+            ),
+          ]),
+        ),
+      )),
+    );
+  }
+
   Future<void> _showTvHome() async {
     final channels = await AurenTvHomeService.instance.personalizedChannels(limit: 24);
     if (!mounted) return;
