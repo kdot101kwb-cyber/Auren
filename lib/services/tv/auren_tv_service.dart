@@ -131,22 +131,55 @@ class AurenTvService {
   final Map<String, AurenTvHealth> _healthCache = <String, AurenTvHealth>{};
 
   Future<AurenTvHealth> checkChannelHealth(AurenTvChannel channel, {Duration timeout = const Duration(seconds: 6)}) async {
-    final started = DateTime.now();
-    try {
-      final r = await http.head(Uri.parse(channel.url), followRedirects: true).timeout(timeout);
-      final ms = DateTime.now().difference(started).inMilliseconds;
-      final ok = r.statusCode >= 200 && r.statusCode < 500;
-      final health = AurenTvHealth(status: ok ? 'online' : 'offline', latencyMs: ms, checkedAt: DateTime.now());
-      _healthCache[channel.id] = health;
-      await _saveHealth(channel.id, health);
-      return health;
-    } catch (_) {
+    final uri = Uri.tryParse(channel.url);
+    if (uri == null || uri.scheme.isEmpty || uri.host.isEmpty) {
       final health = AurenTvHealth(status: 'offline', latencyMs: null, checkedAt: DateTime.now());
       _healthCache[channel.id] = health;
       await _saveHealth(channel.id, health);
       return health;
     }
+
+    final started = DateTime.now();
+    try {
+      // Some IPTV servers reject HEAD even though the stream is playable.
+      // Probe HEAD first, then fall back to a tiny GET with Range.
+      final head = await http.head(uri, followRedirects: true).timeout(timeout);
+      final ms = DateTime.now().difference(started).inMilliseconds;
+      if (_healthHttpOk(head.statusCode)) {
+        final health = AurenTvHealth(status: 'online', latencyMs: ms, checkedAt: DateTime.now());
+        _healthCache[channel.id] = health;
+        await _saveHealth(channel.id, health);
+        return health;
+      }
+    } catch (_) {}
+
+    final fallbackStarted = DateTime.now();
+    try {
+      final request = http.Request('GET', uri)
+        ..followRedirects = true
+        ..headers['Range'] = 'bytes=0-1023'
+        ..headers['Accept'] = '*/*';
+      final streamed = await http.Client().send(request).timeout(timeout);
+      final ms = DateTime.now().difference(fallbackStarted).inMilliseconds;
+      final ok = _healthHttpOk(streamed.statusCode);
+      // Consume only a tiny bounded probe body; never log or expose its contents.
+      await streamed.stream.take(1024).drain();
+      if (ok) {
+        final health = AurenTvHealth(status: 'online', latencyMs: ms, checkedAt: DateTime.now());
+        _healthCache[channel.id] = health;
+        await _saveHealth(channel.id, health);
+        return health;
+      }
+    } catch (_) {}
+
+    final health = AurenTvHealth(status: 'offline', latencyMs: null, checkedAt: DateTime.now());
+    _healthCache[channel.id] = health;
+    await _saveHealth(channel.id, health);
+    return health;
   }
+
+  static bool _healthHttpOk(int statusCode) =>
+      statusCode >= 200 && statusCode < 500;
 
   Future<AurenTvHealth?> channelHealth(String channelId) async {
     if (_healthCache.containsKey(channelId)) return _healthCache[channelId];
