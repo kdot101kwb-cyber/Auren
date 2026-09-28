@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../data/auren_game_progress.dart';
+import '../data/auren_game_multiplayer.dart';
 
 class AurenFlagshipGamesPanel extends StatefulWidget {
   final int gameIndex;
@@ -10,6 +12,10 @@ class AurenFlagshipGamesPanel extends StatefulWidget {
 
 class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   final _rng = Random();
+  final _multiplayer = AurenGameMultiplayer();
+  StreamSubscription<Map<String, dynamic>?>? _lobbySubscription;
+  String? _lobbyId;
+  String _onlineStatus = 'Offline';
   int _score = 0, _round = 0, _hp = 100, _streak = 0, _energy = 100, _distance = 0;
   int _bestScore = 0, _wins = 0, _savedRounds = 0;
   String _message = 'ابدأ الجولة';
@@ -79,6 +85,67 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       if (_score > _bestScore) _bestScore = _score;
       _savedRounds = _round;
     });
+  }
+
+  @override
+  void dispose() {
+    _lobbySubscription?.cancel();
+    _multiplayer.leaveLobby();
+    super.dispose();
+  }
+
+  Future<void> _createLobby() async {
+    try {
+      final id = await _multiplayer.createLobby(gameIndex: widget.gameIndex);
+      _watchLobby(id);
+      if (!mounted) return;
+      setState(() => _onlineStatus = 'Waiting • ' + id.substring(0, min(6, id.length)).toUpperCase());
+    } catch (_) {
+      if (mounted) setState(() => _onlineStatus = 'Online unavailable');
+    }
+  }
+
+  Future<void> _joinLobby() async {
+    final controller = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Join AUREN Match'),
+        content: TextField(controller: controller, autofocus: true, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(hintText: 'Lobby ID')),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Join'))],
+      ),
+    );
+    controller.dispose();
+    if (code == null || code.isEmpty) return;
+    try {
+      final ok = await _multiplayer.joinLobby(lobbyId: code, gameIndex: widget.gameIndex);
+      if (!ok) {
+        if (mounted) setState(() => _onlineStatus = 'Lobby not available');
+        return;
+      }
+      _watchLobby(code);
+      if (mounted) setState(() => _onlineStatus = 'Connected • ' + code.substring(0, min(6, code.length)).toUpperCase());
+    } catch (_) {
+      if (mounted) setState(() => _onlineStatus = 'Online unavailable');
+    }
+  }
+
+  void _watchLobby(String id) {
+    _lobbySubscription?.cancel();
+    _lobbyId = id;
+    _lobbySubscription = _multiplayer.watchLobby(id).listen((data) {
+      if (!mounted || data == null) return;
+      final players = List<String>.from(data['players'] ?? const <String>[]);
+      final status = data['status']?.toString() ?? 'waiting';
+      setState(() => _onlineStatus = (status == 'playing' ? '2 Players • Ready' : 'Waiting • ' + players.length.toString() + '/2'));
+    });
+  }
+
+  Future<void> _leaveLobby() async {
+    await _lobbySubscription?.cancel();
+    _lobbySubscription = null;
+    await _multiplayer.leaveLobby();
+    if (mounted) setState(() { _lobbyId = null; _onlineStatus = 'Offline'; });
   }
 
   @override
@@ -434,14 +501,25 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       Text(_names[widget.gameIndex], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
       const SizedBox(height: 6), Text('جولة ' + _round.toString() + ' • ⭐ ' + _score.toString() + ' • 🔥 Combo ' + _streak.toString()),
       const SizedBox(height: 12),
-      Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(
+      Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('🌐 ' + _onlineStatus, style: const TextStyle(fontWeight: FontWeight.w800)),
+          if (_lobbyId != null) IconButton(onPressed: _leaveLobby, icon: const Icon(Icons.close)),
+        ]),
+        if (_lobbyId == null) Row(children: [
+          Expanded(child: FilledButton.tonal(onPressed: _createLobby, child: const Text('Create Match'))),
+          const SizedBox(width: 8),
+          Expanded(child: OutlinedButton(onPressed: _joinLobby, child: const Text('Join Match'))),
+        ]),
+        const SizedBox(height: 8),
+        Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _stat('Best', _bestScore.toString()),
           _stat('Wins', _wins.toString()),
           _stat('Saved Rounds', _savedRounds.toString()),
-        ],
-      ))),
+        ]),
+      ]))),
       const SizedBox(height: 12),
       if (widget.gameIndex == 0) _ludoBoard(),
       if (widget.gameIndex == 1) _dominoBoard(),
