@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../core/models/entertainment.dart';
 
 class EntertainmentRepository {
@@ -312,6 +313,16 @@ class EntertainmentRepository {
       default: return ['story','characters','scenes','artwork'];
     }
   }
+  /// Generates and persists the server-owned series blueprint for a creation job.
+  Future<Map<String, dynamic>> generateSeriesBlueprint(String jobId) async {
+    final id = jobId.trim();
+    if (id.isEmpty) throw ArgumentError('jobId is required');
+    final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('generateAurenSeriesBlueprint');
+    final response = await callable.call({'jobId': id});
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, dynamic>?> getEntertainmentCreationJob(
     String uid,
     String jobId,
