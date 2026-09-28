@@ -47,3 +47,17 @@ test('never accepts client score or hp as authority', () => {
   assert.ok(n.score < 999999);
   assert.equal(n.hp,100);
 });
+
+
+test('finishes a flagship match at the server-defined round limit', () => {
+  let s=createInitialFlagshipState(54,'host','guest');
+  for (let i=0;i<20;i++) s=validateAndApplyFlagshipAction(s,{type:'shoot',payload:{lane:0}},'host');
+  assert.equal(s.matchFinished,true);
+  assert.equal(s.round,20);
+});
+
+test('authoritative state has no client-controlled wins field mutation action', () => {
+  const s=createInitialFlagshipState(55,'host','guest');
+  const n=validateAndApplyFlagshipAction(s,{type:'shot',payload:{shot:0,wins:9999}},'host');
+  assert.equal(n.wins,0);
+});
