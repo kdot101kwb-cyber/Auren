@@ -57,7 +57,7 @@ class AurenTvHomeService {
     for (final c in channels) {
       var score = 0.0;
       final key = AurenTvService.channelIdentity(c);
-      final fav = favorites.contains(c.id) || favorites.contains('channel:' + key);
+      final fav = favorites.contains(c.id) || favorites.contains(AurenTvService.favoriteKey(c));
       if (fav) score += 100;
       score += (history[key] ?? 0) * 12;
       if (c.logo.isNotEmpty) score += 3;
