@@ -46,7 +46,7 @@ test('Ludo rejects overshoot and awards extra turn on six', () => {
 test('Ludo capture sends an opponent piece back to base', () => {
   const state = createInitialLudoState('host', 'guest');
   state.ludo[0] = 10;
-  state.cpuLudo[0] = 0;
+  state.cpuLudo[0] = 50;
   state.ludoPendingDice = 1;
   const next = validateAndApplyLudoAction(state, {type:'move', pieceIndex:0}, 'host');
   assert.equal(next.ludo[0], 11);
