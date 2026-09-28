@@ -121,6 +121,21 @@ class AurenGameMultiplayer {
     }
   }
 
+  Future<bool> initializeDominoMatch() async {
+    final id=_lobbyId; if(id==null)return false; await _ensureSignedIn();
+    try { final r=await _functions.httpsCallable('initializeAurenDominoMatch').call({'lobbyId':id});
+      return r.data is Map && r.data['accepted']==true;
+    } on FirebaseFunctionsException { return false; }
+  }
+
+  Future<bool> submitDominoAction({required Map<String,dynamic> action,required int expectedVersion,required String moveId}) async {
+    final id=_lobbyId; if(id==null)return false; await _ensureSignedIn();
+    try { final r=await _functions.httpsCallable('submitAurenDominoAction').call({
+      'lobbyId':id,'action':action,'expectedVersion':expectedVersion,'moveId':moveId});
+      return r.data is Map && r.data['accepted']==true;
+    } on FirebaseFunctionsException { return false; }
+  }
+
   Future<bool> submitState({
     required Map<String, dynamic> state,
     required int expectedVersion,
