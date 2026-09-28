@@ -259,6 +259,49 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              if (status == 'ready') ...[
+                const SizedBox(height: 18),
+                _sectionTitle('الحزمة النهائية'),
+                const SizedBox(height: 8),
+                FutureBuilder<Map<String, dynamic>?>(
+                  future: EntertainmentRepository().getFinalEpisodePackage(jobId),
+                  builder: (context, packageSnapshot) {
+                    if (packageSnapshot.connectionState == ConnectionState.waiting) {
+                      return const Card(child: ListTile(leading: CircularProgressIndicator(), title: Text('جاري تجهيز الحزمة النهائية…')));
+                    }
+                    if (packageSnapshot.hasError || packageSnapshot.data == null) {
+                      return const Card(child: ListTile(leading: Icon(Icons.hourglass_empty_rounded), title: Text('الحزمة النهائية لم تصبح متاحة بعد'), subtitle: Text('سيتم عرض الحلقات والأصول تلقائياً عند اكتمالها.')));
+                    }
+                    final data = packageSnapshot.data!;
+                    final pkg = data['package'] is Map ? Map<String, dynamic>.from(data['package'] as Map) : <String, dynamic>{};
+                    final episodes = pkg['episodes'] is List ? pkg['episodes'] as List : const [];
+                    final assets = pkg['availableAssets'] is List ? (pkg['availableAssets'] as List).map((e) => e.toString()).toList() : const <String>[];
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(pkg['title']?.toString().isNotEmpty == true ? pkg['title'].toString() : 'مسلسل AUREN', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                          const SizedBox(height: 6),
+                          Text('${episodes.length} حلقة • الحزمة v${data['packageVersion'] ?? 1}'),
+                          if (assets.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Wrap(spacing: 8, runSpacing: 8, children: assets.map((asset) => Chip(avatar: const Icon(Icons.check_rounded, size: 16), label: Text(_assetLabel(asset))).toList()),
+                          ],
+                          const SizedBox(height: 10),
+                          ...episodes.take(20).map((episode) {
+                            final e = episode is Map ? Map<String, dynamic>.from(episode) : <String, dynamic>{};
+                            final n = e['episodeNumber'] ?? '?';
+                            final media = e['media'] is Map ? Map<String, dynamic>.from(e['media'] as Map) : <String, dynamic>{};
+                            final hasVideo = media['video'] is Map || media['video']?.toString().isNotEmpty == true;
+                            final hasTrailer = media['trailer'] is Map || media['trailer']?.toString().isNotEmpty == true;
+                            return ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(child: Text('$n')), title: Text('الحلقة $n', style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text([if (hasVideo) 'فيديو', if (media['audio'] != null) 'صوت', if (media['subtitles'] != null) 'AR/EN', if (hasTrailer) 'Trailer'].join(' • ')));
+                          }),
+                        ]),
+                      ),
+                    );
+                  },
+                ),
+              ],
               if (status == 'ready' && job['providerResult'] is Map &&
                   (job['providerResult'] as Map).isNotEmpty) ...[
                 const SizedBox(height: 18),
