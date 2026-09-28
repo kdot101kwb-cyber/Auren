@@ -89,17 +89,21 @@ class AurenTvService {
 
   Future<List<AurenTvEpgReminder>> epgReminders() async {
     final prefs = _prefs ??= await SharedPreferences.getInstance();
-    reminders.removeWhere((x) {
-      final start = DateTime.tryParse(x.startIso);
-      return start != null && start.isBefore(DateTime.now().toUtc().subtract(const Duration(hours: 6)));
-    });
-    final prefs = _prefs ??= await SharedPreferences.getInstance();
-    await prefs.setStringList('auren_tv_epg_reminders', reminders.map((x) => x.id + '|' + x.channelId + '|' + x.title + '|' + x.startIso).toList());
-    return (prefs.getStringList('auren_tv_epg_reminders') ?? const <String>[]).map((x) {
-      final p = x.split('|');
-      if (p.length < 4) return null;
-      return AurenTvEpgReminder(id: p[0], channelId: p[1], title: p[2], startIso: p[3]);
-    }).whereType<AurenTvEpgReminder>().toList();
+    final raw = prefs.getStringList('auren_tv_epg_reminders') ?? <String>[];
+    final now = DateTime.now().toUtc();
+    final active = <AurenTvEpgReminder>[];
+    for (final value in raw) {
+      final parts = value.split('|');
+      if (parts.length < 4) continue;
+      final start = DateTime.tryParse(parts[3]);
+      if (start == null || !start.isAfter(now.subtract(const Duration(hours: 2)))) continue;
+      active.add(AurenTvEpgReminder(id: parts[0], channelId: parts[1], title: parts[2], startIso: parts[3]));
+    }
+    if (active.length != raw.length) {
+      await prefs.setStringList('auren_tv_epg_reminders', active.map((x) => x.id + '|' + x.channelId + '|' + x.title + '|' + x.startIso).toList());
+    }
+    active.sort((a, b) => (DateTime.tryParse(a.startIso) ?? DateTime(9999)).compareTo(DateTime.tryParse(b.startIso) ?? DateTime(9999)));
+    return active;
   }  Future<int> cleanupExpiredEpgReminders() async {
     final prefs = _prefs ??= await SharedPreferences.getInstance();
     final raw = prefs.getStringList('auren_tv_epg_reminders') ?? <String>[];
