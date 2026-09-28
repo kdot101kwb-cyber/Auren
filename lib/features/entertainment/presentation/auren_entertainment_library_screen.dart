@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_offline_media_service.dart';
 import 'auren_entertainment_job_detail_screen.dart';
+import 'auren_entertainment_discover_screen.dart';
 
 class AurenEntertainmentLibraryScreen extends StatefulWidget {
   const AurenEntertainmentLibraryScreen({super.key});
@@ -114,7 +115,7 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
     if (uid == null) return const Scaffold(body: Center(child: Text('سجّل الدخول لعرض مكتبتك.')));
     final repo = EntertainmentRepository();
     return Scaffold(
-      appBar: AppBar(title: const Text('مكتبة AUREN Entertainment')),
+      appBar: AppBar(title: const Text('مكتبة AUREN Entertainment'), actions: [IconButton(tooltip: 'اكتشاف Entertainment', icon: const Icon(Icons.explore_rounded), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentDiscoverScreen())))],),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16,12,16,32),
         children: [
