@@ -52,10 +52,23 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     super.dispose();
   }
 
+  String _favoriteKey(AurenTvChannel c) {
+    final clean = (String value) => value.toLowerCase()
+        .replaceAll('أ', 'ا').replaceAll('إ', 'ا').replaceAll('آ', 'ا')
+        .replaceAll('ة', 'ه').replaceAll('ى', 'ي')
+        .replaceAll(RegExp(r'[^a-z0-9\\u0600-\\u06ff]+'), '');
+    final tvg = clean(c.tvgId);
+    return tvg.isNotEmpty ? 'tvg:$tvg' : 'name:${clean(c.name)}|country:${clean(c.country)}';
+  }
+
   Future<void> toggleFavorite(AurenTvChannel c) async {
-    final value = !favorites.contains(c.id);
-    await AurenTvService.instance.setFavorite(c.id, value);
-    if (mounted) setState(() { if (value) { favorites.add(c.id); } else { favorites.remove(c.id); } });
+    final key = _favoriteKey(c);
+    final value = !favorites.contains(c.id) && !favorites.contains(key);
+    await AurenTvService.instance.setChannelFavorite(c, value);
+    if (mounted) setState(() {
+      if (value) { favorites.add(key); favorites.remove(c.id); }
+      else { favorites.remove(key); favorites.remove(c.id); }
+    });
   }
 
   Future<void> play(AurenTvChannel c) async {
@@ -477,7 +490,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
               (entertainmentCategory == 'animation' && RegExp(r'anime|animation|cartoon', caseSensitive: false).hasMatch(n)) ||
               (entertainmentCategory == 'culture' && RegExp(r'culture|cultural|travel', caseSensitive: false).hasMatch(n)) ||
               (entertainmentCategory == 'documentary' && RegExp(r'documentary|documentaries', caseSensitive: false).hasMatch(n));
-            return matchesQuery && matchesRegion && matchesQuick && matchesNewsRegion && matchesSportCategory && matchesEntertainmentCategory && (!onlyFavorites || favorites.contains(c.id));
+            return matchesQuery && matchesRegion && matchesQuick && matchesNewsRegion && matchesSportCategory && matchesEntertainmentCategory && (!onlyFavorites || favorites.contains(c.id) || favorites.contains(_favoriteKey(c)));
           }).toList();
           if (channels.isEmpty) return const Center(child: Text('ما لقينا قنوات مطابقة. جرّب تغيير البحث أو الدولة.'));
           return ListView.separated(
@@ -491,7 +504,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 subtitle: Text('${c.country} • ${c.language} • ${c.category}', maxLines: 2, overflow: TextOverflow.ellipsis),
                 trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [
                   IconButton(tooltip: 'جدول البرامج', onPressed: () => _showSchedule(c), icon: const Icon(Icons.calendar_month_outlined)),
-                  IconButton(tooltip: favorites.contains(c.id) ? 'إزالة من المفضلة' : 'أضف للمفضلة', onPressed: () => toggleFavorite(c), icon: Icon(favorites.contains(c.id) ? Icons.star : Icons.star_border)),
+                  IconButton(tooltip: (favorites.contains(c.id) || favorites.contains(_favoriteKey(c))) ? 'إزالة من المفضلة' : 'أضف للمفضلة', onPressed: () => toggleFavorite(c), icon: Icon((favorites.contains(c.id) || favorites.contains(_favoriteKey(c))) ? Icons.star : Icons.star_border)),
                 ]),
                 onTap: () => play(c),
               ));
