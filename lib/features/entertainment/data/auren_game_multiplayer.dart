@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -244,41 +245,22 @@ class AurenGameMultiplayer {
   Future<void> finishLobby() async {
     final id = _lobbyId;
     if (id == null) return;
-    await _db.collection('auren_game_lobbies').doc(id).update({
-      'status': 'finished',
-      'turnPlayerId': null,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _ensureSignedIn();
+    try {
+      await _functions.httpsCallable('finishAurenGameLobby').call({'lobbyId': id});
+    } on FirebaseFunctionsException {
+      // Server remains authoritative; UI can continue without throwing.
+    }
   }
 
   Future<void> leaveLobby() async {
     final id = _lobbyId;
     if (id == null) return;
-    final ref = _db.collection('auren_game_lobbies').doc(id);
+    await _ensureSignedIn();
     try {
-      await _db.runTransaction((tx) async {
-        final snapshot = await tx.get(ref);
-        if (!snapshot.exists) return;
-        final data = snapshot.data() ?? <String, dynamic>{};
-        final players = List<String>.from(data['players'] ?? const <String>[]);
-        players.remove(playerId);
-        if (players.isEmpty) {
-          tx.delete(ref);
-          return;
-        }
-        final hostId = data['hostId']?.toString();
-        final nextHost = hostId == playerId ? players.first : hostId;
-        tx.update(ref, {
-          'players': players,
-          'hostId': nextHost,
-          'guestId': players.length > 1 ? players[1] : null,
-          'status': players.length == 2 ? 'playing' : 'waiting',
-          'turnPlayerId': players.length == 2
-              ? (data['turnPlayerId']?.toString() == playerId ? players.first : data['turnPlayerId'])
-              : players.first,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      });
+      await _functions.httpsCallable('leaveAurenGameLobby').call({'lobbyId': id});
+    } on FirebaseFunctionsException {
+      // Best-effort lifecycle cleanup.
     } finally {
       _lobbyId = null;
     }
