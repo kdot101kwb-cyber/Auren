@@ -1853,6 +1853,8 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
         next.playerStats[uid].actions += 1;
 
         const result = determineMatchResult(players, next.playerStats, next);
+        next.winnerId = result.winnerId;
+        next.loserId = result.winnerId ? players.find((id) => id !== result.winnerId) || null : null;
         next.matchResult = result;
         const nextTurn = next.matchFinished ? null : players.find((id) => id !== uid);
         if (next.matchFinished && !data.matchResult?.recorded) {
