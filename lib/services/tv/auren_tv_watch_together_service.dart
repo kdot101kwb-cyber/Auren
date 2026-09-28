@@ -47,6 +47,7 @@ class AurenTvWatchTogetherService {
     await _presence(roomId).doc(u.uid).set({
       'uid':u.uid,
       'online':online,
+      'displayName': _displayName(),
       'lastSeen':FieldValue.serverTimestamp(),
     },SetOptions(merge:true));
   }
@@ -98,6 +99,15 @@ class AurenTvWatchTogetherService {
     try { await _rooms.doc(roomId).collection('typing').doc(u.uid).delete(); } catch (_) {}
   }
 
+  String _displayName() {
+    final u = FirebaseAuth.instance.currentUser;
+    final name = u?.displayName?.trim();
+    if (name != null && name.isNotEmpty) return name.length > 80 ? name.substring(0, 80) : name;
+    final email = u?.email?.trim();
+    if (email != null && email.isNotEmpty) return email.length > 80 ? email.substring(0, 80) : email;
+    return 'عضو';
+  }
+
   Future<void> sendMessage(String roomId, String text) async {
     final u = FirebaseAuth.instance.currentUser;
     final value = text.trim();
@@ -108,6 +118,7 @@ class AurenTvWatchTogetherService {
     if (!members.contains(u.uid)) return;
     await _rooms.doc(roomId).collection('messages').add({
       'senderUid': u.uid,
+      'senderName': _displayName(),
       'text': value,
       'createdAt': FieldValue.serverTimestamp(),
     });
