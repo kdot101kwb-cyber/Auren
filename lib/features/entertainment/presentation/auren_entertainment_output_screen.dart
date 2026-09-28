@@ -65,6 +65,11 @@ class _AurenEntertainmentOutputScreenState
   bool _isFullscreen = false;
   bool _lastPlayingState = false;
   static const _speedPreferenceKey = 'auren_entertainment_playback_speed';
+  static const _qualityPreferenceKey = 'auren_entertainment_quality';
+  static const _lowDataPreferenceKey = 'auren_entertainment_low_data';
+  String _quality = 'auto';
+  bool _lowData = false;
+  bool _switchingQuality = false;
 
   void _resetControlsTimer() {
     _controlsTimer?.cancel();
@@ -77,6 +82,113 @@ class _AurenEntertainmentOutputScreenState
           setState(() => _showControls = false);
         }
       });
+    }
+  }
+
+  Future<void> _loadPlaybackPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _quality = prefs.getString(_qualityPreferenceKey) ?? 'auto';
+      _lowData = prefs.getBool(_lowDataPreferenceKey) ?? false;
+    });
+  }
+
+  Future<void> _saveQualityPreference(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_qualityPreferenceKey, value);
+  }
+
+  Future<void> _saveLowDataPreference(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_lowDataPreferenceKey, value);
+  }
+
+  Map<String, String> get _qualityUrls {
+    final raw = widget.output['qualityUrls'];
+    if (raw is! Map) return const {};
+    return raw.map((key, value) => MapEntry(key.toString(), value.toString()));
+  }
+
+  String get _effectiveQuality {
+    if (_lowData && _qualityUrls.containsKey('480p')) return '480p';
+    return _quality;
+  }
+
+  Future<void> _changeQuality() async {
+    final urls = _qualityUrls;
+    if (urls.isEmpty || _switchingQuality) return;
+    final values = ['auto', '1080p', '720p', '480p', '360p']
+        .where((q) => q == 'auto' || urls.containsKey(q))
+        .toList();
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...values.map((q) => ListTile(
+              title: Text(q == 'auto' ? 'تلقائي' : q),
+              trailing: q == _quality ? const Icon(Icons.check_rounded) : null,
+              onTap: () => Navigator.pop(sheetContext, q),
+            )),
+            SwitchListTile(
+              title: const Text('وضع Low Data'),
+              subtitle: const Text('يفضل 480p عند توفره لتقليل استهلاك البيانات'),
+              value: _lowData,
+              onChanged: (v) async {
+                await _saveLowDataPreference(v);
+                if (mounted) setState(() => _lowData = v);
+                Navigator.pop(sheetContext);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selected == null) return;
+    await _saveQualityPreference(selected);
+    if (mounted) setState(() => _quality = selected);
+    final target = selected == 'auto'
+        ? (_lowData && urls.containsKey('480p') ? '480p' : null)
+        : urls[selected];
+    if (target != null && target.isNotEmpty && target != _url) {
+      await _switchVideoQuality(target);
+    }
+  }
+
+  Future<void> _switchVideoQuality(String targetUrl) async {
+    final old = _controller;
+    if (old == null || !mounted) return;
+    setState(() => _switchingQuality = true);
+    final wasPlaying = old.value.isPlaying;
+    final position = old.value.position;
+    final volume = old.value.volume;
+    try {
+      final next = VideoPlayerController.networkUrl(Uri.parse(targetUrl));
+      await next.initialize();
+      await next.setPlaybackSpeed(_playbackSpeed);
+      await next.setVolume(volume);
+      if (next.value.duration > Duration.zero) {
+        await next.seekTo(position <= next.value.duration ? position : next.value.duration);
+      }
+      if (wasPlaying) await next.play();
+      next.addListener(_onVideoProgress);
+      _controller = next;
+      await old.pause();
+      await old.dispose();
+      if (mounted) {
+        setState(() => _switchingQuality = false);
+        _resetControlsTimer();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _switchingQuality = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تغيير جودة الفيديو.')),
+        );
+      }
     }
   }
 
@@ -212,6 +324,7 @@ class _AurenEntertainmentOutputScreenState
   @override
   void initState() {
     super.initState();
+    _loadPlaybackPreferences();
     if (_isVideo && _url.isNotEmpty) {
       final controller = VideoPlayerController.networkUrl(Uri.parse(_url));
       _controller = controller;
@@ -392,6 +505,13 @@ class _AurenEntertainmentOutputScreenState
                     icon: Icon(_isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded),
                   ),
                 ),
+              if (_switchingQuality)
+                const Positioned.fill(
+                  child: ColoredBox(
+                    color: Color(0x55000000),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
               if (_showControls)
                 Positioned(
                   bottom: 8,
@@ -504,6 +624,12 @@ class _AurenEntertainmentOutputScreenState
                 IconButton(onPressed: () => _skipBy(-10), icon: const Icon(Icons.replay_10_rounded)),
                 IconButton(onPressed: () => _skipBy(30), icon: const Icon(Icons.forward_30_rounded)),
                 IconButton(onPressed: _changeSpeed, icon: const Icon(Icons.speed_rounded)),
+                if (_qualityUrls.isNotEmpty)
+                  IconButton(
+                    tooltip: 'الجودة والبيانات',
+                    onPressed: _changeQuality,
+                    icon: Icon(_lowData ? Icons.data_saver_on_rounded : Icons.hd_rounded),
+                  ),
                 if (widget.episodes.isNotEmpty && widget.onSelectEpisode != null)
                   IconButton(onPressed: _showEpisodes, icon: const Icon(Icons.list_alt_rounded)),
               ]),
