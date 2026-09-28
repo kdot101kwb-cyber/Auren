@@ -11,6 +11,10 @@ class AurenTvService {
   AurenTvService._();
   static final instance = AurenTvService._();
   static const playlist = 'https://iptv-org.github.io/iptv/index.country.m3u';
+  static const entertainmentPlaylist = 'https://iptv-org.github.io/iptv/categories/entertainment.m3u';
+  static const sportsPlaylist = 'https://iptv-org.github.io/iptv/categories/sports.m3u';
+  List<AurenTvChannel>? _entertainmentCache;
+  List<AurenTvChannel>? _sportsCache;
   List<AurenTvChannel>? _cache;
   String? _epgUrl;
   Map<String, List<Map<String, String>>>? _epgCache;
@@ -42,6 +46,46 @@ class AurenTvService {
       if (result.length >= limit) break;
     }
     return result;
+  }
+
+
+  Future<List<AurenTvChannel>> loadEntertainment({int limit = 500}) async {
+    _entertainmentCache ??= await _fetchPlaylist(entertainmentPlaylist, fallbackCategory: 'Entertainment');
+    return _entertainmentCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> loadSports({int limit = 500}) async {
+    _sportsCache ??= await _fetchPlaylist(sportsPlaylist, fallbackCategory: 'Sports');
+    return _sportsCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> _fetchPlaylist(String source, {String fallbackCategory = ''}) async {
+    final r = await http.get(Uri.parse(source)).timeout(const Duration(seconds: 25));
+    if (r.statusCode != 200) throw Exception('تعذر تحميل قائمة IPTV العامة.');
+    final out = <AurenTvChannel>[];
+    Map<String, String>? meta;
+    for (final line in const LineSplitter().convert(r.body)) {
+      if (line.startsWith('#EXTM3U')) {
+        _epgUrl ??= ((_attr(line, 'x-tvg-url') ?? _attr(line, 'url-tvg')) ?? '').split(',').map((x) => x.trim()).firstWhere((x) => x.isNotEmpty, orElse: () => '');
+      } else if (line.startsWith('#EXTINF:')) {
+        meta = {
+          'name': _attr(line, 'tvg-name') ?? line.split(',').last.trim(),
+          'logo': _attr(line, 'tvg-logo') ?? '',
+          'country': _attr(line, 'tvg-country') ?? '',
+          'language': _attr(line, 'tvg-language') ?? '',
+          'category': _attr(line, 'group-title') ?? fallbackCategory,
+          'tvgId': _attr(line, 'tvg-id') ?? '',
+        };
+      } else if (line.trim().startsWith('http') && meta != null) {
+        out.add(AurenTvChannel(
+          id: 'tv-' + source.hashCode.toString() + '-' + out.length.toString(),
+          name: meta['name']!, logo: meta['logo']!, country: meta['country']!, language: meta['language']!,
+          category: meta['category']!, tvgId: meta['tvgId']!, url: line.trim(),
+        ));
+        meta = null;
+      }
+    }
+    return out;
   }
 
   Future<List<AurenTvChannel>> _fetch() async {
