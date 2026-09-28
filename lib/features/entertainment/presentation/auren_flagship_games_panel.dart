@@ -16,6 +16,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   int _selectedCard = 0;
   int _playerGoals = 0, _cpuGoals = 0, _playerPoints = 0, _cpuPoints = 0;
   String _message = 'ابدأ الجولة';
+  int _energy = 100;
+  int _distance = 0;
 
   static const _names = [
     '🎲 Ludo','🁫 Dominoes','🃏 UNO','🕵️ Crime Files',
@@ -33,7 +35,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     setState(() {
       _score = 0; _round = 0; _hp = 100; _streak = 0;
       _playerGoals = 0; _cpuGoals = 0; _playerPoints = 0; _cpuPoints = 0;
-      _message = 'ابدأ الجولة'; _selectedCard = 0;
+      _message = 'ابدأ الجولة'; _selectedCard = 0; _energy = 100; _distance = 0;
       for (var i = 0; i < _ludo.length; i++) _ludo[i] = 0;
       _domino.setAll(0, [6, 4, 2, 1]);
       _uno
@@ -83,21 +85,23 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _footballTurn() {
-    final goal = _rng.nextInt(3) != _rng.nextInt(3);
+    final goal = _rng.nextInt(100) > 48;
     if (goal) { _playerGoals++; _score += 30; _message = '⚽ GOAL! ' + _playerGoals.toString() + '-' + _cpuGoals.toString(); }
     else { _cpuGoals++; _score += 5; _message = '🧤 تصدّي! ' + _playerGoals.toString() + '-' + _cpuGoals.toString(); }
     _round++;
   }
 
   void _basketballTurn() {
-    final shot = _rng.nextDouble(), points = shot > .82 ? 3 : shot > .42 ? 2 : 0;
+    final shot = _rng.nextDouble(), points = shot > .78 ? 3 : shot > .38 ? 2 : 0;
     if (points > 0) { _playerPoints += points; _score += points * 10; _message = '🏀 ' + points.toString() + ' نقاط!'; }
     else { _cpuPoints += 2; _message = '❌ ضاعت الرمية • الخصم سجل 2'; }
     _round++;
   }
 
   void _boxingTurn() {
-    if (_rng.nextInt(100) > _rng.nextInt(100)) { final damage = 8 + _rng.nextInt(13); _score += damage * 2; _streak++; _message = '🥊 لكمة ناجحة • ضرر ' + damage.toString(); }
+    if (_energy < 15) { _message = '🥊 طاقتك منخفضة — نفّذ مراوغة أولاً'; return; }
+    _energy = max(0, _energy - 15);
+    if (_rng.nextInt(100) > 42) { final damage = 8 + _rng.nextInt(13); _score += damage * 2; _streak++; _message = '🥊 لكمة ناجحة • ضرر ' + damage.toString(); }
     else { final damage = 5 + _rng.nextInt(11); _hp = max(0, _hp - damage); _streak = 0; _message = '🥊 الخصم ردّ • -' + damage.toString() + ' HP'; }
     _round++;
   }
@@ -116,6 +120,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   void _racingTurn() {
     final speed = 60 + _rng.nextInt(41), drift = _rng.nextDouble() > .35;
+    _distance += speed ~/ 4;
+    _energy = max(0, _energy - (drift ? 8 : 4));
     _round++; _score += drift ? 25 : 10; _streak = drift ? _streak + 1 : 0;
     _message = '🏎️ سرعة ' + speed.toString() + ' km/h • ' + (drift ? 'انجراف مضبوط' : 'حافظ على المسار') + ' • قطاع ' + _round.toString();
   }
@@ -134,6 +140,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       if (widget.gameIndex == 2) _unoBoard(),
       if (widget.gameIndex == 3) _crimeBoard(),
       if (widget.gameIndex >= 4) _actionBoard(),
+      if (widget.gameIndex >= 4) _controls(),
       const SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(14), child: Text(_message, style: const TextStyle(fontWeight: FontWeight.w800)))),
       const SizedBox(height: 12),
@@ -170,12 +177,41 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     const SizedBox(height: 10), Text(_round >= 5 ? '🔓 الملف مفتوح للتحليل النهائي.' : 'اجمع 5 أدلة مترابطة قبل إصدار الاتهام.'),
   ])));
 
+  Widget _controls() {
+    if (widget.gameIndex == 4) return _choiceCard('اختر زاوية التسديد', ['يسار','وسط','يمين'], (i) {
+      setState(() { _round++; if (_rng.nextInt(3) != i) { _playerGoals++; _score += 30; _message = '⚽ تسديدة ناجحة'; } else { _message = '🧤 الحارس تصدى'; } });
+    });
+    if (widget.gameIndex == 5) return _choiceCard('اختر الرمية', ['2 نقاط','3 نقاط','Fadeaway'], (i) {
+      setState(() { _round++; final chance = i == 1 ? .55 : .72; if (_rng.nextDouble() < chance) { final p = i == 1 ? 3 : 2; _playerPoints += p; _score += p * 10; _message = '🏀 رمية ناجحة: ' + p.toString(); } else { _cpuPoints += 2; _message = '🏀 ضاعت الرمية'; } });
+    });
+    if (widget.gameIndex == 6) return _choiceCard('اختر حركة الملاكمة', ['Jab','Hook','Dodge'], (i) {
+      setState(() { if (i == 2) { _energy = min(100, _energy + 12); _message = '🥊 مراوغة +12 طاقة'; } else { _act(); } });
+    });
+    if (widget.gameIndex == 9) return _choiceCard('اختر المسار', ['يسار','وسط','يمين'], (i) {
+      setState(() { _distance += i == 1 ? 8 : 5; _racingTurn(); });
+    });
+    return const SizedBox.shrink();
+  }
+
+  Widget _choiceCard(String title, List<String> options, void Function(int) onTap) {
+    return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, children: List.generate(options.length, (i) =>
+          FilledButton.tonal(onPressed: _hp > 0 ? () => onTap(i) : null, child: Text(options[i])))),
+      ],
+    )));
+  }
+
   Widget _actionBoard() {
     final icon = ['⚽','🏀','🥊','⚔️','🥷','🏎️'][widget.gameIndex - 4];
     return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
       Text(icon + ' ساحة اللعب', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
       const SizedBox(height: 12), LinearProgressIndicator(value: _hp / 100), const SizedBox(height: 8),
-      Text('HP ' + _hp.toString() + ' • الجولة ' + _round.toString() + ' • النقاط ' + _score.toString()),
+      Text('HP ' + _hp.toString() + ' • طاقة ' + _energy.toString() + ' • الجولة ' + _round.toString() + ' • النقاط ' + _score.toString()),
+      if (widget.gameIndex == 9) Text('المسافة: ' + _distance.toString() + 'm'),
       if (widget.gameIndex == 4) Text('الأهداف: ' + _playerGoals.toString() + ' - ' + _cpuGoals.toString()),
       if (widget.gameIndex == 5) Text('النقاط: ' + _playerPoints.toString() + ' - ' + _cpuPoints.toString()),
     ])));
