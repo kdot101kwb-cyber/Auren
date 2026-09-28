@@ -3187,3 +3187,5 @@ exports.claimAurenGamingSeasonReward = require('firebase-functions/v2/https').on
   return result;
  }
 );
+
+exports.getAurenSeasonChampionBadge = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');const snap=await db.collection('auren_gaming_badges').doc(request.auth.uid).get();return {tournamentChampion:snap.exists&&snap.data()?.tournamentChampion===true,seasonChampion:snap.exists&&snap.data()?.seasonChampion===true};});
