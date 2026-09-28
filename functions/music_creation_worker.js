@@ -9,6 +9,16 @@ const REPLICATE_API_TOKEN=defineSecret('REPLICATE_API_TOKEN');
 const REPLICATE_MUSIC_CREATION_MODEL_VERSION=defineString('REPLICATE_MUSIC_CREATION_MODEL_VERSION',{default:'',description:'Backend-only Replicate model version for AUREN original music creation.'});
 const db=admin.firestore(),LOCK_MS=6*60*1000,MAX_ATTEMPTS=5;
 const hasOutput=o=>Boolean(o&&(o.url||o.storagePath||o.externalId));
+async function validateAudioArtifact(o){
+ if(!hasOutput(o))return {ok:false,reason:'missing_artifact'};
+ if(o.storagePath||o.externalId)return {ok:true,referenceOnly:true};
+ const url=String(o.url||''); if(!/^https?:\\/\\//i.test(url))return {ok:false,reason:'invalid_url'};
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),10000);
+ try{const r=await fetch(url,{method:'HEAD',signal:controller.signal});if(!r.ok)return {ok:false,reason:'http_'+r.status};
+  const type=String(r.headers.get('content-type')||'').toLowerCase();if(type && !(type.startsWith('audio/')||type==='application/octet-stream'))return {ok:false,reason:'not_audio',contentType:type};
+  return {ok:true,contentType:type||null};
+ }catch(e){return {ok:false,reason:'artifact_unreachable'};}finally{clearTimeout(timer);}
+}
 
 async function claim(){
  const snap=await db.collectionGroup('entertainmentCreationJobs').where('mode','==','أغنية').where('musicProductionStage','in',['music_blueprint_ready','blueprint_ready','generation','processing']).limit(10).get();
@@ -37,7 +47,11 @@ async function run(ref){
   await ref.set({musicProductionStage:'generation',musicProductionStatus:'queued',musicWorkerLockUntilMs:0,progress:20,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;
  }
  const d=existing.data()||{};
- if(d.status==='output'){await ref.set({musicProductionStage:'ready',musicProductionStatus:'ready',musicWorkerLockUntilMs:0,musicArtifact:d.output,musicProductionQc:{version:1,result:'passed',taskCount:1},progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
+ if(d.status==='output'){
+  const check=await validateAudioArtifact(d.output);
+  if(!check.ok){await ref.set({musicProductionStage:'qc_failed',musicProductionStatus:'qc_failed',musicWorkerLockUntilMs:0,musicProductionQc:{version:2,result:'failed',taskCount:1,artifactChecks:[check]},lastError:'Music artifact QC failed.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
+  await ref.set({musicProductionStage:'ready',musicProductionStatus:'ready',musicWorkerLockUntilMs:0,musicArtifact:d.output,musicProductionQc:{version:2,result:'passed',taskCount:1,artifactChecks:[check]},progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;
+}
  if(d.status==='failed'||Number(d.lockUntilMs||0)>Date.now())return;
  if(Number(d.attempts||0)>=MAX_ATTEMPTS&&!d.externalJobId){
   await taskRef.set({status:'failed',lockUntilMs:0,lastError:'Maximum music generation attempts reached.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
