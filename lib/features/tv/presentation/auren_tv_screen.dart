@@ -95,6 +95,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
   Future<void> _showEpgReminderCenter() async {
+    await AurenTvService.instance.cleanupExpiredEpgReminders();
     final reminders = await AurenTvService.instance.epgReminders();
     if (!mounted) return;
     showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => SafeArea(child: SizedBox(height: MediaQuery.of(ctx).size.height * .72, child: reminders.isEmpty ? const Center(child: Text('لا توجد تذكيرات EPG حالياً.')) : ListView.separated(padding: const EdgeInsets.all(12), itemCount: reminders.length + 1, separatorBuilder: (_, __) => const SizedBox(height: 6), itemBuilder: (_, i) {
