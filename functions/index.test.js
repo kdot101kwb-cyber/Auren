@@ -493,3 +493,14 @@ test('Entertainment QC fails closed for non-video or unreachable artifacts',()=>
   assert.match(source,/artifact_unreachable/);
   assert.match(source,/productionStage:'qc_failed'/);
 });
+
+
+test('Episode assembly manifest is deterministic and scene-ordered',()=>{
+  const start=source.indexOf('function buildAurenEpisodeAssemblyManifest');
+  const end=source.indexOf('async function validateAurenProductionArtifact',start);
+  const helper=source.slice(start,end);
+  assert.match(helper,/episodeNumber - b\.episodeNumber/);
+  assert.match(helper,/sceneNumber - b\.sceneNumber/);
+  assert.match(source,/assemblyManifest/);
+  assert.match(source,/assemblyStatus:'manifest_ready'/);
+});
