@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'auren_entertainment_output_screen.dart';
+import 'auren_entertainment_media_player_screen.dart';
 import 'entertainment_detail_screen.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -350,6 +351,18 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   },
                 ),
               ],
+              if (status == 'ready' && job['mode']?.toString() == 'فيلم') ...[
+                const SizedBox(height: 18),
+                _sectionTitle('الفيلم'),
+                const SizedBox(height: 8),
+                _movieReadyCard(context, job),
+              ],
+              if (status == 'ready' && job['mode']?.toString() == 'أغنية') ...[
+                const SizedBox(height: 18),
+                _sectionTitle('الموسيقى'),
+                const SizedBox(height: 8),
+                _musicReadyCard(context, job),
+              ],
               if (status == 'ready' && job['providerResult'] is Map &&
                   (job['providerResult'] as Map).isNotEmpty) ...[
                 const SizedBox(height: 18),
@@ -667,4 +680,57 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     };
     return labels[asset] ?? asset;
   }
+  Widget _movieReadyCard(BuildContext context, Map<String, dynamic> job) {
+    final raw = job['movieAssemblyManifest'] ?? job['movieArtifacts'];
+    final manifest = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+    final scenes = manifest['scenes'] is List ? manifest['scenes'] as List : const [];
+    final assemblyId = job['movieAssemblyId']?.toString() ?? manifest['assemblyId']?.toString() ?? '';
+    final playable = scenes.where((s) {
+      final m = s is Map ? Map<String, dynamic>.from(s as Map) : <String, dynamic>{};
+      final o = m['output'] ?? m['media'] ?? m['video'];
+      final url = o is Map ? o['url']?.toString() ?? '' : o?.toString() ?? '';
+      return url.isNotEmpty;
+    }).length;
+    return Card(
+      child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.local_movies_rounded)),
+        title: Text((playable > 0 ? playable : scenes.length).toString() + ' مشهد جاهز'),
+        subtitle: Text(assemblyId.isEmpty ? 'حزمة الفيلم جاهزة للتشغيل' : 'Assembly: ' + assemblyId),
+        trailing: const Icon(Icons.play_circle_fill_rounded),
+        onTap: scenes.isEmpty ? null : () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AurenEntertainmentMoviePlayerScreen(
+              title: job['title']?.toString() ?? job['idea']?.toString() ?? 'فيلم AUREN',
+              scenes: scenes,
+            ),
+          ));
+        },
+      ),
+    );
+  }
+
+  Widget _musicReadyCard(BuildContext context, Map<String, dynamic> job) {
+    final raw = job['musicArtifact'] ?? job['providerResult'];
+    final artifact = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+    final url = artifact['url']?.toString() ?? artifact['mediaUrl']?.toString() ?? '';
+    final title = job['title']?.toString().isNotEmpty == true ? job['title'].toString() : job['idea']?.toString() ?? 'أغنية AUREN';
+    return Card(
+      child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.music_note_rounded)),
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(url.isEmpty ? 'الأغنية جاهزة لكن رابط التشغيل غير متاح بعد' : 'تشغيل / مشاركة'),
+        trailing: const Icon(Icons.play_circle_fill_rounded),
+        onTap: url.isEmpty ? null : () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AurenEntertainmentOutputScreen(
+              output: {...artifact, 'url': url, 'type': 'audio', 'mimeType': artifact['mimeType']?.toString() ?? 'audio/mpeg'},
+              title: title,
+            ),
+          ));
+        },
+      ),
+    );
+  }
+
+
 }
