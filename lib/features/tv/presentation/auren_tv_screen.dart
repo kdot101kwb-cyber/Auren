@@ -212,6 +212,22 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV'), actions: [
       IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
+      if (activeSource != null)
+        IconButton(
+          tooltip: 'تحديث مصدر IPTV',
+          onPressed: () async {
+            try {
+              await AurenTvService.instance.refreshSource(activeSource!, limit: lowData ? 150 : 500);
+              if (mounted) setState(() {});
+            } catch (_) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تعذر تحديث مصدر IPTV حالياً.')),
+              );
+            }
+          },
+          icon: const Icon(Icons.refresh),
+        ),
     ]),
     body: Column(children: [
       Padding(
