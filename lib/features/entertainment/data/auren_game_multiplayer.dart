@@ -276,6 +276,27 @@ class AurenGameMultiplayer {
     return null;
   }
 
+  Future<Map<String, dynamic>?> getGamingGameStats({required int gameIndex, bool season = false}) async {
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('getAurenGameStats').call({
+        'gameIndex': gameIndex, 'season': season,
+      });
+      if (result.data is Map) return Map<String, dynamic>.from(result.data);
+    } on FirebaseFunctionsException {}
+    return null;
+  }
+
+  Future<List<Map<String, dynamic>>> getGamingAchievements({bool season = false}) async {
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('getAurenGamingAchievements').call({'season': season});
+      final items = result.data is Map ? result.data['achievements'] : null;
+      if (items is List) return items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    } on FirebaseFunctionsException {}
+    return const [];
+  }
+
   Future<Map<String, dynamic>?> getFlagshipRanking({required int gameIndex}) async {
     await _ensureSignedIn();
     try {
