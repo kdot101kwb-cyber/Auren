@@ -294,7 +294,18 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                             final media = e['media'] is Map ? Map<String, dynamic>.from(e['media'] as Map) : <String, dynamic>{};
                             final hasVideo = media['video'] is Map || media['video']?.toString().isNotEmpty == true;
                             final hasTrailer = media['trailer'] is Map || media['trailer']?.toString().isNotEmpty == true;
-                            return ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(child: Text('$n')), title: Text('الحلقة $n', style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text([if (hasVideo) 'فيديو', if (media['audio'] != null) 'صوت', if (media['subtitles'] != null) 'AR/EN', if (hasTrailer) 'Trailer'].join(' • ')));
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: CircleAvatar(child: Text('$n')),
+                              title: Text('الحلقة $n', style: const TextStyle(fontWeight: FontWeight.w800)),
+                              subtitle: Text([if (hasVideo) 'فيديو', if (media['audio'] != null) 'صوت', if (media['subtitles'] != null) 'AR/EN', if (hasTrailer) 'Trailer'].join(' • ')),
+                              trailing: hasVideo ? const Icon(Icons.play_circle_fill_rounded) : null,
+                              onTap: hasVideo ? () {
+                                final video = media['video'];
+                                final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
+                                Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(output: output)));
+                              } : null,
+                            );
                           }),
                         ]),
                       ),
