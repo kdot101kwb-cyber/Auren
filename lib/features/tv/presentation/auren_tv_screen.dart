@@ -292,6 +292,15 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     return 'غير متصل';
   }
 
+  String _watchActivityLabel(String type) {
+    switch (type) {
+      case 'joined': return 'دخل الغرفة';
+      case 'left': return 'غادر الغرفة';
+      case 'reconnected': return 'عاد للاتصال';
+      default: return 'نشاط جديد';
+    }
+  }
+
   Future<void> _showWatchTogetherStatus(AurenTvWatchTogetherRoom initial) async {
     final service = AurenTvWatchTogetherService.instance;
     if (!mounted) return;
@@ -315,6 +324,24 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
               ),
               const Divider(),
               StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+                stream: service.activity(room.id),
+                builder: (ctx, snap) {
+                  final events = snap.data?.docs ?? const <QueryDocumentSnapshot<Map<String,dynamic>>>[];
+                  if (events.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'آخر النشاطات • ' + events.take(3).map((d) => _watchActivityLabel(d.data()['type'] as String? ?? '')).join(' • '),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+
                 stream: service.presence(room.id),
                 builder: (ctx, presenceSnap) {
                   final now = DateTime.now();
