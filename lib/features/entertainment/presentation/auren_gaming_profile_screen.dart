@@ -20,6 +20,8 @@ class _AurenGamingProfileScreenState extends State<AurenGamingProfileScreen> {
     if(!mounted)return;
     setState(()=>({_profile=r[0] as Map<String,dynamic>?,_achievements=r[1] as List<Map<String,dynamic>>,_gameStats=r[2] as Map<String,dynamic>?,_loading=false});
   }
+
+  Future<void> _showTournamentHistory() async { final items=await _api.getTournamentHistory(); if(!mounted)return; showModalBottomSheet(context:context,builder:(_)=>ListView(padding:const EdgeInsets.all(16),children:[const Text('🏆 Tournament History',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold)),const SizedBox(height:12),if(items.isEmpty)const Text('لا توجد بطولات مسجلة بعد'),...items.map((x){final placement=(x['placement'] as num?)?.toInt()??0;return ListTile(leading:Text(placement==1?'🥇':placement==2?'🥈':'🏆',style:const TextStyle(fontSize:24)),title:Text('Game #${x['gameIndex']??'—'} • ${placement==1?'Champion':'Placement $placement'}'),subtitle:Text('+${x['coins']??0} coins • +${x['xp']??0} XP'));})])); }
   @override Widget build(BuildContext context){
     final p=_profile??const <String,dynamic>{};
     final games=const [(53,'Crime'),(54,'Football'),(55,'Basketball'),(56,'Boxing'),(57,'Wars'),(58,'Samurai'),(59,'Racing')];
@@ -28,7 +30,7 @@ class _AurenGamingProfileScreenState extends State<AurenGamingProfileScreen> {
         Card(child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('Player ${p['playerId']??'—'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.bold)),const SizedBox(height:12),Text('⭐ Rating ${p['rating']??1000} • 🏆 ${p['wins']??0} wins'),Text('🎮 ${p['matches']??0} matches • 📈 ${p['winRate']??0}% win rate')]))),
         const SizedBox(height:12),const Text('Game Stats',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),Wrap(spacing:8,children:[for(final g in games)ChoiceChip(label:Text(g.$2),selected:_gameIndex==g.$1,onSelected:(_){setState(()=>_gameIndex=g.$1);_load();})]),
         if(_gameStats!=null)Card(child:ListTile(title:Text('Game $_gameIndex'),subtitle:Text('⭐ ${_gameStats!['rating']??1000} • 🏆 ${_gameStats!['wins']??0} • ❌ ${_gameStats!['losses']??0} • ➖ ${_gameStats!['draws']??0}'),trailing:Text('${_gameStats!['winRate']??0}%'))),
-        const SizedBox(height:12),Text('Achievements ${_achievements.where((x)=>x['unlocked']==true).length}/${_achievements.length}',style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
+        const SizedBox(height:12),FilledButton.icon(onPressed:_showTournamentHistory,icon:const Icon(Icons.emoji_events),label:const Text('Tournament History')),const SizedBox(height:12),Text('Achievements ${_achievements.where((x)=>x['unlocked']==true).length}/${_achievements.length}',style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
         for(final a in _achievements)Card(child:ListTile(leading:Icon(a['unlocked']==true?Icons.emoji_events:Icons.lock_outline),title:Text(a['title']?.toString()??'Achievement'),subtitle:Text('${a['description']??''} ${a['progress']??0}/${a['target']??1}'))),
       ])));
   }
