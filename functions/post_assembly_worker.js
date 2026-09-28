@@ -177,36 +177,6 @@ async function validatePostAssemblyArtifact(output, type) {
     clearTimeout(timer);
   }
 }
-  if (!hasRealOutput(output)) return {ok:false, reason:'missing_artifact_reference'};
-  const url = String(output.url || '').trim();
-  if (!url) return {ok:true, verification:'provider_artifact_reference'};
-  if (!/^https?:\\/\\//i.test(url)) return {ok:false, reason:'invalid_output_url'};
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
-  try {
-    const response = await fetch(url, {method:'HEAD', signal:controller.signal});
-    if (!response.ok) return {ok:false, reason:'artifact_http_'+response.status};
-    const contentType = String(response.headers.get('content-type') || '').toLowerCase();
-    const expectedAudio = type === 'audio' || type === 'music';
-    const expectedImage = type === 'thumbnail';
-    const expectedVideo = type === 'trailer';
-    if (contentType) {
-      const valid = expectedAudio
-        ? contentType.startsWith('audio/')
-        : expectedImage
-          ? contentType.startsWith('image/')
-          : expectedVideo
-            ? contentType.startsWith('video/')
-            : contentType.includes('text/') || contentType.includes('json') || contentType.includes('vtt') || contentType.includes('subtitle');
-      if (!valid) return {ok:false, reason:'artifact_type_mismatch'};
-    }
-    return {ok:true, verification:'http_head', contentType:contentType || 'unknown'};
-  } catch (_) {
-    return {ok:false, reason:'artifact_unreachable'};
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 async function validateSubtitleLanguageArtifacts(output, languages) {
   const normalized = normalizeSubtitleOutput(output, languages);
