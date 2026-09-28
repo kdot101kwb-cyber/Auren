@@ -26,6 +26,7 @@ function createInitialFlagshipState(gameIndex, hostId, guestId) {
     gameIndex,
     players,
     score: 0,
+    playerStats: Object.fromEntries(players.map((id) => [id, {score:0, rounds:0, actions:0}])),
     round: 0,
     hp: 100,
     streak: 0,
