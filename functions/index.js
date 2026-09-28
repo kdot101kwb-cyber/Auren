@@ -1894,28 +1894,18 @@ async function recordFlagshipRanking(tx, players, result, gameIndex, countryByUi
   for (const id of ids) {
     refs.push(db.collection('auren_game_rankings').doc(String(gameIndex)).collection('players').doc(id));
     refs.push(db.collection('auren_game_rankings').doc(String(gameIndex)).collection('seasons').doc(seasonId).collection('players').doc(id));
-    refs.push(db.collection('auren_global_gaming_rankings').doc('players').collection('players').doc(id));
-    refs.push(db.collection('auren_global_gaming_rankings').doc('seasons').collection(seasonId).doc('players').collection('players').doc(id));
   }
   const snapshots = await Promise.all(refs.map((ref) => tx.get(ref)));
   let p = 0;
   for (const id of ids) {
     const gameRef = refs[p]; const gameSnap = snapshots[p++];
-    const seasonGameRef = refs[p]; const seasonGameSnap = snapshots[p++];
-    const globalRef = refs[p]; const globalSnap = snapshots[p++];
-    const globalSeasonRef = refs[p]; const globalSeasonSnap = snapshots[p++];
-
+    const seasonRef = refs[p]; const seasonSnap = snapshots[p++];
     const game = rankingTotals(gameSnap.exists ? gameSnap.data() || {} : {}, result, id);
-    const seasonGame = rankingTotals(seasonGameSnap.exists ? seasonGameSnap.data() || {} : {}, result, id);
-    const global = rankingTotals(globalSnap.exists ? globalSnap.data() || {} : {}, result, id);
-    const globalSeason = rankingTotals(globalSeasonSnap.exists ? globalSeasonSnap.data() || {} : {}, result, id);
-    const countryCode = countryByUid[id] || gameSnap.data()?.countryCode || null;
-
+    const season = rankingTotals(seasonSnap.exists ? seasonSnap.data() || {} : {}, result, id);
+    const countryCode = countryByUid[id] || (gameSnap.data()?.countryCode || null);
     const common = {countryCode: countryCode || null, updatedAt: FieldValue.serverTimestamp()};
-    tx.set(gameRef, {...game, ...common}, {merge:true});
-    tx.set(seasonGameRef, {...seasonGame, gameIndex, seasonId, ...common}, {merge:true});
-    tx.set(globalRef, {...global, gamesPlayed:Math.max(0, Number(global.gamesPlayed) || 0) + 1, ...common}, {merge:true});
-    tx.set(globalSeasonRef, {...globalSeason, seasonId, gamesPlayed:Math.max(0, Number(globalSeason.gamesPlayed) || 0) + 1, ...common}, {merge:true});
+    tx.set(gameRef, {...game, gameIndex, ...common}, {merge:true});
+    tx.set(seasonRef, {...season, gameIndex, seasonId, ...common}, {merge:true});
   }
 }
 
@@ -1950,17 +1940,17 @@ exports.getAurenGlobalGamingLeaderboard = require('firebase-functions/v2/https')
   async (request) => {
     if (!request.auth?.uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
     const limit = Math.min(50, Math.max(1, Number(request.data?.limit) || 20));
-    const seasonId = currentAurenGamingSeasonId();
     const season = request.data?.season === true;
     const countryCode = normalizeGamingCountry(request.data?.countryCode);
-    const docs = [];
-    if (season) {
-      const snap = await db.collection('auren_global_gaming_rankings').doc('seasons').collection(seasonId).doc('players').collection('players').limit(500).get();
-      docs.push(...snap.docs);
-    } else {
-      const snap = await db.collection('auren_global_gaming_rankings').doc('players').collection('players').limit(500).get();
-      docs.push(...snap.docs);
-    }
+    const seasonId = currentAurenGamingSeasonId();
+    const snapshots = await Promise.all([53,54,55,56,57,58,59].map((gameIndex) => {
+      const base = db.collection('auren_game_rankings').doc(String(gameIndex));
+      const ref = season
+        ? base.collection('seasons').doc(seasonId).collection('players')
+        : base.collection('players');
+      return ref.limit(500).get();
+    }));
+    const docs = snapshots.flatMap((snap) => snap.docs);
     return {seasonId, scope:season ? 'season' : 'lifetime', countryCode:countryCode || null, entries:aggregateGamingEntries(docs, limit, countryCode)};
   }
 );
@@ -1974,28 +1964,38 @@ exports.getAurenCountryGamingLeaderboard = require('firebase-functions/v2/https'
     const limit = Math.min(50, Math.max(1, Number(request.data?.limit) || 20));
     const season = request.data?.season === true;
     const seasonId = currentAurenGamingSeasonId();
-    const ref = season
-      ? db.collection('auren_global_gaming_rankings').doc('seasons').collection(seasonId).doc('players').collection('players')
-      : db.collection('auren_global_gaming_rankings').doc('players').collection('players');
-    const snap = await ref.where('countryCode','==',countryCode).limit(500).get();
-    return {seasonId, scope:season ? 'season' : 'lifetime', countryCode, entries:aggregateGamingEntries(snap.docs, limit, countryCode)};
+    const snapshots = await Promise.all([53,54,55,56,57,58,59].map((gameIndex) => {
+      const base = db.collection('auren_game_rankings').doc(String(gameIndex));
+      const ref = season
+        ? base.collection('seasons').doc(seasonId).collection('players')
+        : base.collection('players');
+      return ref.where('countryCode','==',countryCode).limit(500).get();
+    }));
+    return {seasonId, scope:season ? 'season' : 'lifetime', countryCode, entries:aggregateGamingEntries(snapshots.flatMap((snap) => snap.docs), limit, countryCode)};
   }
 );
 
 exports.getAurenPlayerGamingProfile = require('firebase-functions/v2/https').onCall(
-  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
     const season = request.data?.season === true;
     const seasonId = currentAurenGamingSeasonId();
-    const ref = season
-      ? db.collection('auren_global_gaming_rankings').doc('seasons').collection(seasonId).doc('players').collection('players').doc(uid)
-      : db.collection('auren_global_gaming_rankings').doc('players').collection('players').doc(uid);
-    const snap = await ref.get();
-    const x = snap.exists ? snap.data() || {} : {};
-    const matches = Math.max(0, Number(x.matches) || 0);
-    return {seasonId, scope:season ? 'season' : 'lifetime', playerId:uid, countryCode:normalizeGamingCountry(x.countryCode), wins:Math.max(0,Number(x.wins)||0), losses:Math.max(0,Number(x.losses)||0), draws:Math.max(0,Number(x.draws)||0), matches, gamesPlayed:Math.max(0,Number(x.gamesPlayed)||0), rating:Math.max(100,Number(x.rating)||1000), winRate:matches ? Math.round((Number(x.wins)||0)/matches*1000)/10 : 0};
+    const snapshots = await Promise.all([53,54,55,56,57,58,59].map((gameIndex) => {
+      const base = db.collection('auren_game_rankings').doc(String(gameIndex));
+      const ref = season
+        ? base.collection('seasons').doc(seasonId).collection('players').doc(uid)
+        : base.collection('players').doc(uid);
+      return ref.get();
+    }));
+    const entries = snapshots.filter((snap) => snap.exists).map((snap) => snap.data() || {});
+    const matches = entries.reduce((n,x) => n + Math.max(0,Number(x.matches)||0), 0);
+    const wins = entries.reduce((n,x) => n + Math.max(0,Number(x.wins)||0), 0);
+    const losses = entries.reduce((n,x) => n + Math.max(0,Number(x.losses)||0), 0);
+    const draws = entries.reduce((n,x) => n + Math.max(0,Number(x.draws)||0), 0);
+    const rating = entries.length ? Math.round(entries.reduce((n,x) => n + Math.max(100,Number(x.rating)||1000), 0) / entries.length) : 1000;
+    return {seasonId, scope:season ? 'season' : 'lifetime', playerId:uid, countryCode:normalizeGamingCountry(entries.find((x) => x.countryCode)?.countryCode), wins, losses, draws, matches, gamesPlayed:entries.length, rating, winRate:matches ? Math.round(wins/matches*1000)/10 : 0};
   }
 );
 
