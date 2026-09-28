@@ -297,6 +297,36 @@ class AurenGameMultiplayer {
     return const [];
   }
 
+  Future<Map<String,dynamic>?> getTournament({required int gameIndex}) async {
+    await _ensureSignedIn();
+    try { final r=await _functions.httpsCallable('getAurenTournament').call({'gameIndex':gameIndex});
+      if(r.data is Map)return Map<String,dynamic>.from(r.data);
+    } on FirebaseFunctionsException {}
+    return null;
+  }
+
+  Future<Map<String,dynamic>?> createTournament({required int gameIndex}) async {
+    await _ensureSignedIn();
+    try { final r=await _functions.httpsCallable('createAurenTournament').call({'gameIndex':gameIndex});
+      if(r.data is Map)return Map<String,dynamic>.from(r.data);
+    } on FirebaseFunctionsException {}
+    return null;
+  }
+
+  Future<bool> joinTournament({required int gameIndex}) async {
+    await _ensureSignedIn();
+    try { final r=await _functions.httpsCallable('joinAurenTournament').call({'gameIndex':gameIndex});
+      return r.data is Map && r.data['joined']==true;
+    } on FirebaseFunctionsException { return false; }
+  }
+
+  Future<bool> leaveTournament({required int gameIndex}) async {
+    await _ensureSignedIn();
+    try { final r=await _functions.httpsCallable('leaveAurenTournament').call({'gameIndex':gameIndex});
+      return r.data is Map && r.data['left']==true;
+    } on FirebaseFunctionsException { return false; }
+  }
+
   Future<Map<String, dynamic>?> getFlagshipRanking({required int gameIndex}) async {
     await _ensureSignedIn();
     try {
