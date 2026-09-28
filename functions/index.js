@@ -3132,3 +3132,15 @@ exports.getAurenGamingSeason = require('firebase-functions/v2/https').onCall(
   return {seasonId:s.seasonId,year:s.year,quarter:s.quarter,startsAt:s.startsAt.toISOString(),endsAt:s.endsAt.toISOString(),tournamentCadence:'weekly',games:AUREN_TOURNAMENT_GAMES};
  }
 );
+
+exports.getAurenSeasonChampion = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
+ async(request)=>{
+  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const s=aurenGamingSeasonMeta(), gameIndex=Number(request.data?.gameIndex||53);
+  if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex))throw aurenHttpsError('invalid-argument','Unsupported game.');
+  const snap=await db.collection('auren_game_rankings').doc(String(gameIndex)).collection('seasons').doc(s.seasonId).collection('players').orderBy('rating','desc').limit(1).get();
+  const top=snap.docs[0];
+  return {seasonId:s.seasonId,gameIndex,champion:top?{playerId:top.id,...top.data()}:null};
+ }
+);
