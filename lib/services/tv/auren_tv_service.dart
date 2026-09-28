@@ -39,6 +39,8 @@ class AurenTvService {
   List<AurenTvChannel>? _cache;
   String? _epgUrl;
   Map<String, List<Map<String, String>>>? _epgCache;
+  final Map<String, String> _sourceEpgUrls = <String, String>{};
+  final Map<String, Map<String, List<Map<String, String>>>> _sourceEpgCaches = <String, Map<String, List<Map<String, String>>>>{};
 
   static const _sourcesKey = 'auren_tv_sources';
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
@@ -79,11 +81,16 @@ class AurenTvService {
   }
 
   Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500}) async {
-    if (source.epgUrl.trim().isNotEmpty) { _epgUrl = source.epgUrl.trim(); _epgCache = null; }
-    if (source.type == 'xtream') return _fetchXtream(source, limit: limit);
+    if (source.epgUrl.trim().isNotEmpty) {
+      _sourceEpgUrls[source.id] = source.epgUrl.trim();
+    }
+    if (source.type.toLowerCase() == 'xtream') {
+      return _fetchXtream(source, limit: limit);
+    }
     if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
-    return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV');
+    return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV', limit: limit);
   }
+
 
   Future<List<AurenTvChannel>> _fetchXtream(AurenTvSource source, {int limit = 500}) async {
     if (source.url.trim().isEmpty || source.username.trim().isEmpty || source.password.isEmpty) {
@@ -205,7 +212,7 @@ class AurenTvService {
     return _seriesCache!.take(limit).toList();
   }
 
-  Future<List<AurenTvChannel>> _fetchPlaylist(String source, {String fallbackCategory = ''}) async {
+  Future<List<AurenTvChannel>> _fetchPlaylist(String source, {String fallbackCategory = '', int limit = 500}) async {
     final r = await http.get(Uri.parse(source)).timeout(const Duration(seconds: 25));
     if (r.statusCode != 200) throw Exception('تعذر تحميل قائمة IPTV العامة.');
     final out = <AurenTvChannel>[];
@@ -229,6 +236,7 @@ class AurenTvService {
           category: meta['category']!, tvgId: meta['tvgId']!, url: line.trim(),
         ));
         meta = null;
+        if (out.length >= limit) break;
       }
     }
     return out;
