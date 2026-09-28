@@ -1217,7 +1217,7 @@ function buildAurenPostAssemblyTasks(assemblyManifest) {
   const tasks = [];
   for (const episodeNumber of Object.keys(episodes).sort((a,b)=>Number(a)-Number(b))) {
     const n = Math.max(1, Number(episodeNumber || 1));
-    for (const type of ['audio','music','subtitles']) {
+    for (const type of ['audio','music','subtitles','thumbnail','trailer']) {
       tasks.push({
         id:'ep' + n + '_' + type,
         episodeNumber:n,
@@ -1225,6 +1225,7 @@ function buildAurenPostAssemblyTasks(assemblyManifest) {
         status:'queued',
         providerRequired:true,
         idempotencyKey:'post_' + type + '_ep' + n,
+        targetLanguages: type === 'subtitles' ? ['ar','en'] : [],
       });
     }
   }
