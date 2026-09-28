@@ -42,6 +42,8 @@ class AurenTvService {
   final Map<String, String> _sourceEpgUrls = <String, String>{};
   final Map<String, Map<String, List<Map<String, String>>>> _sourceEpgCaches = <String, Map<String, List<Map<String, String>>>>{};
   final Map<String, List<AurenTvChannel>> _sourceChannelCaches = <String, List<AurenTvChannel>>{};
+  final Map<String, DateTime> _sourceChannelCacheTimes = <String, DateTime>{};
+  static const Duration _sourceChannelCacheTtl = Duration(minutes: 10);
 
   static const _sourcesKey = 'auren_tv_sources';
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
@@ -80,13 +82,16 @@ class AurenTvService {
     await _secure.delete(key: 'auren_tv_source_password_$id');
     _sourcesCache = current;
     _sourceChannelCaches.remove(id);
+    _sourceChannelCacheTimes.remove(id);
     _sourceEpgUrls.remove(id);
     _sourceEpgCaches.remove(id);
   }
 
   Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500, bool forceRefresh = false}) async {
-    if (!forceRefresh && _sourceChannelCaches.containsKey(source.id)) {
-      return _sourceChannelCaches[source.id]!.take(limit).toList();
+    final cachedAt = _sourceChannelCacheTimes[source.id];
+    final cached = _sourceChannelCaches[source.id];
+    if (!forceRefresh && cached != null && cachedAt != null && DateTime.now().difference(cachedAt) < _sourceChannelCacheTtl) {
+      return cached.take(limit).toList();
     }
     if (source.epgUrl.trim().isNotEmpty) {
       _sourceEpgUrls[source.id] = source.epgUrl.trim();
@@ -95,6 +100,7 @@ class AurenTvService {
         ? await _fetchXtream(source, limit: 500)
         : await _loadM3uSource(source, limit: 500);
     _sourceChannelCaches[source.id] = channels;
+    _sourceChannelCacheTimes[source.id] = DateTime.now();
     return channels.take(limit).toList();
   }
 
@@ -105,6 +111,7 @@ class AurenTvService {
 
   Future<List<AurenTvChannel>> refreshSource(AurenTvSource source, {int limit = 500}) async {
     _sourceChannelCaches.remove(source.id);
+    _sourceChannelCacheTimes.remove(source.id);
     _sourceEpgCaches.remove(source.id);
     _sourceEpgUrls.remove(source.id);
     return loadSource(source, limit: limit, forceRefresh: true);
@@ -247,7 +254,10 @@ class AurenTvService {
           'logo': _attr(line, 'tvg-logo') ?? '',
           'country': _attr(line, 'tvg-country') ?? '',
           'language': _attr(line, 'tvg-language') ?? '',
-          'category': _attr(line, 'group-title') ?? fallbackCategory,
+          'category': _classifyCategory(
+            name: _attr(line, 'tvg-name') ?? line.split(',').last.trim(),
+            category: _attr(line, 'group-title') ?? fallbackCategory,
+          ),
           'tvgId': _attr(line, 'tvg-id') ?? '',
         };
       } else if (line.trim().startsWith('http') && meta != null) {
