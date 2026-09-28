@@ -20,6 +20,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
   bool autoLowData = true;
+  bool _epgSearching = false;
+  List<AurenTvEpgSearchResult> _epgResults = const [];
   ConnectivityResult _connectionType = ConnectivityResult.wifi;
   bool _networkAvailable = true;
   DateTime? _lastRecoveryAt;
@@ -81,6 +83,34 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         activeSource = matches.isEmpty ? null : matches.first;
       });
     });
+  }
+
+  Future<void> _searchEpg() async {
+    final q = _search.text.trim();
+    if (q.length < 2) return;
+    setState(() => _epgSearching = true);
+    final results = await AurenTvService.instance.searchEpg(q, source: activeSource, hours: 48);
+    if (!mounted) return;
+    setState(() { _epgResults = results; _epgSearching = false; });
+  }
+
+  void _showEpgSearchResults() {
+    showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => SafeArea(child: SizedBox(
+      height: MediaQuery.of(ctx).size.height * .72,
+      child: Column(children: [
+        const Padding(padding: EdgeInsets.all(16), child: Align(alignment: Alignment.centerLeft, child: Text('نتائج بحث البرامج • EPG', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)))),
+        Expanded(child: _epgSearching ? const Center(child: CircularProgressIndicator()) : _epgResults.isEmpty ? const Center(child: Text('ما لقينا برنامج مطابق خلال 48 ساعة.')) : ListView.separated(
+          padding: const EdgeInsets.all(12), itemCount: _epgResults.length, separatorBuilder: (_, __) => const SizedBox(height: 6),
+          itemBuilder: (_, i) {
+            final x = _epgResults[i];
+            final start = DateTime.tryParse(x.startIso)?.toLocal();
+            final stop = DateTime.tryParse(x.stopIso)?.toLocal();
+            final time = start == null || stop == null ? '' : TimeOfDay.fromDateTime(start).format(ctx) + ' — ' + TimeOfDay.fromDateTime(stop).format(ctx);
+            return Card(child: ListTile(leading: CircleAvatar(child: Icon(x.state == 'now' ? Icons.play_arrow : Icons.schedule)), title: Text(x.title), subtitle: Text(time), trailing: x.state == 'now' ? const Chip(label: Text('الآن')) : null));
+          },
+        )),
+      ]),
+    )));
   }
 
   void _smartSearch(String value) {
