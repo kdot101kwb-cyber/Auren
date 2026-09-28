@@ -176,7 +176,7 @@ async function validatePostAssemblyArtifact(output, type) {
   } finally {
     clearTimeout(timer);
   }
-}async function validatePostAssemblyArtifact(output, type) {
+}
   if (!hasRealOutput(output)) return {ok:false, reason:'missing_artifact_reference'};
   const url = String(output.url || '').trim();
   if (!url) return {ok:true, verification:'provider_artifact_reference'};
