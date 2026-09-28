@@ -38,6 +38,8 @@ class AurenTvService {
   List<AurenTvChannel>? _seriesCache;
   List<AurenTvChannel>? _cache;
   String? _epgUrl;
+  Map<String, List<Map<String, String>>>? _epgCache;
+
   static const _sourcesKey = 'auren_tv_sources';
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
   List<AurenTvSource>? _sourcesCache;
@@ -77,21 +79,15 @@ class AurenTvService {
   }
 
   Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500}) async {
-    if (source.epgUrl.trim().isNotEmpty) {
-      _epgUrl = source.epgUrl.trim();
-      _epgCache = null;
-    }
+    if (source.epgUrl.trim().isNotEmpty) { _epgUrl = source.epgUrl.trim(); _epgCache = null; }
     if (source.type == 'xtream') return _fetchXtream(source, limit: limit);
     if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
     return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV');
   }
 
   Future<List<AurenTvChannel>> _fetchXtream(AurenTvSource source, {int limit = 500}) async {
-    if (source.url.isEmpty || source.username.isEmpty || source.password.isEmpty) throw Exception('بيانات Xtream غير مكتملة.');
+    if (source.url.trim().isEmpty || source.username.trim().isEmpty || source.password.isEmpty) throw Exception('بيانات Xtream غير مكتملة.');
     final base = source.url.trim().replaceFirst(RegExp(r'/+
-  Map<String, List<Map<String, String>>>? _epgCache;
-
-  Future<List<AurenTvChannel>> load({String country = '', String category = ''}) async {
     _cache ??= await _fetch();
     final c = country.trim().toLowerCase();
     final k = category.trim().toLowerCase();
@@ -316,7 +312,7 @@ class AurenTvService {
   static String? _attr(String s, String key) => RegExp(key + '="([^"]*)"').firstMatch(s)?.group(1);
 }
 ), '');
-    final api = Uri.parse('$base/player_api.php').replace(queryParameters: {'username': source.username, 'password': source.password});
+    final api = Uri.parse(base + '/player_api.php').replace(queryParameters: {'username': source.username, 'password': source.password});
     final r = await http.get(api).timeout(const Duration(seconds: 25));
     if (r.statusCode != 200) throw Exception('تعذر الاتصال بمصدر Xtream.');
     final data = jsonDecode(r.body);
@@ -336,13 +332,12 @@ class AurenTvService {
       final logo = item['stream_icon']?.toString() ?? '';
       final category = item['category_name']?.toString() ?? 'IPTV';
       final tvgId = item['epg_channel_id']?.toString() ?? item['epg_id']?.toString() ?? '';
-      final url = '$base/live/${Uri.encodeComponent(source.username)}/${Uri.encodeComponent(source.password)}/$id.$ext';
-      out.add(AurenTvChannel(id: 'xtream-${source.id}-$id', name: name, logo: logo, country: '', language: '', category: category, tvgId: tvgId, url: url));
+      final url = base + '/live/' + Uri.encodeComponent(source.username) + '/' + Uri.encodeComponent(source.password) + '/' + id + '.' + ext;
+      out.add(AurenTvChannel(id: 'xtream-' + source.id + '-' + id, name: name, logo: logo, country: '', language: '', category: category, tvgId: tvgId, url: url));
       if (out.length >= limit) break;
     }
     return out;
   }
-  Map<String, List<Map<String, String>>>? _epgCache;
 
   Future<List<AurenTvChannel>> load({String country = '', String category = ''}) async {
     _cache ??= await _fetch();
