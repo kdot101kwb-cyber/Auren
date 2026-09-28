@@ -6,6 +6,33 @@ class EntertainmentRepository {
   final FirebaseFirestore db;
   EntertainmentRepository({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
 
+  Stream<List<AurenEntertainmentItem>> searchEntertainment(String query) {
+    final needle=query.trim().toLowerCase();
+    if(needle.isEmpty) return watchItems();
+    return watchItems().map((items)=>items.where((item){
+      final hay=item.title.toLowerCase() + ' ' + item.description.toLowerCase();
+      return hay.contains(needle);
+    }).toList());
+  }
+
+  Stream<List<AurenEntertainmentItem>> watchAiRecommendations(String uid) {
+    return db.collection('entertainment_items').where('visibility',isEqualTo:'public').limit(100).snapshots().asyncMap((snap) async {
+      final items=snap.docs.map((d)=>AurenEntertainmentItem.fromMap(d.id,d.data())).where((i)=>i.mediaUrl.isNotEmpty).toList();
+      final signals=await db.collection('users').doc(uid).collection('entertainmentSignals').get();
+      final scores=<String,double>{};
+      for(final d in signals.docs){final data=d.data();scores[d.id]=((data['watchSeconds'] as num?)?.toDouble()??0)*.02+((data['likes'] as num?)?.toDouble()??0)*5+((data['saves'] as num?)?.toDouble()??0)*4+((data['completions'] as num?)?.toDouble()??0)*3-((data['skips'] as num?)?.toDouble()??0)*2;}
+      items.sort((a,b)=>(scores[b.id]??0).compareTo(scores[a.id]??0)); return items;
+    });
+  }
+
+  Future<String> createWatchTogetherRoom(String uid,{required String itemId,required String title}) async {
+    final ref=db.collection('watchTogetherRooms').doc();
+    await ref.set({'hostUid':uid,'itemId':itemId,'title':title,'status':'waiting','positionSeconds':0,'isPlaying':false,'createdAt':FieldValue.serverTimestamp(),'updatedAt':FieldValue.serverTimestamp()});
+    await ref.collection('members').doc(uid).set({'uid':uid,'role':'host','joinedAt':FieldValue.serverTimestamp()}); return ref.id;
+  }
+  Future<void> joinWatchTogetherRoom(String roomId,String uid) async => db.collection('watchTogetherRooms').doc(roomId).collection('members').doc(uid).set({'uid':uid,'role':'viewer','joinedAt':FieldValue.serverTimestamp()});
+  Stream<Map<String,dynamic>?> watchTogetherRoom(String roomId) => db.collection('watchTogetherRooms').doc(roomId).snapshots().map((d)=>d.exists?{'id':d.id,...?d.data()}:null);
+  Future<void> updateWatchTogetherPlayback(String roomId,{required int positionSeconds,required bool isPlaying}) => db.collection('watchTogetherRooms').doc(roomId).update({'positionSeconds':positionSeconds,'isPlaying':isPlaying,'updatedAt':FieldValue.serverTimestamp()});
   Stream<List<AurenEntertainmentItem>> watchItems({String? type}) {
     Query<Map<String, dynamic>> q = db.collection('entertainment_items')
         .where('visibility', isEqualTo: 'public');
