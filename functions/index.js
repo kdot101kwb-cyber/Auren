@@ -1239,7 +1239,7 @@ function buildAurenPostAssemblyPlan(assemblyManifest) {
     episodeNumber: Math.max(1, Number(episodeNumber || 1)),
     audio: {status:'waiting_provider', providerRequired:true},
     music: {status:'waiting_provider', providerRequired:true},
-    subtitles: {status:'waiting_provider', providerRequired:true, languages:['ar','en']},
+    subtitles: {status:'waiting_provider', providerRequired:true, languages:['ar','en','fr','es','pt','de','it','tr','zh','ja','ko','hi']},
     thumbnail: {status:'waiting_provider', providerRequired:true},
     trailer: {status:'waiting_provider', providerRequired:true},
   }));
