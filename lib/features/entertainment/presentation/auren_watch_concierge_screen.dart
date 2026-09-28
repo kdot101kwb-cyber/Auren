@@ -22,7 +22,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
   List<AurenEntertainmentItem> _plan = const [];
 
   static const _moods = ['الكل', 'خفيف', 'هادئ', 'حماس', 'غموض', 'رومانسي', 'كوميدي', 'اكتشاف'];
-  static const _types = ['الكل', 'Global Series', 'Anime', 'Short', 'Book'];
+  static const _types = ['الكل', 'Movie', 'Global Series', 'Anime', 'Short', 'Book'];
 
   @override
   void initState() { super.initState(); _prompt.addListener(_inferIntent); }
@@ -50,6 +50,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     };
     const typeKeys = <String, List<String>>{
       'Anime': ['anime', 'أنمي'],
+      'Movie': ['فيلم', 'movie', 'movies', 'film'],
       'Global Series': ['مسلسل', 'series', 'سلسلة'],
       'Short': ['short', 'شورت', 'قصير'],
       'Book': ['كتاب', 'book', 'manga', 'مانجا'],
@@ -230,8 +231,6 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
 
     // Discovery-first: reserve part of the plan for never-watched items,
     // while keeping the strongest personalized items in the remaining slots.
-    final neverWatched = usable.where((x) => !_history.containsKey(x.id)).toList();
-    final personalized = usable.where((x) => _history.containsKey(x.id)).toList();
     double rankedScore(AurenEntertainmentItem item) =>
         _score(item) + _recencyBoost(item) + _explorationBoost(item);
 
@@ -259,7 +258,6 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
       (a, b) => rankedScore(b).compareTo(rankedScore(a)),
     );
     if (usable.isEmpty) return const [];
-    final target = (_minutes / 30).ceil().clamp(1, 8);
     final result = <AurenEntertainmentItem>[];
     final creators = <String>{};
     final discoveryTarget = target >= 3 ? (target * 0.4).ceil() : target;
