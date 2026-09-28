@@ -316,6 +316,44 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     );
   }
 
+  Future<void> _showEpgSmartSettings() async {
+    var enabled = await AurenTvEpgSmartService.instance.smartNotificationsEnabled();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const ListTile(
+              title: Text('AUREN TV • Smart EPG', style: TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text('تحكم في التنبيهات الذكية والاقتراحات على جهازك.'),
+            ),
+            SwitchListTile(
+              title: const Text('تنبيهات بداية البرامج'),
+              subtitle: const Text('يتم تشغيلها عند ضبط تذكير ذكي.'),
+              value: enabled,
+              onChanged: (value) async {
+                await AurenTvEpgSmartService.instance.setSmartNotificationsEnabled(value);
+                setLocal(() => enabled = value);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.auto_awesome),
+              title: const Text('بحث AUREN AI في EPG'),
+              onTap: () { Navigator.pop(ctx); _showEpgAiSearch(); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_search_outlined),
+              title: const Text('For You • TV'),
+              onTap: () { Navigator.pop(ctx); _showEpgPersonalized(); },
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Future<void> _scheduleSmartStart(AurenTvEpgSearchResult item) async {
     final ok = await AurenTvEpgSmartService.instance.scheduleSmartStart(item);
     if (!mounted) return;
@@ -741,7 +779,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV'), actions: [
-      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)), IconButton(tooltip: 'تقويم EPG', onPressed: _showEpgCalendar, icon: const Icon(Icons.calendar_month_outlined)), IconButton(tooltip: 'خط EPG الزمني', onPressed: _showEpgTimeline, icon: const Icon(Icons.timeline)), IconButton(tooltip: 'AUREN AI • EPG', onPressed: _showEpgAiSearch, icon: const Icon(Icons.auto_awesome)), IconButton(tooltip: 'For You • TV', onPressed: _showEpgPersonalized, icon: const Icon(Icons.person_search_outlined)),
+      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)), IconButton(tooltip: 'تقويم EPG', onPressed: _showEpgCalendar, icon: const Icon(Icons.calendar_month_outlined)), IconButton(tooltip: 'خط EPG الزمني', onPressed: _showEpgTimeline, icon: const Icon(Icons.timeline)), IconButton(tooltip: 'AUREN AI • EPG', onPressed: _showEpgAiSearch, icon: const Icon(Icons.auto_awesome)), IconButton(tooltip: 'For You • TV', onPressed: _showEpgPersonalized, icon: const Icon(Icons.person_search_outlined)), IconButton(tooltip: 'Smart EPG', onPressed: _showEpgSmartSettings, icon: const Icon(Icons.tune));
       IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
       if (activeSource != null)
         IconButton(
