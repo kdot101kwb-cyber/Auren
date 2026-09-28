@@ -17,7 +17,7 @@ const MAX_ATTEMPTS = 5;
 
 async function claimTask() {
   const snap = await db.collectionGroup('productionTasks')
-    .where('status','in',['generation','processing'])
+    .where('status','in',['generation','provider_pending','processing'])
     .orderBy('updatedAt','asc')
     .limit(10).get();
 
@@ -26,7 +26,7 @@ async function claimTask() {
       const fresh = await tx.get(item.ref);
       if (!fresh.exists) return false;
       const data=fresh.data() || {};
-      if (!['generation','processing'].includes(String(data.status || ''))) return false;
+      if (!['generation','provider_pending','processing'].includes(String(data.status || ''))) return false;
       if (Number(data.providerLockUntilMs || 0) > Date.now()) return false;
       if (Number(data.generationAttempts || 0) >= MAX_ATTEMPTS) return false;
       tx.update(item.ref,{
@@ -76,7 +76,17 @@ async function processTask(ref) {
       },{merge:true});
       return;
     }
-    if (state === 'failed' || state === 'canceled') throw new Error(polled.error || 'Provider job failed.');
+    if (state === 'failed' || state === 'canceled') {
+      await ref.set({
+        status:'generation',
+        providerState:state,
+        externalJobId:'',
+        providerLockUntilMs:0,
+        lastError:String(polled.error || 'Provider job failed.').slice(0,700),
+        updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+      },{merge:true});
+      return;
+    }
     await ref.set({
       status:'processing',
       providerState:state,
