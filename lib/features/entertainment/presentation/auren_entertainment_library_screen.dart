@@ -63,6 +63,21 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
     }
   }
 
+  Future<void> _download(BuildContext context, String url, String title, String type, String id) async {
+    try {
+      await AurenOfflineMediaService.instance.download(
+        url:url, title:title, type:type, id:id.isEmpty?null:id,
+      );
+      if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('تم حفظ الوسائط Offline بنجاح.')),
+      );
+    } catch (_) {
+      if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content:Text('تعذر تنزيل الوسائط. يلزم رابط HTTP(S) حقيقي.')),
+      );
+    }
+  }
+
   Future<void> _downloadJob(BuildContext context, Map<String,dynamic> job) async {
     final mode=job['mode']?.toString()??'media';
     final title=job['title']?.toString().trim().isNotEmpty==true?job['title'].toString():job['idea']?.toString()??'AUREN Media';
