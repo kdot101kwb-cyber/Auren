@@ -1211,6 +1211,33 @@ async function claimAurenProductionV2Job() {
   return null;
 }
 
+async function validateAurenProductionArtifact(output) {
+  if (!output || typeof output !== 'object') return {ok:false, reason:'missing_output'};
+  const url=String(output.url || '').trim();
+  if (!url) {
+    if (String(output.storagePath || '').trim() || String(output.externalId || '').trim()) {
+      return {ok:true, verification:'provider_artifact_reference'};
+    }
+    return {ok:false, reason:'missing_artifact_reference'};
+  }
+  if (!/^https?:\\/\\//i.test(url)) return {ok:false, reason:'invalid_output_url'};
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+  try {
+    const response=await fetch(url,{method:'HEAD',signal:controller.signal});
+    if (!response.ok) return {ok:false, reason:'artifact_http_'+response.status};
+    const contentType=String(response.headers.get('content-type') || '').toLowerCase();
+    const contentLength=Number(response.headers.get('content-length') || 0);
+    if (contentType && !contentType.startsWith('video/')) return {ok:false, reason:'artifact_not_video'};
+    if (contentLength === 0 && contentType) return {ok:false, reason:'artifact_empty'};
+    return {ok:true, verification:'http_head',contentType:contentType || 'unknown',contentLength};
+  } catch (error) {
+    return {ok:false, reason:'artifact_unreachable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function aurenProductionV2Run(ref) {
   const snap = await ref.get();
   if (!snap.exists) return;
@@ -1291,15 +1318,20 @@ async function aurenProductionV2Run(ref) {
     const tasks = await ref.collection('productionTasks').limit(240).get();
     if (!tasks.docs.length) throw new Error('QC cannot run without production tasks.');
     const failures = [];
-    tasks.docs.forEach((doc) => {
+    const artifactChecks = {};
+    for (const doc of tasks.docs) {
       const data = doc.data() || {};
-      if (data.status !== 'output' || !data.output || !(data.output.url || data.output.storagePath || data.output.externalId)) {
+      if (data.status !== 'output') {
         failures.push(doc.id);
+        continue;
       }
-    });
+      const check = await validateAurenProductionArtifact(data.output);
+      artifactChecks[doc.id] = check;
+      if (!check.ok) failures.push(doc.id);
+    }
     if (failures.length) {
       await ref.set({...common, status:'failed', productionStage:'qc_failed', qcStatus:'failed',
-        qcFailures:failures.slice(0,50), productionProgress:88}, {merge:true});
+        qcFailures:failures.slice(0,50), qcArtifactChecks:artifactChecks, productionProgress:88}, {merge:true});
       return;
     }
     const qcId = 'qc_' + ref.id;
@@ -1312,6 +1344,7 @@ async function aurenProductionV2Run(ref) {
         qcId, productionProgress:100, readyAt:FieldValue.serverTimestamp()}, {merge:true});
       tx.set(ref.collection('productionAudits').doc(qcId), {
         idempotencyKey:qcId, result:'passed', taskCount:tasks.docs.length,
+        artifactChecks, verificationVersion:1,
         createdAt:FieldValue.serverTimestamp(),
       }, {merge:true});
     });
