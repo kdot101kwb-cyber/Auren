@@ -1,4 +1,5 @@
 import 'dart:async';
+  Future<Map<String, dynamic>?> getLiveMatch({required String lobbyId}) async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenLiveMatch').call({'lobbyId':lobbyId}); if(r.data is Map)return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException {} return null; }
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
