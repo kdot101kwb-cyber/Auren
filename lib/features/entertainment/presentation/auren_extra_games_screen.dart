@@ -73,7 +73,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
     ('🃏 Memory Match+', Icons.style), ('🧠 Sequence Recall', Icons.psychology_alt), ('🔵 Color Memory', Icons.circle), ('🧩 Pair Recall', Icons.grid_view), ('👀 Flash Memory', Icons.visibility),
     ('🔥 AUREN Arena', Icons.local_fire_department),
     ('🗺️ Lost World', Icons.explore), ('🏜️ Desert Quest', Icons.landscape), ('🌊 Ocean Explorer', Icons.water), ('🌲 Wild Trails', Icons.forest), ('🚀 Beyond Earth', Icons.rocket_launch), ('🏙️ AUREN City', Icons.location_city), ('💎 Treasure Heist', Icons.diamond), ('🚀 Sky Racers', Icons.flight), ('🧟 Zombie Escape', Icons.directions_run), ('🎵 Rhythm Rush', Icons.music_note), ('🏝️ Island Survival', Icons.surfing), ('⏳ Time Warp', Icons.history),
-    ('🎲 Ludo', Icons.casino), ('🁫 Dominoes', Icons.view_week), ('🃏 UNO', Icons.style), ('🕵️ Crime Files', Icons.manage_search), ('⚽ AUREN Football Pro', Icons.sports_soccer), ('🏀 Basketball Pro', Icons.sports_basketball), ('🥊 Boxing Champion', Icons.sports_mma), ('⚔️ Ancient & Modern Wars', Icons.shield), ('🥷 Samurai Legacy', Icons.gpp_good), ('🏎️ AUREN Street Racing', Icons.speed),
+    ('🎲 Ludo', Icons.casino), ('🁫 Dominoes', Icons.view_week), ('🃏 UNO', Icons.style), ('🕵️ Crime Files', Icons.manage_search), ('⚽ AUREN Football Pro', Icons.sports_soccer), ('🏀 Basketball Pro', Icons.sports_basketball), ('🥊 Boxing Champion', Icons.sports_mma), ('⚔️ Ancient & Modern Wars', Icons.shield), ('🥷 Samurai Legacy', Icons.gpp_good), ('🏎️ AUREN Street Racing', Icons.speed), ('♟️ Chess Arena', Icons.grid_on), ('⚫ Checkers Duel', Icons.circle), ('🎱 Pool Masters', Icons.sports_bar), ('🏐 Volleyball Pro', Icons.sports_volleyball), ('⛳ Golf Challenge', Icons.sports_golf), ('🥷 Shadow Infiltration', Icons.visibility_off), ('💰 Heist Planner', Icons.account_balance), ('🧟 Outbreak Survival', Icons.coronavirus), ('🏹 Samurai Siege', Icons.sports_kabaddi), ('🚀 Future War', Icons.rocket_launch),
   ];
 
   @override Widget build(BuildContext context) {
@@ -616,12 +616,12 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
   int _enemy=100,_shots=5,_resource=0,_laps=0,_challenge=1; String _message='جاهز!';
   static const _categoryNames=['⚔️ Arena Duel','🥊 Punch Rush','🛡️ Shield Block','🏹 Archer Aim','⚡ Battle Reflex','⚽ Penalty King','🏀 Hoops','🏃 Sprint','🎾 Tennis Rally','🚴 Cycling','🧩 Logic Grid','🔢 Number Matrix','♟️ Strategy','🧠 Pattern Logic','🔐 Code Breaker','🃏 Memory Match+','🧠 Sequence Recall','🔵 Color Memory','🧩 Pair Recall','👀 Flash Memory','🔥 AUREN Arena'];
   static const _adventureNames=['🗺️ Lost World','🏜️ Desert Quest','🌊 Ocean Explorer','🌲 Wild Trails','🚀 Beyond Earth','🏙️ AUREN City','💎 Treasure Heist','🚀 Sky Racers','🧟 Zombie Escape','🎵 Rhythm Rush','🏝️ Island Survival','⏳ Time Warp'];
-  static const _newGameNames=['🎲 Ludo','🁫 Dominoes','🃏 UNO','🕵️ Crime Files','⚽ AUREN Football Pro','🏀 Basketball Pro','🥊 Boxing Champion','⚔️ Ancient & Modern Wars','🥷 Samurai Legacy','🏎️ AUREN Street Racing'];
-  bool get _newGame=>widget.gameIndex>=33;
-  int get _newIndex=>widget.gameIndex-33;
+  static const _newGameNames=['🎲 Ludo','🁫 Dominoes','🃏 UNO','🕵️ Crime Files','⚽ AUREN Football Pro','🏀 Basketball Pro','🥊 Boxing Champion','⚔️ Ancient & Modern Wars','🥷 Samurai Legacy','🏎️ AUREN Street Racing','♟️ Chess Arena','⚫ Checkers Duel','🎱 Pool Masters','🏐 Volleyball Pro','⛳ Golf Challenge','🥷 Shadow Infiltration','💰 Heist Planner','🧟 Outbreak Survival','🏹 Samurai Siege','🚀 Future War'];
+  bool get _newGame=>widget.gameIndex>=50;
+  int get _newIndex=>widget.gameIndex-50;
   String get title=>widget.adventure?_adventureNames[widget.gameIndex-21]:_newGame?_newGameNames[_newIndex]:_categoryNames[widget.gameIndex];
   Auren3DWorldPreset get preset{
-    if(_newGame){if(_newIndex==4||_newIndex==5||_newIndex==9)return Auren3DWorldPreset.sports;if(_newIndex==3||_newIndex==6||_newIndex==7||_newIndex==8)return Auren3DWorldPreset.arena;return Auren3DWorldPreset.city;}
+    if(_newGame){if([4,5,9,13,14,18].contains(_newIndex))return Auren3DWorldPreset.sports;if([3,6,7,8,15,16,17,19].contains(_newIndex))return Auren3DWorldPreset.arena;return Auren3DWorldPreset.city;}
     if(widget.adventure){if(widget.gameIndex==1)return Auren3DWorldPreset.desert;if(widget.gameIndex==8)return Auren3DWorldPreset.arena;if(widget.gameIndex==2||widget.gameIndex==7||widget.gameIndex==9||widget.gameIndex==10)return Auren3DWorldPreset.sports;return Auren3DWorldPreset.city;}
     if(widget.gameIndex<5||widget.gameIndex==20)return Auren3DWorldPreset.arena;if(widget.gameIndex<10)return Auren3DWorldPreset.sports;return Auren3DWorldPreset.city;
   }
@@ -641,6 +641,20 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
     _message=ok?'\${labels[i]} صحيح!':'\${labels[i]} جرّب مرة أخرى';_score+=ok?18:2;
   }
   void _newGameAction(){
+    switch(_newIndex){
+      case 10: _message='♟️ خطة تكتيكية: سيطر على الوسط ثم نفّذ نقلة هجومية'; _score+=20; _challenge++; break;
+      case 11: _message='⚫ دورك: حرّك قطعة واقفز فوق خصمك عند الإمكان'; _score+=15; _resource++; break;
+      case 12: final pocket=_rng.nextDouble()<.55; _message='🎱 ${pocket?'دخلت الكرة الجيب!':'حاول ضبط زاوية التصويب'}'; _score+=pocket?28:6; break;
+      case 13: final spike=_rng.nextDouble()<.58; _message='🏐 ${spike?'ضربة ساحقة!':'استقبل الكرة وواصل الهجمة'}'; _score+=spike?25:10; break;
+      case 14: final birdie=_rng.nextDouble()<.5; _message='⛳ ${birdie?'ضربة دقيقة قرب الحفرة!':'أعد حساب المسافة والاتجاه'}'; _score+=birdie?30:8; break;
+      case 15: final stealth=_rng.nextDouble()<.7; _message='🥷 ${stealth?'تجاوزت الحارس دون إنذار':'تم اكتشافك — غيّر المسار'}'; _score+=stealth?24:4; if(!stealth)_health=max(0,_health-10); break;
+      case 16: _message='💰 مهمة تخطيط: وزّع الأدوار، راقب الوقت، واختر طريق الهروب'; _score+=18; _resource++; _challenge++; break;
+      case 17: final safe=_rng.nextDouble()<.6; _message='🧟 ${safe?'وجدت منطقة آمنة وموارد':'ظهر خطر جديد — تحرك بحذر'}'; _score+=safe?22:6; if(!safe)_health=max(0,_health-12); break;
+      case 18: _message='🏹 حصار الساموراي: احمِ البوابة وأنجز أهداف المرحلة'; _score+=22; _resource++; break;
+      case 19: _message='🚀 مهمة مستقبلية: سيطر على نقطة الاتصال وأنقذ الفريق'; _score+=24; _resource++; _challenge++; break;
+    }
+  }
+
     switch(_newIndex){
       case 0: final roll=1+_rng.nextInt(6); _message='🎲 رميت $roll • حرّك قطعتك $roll خطوة'; _score+=roll*2; _resource=(_resource+roll)%4; break;
       case 1: final points=1+_rng.nextInt(6); _message='🁫 قطعة بقيمة $points • طابق الرقم التالي'; _score+=points*3; _enemy=max(0,_enemy-points*4); break;
