@@ -2,6 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+class AurenTvEpgReminder {
+  final String id, channelId, title, startIso;
+  const AurenTvEpgReminder({required this.id, required this.channelId, required this.title, required this.startIso});
+}
 
 class AurenTvEpgSearchResult {
   final String channelId, title, startIso, stopIso, state;
@@ -63,8 +71,62 @@ class AurenTvService {
   static const _sourcesKey = 'auren_tv_sources';
   static const _defaultSourceKey = 'auren_tv_default_source';
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
+  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  bool _notificationsReady = false;
   List<AurenTvSource>? _sourcesCache;
 
+  Future<void> _initEpgNotifications() async {
+    if (_notificationsReady) return;
+    tz.initializeTimeZones();
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const settings = InitializationSettings(android: android);
+    await _notifications.initialize(settings);
+    await _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+    _notificationsReady = true;
+  }
+
+  String _reminderId(AurenTvEpgSearchResult item) => 'epg_' + item.channelId + '_' + item.startIso;
+
+  Future<List<AurenTvEpgReminder>> epgReminders() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    return (prefs.getStringList('auren_tv_epg_reminders') ?? const <String>[]).map((x) {
+      final p = x.split('|');
+      if (p.length < 4) return null;
+      return AurenTvEpgReminder(id: p[0], channelId: p[1], title: p[2], startIso: p[3]);
+    }).whereType<AurenTvEpgReminder>().toList();
+  }
+
+  Future<bool> addEpgReminder(AurenTvEpgSearchResult item, {Duration before = const Duration(minutes: 10)}) async {
+    final start = DateTime.tryParse(item.startIso);
+    if (start == null || !start.isAfter(DateTime.now().toUtc())) return false;
+    await _initEpgNotifications();
+    final scheduled = start.subtract(before);
+    final when = scheduled.isAfter(DateTime.now().toUtc()) ? scheduled : start;
+    final id = _reminderId(item);
+    final reminders = await epgReminders();
+    if (!reminders.any((x) => x.id == id)) reminders.add(AurenTvEpgReminder(id: id, channelId: item.channelId, title: item.title, startIso: item.startIso));
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    await prefs.setStringList('auren_tv_epg_reminders', reminders.take(100).map((x) => x.id + '|' + x.channelId + '|' + x.title + '|' + x.startIso).toList());
+    await _notifications.zonedSchedule(
+      id.hashCode & 0x7fffffff,
+      'AUREN TV • تذكير EPG',
+      item.title + ' سيبدأ خلال ' + before.inMinutes.toString() + ' دقيقة',
+      tz.TZDateTime.from(when, tz.UTC),
+      const NotificationDetails(android: AndroidNotificationDetails('auren_tv_epg', 'AUREN TV EPG', channelDescription: 'تذكيرات برامج التلفزيون')),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+    return true;
+  }
+
+  Future<void> removeEpgReminder(AurenTvEpgSearchResult item) async {
+    await _initEpgNotifications();
+    await _notifications.cancel(_reminderId(item).hashCode & 0x7fffffff);
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    final id = _reminderId(item);
+    final reminders = prefs.getStringList('auren_tv_epg_reminders') ?? <String>[];
+    reminders.removeWhere((x) => x.startsWith(id + '|'));
+    await prefs.setStringList('auren_tv_epg_reminders', reminders);
+  }
   Future<List<AurenTvSource>> sources() async {
     if (_sourcesCache != null) return List.unmodifiable(_sourcesCache!);
     final p = await SharedPreferences.getInstance();
