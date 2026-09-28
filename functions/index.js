@@ -1736,42 +1736,84 @@ exports.enqueueAurenGameMatchmaking = require('firebase-functions/v2/https').onC
     if (!Number.isInteger(gameIndex) || gameIndex < 53 || gameIndex > 59) {
       throw aurenHttpsError('invalid-argument', 'Invalid game index.');
     }
-    const ownRef = db.collection('auren_game_matchmaking').doc(uid);
-    const waiting = await db.collection('auren_game_matchmaking')
-      .where('status', '==', 'waiting').where('gameIndex', '==', gameIndex)
-      .orderBy('createdAt', 'asc').limit(10).get();
-    const candidate = waiting.docs.find((d) => d.id !== uid);
-    if (!candidate) {
-      await ownRef.set({
-        uid, gameIndex, status:'waiting', matchId:null,
-        createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
-      }, {merge:true});
-      return {status:'waiting', matchId:null};
+
+    const queue = db.collection('auren_game_matchmaking');
+    const ownRef = queue.doc(uid);
+    const ownSnap = await ownRef.get();
+    const own = ownSnap.exists ? (ownSnap.data() || {}) : {};
+    if (own.status === 'matched' && typeof own.matchId === 'string' && own.gameIndex === gameIndex) {
+      return {status:'matched', matchId:own.matchId, reused:true};
     }
 
-    const candidateRef = candidate.ref;
-    const lobbyRef = db.collection('auren_game_lobbies').doc();
-    const matched = await db.runTransaction(async (tx) => {
-      const ownSnap = await tx.get(ownRef);
-      const candidateSnap = await tx.get(candidateRef);
-      const own = ownSnap.exists ? (ownSnap.data() || {}) : {};
-      const other = candidateSnap.exists ? (candidateSnap.data() || {}) : {};
-      if (!candidateSnap.exists || other.status !== 'waiting' || Number(other.gameIndex) !== gameIndex ||
-          (own.status && own.status !== 'waiting')) return false;
-      const hostId = String(other.uid || candidate.id);
-      const players = [hostId, uid];
-      const lobby = {
-        gameIndex, status:'playing', hostId, guestId:uid, players,
-        turnPlayerId:hostId, stateVersion:0, lastMoveId:null, state:{},
-        matchmade:true, createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
-      };
-      tx.create(lobbyRef, lobby);
-      tx.set(candidateRef, {status:'matched', matchId:lobbyRef.id, matchedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()}, {merge:true});
-      tx.set(ownRef, {uid, gameIndex, status:'matched', matchId:lobbyRef.id, matchedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()}, {merge:true});
-      return true;
-    });
-    if (!matched) return {status:'retry', matchId:null};
-    return {status:'matched', matchId:lobbyRef.id};
+    const ownRatingSnap = await db.collection('auren_game_rankings').doc(String(gameIndex))
+      .collection('players').doc(uid).get();
+    const ownRating = Math.max(100, Number(ownRatingSnap.data()?.rating) || 1000);
+
+    const now = Date.now();
+    const maxWaitMs = 5 * 60 * 1000;
+    const createdMs = own.createdAt?.toMillis?.() || 0;
+    if (own.status === 'waiting' && createdMs > 0 && now - createdMs > maxWaitMs) {
+      await ownRef.set({status:'cancelled', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    }
+
+    const waiting = await queue.where('status','==','waiting')
+      .where('gameIndex','==',gameIndex).orderBy('createdAt','asc').limit(20).get();
+
+    const candidates = waiting.docs.filter((d) => d.id !== uid);
+    for (const candidate of candidates) {
+      const candidateRef = candidate.ref;
+      const candidateRatingRef = db.collection('auren_game_rankings').doc(String(gameIndex))
+        .collection('players').doc(candidate.id);
+      const lobbyRef = db.collection('auren_game_lobbies').doc();
+
+      const matched = await db.runTransaction(async (tx) => {
+        const ownNowSnap = await tx.get(ownRef);
+        const candidateNowSnap = await tx.get(candidateRef);
+        const candidateRatingSnap = await tx.get(candidateRatingRef);
+        const ownNow = ownNowSnap.exists ? (ownNowSnap.data() || {}) : {};
+        const other = candidateNowSnap.exists ? (candidateNowSnap.data() || {}) : {};
+        if (!candidateNowSnap.exists || other.status !== 'waiting' ||
+            Number(other.gameIndex) !== gameIndex || candidate.id === uid ||
+            (ownNow.status && !['waiting','cancelled'].includes(ownNow.status))) return false;
+
+        const otherCreatedMs = other.createdAt?.toMillis?.() || 0;
+        if (!otherCreatedMs || Date.now() - otherCreatedMs > maxWaitMs) return false;
+
+        const otherRating = Math.max(100, Number(candidateRatingSnap.data()?.rating) || 1000);
+        const waitMs = Math.max(0, Date.now() - (otherCreatedMs || Date.now()));
+        const band = waitMs >= 120000 ? 300 : waitMs >= 30000 ? 200 : 100;
+        if (Math.abs(ownRating - otherRating) > band) return false;
+
+        const hostId = String(other.uid || candidate.id);
+        const players = [hostId, uid];
+        tx.create(lobbyRef, {
+          gameIndex, status:'playing', hostId, guestId:uid, players,
+          turnPlayerId:hostId, stateVersion:0, lastMoveId:null, state:{},
+          matchmade:true, matchmaking:{
+            ratingBand:band, hostRating:otherRating, guestRating:ownRating,
+          },
+          createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+        });
+        tx.set(candidateRef, {
+          status:'matched', matchId:lobbyRef.id, matchedAt:FieldValue.serverTimestamp(),
+          ratingSnapshot:otherRating, updatedAt:FieldValue.serverTimestamp(),
+        }, {merge:true});
+        tx.set(ownRef, {
+          uid, gameIndex, status:'matched', matchId:lobbyRef.id, matchedAt:FieldValue.serverTimestamp(),
+          ratingSnapshot:ownRating, updatedAt:FieldValue.serverTimestamp(),
+        }, {merge:true});
+        return true;
+      });
+      if (matched) return {status:'matched', matchId:lobbyRef.id, rating:ownRating};
+    }
+
+    await ownRef.set({
+      uid, gameIndex, status:'waiting', matchId:null, ratingSnapshot:ownRating,
+      createdAt: (own.status === 'waiting' && createdMs > 0 && now - createdMs <= maxWaitMs)
+        ? own.createdAt : FieldValue.serverTimestamp(),
+      updatedAt:FieldValue.serverTimestamp(),
+    }, {merge:true});
+    return {status:'waiting', matchId:null, rating:ownRating};
   }
 );
 
