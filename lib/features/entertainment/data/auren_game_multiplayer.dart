@@ -80,10 +80,57 @@ class AurenGameMultiplayer {
   }
 
   Stream<Map<String, dynamic>?> watchLobby(String lobbyId) {
-    return _db.collection('auren_game_lobbies').doc(lobbyId).snapshots().map((snapshot) {
-      if (!snapshot.exists) return null;
-      return snapshot.data();
-    });
+    final controller = StreamController<Map<String, dynamic>?>();
+    Map<String, dynamic>? lobby;
+    Map<String, dynamic>? privateData;
+
+    void emit() {
+      final base = lobby;
+      if (base == null) {
+        controller.add(null);
+        return;
+      }
+      final merged = Map<String, dynamic>.from(base);
+      final state = Map<String, dynamic>.from((base['state'] as Map?)?.cast<String, dynamic>() ?? const {});
+      if (privateData != null) {
+        final hand = List<String>.from(privateData!['hand'] ?? const <String>[]);
+        if (state['dominoHandCounts'] is Map) {
+          final counts = Map<String, dynamic>.from(state['dominoHandCounts'] as Map);
+          final opponentCount = counts.entries
+              .where((e) => e.key.toString() != playerId)
+              .map((e) => (e.value as num?)?.toInt() ?? 0)
+              .fold<int>(0, (a, b) => a + b);
+          state['dominoHand'] = hand;
+          state['dominoCpu'] = List<String>.filled(opponentCount, 'HIDDEN');
+        } else if (state['unoHandCounts'] is Map) {
+          final counts = Map<String, dynamic>.from(state['unoHandCounts'] as Map);
+          final opponentCount = counts.entries
+              .where((e) => e.key.toString() != playerId)
+              .map((e) => (e.value as num?)?.toInt() ?? 0)
+              .fold<int>(0, (a, b) => a + b);
+          state['unoHand'] = hand;
+          state['unoCpu'] = List<String>.filled(opponentCount, 'HIDDEN');
+        }
+      }
+      merged['state'] = state;
+      controller.add(merged);
+    }
+
+    final lobbySub = _db.collection('auren_game_lobbies').doc(lobbyId).snapshots().listen((snapshot) {
+      lobby = snapshot.exists ? snapshot.data() : null;
+      emit();
+    }, onError: controller.addError);
+    final privateSub = _db.collection('auren_game_lobbies').doc(lobbyId)
+        .collection('private_players').doc(playerId).snapshots().listen((snapshot) {
+      privateData = snapshot.exists ? snapshot.data() : null;
+      emit();
+    }, onError: controller.addError);
+
+    controller.onCancel = () async {
+      await lobbySub.cancel();
+      await privateSub.cancel();
+    };
+    return controller.stream;
   }
 
   Future<bool> initializeLudoMatch() async {
