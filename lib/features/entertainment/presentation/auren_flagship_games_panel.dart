@@ -308,6 +308,19 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     });
   }
 
+  Future<void> _submitFlagshipAction(String type, Map<String, dynamic> payload) async {
+    if (!_onlineMatch || !_isMyTurn) return;
+    final expectedVersion = _stateVersion;
+    final accepted = await _multiplayer.submitFlagshipAction(
+      action: {'type': type, 'payload': payload},
+      expectedVersion: expectedVersion,
+      moveId: _nextMoveId(),
+    );
+    if (!accepted && mounted) {
+      setState(() => _message = '⚠️ الحركة رفضها الخادم — حدّث المباراة وحاول مرة أخرى');
+    }
+  }
+
   void _act() {
     if (!_isMyTurn) { setState(() => _message = '⏳ انتظر دورك'); return; }
     switch (widget.gameIndex) {
@@ -322,13 +335,13 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         _dominoDrawOrPlay();
         break;
       case 2: _unoDraw(); break;
-      case 3: _crimeAdvance(); break;
-      case 4: _footballTurn(); break;
-      case 5: _basketballTurn(); break;
-      case 6: _boxingTurn(); break;
-      case 7: _warTurn(); break;
-      case 8: _samuraiTurn(); break;
-      case 9: _racingTurn(); break;
+      case 3: if (_onlineMatch) { _submitFlagshipAction('advance_case', {}); return; } _crimeAdvance(); break;
+      case 4: if (_onlineMatch) { _submitFlagshipAction('shoot', {'lane': 1}); return; } _footballTurn(); break;
+      case 5: if (_onlineMatch) { _submitFlagshipAction('shot', {'shot': 0}); return; } _basketballTurn(); break;
+      case 6: if (_onlineMatch) { _submitFlagshipAction('boxing', {'move': 0}); return; } _boxingTurn(); break;
+      case 7: if (_onlineMatch) { _submitFlagshipAction('mission', {'mission': 0}); return; } _warTurn(); break;
+      case 8: if (_onlineMatch) { _submitFlagshipAction('samurai', {'move': 0}); return; } _samuraiTurn(); break;
+      case 9: if (_onlineMatch) { _submitFlagshipAction('steer', {'lane': 1}); return; } _racingTurn(); break;
     }
     _saveProgress();
     _syncGameState();
