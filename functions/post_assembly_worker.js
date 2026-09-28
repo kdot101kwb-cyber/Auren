@@ -108,6 +108,79 @@ async function claimTask() {
   return null;
 }
 
+
+async function validatePostAssemblyArtifact(output, type) {
+  if (!hasRealOutput(output)) return {ok:false, reason:'missing_artifact_reference'};
+  const url = String(output.url || '').trim();
+  if (!url) return {ok:true, verification:'provider_artifact_reference'};
+  if (!/^https?:\\/\\//i.test(url)) return {ok:false, reason:'invalid_output_url'};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(url, {method:'HEAD', signal:controller.signal});
+    if (!response.ok) return {ok:false, reason:'artifact_http_'+response.status};
+    const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+    const expectedAudio = type === 'audio' || type === 'music';
+    if (contentType) {
+      const valid = expectedAudio
+        ? contentType.startsWith('audio/')
+        : contentType.includes('text/') || contentType.includes('json') ||
+          contentType.includes('vtt') || contentType.includes('subtitle');
+      if (!valid) return {ok:false, reason:'artifact_type_mismatch'};
+    }
+    return {ok:true, verification:'http_head', contentType:contentType || 'unknown'};
+  } catch (_) {
+    return {ok:false, reason:'artifact_unreachable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function finalizeEpisodeAssembly(ref) {
+  const assemblyRef = ref.parent.parent;
+  if (!assemblyRef) return;
+  const snap = await assemblyRef.collection('postAssemblyTasks').get();
+  const tasks = snap.docs.map((d) => ({id:d.id, ...d.data()}));
+  if (!tasks.length) return;
+  if (tasks.some((t) => t.status === 'failed')) {
+    await assemblyRef.set({
+      postAssemblyStatus:'qc_failed',
+      postAssemblyQcVersion:1,
+      updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge:true});
+    return;
+  }
+  if (tasks.some((t) => t.status !== 'output')) return;
+  const checks = [];
+  for (const task of tasks) {
+    const check = await validatePostAssemblyArtifact(task.output, String(task.type || ''));
+    checks.push({taskId:task.id, type:task.type, ...check});
+    if (!check.ok) {
+      await assemblyRef.set({
+        postAssemblyStatus:'qc_failed',
+        postAssemblyQcVersion:1,
+        postAssemblyArtifactChecks:checks,
+        updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge:true});
+      return;
+    }
+  }
+  const episodes = {};
+  for (const task of tasks) {
+    const n = Math.max(1, Number(task.episodeNumber || 1));
+    if (!episodes[n]) episodes[n] = {};
+    episodes[n][String(task.type)] = task.output;
+  }
+  await assemblyRef.set({
+    postAssemblyStatus:'ready',
+    postAssemblyQcVersion:1,
+    postAssemblyArtifactChecks:checks,
+    finalizedEpisodes:episodes,
+    finalizedAt:admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge:true});
+}
+
 async function processTask(ref) {
   const snap = await ref.get();
   if (!snap.exists) return;
@@ -177,6 +250,7 @@ async function processTask(ref) {
         lastError: '',
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, {merge: true});
+      await finalizeEpisodeAssembly(ref);
       return;
     }
 
@@ -248,6 +322,7 @@ async function processTask(ref) {
     lastError: hasOutput || externalId ? '' : 'Provider accepted task without an output or asynchronous job id.',
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, {merge: true});
+  if (hasOutput) await finalizeEpisodeAssembly(ref);
 }
 
 exports.runAurenPostAssemblyProvider = onSchedule({
