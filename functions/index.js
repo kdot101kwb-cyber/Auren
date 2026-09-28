@@ -3430,7 +3430,7 @@ exports.getAurenGamingRivals = require('firebase-functions/v2/https').onCall({re
 });
 exports.getAurenLiveSpectators = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{
  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
- const snap=await db.collection('auren_game_lobbies').where('status','==','active').limit(20).get();
+ const snap=await db.collection('auren_game_lobbies').where('status','==','playing').limit(20).get();
  return {matches:snap.docs.map(d=>({lobbyId:d.id,gameIndex:d.data().gameIndex,players:d.data().players||[],stateVersion:d.data().stateVersion||0}))};
 });
 
@@ -3457,4 +3457,4 @@ exports.markAurenGamingNotificationsRead = require('firebase-functions/v2/https'
  const uid=request.auth.uid, snap=await db.collection('users').doc(uid).collection('gaming_notifications').where('read','==',false).limit(50).get();
  const batch=db.batch(); snap.docs.forEach(d=>batch.set(d.ref,{read:true,readAt:FieldValue.serverTimestamp()},{merge:true})); await batch.commit();
  return {ok:true,count:snap.size};
-});
+});\nexports.getAurenLiveMatch = require('firebase-functions/v2/https').onCall({region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},async(request)=>{\n if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');\n const lobbyId=String(request.data?.lobbyId||''); if(!lobbyId)throw aurenHttpsError('invalid-argument','lobbyId is required.');\n const snap=await db.collection('auren_game_lobbies').doc(lobbyId).get();\n if(!snap.exists)throw aurenHttpsError('not-found','Live match not found.');\n const d=snap.data()||{}; const gameIndex=Number(d.gameIndex);\n if(gameIndex<53||gameIndex>59||d.status!=='playing')throw aurenHttpsError('failed-precondition','Match is not live.');\n return {lobbyId,gameIndex,players:d.players||[],turnPlayerId:d.turnPlayerId||null,stateVersion:Number(d.stateVersion||0),state:d.state||{}};\n});
