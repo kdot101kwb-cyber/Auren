@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:async';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'auren_3d_world_screen.dart';
@@ -15,6 +16,44 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
   int _gamingXp = 0;
   int _gamesPlayed = 0;
   final Set<String> _gameBadges = {};
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _statsSubscription;
+  int _seasonXp = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      _statsSubscription = FirebaseFirestore.instance
+          .collection('users').doc(uid)
+          .collection('gaming_profile').doc('stats')
+          .snapshots().listen((snapshot) {
+        if (!mounted) return;
+        final data = snapshot.data() ?? <String, dynamic>{};
+        setState(() {
+          _gamingXp = (data['xp'] as num?)?.toInt() ?? 0;
+          _gamesPlayed = (data['games'] as num?)?.toInt() ?? 0;
+          _seasonXp = (data['seasonXp'] as num?)?.toInt() ?? 0;
+          _gameBadges
+            ..clear()
+            ..addAll(_earnedBadges(_gamingXp));
+        });
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _statsSubscription?.cancel();
+    super.dispose();
+  }
+
+  List<String> _earnedBadges(int xp) => [
+    if (xp >= 50) 'البداية',
+    if (xp >= 250) 'لاعب نشيط',
+    if (xp >= 1000) 'محترف',
+    if (xp >= 5000) 'أسطورة',
+  ];
   bool _rewardBusy = false;
   String? _rewardMessage;
   final _games = const [
@@ -60,6 +99,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
           Expanded(child: _statTile(Icons.sports_esports, 'جولات', '\$_gamesPlayed')), const SizedBox(width: 8),
           Expanded(child: _statTile(Icons.workspace_premium, 'جوائز', '\${_gameBadges.length}')),
         ])),
+        Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('المستوى \${1 + (_seasonXp ~/ 250)} • نقاط الموسم: $_seasonXp', style: Theme.of(context).textTheme.labelSmall)),
         Expanded(child: Column(children: [
           Expanded(child: _buildSelectedGame()),
           _miniGameRewardCard(),
@@ -100,8 +140,7 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
       final xp = (data['xp'] as num?)?.toInt() ?? 0;
       if (!mounted) return;
       setState(() {
-        if (claimed) { _gamingXp += xp; _gamesPlayed++; }
-        _rewardMessage = claimed ? '🎉 +$xp XP — المكافأة اتسجلت.' : '⏳ جرّب بعد 5 دقائق لهذا النوع.';
+        _rewardMessage = claimed ? '🎉 +$xp XP — اتسجلت في حسابك.' : '⏳ استلمت مكافأة هذا النوع مؤخراً؛ حاول بعد 5 دقائق.';
       });
     } catch (_) {
       if (mounted) setState(() => _rewardMessage = 'تعذر تسجيل المكافأة الآن.');
