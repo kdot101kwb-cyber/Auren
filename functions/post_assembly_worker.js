@@ -22,6 +22,15 @@ const REPLICATE_SUBTITLE_MODEL_VERSION = defineString('REPLICATE_SUBTITLE_MODEL_
   description: 'Backend-only Replicate model version for subtitle generation.',
 });
 
+const REPLICATE_THUMBNAIL_MODEL_VERSION = defineString('REPLICATE_THUMBNAIL_MODEL_VERSION', {
+  default: '',
+  description: 'Backend-only Replicate model version for episode thumbnail generation.',
+});
+const REPLICATE_TRAILER_MODEL_VERSION = defineString('REPLICATE_TRAILER_MODEL_VERSION', {
+  default: '',
+  description: 'Backend-only Replicate model version for episode trailer generation.',
+});
+
 const db = admin.firestore();
 const LOCK_MS = 6 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
@@ -30,6 +39,8 @@ function modelVersionForType(type) {
   if (type === 'audio') return REPLICATE_AUDIO_MODEL_VERSION.value().trim();
   if (type === 'music') return REPLICATE_MUSIC_MODEL_VERSION.value().trim();
   if (type === 'subtitles') return REPLICATE_SUBTITLE_MODEL_VERSION.value().trim();
+  if (type === 'thumbnail') return REPLICATE_THUMBNAIL_MODEL_VERSION.value().trim();
+  if (type === 'trailer') return REPLICATE_TRAILER_MODEL_VERSION.value().trim();
   return '';
 }
 
@@ -37,6 +48,8 @@ function inputForTask(data) {
   const type = String(data.type || '');
   const episode = Math.max(1, Number(data.episodeNumber || 1));
   const base = {episodeNumber: episode};
+  if (type === 'thumbnail') return {...base, mode:'poster', aspectRatio:'16:9'};
+  if (type === 'trailer') return {...base, mode:'trailer', durationSeconds:30};
   if (type === 'subtitles') {
     return {
       ...base,
@@ -121,11 +134,16 @@ async function validatePostAssemblyArtifact(output, type) {
     if (!response.ok) return {ok:false, reason:'artifact_http_'+response.status};
     const contentType = String(response.headers.get('content-type') || '').toLowerCase();
     const expectedAudio = type === 'audio' || type === 'music';
+    const expectedImage = type === 'thumbnail';
+    const expectedVideo = type === 'trailer';
     if (contentType) {
       const valid = expectedAudio
         ? contentType.startsWith('audio/')
-        : contentType.includes('text/') || contentType.includes('json') ||
-          contentType.includes('vtt') || contentType.includes('subtitle');
+        : expectedImage
+          ? contentType.startsWith('image/')
+          : expectedVideo
+            ? contentType.startsWith('video/')
+            : contentType.includes('text/') || contentType.includes('json') || contentType.includes('vtt') || contentType.includes('subtitle');
       if (!valid) return {ok:false, reason:'artifact_type_mismatch'};
     }
     return {ok:true, verification:'http_head', contentType:contentType || 'unknown'};
@@ -174,6 +192,8 @@ async function finalizeEpisodeAssembly(ref) {
   await assemblyRef.set({
     postAssemblyStatus:'ready',
     postAssemblyQcVersion:1,
+    finalPackageVersion:1,
+    finalPackageStatus:'ready',
     postAssemblyArtifactChecks:checks,
     finalizedEpisodes:episodes,
     finalizedAt:admin.firestore.FieldValue.serverTimestamp(),
@@ -187,7 +207,7 @@ async function processTask(ref) {
   const task = snap.data() || {};
   const type = String(task.type || '');
 
-  if (!['audio', 'music', 'subtitles'].includes(type)) {
+  if (!['audio', 'music', 'subtitles', 'thumbnail', 'trailer'].includes(type)) {
     await ref.set({
       status: 'failed',
       lastError: 'Unsupported post-assembly task type.',
