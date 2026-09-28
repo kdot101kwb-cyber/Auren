@@ -7,7 +7,7 @@ class _AurenGamingTournamentScreenState extends State<AurenGamingTournamentScree
  @override void didChangeDependencies(){super.didChangeDependencies(); final g=widget.initialGameIndex; if(g!=null && g>=53 && g<=59 && _game!=g){_game=g; _load();}}
  @override void initState(){super.initState();_load();}
  String _gameName(int g)=>const {53:'🕵️ Crime Files',54:'⚽ Football Pro',55:'🏀 Basketball Pro',56:'🥊 Boxing Champion',57:'⚔️ Wars',58:'🥷 Samurai Legacy',59:'🏎️ Street Racing'}[g]??'Game';
- Future<void> _load() async { setState(()=>_loading=true); final d=await _api.getTournament(gameIndex:_game); final b=await _api.getTournamentBracket(gameIndex:_game); if(mounted)setState(()=>{_data=d,_bracket=b,_loading=false}); }
+ Future<void> _load() async { setState(()=>_loading=true); final d=await _api.getTournament(gameIndex:_game); final b=await _api.getTournamentBracket(gameIndex:_game); if(mounted)setState((){_data=d;_bracket=b;_loading=false;}); }
  @override Widget build(BuildContext context){
   final players=List<String>.from(_data?['players']??const <String>[]);
   return Scaffold(appBar:AppBar(title:const Text('🏆 AUREN Tournaments')),body:_loading?const Center(child:CircularProgressIndicator()):ListView(padding:const EdgeInsets.all(16),children:[
