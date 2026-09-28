@@ -502,7 +502,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 title: Text(room.title, style: const TextStyle(fontWeight: FontWeight.w800)),
                 subtitle: Text('الكود: ${room.inviteCode} • ${room.memberIds.length}/8 • ${room.status}'),
               ),
-              ListTile(leading: const Icon(Icons.chat_bubble_outline), title: const Text('الدردشة'), onTap: () { Navigator.pop(context); _showWatchTogetherChat(room); }),
+              ListTile(leading: const Icon(Icons.chat_bubble_outline), title: const Text('الدردشة'), subtitle: Text(_watchTogetherUnreadCount > 0 ? '$_watchTogetherUnreadCount رسالة جديدة${_watchTogetherLastMessage.isEmpty ? '' : ' • $_watchTogetherLastMessage'}' : (_watchTogetherLastMessage.isEmpty ? 'فتح الدردشة' : _watchTogetherLastMessage), maxLines: 2, overflow: TextOverflow.ellipsis), trailing: _watchTogetherUnreadCount > 0 ? Badge(label: Text('$_watchTogetherUnreadCount')) : null, onTap: () { Navigator.pop(context); _showWatchTogetherChat(room); }),
               const Divider(),
               StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
                 stream: service.activity(room.id),
