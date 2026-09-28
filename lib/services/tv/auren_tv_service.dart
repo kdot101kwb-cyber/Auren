@@ -24,6 +24,26 @@ class AurenTvService {
       (k.isEmpty || x.category.toLowerCase().contains(k))).take(500).toList();
   }
 
+  /// Fast continent browsing: return a small curated slice instead of
+  /// forcing the user to scan the entire global catalogue.
+  Future<List<AurenTvChannel>> loadFeaturedByCountries(
+    Set<String> countryCodes, {
+    int limit = 20,
+  }) async {
+    _cache ??= await _fetch();
+    final codes = countryCodes.map((e) => e.toUpperCase()).toSet();
+    final result = <AurenTvChannel>[];
+    final seen = <String>{};
+    for (final channel in _cache!) {
+      if (!codes.contains(channel.country.toUpperCase())) continue;
+      final key = '${channel.name}|${channel.country}|${channel.url}';
+      if (!seen.add(key)) continue;
+      result.add(channel);
+      if (result.length >= limit) break;
+    }
+    return result;
+  }
+
   Future<List<AurenTvChannel>> _fetch() async {
     final r = await http.get(Uri.parse(playlist)).timeout(const Duration(seconds: 25));
     if (r.statusCode != 200) throw Exception('تعذر تحميل قائمة IPTV العامة.');
