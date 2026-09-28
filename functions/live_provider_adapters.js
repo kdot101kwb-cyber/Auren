@@ -105,8 +105,17 @@ function normalizeReplicateOutput(data) {
   const output=data?.output;
   if (typeof output==='string' && output) return {url:output};
   if (Array.isArray(output) && output.length) {
-    const first=output.find((v)=>typeof v==='string') || '';
-    if (first) return {url:first};
+    const firstString=output.find((v)=>typeof v==='string') || '';
+    if (firstString) return {url:firstString};
+    const firstObject=output.find((v)=>v && typeof v==='object') || null;
+    if (firstObject) {
+      const url=String(firstObject.url || firstObject.audio_url || firstObject.video_url || '').trim();
+      if (url) return {url};
+    }
+  }
+  if (output && typeof output==='object') {
+    const url=String(output.url || output.audio_url || output.video_url || '').trim();
+    if (url) return {url};
   }
   return null;
 }
