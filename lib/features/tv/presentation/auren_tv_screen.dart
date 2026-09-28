@@ -157,6 +157,12 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         ButtonSegment(value: 'entertainment', label: Text('ترفيه'), icon: Icon(Icons.movie_outlined)),
         ButtonSegment(value: 'sports', label: Text('رياضة'), icon: Icon(Icons.sports_soccer)),
         ButtonSegment(value: 'news', label: Text('أخبار'), icon: Icon(Icons.newspaper)),
+        ButtonSegment(value: 'movies', label: Text('أفلام'), icon: Icon(Icons.local_movies_outlined)),
+        ButtonSegment(value: 'music', label: Text('موسيقى'), icon: Icon(Icons.music_note)),
+        ButtonSegment(value: 'kids', label: Text('أطفال'), icon: Icon(Icons.child_care)),
+        ButtonSegment(value: 'animation', label: Text('أنمي/كرتون'), icon: Icon(Icons.animation)),
+        ButtonSegment(value: 'documentary', label: Text('وثائقي'), icon: Icon(Icons.menu_book_outlined)),
+        ButtonSegment(value: 'series', label: Text('مسلسلات'), icon: Icon(Icons.tv_outlined)),
       ], selected: {tvMode}, onSelectionChanged: (v) => setState(() { tvMode = v.first; country = ''; continent = ''; quickRegion = ''; category = ''; newsRegion = 'all'; }))),
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
@@ -257,7 +263,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             ),
         ]),
       Expanded(child: FutureBuilder<List<AurenTvChannel>>(
-        future: tvMode == 'entertainment' ? AurenTvService.instance.loadEntertainment(limit: lowData ? 150 : 500) : tvMode == 'sports' ? AurenTvService.instance.loadSports(limit: lowData ? 150 : 500) : tvMode == 'news' ? AurenTvService.instance.loadNews(limit: lowData ? 150 : 500) : continent.isNotEmpty ? AurenTvService.instance.loadFeaturedByCountries(regions[continent]!.toSet(), limit: 20) : AurenTvService.instance.load(country: country, category: category),
+        future: tvMode == 'entertainment' ? AurenTvService.instance.loadEntertainment(limit: lowData ? 150 : 500) : tvMode == 'sports' ? AurenTvService.instance.loadSports(limit: lowData ? 150 : 500) : tvMode == 'news' ? AurenTvService.instance.loadNews(limit: lowData ? 150 : 500) : tvMode == 'movies' ? AurenTvService.instance.loadMovies(limit: lowData ? 150 : 500) : tvMode == 'music' ? AurenTvService.instance.loadMusic(limit: lowData ? 150 : 500) : tvMode == 'kids' ? AurenTvService.instance.loadKids(limit: lowData ? 150 : 500) : tvMode == 'animation' ? AurenTvService.instance.loadAnimation(limit: lowData ? 150 : 500) : tvMode == 'documentary' ? AurenTvService.instance.loadDocumentary(limit: lowData ? 150 : 500) : tvMode == 'series' ? AurenTvService.instance.loadSeries(limit: lowData ? 150 : 500) : continent.isNotEmpty ? AurenTvService.instance.loadFeaturedByCountries(regions[continent]!.toSet(), limit: 20) : AurenTvService.instance.load(country: country, category: category),
         builder: (context, snapshot) {
           if (snapshot.hasError) return Center(child: Text('تعذر تحميل القنوات: ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
