@@ -2546,5 +2546,55 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /agriculture_records/{recordId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.type in ['crop','livestock','farm','soil','water','equipment']
+        && request.resource.data.location is string
+        && request.resource.data.location.size() <= 200
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /agriculture_opportunities/{opportunityId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow write: if false;
+    }
+
+    match /users/{userId}/agricultureNotes/{noteId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['title','note','type','createdAt','updatedAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.note is string
+        && request.resource.data.note.size() > 0
+        && request.resource.data.note.size() <= 5000
+        && request.resource.data.type in ['field','livestock','farm']
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','note','type','updatedAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.note is string
+        && request.resource.data.note.size() > 0
+        && request.resource.data.note.size() <= 5000
+        && request.resource.data.type in ['field','livestock','farm']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
   }
 }
