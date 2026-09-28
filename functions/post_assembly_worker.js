@@ -34,6 +34,7 @@ const REPLICATE_TRAILER_MODEL_VERSION = defineString('REPLICATE_TRAILER_MODEL_VE
 const db = admin.firestore();
 const LOCK_MS = 6 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
+const AUREN_SUBTITLE_LANGUAGES = ['ar', 'en', 'fr', 'es', 'pt', 'de', 'it', 'tr', 'zh', 'ja', 'ko', 'hi'];
 
 function modelVersionForType(type) {
   if (type === 'audio') return REPLICATE_AUDIO_MODEL_VERSION.value().trim();
@@ -54,7 +55,7 @@ function inputForTask(data) {
     return {
       ...base,
       sourceLanguage: 'auto',
-      targetLanguages: Array.isArray(data.targetLanguages) && data.targetLanguages.length > 0 ? data.targetLanguages : ['ar', 'en', 'fr', 'es', 'pt', 'de', 'it', 'tr', 'zh', 'ja', 'ko', 'hi'],
+      targetLanguages: (() => { const requested = Array.isArray(data.targetLanguages) ? data.targetLanguages.map((v) => String(v).toLowerCase().trim()) : []; const selected = requested.filter((v, i, a) => AUREN_SUBTITLE_LANGUAGES.includes(v) && a.indexOf(v) === i); return selected.length ? selected : AUREN_SUBTITLE_LANGUAGES.slice(); })(),
     };
   }
   if (type === 'music') return {...base, mode: 'original', instrumental: true};
