@@ -170,6 +170,44 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     }
   }
 
+  Future<AurenTvChannel?> _findWatchTogetherChannel(String channelId) async {
+    try {
+      for (final source in (await AurenTvService.instance.sources()).where((x) => x.enabled)) {
+        final channels = await AurenTvService.instance.loadSource(source, limit: 500);
+        for (final channel in channels) {
+          if (channel.id == channelId) return channel;
+        }
+      }
+      final channels = await AurenTvService.instance.load();
+      for (final channel in channels) {
+        if (channel.id == channelId) return channel;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> _applyWatchTogetherRoomState(AurenTvWatchTogetherRoom room) async {
+    if (room.channelId == null) return;
+    final channel = await _findWatchTogetherChannel(room.channelId!);
+    if (!mounted || channel == null) return;
+    await play(channel, syncWatchTogether: false, autoplay: false);
+    final p = player;
+    if (p == null || !p.value.isInitialized) return;
+    _applyingRemoteWatchState = true;
+    try {
+      final position = Duration(milliseconds: (room.positionSeconds * 1000).round());
+      await p.seekTo(position);
+      if (room.isPlaying && !lowData) {
+        await p.play();
+      } else {
+        await p.pause();
+      }
+      if (mounted) setState(() {});
+    } finally {
+      _applyingRemoteWatchState = false;
+    }
+  }
+
   Future<void> _showWatchTogether() async {
     final service = AurenTvWatchTogetherService.instance;
     final action = await showDialog<String>(context: context, builder: (ctx) {
@@ -213,6 +251,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       await _watchTogetherSubscription?.cancel();
       final roomId = room.id;
       setState(() { _watchTogether = true; _watchTogetherRoom = roomId; });
+      if (action == 'join') await _applyWatchTogetherRoomState(room);
       _watchTogetherSyncTimer?.cancel();
       _watchTogetherSyncTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
         if (_watchTogetherRoom != roomId || _applyingRemoteWatchState || player == null || !player!.value.isInitialized) return;
@@ -723,7 +762,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     });
   }
 
-  Future<void> play(AurenTvChannel c) async {
+  Future<void> play(AurenTvChannel c, {bool syncWatchTogether = true, bool autoplay = true}) async {
     _failoverAttempts = 0;
     _bufferingSince = null;
     _lastPosition = null;
@@ -745,7 +784,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     final p = VideoPlayerController.networkUrl(Uri.parse(channel.url));
     player = p;
     playing = channel;
-    if (_watchTogetherRoom != null) {
+    if (_watchTogetherRoom != null && syncWatchTogether) {
       await AurenTvWatchTogetherService.instance.sync(_watchTogetherRoom!, channelId: channel.id, channelName: channel.name);
     }
     p.addListener(_onPlayerValueChanged);
@@ -763,7 +802,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       _lastPosition = p.value.position;
       _lastProgressAt = DateTime.now();
       setState(() { loading = false; });
-      if (!lowData) await p.play();
+      if (autoplay && !lowData) await p.play();
     } catch (_) {
       if (!mounted || generation != _playerGeneration) return;
       setState(() { loading = false; });
