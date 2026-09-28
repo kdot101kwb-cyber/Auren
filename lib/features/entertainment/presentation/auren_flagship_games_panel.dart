@@ -33,6 +33,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   String? _matchWinnerId;
   String _matchResult = 'in_progress';
   bool _tournamentResultSent = false;
+  bool _onlineInitializationRequested = false;
   String _message = 'ابدأ الجولة';
 
   final List<int> _ludo = [-1, -1, -1, -1];
@@ -76,7 +77,6 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     _loadProgress();
     if (widget.initialLobbyId != null && widget.initialLobbyId!.isNotEmpty) {
       _watchLobby(widget.initialLobbyId!);
-      unawaited(_initializeOnlineMatch());
     }
   }
 
@@ -262,14 +262,21 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   Future<void> _initializeOnlineMatch() async {
-    if (widget.gameIndex == 0) {
+    if (_onlineInitializationRequested) return;
+    _onlineInitializationRequested = true;
+    try {
+    if (_localIndex == 0) {
       await _multiplayer.initializeLudoMatch();
-    } else if (widget.gameIndex == 1) {
+    } else if (_localIndex == 1) {
       await _multiplayer.initializeDominoMatch();
-    } else if (widget.gameIndex == 2) {
+    } else if (_localIndex == 2) {
       await _multiplayer.initializeUnoMatch();
     } else if (_gameId >= 53 && _gameId <= 59) {
       await _multiplayer.initializeFlagshipMatch();
+    }
+    } catch (_) {
+      _onlineInitializationRequested = false;
+      rethrow;
     }
   }
 
@@ -326,6 +333,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     _lobbyId = id;
     _turnPlayerId = null;
     _stateVersion = 0;
+    _onlineInitializationRequested = false;
     _lobbySubscription = _multiplayer.watchLobby(id).listen((data) {
       if (!mounted || data == null) return;
       final players = List<String>.from(data['players'] ?? const <String>[]);
@@ -342,6 +350,9 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       final matchResult = data['matchResult'];
       if (matchResult is Map) { _matchWinnerId = matchResult['winnerId']?.toString(); _matchResult = matchResult['result']?.toString() ?? _matchResult; }
       final status = data['status']?.toString() ?? 'waiting';
+      if (status == 'playing' && !_onlineInitializationRequested && (remoteState is! Map || remoteState.isEmpty)) {
+        unawaited(_initializeOnlineMatch());
+      }
       final turnText = status == 'playing' ? (_isMyTurn ? 'Your turn' : 'Opponent turn') : 'Waiting';
       setState(() => _onlineStatus = status == 'playing' ? '2 Players • ' + turnText : turnText + ' • ' + players.length.toString() + '/2');
       if (status == 'finished') unawaited(_loadServerRanking());
@@ -361,6 +372,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     if (oldWidget.gameIndex != widget.gameIndex || oldWidget.initialLobbyId != widget.initialLobbyId) {
       unawaited(_leaveLobby());
       _reset();
+      _onlineInitializationRequested = false;
+      if (widget.initialLobbyId != null && widget.initialLobbyId!.isNotEmpty) _watchLobby(widget.initialLobbyId!);
       unawaited(_loadProgress());
     }
   }
