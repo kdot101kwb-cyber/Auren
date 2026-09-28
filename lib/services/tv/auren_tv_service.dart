@@ -10,7 +10,8 @@ class AurenTvChannel {
 
 class AurenTvSource {
   final String id, name, type, url, epgUrl, username, password;
-  const AurenTvSource({required this.id, required this.name, required this.type, this.url = '', this.epgUrl = '', this.username = '', this.password = ''});
+  final bool enabled;
+  const AurenTvSource({required this.id, required this.name, required this.type, this.url = '', this.epgUrl = '', this.username = '', this.password = '', this.enabled = true});
 }
 
 class AurenTvService {
@@ -46,6 +47,7 @@ class AurenTvService {
   static const Duration _sourceChannelCacheTtl = Duration(minutes: 10);
 
   static const _sourcesKey = 'auren_tv_sources';
+  static const _defaultSourceKey = 'auren_tv_default_source';
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
   List<AurenTvSource>? _sourcesCache;
 
@@ -60,7 +62,7 @@ class AurenTvService {
         final id = m['id']?.toString() ?? '';
         if (id.isEmpty) continue;
         final password = await _secure.read(key: 'auren_tv_source_password_$id') ?? '';
-        out.add(AurenTvSource(id: id, name: m['name']?.toString() ?? 'IPTV', type: m['type']?.toString() ?? 'm3u', url: m['url']?.toString() ?? '', epgUrl: m['epgUrl']?.toString() ?? '', username: m['username']?.toString() ?? '', password: password));
+        out.add(AurenTvSource(id: id, name: m['name']?.toString() ?? 'IPTV', type: m['type']?.toString() ?? 'm3u', url: m['url']?.toString() ?? '', epgUrl: m['epgUrl']?.toString() ?? '', username: m['username']?.toString() ?? '', password: password, enabled: m['enabled'] != false));
       } catch (_) {}
     }
     _sourcesCache = out;
@@ -70,9 +72,35 @@ class AurenTvService {
   Future<void> saveSource(AurenTvSource source) async {
     final current = (await sources()).where((x) => x.id != source.id).toList()..add(source);
     final p = await SharedPreferences.getInstance();
-    await p.setStringList(_sourcesKey, current.map((x) => jsonEncode({'id': x.id, 'name': x.name, 'type': x.type, 'url': x.url, 'epgUrl': x.epgUrl, 'username': x.username})).toList());
+    await p.setStringList(_sourcesKey, current.map((x) => jsonEncode({'id': x.id, 'name': x.name, 'type': x.type, 'url': x.url, 'epgUrl': x.epgUrl, 'username': x.username, 'enabled': x.enabled})).toList());
     await _secure.write(key: 'auren_tv_source_password_${source.id}', value: source.password);
     _sourcesCache = current;
+  }
+
+  Future<String?> defaultSourceId() async {
+    final p = await SharedPreferences.getInstance();
+    final id = p.getString(_defaultSourceKey);
+    if (id == null || id.isEmpty) return null;
+    final exists = (await sources()).any((x) => x.id == id && x.enabled);
+    return exists ? id : null;
+  }
+
+  Future<void> setDefaultSource(String? id) async {
+    final p = await SharedPreferences.getInstance();
+    if (id == null || id.isEmpty) {
+      await p.remove(_defaultSourceKey);
+      return;
+    }
+    final exists = (await sources()).any((x) => x.id == id && x.enabled);
+    if (exists) await p.setString(_defaultSourceKey, id);
+  }
+
+  Future<void> setSourceEnabled(String id, bool enabled) async {
+    final current = await sources();
+    final source = current.where((x) => x.id == id).toList();
+    if (source.isEmpty) return;
+    await saveSource(AurenTvSource(id: source.first.id, name: source.first.name, type: source.first.type, url: source.first.url, epgUrl: source.first.epgUrl, username: source.first.username, password: source.first.password, enabled: enabled));
+    if (!enabled && await defaultSourceId() == id) await setDefaultSource(null);
   }
 
   Future<void> deleteSource(String id) async {
@@ -85,9 +113,21 @@ class AurenTvService {
     _sourceChannelCacheTimes.remove(id);
     _sourceEpgUrls.remove(id);
     _sourceEpgCaches.remove(id);
+    if (await defaultSourceId() == id) await setDefaultSource(null);
+  }
+
+  Future<int> testSource(AurenTvSource source) async {
+    if (source.type.toLowerCase() == 'xtream') {
+      final channels = await _fetchXtream(source, limit: 500);
+      return channels.length;
+    }
+    if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
+    final channels = await _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV', limit: 500, sourceId: source.id);
+    return channels.length;
   }
 
   Future<List<AurenTvChannel>> loadSource(AurenTvSource source, {int limit = 500, bool forceRefresh = false}) async {
+    if (!source.enabled) return const [];
     final cachedAt = _sourceChannelCacheTimes[source.id];
     final cached = _sourceChannelCaches[source.id];
     if (!forceRefresh && cached != null && cachedAt != null && DateTime.now().difference(cachedAt) < _sourceChannelCacheTtl) {
