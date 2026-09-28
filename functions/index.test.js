@@ -514,3 +514,9 @@ test('post-assembly plan covers audio, music, subtitles, thumbnail and trailer p
   assert.match(source,/languages:\['ar','en'\]/);
   assert.match(source,/postAssemblyPlan/);
 });
+
+test('post-assembly tasks include thumbnail and trailer and final package assets',()=>{
+  assert.match(source,/for \(const type of \['audio','music','subtitles','thumbnail','trailer'\]\)/);
+  assert.match(source,/finalPackageVersion:1/);
+  assert.match(source,/availableAssets:\['video','audio','music','subtitles','thumbnail','trailer'\]/);
+});
