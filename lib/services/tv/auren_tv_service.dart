@@ -15,9 +15,21 @@ class AurenTvService {
   static const sportsPlaylist = 'https://iptv-org.github.io/iptv/categories/sports.m3u';
   static const newsPlaylist = 'https://iptv-org.github.io/iptv/categories/news.m3u';
   static const sudanPlaylist = 'https://iptv-org.github.io/iptv/countries/sd.m3u';
+  static const moviesPlaylist = 'https://iptv-org.github.io/iptv/categories/movies.m3u';
+  static const musicPlaylist = 'https://iptv-org.github.io/iptv/categories/music.m3u';
+  static const kidsPlaylist = 'https://iptv-org.github.io/iptv/categories/kids.m3u';
+  static const animationPlaylist = 'https://iptv-org.github.io/iptv/categories/animation.m3u';
+  static const documentaryPlaylist = 'https://iptv-org.github.io/iptv/categories/documentary.m3u';
+  static const seriesPlaylist = 'https://iptv-org.github.io/iptv/categories/series.m3u';
   List<AurenTvChannel>? _entertainmentCache;
   List<AurenTvChannel>? _sportsCache;
   List<AurenTvChannel>? _newsCache;
+  List<AurenTvChannel>? _moviesCache;
+  List<AurenTvChannel>? _musicCache;
+  List<AurenTvChannel>? _kidsCache;
+  List<AurenTvChannel>? _animationCache;
+  List<AurenTvChannel>? _documentaryCache;
+  List<AurenTvChannel>? _seriesCache;
   List<AurenTvChannel>? _cache;
   String? _epgUrl;
   Map<String, List<Map<String, String>>>? _epgCache;
@@ -75,6 +87,36 @@ class AurenTvService {
       _newsCache = merged;
     }
     return _newsCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> loadMovies({int limit = 500}) async {
+    _moviesCache ??= await _fetchPlaylist(moviesPlaylist, fallbackCategory: 'Movies');
+    return _moviesCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> loadMusic({int limit = 500}) async {
+    _musicCache ??= await _fetchPlaylist(musicPlaylist, fallbackCategory: 'Music');
+    return _musicCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> loadKids({int limit = 500}) async {
+    _kidsCache ??= await _fetchPlaylist(kidsPlaylist, fallbackCategory: 'Kids');
+    return _kidsCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> loadAnimation({int limit = 500}) async {
+    _animationCache ??= await _fetchPlaylist(animationPlaylist, fallbackCategory: 'Animation');
+    return _animationCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> loadDocumentary({int limit = 500}) async {
+    _documentaryCache ??= await _fetchPlaylist(documentaryPlaylist, fallbackCategory: 'Documentary');
+    return _documentaryCache!.take(limit).toList();
+  }
+
+  Future<List<AurenTvChannel>> loadSeries({int limit = 500}) async {
+    _seriesCache ??= await _fetchPlaylist(seriesPlaylist, fallbackCategory: 'Series');
+    return _seriesCache!.take(limit).toList();
   }
 
   Future<List<AurenTvChannel>> _fetchPlaylist(String source, {String fallbackCategory = ''}) async {
