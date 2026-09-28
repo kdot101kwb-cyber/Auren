@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../services/tv/auren_tv_service.dart';
 import '../../../services/tv/auren_tv_epg_smart_service.dart';
