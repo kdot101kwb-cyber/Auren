@@ -6,6 +6,95 @@ import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 import 'auren_audio_player_screen.dart';
 import 'auren_music_concierge_screen.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+
+class _OriginalMusicCreationScreen extends StatefulWidget {
+  @override
+  State<_OriginalMusicCreationScreen> createState() => _OriginalMusicCreationScreenState();
+}
+
+class _OriginalMusicCreationScreenState extends State<_OriginalMusicCreationScreen> {
+  final idea = TextEditingController();
+  String genre = 'Afrobeat';
+  String mood = 'حماس';
+  String language = 'العربية';
+
+  static const genres = ['Afrobeat', 'Pop', 'Hip Hop', 'R&B', 'Rock', 'Classical', 'Chill'];
+  static const moods = ['هادئ', 'حماس', 'تركيز', 'رومانسي', 'حزين', 'تسلية'];
+  static const languages = ['العربية', 'English', 'Français', 'Español'];
+
+  @override
+  void dispose() {
+    idea.dispose();
+    super.dispose();
+  }
+
+  void createBrief() {
+    final text = idea.text.trim().isEmpty ? 'أغنية أصلية عن الأمل وبداية جديدة' : idea.text.trim();
+    final prompt = 'أريد إنشاء أغنية أصلية بالكامل داخل AUREN Music AI. الفكرة: $text. '
+        'النوع: $genre. المزاج: $mood. اللغة: $language. '
+        'أنشئ لي أولاً Creative Brief يتضمن العنوان المقترح، الفكرة، بنية الأغنية، كلمات أصلية، وصف التوزيع والموسيقى والمؤثرات، '
+        'مع التأكيد على عدم تقليد صوت أو أسلوب فنان حقيقي وعدم استخدام مادة محمية دون ترخيص.';
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => MessengerScreen(initialPrompt: prompt),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('AUREN Original Music AI')),
+    body: ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(colors: [
+              Theme.of(context).colorScheme.primaryContainer,
+              Theme.of(context).colorScheme.tertiaryContainer,
+            ]),
+          ),
+          child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Icons.auto_awesome_rounded, size: 38),
+            SizedBox(height: 8),
+            Text('Create. Compose. Own.', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+            SizedBox(height: 6),
+            Text('نبدأ من فكرة أصلية ثم نحوّلها إلى Creative Brief قابل للإنتاج.'),
+          ]),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: idea,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: 'فكرة الأغنية',
+            hintText: 'مثلاً: أغنية عن السودان، الأمل، والصداقة بين الشعوب',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 14),
+        const Text('النوع', style: TextStyle(fontWeight: FontWeight.w700)),
+        Wrap(spacing: 8, children: genres.map((v) => ChoiceChip(label: Text(v), selected: genre == v, onSelected: (_) => setState(() => genre = v))).toList()),
+        const SizedBox(height: 14),
+        const Text('المزاج', style: TextStyle(fontWeight: FontWeight.w700)),
+        Wrap(spacing: 8, children: moods.map((v) => ChoiceChip(label: Text(v), selected: mood == v, onSelected: (_) => setState(() => mood = v))).toList()),
+        const SizedBox(height: 14),
+        const Text('اللغة', style: TextStyle(fontWeight: FontWeight.w700)),
+        Wrap(spacing: 8, children: languages.map((v) => ChoiceChip(label: Text(v), selected: language == v, onSelected: (_) => setState(() => language = v))).toList()),
+        const SizedBox(height: 18),
+        FilledButton.icon(
+          onPressed: createBrief,
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('ابدأ إنشاء الأغنية'),
+        ),
+        const SizedBox(height: 10),
+        const Text('حقوق آمنة: المحتوى المقترح أصلي، ولا يُفترض تقليد أصوات فنانين حقيقيين أو استخدام مواد محمية بلا ترخيص.',
+          style: TextStyle(fontSize: 12)),
+      ],
+    ),
+  );
+}
 
 class AurenSmartMusicScreen extends StatefulWidget {
   const AurenSmartMusicScreen({super.key});
