@@ -642,14 +642,30 @@ class AurenTvService {
     return {'current': current['title'] ?? '', 'next': next['title'] ?? ''};
   }
 
+  Future<List<Map<String, String>>> smartScheduleForChannel(
+    AurenTvChannel channel, {
+    AurenTvSource? source,
+    int hours = 48,
+  }) async {
+    // Prefer the active source EPG, then fall back to the global EPG.
+    if (source != null) {
+      final sourceItems = await scheduleForSourceChannel(source, channel, hours: hours);
+      if (sourceItems.isNotEmpty) return sourceItems;
+    }
+    return scheduleForChannel(channel, hours: hours);
+  }
+
   Future<Map<String, String>?> nowNextForChannel(AurenTvChannel channel, {AurenTvSource? source}) async {
-    final list = source == null
-        ? await scheduleForChannel(channel)
-        : await scheduleForSourceChannel(source, channel);
+    final list = await smartScheduleForChannel(channel, source: source, hours: 48);
     if (list.isEmpty) return null;
     final current = list.firstWhere((x) => x['state'] == 'now', orElse: () => <String, String>{});
     final next = list.firstWhere((x) => x['state'] == 'next', orElse: () => <String, String>{});
-    return {'current': current['title'] ?? '', 'next': next['title'] ?? ''};
+    return {
+      'current': current['title'] ?? '',
+      'next': next['title'] ?? '',
+      'currentStart': current['startIso'] ?? '',
+      'currentStop': current['stopIso'] ?? '',
+    };
   }
 
   Future<List<Map<String, String>>> schedule(String tvgId, {int hours = 24}) async {
@@ -777,7 +793,7 @@ class AurenTvService {
     return programs.where((x) {
       final stop = DateTime.tryParse(x['stopIso'] ?? '');
       return stop != null && stop.isAfter(now) && stop.isBefore(until);
-    }).take(12).toList();
+    }).take(hours <= 24 ? 12 : 24).toList();
   }
 
   Future<Map<String, List<Map<String, String>>>> _loadEpg(String epgUrl, {String metadataKey = 'global'}) async {
