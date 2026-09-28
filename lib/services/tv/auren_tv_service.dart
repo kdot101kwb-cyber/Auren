@@ -49,6 +49,7 @@ class AurenTvService {
   Map<String, List<Map<String, String>>>? _epgCache;
   final Map<String, String> _sourceEpgUrls = <String, String>{};
   final Map<String, Map<String, List<Map<String, String>>>> _sourceEpgCaches = <String, Map<String, List<Map<String, String>>>>{};
+  final Map<String, Map<String, Map<String, String>>> _epgChannelMetadata = <String, Map<String, Map<String, String>>>{};
   final Map<String, List<AurenTvChannel>> _sourceChannelCaches = <String, List<AurenTvChannel>>{};
   final Map<String, DateTime> _sourceChannelCacheTimes = <String, DateTime>{};
   static const Duration _sourceChannelCacheTtl = Duration(minutes: 10);
@@ -120,6 +121,7 @@ class AurenTvService {
     _sourceChannelCacheTimes.remove(id);
     _sourceEpgUrls.remove(id);
     _sourceEpgCaches.remove(id);
+    _epgChannelMetadata.remove(id);
     final p2 = await SharedPreferences.getInstance();
     if (p2.getString(_defaultSourceKey) == id) await p2.remove(_defaultSourceKey);
   }
@@ -463,9 +465,19 @@ class AurenTvService {
     return {'current': current['title'] ?? '', 'next': next['title'] ?? ''};
   }
 
+  Future<Map<String, String>?> nowNextForChannel(AurenTvChannel channel, {AurenTvSource? source}) async {
+    final list = source == null
+        ? await scheduleForChannel(channel)
+        : await scheduleForSourceChannel(source, channel);
+    if (list.isEmpty) return null;
+    final current = list.firstWhere((x) => x['state'] == 'now', orElse: () => <String, String>{});
+    final next = list.firstWhere((x) => x['state'] == 'next', orElse: () => <String, String>{});
+    return {'current': current['title'] ?? '', 'next': next['title'] ?? ''};
+  }
+
   Future<List<Map<String, String>>> schedule(String tvgId, {int hours = 24}) async {
     if (tvgId.isEmpty || _epgUrl == null || _epgUrl!.isEmpty) return const [];
-    _epgCache ??= await _loadEpg(_epgUrl!);
+    _epgCache ??= await _loadEpg(_epgUrl!, metadataKey: 'global');
     return _filterSchedule(_matchEpg(_epgCache!, tvgId), hours);
   }
 
@@ -473,8 +485,23 @@ class AurenTvService {
     if (tvgId.isEmpty) return const [];
     final epgUrl = source.epgUrl.trim().isNotEmpty ? source.epgUrl.trim() : (_sourceEpgUrls[source.id] ?? '');
     if (epgUrl.isEmpty) return const [];
-    final cache = _sourceEpgCaches[source.id] ??= await _loadEpg(epgUrl);
+    final cache = _sourceEpgCaches[source.id] ??= await _loadEpg(epgUrl, metadataKey: source.id);
     return _filterSchedule(_matchEpg(cache, tvgId), hours);
+  }
+
+  Future<List<Map<String, String>>> scheduleForChannel(AurenTvChannel channel, {int hours = 24}) async {
+    if (_epgUrl == null || _epgUrl!.isEmpty) return const [];
+    _epgCache ??= await _loadEpg(_epgUrl!, metadataKey: 'global');
+    final matched = _matchEpgForChannel(_epgCache!, channel, _epgChannelMetadata['global'] ?? const {});
+    return _filterSchedule(matched, hours);
+  }
+
+  Future<List<Map<String, String>>> scheduleForSourceChannel(AurenTvSource source, AurenTvChannel channel, {int hours = 24}) async {
+    final epgUrl = source.epgUrl.trim().isNotEmpty ? source.epgUrl.trim() : (_sourceEpgUrls[source.id] ?? '');
+    if (epgUrl.isEmpty) return const [];
+    final cache = _sourceEpgCaches[source.id] ??= await _loadEpg(epgUrl, metadataKey: source.id);
+    final matched = _matchEpgForChannel(cache, channel, _epgChannelMetadata[source.id] ?? const {});
+    return _filterSchedule(matched, hours);
   }
 
   List<Map<String, String>> _matchEpg(Map<String, List<Map<String, String>>> cache, String tvgId) {
@@ -490,6 +517,83 @@ class AurenTvService {
     return const [];
   }
 
+  List<Map<String, String>> _matchEpgForChannel(
+    Map<String, List<Map<String, String>>> cache,
+    AurenTvChannel channel,
+    Map<String, Map<String, String>> metadata,
+  ) {
+    if (cache.isEmpty) return const [];
+    final byId = _matchEpg(cache, channel.tvgId);
+    if (byId.isNotEmpty) return byId;
+
+    final wantedName = _normalizeIdentity(channel.name);
+    if (wantedName.isEmpty) return const [];
+
+    List<Map<String, String>>? best;
+    var bestScore = 0.0;
+    for (final entry in metadata.entries) {
+      final programs = cache[entry.key];
+      if (programs == null || programs.isEmpty) continue;
+      final metaName = _normalizeIdentity(entry.value['name'] ?? '');
+      if (metaName.isEmpty) continue;
+
+      final nameScore = _identitySimilarity(wantedName, metaName);
+      if (nameScore < 0.72) continue;
+
+      final metaCountry = _normalizeIdentity(entry.value['country'] ?? '');
+      final wantedCountry = _normalizeIdentity(channel.country);
+      final metaLanguage = _normalizeIdentity(entry.value['language'] ?? '');
+      final wantedLanguage = _normalizeIdentity(channel.language);
+
+      var score = nameScore;
+      if (wantedCountry.isNotEmpty && metaCountry.isNotEmpty) {
+        if (wantedCountry == metaCountry) {
+          score += 0.12;
+        } else if (metaCountry.contains(wantedCountry) || wantedCountry.contains(metaCountry)) {
+          score += 0.06;
+        } else {
+          score -= 0.10;
+        }
+      }
+      if (wantedLanguage.isNotEmpty && metaLanguage.isNotEmpty) {
+        if (wantedLanguage == metaLanguage) {
+          score += 0.08;
+        } else if (metaLanguage.contains(wantedLanguage) || wantedLanguage.contains(metaLanguage)) {
+          score += 0.04;
+        } else {
+          score -= 0.06;
+        }
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = programs;
+      }
+    }
+    return bestScore >= 0.78 ? best ?? const [] : const [];
+  }
+
+  static double _identitySimilarity(String a, String b) {
+    if (a.isEmpty || b.isEmpty) return 0;
+    if (a == b) return 1;
+    if (a.contains(b) || b.contains(a)) {
+      final shorter = a.length < b.length ? a : b;
+      final longer = a.length >= b.length ? a : b;
+      return shorter.length / longer.length;
+    }
+    final aTokens = _identityTokens(a);
+    final bTokens = _identityTokens(b);
+    if (aTokens.isEmpty || bTokens.isEmpty) return 0;
+    final overlap = aTokens.intersection(bTokens).length;
+    return overlap / aTokens.union(bTokens).length;
+  }
+
+  static Set<String> _identityTokens(String value) {
+    return RegExp(r'[a-z0-9\\u0600-\\u06ff]+').allMatches(value)
+        .map((m) => m.group(0)!)
+        .where((x) => x.length >= 2)
+        .toSet();
+  }
+
   List<Map<String, String>> _filterSchedule(List<Map<String, String>> programs, int hours) {
     final now = DateTime.now().toUtc();
     final until = now.add(Duration(hours: hours));
@@ -499,11 +603,33 @@ class AurenTvService {
     }).take(12).toList();
   }
 
-  Future<Map<String, List<Map<String, String>>>> _loadEpg(String epgUrl) async {
+  Future<Map<String, List<Map<String, String>>>> _loadEpg(String epgUrl, {String metadataKey = 'global'}) async {
     try {
       final r = await http.get(Uri.parse(epgUrl)).timeout(const Duration(seconds: 20));
       if (r.statusCode != 200) return {};
       final result = <String, List<Map<String, String>>>{};
+      final metadata = <String, Map<String, String>>{};
+      final channelPattern = RegExp(r'<channel\\b([^>]*)>([\\s\\S]*?)</channel>', caseSensitive: false);
+      for (final m in channelPattern.allMatches(r.body).take(10000)) {
+        final attrs = m.group(1)!;
+        final body = m.group(2)!;
+        final id = _xmlAttr(attrs, 'id');
+        if (id.isEmpty) continue;
+        final displayNames = RegExp(r'<display-name[^>]*>([\\s\\S]*?)</display-name>', caseSensitive: false)
+            .allMatches(body)
+            .map((x) => _decodeXml(x.group(1) ?? ''))
+            .where((x) => x.trim().isNotEmpty)
+            .toList();
+        final firstDisplay = RegExp(r'<display-name\\b([^>]*)>', caseSensitive: false).firstMatch(body);
+        final language = _xmlAttr(firstDisplay?.group(1) ?? '', 'lang');
+        metadata[id] = {
+          'name': displayNames.isEmpty ? '' : displayNames.first,
+          'names': displayNames.join(' | '),
+          'language': language,
+          'country': _extractCountryHint(displayNames.join(' ') + ' ' + id),
+        };
+      }
+      _epgChannelMetadata[metadataKey] = metadata;
       final now = DateTime.now().toUtc();
       final pattern = RegExp(r'<programme\b([^>]*)>([\s\S]*?)</programme>', caseSensitive: false);
       for (final m in pattern.allMatches(r.body).take(30000)) {
@@ -563,5 +689,17 @@ class AurenTvService {
   }
   static String _xmlAttr(String s, String key) => RegExp('$key="([^"]*)"').firstMatch(s)?.group(1) ?? '';
   static String _decodeXml(String s) => s.replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"').replaceAll('&apos;', "'");
+  static String _extractCountryHint(String value) {
+    final upper = value.toUpperCase();
+    final matches = RegExp(r'\\b([A-Z]{2})\\b').allMatches(upper).map((m) => m.group(1)!).toSet();
+    const known = {
+      'SD','EG','SA','AE','QA','KW','BH','OM','JO','IQ','LB','MA','DZ','TN','TR','ZA','NG','KE',
+      'IN','CN','JP','KR','GB','FR','DE','IT','ES','US','CA','BR','AU','RU','UA','PK','BD',
+    };
+    for (final code in matches) {
+      if (known.contains(code)) return code;
+    }
+    return '';
+  }
   static String? _attr(String s, String key) => RegExp(key + '="([^"]*)"').firstMatch(s)?.group(1);
 }
