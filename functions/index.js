@@ -991,3 +991,155 @@ exports.processAurenSeriesProduction = onSchedule(
     }
   }
 );
+
+
+// AUREN Series Render Queue v1.
+// This stage converts the durable series blueprint/scenes into deterministic,
+// idempotent render tasks. It does not pretend media is rendered until a
+// provider worker completes the task.
+function buildAurenSeriesRenderTasks(jobId, scenes, blueprint) {
+  const list = Array.isArray(scenes) ? scenes : [];
+  const visualStyle = String(blueprint?.visualStyle || '').slice(0, 600);
+  return list.slice(0, 240).map((scene) => {
+    const episode = Math.max(1, Number(scene?.episodeNumber || 1));
+    const sceneNumber = Math.max(1, Number(scene?.sceneNumber || 1));
+    const id = 'ep' + episode + '_sc' + sceneNumber;
+    const beat = String(scene?.beat || '').slice(0, 800);
+    return {
+      id,
+      episodeNumber: episode,
+      sceneNumber,
+      type: 'video_clip',
+      prompt: ('Original series scene. ' + beat + (visualStyle ? ' Visual style: ' + visualStyle : '')).slice(0, 3000),
+      providerCandidates: ['pollinations', 'gemini', 'server_provider'],
+      status: 'queued',
+      attempts: 0,
+      output: null,
+    };
+  });
+}
+
+async function claimAurenSeriesRenderPreparation() {
+  const snapshot = await db.collectionGroup('entertainmentCreationJobs')
+    .where('mode', '==', 'مسلسل')
+    .where('productionStage', '==', 'ready_for_render')
+    .orderBy('updatedAt', 'asc')
+    .limit(5)
+    .get();
+  for (const snap of snapshot.docs) {
+    const claimed = await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(snap.ref);
+      if (!fresh.exists) return false;
+      const data = fresh.data() || {};
+      if (data.status === 'cancelled') return false;
+      if (String(data.productionStage || '') !== 'ready_for_render') return false;
+      const lockUntil = Number(data.workerLockUntilMs || 0);
+      if (lockUntil > Date.now()) return false;
+      tx.update(snap.ref, {
+        status: 'processing',
+        productionStage: 'render_queue_building',
+        workerLockUntilMs: Date.now() + 4 * 60 * 1000,
+        workerClaimedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return true;
+    });
+    if (claimed) return snap.ref;
+  }
+  return null;
+}
+
+exports.prepareAurenSeriesRenderQueue = onSchedule(
+  {schedule:'every 2 minutes', timeZone:'UTC', region:'us-central1', timeoutSeconds:120, memory:'512MiB'},
+  async () => {
+    const ref = await claimAurenSeriesRenderPreparation();
+    if (!ref) return;
+    try {
+      const snap = await ref.get();
+      const job = snap.data() || {};
+      const tasks = buildAurenSeriesRenderTasks(ref.id, job.scenes || [], job.seriesBlueprint || {});
+      if (!tasks.length) {
+        await ref.set({status:'failed', productionStage:'production_failed', workerLockUntilMs:0, lastError:'No scenes were available for rendering.', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+        return;
+      }
+      const batch = db.batch();
+      const tasksRef = ref.collection('renderTasks');
+      for (const task of tasks) {
+        batch.set(tasksRef.doc(task.id), {
+          jobId: ref.id,
+          episodeNumber: task.episodeNumber,
+          sceneNumber: task.sceneNumber,
+          type: task.type,
+          prompt: task.prompt,
+          providerCandidates: task.providerCandidates,
+          status: task.status,
+          attempts: task.attempts,
+          output: task.output,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        }, {merge:true});
+      }
+      batch.update(ref, {
+        productionStage: 'render_queue_ready',
+        renderQueueStatus: 'queued',
+        renderTaskCount: tasks.length,
+        completedRenderTaskCount: 0,
+        progress: 65,
+        workerLockUntilMs: 0,
+        lastError: '',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      await batch.commit();
+    } catch (error) {
+      await ref.set({status:'failed', productionStage:'production_failed', workerLockUntilMs:0, lastError:String(error?.message || error).slice(0,700), updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    }
+  }
+);
+
+// Claims exactly one render task. Provider execution is intentionally kept as
+// a separate stage so retries cannot create duplicate media submissions.
+async function claimAurenSeriesRenderTask() {
+  const snapshot = await db.collectionGroup('renderTasks')
+    .where('status', '==', 'queued')
+    .orderBy('updatedAt', 'asc')
+    .limit(10)
+    .get();
+  for (const snap of snapshot.docs) {
+    const claimed = await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(snap.ref);
+      if (!fresh.exists) return false;
+      const data = fresh.data() || {};
+      if (data.status !== 'queued') return false;
+      const lockUntil = Number(data.lockUntilMs || 0);
+      if (lockUntil > Date.now()) return false;
+      tx.update(snap.ref, {
+        status: 'provider_pending',
+        attempts: FieldValue.increment(1),
+        lockUntilMs: Date.now() + 6 * 60 * 1000,
+        claimedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return true;
+    });
+    if (claimed) return snap.ref;
+  }
+  return null;
+}
+
+exports.claimAurenSeriesRenderTask = onSchedule(
+  {schedule:'every 2 minutes', timeZone:'UTC', region:'us-central1', timeoutSeconds:60, memory:'256MiB'},
+  async () => {
+    const ref = await claimAurenSeriesRenderTask();
+    if (!ref) return;
+    const task = (await ref.get()).data() || {};
+    // Provider submission is the next adapter boundary. Keeping this task in
+    // provider_pending makes the state visible and retry-safe without claiming
+    // that a provider accepted or rendered the clip.
+    await ref.set({
+      providerState: 'awaiting_provider_adapter',
+      providerAttempt: 0,
+      lastError: '',
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge:true});
+  }
+);
