@@ -102,6 +102,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   String _nextMoveId() => '${_multiplayer.playerId}-${++_localMoveCounter}';
 
   Map<String, dynamic> _gameState() => {
+    'gameIndex': widget.gameIndex,
     'score': _score, 'round': _round, 'hp': _hp, 'streak': _streak,
     'energy': _energy, 'distance': _distance, 'message': _message,
     'ludo': _ludo, 'cpuLudo': _cpuLudo, 'ludoDice': _ludoDice, 'ludoPendingDice': _ludoPendingDice,
