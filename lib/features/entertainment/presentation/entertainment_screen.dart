@@ -7,6 +7,7 @@ import '../../search/presentation/global_search_screen.dart';
 import 'entertainment_detail_screen.dart';
 import 'entertainment_shorts_screen.dart';
 import 'auren_music_hub_screen.dart';
+import 'auren_movies_hub_screen.dart';
 import 'auren_watch_concierge_screen.dart';
 import 'continue_watching_screen.dart';
 import 'watch_history_screen.dart';
@@ -34,7 +35,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
   String _mood = 'الكل';
 
   static const _quickActions = <_EntertainmentAction>[
-    _EntertainmentAction(Icons.movie_filter_rounded, 'Watch AI', 'Smart movies, series & anime'),
+    _EntertainmentAction(Icons.movie_filter_rounded, 'Movies', 'Global movies with smart discovery'),
     _EntertainmentAction(Icons.groups_rounded, 'Watch Together', 'Watch with friends in one room'),
     _EntertainmentAction(Icons.music_note_rounded, 'Music', 'Songs, playlists & AI music'),
     _EntertainmentAction(Icons.live_tv_rounded, 'Live', 'Channels, live events & radio'),
@@ -381,7 +382,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGamingScreen()));
                   } else if (action.title == 'Watch Together') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchTogetherScreen()));
-                  } else if (action.title == 'Watch AI') {
+                  } else if (action.title == 'Movies') {\n                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMoviesHubScreen()));\n                  } else if (action.title == 'Watch AI') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchConciergeScreen()));
                   } else if (action.title == 'Music') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()));
