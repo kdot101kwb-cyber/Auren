@@ -106,7 +106,24 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             final start = DateTime.tryParse(x.startIso)?.toLocal();
             final stop = DateTime.tryParse(x.stopIso)?.toLocal();
             final time = start == null || stop == null ? '' : TimeOfDay.fromDateTime(start).format(ctx) + ' — ' + TimeOfDay.fromDateTime(stop).format(ctx);
-            return Card(child: ListTile(leading: CircleAvatar(child: Icon(x.state == 'now' ? Icons.play_arrow : Icons.schedule)), title: Text(x.title), subtitle: Text(time), trailing: x.state == 'now' ? const Chip(label: Text('الآن')) : null));
+            return Card(child: ListTile(
+              leading: CircleAvatar(child: Icon(x.state == 'now' ? Icons.play_arrow : Icons.schedule)),
+              title: Text(x.title),
+              subtitle: Text(time),
+              trailing: x.state == 'now' ? const Chip(label: Text('الآن')) : null,
+              onTap: () async {
+                final channel = await AurenTvService.instance.findChannelForEpgId(x.channelId, source: activeSource);
+                if (!ctx.mounted) return;
+                Navigator.pop(ctx);
+                if (channel != null) {
+                  await play(channel);
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('لقينا البرنامج لكن القناة غير متاحة حالياً.')),
+                  );
+                }
+              },
+            ));
           },
         )),
       ]),
@@ -589,7 +606,21 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search),
             hintText: 'ابحث بذكاء: قناة، دولة، لغة أو فئة',
-            suffixIcon: query.isEmpty ? null : IconButton(onPressed: () { _search.clear(); setState(() => query = ''); }, icon: const Icon(Icons.clear)),
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'بحث في دليل البرامج EPG',
+                  onPressed: _search.text.trim().length < 2 ? null : () async {
+                    await _searchEpg();
+                    if (mounted) _showEpgSearchResults();
+                  },
+                  icon: _epgSearching ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.event_note_outlined),
+                ),
+                if (query.isNotEmpty)
+                  IconButton(onPressed: () { _search.clear(); setState(() => query = ''); }, icon: const Icon(Icons.clear)),
+              ],
+            ),
           ),
           onChanged: (v) => setState(() { query = _normalizeSearch(v); }),
         ),
