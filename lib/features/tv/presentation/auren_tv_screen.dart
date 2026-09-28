@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../services/tv/auren_tv_service.dart';
 
 class AurenTvScreen extends StatefulWidget {
@@ -18,12 +19,17 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String countryLabel = 'الدول';
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
+  bool _networkAvailable = true;
+  DateTime? _lastRecoveryAt;
+  int _bufferEvents = 0;
+  Duration _totalBuffering = Duration.zero;
   List<AurenTvSource> sources = const [];
   AurenTvSource? activeSource;
   Set<String> favorites = {};
   VideoPlayerController? player;
   AurenTvChannel? playing;
   Timer? _recoveryTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   DateTime? _bufferingSince;
   DateTime? _lastProgressAt;
   Duration? _lastPosition;
@@ -45,6 +51,14 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
     AurenTvService.instance.autoRefreshSources(limit: 150).catchError((_) {});
     _recoveryTimer = Timer.periodic(const Duration(seconds: 3), (_) => _monitorPlayback());
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      if (!mounted) return;
+      final available = results.any((r) => r != ConnectivityResult.none);
+      setState(() => _networkAvailable = available);
+      if (available && player?.value.isInitialized == true && player!.value.isBuffering && !_recovering) {
+        _recoverPlayback(reason: 'عاد الاتصال بالإنترنت');
+      }
+    });
     AurenTvService.instance.sources().then((v) async {
       final defaultId = await AurenTvService.instance.defaultSourceId();
       if (!mounted) return;
@@ -59,6 +73,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override void dispose() {
     _search.dispose();
     _recoveryTimer?.cancel();
+    _connectivitySubscription?.cancel();
     player?.dispose();
     super.dispose();
   }
@@ -104,6 +119,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         await p.dispose();
         return;
       }
+      if (_bufferingSince != null) {
+        _totalBuffering += DateTime.now().difference(_bufferingSince!);
+        _bufferEvents++;
+      }
       _bufferingSince = null;
       _lastPosition = p.value.position;
       _lastProgressAt = DateTime.now();
@@ -138,6 +157,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   void _monitorPlayback() {
     final p = player;
     if (!mounted || p == null || !p.value.isInitialized || _recovering) return;
+    if (!_networkAvailable) return;
     final value = p.value;
     if (value.hasError) {
       _recoverPlayback(reason: 'انقطع البث');
@@ -145,7 +165,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     }
     if (value.isBuffering) {
       _bufferingSince ??= DateTime.now();
-      if (DateTime.now().difference(_bufferingSince!) >= const Duration(seconds: 8)) {
+      final bufferingFor = DateTime.now().difference(_bufferingSince!);
+      // Adaptive buffering: tolerate short mobile-network stalls, then recover.
+      final threshold = lowData ? const Duration(seconds: 12) : const Duration(seconds: 8);
+      if (bufferingFor >= threshold && DateTime.now().difference(_lastRecoveryAt ?? DateTime.fromMillisecondsSinceEpoch(0)) >= const Duration(seconds: 15)) {
         _recoverPlayback(reason: 'البث متوقف مؤقتاً');
       }
       return;
@@ -196,6 +219,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       return;
     }
     _recovering = true;
+    _lastRecoveryAt = DateTime.now();
     _failoverAttempts++;
     final generation = ++_playerGeneration;
     final current = playing!;
@@ -228,6 +252,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           if (!mounted || generation != _playerGeneration) {
             await next.dispose();
             return;
+          }
+          if (_bufferingSince != null) {
+            _totalBuffering += DateTime.now().difference(_bufferingSince!);
+            _bufferEvents++;
           }
           _bufferingSince = null;
           _lastPosition = next.value.position;
@@ -593,11 +621,20 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           )),
         ],
       )),
-      if (playing != null && !lowData) const SizedBox.shrink(),
+      if (playing != null && _bufferEvents > 0)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          child: Align(alignment: AlignmentDirectional.centerStart, child: Text('Smart Buffer • $_bufferEvents توقف • ${_totalBuffering.inSeconds}s', style: const TextStyle(fontSize: 11))),
+        ),
       if (lowData) const Padding(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Text('وضع توفير البيانات: لا يبدأ التشغيل تلقائياً. جودة البث تعتمد على رابط القناة.', style: TextStyle(fontSize: 12)),
       ),
+      if (!_networkAvailable)
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Row(children: [Icon(Icons.wifi_off, size: 16), SizedBox(width: 6), Text('لا يوجد اتصال بالإنترنت حالياً.')]),
+        ),
       if (loading) const LinearProgressIndicator(),
       if (player?.value.isInitialized == true)
         Column(children: [
