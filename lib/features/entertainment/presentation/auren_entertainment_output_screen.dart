@@ -72,6 +72,8 @@ class _AurenEntertainmentOutputScreenState
   bool _switchingQuality = false;
   bool _isBuffering = false;
   bool _didBufferError = false;
+  String _currentUrl = '';
+  bool _completionHandling = false;
 
   void _resetControlsTimer() {
     _controlsTimer?.cancel();
@@ -185,6 +187,7 @@ class _AurenEntertainmentOutputScreenState
         setState(() => _isBuffering = next.value.isBuffering);
       });
       _controller = next;
+      _currentUrl = targetUrl;
       _didBufferError = false;
       await old.pause();
       await old.dispose();
@@ -280,15 +283,25 @@ class _AurenEntertainmentOutputScreenState
     );
   }
 
+  Future<void> _handleVideoCompleted() async {
+    if (_completionHandling) return;
+    _completionHandling = true;
+    try {
+      await _saveWatchProgress(completed: true, force: true);
+      if (!mounted || _didAutoAdvance || widget.onNextEpisode == null) return;
+      _didAutoAdvance = true;
+      _startNextCountdown();
+    } finally {
+      _completionHandling = false;
+    }
+  }
+
   void _onVideoProgress() {
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) return;
-    if (controller.value.position >= controller.value.duration && controller.value.duration > Duration.zero) {
-      _saveWatchProgress(completed: true, force: true);
-      if (!_didAutoAdvance && widget.onNextEpisode != null) {
-        _didAutoAdvance = true;
-        _startNextCountdown();
-      }
+    if (controller.value.position >= controller.value.duration &&
+        controller.value.duration > Duration.zero) {
+      _handleVideoCompleted();
     } else if (!controller.value.isPlaying) {
       _saveWatchProgress(force: true);
     } else {
@@ -324,7 +337,7 @@ class _AurenEntertainmentOutputScreenState
   }
 
   String get _type => widget.output['type']?.toString() ?? 'output';
-  String get _url => widget.output['url']?.toString() ?? '';
+  String get _url => _currentUrl.isNotEmpty ? _currentUrl : (widget.output['url']?.toString() ?? '');
   String get _text => widget.output['text']?.toString() ?? '';
   String get _mime => widget.output['mimeType']?.toString() ?? '';
 
@@ -336,7 +349,8 @@ class _AurenEntertainmentOutputScreenState
     super.initState();
     _loadPlaybackPreferences();
     if (_isVideo && _url.isNotEmpty) {
-      final controller = VideoPlayerController.networkUrl(Uri.parse(_url));
+      _currentUrl = _url;
+      final controller = VideoPlayerController.networkUrl(Uri.parse(_currentUrl));
       _controller = controller;
       controller.addListener(() {
         final playing = controller.value.isPlaying;
