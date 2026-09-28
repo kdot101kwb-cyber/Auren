@@ -183,7 +183,16 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
               leading: CircleAvatar(child: Icon(x.state == 'now' ? Icons.play_arrow : Icons.schedule)),
               title: Text(x.title),
               subtitle: Text(time),
-              trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [IconButton(tooltip: 'حفظ البرنامج', onPressed: () async { await AurenTvService.instance.addEpgWatchlist(x); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ البرنامج في EPG.'))); }, icon: const Icon(Icons.bookmark_add_outlined)), IconButton(tooltip: 'تذكير قبل 10 دقائق', onPressed: () async { final ok = await AurenTvService.instance.addEpgReminder(x); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'تم ضبط تذكير قبل 10 دقائق.' : 'البرنامج بدأ بالفعل أو بيانات الوقت غير صالحة.'))); }, icon: const Icon(Icons.notifications_none))]),
+              trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [IconButton(tooltip: 'حفظ البرنامج', onPressed: () async { await AurenTvService.instance.addEpgWatchlist(x); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ البرنامج في EPG.'))); }, icon: const Icon(Icons.bookmark_add_outlined)), IconButton(tooltip: 'ضبط تذكير', onPressed: () async {
+                  final before = await showModalBottomSheet<Duration>(context: context, builder: (sheetCtx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    const ListTile(title: Text('متى تريد التذكير؟', style: TextStyle(fontWeight: FontWeight.bold))),
+                    for (final m in const [5, 10, 15, 30, 60])
+                      ListTile(leading: const Icon(Icons.notifications_none), title: Text('قبل $m دقيقة'), onTap: () => Navigator.pop(sheetCtx, Duration(minutes: m))),
+                  ])));
+                  if (before == null || !mounted) return;
+                  final ok = await AurenTvService.instance.addEpgReminder(x, before: before);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ok ? 'تم ضبط التذكير قبل ' + before.inMinutes.toString() + ' دقيقة.' : 'البرنامج بدأ بالفعل أو بيانات الوقت غير صالحة.')));
+                }, icon: const Icon(Icons.notifications_none))]),
               onTap: () async {
                 final channel = await AurenTvService.instance.findChannelForEpgId(x.channelId, source: activeSource);
                 if (!ctx.mounted) return;
