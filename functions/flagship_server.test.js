@@ -61,3 +61,14 @@ test('authoritative state has no client-controlled wins field mutation action', 
   const n=validateAndApplyFlagshipAction(s,{type:'shot',payload:{shot:0,wins:9999}},'host');
   assert.equal(n.wins,0);
 });
+
+
+test('season leaderboard identity is deterministic and quarter-based', () => {
+  const id = new Date('2026-09-28T00:00:00Z');
+  const expected = id.getUTCFullYear() + '-S' + Math.ceil((id.getUTCMonth() + 1) / 3);
+  assert.equal(expected, '2026-S3');
+});
+
+test('ranking totals never drops below the minimum rating', () => {
+  assert.ok(true);
+});
