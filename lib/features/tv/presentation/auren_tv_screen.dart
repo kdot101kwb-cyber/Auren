@@ -45,6 +45,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   StreamSubscription<AurenTvWatchTogetherRoom>? _watchTogetherSubscription;
 
   Timer? _recoveryTimer;
+  Timer? _watchTogetherSyncTimer;
+  bool _applyingRemoteWatchState = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   DateTime? _bufferingSince;
   DateTime? _lastProgressAt;
@@ -210,16 +212,23 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       await _watchTogetherSubscription?.cancel();
       final roomId = room.id;
       setState(() { _watchTogether = true; _watchTogetherRoom = roomId; });
+      _watchTogetherSyncTimer?.cancel();
+      _watchTogetherSyncTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+        if (_watchTogetherRoom != roomId || _applyingRemoteWatchState || player == null || !player!.value.isInitialized) return;
+        await service.sync(roomId, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying);
+      });
       _watchTogetherSubscription = service.watch(roomId).listen((remote) async {
         if (!mounted) return;
         final current = playing;
         if (current == null || remote.channelId != current.id) return;
         final p = player;
         if (p == null || !p.value.isInitialized) return;
+        _applyingRemoteWatchState = true;
         final remotePos = Duration(milliseconds: (remote.positionSeconds * 1000).round());
         if ((p.value.position - remotePos).abs() > const Duration(seconds: 3)) await p.seekTo(remotePos);
         if (remote.isPlaying && !p.value.isPlaying && !lowData) await p.play();
         if (!remote.isPlaying && p.value.isPlaying) await p.pause();
+        _applyingRemoteWatchState = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الغرفة جاهزة • الكود: ' + room.inviteCode)));
     } catch (_) {
@@ -636,6 +645,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override void dispose() {
     _watchTogetherSubscription?.cancel();
+    _watchTogetherSyncTimer?.cancel();
     _search.dispose();
     _recoveryTimer?.cancel();
     _connectivitySubscription?.cancel();
