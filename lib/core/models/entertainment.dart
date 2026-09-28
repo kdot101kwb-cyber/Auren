@@ -1,5 +1,5 @@
 class AurenEntertainmentItem {
-  final String id, title, type, description, imageUrl, mediaUrl, mediaKind, creatorId, channelId, country, language, year;
+  final String id, title, type, description, imageUrl, mediaUrl, mediaKind, creatorId, channelId, country, language, year, trailerUrl;
   final List<String> genres;
   final int seasons, episodes;
   const AurenEntertainmentItem({
@@ -7,7 +7,7 @@ class AurenEntertainmentItem {
     required this.description, required this.imageUrl,
     required this.mediaUrl, required this.mediaKind,
     this.creatorId = '', this.channelId = '', this.country = '', this.language = '', this.year = '',
-    this.genres = const [], this.seasons = 0, this.episodes = 0,
+    this.genres = const [], this.seasons = 0, this.episodes = 0, this.trailerUrl = '',
   });
 
   bool get isVideo => mediaKind == 'video' || mediaUrl.toLowerCase().endsWith('.mp4') || mediaUrl.toLowerCase().contains('.m3u8');
@@ -24,6 +24,7 @@ class AurenEntertainmentItem {
     creatorId: (d['creatorId'] ?? d['ownerId'] ?? d['authorId'] ?? d['uid'] ?? '').toString(),
     channelId: (d['channelId'] ?? '').toString(),
     country: (d['country'] ?? '').toString(), language: (d['language'] ?? '').toString(), year: (d['year'] ?? '').toString(),
+    trailerUrl: (d['trailerUrl'] ?? d['trailer'] ?? '').toString(),
     genres: ((d['genres'] as List?)?.whereType<String>().take(10).toList() ?? const []),
     seasons: (d['seasons'] as num?)?.toInt() ?? 0, episodes: (d['episodes'] as num?)?.toInt() ?? 0,
   );
