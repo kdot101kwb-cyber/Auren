@@ -3158,3 +3158,32 @@ exports.processAurenGamingSeasonRewards = require('firebase-functions/v2/https')
   await batch.commit(); return {seasonId:s.seasonId,gameIndex,rewards};
  }
 );
+
+exports.getAurenGamingSeasonRewards = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
+ async(request)=>{
+  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const s=aurenGamingSeasonMeta();
+  const snap=await db.collection('auren_gaming_season_rewards').where('playerId','==',request.auth.uid).orderBy('createdAt','desc').limit(30).get();
+  return {seasonId:s.seasonId,rewards:snap.docs.map(d=>({id:d.id,...d.data()}))};
+ }
+);
+exports.claimAurenGamingSeasonReward = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
+ async(request)=>{
+  if(!request.auth?.uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const id=String(request.data?.rewardId||''); if(!id)throw aurenHttpsError('invalid-argument','rewardId is required.');
+  const ref=db.collection('auren_gaming_season_rewards').doc(id);
+  const result=await db.runTransaction(async(tx)=>{
+   const snap=await tx.get(ref); if(!snap.exists)throw aurenHttpsError('not-found','Reward not found.');
+   const d=snap.data(); if(d.playerId!==request.auth.uid)throw aurenHttpsError('permission-denied','Not your reward.');
+   if(d.claimed===true)return {claimed:true,reward:d.reward||0};
+   const reward=Number(d.reward||0);
+   const wallet=db.collection('users').doc(request.auth.uid);
+   tx.set(wallet,{gamingCoins:FieldValue.increment(reward),gamingXp:FieldValue.increment(reward*2)},{merge:true});
+   tx.update(ref,{claimed:true,claimedAt:FieldValue.serverTimestamp()});
+   return {claimed:true,reward};
+  });
+  return result;
+ }
+);
