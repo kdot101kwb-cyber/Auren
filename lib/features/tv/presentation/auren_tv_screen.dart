@@ -471,6 +471,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     if (mounted) setState(() { loading = true; });
     final resolved = await AurenTvService.instance.bestAvailableChannel(c);
     await AurenTvEpgSmartService.instance.recordChannelOpen(c);
+    await AurenTvHomeService.instance.recordWatch(c);
     if (!mounted || generation != _playerGeneration) return;
     final channel = resolved ?? c;
     if (lowData) {
@@ -852,7 +853,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV'), actions: [
-      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)), IconButton(tooltip: 'تقويم EPG', onPressed: _showEpgCalendar, icon: const Icon(Icons.calendar_month_outlined)), IconButton(tooltip: 'خط EPG الزمني', onPressed: _showEpgTimeline, icon: const Icon(Icons.timeline)), IconButton(tooltip: 'AUREN AI • EPG', onPressed: _showEpgAiSearch, icon: const Icon(Icons.auto_awesome)), IconButton(tooltip: 'For You • TV', onPressed: _showEpgPersonalized, icon: const Icon(Icons.person_search_outlined)), IconButton(tooltip: 'Smart EPG', onPressed: _showEpgSmartSettings, icon: const Icon(Icons.tune));
+      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)), IconButton(tooltip: 'تقويم EPG', onPressed: _showEpgCalendar, icon: const Icon(Icons.calendar_month_outlined)), IconButton(tooltip: 'خط EPG الزمني', onPressed: _showEpgTimeline, icon: const Icon(Icons.timeline)), IconButton(tooltip: 'AUREN AI • EPG', onPressed: _showEpgAiSearch, icon: const Icon(Icons.auto_awesome)), IconButton(tooltip: 'For You • TV', onPressed: _showEpgPersonalized, icon: const Icon(Icons.person_search_outlined)), IconButton(tooltip: 'Smart EPG', onPressed: _showEpgSmartSettings, icon: const Icon(Icons.tune)), IconButton(tooltip: 'TV Home • For You', onPressed: _showTvHome, icon: const Icon(Icons.home_work_outlined)), IconButton(tooltip: 'Multi-Channel EPG', onPressed: _showMultiChannelEpg, icon: const Icon(Icons.view_agenda_outlined)),
       IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
       if (activeSource != null)
         IconButton(
