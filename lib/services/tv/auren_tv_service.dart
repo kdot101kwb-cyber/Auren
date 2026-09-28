@@ -100,11 +100,23 @@ class AurenTvService {
     final start = DateTime.tryParse(item.startIso);
     if (start == null || !start.isAfter(DateTime.now().toUtc())) return false;
     await _initEpgNotifications();
-    final scheduled = start.subtract(before);
-    final when = scheduled.isAfter(DateTime.now().toUtc()) ? scheduled : start;
     final id = _reminderId(item);
     final reminders = await epgReminders();
-    if (!reminders.any((x) => x.id == id)) reminders.add(AurenTvEpgReminder(id: id, channelId: item.channelId, title: item.title, startIso: item.startIso));
+    final duplicate = reminders.where((x) => x.id == id).toList();
+    if (duplicate.isNotEmpty) {
+      await _notifications.zonedSchedule(
+        id.hashCode & 0x7fffffff,
+        'AUREN TV • تذكير EPG',
+        item.title + ' — لديك تذكير مضبوط بالفعل',
+        tz.TZDateTime.from(start.subtract(before).isAfter(DateTime.now().toUtc()) ? start.subtract(before) : start, tz.UTC),
+        const NotificationDetails(android: AndroidNotificationDetails('auren_tv_epg', 'AUREN TV EPG', channelDescription: 'تذكيرات برامج التلفزيون')),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+      return true;
+    }
+    final scheduled = start.subtract(before);
+    final when = scheduled.isAfter(DateTime.now().toUtc()) ? scheduled : start;
+    reminders.add(AurenTvEpgReminder(id: id, channelId: item.channelId, title: item.title, startIso: item.startIso));
     final prefs = _prefs ??= await SharedPreferences.getInstance();
     await prefs.setStringList('auren_tv_epg_reminders', reminders.take(100).map((x) => x.id + '|' + x.channelId + '|' + x.title + '|' + x.startIso).toList());
     await _notifications.zonedSchedule(
