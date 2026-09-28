@@ -110,7 +110,26 @@ class _AurenEntertainmentCreateScreenState
       final draftId = _editingDraftId ?? await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: idea);
       _editingDraftId ??= draftId;
       _activeJobId = await EntertainmentRepository().createEntertainmentJob(uid, draftId: draftId, mode: _mode, mood: _mood, length: _length, idea: idea);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إنشاء مهمة الإنتاج: مرحلة التخطيط.')));
+      try {
+        if (_mode == 'مسلسل') {
+          await EntertainmentRepository().generateSeriesBlueprint(_activeJobId!);
+        } else if (_mode == 'فيلم') {
+          await EntertainmentRepository().generateMovieBlueprint(_activeJobId!);
+        } else if (_mode == 'أغنية') {
+          await EntertainmentRepository().generateMusicBlueprint(_activeJobId!);
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم إنشاء مشروع $_mode وبدء مرحلة التخطيط بالذكاء الاصطناعي.')),
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم إنشاء مشروع $_mode، لكن التخطيط يحتاج إعداد مزود AI ثم إعادة المحاولة.')),
+          );
+        }
+      }
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر بدء مهمة الإنتاج.')));
     } finally {
