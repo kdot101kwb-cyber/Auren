@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class AurenAgricultureRecord {
   final String id;
@@ -63,6 +64,25 @@ class AurenAgricultureRepository {
         .limit(50)
         .snapshots()
         .map((s) => s.docs.map(AurenAgricultureRecord.fromDoc).toList());
+  }
+
+  Future<String> requestAiAdvice({
+    required String type,
+    required String observations,
+    String location = '',
+    String crop = '',
+    String animal = '',
+  }) async {
+    final result = await FirebaseFunctions.instance
+        .httpsCallable('aurenAgricultureAdvisor')
+        .call({
+      'type': type,
+      'location': location.trim(),
+      'crop': crop.trim(),
+      'animal': animal.trim(),
+      'observations': observations.trim(),
+    });
+    return (result.data is Map ? (result.data['advice'] ?? '') : '').toString();
   }
 
   Future<String> saveFieldNote({
