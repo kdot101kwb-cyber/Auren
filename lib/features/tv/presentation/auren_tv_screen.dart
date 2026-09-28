@@ -681,6 +681,17 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                     const Text('دليل البرامج • EPG', style: TextStyle(fontWeight: FontWeight.bold)),
                     Text('الآن: ${(guide['current'] ?? '').isEmpty ? 'غير متاح' : guide['current']}'),
                     Text('القادم: ${(guide['next'] ?? '').isEmpty ? 'غير متاح' : guide['next']}'),
+                    if ((guide['currentStart'] ?? '').isNotEmpty && (guide['currentStop'] ?? '').isNotEmpty) Builder(builder: (_) {
+                      final start = DateTime.tryParse(guide['currentStart']!)?.toLocal();
+                      final stop = DateTime.tryParse(guide['currentStop']!)?.toLocal();
+                      if (start == null || stop == null || !stop.isAfter(start)) return const SizedBox.shrink();
+                      final now = DateTime.now();
+                      final progress = now.isBefore(start) ? 0.0 : now.isAfter(stop) ? 1.0 : now.difference(start).inMilliseconds / stop.difference(start).inMilliseconds;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: progress.clamp(0.0, 1.0))),
+                      );
+                    }),
                   ]),
                 ));
               },
