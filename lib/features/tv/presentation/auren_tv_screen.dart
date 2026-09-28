@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../../../services/tv/auren_tv_service.dart';
@@ -22,6 +23,14 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   Set<String> favorites = {};
   VideoPlayerController? player;
   AurenTvChannel? playing;
+  Timer? _recoveryTimer;
+  DateTime? _bufferingSince;
+  DateTime? _lastProgressAt;
+  Duration? _lastPosition;
+  bool _recovering = false;
+  int _playerGeneration = 0;
+  int _failoverAttempts = 0;
+  static const int _maxFailoverAttempts = 3;
 
   static const regions = <String, List<String>>{
     'Africa': ['AF','DZ','AO','BJ','BW','BF','BI','CV','CM','CF','TD','KM','CD','CG','CI','DJ','EG','GQ','ER','SZ','ET','GA','GM','GH','GN','GW','KE','LS','LR','LY','MG','MW','ML','MR','MU','MA','MZ','NA','NE','NG','RW','ST','SN','SC','SL','SO','ZA','SS','SD','TZ','TG','TN','UG','ZM','ZW'],
@@ -35,6 +44,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     super.initState();
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
     AurenTvService.instance.autoRefreshSources(limit: 150).catchError((_) {});
+    _recoveryTimer = Timer.periodic(const Duration(seconds: 3), (_) => _monitorPlayback());
     AurenTvService.instance.sources().then((v) async {
       final defaultId = await AurenTvService.instance.defaultSourceId();
       if (!mounted) return;
@@ -48,6 +58,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override void dispose() {
     _search.dispose();
+    _recoveryTimer?.cancel();
     player?.dispose();
     super.dispose();
   }
@@ -72,23 +83,173 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
   Future<void> play(AurenTvChannel c) async {
-    setState(() { loading = true; });
+    _failoverAttempts = 0;
+    _bufferingSince = null;
+    _lastPosition = null;
+    _lastProgressAt = DateTime.now();
+    final generation = ++_playerGeneration;
+    if (mounted) setState(() { loading = true; });
     final resolved = await AurenTvService.instance.bestAvailableChannel(c);
+    if (!mounted || generation != _playerGeneration) return;
     final channel = resolved ?? c;
     await player?.dispose();
+    if (!mounted || generation != _playerGeneration) return;
     final p = VideoPlayerController.networkUrl(Uri.parse(channel.url));
     player = p;
     playing = channel;
+    p.addListener(_onPlayerValueChanged);
     try {
       await p.initialize();
-      if (!mounted) return;
+      if (!mounted || generation != _playerGeneration) {
+        await p.dispose();
+        return;
+      }
+      _bufferingSince = null;
+      _lastPosition = p.value.position;
+      _lastProgressAt = DateTime.now();
       setState(() { loading = false; });
       if (!lowData) await p.play();
     } catch (_) {
+      if (!mounted || generation != _playerGeneration) return;
+      setState(() { loading = false; });
+      await _recoverPlayback(reason: 'تعذر تشغيل البث');
+    }
+  }
+
+  void _onPlayerValueChanged() {
+    final p = player;
+    if (!mounted || p == null || !p.value.isInitialized) return;
+    final value = p.value;
+    if (value.hasError) {
+      _recoverPlayback(reason: 'انقطع البث');
+      return;
+    }
+    if (!value.isBuffering) {
+      _bufferingSince = null;
+      if (_lastPosition == null || value.position != _lastPosition) {
+        _lastPosition = value.position;
+        _lastProgressAt = DateTime.now();
+      }
+    } else {
+      _bufferingSince ??= DateTime.now();
+    }
+  }
+
+  void _monitorPlayback() {
+    final p = player;
+    if (!mounted || p == null || !p.value.isInitialized || _recovering) return;
+    final value = p.value;
+    if (value.hasError) {
+      _recoverPlayback(reason: 'انقطع البث');
+      return;
+    }
+    if (value.isBuffering) {
+      _bufferingSince ??= DateTime.now();
+      if (DateTime.now().difference(_bufferingSince!) >= const Duration(seconds: 8)) {
+        _recoverPlayback(reason: 'البث متوقف مؤقتاً');
+      }
+      return;
+    }
+    if (value.isPlaying) {
+      _lastPosition ??= value.position;
+      _lastProgressAt ??= DateTime.now();
+      if (value.position != _lastPosition) {
+        _lastPosition = value.position;
+        _lastProgressAt = DateTime.now();
+      } else if (DateTime.now().difference(_lastProgressAt!) >= const Duration(seconds: 12)) {
+        _recoverPlayback(reason: 'البث لا يتقدم');
+      }
+    }
+  }
+
+  Future<List<AurenTvChannel>> _recoveryCandidates(AurenTvChannel current) async {
+    final identity = AurenTvService.channelIdentity(current);
+    final result = <AurenTvChannel>[];
+    final seen = <String>{};
+    for (final source in (await AurenTvService.instance.sources()).where((x) => x.enabled)) {
+      try {
+        final channels = await AurenTvService.instance.loadSource(source, limit: 500);
+        for (final candidate in channels) {
+          if (AurenTvService.channelIdentity(candidate) != identity) continue;
+          if (candidate.url == current.url) continue;
+          if (!seen.add(candidate.url)) continue;
+          result.add(candidate);
+        }
+      } catch (_) {}
+    }
+    result.sort((a, b) {
+      int score(AurenTvChannel c) =>
+          (c.url.startsWith('https://') ? 2 : 0) +
+          (c.tvgId.isNotEmpty ? 2 : 0) +
+          (c.logo.isNotEmpty ? 1 : 0);
+      return score(b).compareTo(score(a));
+    });
+    return result;
+  }
+
+  Future<void> _recoverPlayback({required String reason}) async {
+    if (!mounted || _recovering || playing == null) return;
+    if (_failoverAttempts >= _maxFailoverAttempts) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر استعادة البث تلقائياً. يمكنك اختيار القناة مرة أخرى.')),
+      );
+      return;
+    }
+    _recovering = true;
+    _failoverAttempts++;
+    final generation = ++_playerGeneration;
+    final current = playing!;
+    _bufferingSince = null;
+    _lastPosition = null;
+    _lastProgressAt = DateTime.now();
+    try {
+      final candidates = await _recoveryCandidates(current);
+      if (!mounted || generation != _playerGeneration) return;
+      final ranked = <AurenTvChannel>[];
+      for (final candidate in candidates) {
+        final health = await AurenTvService.instance.checkChannelHealth(
+          candidate,
+          timeout: const Duration(seconds: 4),
+        );
+        if (health.status == 'online') ranked.add(candidate);
+      }
+      if (ranked.isEmpty) ranked.addAll(candidates);
+      for (final candidate in ranked) {
+        if (!mounted || generation != _playerGeneration) return;
+        final old = player;
+        player = null;
+        await old?.dispose();
+        final next = VideoPlayerController.networkUrl(Uri.parse(candidate.url));
+        player = next;
+        playing = candidate;
+        next.addListener(_onPlayerValueChanged);
+        try {
+          await next.initialize();
+          if (!mounted || generation != _playerGeneration) {
+            await next.dispose();
+            return;
+          }
+          _bufferingSince = null;
+          _lastPosition = next.value.position;
+          _lastProgressAt = DateTime.now();
+          setState(() { loading = false; });
+          if (!lowData) await next.play();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم استعادة البث تلقائياً عبر مصدر بديل.')),
+          );
+          return;
+        } catch (_) {
+          await next.dispose();
+        }
+      }
       if (mounted) {
         setState(() { loading = false; });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر تشغيل القناة؛ قد تكون غير متاحة أو محجوبة جغرافياً.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$reason؛ لم يتوفر مصدر بديل صالح حالياً.')),
+        );
       }
+    } finally {
+      _recovering = false;
     }
   }
   Future<void> _pickCountry() async {
