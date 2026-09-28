@@ -16,6 +16,9 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   StreamSubscription<Map<String, dynamic>?>? _lobbySubscription;
   String? _lobbyId;
   String _onlineStatus = 'Offline';
+  String? _turnPlayerId;
+  int _stateVersion = 0;
+  int _localMoveCounter = 0;
   int _score = 0, _round = 0, _hp = 100, _streak = 0, _energy = 100, _distance = 0;
   int _bestScore = 0, _wins = 0, _savedRounds = 0;
   String _message = 'ابدأ الجولة';
@@ -94,6 +97,10 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     super.dispose();
   }
 
+  bool get _onlineMatch => _lobbyId != null;
+  bool get _isMyTurn => !_onlineMatch || _turnPlayerId == _multiplayer.playerId;
+  String _nextMoveId() => '${_multiplayer.playerId}-${++_localMoveCounter}';
+
   Map<String, dynamic> _gameState() => {
     'score': _score, 'round': _round, 'hp': _hp, 'streak': _streak,
     'energy': _energy, 'distance': _distance, 'message': _message,
@@ -109,6 +116,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     'crimeCase': _crimeCase, 'crimePhase': _crimePhase,
     'crimeEvidence': _crimeEvidence, 'crimeScore': _crimeScore,
     'crimeCollected': _crimeCollected.toList(), 'crimeSuspect': _crimeSuspect,
+    'matchFinished': _lobbyId != null && (_hp <= 0 || _ludoWinner() != null),
   };
 
   void _applyGameState(Map<String, dynamic> state) {
@@ -154,9 +162,25 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   Future<void> _syncGameState() async {
-    if (_lobbyId == null) return;
+    if (!_onlineMatch) return;
+    final expectedVersion = _stateVersion;
+    final moveId = _nextMoveId();
     try {
-      await _multiplayer.updateState(_gameState());
+      final accepted = await _multiplayer.submitState(
+        state: _gameState(),
+        expectedVersion: expectedVersion,
+        moveId: moveId,
+      );
+      if (!accepted) {
+        if (mounted) setState(() => _message = '⚠️ الحركة لم تُقبل: دور الخصم أو حالة المباراة تغيّرت');
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _stateVersion = expectedVersion + 1;
+          _turnPlayerId = null;
+        });
+      }
     } catch (_) {
       if (mounted) setState(() => _onlineStatus = 'Match sync unavailable');
     }
@@ -168,7 +192,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _watchLobby(id);
       if (!mounted) return;
       setState(() => _onlineStatus = 'Waiting • ' + id.substring(0, min(6, id.length)).toUpperCase());
-      await _syncGameState();
+      await _multiplayer.seedState(_gameState());
     } catch (_) {
       if (mounted) setState(() => _onlineStatus = 'Online unavailable');
     }
@@ -202,13 +226,24 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   void _watchLobby(String id) {
     _lobbySubscription?.cancel();
     _lobbyId = id;
+    _turnPlayerId = null;
+    _stateVersion = 0;
     _lobbySubscription = _multiplayer.watchLobby(id).listen((data) {
       if (!mounted || data == null) return;
       final players = List<String>.from(data['players'] ?? const <String>[]);
+      final remoteVersion = (data['stateVersion'] as num?)?.toInt() ?? 0;
+      final remoteTurn = data['turnPlayerId']?.toString();
       final remoteState = data['state'];
-      if (remoteState is Map<String, dynamic> && remoteState.isNotEmpty) _applyGameState(remoteState);
+      if (remoteState is Map<String, dynamic> && remoteState.isNotEmpty && remoteVersion >= _stateVersion) {
+        _stateVersion = remoteVersion;
+        _applyGameState(remoteState);
+      } else if (remoteVersion > _stateVersion) {
+        _stateVersion = remoteVersion;
+      }
+      _turnPlayerId = remoteTurn;
       final status = data['status']?.toString() ?? 'waiting';
-      setState(() => _onlineStatus = (status == 'playing' ? '2 Players • Ready' : 'Waiting • ' + players.length.toString() + '/2'));
+      final turnText = status == 'playing' ? (_isMyTurn ? 'Your turn' : 'Opponent turn') : 'Waiting';
+      setState(() => _onlineStatus = status == 'playing' ? '2 Players • ' + turnText : turnText + ' • ' + players.length.toString() + '/2');
     });
   }
 
@@ -216,13 +251,14 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     await _lobbySubscription?.cancel();
     _lobbySubscription = null;
     await _multiplayer.leaveLobby();
-    if (mounted) setState(() { _lobbyId = null; _onlineStatus = 'Offline'; });
+    if (mounted) setState(() { _lobbyId = null; _turnPlayerId = null; _stateVersion = 0; _onlineStatus = 'Offline'; });
   }
 
   @override
   void didUpdateWidget(covariant AurenFlagshipGamesPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.gameIndex != widget.gameIndex) {
+      _leaveLobby();
       _reset();
       _loadProgress();
     }
@@ -249,6 +285,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _act() {
+    if (!_isMyTurn) { setState(() => _message = '⏳ انتظر دورك'); return; }
     switch (widget.gameIndex) {
       case 0: _ludoRoll(); break;
       case 1: _dominoDrawOrPlay(); break;
@@ -266,7 +303,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _ludoRoll() {
-    if (_ludoPendingDice != null || _ludoWinner() != null) return;
+    if (!_isMyTurn || _ludoPendingDice != null || _ludoWinner() != null) return;
     _ludoDice = 1 + _rng.nextInt(6);
     _ludoPendingDice = _ludoDice;
     _message = '🎲 رميت ' + _ludoDice.toString() + ' • اختر قطعة قانونية';
@@ -282,6 +319,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _ludoMove(int i) {
+    if (!_isMyTurn) return;
     final dice = _ludoPendingDice;
     if (dice == null || !_ludoCanMove(i, dice)) {
       _message = dice == null ? '🎲 ارمِ النرد أولاً' : '🚫 هذه القطعة لا يمكنها التحرك';
@@ -369,7 +407,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _dominoPlay(int index) {
-    if (!_dominoPlayerTurn || index < 0 || index >= _dominoHand.length) return;
+    if (!_isMyTurn || !_dominoPlayerTurn || index < 0 || index >= _dominoHand.length) return;
     final piece = _dominoHand[index];
     if (!_dominoLegal(piece)) {
       _message = '🚫 ' + piece + ' لا يطابق أي طرف';
@@ -421,7 +459,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _dominoDrawOrPlay() {
-    if (!_dominoPlayerTurn) return;
+    if (!_isMyTurn || !_dominoPlayerTurn) return;
     if (_dominoHand.any(_dominoLegal)) {
       _message = '🁫 لديك قطعة قانونية — اخترها من يدك';
     } else if (_dominoPool.isNotEmpty) {
@@ -459,7 +497,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _unoPlay(int index) {
-    if (!_unoPlayerTurn || index < 0 || index >= _unoHand.length) return;
+    if (!_isMyTurn || !_unoPlayerTurn || index < 0 || index >= _unoHand.length) return;
     final card = _unoHand[index];
     if (!_unoPlayable(card)) {
       _message = '🚫 ' + card + ' غير صالح على اللون ' + _unoColor;
@@ -481,7 +519,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _unoDraw() {
-    if (!_unoPlayerTurn) return;
+    if (!_isMyTurn || !_unoPlayerTurn) return;
     if (_unoPendingDraw > 0) {
       for (var i = 0; i < _unoPendingDraw; i++) _unoDrawOne(_unoHand);
       _unoPendingDraw = 0; _message = '🃏 سحبت عقوبة — دور الخصم';
@@ -531,6 +569,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   void _crimeAdvance() {
+    if (!_isMyTurn) return;
     const clues = [
       'بصمة على مقبض الباب','كاميرا توقفت عند 03:12','إيصال من متجر قريب',
       'رسالة مشفرة في الهاتف','رقم لوحة ظهر في الشارع','بصمة رقمية تربط الحساب بالموقع',
@@ -622,7 +661,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     Text('النرد: ' + (_ludoDice == 0 ? '—' : _ludoDice.toString())),
     const SizedBox(height: 8),
     Wrap(spacing: 6, runSpacing: 6, children: List.generate(4, (i) => FilledButton.tonal(
-      onPressed: _ludoPendingDice == null ? null : () => _ludoMove(i),
+      onPressed: _isMyTurn && _ludoPendingDice != null ? () => _ludoMove(i),
       child: Text('🔵 ' + (i + 1).toString() + ': ' + (_ludo[i] == -1 ? 'قاعدة' : _ludo[i].toString() + '/56')),
     ))),
     const SizedBox(height: 8),
@@ -637,7 +676,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: _dominoBoard.map((p) => Padding(padding: const EdgeInsets.only(right: 5), child: Chip(label: Text('🁫 ' + p))).toList())),
     const SizedBox(height: 8), Text('الأطراف: ' + _dominoLeft.toString() + ' | ' + _dominoRight.toString()),
     const SizedBox(height: 8),
-    Wrap(spacing: 6, runSpacing: 6, children: List.generate(_dominoHand.length, (i) => FilledButton.tonal(onPressed: _dominoPlayerTurn ? () => _dominoPlay(i) : null, child: Text(_dominoHand[i])))),
+    Wrap(spacing: 6, runSpacing: 6, children: List.generate(_dominoHand.length, (i) => FilledButton.tonal(onPressed: _isMyTurn && _dominoPlayerTurn ? () => _dominoPlay(i) : null, child: Text(_dominoHand[i])))),
     const SizedBox(height: 8), const Text('طابق أحد طرفي السلسلة. إذا لم توجد قطعة قانونية استخدم زر السحب.'),
   ])));
 
@@ -648,9 +687,9 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     Wrap(spacing: 6, runSpacing: 6, children: List.generate(_unoHand.length, (i) => ChoiceChip(selected: _unoSelected == i, label: Text(_unoHand[i]), onSelected: (_) => setState(() => _unoSelected = i)))),
     const SizedBox(height: 8),
     Row(children: [
-      Expanded(child: FilledButton.tonal(onPressed: _unoPlayerTurn && _unoHand.isNotEmpty ? () => _unoPlay(_unoSelected) : null, child: const Text('العب'))),
+      Expanded(child: FilledButton.tonal(onPressed: _isMyTurn && _unoPlayerTurn && _unoHand.isNotEmpty ? () => _unoPlay(_unoSelected) : null, child: const Text('العب'))),
       const SizedBox(width: 8),
-      Expanded(child: OutlinedButton(onPressed: _unoPlayerTurn ? _unoDraw : null, child: const Text('اسحب'))),
+      Expanded(child: OutlinedButton(onPressed: _isMyTurn && _unoPlayerTurn ? _unoDraw : null, child: const Text('اسحب'))),
     ]),
     const SizedBox(height: 8), const Text('تطابق اللون أو الرقم/الرمز. Wild يغيّر اللون، و +2/Skip/Reverse تؤثر في الدور.'),
   ])));
@@ -674,7 +713,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   Widget _choiceCard(String title, List<String> options, void Function(int) onTap) => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 8),
-    Wrap(spacing: 8, children: List.generate(options.length, (i) => FilledButton.tonal(onPressed: _hp > 0 ? () { onTap(i); _saveProgress(); } : null, child: Text(options[i])))),
+    Wrap(spacing: 8, children: List.generate(options.length, (i) => FilledButton.tonal(onPressed: _hp > 0 && _isMyTurn ? () { onTap(i); _saveProgress(); _syncGameState(); } : null, child: Text(options[i])))),
   ])));
 
   Widget _actionBoard() {
