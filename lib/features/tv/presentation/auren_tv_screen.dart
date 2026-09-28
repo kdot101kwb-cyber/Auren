@@ -94,7 +94,67 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     setState(() { _epgResults = results; _epgSearching = false; });
   }
 
-  Future<void> _showEpgWatchlist() async { final items = await AurenTvService.instance.watchlistPrograms(); if (!mounted) return; showModalBottomSheet<void>(context: context, builder: (ctx) => SafeArea(child: ListView(padding: const EdgeInsets.all(12), children: [const ListTile(title: Text('برامجي المحفوظة • EPG')), ...items.map((x) => ListTile(title: Text(x.title), subtitle: Text(x.startIso), onTap: () async { final c = await AurenTvService.instance.findChannelForEpgId(x.channelId, source: activeSource); if (ctx.mounted) Navigator.pop(ctx); if (c != null) await play(c); }))]))); }
+  Future<void> _showEpgWatchlist() async {
+    final items = await AurenTvService.instance.watchlistPrograms();
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * .72,
+          child: items.isEmpty
+              ? const Center(child: Text('لا توجد برامج محفوظة بعد.'))
+              : ListView.separated(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: items.length + 1,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  itemBuilder: (_, i) {
+                    if (i == 0) {
+                      return const ListTile(
+                        title: Text('برامجي المحفوظة • EPG', style: TextStyle(fontWeight: FontWeight.w800)),
+                        subtitle: Text('اضغط على البرنامج لمشاهدته، أو احذفه من القائمة.'),
+                      );
+                    }
+                    final x = items[i - 1];
+                    final start = DateTime.tryParse(x.startIso)?.toLocal();
+                    final stop = DateTime.tryParse(x.stopIso)?.toLocal();
+                    final time = start == null || stop == null
+                        ? x.startIso
+                        : TimeOfDay.fromDateTime(start).format(ctx) + ' — ' + TimeOfDay.fromDateTime(stop).format(ctx);
+                    return Card(
+                      child: ListTile(
+                        leading: CircleAvatar(child: Icon(x.state == 'now' ? Icons.play_arrow : Icons.schedule)),
+                        title: Text(x.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(time),
+                        trailing: IconButton(
+                          tooltip: 'حذف من المحفوظة',
+                          onPressed: () async {
+                            await AurenTvService.instance.removeEpgWatchlist(x);
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                              await _showEpgWatchlist();
+                            }
+                          },
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                        onTap: () async {
+                          final channel = await AurenTvService.instance.findChannelForEpgId(x.channelId, source: activeSource);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          if (channel != null) {
+                            await play(channel);
+                          } else if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('البرنامج محفوظ، لكن القناة غير متاحة حالياً.')));
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ),
+    );
+  }
 
   void _showEpgSearchResults() {
     showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => SafeArea(child: SizedBox(
