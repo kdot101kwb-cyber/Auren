@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../data/auren_game_progress.dart';
 
 class AurenFlagshipGamesPanel extends StatefulWidget {
   final int gameIndex;
@@ -10,6 +11,7 @@ class AurenFlagshipGamesPanel extends StatefulWidget {
 class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   final _rng = Random();
   int _score = 0, _round = 0, _hp = 100, _streak = 0, _energy = 100, _distance = 0;
+  int _bestScore = 0, _wins = 0, _savedRounds = 0;
   String _message = 'ابدأ الجولة';
 
   final List<int> _ludo = [-1, -1, -1, -1];
@@ -49,17 +51,47 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   @override
   void initState() {
     super.initState();
-    _reset();
+    _reset(initializing: true);
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final progress = await AurenGameProgress.load(widget.gameIndex);
+    if (!mounted) return;
+    setState(() {
+      _bestScore = progress['best'] ?? 0;
+      _wins = progress['wins'] ?? 0;
+      _savedRounds = progress['round'] ?? 0;
+    });
+  }
+
+  Future<void> _saveProgress({bool won = false}) async {
+    final nextWins = _wins + (won ? 1 : 0);
+    await AurenGameProgress.save(
+      gameIndex: widget.gameIndex,
+      score: _score,
+      round: _round,
+      wins: nextWins,
+    );
+    if (!mounted) return;
+    setState(() {
+      _wins = nextWins;
+      if (_score > _bestScore) _bestScore = _score;
+      _savedRounds = _round;
+    });
   }
 
   @override
   void didUpdateWidget(covariant AurenFlagshipGamesPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.gameIndex != widget.gameIndex) _reset();
+    if (oldWidget.gameIndex != widget.gameIndex) {
+      _reset();
+      _loadProgress();
+    }
   }
 
-  void _reset() {
-    setState(() {
+  void _reset({bool initializing = false}) {
+    void resetState() {
       _score = 0; _round = 0; _hp = 100; _streak = 0; _energy = 100; _distance = 0;
       _message = 'ابدأ الجولة';
       for (var i = 0; i < 4; i++) { _ludo[i] = -1; _cpuLudo[i] = -1; }
@@ -68,6 +100,13 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _initUno();
       _crimeCase = 1; _crimePhase = 0; _crimeEvidence = 0; _crimeScore = 0;
       _crimeCollected.clear(); _crimeSuspect = '';
+    }
+    if (initializing) {
+      resetState();
+      return;
+    }
+    setState(() {
+      resetState();
     });
   }
 
@@ -84,6 +123,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       case 8: _samuraiTurn(); break;
       case 9: _racingTurn(); break;
     }
+    _saveProgress();
   }
 
   void _ludoRoll() {
@@ -128,6 +168,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     if (_ludoWinner() == 'player') {
       _score += 250;
       _message = '🏆 فوز Ludo! كل قطعك وصلت للبيت';
+      _saveProgress(won: true);
     } else {
       _cpuLudoTurn();
     }
@@ -200,6 +241,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     _score += 20; _streak++; _round++;
     if (_dominoHand.isEmpty) {
       _score += 200; _message = '🏆 فوز Dominoes! انتهت يدك';
+      _saveProgress(won: true);
       setState(() {});
       return;
     }
@@ -288,6 +330,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     _score += 25; _round++; _streak++;
     if (_unoHand.isEmpty) {
       _score += 300; _message = '🏆 فوز UNO! تخلّصت من كل بطاقاتك';
+      _saveProgress(won: true);
       setState(() {}); return;
     }
     if (rank == '+2') _unoPendingDraw = 2;
@@ -366,13 +409,14 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _message = '🧠 التحليل يقترح مشتبهًا: ' + _crimeSuspect + ' • راجع الأدلة';
     } else if (_crimePhase == 3) {
       final correct = _crimeSuspect == 'سامي';
-      if (correct) { _crimeScore += 150; _score += 200; _crimePhase = 4; _message = '🏆 أغلقت القضية بنجاح'; }
+      if (correct) { _crimeScore += 150; _score += 200; _crimePhase = 4; _message = '🏆 أغلقت القضية بنجاح'; _saveProgress(won: true); }
       else { _hp = max(1, _hp - 15); _crimePhase = 4; _message = '⚠️ الاتهام لم يتطابق مع الأدلة'; }
     } else {
       _crimeCase++; _crimePhase = 0; _crimeEvidence = 0; _crimeScore = 0; _crimeCollected.clear(); _crimeSuspect = '';
       _message = '📁 بدأت قضية جديدة رقم ' + _crimeCase.toString();
     }
-    _round++; setState(() {});
+    _saveProgress();
+    setState(() {});
   }
 
   void _footballTurn() { final goal = _rng.nextInt(100) > 48; _round++; _score += goal ? 30 : 5; _message = goal ? '⚽ GOAL! هجمة ناجحة' : '🧤 تصدّي!'; }
@@ -390,6 +434,15 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       Text(_names[widget.gameIndex], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
       const SizedBox(height: 6), Text('جولة ' + _round.toString() + ' • ⭐ ' + _score.toString() + ' • 🔥 Combo ' + _streak.toString()),
       const SizedBox(height: 12),
+      Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _stat('Best', _bestScore.toString()),
+          _stat('Wins', _wins.toString()),
+          _stat('Saved Rounds', _savedRounds.toString()),
+        ],
+      ))),
+      const SizedBox(height: 12),
       if (widget.gameIndex == 0) _ludoBoard(),
       if (widget.gameIndex == 1) _dominoBoard(),
       if (widget.gameIndex == 2) _unoBoard(),
@@ -404,6 +457,12 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       OutlinedButton.icon(onPressed: _reset, icon: const Icon(Icons.refresh), label: const Text('لعبة جديدة')),
     ]);
   }
+
+  Widget _stat(String label, String value) => Column(children: [
+    Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+    const SizedBox(height: 2),
+    Text(label, style: const TextStyle(fontSize: 11)),
+  ]);
 
   Widget _ludoBoard() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text('النرد: ' + (_ludoDice == 0 ? '—' : _ludoDice.toString())),
@@ -461,7 +520,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   Widget _choiceCard(String title, List<String> options, void Function(int) onTap) => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text(title, style: const TextStyle(fontWeight: FontWeight.w900)), const SizedBox(height: 8),
-    Wrap(spacing: 8, children: List.generate(options.length, (i) => FilledButton.tonal(onPressed: _hp > 0 ? () => onTap(i) : null, child: Text(options[i])))),
+    Wrap(spacing: 8, children: List.generate(options.length, (i) => FilledButton.tonal(onPressed: _hp > 0 ? () { onTap(i); _saveProgress(); } : null, child: Text(options[i])))),
   ])));
 
   Widget _actionBoard() {
