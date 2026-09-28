@@ -9,6 +9,7 @@ class AurenTvEpgSmartService {
   static final instance = AurenTvEpgSmartService._();
   static const _historyKey = 'auren_tv_epg_channel_history_v1';
   static const _smartKey = 'auren_tv_epg_smart_notifications_v1';
+  static const _enabledKey = 'auren_tv_epg_smart_enabled_v1';
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
@@ -19,6 +20,27 @@ class AurenTvEpgSmartService {
     await _notifications.initialize(settings);
     await _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
     _ready = true;
+  }
+
+  Future<bool> smartNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_enabledKey) ?? true;
+  }
+
+  Future<void> setSmartNotificationsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_enabledKey, enabled);
+    if (!enabled) await _notifications.cancelAll();
+  }
+
+  Future<void> cancelSmartNotification(AurenTvEpgSearchResult item) async {
+    await _initNotifications();
+    final id = 'smart_start_${item.channelId}_${item.startIso}'.hashCode & 0x7fffffff;
+    await _notifications.cancel(id);
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_smartKey) ?? <String>[];
+    saved.remove('${item.channelId}|${item.title}|${item.startIso}');
+    await prefs.setStringList(_smartKey, saved);
   }
 
   Future<void> recordChannelOpen(AurenTvChannel channel) async {
@@ -57,6 +79,7 @@ class AurenTvEpgSmartService {
   Future<bool> scheduleSmartStart(AurenTvEpgSearchResult item) async {
     final start = DateTime.tryParse(item.startIso);
     if (start == null || !start.isAfter(DateTime.now().toUtc())) return false;
+    if (!await smartNotificationsEnabled()) return false;
     await _initNotifications();
     final id = 'smart_start_${item.channelId}_${item.startIso}'.hashCode & 0x7fffffff;
     final prefs = await SharedPreferences.getInstance();
