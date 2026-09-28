@@ -528,3 +528,26 @@ test('post-assembly tasks include thumbnail and trailer and final package assets
   assert.match(source,/finalPackageVersion:1/);
   assert.match(source,/availableAssets:\['video','audio','music','subtitles','thumbnail','trailer'\]/);
 });
+
+
+test('post-assembly subtitle outputs normalize direct maps and artifact arrays to canonical languages',()=>{
+  const worker=fs.readFileSync(new URL('./post_assembly_worker.js', import.meta.url), 'utf8');
+  assert.match(worker,/function normalizeSubtitleOutput/);
+  assert.match(worker,/source\.languageUrls/);
+  assert.match(worker,/source\.subtitleUrls/);
+  assert.match(worker,/artifact\?\.language \|\| artifact\?\.lang/);
+  assert.match(worker,/languageUrls: map/);
+});
+
+test('post-assembly subtitle QC validates every requested language artifact',()=>{
+  const worker=fs.readFileSync(new URL('./post_assembly_worker.js', import.meta.url), 'utf8');
+  assert.match(worker,/async function validateSubtitleLanguageArtifacts/);
+  assert.match(worker,/missing_language_artifact/);
+  assert.match(worker,/languageChecks: checks/);
+  assert.match(worker,/type === 'subtitles'/);
+});
+
+test('final package preserves normalized multilingual subtitle URLs',()=>{
+  const worker=fs.readFileSync(new URL('./post_assembly_worker.js', import.meta.url), 'utf8');
+  assert.match(worker,/episodes\[n\]\.subtitles = normalizeSubtitleOutput/);
+});
