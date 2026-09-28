@@ -685,6 +685,27 @@ class AurenTvService {
     return results;
   }
 
+  Future<AurenTvChannel?> findChannelForEpgId(String epgChannelId, {AurenTvSource? source}) async {
+    final wanted = _normalizeIdentity(epgChannelId);
+    if (wanted.isEmpty) return null;
+    final pools = <List<AurenTvChannel>>[];
+    if (source != null) {
+      try { pools.add(await loadSource(source, limit: 500)); } catch (_) {}
+    }
+    try {
+      if (pools.isEmpty) pools.add(await loadAllEnabledSources(limitPerSource: 500));
+    } catch (_) {}
+    for (final pool in pools) {
+      for (final channel in pool) {
+        final tvg = _normalizeIdentity(channel.tvgId);
+        if (tvg.isNotEmpty && (tvg == wanted || tvg.contains(wanted) || wanted.contains(tvg))) {
+          return channel;
+        }
+      }
+    }
+    return null;
+  }
+
   Future<Map<String, String>?> nowNextForChannel(AurenTvChannel channel, {AurenTvSource? source}) async {
     final list = await smartScheduleForChannel(channel, source: source, hours: 48);
     if (list.isEmpty) return null;
