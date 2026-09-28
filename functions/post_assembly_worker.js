@@ -188,7 +188,19 @@ async function finalizeEpisodeAssembly(ref) {
   for (const task of tasks) {
     const n = Math.max(1, Number(task.episodeNumber || 1));
     if (!episodes[n]) episodes[n] = {};
-    episodes[n][String(task.type)] = task.output;
+    if (String(task.type) === 'subtitles') {
+      const output = task.output || {};
+      const languageUrls = output.languageUrls && typeof output.languageUrls === 'object'
+        ? output.languageUrls
+        : null;
+      episodes[n].subtitles = {
+        ...output,
+        languages: Array.isArray(task.targetLanguages) ? task.targetLanguages : AUREN_SUBTITLE_LANGUAGES.slice(),
+        languageUrls: languageUrls || {},
+      };
+    } else {
+      episodes[n][String(task.type)] = task.output;
+    }
   }
   const jobRef = assemblyRef.parent && assemblyRef.parent.parent;
   const jobSnap = jobRef ? await jobRef.get() : null;
