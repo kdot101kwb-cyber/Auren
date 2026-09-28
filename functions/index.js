@@ -1809,6 +1809,11 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
         const result = determineMatchResult(players, next.playerStats, next);
         next.matchResult = result;
         const nextTurn = next.matchFinished ? null : players.find((id) => id !== uid);
+        if (next.matchFinished && !data.matchResult?.recorded) {
+          await recordFlagshipRanking(tx, players, result, gameIndex);
+          result.recorded = true;
+          next.matchResult = result;
+        }
 
         tx.update(ref, {
           state: next,
