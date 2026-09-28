@@ -859,3 +859,135 @@ exports.generateAurenSeriesBlueprint = require('firebase-functions/v2/https').on
     return {status:'series_blueprint_ready', provider:selectedProvider, blueprint:generated};
   }
 );
+
+
+// AUREN Entertainment production orchestrator.
+// It advances durable series-production stages one at a time. Each claim is
+// transactional so overlapping scheduled invocations cannot own the same job.
+const {onSchedule} = require('firebase-functions/v2/scheduler');
+
+function aurenSeriesStagePlan(stage) {
+  const stages = [
+    'series_blueprint_ready',
+    'episode_bibles_ready',
+    'scenes_ready',
+    'asset_manifest_ready',
+    'ready_for_render',
+  ];
+  const index = stages.indexOf(stage);
+  return {index, next: index >= 0 && index + 1 < stages.length ? stages[index + 1] : null};
+}
+
+function buildSeriesEpisodeBibles(blueprint) {
+  return (Array.isArray(blueprint?.episodes) ? blueprint.episodes : []).slice(0, 24).map((episode, index) => ({
+    number: Number(episode?.number || index + 1),
+    title: String(episode?.title || 'Episode ' + (index + 1)).slice(0, 160),
+    logline: String(episode?.logline || '').slice(0, 1000),
+    beats: Array.isArray(episode?.beats) ? episode.beats.slice(0, 12).map((b) => String(b).slice(0, 500)) : [],
+    status: 'planned',
+  }));
+}
+
+function buildSeriesScenes(episodeBibles) {
+  const scenes = [];
+  for (const episode of Array.isArray(episodeBibles) ? episodeBibles : []) {
+    const beats = Array.isArray(episode.beats) && episode.beats.length ? episode.beats : ['Opening', 'Development', 'Climax', 'Resolution'];
+    beats.slice(0, 12).forEach((beat, index) => scenes.push({
+      episodeNumber: episode.number,
+      sceneNumber: index + 1,
+      beat: String(beat).slice(0, 500),
+      shotCount: 1,
+      status: 'planned',
+    }));
+  }
+  return scenes.slice(0, 240);
+}
+
+function buildSeriesAssetManifest(blueprint, scenes) {
+  const notes = blueprint?.productionNotes || {};
+  const locations = Array.isArray(notes.locations) ? notes.locations.slice(0, 30) : [];
+  const props = Array.isArray(notes.props) ? notes.props.slice(0, 40) : [];
+  const characters = Array.isArray(blueprint?.characters) ? blueprint.characters.slice(0, 40).map((c) => ({
+    name: String(c?.name || '').slice(0, 120),
+    role: String(c?.role || '').slice(0, 120),
+  })) : [];
+  return {
+    characters,
+    locations: locations.map((x) => String(x).slice(0, 160)),
+    props: props.map((x) => String(x).slice(0, 160)),
+    scenes: (Array.isArray(scenes) ? scenes : []).map((s) => ({episodeNumber:s.episodeNumber, sceneNumber:s.sceneNumber})),
+    voiceDirection: String(notes.voiceDirection || '').slice(0, 1000),
+    musicDirection: String(notes.musicDirection || '').slice(0, 1000),
+    visualStyle: String(blueprint?.visualStyle || '').slice(0, 1000),
+    continuityRules: Array.isArray(notes.continuityRules) ? notes.continuityRules.slice(0, 30).map((x) => String(x).slice(0, 500)) : [],
+    status: 'ready_for_generation',
+  };
+}
+
+async function claimNextAurenSeriesJob() {
+  const snapshot = await db.collectionGroup('entertainmentCreationJobs')
+    .where('mode', '==', 'مسلسل')
+    .where('productionStage', 'in', ['series_blueprint_ready','episode_bibles_ready','scenes_ready','asset_manifest_ready'])
+    .orderBy('updatedAt', 'asc')
+    .limit(5)
+    .get();
+  for (const snap of snapshot.docs) {
+    const ref = snap.ref;
+    const claimed = await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(ref);
+      if (!fresh.exists) return false;
+      const data = fresh.data() || {};
+      const stage = String(data.productionStage || '');
+      const plan = aurenSeriesStagePlan(stage);
+      if (plan.index < 0 || !plan.next || data.status === 'cancelled') return false;
+      const lockUntil = Number(data.workerLockUntilMs || 0);
+      if (lockUntil > Date.now()) return false;
+      tx.update(ref, {
+        status: 'processing',
+        workerLockUntilMs: Date.now() + 4 * 60 * 1000,
+        workerClaimedAt: FieldValue.serverTimestamp(),
+        workerStage: stage,
+        productionAttempts: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return true;
+    });
+    if (claimed) return {ref, data:snapshot.docs.find((d) => d.id === ref.id)?.data() || {}};
+  }
+  return null;
+}
+
+exports.processAurenSeriesProduction = onSchedule(
+  {schedule:'every 2 minutes', timeZone:'UTC', region:'us-central1', timeoutSeconds:120, memory:'512MiB'},
+  async () => {
+    const claimed = await claimNextAurenSeriesJob();
+    if (!claimed) return;
+    const ref = claimed.ref;
+    const current = (await ref.get()).data() || {};
+    const stage = String(current.workerStage || current.productionStage || '');
+    try {
+      if (stage === 'series_blueprint_ready') {
+        const episodeBibles = buildSeriesEpisodeBibles(current.seriesBlueprint || {});
+        await ref.set({episodeBibles, productionStage:'episode_bibles_ready', progress:30, workerLockUntilMs:0, lastError:'', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+        return;
+      }
+      if (stage === 'episode_bibles_ready') {
+        const scenes = buildSeriesScenes(current.episodeBibles || []);
+        await ref.set({scenes, productionStage:'scenes_ready', progress:42, workerLockUntilMs:0, lastError:'', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+        return;
+      }
+      if (stage === 'scenes_ready') {
+        const assetManifest = buildSeriesAssetManifest(current.seriesBlueprint || {}, current.scenes || []);
+        await ref.set({assetManifest, productionStage:'asset_manifest_ready', progress:52, workerLockUntilMs:0, lastError:'', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+        return;
+      }
+      if (stage === 'asset_manifest_ready') {
+        await ref.set({productionStage:'ready_for_render', progress:60, renderQueueStatus:'queued', workerLockUntilMs:0, lastError:'', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+        return;
+      }
+      await ref.set({status:'failed', productionStage:'production_failed', workerLockUntilMs:0, lastError:'Unsupported production stage.', updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    } catch (error) {
+      await ref.set({status:'failed', productionStage:'production_failed', workerLockUntilMs:0, lastError:String(error?.message || error).slice(0,700), updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    }
+  }
+);
