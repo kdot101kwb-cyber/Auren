@@ -13,7 +13,7 @@ class _AurenGamingNotificationsScreenState extends State<AurenGamingNotification
   appBar:AppBar(title:Text('🔔 Gaming Notifications'+(_unread>0?' ($_unread)':'')),actions:[if(_unread>0)IconButton(onPressed:()async{await _api.markGamingNotificationsRead();await _load();},icon:const Icon(Icons.done_all))]),
   body:_loading?const Center(child:CircularProgressIndicator()):RefreshIndicator(
    onRefresh:_load,child:ListView(padding:const EdgeInsets.all(16),children:[
-    if(_items.isEmpty)const ListTile(title:const Text('No gaming notifications yet.')),
+    if(_items.isEmpty)const ListTile(title:Text('No gaming notifications yet.')),
     for(final x in _items)Card(child:ListTile(
      leading:const Icon(Icons.emoji_events),
      title:Text('Season Reward • Rank '+(x['rank']?.toString()??'—')),
