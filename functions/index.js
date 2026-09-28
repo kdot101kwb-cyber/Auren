@@ -1704,6 +1704,26 @@ function determineMatchResult(players, stats, state) {
   return {status:'finished', winnerId:winners[0], result:'win'};
 }
 
+
+async function recordFlagshipRanking(tx, players, result, gameIndex) {
+  const ids = normalizePlayers(players);
+  for (const id of ids) {
+    const ref = db.collection('auren_game_rankings').doc(String(gameIndex)).collection('players').doc(id);
+    const snap = await tx.get(ref);
+    const old = snap.exists ? (snap.data() || {}) : {};
+    const wins = Math.max(0, Number(old.wins) || 0) + (result.winnerId === id ? 1 : 0);
+    const losses = Math.max(0, Number(old.losses) || 0) + (result.result === 'win' && result.winnerId !== id ? 1 : 0);
+    const draws = Math.max(0, Number(old.draws) || 0) + (result.result === 'draw' ? 1 : 0);
+    const matches = Math.max(0, Number(old.matches) || 0) + 1;
+    const rating = Math.max(0, Number(old.rating) || 1000) + (result.winnerId === id ? 20 : result.result === 'draw' ? 0 : -15);
+    tx.set(ref, {
+      wins, losses, draws, matches,
+      rating: Math.max(100, rating),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge:true});
+  }
+}
+
 exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
