@@ -86,6 +86,18 @@ class AurenOfflineMediaService {
     return out;
   }
 
+  Future<void> enqueueSeriesPackage({required Map<String,dynamic> finalizedEpisodes,required String jobId}) async {
+    final entries=finalizedEpisodes.entries.toList()..sort((a,b)=>a.key.compareTo(b.key));
+    for(final entry in entries){
+      dynamic value=entry.value;
+      if(value is Map) value=value['video'] ?? value['videoUrl'] ?? value['url'] ?? value['media'];
+      if(value is Map) value=value['url'];
+      if(value is String && value.startsWith(RegExp(r'https?://'))){
+        await enqueue(url:value,title:'AUREN • الحلقة '+entry.key,type:'video',id:jobId+'_ep_'+entry.key);
+      }
+    }
+  }
+
   Future<void> setLowData(bool enabled) async {
     final p=await SharedPreferences.getInstance();
     await p.setBool('auren_offline_low_data_v1',enabled);
