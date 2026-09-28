@@ -2075,6 +2075,10 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
       throw aurenHttpsError('invalid-argument', 'Invalid flagship action request.');
     }
     const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    const lobbySnapshot = await ref.get();
+    const trustedCountries = lobbySnapshot.exists
+      ? await getTrustedGamingCountries(normalizePlayers(lobbySnapshot.data()?.players))
+      : {};
     try {
       return await db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
