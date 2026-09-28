@@ -242,6 +242,40 @@ class AurenGameMultiplayer {
     return const [];
   }
 
+  Future<List<Map<String, dynamic>>> getGlobalGamingLeaderboard({int limit = 20, bool season = false, String? countryCode}) async {
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('getAurenGlobalGamingLeaderboard').call({
+        'limit': limit, 'season': season,
+        if (countryCode != null && countryCode.isNotEmpty) 'countryCode': countryCode,
+      });
+      final entries = result.data is Map ? result.data['entries'] : null;
+      if (entries is List) return entries.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    } on FirebaseFunctionsException {}
+    return const [];
+  }
+
+  Future<List<Map<String, dynamic>>> getCountryGamingLeaderboard({required String countryCode, int limit = 20, bool season = false}) async {
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('getAurenCountryGamingLeaderboard').call({
+        'countryCode': countryCode, 'limit': limit, 'season': season,
+      });
+      final entries = result.data is Map ? result.data['entries'] : null;
+      if (entries is List) return entries.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    } on FirebaseFunctionsException {}
+    return const [];
+  }
+
+  Future<Map<String, dynamic>?> getPlayerGamingProfile({bool season = false}) async {
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('getAurenPlayerGamingProfile').call({'season': season});
+      if (result.data is Map) return Map<String, dynamic>.from(result.data);
+    } on FirebaseFunctionsException {}
+    return null;
+  }
+
   Future<Map<String, dynamic>?> getFlagshipRanking({required int gameIndex}) async {
     await _ensureSignedIn();
     try {
