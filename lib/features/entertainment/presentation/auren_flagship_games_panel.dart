@@ -15,6 +15,8 @@ class AurenFlagshipGamesPanel extends StatefulWidget {
 }
 
 class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
+  int get _gameId => widget.gameIndex >= 50 ? widget.gameIndex : (widget.gameIndex >= 3 ? widget.gameIndex + 50 : widget.gameIndex);
+  int get _localIndex => _gameId >= 53 ? _gameId - 50 : _gameId;
   final _rng = Random();
   final _multiplayer = AurenGameMultiplayer();
   StreamSubscription<Map<String, dynamic>?>? _lobbySubscription;
@@ -79,7 +81,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   Future<void> _loadProgress() async {
-    final progress = await AurenGameProgress.load(widget.gameIndex);
+    final progress = await AurenGameProgress.load(_gameId);
     if (!mounted) return;
     setState(() {
       _bestScore = progress['best'] ?? 0;
@@ -91,7 +93,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   Future<void> _saveProgress({bool won = false}) async {
     final nextWins = _wins + (won ? 1 : 0);
     await AurenGameProgress.save(
-      gameIndex: widget.gameIndex,
+      gameIndex: _gameId,
       score: _score,
       round: _round,
       wins: nextWins,
@@ -222,7 +224,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   }
 
   Future<void> _loadServerRanking() async {
-    final data = await _multiplayer.getFlagshipRanking(gameIndex: widget.gameIndex);
+    final data = await _multiplayer.getFlagshipRanking(gameIndex: _gameId);
     if (!mounted || data == null) return;
     setState(() { _wins = (data['wins'] as num?)?.toInt() ?? _wins; _serverLosses = (data['losses'] as num?)?.toInt() ?? _serverLosses; _serverDraws = (data['draws'] as num?)?.toInt() ?? _serverDraws; _serverMatches = (data['matches'] as num?)?.toInt() ?? _serverMatches; _serverRating = (data['rating'] as num?)?.toInt() ?? _serverRating; });
   }
@@ -230,7 +232,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   Future<void> _startMatchmaking() async {
     _matchmakingTimer?.cancel();
     setState(() => _matchmaking = true);
-    final result = await _multiplayer.enqueueMatchmaking(gameIndex: widget.gameIndex);
+    final result = await _multiplayer.enqueueMatchmaking(gameIndex: _gameId);
     if (!mounted) return;
     if (result?['status'] == 'matched' && result?['matchId'] is String) {
       final id = result!['matchId'].toString();
@@ -273,7 +275,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   Future<void> _createLobby() async {
     try {
-      final id = await _multiplayer.createLobby(gameIndex: widget.gameIndex);
+      final id = await _multiplayer.createLobby(gameIndex: _gameId);
       _watchLobby(id);
       if (widget.gameIndex == 1) {
         // Initialization is completed by the second player after the lobby becomes playable.
@@ -298,7 +300,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     controller.dispose();
     if (code == null || code.isEmpty) return;
     try {
-      final ok = await _multiplayer.joinLobby(lobbyId: code, gameIndex: widget.gameIndex);
+      final ok = await _multiplayer.joinLobby(lobbyId: code, gameIndex: _gameId);
       if (!ok) {
         if (mounted) setState(() => _onlineStatus = 'Lobby not available');
         return;
@@ -385,7 +387,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   Future<void> _submitTournamentResultIfNeeded() async {
     if (_tournamentResultSent || _lobbyId == null || _matchWinnerId == null || _matchResult == 'in_progress') return;
-    final tournament = await _multiplayer.getTournament(gameIndex: widget.gameIndex);
+    final tournament = await _multiplayer.getTournament(gameIndex: _gameId);
     final matches = tournament?['matches'];
     if (matches is! List) return;
     final me = _multiplayer.playerId;
@@ -399,7 +401,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     final id = target['id']?.toString();
     if (id == null) return;
     final result = await _multiplayer.submitTournamentMatchResult(
-      gameIndex: widget.gameIndex, matchId: id, winnerId: _matchWinnerId!);
+      gameIndex: _gameId, matchId: id, winnerId: _matchWinnerId!);
     if (result != null) {
       _tournamentResultSent = true;
       if (mounted) setState(() => _message = '🏆 تم تسجيل نتيجة البطولة والتأهل تلقائياً');
@@ -421,7 +423,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
 
   void _act() {
     if (!_isMyTurn) { setState(() => _message = '⏳ انتظر دورك'); return; }
-    switch (widget.gameIndex) {
+    switch (_localIndex) {
       case 0:
         _ludoRoll();
         return;
@@ -764,7 +766,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   @override
   Widget build(BuildContext context) {
     return ListView(padding: const EdgeInsets.all(16), children: [
-      Text(_names[widget.gameIndex], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+      Text(_names[_localIndex], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
       const SizedBox(height: 8),
       Align(alignment: AlignmentDirectional.centerStart, child: OutlinedButton.icon(onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenGlobalGamingLeaderboardScreen())); }, icon: const Icon(Icons.leaderboard), label: const Text('🌍 Spectate Live Matches • Global Gaming Leaderboard'))),
       const SizedBox(width: 8),
@@ -783,7 +785,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         ]),
         if (_lobbyId == null && !_matchmaking) const SizedBox(height: 8),
         if (_lobbyId == null && !_matchmaking) OutlinedButton(onPressed: _joinLobby, child: const Text('Join Match')),
-        if (_lobbyId == null && !_matchmaking) OutlinedButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenGamingTournamentScreen(initialGameIndex: widget.gameIndex))), icon: const Icon(Icons.emoji_events), label: const Text('Tournament')),
+        if (_lobbyId == null && !_matchmaking) OutlinedButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenGamingTournamentScreen(initialGameIndex: _gameId))), icon: const Icon(Icons.emoji_events), label: const Text('Tournament')),
         if (_lobbyId == null && _matchmaking) FilledButton.tonal(onPressed: _cancelMatchmaking, child: const Text('Cancel Search')),
         const SizedBox(height: 8),
         Row(
@@ -796,12 +798,12 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         ]),
       ]))),
       const SizedBox(height: 12),
-      if (widget.gameIndex == 0) _ludoBoard(),
-      if (widget.gameIndex == 1) _dominoBoard(),
-      if (widget.gameIndex == 2) _unoBoard(),
-      if (widget.gameIndex == 3) _crimeBoard(),
-      if (widget.gameIndex >= 4) _actionBoard(),
-      if (widget.gameIndex >= 4) _controls(),
+      if (_localIndex == 0) _ludoBoard(),
+      if (_localIndex == 1) _dominoBoard(),
+      if (_localIndex == 2) _unoBoard(),
+      if (_localIndex == 3) _crimeBoard(),
+      if (_localIndex >= 4) _actionBoard(),
+      if (_localIndex >= 4) _controls(),
       const SizedBox(height: 12),
       if (_onlineMatch && _matchResult != 'in_progress') Card(child: Padding(padding: const EdgeInsets.all(14), child: Text(_matchResult == 'draw' ? '🤝 تعادل • النتيجة محفوظة من الخادم' : (_matchWinnerId == _multiplayer.playerId ? '🏆 فوز مسجل من الخادم' : '📊 انتهت المباراة'), style: const TextStyle(fontWeight: FontWeight.w900)))),
       Card(child: Padding(padding: const EdgeInsets.all(14), child: Text(_message, style: const TextStyle(fontWeight: FontWeight.w800)))),
@@ -865,10 +867,10 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   ])));
 
   Widget _controls() {
-    if (widget.gameIndex == 4) return _choiceCard('اختر زاوية التسديد', ['يسار','وسط','يمين'], (i) { if (_onlineMatch) { _submitFlagshipAction('shoot', {'lane': i}); return; } setState(() { _round++; if (_rng.nextInt(3) != i) { _score += 30; _message = '⚽ تسديدة ناجحة'; } else { _message = '🧤 الحارس تصدى'; } }); });
-    if (widget.gameIndex == 5) return _choiceCard('اختر الرمية', ['2 نقاط','3 نقاط','Fadeaway'], (i) { if (_onlineMatch) { _submitFlagshipAction('shot', {'shot': i}); return; } setState(() { _round++; final chance = i == 1 ? .55 : .72; if (_rng.nextDouble() < chance) { final p = i == 1 ? 3 : 2; _score += p * 10; _message = '🏀 رمية ناجحة: ' + p.toString(); } else { _message = '🏀 ضاعت الرمية'; } }); });
-    if (widget.gameIndex == 6) return _choiceCard('اختر حركة الملاكمة', ['Jab','Hook','Dodge'], (i) { if (_onlineMatch) { _submitFlagshipAction('boxing', {'move': i}); return; } setState(() { if (i == 2) { _energy = min(100, _energy + 12); _message = '🥊 مراوغة +12 طاقة'; } else { _boxingTurn(); } }); });
-    if (widget.gameIndex == 9) return _choiceCard('اختر المسار', ['يسار','وسط','يمين'], (i) { if (_onlineMatch) { _submitFlagshipAction('steer', {'lane': i}); return; } setState(() { _distance += i == 1 ? 8 : 5; _racingTurn(); }); });
+    if (_localIndex == 4) return _choiceCard('اختر زاوية التسديد', ['يسار','وسط','يمين'], (i) { if (_onlineMatch) { _submitFlagshipAction('shoot', {'lane': i}); return; } setState(() { _round++; if (_rng.nextInt(3) != i) { _score += 30; _message = '⚽ تسديدة ناجحة'; } else { _message = '🧤 الحارس تصدى'; } }); });
+    if (_localIndex == 5) return _choiceCard('اختر الرمية', ['2 نقاط','3 نقاط','Fadeaway'], (i) { if (_onlineMatch) { _submitFlagshipAction('shot', {'shot': i}); return; } setState(() { _round++; final chance = i == 1 ? .55 : .72; if (_rng.nextDouble() < chance) { final p = i == 1 ? 3 : 2; _score += p * 10; _message = '🏀 رمية ناجحة: ' + p.toString(); } else { _message = '🏀 ضاعت الرمية'; } }); });
+    if (_localIndex == 6) return _choiceCard('اختر حركة الملاكمة', ['Jab','Hook','Dodge'], (i) { if (_onlineMatch) { _submitFlagshipAction('boxing', {'move': i}); return; } setState(() { if (i == 2) { _energy = min(100, _energy + 12); _message = '🥊 مراوغة +12 طاقة'; } else { _boxingTurn(); } }); });
+    if (_localIndex == 9) return _choiceCard('اختر المسار', ['يسار','وسط','يمين'], (i) { if (_onlineMatch) { _submitFlagshipAction('steer', {'lane': i}); return; } setState(() { _distance += i == 1 ? 8 : 5; _racingTurn(); }); });
     return const SizedBox.shrink();
   }
 
@@ -878,12 +880,12 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   ])));
 
   Widget _actionBoard() {
-    final icon = ['⚽','🏀','🥊','⚔️','🥷','🏎️'][widget.gameIndex - 4];
+    final icon = ['⚽','🏀','🥊','⚔️','🥷','🏎️'][_localIndex - 4];
     return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
       Text(icon + ' ساحة اللعب', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
       const SizedBox(height: 12), LinearProgressIndicator(value: _hp / 100), const SizedBox(height: 8),
       Text('HP ' + _hp.toString() + ' • طاقة ' + _energy.toString() + ' • الجولة ' + _round.toString() + ' • النقاط ' + _score.toString()),
-      if (widget.gameIndex == 9) Text('المسافة: ' + _distance.toString() + 'm'),
+      if (_localIndex == 9) Text('المسافة: ' + _distance.toString() + 'm'),
     ])));
   }
 }
