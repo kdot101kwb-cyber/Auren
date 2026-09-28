@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
@@ -58,6 +59,51 @@ class _AurenEntertainmentOutputScreenState
   bool _showNextCountdown = false;
   int _nextCountdown = 10;
   Timer? _nextTimer;
+  Timer? _controlsTimer;
+  bool _showControls = true;
+  bool _isFullscreen = false;
+
+  void _resetControlsTimer() {
+    _controlsTimer?.cancel();
+    if (!mounted) return;
+    setState(() => _showControls = true);
+    final controller = _controller;
+    if (controller?.value.isPlaying == true) {
+      _controlsTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted && _controller?.value.isPlaying == true) {
+          setState(() => _showControls = false);
+        }
+      });
+    }
+  }
+
+  Future<void> _toggleFullscreen() async {
+    final entering = !_isFullscreen;
+    if (entering) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+    if (mounted) setState(() => _isFullscreen = entering);
+    _resetControlsTimer();
+  }
+
+  Future<void> _exitFullscreenIfNeeded() async {
+    if (!_isFullscreen) return;
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
 
   bool get _canSaveWatchProgress => widget.watchUid?.isNotEmpty == true &&
       widget.watchJobId?.isNotEmpty == true &&
@@ -152,6 +198,11 @@ class _AurenEntertainmentOutputScreenState
     if (_isVideo && _url.isNotEmpty) {
       final controller = VideoPlayerController.networkUrl(Uri.parse(_url));
       _controller = controller;
+      controller.addListener(() {
+        if (controller.value.isPlaying) {
+          _resetControlsTimer();
+        }
+      });
       controller.addListener(_onVideoProgress);
       _initializeFuture = controller.initialize().then((_) => _loadWatchProgress(controller));
     } else if (_isAudio && _url.isNotEmpty) {
@@ -163,7 +214,9 @@ class _AurenEntertainmentOutputScreenState
   @override
   void dispose() {
     _nextTimer?.cancel();
+    _controlsTimer?.cancel();
     _saveWatchProgress(force: true);
+    _exitFullscreenIfNeeded();
     _controller?.removeListener(_onVideoProgress);
     _controller?.dispose();
     _audioPlayer?.dispose();
@@ -267,15 +320,83 @@ class _AurenEntertainmentOutputScreenState
           return const Center(child: Text('تعذر تشغيل الفيديو. قد يكون الرابط المؤقت انتهت صلاحيته.'));
         }
 
-        return Center(
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _resetControlsTimer,
+          child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AspectRatio(
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                AspectRatio(
                 aspectRatio: controller.value.aspectRatio == 0
                     ? 9 / 16
                     : controller.value.aspectRatio,
                 child: VideoPlayer(controller),
+              ),
+              if (_showControls)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.35),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.45),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (_showControls)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton.filled(
+                    tooltip: _isFullscreen ? 'خروج من ملء الشاشة' : 'ملء الشاشة',
+                    onPressed: _toggleFullscreen,
+                    icon: Icon(_isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded),
+                  ),
+                ),
+              if (_showControls)
+                Positioned(
+                  bottom: 8,
+                  left: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton.filledTonal(
+                        onPressed: () => _skipBy(-10),
+                        icon: const Icon(Icons.replay_10_rounded),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        onPressed: () async {
+                          if (controller.value.isPlaying) {
+                            await controller.pause();
+                          } else {
+                            await controller.play();
+                          }
+                          _resetControlsTimer();
+                        },
+                        icon: Icon(controller.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        onPressed: () => _skipBy(30),
+                        icon: const Icon(Icons.forward_30_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                ],
               ),
               if (_showNextCountdown && widget.onNextEpisode != null)
                 Card(
@@ -387,7 +508,8 @@ class _AurenEntertainmentOutputScreenState
               ),
             ],
           ),
-        );
+        ),
+        ); 
       },
     );
   }
