@@ -47,6 +47,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   Timer? _recoveryTimer;
   Timer? _watchTogetherSyncTimer;
+  Timer? _watchTogetherPresenceTimer;
   bool _applyingRemoteWatchState = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   DateTime? _bufferingSince;
@@ -253,6 +254,9 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       setState(() { _watchTogether = true; _watchTogetherRoom = roomId; });
       if (action == 'join') await _applyWatchTogetherRoomState(room);
       _watchTogetherSyncTimer?.cancel();
+      _watchTogetherPresenceTimer?.cancel();
+      await service.heartbeat(roomId);
+      _watchTogetherPresenceTimer = Timer.periodic(const Duration(seconds: 10), (_) async { if (_watchTogetherRoom == roomId) { try { await service.heartbeat(roomId); } catch (_) {} } });
       _watchTogetherSyncTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
         if (_watchTogetherRoom != roomId || _applyingRemoteWatchState || player == null || !player!.value.isInitialized) return;
         await service.sync(roomId, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying);
@@ -277,6 +281,17 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     }
   }
 
+  String _presenceLabel(Map<String,dynamic>? data, DateTime now) {
+    if (data == null) return 'غير متصل';
+    final last = data['lastSeen'];
+    if (last is Timestamp) {
+      final seconds = now.difference(last.toDate()).inSeconds;
+      if (data['online'] == true && seconds <= 30) return 'متصل الآن';
+      if (seconds <= 120) return 'اتصال ضعيف/عاد مؤخراً';
+    }
+    return 'غير متصل';
+  }
+
   Future<void> _showWatchTogetherStatus(AurenTvWatchTogetherRoom initial) async {
     final service = AurenTvWatchTogetherService.instance;
     if (!mounted) return;
@@ -299,8 +314,26 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 subtitle: Text('الكود: ${room.inviteCode} • ${room.memberIds.length}/8 • ${room.status}'),
               ),
               const Divider(),
-              for (final id in room.memberIds)
-                ListTile(
+              StreamBuilder<QuerySnapshot<Map<String,dynamic>>>(
+                stream: service.presence(room.id),
+                builder: (ctx, presenceSnap) {
+                  final now = DateTime.now();
+                  final docs = <String,Map<String,dynamic>>{
+                    for (final d in presenceSnap.data?.docs ?? const <QueryDocumentSnapshot<Map<String,dynamic>>>[])
+                      d.id: d.data(),
+                  };
+                  return Column(children: [
+                    for (final id in room.memberIds)
+                      ListTile(
+                        dense: true,
+                        leading: Icon(id == room.hostUid ? Icons.workspace_premium : Icons.person_outline),
+                        title: Text(id == uid ? 'أنت' : 'عضو'),
+                        subtitle: Text(id == room.hostUid ? 'Host • '+_presenceLabel(docs[id], now) : 'Member • '+_presenceLabel(docs[id], now)),
+                      ),
+                  ]);
+                },
+              ),
+
                   dense: true,
                   leading: Icon(id == room.hostUid ? Icons.workspace_premium : Icons.person_outline),
                   title: Text(id == uid ? 'أنت' : 'عضو'),
@@ -308,7 +341,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 ),
               Row(children: [
                 Expanded(child: OutlinedButton.icon(
-                  onPressed: () async { await service.leave(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
+                  onPressed: () async { await service.leave(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); _watchTogetherPresenceTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
                   icon: const Icon(Icons.exit_to_app), label: const Text('مغادرة'),
                 )),
                 if (isHost) ...[
@@ -736,6 +769,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override void dispose() {
     _watchTogetherSubscription?.cancel();
     _watchTogetherSyncTimer?.cancel();
+    _watchTogetherPresenceTimer?.cancel();
+    if (_watchTogetherRoom != null) unawaited(AurenTvWatchTogetherService.instance.heartbeat(_watchTogetherRoom!, online: false));
     _search.dispose();
     _recoveryTimer?.cancel();
     _connectivitySubscription?.cancel();
