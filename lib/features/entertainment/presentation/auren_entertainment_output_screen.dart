@@ -74,6 +74,8 @@ class _AurenEntertainmentOutputScreenState
   bool _didBufferError = false;
   String _currentUrl = '';
   bool _completionHandling = false;
+  int _recoveryAttempts = 0;
+  bool _recoveringPlayback = false;
 
   void _resetControlsTimer() {
     _controlsTimer?.cancel();
@@ -162,6 +164,65 @@ class _AurenEntertainmentOutputScreenState
         : urls[selected];
     if (target != null && target.isNotEmpty && target != _url) {
       await _switchVideoQuality(target);
+    }
+  }
+
+  Future<void> _recoverPlayback() async {
+    final url = _currentUrl.isNotEmpty ? _currentUrl : (widget.output['url']?.toString() ?? '');
+    final old = _controller;
+    if (url.isEmpty || old == null || _recoveringPlayback || !mounted) return;
+    if (_recoveryAttempts >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر استعادة التشغيل. جرّب إعادة المحاولة لاحقاً.')),
+      );
+      return;
+    }
+    _recoveringPlayback = true;
+    _recoveryAttempts++;
+    final position = old.value.position;
+    final wasPlaying = old.value.isPlaying;
+    final volume = old.value.volume;
+    if (mounted) setState(() => _switchingQuality = true);
+    try {
+      final next = VideoPlayerController.networkUrl(Uri.parse(url));
+      await next.initialize();
+      await next.setPlaybackSpeed(_playbackSpeed);
+      await next.setVolume(volume);
+      if (next.value.duration > Duration.zero) {
+        await next.seekTo(position <= next.value.duration ? position : next.value.duration);
+      }
+      if (wasPlaying) await next.play();
+      next.addListener(_onVideoProgress);
+      next.addListener(() {
+        if (!mounted) return;
+        if (next.value.isBuffering != _isBuffering) {
+          setState(() => _isBuffering = next.value.isBuffering);
+        }
+        if (next.value.hasError && !_didBufferError) {
+          _didBufferError = true;
+        }
+      });
+      _controller = next;
+      _didBufferError = false;
+      await old.pause();
+      await old.dispose();
+      if (mounted) {
+        setState(() {
+          _switchingQuality = false;
+          _recoveringPlayback = false;
+        });
+        _resetControlsTimer();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _switchingQuality = false;
+          _recoveringPlayback = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل الاسترداد ($_recoveryAttempts/3).')),
+        );
+      }
     }
   }
 
@@ -361,7 +422,10 @@ class _AurenEntertainmentOutputScreenState
         if (controller.value.hasError && !_didBufferError && mounted) {
           _didBufferError = true;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(controller.value.errorDescription ?? 'حدث خطأ أثناء تشغيل الفيديو.')),
+            SnackBar(
+              content: Text(controller.value.errorDescription ?? 'حدث خطأ أثناء تشغيل الفيديو.'),
+              action: SnackBarAction(label: 'إعادة المحاولة', onPressed: _recoverPlayback),
+            ),
           );
         }
         if (playing != _lastPlayingState) {
@@ -637,6 +701,15 @@ class _AurenEntertainmentOutputScreenState
                         ),
                       ),
                     ],
+                  ),
+                ),
+                            if (_didBufferError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: OutlinedButton.icon(
+                    onPressed: _recoveringPlayback ? null : _recoverPlayback,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(_recoveringPlayback ? 'جارٍ الاستعادة…' : 'إعادة تشغيل'),
                   ),
                 ),
               const SizedBox(height: 18),
