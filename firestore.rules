@@ -1996,6 +1996,17 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
     }
 
+    match /auren_game_lobbies/{lobbyId}/private_players/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid
+        && exists(/databases/$(database)/documents/auren_game_lobbies/$(lobbyId))
+        && request.auth.uid in get(/databases/$(database)/documents/auren_game_lobbies/$(lobbyId)).data.players;
+      allow create, update, delete: if false;
+    }
+
+    match /auren_game_lobbies/{lobbyId}/server/{docId} {
+      allow read, write: if false;
+    }
+
     match /auren_game_lobbies/{lobbyId} {
       allow read: if request.auth != null
         && request.auth.uid in resource.data.players;
