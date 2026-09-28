@@ -6,7 +6,7 @@
   },
   "main": "index.js",
   "scripts": {
-    "test": "node --check index.js && node --check live_production_worker.js && node --test index.test.js entertainment_providers.test.js providers_100.test.js live_provider_adapters.test.js provider_runtime.test.js"
+    "test": "node --check index.js && node --check live_production_worker.js && node --test index.test.js entertainment_providers.test.js providers_100.test.js live_provider_adapters.test.js provider_runtime.test.js live_production_worker.test.js"
   },
   "dependencies": {
     "firebase-admin": "^13.0.0",
