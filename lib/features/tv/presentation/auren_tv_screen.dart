@@ -10,6 +10,7 @@ class AurenTvScreen extends StatefulWidget {
 class _AurenTvScreenState extends State<AurenTvScreen> {
   final _search = TextEditingController();
   String country = '', category = '', query = '', continent = '';
+  String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
   Set<String> favorites = {};
   VideoPlayerController? player;
@@ -92,11 +93,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         children: [
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: ChoiceChip(label: const Text('🇸🇩 السودان'), selected: quickRegion == 'Sudan', onSelected: (_) => setState(() { quickRegion = quickRegion == 'Sudan' ? '' : 'Sudan'; country = quickRegion == 'Sudan' ? 'SD' : ''; continent = ''; }))),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: ChoiceChip(label: const Text('🌍 عربي'), selected: quickRegion == 'Arab', onSelected: (_) => setState(() { quickRegion = quickRegion == 'Arab' ? '' : 'Arab'; country = ''; continent = ''; }))),
           for (final region in regions.keys)
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: ChoiceChip(
-              label: Text(region), selected: continent == region,
-              onSelected: (_) => setState(() { continent = continent == region ? '' : region; country = ''; }),
-            )),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: ChoiceChip(label: Text(region), selected: continent == region, onSelected: (_) => setState(() { continent = continent == region ? '' : region; country = ''; quickRegion = ''; }))),
           Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: FilterChip(
             label: const Text('المفضلة'), selected: onlyFavorites, onSelected: (v) => setState(() => onlyFavorites = v),
           )),
@@ -139,14 +139,17 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasError) return Center(child: Text('تعذر تحميل القنوات: ${snapshot.error}'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          final arabCountries = {'DZ','BH','KM','DJ','EG','IQ','JO','KW','LB','LY','MR','MA','OM','PS','QA','SA','SO','SD','SY','TN','AE','YE'};
+          final maxChannels = lowData ? 150 : 500;
           final channels = snapshot.data!.where((c) {
             final matchesQuery = query.isEmpty || '${c.name} ${c.country} ${c.language} ${c.category}'.toLowerCase().contains(query);
             final matchesRegion = continent.isEmpty || _regionLabel(c) == continent;
-            return matchesQuery && matchesRegion && (!onlyFavorites || favorites.contains(c.id));
+            final matchesQuick = quickRegion == 'Sudan' ? c.country.toUpperCase() == 'SD' : quickRegion == 'Arab' ? arabCountries.contains(c.country.toUpperCase()) : true;
+            return matchesQuery && matchesRegion && matchesQuick && (!onlyFavorites || favorites.contains(c.id));
           }).toList();
           if (channels.isEmpty) return const Center(child: Text('ما لقينا قنوات مطابقة. جرّب تغيير البحث أو الدولة.'));
           return ListView.separated(
-            padding: const EdgeInsets.all(12), itemCount: channels.length,
+            padding: const EdgeInsets.all(12), itemCount: channels.take(maxChannels).length,
             separatorBuilder: (_, __) => const SizedBox(height: 6),
             itemBuilder: (context, i) {
               final c = channels[i];
