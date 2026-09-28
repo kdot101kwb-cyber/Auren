@@ -38,10 +38,27 @@ class AurenEntertainmentLibraryScreen extends StatelessWidget {
   }
 
   Future<void> _downloadJob(BuildContext context, Map<String,dynamic> job) async {
-    final url=_jobMediaUrl(job);
-    if(url==null)return;
     final mode=job['mode']?.toString()??'media';
     final title=job['title']?.toString().trim().isNotEmpty==true?job['title'].toString():job['idea']?.toString()??'AUREN Media';
+    if(mode=='فيلم' && job['movieArtifacts'] is List) {
+      final artifacts=job['movieArtifacts'] as List;
+      var count=0;
+      for(var i=0;i<artifacts.length;i++) {
+        dynamic value=artifacts[i];
+        if(value is Map) value=value['url'] ?? value['output'];
+        if(value is Map) value=value['url'];
+        if(value is String && value.startsWith(RegExp(r'https?://'))) {
+          await _download(context,value,'$title • المشهد '+(i+1).toString(),'video',job['id']?.toString()??'');
+          count++;
+        }
+      }
+      if(context.mounted && count>0) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تمت معالجة تنزيل $count مشهداً للحفظ Offline.')));
+      }
+      return;
+    }
+    final url=_jobMediaUrl(job);
+    if(url==null)return;
     await _download(context,url,title,mode=='أغنية'?'audio':'video',job['id']?.toString()??'');
   }
 
