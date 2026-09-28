@@ -1211,6 +1211,32 @@ async function claimAurenProductionV2Job() {
   return null;
 }
 
+function buildAurenEpisodeAssemblyManifest(taskDocs) {
+  const items = taskDocs.map((doc) => {
+    const data = doc.data() || {};
+    return {
+      taskId: doc.id,
+      episodeNumber: Math.max(1, Number(data.episodeNumber || 1)),
+      sceneNumber: Math.max(1, Number(data.sceneNumber || 1)),
+      output: data.output || null,
+      durationSeconds: Number(data.durationSeconds || 0) || null,
+    };
+  }).sort((a,b) => a.episodeNumber - b.episodeNumber || a.sceneNumber - b.sceneNumber || a.taskId.localeCompare(b.taskId));
+  const episodes = {};
+  for (const item of items) {
+    const key = String(item.episodeNumber);
+    if (!episodes[key]) episodes[key] = [];
+    episodes[key].push(item);
+  }
+  return {
+    version: 1,
+    sceneCount: items.length,
+    episodeCount: Object.keys(episodes).length,
+    episodes,
+    createdAt: new Date().toISOString(),
+  };
+}
+
 async function validateAurenProductionArtifact(output) {
   if (!output || typeof output !== 'object') return {ok:false, reason:'missing_output'};
   const url=String(output.url || '').trim();
@@ -1340,8 +1366,10 @@ async function aurenProductionV2Run(ref) {
       if (!fresh.exists) return;
       const data = fresh.data() || {};
       if (data.productionStage !== 'qc') return;
+      const assemblyManifest = buildAurenEpisodeAssemblyManifest(tasks.docs);
       tx.set(ref, {...common, status:'ready', productionStage:'ready', qcStatus:'passed',
-        qcId, productionProgress:100, readyAt:FieldValue.serverTimestamp()}, {merge:true});
+        qcId, assemblyManifest, assemblyStatus:'manifest_ready', productionProgress:100,
+        readyAt:FieldValue.serverTimestamp()}, {merge:true});
       tx.set(ref.collection('productionAudits').doc(qcId), {
         idempotencyKey:qcId, result:'passed', taskCount:tasks.docs.length,
         artifactChecks, verificationVersion:1,
