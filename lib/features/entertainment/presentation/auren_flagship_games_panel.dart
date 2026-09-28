@@ -9,7 +9,8 @@ import 'auren_gaming_tournament_screen.dart';
 
 class AurenFlagshipGamesPanel extends StatefulWidget {
   final int gameIndex;
-  const AurenFlagshipGamesPanel({super.key, required this.gameIndex});
+  final String? initialLobbyId;
+  const AurenFlagshipGamesPanel({super.key, required this.gameIndex, this.initialLobbyId});
   @override State<AurenFlagshipGamesPanel> createState() => _AurenFlagshipGamesPanelState();
 }
 
@@ -71,6 +72,10 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     super.initState();
     _reset(initializing: true);
     _loadProgress();
+    if (widget.initialLobbyId != null && widget.initialLobbyId!.isNotEmpty) {
+      _watchLobby(widget.initialLobbyId!);
+      unawaited(_initializeOnlineMatch());
+    }
   }
 
   Future<void> _loadProgress() async {
@@ -351,7 +356,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   @override
   void didUpdateWidget(covariant AurenFlagshipGamesPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.gameIndex != widget.gameIndex) {
+    if (oldWidget.gameIndex != widget.gameIndex || oldWidget.initialLobbyId != widget.initialLobbyId) {
       unawaited(_leaveLobby());
       _reset();
       unawaited(_loadProgress());
