@@ -343,6 +343,7 @@ class EntertainmentRepository {
   List<String> _creationPlan(String mode) {
     switch (mode) {
       case 'أغنية': return ['Concept وكلمات','لحن وتوزيع','صوت/أداء','Mix & Master','مراجعة الحقوق','Ready'];
+      case 'فيلم': return ['Concept وScript','Story & Characters','Storyboard','الأصول البصرية','الصوت والموسيقى','المونتاج','مراجعة الحقوق','Ready'];
       case 'فيديو': return ['Concept وScript','Storyboard','الأصول البصرية','الصوت والموسيقى','المونتاج','مراجعة الحقوق','Ready'];
       case 'بودكاست': return ['الفكرة والهيكل','Script/Notes','تسجيل الصوت','تنظيف ومكساج','غلاف ووصف','مراجعة الحقوق','Ready'];
       case 'عالم': return ['تصميم العالم','الشخصيات والأماكن','المهام والتفاعل','الأصول الصوتية والبصرية','اختبار التجربة','Ready'];
@@ -354,6 +355,7 @@ class EntertainmentRepository {
   List<String> _creationAssets(String mode) {
     switch (mode) {
       case 'أغنية': return ['lyrics','music','vocals','artwork'];
+      case 'فيلم': return ['film_bible','script','characters','storyboard','visual_assets','video','audio','music','thumbnail','trailer','qc'];
       case 'فيديو': return ['script','storyboard','video','audio','thumbnail'];
       case 'بودكاست': return ['script','voice','cover','description'];
       case 'عالم': return ['world','characters','locations','missions','audio'];
