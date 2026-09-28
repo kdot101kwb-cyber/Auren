@@ -24,6 +24,7 @@ class _AurenEntertainmentCreateScreenState
     'أغنية': Icons.music_note_rounded,
     'قصة': Icons.auto_stories_rounded,
     'فيديو': Icons.movie_creation_rounded,
+    'فيلم': Icons.local_movies_rounded,
     'بودكاست': Icons.podcasts_rounded,
     'عالم': Icons.public_rounded,
   };
@@ -43,6 +44,8 @@ class _AurenEntertainmentCreateScreenState
         return 'أغنية عربية أصلية عن بداية رحلة جديدة.';
       case 'قصة':
         return 'قصة قصيرة عن شخص يكتشف مدينة غامضة.';
+      case 'فيلم':
+        return 'فيلم أصلي عن شاب من السودان يحاول بناء حياة جديدة بين مدينتين.';
       case 'فيديو':
         return 'فيديو قصير يحكي فكرة ملهمة بصرياً.';
       case 'بودكاست':
