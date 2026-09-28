@@ -3,6 +3,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+class AurenTvEpgSearchResult {
+  final String channelId, title, startIso, stopIso, state;
+  const AurenTvEpgSearchResult({required this.channelId, required this.title, required this.startIso, required this.stopIso, required this.state});
+}
+
 class AurenTvHealth {
   final String status;
   final int? latencyMs;
@@ -653,6 +658,31 @@ class AurenTvService {
       if (sourceItems.isNotEmpty) return sourceItems;
     }
     return scheduleForChannel(channel, hours: hours);
+  }
+
+  Future<List<AurenTvEpgSearchResult>> searchEpg(String query, {AurenTvSource? source, int hours = 48, int limit = 50}) async {
+    final q = _normalizeIdentity(query);
+    if (q.isEmpty) return const [];
+    final results = <AurenTvEpgSearchResult>[];
+    final seen = <String>{};
+    final caches = <Map<String, List<Map<String, String>>>>[];
+    if (source != null) {
+      final url = source.epgUrl.trim().isNotEmpty ? source.epgUrl.trim() : (_sourceEpgUrls[source.id] ?? '');
+      if (url.isNotEmpty) caches.add(_sourceEpgCaches[source.id] ??= await _loadEpg(url, metadataKey: source.id));
+    }
+    if (_epgUrl != null && _epgUrl!.isNotEmpty) caches.add(_epgCache ??= await _loadEpg(_epgUrl!, metadataKey: 'global'));
+    for (final cache in caches) {
+      for (final entry in cache.entries) {
+        for (final p in _filterSchedule(entry.value, hours)) {
+          if (!_normalizeIdentity(p['title'] ?? '').contains(q)) continue;
+          final key = entry.key + '|' + (p['startIso'] ?? '') + '|' + (p['title'] ?? '');
+          if (!seen.add(key)) continue;
+          results.add(AurenTvEpgSearchResult(channelId: entry.key, title: p['title'] ?? '', startIso: p['startIso'] ?? '', stopIso: p['stopIso'] ?? '', state: p['state'] ?? 'next'));
+          if (results.length >= limit) return results;
+        }
+      }
+    }
+    return results;
   }
 
   Future<Map<String, String>?> nowNextForChannel(AurenTvChannel channel, {AurenTvSource? source}) async {
