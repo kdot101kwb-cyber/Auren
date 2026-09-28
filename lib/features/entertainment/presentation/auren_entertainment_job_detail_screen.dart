@@ -314,150 +314,17 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                                   title: Text('الحلقة $n', style: const TextStyle(fontWeight: FontWeight.w800)),
                                   subtitle: subtitle.isEmpty ? null : Text(subtitle),
                                   trailing: hasVideo ? const Icon(Icons.play_circle_fill_rounded) : null,
-                                  onTap: hasVideo ? () {
-                                    final video = media['video'];
-                                    final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
-                                    int findNextPlayableIndex(int start) {
-                                      for (var i = start; i < episodes.length && i < 20; i++) {
-                                        final raw = episodes[i];
-                                        final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-                                        final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
-                                        final v = m['video'];
-                                        if (v is Map && v['url']?.toString().isNotEmpty == true) return i;
-                                        if (v is String && v.isNotEmpty) return i;
-                                      }
-                                      return -1;
-                                    }
-                                    final nextIndex = findNextPlayableIndex(episodeIndex + 1);
-                                    final hasNext = nextIndex >= 0;
-                                    Future<void> openNextEpisode() async {
-                                      if (!hasNext || !context.mounted) return;
-                                      final nextRaw = episodes[nextIndex];
-                                      final next = nextRaw is Map ? Map<String, dynamic>.from(nextRaw) : <String, dynamic>{};
-                                      final nextNumber = int.tryParse(next['episodeNumber']?.toString() ?? '') ?? (episodeNumber + 1);
-                                      final nextMedia = next['media'] is Map ? Map<String, dynamic>.from(next['media'] as Map) : <String, dynamic>{};
-                                      final nextVideo = nextMedia['video'];
-                                      if (nextVideo == null) return;
-                                      final nextOutput = nextVideo is Map ? Map<String, dynamic>.from(nextVideo) : {'url': nextVideo.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
-                                      final nextThumbnail = nextMedia['thumbnail'];
-                                      final nextPreviewUrl = nextThumbnail is Map ? nextThumbnail['url']?.toString() ?? '' : nextThumbnail?.toString() ?? '';
-                                      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
-                                        output: nextOutput,
-                                        title: seriesTitle,
-                                        episodeLabel: 'الحلقة $nextNumber',
-                                        onNextEpisode: nextIndex + 1 < episodes.length && nextIndex + 1 < 20 ? openNextEpisode : null,
-                                        nextEpisodeLabel: nextIndex + 1 < episodes.length && nextIndex + 1 < 20 ? 'الحلقة ' + (nextNumber + 1) : null,
-                                        nextPreviewUrl: nextIndex + 1 < episodes.length && nextIndex + 1 < 20
-                                            ? (() {
-                                                final raw = episodes[nextIndex + 1];
-                                                final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-                                                final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
-                                                final t = m['thumbnail'];
-                                                return t is Map ? t['url']?.toString() ?? '' : t?.toString() ?? '';
-                                              })()
-                                            : null,
-                                        watchUid: uid,
-                                        watchJobId: jobId,
-                                        watchEpisodeNumber: nextNumber,
-                                        watchTitle: seriesTitle,
-                                      )));
-                                    }
-                                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
-                                      output: output,
-                                      title: seriesTitle,
-                                      episodeLabel: 'الحلقة $episodeNumber',
-                                      episodes: episodes.take(20).map((raw) {
-                                        final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-                                        return {'episodeNumber': item['episodeNumber'], 'label': 'الحلقة ' + (item['episodeNumber']?.toString() ?? '')};
-                                      }).toList(),
-                                      onSelectEpisode: (number) {
-                                        final target = episodes.indexWhere((raw) {
-                                          final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-                                          return int.tryParse(item['episodeNumber']?.toString() ?? '') == number;
-                                        });
-                                        if (target >= 0 && context.mounted) {
-                                          final raw = episodes[target];
-                                          final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-                                          final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
-                                          final v = m['video'];
-                                          if (v != null) {
-                                            final out = v is Map ? Map<String, dynamic>.from(v) : {'url': v.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
-                                            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
-                                              output: out,
-                                              title: seriesTitle,
-                                              episodeLabel: 'الحلقة ' + number.toString(),
-                                              episodes: episodes.take(20).map((r) {
-                                                final x = r is Map ? Map<String, dynamic>.from(r) : <String, dynamic>{};
-                                                return {'episodeNumber': x['episodeNumber'], 'label': 'الحلقة ' + (x['episodeNumber']?.toString() ?? '')};
-                                              }).toList(),
-                                              onSelectEpisode: (selectedNumber) {
-                                                final targetIndex = episodes.indexWhere((raw) {
-                                                  final x = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-                                                  return int.tryParse(x['episodeNumber']?.toString() ?? '') == selectedNumber;
-                                                });
-                                                if (targetIndex < 0 || !context.mounted) return;
-                                                final x = episodes[targetIndex];
-                                                final item = x is Map ? Map<String, dynamic>.from(x) : <String, dynamic>{};
-                                                final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
-                                                final v = m['video'];
-                                                if (v == null) return;
-                                                final out = v is Map ? Map<String, dynamic>.from(v) : {'url': v.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
-                                                Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
-                                                  output: out,
-                                                  title: seriesTitle,
-                                                  episodeLabel: 'الحلقة $selectedNumber',
-                                                  episodes: episodes.take(20).map((r) {
-                                                    final y = r is Map ? Map<String, dynamic>.from(r) : <String, dynamic>{};
-                                                    return {'episodeNumber': y['episodeNumber'], 'label': 'الحلقة ' + (y['episodeNumber']?.toString() ?? '')};
-                                                  }).toList(),
-                                                  onSelectEpisode: (n) {
-                                                    final idx = episodes.indexWhere((raw) {
-                                                      final y = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
-                                                      return int.tryParse(y['episodeNumber']?.toString() ?? '') == n;
-                                                    });
-                                                    if (idx < 0 || !context.mounted) return;
-                                                    final y = episodes[idx];
-                                                    final z = y is Map ? Map<String, dynamic>.from(y) : <String, dynamic>{};
-                                                    final mm = z['media'] is Map ? Map<String, dynamic>.from(z['media'] as Map) : <String, dynamic>{};
-                                                    final vv = mm['video'];
-                                                    if (vv == null) return;
-                                                    final oo = vv is Map ? Map<String, dynamic>.from(vv) : {'url': vv.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
-                                                    Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
-                                                      output: oo,
-                                                      title: seriesTitle,
-                                                      episodeLabel: 'الحلقة $n',
-                                                      episodes: episodes.take(20).map((q) {
-                                                        final w = q is Map ? Map<String, dynamic>.from(q) : <String, dynamic>{};
-                                                        return {'episodeNumber': w['episodeNumber'], 'label': 'الحلقة ' + (w['episodeNumber']?.toString() ?? '')};
-                                                      }).toList(),
-                                                      onSelectEpisode: (_) {},
-                                                      watchUid: uid,
-                                                      watchJobId: jobId,
-                                                      watchEpisodeNumber: n,
-                                                      watchTitle: seriesTitle,
-                                                    )));
-                                                  },
-                                                  watchUid: uid,
-                                                  watchJobId: jobId,
-                                                  watchEpisodeNumber: selectedNumber,
-                                                  watchTitle: seriesTitle,
-                                                )));
-                                              },
-                                              watchUid: uid,
-                                              watchJobId: jobId,
-                                              watchEpisodeNumber: number,
-                                              watchTitle: seriesTitle,
-                                            )));
-                                          }
+                                  onTap: hasVideo
+                                      ? () {
+                                          _openEpisode(
+                                            context,
+                                            uid,
+                                            seriesTitle,
+                                            episodes,
+                                            episodeIndex,
+                                          );
                                         }
-                                      },
-                                      watchUid: uid,
-                                      watchJobId: jobId,
-                                      watchEpisodeNumber: episodeNumber,
-                                      onNextEpisode: hasNext ? openNextEpisode : null,
-                                      watchTitle: seriesTitle,
-                                    )));
-                                  } : null,
+                                      : null,
                                 );
                               },
                             );
@@ -507,6 +374,75 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _openEpisode(
+    BuildContext context,
+    String uid,
+    String seriesTitle,
+    List<dynamic> episodes,
+    int episodeIndex,
+  ) async {
+    if (!context.mounted || episodeIndex < 0 || episodeIndex >= episodes.length) return;
+    final raw = episodes[episodeIndex];
+    final episode = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    final number = int.tryParse(episode['episodeNumber']?.toString() ?? '') ?? 1;
+    final media = episode['media'] is Map ? Map<String, dynamic>.from(episode['media'] as Map) : <String, dynamic>{};
+    final video = media['video'];
+    if (video == null) return;
+    final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
+
+    int findNextPlayableIndex(int start) {
+      for (var i = start; i < episodes.length && i < 20; i++) {
+        final item = episodes[i] is Map ? Map<String, dynamic>.from(episodes[i] as Map) : <String, dynamic>{};
+        final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
+        final v = m['video'];
+        if (v is Map && v['url']?.toString().isNotEmpty == true) return i;
+        if (v is String && v.isNotEmpty) return i;
+      }
+      return -1;
+    }
+
+    final nextIndex = findNextPlayableIndex(episodeIndex + 1);
+    final nextEpisode = nextIndex >= 0
+        ? (episodes[nextIndex] is Map ? Map<String, dynamic>.from(episodes[nextIndex] as Map) : <String, dynamic>{})
+        : <String, dynamic>{};
+    final nextNumber = int.tryParse(nextEpisode['episodeNumber']?.toString() ?? '') ?? 0;
+    final nextMedia = nextEpisode['media'] is Map ? Map<String, dynamic>.from(nextEpisode['media'] as Map) : <String, dynamic>{};
+    final nextThumb = nextMedia['thumbnail'];
+    final nextPreview = nextThumb is Map ? nextThumb['url']?.toString() ?? '' : nextThumb?.toString() ?? '';
+    final pickerEpisodes = episodes.take(20).map((item) {
+      final e = item is Map ? Map<String, dynamic>.from(item as Map) : <String, dynamic>{};
+      return {'episodeNumber': e['episodeNumber'], 'label': 'الحلقة ${e['episodeNumber'] ?? ''}'};
+    }).toList();
+
+    if (!context.mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => AurenEntertainmentOutputScreen(
+          output: output,
+          title: seriesTitle,
+          episodeLabel: 'الحلقة $number',
+          episodes: pickerEpisodes,
+          onSelectEpisode: (selected) {
+            final index = episodes.indexWhere((item) {
+              final e = item is Map ? Map<String, dynamic>.from(item as Map) : <String, dynamic>{};
+              return int.tryParse(e['episodeNumber']?.toString() ?? '') == selected;
+            });
+            _openEpisode(context, uid, seriesTitle, episodes, index);
+          },
+          onNextEpisode: nextIndex >= 0
+              ? () => _openEpisode(context, uid, seriesTitle, episodes, nextIndex)
+              : null,
+          nextEpisodeLabel: nextIndex >= 0 ? 'الحلقة $nextNumber' : null,
+          nextPreviewUrl: nextPreview.isNotEmpty ? nextPreview : null,
+          watchUid: uid,
+          watchJobId: jobId,
+          watchEpisodeNumber: number,
+          watchTitle: seriesTitle,
+        ),
       ),
     );
   }
