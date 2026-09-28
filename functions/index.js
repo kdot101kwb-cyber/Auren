@@ -1500,6 +1500,48 @@ exports.initializeAurenDominoMatch = require('firebase-functions/v2/https').onCa
   }
 );
 
+exports.finishAurenGameLobby = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async request=>{
+  const uid=request.auth?.uid,id=String(request.data?.lobbyId||'').trim();
+  if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const ref=db.collection('auren_game_lobbies').doc(id);
+  await db.runTransaction(async tx=>{
+   const snap=await tx.get(ref);if(!snap.exists)return;
+   const d=snap.data()||{},players=Array.isArray(d.players)?d.players.map(String):[];
+   if(!players.includes(uid))throw aurenHttpsError('permission-denied','Not a lobby player.');
+   tx.update(ref,{status:'finished',turnPlayerId:null,updatedAt:FieldValue.serverTimestamp()});
+  });
+  return {accepted:true};
+ }
+);
+
+exports.leaveAurenGameLobby = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async request=>{
+  const uid=request.auth?.uid,id=String(request.data?.lobbyId||'').trim();
+  if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const ref=db.collection('auren_game_lobbies').doc(id);
+  await db.runTransaction(async tx=>{
+   const snap=await tx.get(ref);if(!snap.exists)return;
+   const d=snap.data()||{},players=Array.isArray(d.players)?d.players.map(String):[];
+   if(!players.includes(uid))return;
+   const remaining=players.filter(p=>p!==uid);
+   if(remaining.length===0){tx.delete(ref);return;}
+   const nextHost=String(d.hostId||'')===uid?remaining[0]:String(d.hostId||remaining[0]);
+   tx.update(ref,{
+    players:remaining,hostId:nextHost,guestId:remaining.length>1?remaining[1]:null,
+    status:remaining.length===2?'playing':'waiting',
+    turnPlayerId:remaining.length===2
+      ? (String(d.turnPlayerId||'')===uid?remaining[0]:d.turnPlayerId)
+      : remaining[0],
+    updatedAt:FieldValue.serverTimestamp()
+   });
+  });
+  return {accepted:true};
+ }
+);
+
 exports.submitAurenDominoAction = require('firebase-functions/v2/https').onCall(
   {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
   async request=>{
