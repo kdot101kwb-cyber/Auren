@@ -59,8 +59,7 @@ test('finished tournament results are idempotent', async () => {
 });
 
 test('champion completion writes tournament reward and champion badge', async () => {
-  const {readFile} = await import('node:fs/promises');
-  const source=await readFile(new URL('./index.js',import.meta.url),'utf8');
+  const source=fs.readFileSync(require.resolve('./index.js'),'utf8');
   assert.match(source,/tournamentChampion:true/);
   assert.match(source,/tournamentRewardForPlacement\(placement\)/);
   assert.match(source,/recordTournamentReward\(tx,ref\.id,champion,gameIndex,1\)/);
