@@ -423,6 +423,11 @@ class EntertainmentRepository {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
+  Stream<Map<String, dynamic>?> watchMusicProductionJob(String uid, String jobId) {
+    return db.collection('users').doc(uid).collection('musicProductionJobs').doc(jobId)
+        .snapshots().map((d) => d.exists ? {'id': d.id, ...d.data()!} : null);
+  }
+
   Future<Map<String, dynamic>> generateMusicBlueprint(String jobId) async {
     final id = jobId.trim();
     if (id.isEmpty) throw ArgumentError('jobId is required');
