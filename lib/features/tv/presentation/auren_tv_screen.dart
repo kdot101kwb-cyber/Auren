@@ -40,6 +40,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   VideoPlayerController? player;
   AurenTvChannel? playing;
   bool _pipMode = false;
+  final List<String> _watchReactionOverlay = <String>[];
   bool _watchTogether = false;
   bool _watchTogetherReconnectPending = false;
   bool _watchTogetherWasOffline = false;
@@ -1388,7 +1389,18 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 ),
                 if (query.isNotEmpty)
                   IconButton(onPressed: () { _search.clear(); setState(() => query = ''); }, icon: const Icon(Icons.clear)),
-              ],
+              if (_watchTogether && _watchReactionOverlay.isNotEmpty)
+              Positioned(
+                right: 16,
+                bottom: 120,
+                child: Column(
+                  children: _watchReactionOverlay.asMap().entries.map((entry) => Padding(
+                    padding: EdgeInsets.only(bottom: 6 + entry.key * 2.0),
+                    child: Text(entry.value, style: const TextStyle(fontSize: 30)),
+                  )).toList(),
+                ),
+              ),
+            ],
             ),
           ),
           onChanged: (v) => setState(() { query = _normalizeSearch(v); }),
