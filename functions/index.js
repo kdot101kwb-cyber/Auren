@@ -1724,6 +1724,29 @@ async function recordFlagshipRanking(tx, players, result, gameIndex) {
   }
 }
 
+exports.getAurenFlagshipRanking = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const gameIndex = Number(request.data?.gameIndex);
+    if (!Number.isInteger(gameIndex) || gameIndex < 53 || gameIndex > 59) {
+      throw aurenHttpsError('invalid-argument', 'Invalid game index.');
+    }
+    const ref = db.collection('auren_game_rankings').doc(String(gameIndex)).collection('players').doc(uid);
+    const snap = await ref.get();
+    const data = snap.exists ? (snap.data() || {}) : {};
+    return {
+      gameIndex,
+      wins: Math.max(0, Number(data.wins) || 0),
+      losses: Math.max(0, Number(data.losses) || 0),
+      draws: Math.max(0, Number(data.draws) || 0),
+      matches: Math.max(0, Number(data.matches) || 0),
+      rating: Math.max(100, Number(data.rating) || 1000),
+    };
+  }
+);
+
 exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
