@@ -317,8 +317,19 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                                   onTap: hasVideo ? () {
                                     final video = media['video'];
                                     final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
-                                    final nextIndex = episodeIndex + 1;
-                                    final hasNext = nextIndex < episodes.length && nextIndex < 20;
+                                    int findNextPlayableIndex(int start) {
+                                      for (var i = start; i < episodes.length && i < 20; i++) {
+                                        final raw = episodes[i];
+                                        final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                                        final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
+                                        final v = m['video'];
+                                        if (v is Map && v['url']?.toString().isNotEmpty == true) return i;
+                                        if (v is String && v.isNotEmpty) return i;
+                                      }
+                                      return -1;
+                                    }
+                                    final nextIndex = findNextPlayableIndex(episodeIndex + 1);
+                                    final hasNext = nextIndex >= 0;
                                     Future<void> openNextEpisode() async {
                                       if (!hasNext || !context.mounted) return;
                                       final nextRaw = episodes[nextIndex];
@@ -355,6 +366,39 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                                       output: output,
                                       title: seriesTitle,
                                       episodeLabel: 'الحلقة $episodeNumber',
+                                      episodes: episodes.take(20).map((raw) {
+                                        final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                                        return {'episodeNumber': item['episodeNumber'], 'label': 'الحلقة ' + (item['episodeNumber']?.toString() ?? '')};
+                                      }).toList(),
+                                      onSelectEpisode: (number) {
+                                        final target = episodes.indexWhere((raw) {
+                                          final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                                          return int.tryParse(item['episodeNumber']?.toString() ?? '') == number;
+                                        });
+                                        if (target >= 0 && context.mounted) {
+                                          final raw = episodes[target];
+                                          final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                                          final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
+                                          final v = m['video'];
+                                          if (v != null) {
+                                            final out = v is Map ? Map<String, dynamic>.from(v) : {'url': v.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
+                                            Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
+                                              output: out,
+                                              title: seriesTitle,
+                                              episodeLabel: 'الحلقة ' + number.toString(),
+                                              episodes: episodes.take(20).map((r) {
+                                                final x = r is Map ? Map<String, dynamic>.from(r) : <String, dynamic>{};
+                                                return {'episodeNumber': x['episodeNumber'], 'label': 'الحلقة ' + (x['episodeNumber']?.toString() ?? '')};
+                                              }).toList(),
+                                              onSelectEpisode: (_) {},
+                                              watchUid: uid,
+                                              watchJobId: jobId,
+                                              watchEpisodeNumber: number,
+                                              watchTitle: seriesTitle,
+                                            )));
+                                          }
+                                        }
+                                      },
                                       watchUid: uid,
                                       watchJobId: jobId,
                                       watchEpisodeNumber: episodeNumber,
