@@ -1738,6 +1738,19 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /read_receipts/{uid} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.lastMessageId is string
+          && request.resource.data.lastMessageId.size() <= 200
+          && request.resource.data.lastReadAt is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+
       match /messages/{messageId} {
         allow read: if request.auth != null
           && request.auth.uid in get(
