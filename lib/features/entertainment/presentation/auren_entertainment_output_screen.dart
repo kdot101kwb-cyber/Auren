@@ -619,8 +619,12 @@ class _AurenEntertainmentOutputScreenState
   void initState() {
     super.initState();
     _loadPlaybackPreferences();
+    _initializeMedia();
+  }
+
+  Future<void> _initializeMedia() async {
     if (_isVideo && _url.isNotEmpty) {
-      _currentUrl = _url;
+      _currentUrl = _effectivePlaybackUrl();
       final localPath = await AurenOfflineMediaService.instance.localPathForUrl(_currentUrl);
       final controller = localPath != null
           ? VideoPlayerController.file(File(localPath))
@@ -629,22 +633,15 @@ class _AurenEntertainmentOutputScreenState
       controller.addListener(() {
         final playing = controller.value.isPlaying;
         final buffering = controller.value.isBuffering;
-        if (buffering != _isBuffering && mounted) {
-          setState(() => _isBuffering = buffering);
-        }
+        if (buffering != _isBuffering && mounted) setState(() => _isBuffering = buffering);
         if (controller.value.hasError && !_didBufferError && mounted) {
           _didBufferError = true;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(controller.value.errorDescription ?? 'حدث خطأ أثناء تشغيل الفيديو.'),
-              action: SnackBarAction(label: 'إعادة المحاولة', onPressed: _recoverPlayback),
-            ),
+            SnackBar(content: Text(controller.value.errorDescription ?? 'حدث خطأ أثناء تشغيل الفيديو.'),
+              action: SnackBarAction(label: 'إعادة المحاولة', onPressed: _recoverPlayback)),
           );
         }
-        if (playing != _lastPlayingState) {
-          _lastPlayingState = playing;
-          _resetControlsTimer();
-        }
+        if (playing != _lastPlayingState) { _lastPlayingState = playing; _resetControlsTimer(); }
       });
       controller.addListener(_onVideoProgress);
       _initializeFuture = controller.initialize().then((_) async {
@@ -653,8 +650,18 @@ class _AurenEntertainmentOutputScreenState
       });
     } else if (_isAudio && _url.isNotEmpty) {
       _audioPlayer = AudioPlayer();
-      _initializeFuture = _audioPlayer!.setUrl(_url).then((_) {});
+      final localPath = await AurenOfflineMediaService.instance.localPathForUrl(_url);
+      _initializeFuture = localPath != null
+          ? _audioPlayer!.setFilePath(localPath)
+          : _audioPlayer!.setUrl(_url);
     }
+  }
+
+  String _effectivePlaybackUrl() {
+    final urls = _qualityUrls;
+    if (_lowData && urls.containsKey('480p')) return urls['480p']!;
+    if (_quality != 'auto' && urls.containsKey(_quality)) return urls[_quality]!;
+    return _url;
   }
 
   @override
