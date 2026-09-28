@@ -88,7 +88,7 @@ class AurenTvService {
       return _fetchXtream(source, limit: limit);
     }
     if (source.url.trim().isEmpty) throw Exception('أدخل رابط M3U صالحاً.');
-    return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV', limit: limit);
+    return _fetchPlaylist(source.url.trim(), fallbackCategory: 'IPTV', limit: limit, sourceId: source.id);
   }
 
 
@@ -212,14 +212,16 @@ class AurenTvService {
     return _seriesCache!.take(limit).toList();
   }
 
-  Future<List<AurenTvChannel>> _fetchPlaylist(String source, {String fallbackCategory = '', int limit = 500}) async {
+  Future<List<AurenTvChannel>> _fetchPlaylist(String source, {String fallbackCategory = '', int limit = 500, String? sourceId}) async {
     final r = await http.get(Uri.parse(source)).timeout(const Duration(seconds: 25));
     if (r.statusCode != 200) throw Exception('تعذر تحميل قائمة IPTV العامة.');
     final out = <AurenTvChannel>[];
     Map<String, String>? meta;
     for (final line in const LineSplitter().convert(r.body)) {
       if (line.startsWith('#EXTM3U')) {
-        _epgUrl ??= ((_attr(line, 'x-tvg-url') ?? _attr(line, 'url-tvg')) ?? '').split(',').map((x) => x.trim()).firstWhere((x) => x.isNotEmpty, orElse: () => '');
+        final embeddedEpg = ((_attr(line, 'x-tvg-url') ?? _attr(line, 'url-tvg')) ?? '').split(',').map((x) => x.trim()).firstWhere((x) => x.isNotEmpty, orElse: () => '');
+        if (sourceId != null && embeddedEpg.isNotEmpty) _sourceEpgUrls[sourceId] = embeddedEpg;
+        if (source == playlist && embeddedEpg.isNotEmpty) _epgUrl = embeddedEpg;
       } else if (line.startsWith('#EXTINF:')) {
         meta = {
           'name': _attr(line, 'tvg-name') ?? line.split(',').last.trim(),
@@ -289,21 +291,40 @@ class AurenTvService {
     return {'current': current['title'] ?? '', 'next': next['title'] ?? ''};
   }
 
-  Future<List<Map<String, String>>> schedule(String tvgId, {int hours = 24}) async {
-    if (tvgId.isEmpty || _epgUrl == null || _epgUrl!.isEmpty) return const [];
-    _epgCache ??= await _loadEpg();
-    final now = DateTime.now().toUtc();
-    final until = now.add(Duration(hours: hours));
-    return (_epgCache![tvgId] ?? const [])
-        .where((x) {
-          final stop = DateTime.tryParse(x['stopIso'] ?? '');
-          return stop != null && stop.isAfter(now) && stop.isBefore(until);
-        }).take(12).toList();
+  Future<Map<String, String>?> nowNextForSource(AurenTvSource source, String tvgId) async {
+    final list = await scheduleForSource(source, tvgId);
+    if (list.isEmpty) return null;
+    final current = list.firstWhere((x) => x['state'] == 'now', orElse: () => <String, String>{});
+    final next = list.firstWhere((x) => x['state'] == 'next', orElse: () => <String, String>{});
+    return {'current': current['title'] ?? '', 'next': next['title'] ?? ''};
   }
 
-  Future<Map<String, List<Map<String, String>>>> _loadEpg() async {
+  Future<List<Map<String, String>>> schedule(String tvgId, {int hours = 24}) async {
+    if (tvgId.isEmpty || _epgUrl == null || _epgUrl!.isEmpty) return const [];
+    _epgCache ??= await _loadEpg(_epgUrl!);
+    return _filterSchedule(_epgCache![tvgId] ?? const [], hours);
+  }
+
+  Future<List<Map<String, String>>> scheduleForSource(AurenTvSource source, String tvgId, {int hours = 24}) async {
+    if (tvgId.isEmpty) return const [];
+    final epgUrl = source.epgUrl.trim().isNotEmpty ? source.epgUrl.trim() : (_sourceEpgUrls[source.id] ?? '');
+    if (epgUrl.isEmpty) return const [];
+    final cache = _sourceEpgCaches[source.id] ??= await _loadEpg(epgUrl);
+    return _filterSchedule(cache[tvgId] ?? const [], hours);
+  }
+
+  List<Map<String, String>> _filterSchedule(List<Map<String, String>> programs, int hours) {
+    final now = DateTime.now().toUtc();
+    final until = now.add(Duration(hours: hours));
+    return programs.where((x) {
+      final stop = DateTime.tryParse(x['stopIso'] ?? '');
+      return stop != null && stop.isAfter(now) && stop.isBefore(until);
+    }).take(12).toList();
+  }
+
+  Future<Map<String, List<Map<String, String>>>> _loadEpg(String epgUrl) async {
     try {
-      final r = await http.get(Uri.parse(_epgUrl!)).timeout(const Duration(seconds: 20));
+      final r = await http.get(Uri.parse(epgUrl)).timeout(const Duration(seconds: 20));
       if (r.statusCode != 200) return {};
       final result = <String, List<Map<String, String>>>{};
       final now = DateTime.now().toUtc();
