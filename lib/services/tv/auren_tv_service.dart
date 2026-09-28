@@ -13,7 +13,7 @@ class AurenTvService {
   static const playlist = 'https://iptv-org.github.io/iptv/index.country.m3u';
   List<AurenTvChannel>? _cache;
   String? _epgUrl;
-  Map<String, Map<String, String>>? _epgCache;
+  Map<String, List<Map<String, String>>>? _epgCache;
 
   Future<List<AurenTvChannel>> load({String country = '', String category = ''}) async {
     _cache ??= await _fetch();
@@ -84,18 +84,32 @@ class AurenTvService {
   }
 
   Future<Map<String, String>?> nowNext(String tvgId) async {
-    if (tvgId.isEmpty || _epgUrl == null || _epgUrl!.isEmpty) return null;
-    _epgCache ??= await _loadEpg();
-    return _epgCache![tvgId];
+    final list = await schedule(tvgId);
+    if (list.isEmpty) return null;
+    final current = list.firstWhere((x) => x['state'] == 'now', orElse: () => <String,String>{});
+    final next = list.firstWhere((x) => x['state'] == 'next', orElse: () => <String,String>{});
+    return {'current': current['title'] ?? '', 'next': next['title'] ?? ''};
   }
 
-  Future<Map<String, Map<String, String>>> _loadEpg() async {
+  Future<List<Map<String, String>>> schedule(String tvgId, {int hours = 8}) async {
+    if (tvgId.isEmpty || _epgUrl == null || _epgUrl!.isEmpty) return const [];
+    _epgCache ??= await _loadEpg();
+    final now = DateTime.now().toUtc();
+    final until = now.add(Duration(hours: hours));
+    return (_epgCache![tvgId] ?? const [])
+        .where((x) {
+          final stop = DateTime.tryParse(x['stopIso'] ?? '');
+          return stop != null && stop.isAfter(now) && stop.isBefore(until);
+        }).take(12).toList();
+  }
+
+  Future<Map<String, List<Map<String, String>>>> _loadEpg() async {
     try {
       final r = await http.get(Uri.parse(_epgUrl!)).timeout(const Duration(seconds: 20));
       if (r.statusCode != 200) return {};
-      final result = <String, Map<String, String>>{};
+      final result = <String, List<Map<String, String>>>{};
       final now = DateTime.now().toUtc();
-      final pattern = RegExp(r'<programme\b([^>]*)>([\s\S]*?)</programme>', caseSensitive: false);
+      final pattern = RegExp(r'<programme\\b([^>]*)>([\\s\\S]*?)</programme>', caseSensitive: false);
       for (final m in pattern.allMatches(r.body).take(30000)) {
         final attrs = m.group(1)!;
         final body = m.group(2)!;
@@ -104,15 +118,24 @@ class AurenTvService {
         final stop = _xmlAttr(attrs, 'stop');
         if (channel.isEmpty || start.isEmpty || stop.isEmpty) continue;
         final from = _epgDate(start), until = _epgDate(stop);
-        if (from == null || until == null) continue;
-        final titleMatch = RegExp(r'<title[^>]*>([\s\S]*?)</title>', caseSensitive: false).firstMatch(body);
+        if (from == null || until == null || until.isBefore(now)) continue;
+        final titleMatch = RegExp(r'<title[^>]*>([\\s\\S]*?)</title>', caseSensitive: false).firstMatch(body);
         final title = _decodeXml(titleMatch?.group(1) ?? '');
-        if (from.isBefore(now) && until.isAfter(now)) {
-          result[channel] = {'current': title, 'next': ''};
-        } else if (from.isAfter(now)) {
-          final old = result[channel];
-          if (old == null || old['nextStart'] == null || from.isBefore(DateTime.parse(old['nextStart']!))) {
-            result[channel] = {...?old, 'next': title, 'nextStart': from.toIso8601String()};
+        final state = from.isBefore(now) && until.isAfter(now) ? 'now' : 'next';
+        result.putIfAbsent(channel, () => <Map<String,String>>[]).add({
+          'title': title,
+          'startIso': from.toIso8601String(),
+          'stopIso': until.toIso8601String(),
+          'state': state,
+        });
+      }
+      for (final list in result.values) {
+        list.sort((a,b) => (DateTime.tryParse(a['startIso'] ?? '') ?? DateTime(9999)).compareTo(DateTime.tryParse(b['startIso'] ?? '') ?? DateTime(9999)));
+        var foundNow = false;
+        for (final item in list) {
+          if (item['state'] == 'now') {
+            if (foundNow) item['state'] = 'next';
+            foundNow = true;
           }
         }
       }
