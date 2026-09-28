@@ -1645,6 +1645,8 @@ exports.submitAurenLudoAction = require('firebase-functions/v2/https').onCall(
       throw aurenHttpsError('invalid-argument', 'Invalid Ludo action request.');
     }
     const ref = db.collection('auren_game_lobbies').doc(lobbyId);
+    const lobbySnapshot = await ref.get();
+    const trustedCountries = lobbySnapshot.exists ? await getTrustedGamingCountries(normalizePlayers(lobbySnapshot.data()?.players)) : {};
     try {
       return await db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
@@ -1708,24 +1710,6 @@ function determineMatchResult(players, stats, state) {
 }
 
 
-async function recordFlagshipRanking(tx, players, result, gameIndex) {
-  const ids = normalizePlayers(players);
-  for (const id of ids) {
-    const ref = db.collection('auren_game_rankings').doc(String(gameIndex)).collection('players').doc(id);
-    const snap = await tx.get(ref);
-    const old = snap.exists ? (snap.data() || {}) : {};
-    const wins = Math.max(0, Number(old.wins) || 0) + (result.winnerId === id ? 1 : 0);
-    const losses = Math.max(0, Number(old.losses) || 0) + (result.result === 'win' && result.winnerId !== id ? 1 : 0);
-    const draws = Math.max(0, Number(old.draws) || 0) + (result.result === 'draw' ? 1 : 0);
-    const matches = Math.max(0, Number(old.matches) || 0) + 1;
-    const rating = Math.max(0, Number(old.rating) || 1000) + (result.winnerId === id ? 20 : result.result === 'draw' ? 0 : -15);
-    tx.set(ref, {
-      wins, losses, draws, matches,
-      rating: Math.max(100, rating),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, {merge:true});
-  }
-}
 
 
 exports.enqueueAurenGameMatchmaking = require('firebase-functions/v2/https').onCall(
@@ -1868,6 +1852,153 @@ exports.getAurenFlagshipRanking = require('firebase-functions/v2/https').onCall(
   }
 );
 
+
+function currentAurenGamingSeasonId() {
+  const now = new Date();
+  return now.getUTCFullYear().toString() + '-S' + Math.ceil((now.getUTCMonth() + 1) / 3).toString();
+}
+
+function normalizeGamingCountry(value) {
+  const country = String(value || '').trim().toUpperCase();
+  return /^[A-Z]{2,3}$/.test(country) ? country : null;
+}
+
+async function getTrustedGamingCountries(players) {
+  const ids = normalizePlayers(players);
+  const pairs = await Promise.all(ids.map(async (uid) => {
+    try {
+      const {getAuth} = require('firebase-admin/auth');
+      const user = await getAuth().getUser(uid);
+      return [uid, normalizeGamingCountry(user.customClaims?.countryCode || user.customClaims?.country)];
+    } catch (_) {
+      return [uid, null];
+    }
+  }));
+  return Object.fromEntries(pairs);
+}
+
+function rankingTotals(old, result, id) {
+  return {
+    wins: Math.max(0, Number(old.wins) || 0) + (result.winnerId === id ? 1 : 0),
+    losses: Math.max(0, Number(old.losses) || 0) + (result.result === 'win' && result.winnerId !== id ? 1 : 0),
+    draws: Math.max(0, Number(old.draws) || 0) + (result.result === 'draw' ? 1 : 0),
+    matches: Math.max(0, Number(old.matches) || 0) + 1,
+    rating: Math.max(100, Math.max(0, Number(old.rating) || 1000) + (result.winnerId === id ? 20 : result.result === 'draw' ? 0 : -15)),
+  };
+}
+
+async function recordFlagshipRanking(tx, players, result, gameIndex, countryByUid = {}) {
+  const ids = normalizePlayers(players);
+  const seasonId = currentAurenGamingSeasonId();
+  const refs = [];
+  for (const id of ids) {
+    refs.push(db.collection('auren_game_rankings').doc(String(gameIndex)).collection('players').doc(id));
+    refs.push(db.collection('auren_game_rankings').doc(String(gameIndex)).collection('seasons').doc(seasonId).collection('players').doc(id));
+    refs.push(db.collection('auren_global_gaming_rankings').doc('players').collection('players').doc(id));
+    refs.push(db.collection('auren_global_gaming_rankings').doc('seasons').collection(seasonId).doc('players').collection('players').doc(id));
+  }
+  const snapshots = await Promise.all(refs.map((ref) => tx.get(ref)));
+  let p = 0;
+  for (const id of ids) {
+    const gameRef = refs[p]; const gameSnap = snapshots[p++];
+    const seasonGameRef = refs[p]; const seasonGameSnap = snapshots[p++];
+    const globalRef = refs[p]; const globalSnap = snapshots[p++];
+    const globalSeasonRef = refs[p]; const globalSeasonSnap = snapshots[p++];
+
+    const game = rankingTotals(gameSnap.exists ? gameSnap.data() || {} : {}, result, id);
+    const seasonGame = rankingTotals(seasonGameSnap.exists ? seasonGameSnap.data() || {} : {}, result, id);
+    const global = rankingTotals(globalSnap.exists ? globalSnap.data() || {} : {}, result, id);
+    const globalSeason = rankingTotals(globalSeasonSnap.exists ? globalSeasonSnap.data() || {} : {}, result, id);
+    const countryCode = countryByUid[id] || gameSnap.data()?.countryCode || null;
+
+    const common = {countryCode: countryCode || null, updatedAt: FieldValue.serverTimestamp()};
+    tx.set(gameRef, {...game, ...common}, {merge:true});
+    tx.set(seasonGameRef, {...seasonGame, gameIndex, seasonId, ...common}, {merge:true});
+    tx.set(globalRef, {...global, gamesPlayed:Math.max(0, Number(global.gamesPlayed) || 0) + 1, ...common}, {merge:true});
+    tx.set(globalSeasonRef, {...globalSeason, seasonId, gamesPlayed:Math.max(0, Number(globalSeason.gamesPlayed) || 0) + 1, ...common}, {merge:true});
+  }
+}
+
+function aggregateGamingEntries(docs, limit, countryCode) {
+  const byPlayer = new Map();
+  for (const doc of docs) {
+    const x = doc.data() || {};
+    const country = normalizeGamingCountry(x.countryCode);
+    if (countryCode && country !== countryCode) continue;
+    const matches = Math.max(0, Number(x.matches) || 0);
+    if (!matches) continue;
+    const id = doc.id;
+    const old = byPlayer.get(id) || {playerId:id,wins:0,losses:0,draws:0,matches:0,ratingSum:0,gamesPlayed:0,countryCode:country || null};
+    old.wins += Math.max(0, Number(x.wins) || 0);
+    old.losses += Math.max(0, Number(x.losses) || 0);
+    old.draws += Math.max(0, Number(x.draws) || 0);
+    old.matches += matches;
+    old.ratingSum += Math.max(100, Number(x.rating) || 1000);
+    old.gamesPlayed += 1;
+    if (!old.countryCode && country) old.countryCode = country;
+    byPlayer.set(id, old);
+  }
+  return [...byPlayer.values()]
+    .map((x) => ({...x, rating:Math.round(x.ratingSum / Math.max(1,x.gamesPlayed)), winRate:x.matches ? Math.round((x.wins / x.matches) * 1000) / 10 : 0}))
+    .sort((a,b) => b.rating-a.rating || b.matches-a.matches || b.wins-a.wins || a.playerId.localeCompare(b.playerId))
+    .slice(0, limit)
+    .map((x,i) => ({rank:i+1,...x}));
+}
+
+exports.getAurenGlobalGamingLeaderboard = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    if (!request.auth?.uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const limit = Math.min(50, Math.max(1, Number(request.data?.limit) || 20));
+    const seasonId = currentAurenGamingSeasonId();
+    const season = request.data?.season === true;
+    const countryCode = normalizeGamingCountry(request.data?.countryCode);
+    const docs = [];
+    if (season) {
+      const snap = await db.collection('auren_global_gaming_rankings').doc('seasons').collection(seasonId).doc('players').collection('players').limit(500).get();
+      docs.push(...snap.docs);
+    } else {
+      const snap = await db.collection('auren_global_gaming_rankings').doc('players').collection('players').limit(500).get();
+      docs.push(...snap.docs);
+    }
+    return {seasonId, scope:season ? 'season' : 'lifetime', countryCode:countryCode || null, entries:aggregateGamingEntries(docs, limit, countryCode)};
+  }
+);
+
+exports.getAurenCountryGamingLeaderboard = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    if (!request.auth?.uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const countryCode = normalizeGamingCountry(request.data?.countryCode);
+    if (!countryCode) throw aurenHttpsError('invalid-argument', 'A valid country code is required.');
+    const limit = Math.min(50, Math.max(1, Number(request.data?.limit) || 20));
+    const season = request.data?.season === true;
+    const seasonId = currentAurenGamingSeasonId();
+    const ref = season
+      ? db.collection('auren_global_gaming_rankings').doc('seasons').collection(seasonId).doc('players').collection('players')
+      : db.collection('auren_global_gaming_rankings').doc('players').collection('players');
+    const snap = await ref.where('countryCode','==',countryCode).limit(500).get();
+    return {seasonId, scope:season ? 'season' : 'lifetime', countryCode, entries:aggregateGamingEntries(snap.docs, limit, countryCode)};
+  }
+);
+
+exports.getAurenPlayerGamingProfile = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+    const season = request.data?.season === true;
+    const seasonId = currentAurenGamingSeasonId();
+    const ref = season
+      ? db.collection('auren_global_gaming_rankings').doc('seasons').collection(seasonId).doc('players').collection('players').doc(uid)
+      : db.collection('auren_global_gaming_rankings').doc('players').collection('players').doc(uid);
+    const snap = await ref.get();
+    const x = snap.exists ? snap.data() || {} : {};
+    const matches = Math.max(0, Number(x.matches) || 0);
+    return {seasonId, scope:season ? 'season' : 'lifetime', playerId:uid, countryCode:normalizeGamingCountry(x.countryCode), wins:Math.max(0,Number(x.wins)||0), losses:Math.max(0,Number(x.losses)||0), draws:Math.max(0,Number(x.draws)||0), matches, gamesPlayed:Math.max(0,Number(x.gamesPlayed)||0), rating:Math.max(100,Number(x.rating)||1000), winRate:matches ? Math.round((Number(x.wins)||0)/matches*1000)/10 : 0};
+  }
+);
+
 exports.getAurenFlagshipLeaderboard = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
@@ -1979,7 +2110,7 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
         next.matchResult = result;
         const nextTurn = next.matchFinished ? null : players.find((id) => id !== uid);
         if (next.matchFinished && !data.matchResult?.recorded) {
-          await recordFlagshipRanking(tx, players, result, gameIndex);
+          await recordFlagshipRanking(tx, players, result, gameIndex, trustedCountries);
           result.recorded = true;
           next.matchResult = result;
         }
