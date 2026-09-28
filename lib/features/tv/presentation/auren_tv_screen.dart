@@ -94,6 +94,17 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     setState(() { _epgResults = results; _epgSearching = false; });
   }
 
+  Future<void> _showEpgReminderCenter() async {
+    final reminders = await AurenTvService.instance.epgReminders();
+    if (!mounted) return;
+    showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (ctx) => SafeArea(child: SizedBox(height: MediaQuery.of(ctx).size.height * .72, child: reminders.isEmpty ? const Center(child: Text('لا توجد تذكيرات EPG حالياً.')) : ListView.separated(padding: const EdgeInsets.all(12), itemCount: reminders.length + 1, separatorBuilder: (_, __) => const SizedBox(height: 6), itemBuilder: (_, i) {
+      if (i == 0) return const ListTile(title: Text('مركز تذكيرات EPG', style: TextStyle(fontWeight: FontWeight.w800)), subtitle: Text('إدارة البرامج التي طلبت AUREN تذكيرك بها.'));
+      final r = reminders[i - 1]; final start = DateTime.tryParse(r.startIso)?.toLocal(); final diff = start?.difference(DateTime.now());
+      final label = start == null ? r.startIso : ((diff!.isNegative ? 'بدأ البرنامج' : diff.inHours > 0 ? 'بعد ${diff.inHours}س ${diff.inMinutes.remainder(60)}د' : 'بعد ${diff.inMinutes} دقيقة') + ' • ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}');
+      final item = AurenTvEpgSearchResult(channelId: r.channelId, title: r.title, startIso: r.startIso, stopIso: r.startIso, state: 'next');
+      return Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.notifications_active_outlined)), title: Text(r.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(label), trailing: IconButton(tooltip: 'إلغاء التذكير', onPressed: () async { await AurenTvService.instance.removeEpgReminder(item); if (ctx.mounted) { Navigator.pop(ctx); await _showEpgReminderCenter(); } }, icon: const Icon(Icons.notifications_off_outlined))));
+    }))));
+  }
   Future<void> _showEpgWatchlist() async {
     final items = await AurenTvService.instance.watchlistPrograms();
     if (!mounted) return;
@@ -613,7 +624,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV'), actions: [
-      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)),
+      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)),
       IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
       if (activeSource != null)
         IconButton(
