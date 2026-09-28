@@ -102,6 +102,17 @@ class AurenOfflineMediaService {
     }
   }
 
+  Future<void> retryFailed(String id) async {
+    final q=await queue();
+    for(final e in q.where((e)=>e['id']==id && e['status']=='failed')) { e['status']='queued'; e['updatedAt']=DateTime.now().toIso8601String(); }
+    await _saveQueue(q);
+    await processQueue();
+  }
+  Future<int> offlineBytes() async {
+    final items=await list();
+    return items.fold<int>(0,(sum,item)=>sum+item.bytes);
+  }
+
   Future<void> setLowData(bool enabled) async {
     final p=await SharedPreferences.getInstance();
     await p.setBool('auren_offline_low_data_v1',enabled);
