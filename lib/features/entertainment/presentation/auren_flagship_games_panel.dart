@@ -747,12 +747,6 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         if (_lobbyId == null && !_matchmaking) const SizedBox(height: 8),
         if (_lobbyId == null && !_matchmaking) OutlinedButton(onPressed: _joinLobby, child: const Text('Join Match')),
         if (_lobbyId == null && _matchmaking) FilledButton.tonal(onPressed: _cancelMatchmaking, child: const Text('Cancel Search')),
-        /*
-        /*
-          Expanded(child: FilledButton.tonal(onPressed: _createLobby, child: const Text('Create Match'))),
-          const SizedBox(width: 8),
-          Expanded(child: OutlinedButton(onPressed: _joinLobby, child: const Text('Join Match'))),
-        */
         const SizedBox(height: 8),
         Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
