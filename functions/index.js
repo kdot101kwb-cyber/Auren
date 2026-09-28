@@ -1211,6 +1211,26 @@ async function claimAurenProductionV2Job() {
   return null;
 }
 
+function buildAurenPostAssemblyTasks(assemblyManifest) {
+  const episodes = assemblyManifest && assemblyManifest.episodes && typeof assemblyManifest.episodes === 'object'
+    ? assemblyManifest.episodes : {};
+  const tasks = [];
+  for (const episodeNumber of Object.keys(episodes).sort((a,b)=>Number(a)-Number(b))) {
+    const n = Math.max(1, Number(episodeNumber || 1));
+    for (const type of ['audio','music','subtitles']) {
+      tasks.push({
+        id:'ep' + n + '_' + type,
+        episodeNumber:n,
+        type,
+        status:'queued',
+        providerRequired:true,
+        idempotencyKey:'post_' + type + '_ep' + n,
+      });
+    }
+  }
+  return tasks;
+}
+
 function buildAurenPostAssemblyPlan(assemblyManifest) {
   const episodes = assemblyManifest && assemblyManifest.episodes && typeof assemblyManifest.episodes === 'object'
     ? assemblyManifest.episodes : {};
@@ -1389,11 +1409,19 @@ async function aurenProductionV2Run(ref) {
         assemblyFormat:'scene_sequence_v1', episodeMedia, episodeCount, sceneCount,
         productionProgress:100, readyAt:FieldValue.serverTimestamp()}, {merge:true});
       const postAssemblyPlan = buildAurenPostAssemblyPlan(assemblyManifest);
+      const postAssemblyTasks = buildAurenPostAssemblyTasks(assemblyManifest);
       tx.set(ref.collection('episodeAssemblies').doc(assemblyId), {
         id:assemblyId, version:1, status:'ready', episodeCount, sceneCount,
         episodes:episodeMedia, sourceQcId:qcId, postAssemblyPlan,
+        postAssemblyTaskCount:postAssemblyTasks.length,
         createdAt:FieldValue.serverTimestamp(),
       }, {merge:true});
+      for (const task of postAssemblyTasks) {
+        tx.set(ref.collection('episodeAssemblies').doc(assemblyId)
+          .collection('postAssemblyTasks').doc(task.id), {
+            ...task, createdAt:FieldValue.serverTimestamp(),
+          }, {merge:true});
+      }
       tx.set(ref.collection('productionAudits').doc(qcId), {
         idempotencyKey:qcId, result:'passed', taskCount:tasks.docs.length,
         artifactChecks, verificationVersion:1,
