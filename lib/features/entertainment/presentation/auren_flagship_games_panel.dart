@@ -5,6 +5,7 @@ import '../data/auren_game_progress.dart';
 import '../data/auren_game_multiplayer.dart';
 import 'auren_global_gaming_leaderboard_screen.dart';
 import 'auren_gaming_profile_screen.dart';
+import 'auren_gaming_tournament_screen.dart';
 
 class AurenFlagshipGamesPanel extends StatefulWidget {
   final int gameIndex;
