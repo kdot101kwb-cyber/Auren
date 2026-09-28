@@ -11,6 +11,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   final _search = TextEditingController();
   String country = '', category = '', query = '', continent = '';
   String tvMode = 'world';
+  String newsRegion = 'all';
   String countryLabel = 'الدول';
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
@@ -156,7 +157,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         ButtonSegment(value: 'entertainment', label: Text('ترفيه'), icon: Icon(Icons.movie_outlined)),
         ButtonSegment(value: 'sports', label: Text('رياضة'), icon: Icon(Icons.sports_soccer)),
         ButtonSegment(value: 'news', label: Text('أخبار'), icon: Icon(Icons.newspaper)),
-      ], selected: {tvMode}, onSelectionChanged: (v) => setState(() { tvMode = v.first; country = ''; continent = ''; quickRegion = ''; category = ''; }))),
+      ], selected: {tvMode}, onSelectionChanged: (v) => setState(() { tvMode = v.first; country = ''; continent = ''; quickRegion = ''; category = ''; newsRegion = 'all'; }))),
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
         child: TextField(
@@ -177,6 +178,38 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           Expanded(child: TextField(decoration: const InputDecoration(labelText: 'الفئة'), onChanged: (v) => setState(() => category = v))),
         ]),
       ),
+      if (tvMode == 'news')
+        SizedBox(
+          height: 44,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            children: [
+              for (final item in const [
+                ['all', 'كل الأخبار'],
+                ['SD', '🇸🇩 السودان'],
+                ['Arab', '🌙 عربي'],
+                ['Africa', '🌍 أفريقيا'],
+                ['World', '🌐 عالمي'],
+                ['Business', '💼 اقتصاد'],
+                ['Sports', '⚽ أخبار الرياضة'],
+              ])
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: ChoiceChip(
+                    label: Text(item[1]),
+                    selected: newsRegion == item[0],
+                    onSelected: (_) => setState(() {
+                      newsRegion = item[0];
+                      country = '';
+                      continent = '';
+                      quickRegion = '';
+                    }),
+                  ),
+                ),
+            ],
+          ),
+        ),
       SizedBox(height: 42, child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -233,8 +266,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           final channels = snapshot.data!.where((c) {
             final matchesQuery = query.isEmpty || '${c.name} ${c.country} ${c.language} ${c.category}'.toLowerCase().contains(query);
             final matchesRegion = continent.isEmpty || _regionLabel(c) == continent;
+            final n = '${c.name} ${c.category} ${c.language} ${c.country}'.toLowerCase();
+            final matchesNewsRegion = tvMode != 'news' || newsRegion == 'all' || (newsRegion == 'SD' && c.country.toUpperCase() == 'SD') || (newsRegion == 'Arab' && arabCountries.contains(c.country.toUpperCase())) || (newsRegion == 'Africa' && _regionLabel(c) == 'Africa') || (newsRegion == 'World' && _regionLabel(c) != 'Africa' && !arabCountries.contains(c.country.toUpperCase())) || (newsRegion == 'Business' && RegExp(r'business|finance|economy|market|money', caseSensitive: false).hasMatch(n)) || (newsRegion == 'Sports' && RegExp(r'sport|football|soccer|basketball|tennis|espn', caseSensitive: false).hasMatch(n));
             final matchesQuick = quickRegion == 'Sudan' ? c.country.toUpperCase() == 'SD' : quickRegion == 'Arab' ? arabCountries.contains(c.country.toUpperCase()) : true;
-            return matchesQuery && matchesRegion && matchesQuick && (!onlyFavorites || favorites.contains(c.id));
+            return matchesQuery && matchesRegion && matchesQuick && matchesNewsRegion && (!onlyFavorites || favorites.contains(c.id));
           }).toList();
           if (channels.isEmpty) return const Center(child: Text('ما لقينا قنوات مطابقة. جرّب تغيير البحث أو الدولة.'));
           return ListView.separated(
