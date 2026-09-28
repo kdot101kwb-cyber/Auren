@@ -925,3 +925,6 @@ class AurenGameMultiplayer {
 
   Future<Map<String,dynamic>?> getGamingRivals() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenGamingRivals').call(); return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException { return null; } }
   Future<Map<String,dynamic>?> getLiveSpectatorMatches() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenLiveSpectators').call(); return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException { return null; } }
+
+  Future<List<Map<String,dynamic>>> getGamingMatchHistory() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenGamingMatchHistory').call(); return List<Map<String,dynamic>>.from((r.data['matches'] as List? ?? const []).map((x)=>Map<String,dynamic>.from(x))); } on FirebaseFunctionsException { return []; } }
+  Future<List<Map<String,dynamic>>> getGamingNotifications() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenGamingNotifications').call(); return List<Map<String,dynamic>>.from((r.data['notifications'] as List? ?? const []).map((x)=>Map<String,dynamic>.from(x))); } on FirebaseFunctionsException { return []; } }
