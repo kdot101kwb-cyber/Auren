@@ -66,6 +66,29 @@ function hasRealOutput(output) {
   return Boolean(output && (output.url || output.storagePath || output.externalId));
 }
 
+function normalizeSubtitleOutput(output, requestedLanguages) {
+  const source = output && typeof output === 'object' ? output : {};
+  const requested = Array.isArray(requestedLanguages) ? requestedLanguages : AUREN_SUBTITLE_LANGUAGES;
+  const languages = requested.map((v) => String(v).toLowerCase().trim())
+    .filter((v, i, a) => AUREN_SUBTITLE_LANGUAGES.includes(v) && a.indexOf(v) === i);
+  const map = {};
+  const candidates = source.languageUrls && typeof source.languageUrls === 'object'
+    ? source.languageUrls
+    : (source.subtitleUrls && typeof source.subtitleUrls === 'object' ? source.subtitleUrls : null);
+  if (candidates) for (const [key, value] of Object.entries(candidates)) {
+    const lang = String(key).toLowerCase().trim();
+    const url = String(value || '').trim();
+    if (AUREN_SUBTITLE_LANGUAGES.includes(lang) && url) map[lang] = url;
+  }
+  if (Array.isArray(source.artifacts)) for (const artifact of source.artifacts) {
+    const lang = String(artifact?.language || artifact?.lang || '').toLowerCase().trim();
+    const url = String(artifact?.url || artifact?.storagePath || artifact?.externalId || '').trim();
+    if (AUREN_SUBTITLE_LANGUAGES.includes(lang) && url && !map[lang]) map[lang] = url;
+  }
+  return {...source, languages: languages.length ? languages : AUREN_SUBTITLE_LANGUAGES.slice(), languageUrls: map};
+}
+
+
 async function claimTask() {
   const queries = [
     db.collectionGroup('postAssemblyTasks')
@@ -153,6 +176,48 @@ async function validatePostAssemblyArtifact(output, type) {
   } finally {
     clearTimeout(timer);
   }
+}async function validatePostAssemblyArtifact(output, type) {
+  if (!hasRealOutput(output)) return {ok:false, reason:'missing_artifact_reference'};
+  const url = String(output.url || '').trim();
+  if (!url) return {ok:true, verification:'provider_artifact_reference'};
+  if (!/^https?:\\/\\//i.test(url)) return {ok:false, reason:'invalid_output_url'};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(url, {method:'HEAD', signal:controller.signal});
+    if (!response.ok) return {ok:false, reason:'artifact_http_'+response.status};
+    const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+    const expectedAudio = type === 'audio' || type === 'music';
+    const expectedImage = type === 'thumbnail';
+    const expectedVideo = type === 'trailer';
+    if (contentType) {
+      const valid = expectedAudio
+        ? contentType.startsWith('audio/')
+        : expectedImage
+          ? contentType.startsWith('image/')
+          : expectedVideo
+            ? contentType.startsWith('video/')
+            : contentType.includes('text/') || contentType.includes('json') || contentType.includes('vtt') || contentType.includes('subtitle');
+      if (!valid) return {ok:false, reason:'artifact_type_mismatch'};
+    }
+    return {ok:true, verification:'http_head', contentType:contentType || 'unknown'};
+  } catch (_) {
+    return {ok:false, reason:'artifact_unreachable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function validateSubtitleLanguageArtifacts(output, languages) {
+  const normalized = normalizeSubtitleOutput(output, languages);
+  const checks = [];
+  for (const language of normalized.languages) {
+    const url = String(normalized.languageUrls[language] || '').trim();
+    checks.push(url
+      ? {language, ...(await validatePostAssemblyArtifact({url}, 'subtitles'))}
+      : {language, ok:false, reason:'missing_language_artifact'});
+  }
+  return {ok: checks.every((check) => check.ok), languages: normalized.languages, languageChecks: checks, languageUrls: normalized.languageUrls};
 }
 
 async function finalizeEpisodeAssembly(ref) {
@@ -172,7 +237,10 @@ async function finalizeEpisodeAssembly(ref) {
   if (tasks.some((t) => t.status !== 'output')) return;
   const checks = [];
   for (const task of tasks) {
-    const check = await validatePostAssemblyArtifact(task.output, String(task.type || ''));
+    const type = String(task.type || '');
+    const check = type === 'subtitles'
+      ? await validateSubtitleLanguageArtifacts(task.output, task.targetLanguages)
+      : await validatePostAssemblyArtifact(task.output, type);
     checks.push({taskId:task.id, type:task.type, ...check});
     if (!check.ok) {
       await assemblyRef.set({
@@ -189,15 +257,7 @@ async function finalizeEpisodeAssembly(ref) {
     const n = Math.max(1, Number(task.episodeNumber || 1));
     if (!episodes[n]) episodes[n] = {};
     if (String(task.type) === 'subtitles') {
-      const output = task.output || {};
-      const languageUrls = output.languageUrls && typeof output.languageUrls === 'object'
-        ? output.languageUrls
-        : null;
-      episodes[n].subtitles = {
-        ...output,
-        languages: Array.isArray(task.targetLanguages) ? task.targetLanguages : AUREN_SUBTITLE_LANGUAGES.slice(),
-        languageUrls: languageUrls || {},
-      };
+      episodes[n].subtitles = normalizeSubtitleOutput(task.output, task.targetLanguages);
     } else {
       episodes[n][String(task.type)] = task.output;
     }
