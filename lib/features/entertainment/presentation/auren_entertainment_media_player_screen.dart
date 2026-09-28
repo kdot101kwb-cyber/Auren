@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+import '../../../services/entertainment/auren_offline_media_service.dart';
 
 class AurenEntertainmentMoviePlayerScreen extends StatefulWidget {
   final String title;
@@ -31,7 +33,10 @@ class _AurenEntertainmentMoviePlayerScreenState extends State<AurenEntertainment
     final safe = index.clamp(0, _playable.length - 1);
     final old = _controller;
     final url = _playable[safe]['url'].toString();
-    final next = VideoPlayerController.networkUrl(Uri.parse(url));
+    final localPath = await AurenOfflineMediaService.instance.localPathForUrl(url);
+    final next = localPath != null
+        ? VideoPlayerController.file(File(localPath))
+        : VideoPlayerController.networkUrl(Uri.parse(url));
     final future = next.initialize();
     if (mounted) setState(() { _index = safe; _init = future; _completed = false; _controller = next; });
     try {
