@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'auren_3d_world_screen.dart';
+import 'auren_flagship_games_panel.dart';
 
 class AurenExtraGamesScreen extends StatefulWidget {
   const AurenExtraGamesScreen({super.key});
@@ -191,6 +192,9 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
         case 16: return const _QuickCountGame();
         default: return const _MemoryGame();
       }
+    }
+    if (_selected >= 50 && _selected <= 59) {
+      return AurenFlagshipGamesPanel(gameIndex: _selected - 50);
     }
     return _ThreeDGamePanel(
       gameIndex: _selected - 17,
