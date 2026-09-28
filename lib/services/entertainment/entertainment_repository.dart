@@ -366,6 +366,18 @@ class EntertainmentRepository {
     });
   }
 
+
+  Future<Map<String, dynamic>?> getFinalEpisodePackage(String jobId) async {
+    final id = jobId.trim();
+    if (id.isEmpty) return null;
+    final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('getAurenFinalEpisodePackage');
+    final response = await callable.call({'jobId': id});
+    if (response.data is! Map) return null;
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+
   Stream<List<Map<String, dynamic>>> watchContinueWatching(String uid) {
     return db.collection('users').doc(uid).collection('continueWatching')
         .orderBy('updatedAt', descending: true).limit(20).snapshots()
