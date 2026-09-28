@@ -295,6 +295,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                             final hasVideo = media['video'] is Map || media['video']?.toString().isNotEmpty == true;
                             final hasTrailer = media['trailer'] is Map || media['trailer']?.toString().isNotEmpty == true;
                             final episodeNumber = int.tryParse(n.toString()) ?? 1;
+                            final episodeIndex = episodes.indexOf(episode);
                             final seriesTitle = pkg['title']?.toString() ?? '';
                             final baseSubtitle = [if (hasVideo) 'فيديو', if (media['audio'] != null) 'صوت', if (media['subtitles'] != null) 'AR/EN', if (hasTrailer) 'Trailer'].join(' • ');
                             return FutureBuilder<Map<String, dynamic>?>(
@@ -316,6 +317,28 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                                   onTap: hasVideo ? () {
                                     final video = media['video'];
                                     final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
+                                    final nextIndex = episodeIndex + 1;
+                                    final hasNext = nextIndex < episodes.length && nextIndex < 20;
+                                    Future<void> openNextEpisode() async {
+                                      if (!hasNext || !context.mounted) return;
+                                      final nextRaw = episodes[nextIndex];
+                                      final next = nextRaw is Map ? Map<String, dynamic>.from(nextRaw) : <String, dynamic>{};
+                                      final nextNumber = int.tryParse(next['episodeNumber']?.toString() ?? '') ?? (episodeNumber + 1);
+                                      final nextMedia = next['media'] is Map ? Map<String, dynamic>.from(next['media'] as Map) : <String, dynamic>{};
+                                      final nextVideo = nextMedia['video'];
+                                      if (nextVideo == null) return;
+                                      final nextOutput = nextVideo is Map ? Map<String, dynamic>.from(nextVideo) : {'url': nextVideo.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
+                                      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
+                                        output: nextOutput,
+                                        title: seriesTitle,
+                                        episodeLabel: 'الحلقة $nextNumber',
+                                        onNextEpisode: nextIndex + 1 < episodes.length && nextIndex + 1 < 20 ? openNextEpisode : null,
+                                        watchUid: uid,
+                                        watchJobId: jobId,
+                                        watchEpisodeNumber: nextNumber,
+                                        watchTitle: seriesTitle,
+                                      )));
+                                    }
                                     Navigator.of(context).push(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
                                       output: output,
                                       title: seriesTitle,
@@ -323,6 +346,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                                       watchUid: uid,
                                       watchJobId: jobId,
                                       watchEpisodeNumber: episodeNumber,
+                                      onNextEpisode: hasNext ? openNextEpisode : null,
                                       watchTitle: seriesTitle,
                                     )));
                                   } : null,
