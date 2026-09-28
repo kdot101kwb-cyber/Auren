@@ -1331,3 +1331,6 @@ exports.runAurenSeriesProductionWorker = onSchedule(
     }
   }
 );
+
+// Live provider execution bridge for Production Worker v2.
+Object.assign(exports, require('./live_production_worker'));
