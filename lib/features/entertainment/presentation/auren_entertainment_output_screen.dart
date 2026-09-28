@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
@@ -76,6 +78,10 @@ class _AurenEntertainmentOutputScreenState
   bool _completionHandling = false;
   int _recoveryAttempts = 0;
   bool _recoveringPlayback = false;
+  String _subtitleLanguage = 'off';
+  final Map<String, List<Map<String, dynamic>>> _subtitleCues = {};
+  String _activeSubtitle = '';
+  String _audioTrack = 'default';
 
   void _resetControlsTimer() {
     _controlsTimer?.cancel();
@@ -119,6 +125,156 @@ class _AurenEntertainmentOutputScreenState
   String get _effectiveQuality {
     if (_lowData && _qualityUrls.containsKey('480p')) return '480p';
     return _quality;
+  }
+
+  Map<String, String> get _audioTrackUrls {
+    final raw = widget.output['audioTrackUrls'];
+    if (raw is! Map) return const {};
+    return raw.map((key, value) => MapEntry(key.toString(), value.toString()));
+  }
+
+  Map<String, String> get _subtitleUrls {
+    final raw = widget.output['subtitleUrls'];
+    if (raw is! Map) return const {};
+    return raw.map((key, value) => MapEntry(key.toString(), value.toString()));
+  }
+
+  Future<void> _loadSubtitle(String language) async {
+    if (language == 'off') {
+      if (mounted) setState(() { _subtitleLanguage = 'off'; _activeSubtitle = ''; });
+      return;
+    }
+    final url = _subtitleUrls[language];
+    if (url == null || url.isEmpty) return;
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode < 200 || response.statusCode >= 300) throw Exception('subtitle');
+      final cues = _parseVtt(response.body);
+      if (!mounted) return;
+      setState(() {
+        _subtitleCues[language] = cues;
+        _subtitleLanguage = language;
+      });
+      _updateSubtitle();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تحميل الترجمة.')),
+        );
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> _parseVtt(String source) {
+    final lines = const LineSplitter().convert(source.replaceAll('\r', ''));
+    final cues = <Map<String, dynamic>>[];
+    Duration? start;
+    Duration? end;
+    final text = <String>[];
+    Duration? parseTime(String value) {
+      final parts = value.trim().split(':');
+      if (parts.length < 2) return null;
+      final secondsPart = parts.last.replaceFirst(',', '.');
+      final seconds = double.tryParse(secondsPart);
+      if (seconds == null) return null;
+      final minutes = int.tryParse(parts[parts.length - 2]) ?? 0;
+      final hours = parts.length == 3 ? (int.tryParse(parts[0]) ?? 0) : 0;
+      return Duration(milliseconds: ((hours * 3600 + minutes * 60 + seconds) * 1000).round());
+    }
+    void flush() {
+      if (start != null && end != null && text.isNotEmpty) {
+        cues.add({'start': start!, 'end': end!, 'text': text.join('\n')});
+      }
+      start = null; end = null; text.clear();
+    }
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) { flush(); continue; }
+      if (trimmed.contains('-->')) {
+        final parts = trimmed.split('-->');
+        if (parts.length >= 2) {
+          start = parseTime(parts[0].trim().split(' ').first);
+          end = parseTime(parts[1].trim().split(' ').first);
+        }
+      } else if (start != null) {
+        if (!RegExp(r'^\d+$').hasMatch(trimmed) && trimmed != 'WEBVTT') text.add(trimmed);
+      }
+    }
+    flush();
+    return cues;
+  }
+
+  void _updateSubtitle() {
+    final controller = _controller;
+    if (!mounted || controller == null || _subtitleLanguage == 'off') return;
+    final cues = _subtitleCues[_subtitleLanguage] ?? const [];
+    final position = controller.value.position;
+    String active = '';
+    for (final cue in cues) {
+      final start = cue['start'] as Duration;
+      final end = cue['end'] as Duration;
+      if (position >= start && position <= end) {
+        active = cue['text']?.toString() ?? '';
+        break;
+      }
+    }
+    if (active != _activeSubtitle) setState(() => _activeSubtitle = active);
+  }
+
+  Future<void> _changeSubtitle() async {
+    final options = ['off', ..._subtitleUrls.keys];
+    if (options.length <= 1) return;
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: options.map((lang) => ListTile(
+            title: Text(lang == 'off' ? 'بدون ترجمة' : lang.toUpperCase()),
+            trailing: lang == _subtitleLanguage ? const Icon(Icons.check_rounded) : null,
+            onTap: () => Navigator.pop(sheetContext, lang),
+          )).toList(),
+        ),
+      ),
+    );
+    if (selected != null) await _loadSubtitle(selected);
+  }
+
+  Future<void> _changeAudioTrack() async {
+    final tracks = _audioTrackUrls;
+    if (tracks.isEmpty || _switchingQuality) return;
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('المسار الافتراضي'),
+              trailing: _audioTrack == 'default' ? const Icon(Icons.check_rounded) : null,
+              onTap: () => Navigator.pop(sheetContext, 'default'),
+            ),
+            ...tracks.keys.map((lang) => ListTile(
+              title: Text(lang.toUpperCase()),
+              trailing: lang == _audioTrack ? const Icon(Icons.check_rounded) : null,
+              onTap: () => Navigator.pop(sheetContext, lang),
+            )),
+          ],
+        ),
+      ),
+    );
+    if (selected == null) return;
+    final target = selected == 'default'
+        ? widget.output['url']?.toString() ?? ''
+        : tracks[selected] ?? '';
+    if (target.isEmpty || target == _url) {
+      if (mounted) setState(() => _audioTrack = selected);
+      return;
+    }
+    await _switchVideoQuality(target);
+    if (mounted) setState(() => _audioTrack = selected);
   }
 
   Future<void> _changeQuality() async {
@@ -360,6 +516,7 @@ class _AurenEntertainmentOutputScreenState
   void _onVideoProgress() {
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) return;
+    _updateSubtitle();
     if (controller.value.position >= controller.value.duration &&
         controller.value.duration > Duration.zero) {
       _handleVideoCompleted();
@@ -603,6 +760,30 @@ class _AurenEntertainmentOutputScreenState
                     icon: Icon(_isFullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded),
                   ),
                 ),
+              if (_activeSubtitle.isNotEmpty)
+                Positioned(
+                  bottom: 54,
+                  left: 16,
+                  right: 16,
+                  child: IgnorePointer(
+                    child: Center(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          child: Text(
+                            _activeSubtitle,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               if (_switchingQuality || _isBuffering)
                 Positioned.fill(
                   child: ColoredBox(
@@ -750,6 +931,18 @@ class _AurenEntertainmentOutputScreenState
                       _lowData ? 'Low Data' : (_quality == 'auto' ? 'Auto' : _quality),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                  ),
+                if (_subtitleUrls.isNotEmpty)
+                  IconButton(
+                    tooltip: 'الترجمة',
+                    onPressed: _changeSubtitle,
+                    icon: const Icon(Icons.closed_caption_rounded),
+                  ),
+                if (_audioTrackUrls.isNotEmpty)
+                  IconButton(
+                    tooltip: 'مسار الصوت',
+                    onPressed: _changeAudioTrack,
+                    icon: const Icon(Icons.audiotrack_rounded),
                   ),
                 if (_qualityUrls.isNotEmpty)
                   IconButton(
