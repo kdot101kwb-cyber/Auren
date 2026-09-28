@@ -1211,6 +1211,19 @@ async function claimAurenProductionV2Job() {
   return null;
 }
 
+function buildAurenPostAssemblyPlan(assemblyManifest) {
+  const episodes = assemblyManifest && assemblyManifest.episodes && typeof assemblyManifest.episodes === 'object'
+    ? assemblyManifest.episodes : {};
+  return Object.keys(episodes).sort((a,b)=>Number(a)-Number(b)).map((episodeNumber) => ({
+    episodeNumber: Math.max(1, Number(episodeNumber || 1)),
+    audio: {status:'waiting_provider', providerRequired:true},
+    music: {status:'waiting_provider', providerRequired:true},
+    subtitles: {status:'waiting_provider', providerRequired:true, languages:['ar','en']},
+    thumbnail: {status:'planned'},
+    trailer: {status:'planned'},
+  }));
+}
+
 function buildAurenEpisodeAssemblyManifest(taskDocs) {
   const items = taskDocs.map((doc) => {
     const data = doc.data() || {};
@@ -1375,9 +1388,11 @@ async function aurenProductionV2Run(ref) {
         qcId, assemblyId, assemblyManifest, assemblyStatus:'manifest_ready',
         assemblyFormat:'scene_sequence_v1', episodeMedia, episodeCount, sceneCount,
         productionProgress:100, readyAt:FieldValue.serverTimestamp()}, {merge:true});
+      const postAssemblyPlan = buildAurenPostAssemblyPlan(assemblyManifest);
       tx.set(ref.collection('episodeAssemblies').doc(assemblyId), {
         id:assemblyId, version:1, status:'ready', episodeCount, sceneCount,
-        episodes:episodeMedia, sourceQcId:qcId, createdAt:FieldValue.serverTimestamp(),
+        episodes:episodeMedia, sourceQcId:qcId, postAssemblyPlan,
+        createdAt:FieldValue.serverTimestamp(),
       }, {merge:true});
       tx.set(ref.collection('productionAudits').doc(qcId), {
         idempotencyKey:qcId, result:'passed', taskCount:tasks.docs.length,
