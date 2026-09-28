@@ -3001,3 +3001,48 @@ exports.leaveAurenTournament = require('firebase-functions/v2/https').onCall(
     return {left:true};
   }
 );
+
+
+function buildTournamentBracket(players) {
+  const p=[...players];
+  while(p.length<8)p.push(null);
+  return {round:'quarterfinals',matches:[
+    {id:'qf1',round:'quarterfinals',p1:p[0],p2:p[1],status:'pending'},
+    {id:'qf2',round:'quarterfinals',p1:p[2],p2:p[3],status:'pending'},
+    {id:'qf3',round:'quarterfinals',p1:p[4],p2:p[5],status:'pending'},
+    {id:'qf4',round:'quarterfinals',p1:p[6],p2:p[7],status:'pending'},
+  ]};
+}
+
+exports.startAurenTournament = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true,consumeAppCheckToken:true},
+ async(request)=>{
+  const uid=request.auth?.uid;if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const gameIndex=Number(request.data?.gameIndex);if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex))throw aurenHttpsError('invalid-argument','Unsupported tournament game.');
+  const ref=db.collection('auren_game_tournaments').doc(tournamentId(gameIndex));
+  return db.runTransaction(async tx=>{
+   const snap=await tx.get(ref);if(!snap.exists)throw aurenHttpsError('not-found','Tournament not found.');
+   const d=snap.data()||{};const players=Array.isArray(d.players)?d.players.map(String):[];
+   if(!players.includes(uid))throw aurenHttpsError('permission-denied','Join the tournament first.');
+   if(d.status!=='bracket_ready'&&d.status!=='registration')return {started:false,status:d.status};
+   if(players.length<2)throw aurenHttpsError('failed-precondition','At least two players are required.');
+   const bracket=buildTournamentBracket(players);
+   const matches=bracket.matches.filter(m=>m.p1&&m.p2);
+   tx.update(ref,{status:'active',round:'quarterfinals',bracket,matches,updatedAt:FieldValue.serverTimestamp()});
+   return {started:true,status:'active',round:'quarterfinals',matches};
+  });
+ }
+);
+
+exports.getAurenTournamentBracket = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
+ async(request)=>{
+  const uid=request.auth?.uid;if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const gameIndex=Number(request.data?.gameIndex);if(!AUREN_TOURNAMENT_GAMES.includes(gameIndex))throw aurenHttpsError('invalid-argument','Unsupported tournament game.');
+  const snap=await db.collection('auren_game_tournaments').doc(tournamentId(gameIndex)).get();
+  if(!snap.exists)return {exists:false};
+  const d=snap.data()||{};const players=(d.players||[]).map(String);
+  if(!players.includes(uid))throw aurenHttpsError('permission-denied','Tournament access denied.');
+  return {exists:true,tournamentId:snap.id,gameIndex,status:d.status,round:d.round,bracket:d.bracket||null,matches:d.matches||[]};
+ }
+);
