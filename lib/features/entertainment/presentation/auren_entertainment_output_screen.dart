@@ -349,6 +349,19 @@ class _AurenEntertainmentOutputScreenState
     final old = _controller;
     if (url.isEmpty || old == null || _recoveringPlayback || !mounted) return;
     if (_recoveryAttempts >= 3) {
+      if (_quality == 'auto' && !_lowData) {
+        final fallback = _qualityUrls['720p'] ?? _qualityUrls['480p'] ?? _qualityUrls['360p'];
+        if (fallback != null && fallback.isNotEmpty && fallback != _currentUrl) {
+          _recoveryAttempts = 0;
+          await _switchVideoQuality(fallback);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('تم خفض الجودة تلقائياً لتحسين التشغيل.')),
+            );
+          }
+          return;
+        }
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تعذر استعادة التشغيل. جرّب إعادة المحاولة لاحقاً.')),
       );
