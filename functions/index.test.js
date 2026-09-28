@@ -504,3 +504,13 @@ test('Episode assembly manifest is deterministic and scene-ordered',()=>{
   assert.match(source,/assemblyManifest/);
   assert.match(source,/assemblyStatus:'manifest_ready'/);
 });
+
+
+test('post-assembly plan covers audio, music, subtitles, thumbnail and trailer per episode',()=>{
+  assert.match(source,/function buildAurenPostAssemblyPlan/);
+  assert.match(source,/audio: \{status:'waiting_provider'/);
+  assert.match(source,/music: \{status:'waiting_provider'/);
+  assert.match(source,/subtitles: \{status:'waiting_provider'/);
+  assert.match(source,/languages:\['ar','en'\]/);
+  assert.match(source,/postAssemblyPlan/);
+});
