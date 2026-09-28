@@ -58,6 +58,27 @@ class AurenTvWatchTogetherService {
   Stream<QuerySnapshot<Map<String,dynamic>>> messages(String roomId) =>
       _rooms.doc(roomId).collection('messages').orderBy('createdAt', descending: true).limit(100).snapshots();
 
+  CollectionReference<Map<String,dynamic>> _readReceipts(String roomId) =>
+      _rooms.doc(roomId).collection('read_receipts');
+
+  Stream<QuerySnapshot<Map<String,dynamic>>> readReceipts(String roomId) =>
+      _readReceipts(roomId).snapshots();
+
+  Future<void> markMessagesRead(String roomId, {String? lastMessageId}) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return;
+    final room = await _rooms.doc(roomId).get();
+    if (!room.exists) return;
+    final members = List<String>.from(room.data()?['memberIds'] as List? ?? const []);
+    if (!members.contains(u.uid)) return;
+    final ref = _readReceipts(roomId).doc(u.uid);
+    await ref.set({
+      'uid': u.uid,
+      'lastMessageId': lastMessageId ?? '',
+      'lastReadAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   Future<void> sendReaction(String roomId, String emoji) async {
     final u = FirebaseAuth.instance.currentUser;
     final value = emoji.trim();
