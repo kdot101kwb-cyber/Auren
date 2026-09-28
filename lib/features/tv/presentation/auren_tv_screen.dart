@@ -282,7 +282,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   }
 
   Future<void> _showEpgPersonalized() async {
-    final channels = await AurenTvService.instance.loadAllEnabledSources(limit: 500);
+    final channels = await AurenTvService.instance.loadAllEnabledSources(limitPerSource: 500);
     final recommendations = await AurenTvEpgSmartService.instance.personalizeChannels(channels, limit: 20);
     if (!mounted) return;
     showModalBottomSheet<void>(
