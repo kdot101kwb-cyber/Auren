@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
 
 class AurenOfflineMedia {
   final String id, title, type, path, sourceUrl;
@@ -39,6 +40,20 @@ class AurenOfflineMediaService {
     if(out.length!=raw.length)await _save(out); out.sort((a,b)=>b.savedAt.compareTo(a.savedAt)); return out;
   }
   Future<String?> localPathForUrl(String url) async {for(final m in await list()){if(m.sourceUrl==url&&await File(m.path).exists())return m.path;}return null;}
+  Future<List<AurenOfflineMedia>> downloadSeriesPackage({required Map<String,dynamic> finalizedEpisodes, required String jobId, void Function(int,int)? onProgress}) async {
+    final out=<AurenOfflineMedia>[];
+    final entries=finalizedEpisodes.entries.toList()..sort((a,b)=>a.key.compareTo(b.key));
+    for(final entry in entries){
+      dynamic value=entry.value;
+      if(value is Map) value=value['video'] ?? value['videoUrl'] ?? value['url'] ?? value['media'];
+      if(value is Map) value=value['url'];
+      if(value is String && value.startsWith(RegExp(r'https?://'))){
+        out.add(await download(url:value,title:'AUREN • الحلقة '+entry.key,type:'video',id:'${jobId}_ep_${entry.key}',onProgress:onProgress));
+      }
+    }
+    return out;
+  }
+
   Future<AurenOfflineMedia> download({required String url,required String title,required String type,String? id,void Function(int,int)? onProgress}) async {
     final source=url.trim(); final uri=Uri.tryParse(source);
     if(uri==null||(uri.scheme!='http'&&uri.scheme!='https'))throw ArgumentError('Only HTTP(S) media URLs can be downloaded.');
