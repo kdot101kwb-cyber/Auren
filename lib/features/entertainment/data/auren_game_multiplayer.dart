@@ -200,6 +200,20 @@ class AurenGameMultiplayer {
   }
 
 
+  Future<bool> initializeFlagshipMatch() async {
+    final id = _lobbyId;
+    if (id == null) return false;
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('initializeAurenFlagshipMatch').call({
+        'lobbyId': id,
+      });
+      return result.data is Map && result.data['accepted'] == true;
+    } on FirebaseFunctionsException {
+      return false;
+    }
+  }
+
   Future<bool> submitFlagshipAction({
     required Map<String, dynamic> action,
     required int expectedVersion,
