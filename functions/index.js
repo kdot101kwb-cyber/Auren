@@ -3119,3 +3119,16 @@ exports.getAurenTournamentHistory = require('firebase-functions/v2/https').onCal
   return {items:snap.docs.map(d=>({id:d.id,...d.data()}))};
  }
 );
+
+function aurenGamingSeasonMeta() {
+  const now=new Date(); const quarter=Math.floor(now.getUTCMonth()/3)+1;
+  return {seasonId: now.getUTCFullYear()+'-S'+quarter, year:now.getUTCFullYear(), quarter, startsAt:new Date(Date.UTC(now.getUTCFullYear(),(quarter-1)*3,1)), endsAt:new Date(Date.UTC(now.getUTCFullYear(),quarter*3,1))};
+}
+exports.getAurenGamingSeason = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:20,memory:'256MiB',enforceAppCheck:true},
+ async(request)=>{
+  if(!request.auth?.uid) throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const s=aurenGamingSeasonMeta();
+  return {seasonId:s.seasonId,year:s.year,quarter:s.quarter,startsAt:s.startsAt.toISOString(),endsAt:s.endsAt.toISOString(),tournamentCadence:'weekly',games:AUREN_TOURNAMENT_GAMES};
+ }
+);
