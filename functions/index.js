@@ -3102,3 +3102,11 @@ exports.submitAurenTournamentMatchResult = require('firebase-functions/v2/https'
   });
  }
 );
+exports.getAurenTournamentHistory = require('firebase-functions/v2/https').onCall(
+ {region:'us-central1',timeoutSeconds:30,memory:'256MiB',enforceAppCheck:true},
+ async(request)=>{
+  const uid=request.auth?.uid;if(!uid)throw aurenHttpsError('unauthenticated','Authentication is required.');
+  const snap=await db.collection('auren_game_tournament_rewards').where('playerId','==',uid).orderBy('createdAt','desc').limit(30).get();
+  return {items:snap.docs.map(d=>({id:d.id,...d.data()}))};
+ }
+);
