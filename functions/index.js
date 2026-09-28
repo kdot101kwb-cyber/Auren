@@ -1420,6 +1420,8 @@ async function aurenProductionV2Run(ref) {
         tx.set(ref.collection('episodeAssemblies').doc(assemblyId)
           .collection('postAssemblyTasks').doc(task.id), {
             ...task, createdAt:FieldValue.serverTimestamp(),
+            updatedAt:FieldValue.serverTimestamp(), attempts:0,
+            output:null, externalJobId:'', providerId:'', providerState:'queued',
           }, {merge:true});
       }
       tx.set(ref.collection('productionAudits').doc(qcId), {
