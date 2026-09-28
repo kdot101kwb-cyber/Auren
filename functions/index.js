@@ -1584,6 +1584,10 @@ exports.runAurenSeriesProductionWorker = onSchedule(
   }
 );
 
+
+// Dedicated AI movie and original music production workers.
+Object.assign(exports, require('./movie_production_worker'));
+Object.assign(exports, require('./music_creation_worker'));
 // Post-assembly audio/music/subtitle provider worker.\nObject.assign(exports, require('./post_assembly_worker'));\n\n// Live provider execution bridge for Production Worker v2.
 Object.assign(exports, require('./live_production_worker'));
 
