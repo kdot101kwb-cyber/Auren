@@ -14,6 +14,7 @@ class AurenTvService {
   static const entertainmentPlaylist = 'https://iptv-org.github.io/iptv/categories/entertainment.m3u';
   static const sportsPlaylist = 'https://iptv-org.github.io/iptv/categories/sports.m3u';
   static const newsPlaylist = 'https://iptv-org.github.io/iptv/categories/news.m3u';
+  static const sudanPlaylist = 'https://iptv-org.github.io/iptv/countries/sd.m3u';
   List<AurenTvChannel>? _entertainmentCache;
   List<AurenTvChannel>? _sportsCache;
   List<AurenTvChannel>? _newsCache;
@@ -62,7 +63,17 @@ class AurenTvService {
   }
 
   Future<List<AurenTvChannel>> loadNews({int limit = 500}) async {
-    _newsCache ??= await _fetchPlaylist(newsPlaylist, fallbackCategory: 'News');
+    if (_newsCache == null) {
+      final news = await _fetchPlaylist(newsPlaylist, fallbackCategory: 'News');
+      final sudan = await _fetchPlaylist(sudanPlaylist, fallbackCategory: 'Sudan');
+      final merged = <AurenTvChannel>[];
+      final seen = <String>{};
+      for (final channel in [...news, ...sudan]) {
+        final key = '${channel.tvgId}|${channel.url}|${channel.name}'.toLowerCase();
+        if (seen.add(key)) merged.add(channel);
+      }
+      _newsCache = merged;
+    }
     return _newsCache!.take(limit).toList();
   }
 
