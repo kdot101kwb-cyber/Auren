@@ -67,7 +67,6 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
       ]),
     );
   }
-}
 
   Widget _statTile(IconData icon, String label, String value) {
     return Card(margin: EdgeInsets.zero, child: Padding(
@@ -159,6 +158,8 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
       core: false,
     );
   }
+
+}
 
 class _MemoryGame extends StatefulWidget {
   const _MemoryGame();
