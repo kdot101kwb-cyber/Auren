@@ -94,12 +94,81 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     super.dispose();
   }
 
+  Map<String, dynamic> _gameState() => {
+    'score': _score, 'round': _round, 'hp': _hp, 'streak': _streak,
+    'energy': _energy, 'distance': _distance, 'message': _message,
+    'ludo': _ludo, 'cpuLudo': _cpuLudo, 'ludoDice': _ludoDice,
+    'dominoHand': _dominoHand, 'dominoCpu': _dominoCpu,
+    'dominoPool': _dominoPool, 'dominoBoard': _dominoBoard,
+    'dominoPlayerTurn': _dominoPlayerTurn, 'dominoLeft': _dominoLeft,
+    'dominoRight': _dominoRight,
+    'unoHand': _unoHand, 'unoCpu': _unoCpu, 'unoDeck': _unoDeck,
+    'unoDiscard': _unoDiscard, 'unoColor': _unoColor,
+    'unoPlayerTurn': _unoPlayerTurn, 'unoPendingDraw': _unoPendingDraw,
+    'unoSkipNext': _unoSkipNext, 'unoSelected': _unoSelected,
+    'crimeCase': _crimeCase, 'crimePhase': _crimePhase,
+    'crimeEvidence': _crimeEvidence, 'crimeScore': _crimeScore,
+    'crimeCollected': _crimeCollected.toList(), 'crimeSuspect': _crimeSuspect,
+  };
+
+  void _applyGameState(Map<String, dynamic> state) {
+    if (!mounted || state.isEmpty) return;
+    setState(() {
+      _score = (state['score'] as num?)?.toInt() ?? _score;
+      _round = (state['round'] as num?)?.toInt() ?? _round;
+      _hp = (state['hp'] as num?)?.toInt() ?? _hp;
+      _streak = (state['streak'] as num?)?.toInt() ?? _streak;
+      _energy = (state['energy'] as num?)?.toInt() ?? _energy;
+      _distance = (state['distance'] as num?)?.toInt() ?? _distance;
+      _message = state['message']?.toString() ?? _message;
+      final l = state['ludo'];
+      if (l is List) for (var i = 0; i < min(4, l.length); i++) _ludo[i] = (l[i] as num).toInt();
+      final cl = state['cpuLudo'];
+      if (cl is List) for (var i = 0; i < min(4, cl.length); i++) _cpuLudo[i] = (cl[i] as num).toInt();
+      _ludoDice = (state['ludoDice'] as num?)?.toInt() ?? _ludoDice;
+      _dominoHand = List<String>.from(state['dominoHand'] ?? _dominoHand);
+      _dominoCpu = List<String>.from(state['dominoCpu'] ?? _dominoCpu);
+      _dominoPool = List<String>.from(state['dominoPool'] ?? _dominoPool);
+      _dominoBoard = List<String>.from(state['dominoBoard'] ?? _dominoBoard);
+      _dominoPlayerTurn = state['dominoPlayerTurn'] as bool? ?? _dominoPlayerTurn;
+      _dominoLeft = (state['dominoLeft'] as num?)?.toInt() ?? _dominoLeft;
+      _dominoRight = (state['dominoRight'] as num?)?.toInt() ?? _dominoRight;
+      _unoHand = List<String>.from(state['unoHand'] ?? _unoHand);
+      _unoCpu = List<String>.from(state['unoCpu'] ?? _unoCpu);
+      _unoDeck = List<String>.from(state['unoDeck'] ?? _unoDeck);
+      _unoDiscard = List<String>.from(state['unoDiscard'] ?? _unoDiscard);
+      _unoColor = state['unoColor']?.toString() ?? _unoColor;
+      _unoPlayerTurn = state['unoPlayerTurn'] as bool? ?? _unoPlayerTurn;
+      _unoPendingDraw = (state['unoPendingDraw'] as num?)?.toInt() ?? _unoPendingDraw;
+      _unoSkipNext = state['unoSkipNext'] as bool? ?? _unoSkipNext;
+      _unoSelected = (state['unoSelected'] as num?)?.toInt() ?? _unoSelected;
+      _crimeCase = (state['crimeCase'] as num?)?.toInt() ?? _crimeCase;
+      _crimePhase = (state['crimePhase'] as num?)?.toInt() ?? _crimePhase;
+      _crimeEvidence = (state['crimeEvidence'] as num?)?.toInt() ?? _crimeEvidence;
+      _crimeScore = (state['crimeScore'] as num?)?.toInt() ?? _crimeScore;
+      _crimeCollected
+        ..clear()
+        ..addAll(List<String>.from(state['crimeCollected'] ?? const <String>[]));
+      _crimeSuspect = state['crimeSuspect']?.toString() ?? _crimeSuspect;
+    });
+  }
+
+  Future<void> _syncGameState() async {
+    if (_lobbyId == null) return;
+    try {
+      await _multiplayer.updateState(_gameState());
+    } catch (_) {
+      if (mounted) setState(() => _onlineStatus = 'Match sync unavailable');
+    }
+  }
+
   Future<void> _createLobby() async {
     try {
       final id = await _multiplayer.createLobby(gameIndex: widget.gameIndex);
       _watchLobby(id);
       if (!mounted) return;
       setState(() => _onlineStatus = 'Waiting • ' + id.substring(0, min(6, id.length)).toUpperCase());
+      await _syncGameState();
     } catch (_) {
       if (mounted) setState(() => _onlineStatus = 'Online unavailable');
     }
@@ -136,6 +205,8 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     _lobbySubscription = _multiplayer.watchLobby(id).listen((data) {
       if (!mounted || data == null) return;
       final players = List<String>.from(data['players'] ?? const <String>[]);
+      final remoteState = data['state'];
+      if (remoteState is Map<String, dynamic> && remoteState.isNotEmpty) _applyGameState(remoteState);
       final status = data['status']?.toString() ?? 'waiting';
       setState(() => _onlineStatus = (status == 'playing' ? '2 Players • Ready' : 'Waiting • ' + players.length.toString() + '/2'));
     });
@@ -191,6 +262,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       case 9: _racingTurn(); break;
     }
     _saveProgress();
+    _syncGameState();
   }
 
   void _ludoRoll() {
@@ -199,6 +271,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     _ludoPendingDice = _ludoDice;
     _message = '🎲 رميت ' + _ludoDice.toString() + ' • اختر قطعة قانونية';
     setState(() {});
+    _syncGameState();
   }
 
   bool _ludoCanMove(int i, int dice) {
@@ -315,6 +388,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     _dominoPlayerTurn = false;
     _dominoCpuMove();
     setState(() {});
+    _syncGameState();
   }
 
   void _dominoPlace(String piece) {
@@ -416,6 +490,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _unoDrawOne(_unoHand); _message = '🃏 سحبت بطاقة';
     }
     setState(() {});
+    _syncGameState();
   }
 
   void _unoDrawOne(List<String> hand) {
@@ -483,6 +558,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _message = '📁 بدأت قضية جديدة رقم ' + _crimeCase.toString();
     }
     _saveProgress();
+    _syncGameState();
     setState(() {});
   }
 
