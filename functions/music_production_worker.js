@@ -40,6 +40,12 @@ async function claimMusicTask() {
   return null;
 }
 
+async function updateMusicParentJob(ref, patch) {
+  const parent = ref.parent.parent;
+  if (!parent) return;
+  await parent.set({...patch, updatedAt:admin.firestore.FieldValue.serverTimestamp()}, {merge:true});
+}
+
 async function processMusicTask(ref) {
   const snap = await ref.get();
   if (!snap.exists) return;
@@ -54,6 +60,7 @@ async function processMusicTask(ref) {
       lastError:'AUREN music provider credentials/model version are not configured.',
       updatedAt:admin.firestore.FieldValue.serverTimestamp(),
     }, {merge:true});
+    await updateMusicParentJob(ref, {status:'waiting_provider', productionStage:'generation', progress:5});
     return;
   }
 
@@ -73,6 +80,7 @@ async function processMusicTask(ref) {
         providerLockUntilMs:0,
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       }, {merge:true});
+      await updateMusicParentJob(ref, {status:'completed', productionStage:'output', progress:100, output:polled.output});
       return;
     }
     if (state === 'failed' || state === 'canceled') {
@@ -84,9 +92,11 @@ async function processMusicTask(ref) {
         lastError:String(polled.error || 'Music provider job failed.').slice(0,700),
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       }, {merge:true});
+      await updateMusicParentJob(ref, {status:'generation', productionStage:'generation', progress:10, lastError:String(polled.error || 'Music provider job failed.').slice(0,700)});
       return;
     }
     await ref.set({status:'processing',providerState:state,providerLockUntilMs:0,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    await updateMusicParentJob(ref, {status:'processing', productionStage:'generation', progress:50, providerState:state});
     return;
   }
 
@@ -103,6 +113,7 @@ async function processMusicTask(ref) {
 
   if (!result.ok) {
     await ref.set({status:'waiting_provider',providerState:'provider_unavailable',providerLockUntilMs:0,lastError:String(result.message || 'Music provider rejected task').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    await updateMusicParentJob(ref, {status:'waiting_provider', productionStage:'generation', progress:5, lastError:String(result.message || 'Music provider rejected task').slice(0,700)});
     return;
   }
 
@@ -117,6 +128,11 @@ async function processMusicTask(ref) {
     providerLockUntilMs:0,
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
   }, {merge:true});
+  if (output) {
+    await updateMusicParentJob(ref, {status:'completed', productionStage:'output', progress:100, output});
+  } else {
+    await updateMusicParentJob(ref, {status:'processing', productionStage:'generation', progress:35, providerJobId:result.result.externalJobId || ''});
+  }
 }
 
 exports.runAurenMusicProductionWorker = onSchedule({
