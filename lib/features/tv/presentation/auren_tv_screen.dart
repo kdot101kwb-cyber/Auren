@@ -335,7 +335,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     );
   }
 
-  Future<void> _showWatchTogetherChat(AurenTvWatchTogetherRoom room) async {
+  String _watchChatTime(dynamic value) {\n    if (value is! Timestamp) return '';\n    final d = value.toDate().toLocal();\n    final h = d.hour.toString().padLeft(2, '0');\n    final m = d.minute.toString().padLeft(2, '0');\n    return '\${h}:\${m}';\n  }\n\n  Future<void> _showWatchTogetherChat(AurenTvWatchTogetherRoom room) async {
     final service = AurenTvWatchTogetherService.instance;
     final controller = TextEditingController();
     Timer? typingTimer;
@@ -391,7 +391,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                                 color: mine ? Theme.of(ctx).colorScheme.primaryContainer : Theme.of(ctx).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              child: Text(d['text'] as String? ?? ''),
+                              child: Column(\n                                crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,\n                                children: [\n                                  Text(d['text'] as String? ?? ''),\n                                  const SizedBox(height: 2),\n                                  Text(_watchChatTime(d['createdAt']), style: TextStyle(fontSize: 10, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),\n                                ],\n                              ),
                             ),
                           );
                         },
