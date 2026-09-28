@@ -127,7 +127,9 @@ service cloud.firestore {
       && request.resource.data.mode in ['أغنية','قصة','فيديو','بودكاست','عالم','مسلسل']
       && request.resource.data.mood is string
       && request.resource.data.mood.size() <= 40
-      && request.resource.data.length in ['قصير','متوسط','طويل']
+      && request.resource.data.length is string
+      && request.resource.data.length.size() > 0
+      && request.resource.data.length.size() <= 80
       && request.resource.data.idea is string
       && request.resource.data.idea.size() <= 5000
       && request.resource.data.status == 'draft'
