@@ -12,6 +12,9 @@ class AurenEntertainmentOutputScreen extends StatefulWidget {
   final String? title;
   final String? episodeLabel;
   final VoidCallback? onNextEpisode;
+  final String? nextEpisodeLabel;
+  final String? nextPreviewUrl;
+  final int nextCountdownSeconds;
   final String? watchUid;
   final String? watchJobId;
   final int? watchEpisodeNumber;
@@ -23,6 +26,9 @@ class AurenEntertainmentOutputScreen extends StatefulWidget {
     this.title,
     this.episodeLabel,
     this.onNextEpisode,
+    this.nextEpisodeLabel,
+    this.nextPreviewUrl,
+    this.nextCountdownSeconds = 10,
     this.watchUid,
     this.watchJobId,
     this.watchEpisodeNumber,
@@ -105,7 +111,7 @@ class _AurenEntertainmentOutputScreenState
     _nextTimer?.cancel();
     setState(() {
       _showNextCountdown = true;
-      _nextCountdown = 10;
+      _nextCountdown = widget.nextCountdownSeconds.clamp(3, 30);
     });
     _nextTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -214,24 +220,49 @@ class _AurenEntertainmentOutputScreenState
               ),
               if (_showNextCountdown && widget.onNextEpisode != null)
                 Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.skip_next_rounded),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'الحلقة التالية تبدأ تلقائياً خلال $_nextCountdown ثوانٍ',
-                            style: const TextStyle(fontWeight: FontWeight.w800),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.nextPreviewUrl?.isNotEmpty == true)
+                        AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Image.network(
+                            widget.nextPreviewUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                           ),
                         ),
-                        TextButton(
-                          onPressed: _cancelNextEpisode,
-                          child: const Text('إلغاء'),
+                      Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.skip_next_rounded),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('التالي', style: TextStyle(fontSize: 12)),
+                                  Text(
+                                    widget.nextEpisodeLabel ?? 'الحلقة التالية',
+                                    style: const TextStyle(fontWeight: FontWeight.w900),
+                                  ),
+                                  Text(
+                                    'تبدأ تلقائياً خلال $_nextCountdown ثوانٍ',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _cancelNextEpisode,
+                              child: const Text('إلغاء'),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               const SizedBox(height: 18),
