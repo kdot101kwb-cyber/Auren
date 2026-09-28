@@ -475,7 +475,7 @@ class _MusicProductionStatusScreen extends StatelessWidget {
           final data = snapshot.data;
           if (data == null) return const Center(child: CircularProgressIndicator());
           final status = String(data['status'] ?? 'queued');
-          final progress = ((Number.tryParse(String(data['progress'] ?? '0')) ?? 0) / 100).clamp(0.0, 1.0);
+          final progress = ((double.tryParse(String(data['progress'] ?? '0')) ?? 0) / 100).clamp(0.0, 1.0);
           final output = data['output'];
           final url = output is Map ? String(output['url'] ?? '') : '';
           return ListView(
