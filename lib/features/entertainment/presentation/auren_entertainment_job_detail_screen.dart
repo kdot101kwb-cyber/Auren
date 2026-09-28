@@ -328,11 +328,23 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                                       final nextVideo = nextMedia['video'];
                                       if (nextVideo == null) return;
                                       final nextOutput = nextVideo is Map ? Map<String, dynamic>.from(nextVideo) : {'url': nextVideo.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
+                                      final nextThumbnail = nextMedia['thumbnail'];
+                                      final nextPreviewUrl = nextThumbnail is Map ? nextThumbnail['url']?.toString() ?? '' : nextThumbnail?.toString() ?? '';
                                       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => AurenEntertainmentOutputScreen(
                                         output: nextOutput,
                                         title: seriesTitle,
                                         episodeLabel: 'الحلقة $nextNumber',
                                         onNextEpisode: nextIndex + 1 < episodes.length && nextIndex + 1 < 20 ? openNextEpisode : null,
+                                        nextEpisodeLabel: nextIndex + 1 < episodes.length && nextIndex + 1 < 20 ? 'الحلقة ' + (nextNumber + 1) : null,
+                                        nextPreviewUrl: nextIndex + 1 < episodes.length && nextIndex + 1 < 20
+                                            ? (() {
+                                                final raw = episodes[nextIndex + 1];
+                                                final item = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+                                                final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
+                                                final t = m['thumbnail'];
+                                                return t is Map ? t['url']?.toString() ?? '' : t?.toString() ?? '';
+                                              })()
+                                            : null,
                                         watchUid: uid,
                                         watchJobId: jobId,
                                         watchEpisodeNumber: nextNumber,
