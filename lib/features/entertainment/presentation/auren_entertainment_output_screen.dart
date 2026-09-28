@@ -15,6 +15,8 @@ class AurenEntertainmentOutputScreen extends StatefulWidget {
   final String? nextEpisodeLabel;
   final String? nextPreviewUrl;
   final int nextCountdownSeconds;
+  final List<Map<String, dynamic>> episodes;
+  final ValueChanged<int>? onSelectEpisode;
   final String? watchUid;
   final String? watchJobId;
   final int? watchEpisodeNumber;
@@ -29,6 +31,8 @@ class AurenEntertainmentOutputScreen extends StatefulWidget {
     this.nextEpisodeLabel,
     this.nextPreviewUrl,
     this.nextCountdownSeconds = 10,
+    this.episodes = const [],
+    this.onSelectEpisode,
     this.watchUid,
     this.watchJobId,
     this.watchEpisodeNumber,
@@ -46,6 +50,7 @@ class _AurenEntertainmentOutputScreenState
   AudioPlayer? _audioPlayer;
   Future<void>? _initializeFuture;
   bool _muted = false;
+  double _playbackSpeed = 1.0;
   Duration _savedPosition = Duration.zero;
   DateTime _lastProgressSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _progressLoaded = false;
@@ -191,6 +196,60 @@ class _AurenEntertainmentOutputScreenState
     );
   }
 
+  Future<void> _skipBy(int seconds) async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    var target = controller.value.position + Duration(seconds: seconds);
+    if (target < Duration.zero) target = Duration.zero;
+    if (target > controller.value.duration) target = controller.value.duration;
+    await controller.seekTo(target);
+  }
+
+  Future<void> _showEpisodes() async {
+    if (widget.episodes.isEmpty || widget.onSelectEpisode == null || !mounted) return;
+    await showModalBottomSheet<void>(
+      context: context, showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView.separated(
+          shrinkWrap: true, itemCount: widget.episodes.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (_, index) {
+            final e = widget.episodes[index];
+            final n = e['episodeNumber']?.toString() ?? 'episode';
+            final label = e['label']?.toString() ?? 'الحلقة $n';
+            final active = e['episodeNumber']?.toString() == widget.watchEpisodeNumber?.toString();
+            return ListTile(
+              leading: CircleAvatar(child: Text(n)),
+              title: Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+              trailing: active ? const Icon(Icons.play_arrow_rounded) : null,
+              onTap: () {
+                Navigator.pop(sheetContext);
+                final number = int.tryParse(n);
+                if (number != null && number != widget.watchEpisodeNumber) widget.onSelectEpisode!(number);
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _changeSpeed() async {
+    final speed = await showModalBottomSheet<double>(
+      context: context, showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((value) => ListTile(
+          title: Text('${value}x'),
+          trailing: value == _playbackSpeed ? const Icon(Icons.check_rounded) : null,
+          onTap: () => Navigator.pop(sheetContext, value),
+        )).toList()),
+      ),
+    );
+    if (speed != null && _controller != null) {
+      await _controller!.setPlaybackSpeed(speed);
+      if (mounted) setState(() => _playbackSpeed = speed);
+    }
+  }
   Widget _videoBody() {
     final controller = _controller;
     final future = _initializeFuture;
@@ -291,6 +350,14 @@ class _AurenEntertainmentOutputScreenState
                 icon: Icon(controller.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
                 label: Text(controller.value.isPlaying ? 'إيقاف' : 'تشغيل'),
               ),
+              const SizedBox(height: 8),
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                IconButton(onPressed: () => _skipBy(-10), icon: const Icon(Icons.replay_10_rounded)),
+                IconButton(onPressed: () => _skipBy(30), icon: const Icon(Icons.forward_30_rounded)),
+                IconButton(onPressed: _changeSpeed, icon: const Icon(Icons.speed_rounded)),
+                if (widget.episodes.isNotEmpty && widget.onSelectEpisode != null)
+                  IconButton(onPressed: _showEpisodes, icon: const Icon(Icons.list_alt_rounded)),
+              ]),
               const SizedBox(height: 8),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 IconButton(
