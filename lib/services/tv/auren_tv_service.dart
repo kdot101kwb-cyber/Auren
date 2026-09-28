@@ -100,7 +100,29 @@ class AurenTvService {
       if (p.length < 4) return null;
       return AurenTvEpgReminder(id: p[0], channelId: p[1], title: p[2], startIso: p[3]);
     }).whereType<AurenTvEpgReminder>().toList();
+  }  Future<int> cleanupExpiredEpgReminders() async {
+    final prefs = _prefs ??= await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('auren_tv_epg_reminders') ?? <String>[];
+    final now = DateTime.now().toUtc();
+    final keep = <String>[];
+    var removed = 0;
+    for (final encoded in raw) {
+      final parts = encoded.split('|');
+      if (parts.length < 4) continue;
+      final start = DateTime.tryParse(parts[3]);
+      if (start == null || start.isBefore(now.subtract(const Duration(hours: 2)))) {
+        removed++;
+        final item = AurenTvEpgSearchResult(channelId: parts[1], title: parts[2], startIso: parts[3], stopIso: parts[3], state: 'past');
+        await _notifications.cancel(_reminderId(item).hashCode & 0x7fffffff);
+      } else {
+        keep.add(encoded);
+      }
+    }
+    if (removed > 0) await prefs.setStringList('auren_tv_epg_reminders', keep);
+    return removed;
   }
+
+
 
   Future<bool> addEpgReminder(AurenTvEpgSearchResult item, {Duration before = const Duration(minutes: 10)}) async {
     final start = DateTime.tryParse(item.startIso);
