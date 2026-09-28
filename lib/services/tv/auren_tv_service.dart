@@ -113,7 +113,8 @@ class AurenTvService {
     _sourceChannelCacheTimes.remove(id);
     _sourceEpgUrls.remove(id);
     _sourceEpgCaches.remove(id);
-    if (await defaultSourceId() == id) await setDefaultSource(null);
+    final p2 = await SharedPreferences.getInstance();
+    if (p2.getString(_defaultSourceKey) == id) await p2.remove(_defaultSourceKey);
   }
 
   Future<int> testSource(AurenTvSource source) async {
