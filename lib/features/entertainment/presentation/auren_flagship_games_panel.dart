@@ -761,7 +761,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     return ListView(padding: const EdgeInsets.all(16), children: [
       Text(_names[widget.gameIndex], style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
       const SizedBox(height: 8),
-      Align(alignment: AlignmentDirectional.centerStart, child: OutlinedButton.icon(onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenGlobalGamingLeaderboardScreen())); }, icon: const Icon(Icons.leaderboard), label: const Text('🌍 Global Gaming Leaderboard'))),
+      Align(alignment: AlignmentDirectional.centerStart, child: OutlinedButton.icon(onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenGlobalGamingLeaderboardScreen())); }, icon: const Icon(Icons.leaderboard), label: const Text('🌍 Spectate Live Matches • Global Gaming Leaderboard'))),
       const SizedBox(width: 8),
       OutlinedButton.icon(onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AurenGamingProfileScreen())); }, icon: const Icon(Icons.person), label: const Text('Gaming Profile')),
       const SizedBox(height: 6), Text('جولة ' + _round.toString() + ' • ⭐ ' + _score.toString() + ' • 🔥 Combo ' + _streak.toString()),
