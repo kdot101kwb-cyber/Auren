@@ -64,3 +64,10 @@ test('champion completion writes tournament reward and champion badge', async ()
   assert.match(source,/tournamentRewardForPlacement\(placement\)/);
   assert.match(source,/recordTournamentReward\(tx,ref\.id,champion,gameIndex,1\)/);
 });
+
+test('flagship action gateway auto-completes linked tournament matches', () => {
+  const source = fs.readFileSync(require.resolve('./index.js'),'utf8');
+  assert.match(source, /autoCompleteTournamentMatch/);
+  assert.match(source, /data\.tournamentId && data\.tournamentMatchId/);
+  assert.match(source, /autoCompleteTournamentMatch\(tx, data\.tournamentId, gameIndex, data\.tournamentMatchId, result\.winnerId\)/);
+});
