@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../services/tv/auren_tv_service.dart';
 import '../../../services/tv/auren_tv_epg_smart_service.dart';
+import '../../../services/tv/auren_tv_home_service.dart';
 
 class AurenTvScreen extends StatefulWidget {
   const AurenTvScreen({super.key});
@@ -107,6 +108,78 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       return Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.notifications_active_outlined)), title: Text(r.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(label), trailing: Wrap(children: [IconButton(tooltip: 'تعديل التذكير', onPressed: () async { final before = await showModalBottomSheet<Duration>(context: ctx, builder: (s) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [const ListTile(title: Text('تعديل وقت التذكير')), for (final m in const [5, 10, 15, 30, 60]) ListTile(title: Text('قبل $m دقيقة'), onTap: () => Navigator.pop(s, Duration(minutes: m)))]))); if (before == null || !ctx.mounted) return; final ok = await AurenTvService.instance.updateEpgReminder(item, before: before); if (ctx.mounted) { Navigator.pop(ctx); if (ok) await _showEpgReminderCenter(); } }, icon: const Icon(Icons.edit_notifications_outlined)), IconButton(tooltip: 'إلغاء التذكير', onPressed: () async { await AurenTvService.instance.removeEpgReminder(item); if (ctx.mounted) { Navigator.pop(ctx); await _showEpgReminderCenter(); } }, icon: const Icon(Icons.notifications_off_outlined))));
     }))));
   }
+  Future<void> _showTvHome() async {
+    final channels = await AurenTvHomeService.instance.personalizedChannels(limit: 24);
+    if (!mounted) return;
+    final guides = await AurenTvHomeService.instance.multiChannelGuide(channels, hours: 48, perChannel: 4, source: activeSource);
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context, isScrollControlled: true, showDragHandle: true,
+      builder: (ctx) => SafeArea(child: SizedBox(
+        height: MediaQuery.of(ctx).size.height * .82,
+        child: Column(children: [
+          const ListTile(title: Text('AUREN TV • For You', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)), subtitle: Text('قنوات مرتبة حسب مفضلاتك ومشاهدتك السابقة.')),
+          Expanded(child: guides.isEmpty ? const Center(child: Text('لا توجد قنوات مقترحة حالياً.')) : ListView.separated(
+            padding: const EdgeInsets.all(12), itemCount: guides.length, separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (_, i) {
+              final g = guides[i]; final now = g.nowNext?['current']; final next = g.nowNext?['next'];
+              return Card(child: ListTile(
+                leading: g.channel.logo.isEmpty ? const CircleAvatar(child: Icon(Icons.tv)) : CircleAvatar(backgroundImage: NetworkImage(g.channel.logo)),
+                title: Text(g.channel.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(g.channel.country + ' • ' + ((now ?? '').isEmpty ? 'لا يوجد برنامج الآن' : 'الآن: ' + now) + ((next ?? '').isEmpty ? '' : ' • القادم: ' + next), maxLines: 3, overflow: TextOverflow.ellipsis),
+                trailing: const Icon(Icons.play_circle_outline),
+                onTap: () { Navigator.pop(ctx); play(g.channel); },
+              ));
+            },
+          )),
+        ]),
+      )),
+    );
+  }
+
+  Future<void> _showMultiChannelEpg() async {
+    final base = activeSource != null
+        ? await AurenTvService.instance.loadSource(activeSource!, limit: lowData ? 80 : 150)
+        : await AurenTvService.instance.load(country: country, category: category);
+    final channels = base.where((c) => query.isEmpty || _normalizeSearch(c.name + ' ' + c.country + ' ' + c.language + ' ' + c.category).contains(query)).take(30).toList();
+    final guides = await AurenTvHomeService.instance.multiChannelGuide(channels, hours: 48, perChannel: 6, source: activeSource);
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context, isScrollControlled: true, showDragHandle: true,
+      builder: (ctx) => SafeArea(child: SizedBox(
+        height: MediaQuery.of(ctx).size.height * .86,
+        child: Column(children: [
+          const ListTile(title: Text('Multi-Channel EPG', style: TextStyle(fontWeight: FontWeight.w800)), subtitle: Text('الآن والقادم والبرامج التالية عبر عدة قنوات.')),
+          Expanded(child: guides.isEmpty ? const Center(child: Text('لا توجد بيانات EPG للقنوات الحالية.')) : ListView.separated(
+            padding: const EdgeInsets.all(12), itemCount: guides.length, separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              final g = guides[i];
+              return Card(child: ExpansionTile(
+                leading: g.channel.logo.isEmpty ? const CircleAvatar(child: Icon(Icons.tv)) : CircleAvatar(backgroundImage: NetworkImage(g.channel.logo)),
+                title: Text(g.channel.name),
+                subtitle: Text((g.nowNext?['current'] ?? '').isEmpty ? 'لا يوجد برنامج الآن' : 'الآن: ' + (g.nowNext?['current'] ?? '')),
+                children: [
+                  if (g.schedule.isEmpty) const ListTile(title: Text('لا توجد برامج إضافية في الدليل.'))
+                  else for (final item in g.schedule) ListTile(
+                    dense: true, leading: Icon(item['state'] == 'now' ? Icons.play_arrow : Icons.schedule),
+                    title: Text(item['title']?.toString() ?? ''),
+                    subtitle: Text(() {
+                      final s = DateTime.tryParse(item['startIso']?.toString() ?? '')?.toLocal();
+                      final e = DateTime.tryParse(item['stopIso']?.toString() ?? '')?.toLocal();
+                      if (s == null || e == null) return '';
+                      return TimeOfDay.fromDateTime(s).format(ctx) + ' — ' + TimeOfDay.fromDateTime(e).format(ctx);
+                    }()),
+                    onTap: () { Navigator.pop(ctx); play(g.channel); },
+                  ),
+                ],
+              ));
+            },
+          )),
+        ]),
+      )),
+    );
+  }
+
   Future<void> _showEpgCalendar() async {
     if (playing == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('شغّل قناة أولاً لعرض جدولها.'))); return; }
     final channel = playing!;
