@@ -10,6 +10,7 @@ class AurenTvScreen extends StatefulWidget {
 class _AurenTvScreenState extends State<AurenTvScreen> {
   final _search = TextEditingController();
   String country = '', category = '', query = '', continent = '';
+  String countryLabel = 'الدول';
   String quickRegion = '';
   bool lowData = false, onlyFavorites = false, loading = false;
   Set<String> favorites = {};
@@ -59,8 +60,54 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       }
     }
   }
+  Future<void> _pickCountry() async {
+    final countries = <String, String>{
+      'SD': 'السودان 🇸🇩', 'EG': 'مصر 🇪🇬', 'SA': 'السعودية 🇸🇦', 'AE': 'الإمارات 🇦🇪',
+      'QA': 'قطر 🇶🇦', 'KW': 'الكويت 🇰🇼', 'BH': 'البحرين 🇧🇭', 'OM': 'عُمان 🇴🇲',
+      'JO': 'الأردن 🇯🇴', 'IQ': 'العراق 🇮🇶', 'LB': 'لبنان 🇱🇧', 'MA': 'المغرب 🇲🇦',
+      'DZ': 'الجزائر 🇩🇿', 'TN': 'تونس 🇹🇳', 'TR': 'تركيا 🇹🇷', 'ZA': 'جنوب أفريقيا 🇿🇦',
+      'NG': 'نيجيريا 🇳🇬', 'KE': 'كينيا 🇰🇪', 'IN': 'الهند 🇮🇳', 'CN': 'الصين 🇨🇳',
+      'JP': 'اليابان 🇯🇵', 'KR': 'كوريا الجنوبية 🇰🇷', 'GB': 'بريطانيا 🇬🇧', 'FR': 'فرنسا 🇫🇷',
+      'DE': 'ألمانيا 🇩🇪', 'IT': 'إيطاليا 🇮🇹', 'ES': 'إسبانيا 🇪🇸', 'US': 'الولايات المتحدة 🇺🇸',
+      'CA': 'كندا 🇨🇦', 'BR': 'البرازيل 🇧🇷', 'AU': 'أستراليا 🇦🇺',
+    };
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          children: [
+            const ListTile(
+              title: Text('اختر دولة', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('يمكنك أيضاً استخدام البحث لاسم قناة أو لغة أو فئة.'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.public),
+              title: const Text('كل الدول'),
+              selected: country.isEmpty && continent.isEmpty && quickRegion.isEmpty,
+              onTap: () => Navigator.pop(ctx, ''),
+            ),
+            ...countries.entries.map((entry) => ListTile(
+              leading: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(entry.value),
+              selected: country == entry.key,
+              onTap: () => Navigator.pop(ctx, entry.key),
+            )),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || picked == null) return;
+    setState(() {
+      country = picked;
+      countryLabel = picked.isEmpty ? 'الدول' : (countries[picked] ?? picked);
+      continent = '';
+      quickRegion = '';
+    });
+  }
+
   Future<void> _showSchedule(AurenTvChannel channel) async {
-    final items = await AurenTvService.instance.schedule(channel.tvgId, hours: 8);
+    final items = await AurenTvService.instance.schedule(channel.tvgId, hours: 24);
     if (!mounted) return;
     showModalBottomSheet<void>(
       context: context,
@@ -118,7 +165,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Row(children: [
-          Expanded(child: TextField(decoration: const InputDecoration(labelText: 'الدولة أو الرمز'), onChanged: (v) => setState(() { country = v; continent = ''; }))),
+          Expanded(child: OutlinedButton.icon(onPressed: _pickCountry, icon: const Icon(Icons.public), label: Text(countryLabel), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)))),
           const SizedBox(width: 8),
           Expanded(child: TextField(decoration: const InputDecoration(labelText: 'الفئة'), onChanged: (v) => setState(() => category = v))),
         ]),
@@ -139,6 +186,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           )),
         ],
       )),
+      if (playing != null && !lowData) const SizedBox.shrink(),
       if (lowData) const Padding(
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Text('وضع توفير البيانات: لا يبدأ التشغيل تلقائياً. جودة البث تعتمد على رابط القناة.', style: TextStyle(fontSize: 12)),
