@@ -154,7 +154,13 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV')),
     body: Column(children: [
-      Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 2), child: SegmentedButton<String>(segments: const [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
+        child: SizedBox(
+          height: 50,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<String>(segments: const [
         ButtonSegment(value: 'world', label: Text('العالم'), icon: Icon(Icons.public)),
         ButtonSegment(value: 'entertainment', label: Text('ترفيه'), icon: Icon(Icons.movie_outlined)),
         ButtonSegment(value: 'sports', label: Text('رياضة'), icon: Icon(Icons.sports_soccer)),
@@ -165,7 +171,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         ButtonSegment(value: 'animation', label: Text('أنمي/كرتون'), icon: Icon(Icons.animation)),
         ButtonSegment(value: 'documentary', label: Text('وثائقي'), icon: Icon(Icons.menu_book_outlined)),
         ButtonSegment(value: 'series', label: Text('مسلسلات'), icon: Icon(Icons.tv_outlined)),
-      ], selected: {tvMode}, onSelectionChanged: (v) => setState(() { tvMode = v.first; country = ''; continent = ''; quickRegion = ''; category = ''; newsRegion = 'all'; sportCategory = 'all'; entertainmentCategory = 'all'; }))),
+      ], selected: {tvMode}, onSelectionChanged: (v) => setState(() { tvMode = v.first; country = ''; continent = ''; quickRegion = ''; category = ''; newsRegion = 'all'; sportCategory = 'all'; entertainmentCategory = 'all'; })),
+          ),
+        ),
+      ),
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
         child: TextField(
