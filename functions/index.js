@@ -2262,6 +2262,46 @@ exports.initializeAurenFlagshipMatch = require('firebase-functions/v2/https').on
   }
 );
 
+async function autoCompleteTournamentMatch(tx, tournamentIdValue, gameIndex, matchId, winnerId) {
+  if (!tournamentIdValue || !matchId || !winnerId) return null;
+  const ref = db.collection('auren_game_tournaments').doc(String(tournamentIdValue));
+  const snap = await tx.get(ref);
+  if (!snap.exists) return null;
+  const d = snap.data() || {};
+  if (Number(d.gameIndex || gameIndex) !== gameIndex || d.status !== 'active') return null;
+  const matches = Array.isArray(d.matches) ? d.matches.map((m) => ({...m})) : [];
+  const idx = matches.findIndex((m) => String(m.id) === String(matchId));
+  if (idx < 0) return null;
+  const m = matches[idx];
+  if (m.status === 'finished') return {status:d.status, duplicate:true};
+  if (winnerId !== m.p1 && winnerId !== m.p2) return null;
+  m.winnerId = winnerId;
+  m.loserId = winnerId === m.p1 ? m.p2 : m.p1;
+  m.status = 'finished';
+  let round = d.round || 'quarterfinals';
+  let nextMatches = matches;
+  const activeRound = matches.filter((x) => x.round === round);
+  if (activeRound.length && activeRound.every((x) => x.status === 'finished')) {
+    const winners = activeRound.map((x) => x.winnerId).filter(Boolean);
+    if (round === 'final') {
+      const champion = winners[0] || null;
+      const runnerUp = activeRound[0]?.loserId || null;
+      tx.update(ref,{status:'completed',round:'champion',championId:champion,matches,updatedAt:FieldValue.serverTimestamp()});
+      if (champion) await recordTournamentReward(tx,ref.id,champion,gameIndex,1);
+      if (runnerUp) await recordTournamentReward(tx,ref.id,runnerUp,gameIndex,2);
+      const semiLosers = matches.filter((x) => x.round === 'semifinals' && x.loserId && x.loserId !== runnerUp);
+      for (const x of semiLosers) await recordTournamentReward(tx,ref.id,x.loserId,gameIndex,3);
+      return {status:'completed',round:'champion',championId:champion};
+    }
+    const nextRound = round === 'quarterfinals' ? 'semifinals' : 'final';
+    const generated = createTournamentNextRound(round,winners);
+    nextMatches = matches.concat(generated);
+    round = nextRound;
+  }
+  tx.update(ref,{matches:nextMatches,round,status:'active',updatedAt:FieldValue.serverTimestamp()});
+  return {status:'active',round,matches:nextMatches};
+}
+
 exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
   async (request) => {
@@ -2315,6 +2355,9 @@ exports.submitAurenFlagshipAction = require('firebase-functions/v2/https').onCal
         next.loserId = result.winnerId ? players.find((id) => id !== result.winnerId) || null : null;
         next.matchResult = result;
         const nextTurn = next.matchFinished ? null : players.find((id) => id !== uid);
+        if (next.matchFinished && data.tournamentId && data.tournamentMatchId) {
+          await autoCompleteTournamentMatch(tx, data.tournamentId, gameIndex, data.tournamentMatchId, result.winnerId);
+        }
         if (next.matchFinished && !data.matchResult?.recorded) {
           await recordFlagshipRanking(tx, players, result, gameIndex, trustedCountries);
           result.recorded = true;
