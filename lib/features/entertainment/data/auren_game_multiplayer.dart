@@ -313,6 +313,23 @@ class AurenGameMultiplayer {
     } on FirebaseFunctionsException { return []; }
   }
 
+  Future<List<Map<String,dynamic>>> getSeasonRewards() async {
+    await _ensureSignedIn();
+    try {
+      final r=await _functions.httpsCallable('getAurenGamingSeasonRewards').call();
+      final data=Map<String,dynamic>.from(r.data as Map);
+      return List<Map<String,dynamic>>.from((data['rewards'] as List? ?? const []).map((e)=>Map<String,dynamic>.from(e)));
+    } on FirebaseFunctionsException { return const []; }
+  }
+
+  Future<bool> claimSeasonReward({required String rewardId}) async {
+    await _ensureSignedIn();
+    try {
+      await _functions.httpsCallable('claimAurenGamingSeasonReward').call({'rewardId':rewardId});
+      return true;
+    } on FirebaseFunctionsException { return false; }
+  }
+
   Future<Map<String,dynamic>?> getSeasonChampion({required int gameIndex}) async {
     await _ensureSignedIn();
     try { final r=await _functions.httpsCallable('getAurenSeasonChampion').call({'gameIndex':gameIndex}); if(r.data is Map)return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException {}
