@@ -20,6 +20,31 @@ class AurenEntertainmentLibraryScreen extends StatelessWidget {
       default: return Icons.auto_awesome_rounded;
     }
   }
+  String? _jobMediaUrl(Map<String,dynamic> job) {
+    dynamic value=job['musicArtifact'] ?? job['providerResult'];
+    if(value is Map) value=value['url'] ?? value['output'];
+    if(value is Map) value=value['url'];
+    if(value is String && value.startsWith(RegExp(r'https?://'))) return value;
+    final artifacts=job['movieArtifacts'];
+    if(artifacts is List) {
+      for(final item in artifacts) {
+        dynamic v=item;
+        if(v is Map) v=v['url'] ?? v['output'];
+        if(v is Map) v=v['url'];
+        if(v is String && v.startsWith(RegExp(r'https?://'))) return v;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _downloadJob(BuildContext context, Map<String,dynamic> job) async {
+    final url=_jobMediaUrl(job);
+    if(url==null)return;
+    final mode=job['mode']?.toString()??'media';
+    final title=job['title']?.toString().trim().isNotEmpty==true?job['title'].toString():job['idea']?.toString()??'AUREN Media';
+    await _download(context,url,title,mode=='أغنية'?'audio':'video',job['id']?.toString()??'');
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -65,7 +90,16 @@ class AurenEntertainmentLibraryScreen extends StatelessWidget {
                     leading: CircleAvatar(child:Icon(_icon(mode))),
                     title: Text(title,maxLines:1,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),
                     subtitle: Text(mode+' • '+_status(status)+' • '+progress.toString()+'%'),
-                    trailing: status=='ready' ? const Icon(Icons.play_circle_fill_rounded) : SizedBox(width:38,height:38,child:CircularProgressIndicator(value:progress/100)),
+                    trailing: status=='ready'
+                      ? Row(mainAxisSize:MainAxisSize.min,children:[
+                          if(_jobMediaUrl(job)!=null) IconButton(
+                            tooltip:'تنزيل Offline',
+                            icon:const Icon(Icons.download_for_offline_rounded),
+                            onPressed:()=>_downloadJob(context,job),
+                          ),
+                          const Icon(Icons.play_circle_fill_rounded),
+                        ])
+                      : SizedBox(width:38,height:38,child:CircularProgressIndicator(value:progress/100)),
                     onTap: id.isEmpty ? null : () => Navigator.of(context).push(MaterialPageRoute(builder:(_)=>AurenEntertainmentJobDetailScreen(jobId:id))),
                   ),
                 );
