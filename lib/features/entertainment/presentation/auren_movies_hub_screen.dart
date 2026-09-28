@@ -15,6 +15,7 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
   String _country = 'الكل';
   String _language = 'الكل';
   String _search = '';
+  bool _lowData = false;
   static const _genres = ['الكل','Action','Comedy','Drama','Romance','Thriller','Documentary','Animation'];
   String _norm(String v) => v.trim().toLowerCase();
 
@@ -50,10 +51,12 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           SizedBox(height: 42, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: languages.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(languages[i]), selected: _language == languages[i], onSelected: (_) => setState(() => _language = languages[i])))),
           const SizedBox(height: 12),
           SizedBox(height: 42, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: _genres.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(_genres[i]), selected: _genre == _genres[i], onSelected: (_) => setState(() => _genre = _genres[i])))),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Low Data'), subtitle: const Text('عرض الصور بشكل أخف عند ضعف الإنترنت'), value: _lowData, onChanged: (v) => setState(() => _lowData = v)),
+          const SizedBox(height: 8),
           if (snapshot.hasError) Text('تعذر تحميل الأفلام: ${snapshot.error}'),
           if (filtered.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(24), child: Center(child: Text('لا توجد أفلام مضافة بعد. يمكن لـ AUREN استقبال المحتوى المرخص أو الذي يملكه المنشئ.')))),
-          for (final item in filtered) Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(leading: item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie)) : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)), title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis), trailing: const Icon(Icons.play_arrow), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EntertainmentDetailScreen(itemId: item.id))))),
+          for (final item in filtered) Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(leading: _lowData || item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie)) : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)), title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis), trailing: const Icon(Icons.play_arrow), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EntertainmentDetailScreen(itemId: item.id))))),
         ]);
       },
     ),
