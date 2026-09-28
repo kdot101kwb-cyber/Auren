@@ -199,6 +199,28 @@ class AurenGameMultiplayer {
     } on FirebaseFunctionsException { return false; }
   }
 
+
+  Future<bool> submitFlagshipAction({
+    required Map<String, dynamic> action,
+    required int expectedVersion,
+    required String moveId,
+  }) async {
+    final id = _lobbyId;
+    if (id == null) return false;
+    await _ensureSignedIn();
+    try {
+      final result = await _functions.httpsCallable('submitAurenFlagshipAction').call({
+        'lobbyId': id,
+        'action': action,
+        'expectedVersion': expectedVersion,
+        'moveId': moveId,
+      });
+      return result.data is Map && result.data['accepted'] == true;
+    } on FirebaseFunctionsException {
+      return false;
+    }
+  }
+
   Future<bool> submitState({
     required Map<String, dynamic> state,
     required int expectedVersion,
