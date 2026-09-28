@@ -8,6 +8,21 @@ import 'entertainment_detail_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
 
+int aurenFindNextPlayableEpisodeIndex(List<dynamic> episodes, int start, {int maxEpisodes = 20}) {
+  for (var i = start; i < episodes.length && i < maxEpisodes; i++) {
+    final item = episodes[i] is Map
+        ? Map<String, dynamic>.from(episodes[i] as Map)
+        : <String, dynamic>{};
+    final media = item['media'] is Map
+        ? Map<String, dynamic>.from(item['media'] as Map)
+        : <String, dynamic>{};
+    final video = media['video'];
+    if (video is Map && video['url']?.toString().isNotEmpty == true) return i;
+    if (video is String && video.isNotEmpty) return i;
+  }
+  return -1;
+}
+
 class AurenEntertainmentJobDetailScreen extends StatelessWidget {
   final String jobId;
   const AurenEntertainmentJobDetailScreen({super.key, required this.jobId});
@@ -394,18 +409,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     if (video == null) return;
     final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
 
-    int findNextPlayableIndex(int start) {
-      for (var i = start; i < episodes.length && i < 20; i++) {
-        final item = episodes[i] is Map ? Map<String, dynamic>.from(episodes[i] as Map) : <String, dynamic>{};
-        final m = item['media'] is Map ? Map<String, dynamic>.from(item['media'] as Map) : <String, dynamic>{};
-        final v = m['video'];
-        if (v is Map && v['url']?.toString().isNotEmpty == true) return i;
-        if (v is String && v.isNotEmpty) return i;
-      }
-      return -1;
-    }
-
-    final nextIndex = findNextPlayableIndex(episodeIndex + 1);
+    final nextIndex = aurenFindNextPlayableEpisodeIndex(episodes, episodeIndex + 1);
     final nextEpisode = nextIndex >= 0
         ? (episodes[nextIndex] is Map ? Map<String, dynamic>.from(episodes[nextIndex] as Map) : <String, dynamic>{})
         : <String, dynamic>{};
