@@ -72,6 +72,8 @@ class AurenAgricultureRepository {
     String location = '',
     String crop = '',
     String animal = '',
+    String material = '',
+    String invention = '',
   }) async {
     final result = await FirebaseFunctions.instance
         .httpsCallable('aurenAgricultureAdvisor')
@@ -80,6 +82,8 @@ class AurenAgricultureRepository {
       'location': location.trim(),
       'crop': crop.trim(),
       'animal': animal.trim(),
+      'material': material.trim(),
+      'invention': invention.trim(),
       'observations': observations.trim(),
     });
     return (result.data is Map ? (result.data['advice'] ?? '') : '').toString();
