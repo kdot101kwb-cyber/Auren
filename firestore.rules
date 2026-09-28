@@ -209,6 +209,14 @@ service cloud.firestore {
     }
   }
 
+  match /users/{userId}/entertainmentAnalytics/{itemId} {
+    allow read: if isOwner(userId);
+    allow create, update: if isOwner(userId)
+      && request.resource.data.itemId == itemId
+      && request.resource.data.contentType is string
+      && request.resource.data.contentType.size() <= 40;
+    allow delete: if false;
+  }
   match /users/{userId} {
     match /future_simulator/{scenarioId} { allow read: if isOwner(userId); allow create, update: if isOwner(userId) && scenarioId == 'current' && request.resource.data.keys().hasOnly(['scenarios','updatedAt']) && request.resource.data.scenarios is list && request.resource.data.scenarios.size() <= 10; allow delete: if isOwner(userId); }
 
