@@ -1227,7 +1227,7 @@ async function aurenProductionV2Run(ref) {
       batch.set(tasksRef.doc(task.id), {
         jobId: ref.id, idempotencyKey: ref.id + ':' + task.id,
         episodeNumber: task.episodeNumber, sceneNumber: task.sceneNumber,
-        type: 'video_clip', prompt: task.prompt, status: 'queued',
+        type: 'video_clip', prompt: task.prompt, providerCandidates: ['replicate'], status: 'queued',
         generationAttempts: 0, output: null, qc: null,
         createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
       }, {merge:true});
