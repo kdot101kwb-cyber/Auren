@@ -64,6 +64,43 @@ async function exhaustGenerationAttempts() {
   }
 }
 
+async function recoverStaleLocks() {
+  const now = Date.now();
+  const snap = await db.collectionGroup('productionTasks')
+    .where('status','in',['provider_pending','processing'])
+    .orderBy('updatedAt','asc')
+    .limit(20).get();
+
+  for (const item of snap.docs) {
+    let recovered = false;
+    await db.runTransaction(async tx => {
+      const fresh = await tx.get(item.ref);
+      if (!fresh.exists) return;
+      const data = fresh.data() || {};
+      const status = String(data.status || '');
+      const lockUntil = Number(data.providerLockUntilMs || 0);
+      if (!['provider_pending','processing'].includes(status)) return;
+      if (lockUntil <= 0 || lockUntil > now) return;
+      tx.update(item.ref, {
+        providerLockUntilMs: 0,
+        providerState: 'stale_lock_recovered',
+        lastError: 'Worker lock expired; task released for safe recovery.',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      recovered = true;
+    });
+    if (recovered) {
+      try {
+        await syncProductionLifecycle(item.ref, null, 'stale_lock_recovered',
+          'Worker lock expired; task released for safe recovery.');
+      } catch (_) {
+        // Lifecycle telemetry must never prevent other tasks from running.
+      }
+    }
+  }
+}
+
+
 async function claimTask() {
   const snap = await db.collectionGroup('productionTasks')
     .where('status','in',['generation','provider_pending','processing'])
@@ -307,6 +344,7 @@ exports.runAurenLiveProductionProvider = onSchedule(
   },
   async () => {
     await exhaustGenerationAttempts();
+    await recoverStaleLocks();
     const ref=await claimTask();
     if (!ref) return;
     try {
