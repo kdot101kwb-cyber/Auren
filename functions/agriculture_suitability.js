@@ -50,7 +50,9 @@ async function getGaezYieldEvidence({crop, waterSupply, inputLevel, latitude, lo
     });
     try {
       const payload = await getJson(GAEZ_RES05 + '/identify?' + params.toString());
-      samples.push({resource:item, identify:payload});
+      const value = payload?.value ?? payload?.pixel?.value ?? payload?.catalogItems?.[0]?.value ?? null;
+      const numericValue = Number(value);
+      samples.push({resource:item, identify:payload, value:Number.isFinite(numericValue) ? numericValue : null, units:item.units || null});
     } catch (e) {
       samples.push({resource:item, error:String(e.message || e)});
     }
