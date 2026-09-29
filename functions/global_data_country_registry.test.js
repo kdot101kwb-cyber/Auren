@@ -1,0 +1,48 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+
+const source = fs.readFileSync(require.resolve('./global_data_country_registry.js'), 'utf8');
+const index = fs.readFileSync(require.resolve('./index.js'), 'utf8');
+
+test('global country registry requires auth and excludes aggregate regions', () => {
+  assert.match(source, /request\.auth\?\.uid/);
+  assert.match(source, /c\.region\?\.value === 'Aggregates'/);
+  assert.match(source, /auren_global_countries/);
+  assert.match(source, /source: 'world_bank_wdi'/);
+});
+
+test('global country registry preserves ISO identity and geographic metadata', () => {
+  assert.match(source, /iso2: c\.iso2Code/);
+  assert.match(source, /iso3: c\.iso3Code/);
+  assert.match(source, /capitalCity: c\.capitalCity/);
+  assert.match(source, /longitude: c\.longitude/);
+  assert.match(source, /latitude: c\.latitude/);
+});
+
+test('global indicator ingestion uses the canonical core feasibility indicators', () => {
+  for (const indicator of [
+    'SP.POP.TOTL',
+    'NY.GDP.MKTP.CD',
+    'NY.GDP.PCAP.CD',
+    'SP.URB.TOTL.IN.ZS',
+    'SL.UEM.TOTL.ZS',
+    'AG.LND.AGRI.ZS',
+    'AG.LND.ARBL.ZS',
+  ]) assert.match(source, new RegExp(indicator.replaceAll('.', '\\.'), 'g'));
+  assert.match(source, /auren_global_data/);
+  assert.match(source, /indicatorName/);
+  assert.match(source, /year: latest\.date/);
+});
+
+test('global data ingestion is bounded and stores provenance', () => {
+  assert.match(source, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 25, 1\), 250\)/);
+  assert.match(source, /source:'world_bank_wdi'/);
+  assert.match(source, /updatedAt: admin\.firestore\.FieldValue\.serverTimestamp\(\)/);
+});
+
+test('global data callable endpoints are exported through the function index', () => {
+  assert.match(index, /global_data_country_registry/);
+  assert.match(index, /aurenGlobalCountryRegistry/);
+  assert.match(index, /aurenGlobalDataIngest/);
+});
