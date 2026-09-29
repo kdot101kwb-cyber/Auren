@@ -19,6 +19,7 @@ import '../../travel/presentation/travel_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
+import '../../entertainment/presentation/auren_production_studio_screen.dart';
 import '../../profile/presentation/adaptive_profile_surface.dart';
 import '../../../services/social/adaptive_profile_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -49,6 +50,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Wallet', 'محفظة ورصيد وحدود إنفاق', Icons.account_balance_wallet_outlined),
     _DiscoverItem('Business Growth', 'نمو، عملاء، حملات وشراكات', Icons.trending_up),
     _DiscoverItem('Entertainment', 'Series • Music • Gaming • Live', Icons.play_circle_outline),
+    _DiscoverItem('AI Production Studio', 'صناعة Shorts والأفلام والحلقات الطويلة', Icons.movie_creation_outlined),
     _DiscoverItem('Opportunities', 'عمل • مواهب • مشاريع • تعلم', Icons.work_outline),
     _DiscoverItem('Education', 'تعلّم المهارات واربطها بالفرص', Icons.school_outlined),
     _DiscoverItem('Talent', 'مواهب ووكلاء AI للمسار المهني', Icons.psychology_outlined),
@@ -129,6 +131,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTalentScreen()));
       return;
     }
+    if (item.title == 'AI Production Studio') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenProductionStudioScreen())); return; }
     if (item.title == 'Entertainment') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen()));
       return;
