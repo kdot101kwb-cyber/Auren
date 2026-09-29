@@ -177,12 +177,17 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
 
   const capex = finite(p.capex);
   const annualOpex = finite(p.annualOpex);
+  const sourcedCosts = costEvidence.available ? costEvidence.items : [];
+  const sourcedCapex = sourcedCosts.find(x => String(x.category || '').toLowerCase() === 'capex');
+  const sourcedOpex = sourcedCosts.find(x => String(x.category || '').toLowerCase() === 'opex');
+  const effectiveCapex = capex != null ? capex : finite(sourcedCapex?.value);
+  const effectiveAnnualOpex = annualOpex != null ? annualOpex : finite(sourcedOpex?.value);
   const otherAnnualRevenue = finite(p.otherAnnualRevenue) || 0;
   const [costEvidence, logisticsEvidence] = await Promise.all([getCostEvidence(iso3, crop), getLogisticsEvidence(iso3)]);
 
   const missing = [];
   for (const [name, value] of Object.entries({
-    areaHa, yieldTonsHa, pricePerTon, capex, annualOpex
+    areaHa, yieldTonsHa, pricePerTon, capex:effectiveCapex, annualOpex:effectiveAnnualOpex
   })) {
     if (value == null || value < 0) missing.push(name);
   }
@@ -196,13 +201,13 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
     cropRevenue != null ? cropRevenue + otherAnnualRevenue : null;
   const annualOperatingProfit =
     annualRevenue != null && annualOpex != null
-      ? annualRevenue - annualOpex : null;
+      ? annualRevenue - effectiveAnnualOpex : null;
   const simplePaybackYears =
     annualOperatingProfit != null && annualOperatingProfit > 0 && capex != null
-      ? capex / annualOperatingProfit : null;
+      ? effectiveCapex / annualOperatingProfit : null;
   const breakEvenPrice =
     annualProductionTons != null && annualProductionTons > 0 && annualOpex != null
-      ? annualOpex / annualProductionTons : null;
+      ? effectiveAnnualOpex / annualProductionTons : null;
 
   const evidenceSnap = await db.collection('auren_feasibility_evidence')
     .where('iso3','==',iso3)
@@ -214,8 +219,8 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
   const scenarios = [0.8, 1.0, 1.2].map(multiplier => {
     const revenue = cropRevenue == null
       ? null : cropRevenue * multiplier + otherAnnualRevenue;
-    const profit = revenue == null || annualOpex == null
-      ? null : revenue - annualOpex;
+    const profit = revenue == null || effectiveAnnualOpex == null
+      ? null : revenue - effectiveAnnualOpex;
     return {
       priceScenario: multiplier === 1 ? 'base' : multiplier < 1 ? 'downside' : 'upside',
       priceMultiplier: multiplier,
@@ -228,7 +233,7 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
     status: missing.length ? 'needs_inputs' : 'calculated',
     iso3,
     crop,
-    inputs:{areaHa,yieldTonsHa,pricePerTon,capex,annualOpex,otherAnnualRevenue},
+    inputs:{areaHa,yieldTonsHa,pricePerTon,capex:effectiveCapex,annualOpex:effectiveAnnualOpex,otherAnnualRevenue},
     yieldSource: manualYieldTonsHa != null
       ? 'manual'
       : (gaezYield.available ? gaezYield.source : null),
@@ -250,21 +255,21 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
     logisticsEvidence,
     costEvidenceLedger: {
       capex: {
-        evidenceType: 'manual',
-        value: capex,
-        currency: p.capexCurrency || null,
-        unit: p.capexUnit || null,
-        source: p.capexSource || null,
-        year: finite(p.capexYear),
+        evidenceType: sourcedCapex && capex == null ? 'sourced' : 'manual',
+        value: effectiveCapex,
+        currency: p.capexCurrency || sourcedCapex?.currency || null,
+        unit: p.capexUnit || sourcedCapex?.unit || null,
+        source: p.capexSource || sourcedCapex?.source || null,
+        year: finite(p.capexYear ?? sourcedCapex?.year),
         note: 'Manual project input unless replaced by explicit sourced cost evidence.'
       },
       opex: {
-        evidenceType: 'manual',
-        value: annualOpex,
-        currency: p.opexCurrency || null,
-        unit: p.opexUnit || null,
-        source: p.opexSource || null,
-        year: finite(p.opexYear),
+        evidenceType: sourcedOpex && annualOpex == null ? 'sourced' : 'manual',
+        value: effectiveAnnualOpex,
+        currency: p.opexCurrency || sourcedOpex?.currency || null,
+        unit: p.opexUnit || sourcedOpex?.unit || null,
+        source: p.opexSource || sourcedOpex?.source || null,
+        year: finite(p.opexYear ?? sourcedOpex?.year),
         note: 'Manual project input unless replaced by explicit sourced cost evidence.'
       },
       logistics: {
