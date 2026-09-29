@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/livestock_management_service.dart';
+import 'livestock_dashboard_screen.dart';
 
 class LivestockManagementScreen extends StatefulWidget {
   const LivestockManagementScreen({super.key});
@@ -31,6 +32,14 @@ class _LivestockManagementScreenState extends State<LivestockManagementScreen> {
                 ChoiceChip(label:Text(e.value),selected:_species==e.key,onSelected:(_)=>setState(()=>_species=e.key)),
             ]),
           ])),
+          const SizedBox(height:12),
+          Card(child: ListTile(
+            leading: const Icon(Icons.dashboard),
+            title: const Text('لوحة القطيع والتخطيط'),
+            subtitle: const Text('الإحصاءات، العلف والماء والمواعيد'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LivestockDashboardScreen())),
+          )),
           const SizedBox(height:12),
           StreamBuilder<List<LivestockAnimal>>(
             stream:_service.watchAnimals(uid,species:_species),
