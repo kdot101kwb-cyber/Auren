@@ -53,6 +53,46 @@ function taskInput(data) {
   };
 }
 
+async function syncProductionLifecycle(ref, output, event='output', error='') {
+  const pathParts=ref.path.split('/');
+  const uid=pathParts[1];
+  if (!uid) return;
+  const taskSnap=await ref.get();
+  const task=taskSnap.exists ? (taskSnap.data() || {}) : {};
+  const historyRef=db.collection('users').doc(uid).collection('productionHistory').doc();
+  const outputRef=db.collection('users').doc(uid).collection('outputLibrary').doc();
+  const safeOutput = output && typeof output === 'object' ? {
+    url: output.url ? String(output.url) : null,
+    storagePath: output.storagePath ? String(output.storagePath) : null,
+    externalId: output.externalId ? String(output.externalId) : null,
+  } : null;
+  const batch=db.batch();
+  batch.set(historyRef,{
+    taskId:ref.id,
+    taskPath:ref.path,
+    event,
+    status:String(task.status || (event === 'output' ? 'output' : 'failed')),
+    type:String(task.type || task.kind || task.mediaType || 'production'),
+    title:String(task.title || task.name || 'Untitled production').slice(0,200),
+    attempt:Number(task.generationAttempts || 0),
+    retryCount:Number(task.retryCount || 0),
+    error:String(error || task.lastError || '').slice(0,700),
+    createdAt:admin.firestore.FieldValue.serverTimestamp(),
+    ...(safeOutput ? {output:safeOutput} : {}),
+  });
+  if (safeOutput && (safeOutput.url || safeOutput.storagePath || safeOutput.externalId)) {
+    batch.set(outputRef,{
+      taskId:ref.id,
+      taskPath:ref.path,
+      type:String(task.type || task.kind || task.mediaType || 'production'),
+      title:String(task.title || task.name || 'Untitled production').slice(0,200),
+      output:safeOutput,
+      createdAt:admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+  await batch.commit();
+}
+
 async function processTask(ref) {
   const snap=await ref.get();
   if (!snap.exists) return;
@@ -76,17 +116,20 @@ async function processTask(ref) {
         providerLockUntilMs:0,
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      await syncProductionLifecycle(ref, polled.output, 'output');
       return;
     }
     if (state === 'failed' || state === 'canceled') {
+      const errorMessage=String(polled.error || 'Provider job failed.').slice(0,700);
       await ref.set({
         status:'generation',
         providerState:state,
         externalJobId:'',
         providerLockUntilMs:0,
-        lastError:String(polled.error || 'Provider job failed.').slice(0,700),
+        lastError:errorMessage,
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      await syncProductionLifecycle(ref, null, 'failed', errorMessage);
       return;
     }
     await ref.set({
@@ -157,6 +200,7 @@ async function processTask(ref) {
     providerLockUntilMs:0,
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
   },{merge:true});
+  if (realOutput) await syncProductionLifecycle(ref, realOutput, 'output');
 }
 
 exports.runAurenLiveProductionProvider = onSchedule(
@@ -175,12 +219,14 @@ exports.runAurenLiveProductionProvider = onSchedule(
     try {
       await processTask(ref);
     } catch (error) {
+      const errorMessage=String(error?.message || error).slice(0,700);
       await ref.set({
         status:'generation',
         providerLockUntilMs:0,
-        lastError:String(error?.message || error).slice(0,700),
+        lastError:errorMessage,
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      await syncProductionLifecycle(ref, null, 'failed', errorMessage);
     }
   }
 );
