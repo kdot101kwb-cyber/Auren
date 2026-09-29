@@ -36,6 +36,13 @@ class AurenTvWatchTogetherService {
     await _localNotifications.show(roomId.hashCode & 0x7fffffff, 'رسالة من $sender', body, details, payload: roomId);
   }
 
+  Future<void> notifyRoomActivity({required String roomId, required String title, required String body, required String eventId}) async {
+    await initializeNotifications();
+    const details = NotificationDetails(android: AndroidNotificationDetails('auren_watch_together_activity', 'Watch Together Activity', channelDescription: 'تنبيهات نشاط غرف المشاهدة', importance: Importance.defaultImportance, priority: Priority.defaultPriority));
+    final id = eventId.hashCode & 0x7fffffff;
+    await _localNotifications.show(id, title, body, details, payload: roomId);
+  }
+
   CollectionReference<Map<String,dynamic>> get _rooms=>_db.collection('watch_together_rooms');
   String _code(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';var n=DateTime.now().microsecondsSinceEpoch;var o='';for(var i=0;i<6;i++){o+=chars[n%chars.length];n=n~/chars.length;}return o;}
   Future<AurenTvWatchTogetherRoom?> create({required String title,required String channelId,required String channelName}) async {
