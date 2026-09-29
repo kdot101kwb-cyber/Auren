@@ -3562,6 +3562,8 @@ async function sendWatchTogetherPush({roomId, actorUid, type, title, body, event
       type,
       roomId,
       eventId: String(eventId || ''),
+      title: String(title || 'Watch Together').slice(0, 120),
+      body: String(body || '').slice(0, 500),
       ...Object.fromEntries(Object.entries(extra).map(([key, value]) => [key, String(value ?? '')])),
     },
     android: {
