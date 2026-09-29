@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/education/education_repository.dart';
+import '../../../services/education/education_catalog.dart';
 import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
