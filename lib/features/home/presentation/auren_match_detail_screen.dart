@@ -146,6 +146,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
           supplierId: supplierId,
           operation: operation,
           intent: widget.intent,
+          matchFlowId: '${widget.item.kind.name}_${widget.item.id}'.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_'),
           initialPayload: initial,
         ),
       ),
