@@ -46,3 +46,22 @@ test('global data callable endpoints are exported through the function index', (
   assert.match(index, /aurenGlobalCountryRegistry/);
   assert.match(index, /aurenGlobalDataIngest/);
 });
+
+
+test('country intelligence endpoint supports bounded search and indicator hydration', () => {
+  const globalData = fs.readFileSync(require.resolve('./global_data.js'), 'utf8');
+  assert.match(globalData, /exports\.aurenCountryIntelligence/);
+  assert.match(globalData, /orderBy\('name'\)\.limit\(250\)/);
+  assert.match(globalData, /auren_global_data/);
+  assert.match(globalData, /indicatorSnapshot/);
+  assert.match(globalData, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 10, 1\), 25\)/);
+});
+
+test('opportunity country scan returns transparent data signals and deterministic ordering', () => {
+  const globalData = fs.readFileSync(require.resolve('./global_data.js'), 'utf8');
+  assert.match(globalData, /exports\.aurenOpportunityCountryScan/);
+  assert.match(globalData, /dataCompleteness/);
+  assert.match(globalData, /gdpPerCapita/);
+  assert.match(globalData, /agriculturalLand/);
+  assert.match(globalData, /rankingBasis: 'data_completeness_then_name'/);
+});
