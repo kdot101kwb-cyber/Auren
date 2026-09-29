@@ -120,6 +120,22 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     });
   }
 
+  Future<void> _handleWatchTogetherReconnect() async {
+    final roomId = _watchTogetherRoom;
+    if (!_watchTogether || roomId == null || !_watchTogetherWasOffline) return;
+    _watchTogetherWasOffline = false;
+    try {
+      final service = AurenTvWatchTogetherService.instance;
+      await service.heartbeat(roomId, online: true);
+      await service.notifyActivity(roomId, type: 'reconnected');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عاد اتصال Watch Together')));
+      }
+    } catch (_) {
+      _watchTogetherWasOffline = true;
+    }
+  }
+
   Future<void> _searchEpg() async {
     final q = _search.text.trim();
     if (q.length < 2) return;
@@ -269,6 +285,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       }
       await _watchTogetherSubscription?.cancel();
       final roomId = room.id;
+      await service.initializePushNotifications();
       setState(() { _watchTogether = true; _watchTogetherRoom = roomId; });
       if (action == 'join') await _applyWatchTogetherRoomState(room);
       _watchTogetherSyncTimer?.cancel();
