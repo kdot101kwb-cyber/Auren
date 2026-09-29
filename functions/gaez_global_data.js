@@ -137,7 +137,7 @@ function parseCsv(text) {
 }
 
 function normalizeGaezRows(rows) {
-  return rows.slice(0,5000).map(row => {
+  return rows.map(row => {
     const out={};
     for (const [key,value] of Object.entries(row)) {
       const clean=String(value ?? '').trim();
