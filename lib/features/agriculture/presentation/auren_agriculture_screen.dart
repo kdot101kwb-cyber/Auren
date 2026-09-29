@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
+import 'irrigation_intelligence_screen.dart';
 
 class AurenAgricultureScreen extends StatefulWidget {
   const AurenAgricultureScreen({super.key});
@@ -69,6 +70,14 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               ]),
             ),
           ),
+          if (_type == 'crop' || _type == 'farm') ...[
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IrrigationIntelligenceScreen())),
+              icon: const Icon(Icons.water_drop_outlined),
+              label: const Text('إدارة المياه والري الذكي'),
+            ),
+          ],
           FilledButton.icon(
             onPressed: () => _askAi(context),
             icon: const Icon(Icons.auto_awesome_rounded),
