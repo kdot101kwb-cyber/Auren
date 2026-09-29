@@ -1044,6 +1044,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     _watchTogetherActivitySubscription?.cancel();
     _watchTogetherSyncTimer?.cancel();
     _watchTogetherPresenceTimer?.cancel();
+    unawaited(AurenTvWatchTogetherService.instance.disposePushNotifications());
     if (_watchTogetherRoom != null) unawaited(AurenTvWatchTogetherService.instance.heartbeat(_watchTogetherRoom!, online: false));
     _search.dispose();
     _recoveryTimer?.cancel();
