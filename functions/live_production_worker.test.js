@@ -87,3 +87,18 @@ test('generation attempts are terminally exhausted instead of silently stalling'
   assert.match(source,/Generation attempt limit/);
   assert.match(source,/await exhaustGenerationAttempts\(\)/);
 });
+
+test('transient provider polling failures use bounded backoff instead of terminal failure',()=>{
+  assert.match(source,/function isTransientProviderError/);
+  assert.match(source,/status === 408/);
+  assert.match(source,/status === 429/);
+  assert.match(source,/status >= 500/);
+  assert.match(source,/providerState:'poll_backoff'/);
+  assert.match(source,/providerPollFailures/);
+  assert.match(source,/nextPollAtMs/);
+  assert.match(source,/POLL_BACKOFF_MAX_MS/);
+});
+
+test('scheduled worker skips tasks during provider backoff',()=>{
+  assert.match(source,/if \(Number\(data\.nextPollAtMs \|\| 0\) > Date\.now\(\)\) return false/);
+});
