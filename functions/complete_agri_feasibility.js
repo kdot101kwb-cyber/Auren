@@ -90,7 +90,12 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
         otherAnnualRevenue:fi?.inputs?.otherAnnualRevenue ?? null
       },
       priceEvidence:fi?.priceEvidence || null,
-      missing:['local demand','competitor/supply conditions','monetary logistics cost','buyer/offtake terms','current local price validation']
+      missing:['local demand','competitor/supply conditions','monetary logistics cost','buyer/offtake terms','current local price validation'],
+      evidenceStatus:{
+        producerPrice:!!fi?.priceEvidence,
+        logisticsPerformance:!!(fi?.logisticsEvidence?.available || lg),
+        sourcedCosts:!!fi?.costEvidence?.available
+      }
     },
     risks:[
       'Climate and water variability',
