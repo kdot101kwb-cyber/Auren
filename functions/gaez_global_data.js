@@ -397,6 +397,45 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
   };
 });
 
+exports.aurenGaezV5GlobalIngestStatus = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+
+  const [countrySnap, rowSnap] = await Promise.all([
+    db.collection('auren_global_countries').select('iso3','name').get(),
+    db.collection('auren_gaez_v5_crop_summary_rows').select('countryKey').get()
+  ]);
+
+  const expected = new Map();
+  countrySnap.forEach(doc => {
+    const d = doc.data() || {};
+    const iso3 = String(d.iso3 || doc.id || '').trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(iso3)) expected.set(iso3, String(d.name || iso3));
+  });
+
+  const imported = new Set();
+  rowSnap.forEach(doc => {
+    const iso3 = String(doc.data()?.countryKey || '').trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(iso3)) imported.add(iso3);
+  });
+
+  const missing = Array.from(expected.entries())
+    .filter(([iso3]) => !imported.has(iso3))
+    .map(([iso3,name]) => ({iso3,name}))
+    .sort((a,b) => a.iso3.localeCompare(b.iso3));
+
+  return {
+    status:'ok',
+    source:'FAO GAEZ v5 Crop Summary Data',
+    scope:'global',
+    expectedCountryCount:expected.size,
+    importedCountryCount:imported.size,
+    importedRowCount:rowSnap.size,
+    coveragePercent:expected.size ? Number((imported.size / expected.size * 100).toFixed(2)) : 0,
+    missingCountryCount:missing.length,
+    missingCountries:missing
+  };
+});
+
 exports.aurenGaezV5GlobalCoverage = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
   const snap=await db.collection('auren_gaez_v5_crop_summary_rows').select('countryKey','cropKey').get();
