@@ -174,6 +174,70 @@ class AurenLocale {
     },
   };
 
+
+  /// Resolve AUREN's default language from a country code when a profile,
+  /// SIM/network hint, or onboarding selection provides one.
+  /// Device locale still wins when no country is supplied.
+  static Locale localeForCountry(String countryCode) {
+    switch (countryCode.toUpperCase()) {
+      case 'SD':
+      case 'EG':
+      case 'SA':
+      case 'AE':
+      case 'QA':
+      case 'KW':
+      case 'BH':
+      case 'OM':
+      case 'JO':
+      case 'IQ':
+      case 'YE':
+      case 'SO':
+      case 'DJ':
+        return const Locale('ar');
+      case 'FR':
+      case 'SN':
+      case 'CI':
+      case 'ML':
+      case 'BF':
+      case 'NE':
+      case 'TG':
+      case 'BJ':
+      case 'GN':
+      case 'CM':
+      case 'CD':
+        return const Locale('fr');
+      case 'GB':
+      case 'US':
+      case 'CA':
+      case 'AU':
+      case 'GH':
+      case 'NG':
+      case 'ZM':
+      case 'ZW':
+      case 'UG':
+        return const Locale('en');
+      case 'KE':
+      case 'TZ':
+        return const Locale('sw');
+      case 'TR':
+        return const Locale('tr');
+      case 'ES':
+      case 'MX':
+      case 'CO':
+      case 'AR':
+      case 'PE':
+      case 'CL':
+        return const Locale('es');
+      case 'BR':
+      case 'PT':
+      case 'AO':
+      case 'MZ':
+        return const Locale('pt');
+      default:
+        return const Locale('en');
+    }
+  }
+
   static Locale localeFromPlatform(Locale platformLocale) {
     final supported = _supportedLanguages.contains(platformLocale.languageCode);
     return supported ? platformLocale : const Locale('en');
