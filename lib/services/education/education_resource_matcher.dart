@@ -67,7 +67,37 @@ class EducationResourceMatcher {
       if (score > 0 || (query.isEmpty && lang.isEmpty && type.isEmpty)) results.add(EducationResourceRecommendation(resource, score));
     }
     results.sort((a, b) => b.score.compareTo(a.score));
-    return results.take(limit).toList(growable: false);
+
+    // Prefer a useful mix of learning modes instead of returning several
+    // resources that serve the same role.
+    final selected = <EducationResourceRecommendation>[];
+    final usedRoles = <String>{};
+    String roleOf(String resourceType) {
+      final t = resourceType.toLowerCase();
+      if (t.contains('simulation')) return 'simulation';
+      if (t.contains('video')) return 'video';
+      if (t.contains('practice') || t.contains('lab')) return 'practice';
+      if (t.contains('book') || t.contains('textbook')) return 'book';
+      if (t.contains('course') || t.contains('lecture')) return 'course';
+      if (t.contains('research')) return 'research';
+      return 'other';
+    }
+
+    for (final item in results) {
+      final role = roleOf(item.resource['type'] ?? '');
+      if (usedRoles.add(role)) selected.add(item);
+      if (selected.length == limit) break;
+    }
+
+    // If the catalog cannot fill every learning mode, fill the remaining
+    // slots with the highest-scoring resources.
+    if (selected.length < limit) {
+      for (final item in results) {
+        if (!selected.contains(item)) selected.add(item);
+        if (selected.length == limit) break;
+      }
+    }
+    return selected.toList(growable: false);
   }
 
   static String buildTutorPrompt({required String subject, String language = '', String level = ''}) {
