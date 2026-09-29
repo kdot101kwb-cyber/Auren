@@ -80,6 +80,56 @@ async function getFaostatProducerPrice(iso3, crop) {
   };
 }
 
+async function getGaezYieldFromCropSummary(iso3, crop) {
+  const snap = await db.collection('auren_gaez_v5_crop_summary')
+    .where('status','==','imported')
+    .orderBy('importedAt','desc')
+    .limit(1)
+    .get();
+  if (snap.empty) {
+    return {available:false, source:'FAO_GAEZ_v5_Crop_Summary', reason:'no_gaez_v5_crop_summary_ingested'};
+  }
+  const data = snap.docs[0].data() || {};
+  if (data.version !== 'GAEZ v5' || !String(data.source || '').includes('FAO GAEZ v5')) {
+    return {available:false, source:'FAO_GAEZ_v5_Crop_Summary', reason:'gaez_v5_metadata_not_verified'};
+  }
+  const target = normalizeText(crop);
+  const rows = Array.isArray(data.rows) ? data.rows : [];
+  const matches = rows.filter(row => {
+    const country = normalizeText(row.country ?? row.Country ?? row.iso3 ?? row.ISO3 ?? row.country_code ?? row.Country_Code);
+    const item = normalizeText(row.crop ?? row.Crop ?? row.crop_name ?? row.Crop_Name ?? row.item ?? row.Item);
+    return (!country || country === normalizeText(iso3)) &&
+      item && (item === target || item.includes(target) || target.includes(item));
+  });
+  const candidates = [];
+  for (const row of matches) {
+    for (const [key, raw] of Object.entries(row)) {
+      const value = finite(raw);
+      const keyText = normalizeText(key);
+      if (value == null || value < 0) continue;
+      if (!keyText.includes('yield')) continue;
+      if (!/(attainable|potential|yield)/.test(keyText)) continue;
+      candidates.push({value, field:key, units:row.units ?? row.unit ?? row.Unit ?? null});
+    }
+  }
+  const accepted = candidates.filter(x => {
+    const u = normalizeText(x.units);
+    return /^(t\/?ha|tonnes?\s*per\s*ha|tons?\s*per\s*ha)$/.test(u) || u.includes('ton/ha') || u.includes('t/ha');
+  });
+  if (!accepted.length) {
+    return {available:false, source:'FAO_GAEZ_v5_Crop_Summary', reason:'no_explicit_t_per_ha_attainable_yield'};
+  }
+  const average = accepted.reduce((sum, x) => sum + x.value, 0) / accepted.length;
+  return {
+    available:true,
+    source:'FAO_GAEZ_v5_Crop_Summary',
+    yieldTonsHa:average,
+    unit:'t/ha',
+    samples:accepted.slice(0,25),
+    importId:snap.docs[0].id
+  };
+}
+
 async function getGaezYieldFromSuitability(iso3, crop) {
   const ref = db.collection('auren_agri_suitability').doc(iso3 + '_' + cropSlug(crop));
   const snap = await ref.get();
@@ -166,9 +216,12 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
   const gaezYield = manualYieldTonsHa == null
     ? await getGaezYieldFromSuitability(iso3, crop)
     : {available:false, source:'manual_override'};
+  const gaezCropSummaryYield = manualYieldTonsHa == null && !gaezYield.available
+    ? await getGaezYieldFromCropSummary(iso3, crop)
+    : {available:false, source:'manual_override'};
   const yieldTonsHa = manualYieldTonsHa != null
     ? manualYieldTonsHa
-    : (gaezYield.available ? gaezYield.yieldTonsHa : null);
+    : (gaezYield.available ? gaezYield.yieldTonsHa : (gaezCropSummaryYield.available ? gaezCropSummaryYield.yieldTonsHa : null));
 
   const manualPricePerTon = finite(p.pricePerTon);
   const faostatPrice = manualPricePerTon == null
@@ -180,13 +233,25 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
 
   const capex = finite(p.capex);
   const annualOpex = finite(p.annualOpex);
+  const otherAnnualRevenue = finite(p.otherAnnualRevenue) || 0;
+  const [costEvidence, logisticsEvidence] = await Promise.all([getCostEvidence(iso3, crop), getLogisticsEvidence(iso3)]);
   const sourcedCosts = costEvidence.available ? costEvidence.items : [];
   const sourcedCapex = sourcedCosts.find(x => String(x.category || '').toLowerCase() === 'capex');
   const sourcedOpex = sourcedCosts.find(x => String(x.category || '').toLowerCase() === 'opex');
   const effectiveCapex = capex != null ? capex : finite(sourcedCapex?.value);
   const effectiveAnnualOpex = annualOpex != null ? annualOpex : finite(sourcedOpex?.value);
-  const otherAnnualRevenue = finite(p.otherAnnualRevenue) || 0;
-  const [costEvidence, logisticsEvidence] = await Promise.all([getCostEvidence(iso3, crop), getLogisticsEvidence(iso3)]);
+  const marketEvidence = Array.isArray(p.marketEvidence)
+    ? p.marketEvidence.filter(item => item && item.source && finite(item.value) != null).map(item => ({
+      type:item.type || 'market',
+      value:finite(item.value),
+      currency:item.currency || null,
+      unit:item.unit || null,
+      source:item.source,
+      year:finite(item.year),
+      buyer:item.buyer || null,
+      note:item.note || null
+    }))
+    : [];
 
   const missing = [];
   for (const [name, value] of Object.entries({
@@ -239,10 +304,12 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
     inputs:{areaHa,yieldTonsHa,pricePerTon,capex:effectiveCapex,annualOpex:effectiveAnnualOpex,otherAnnualRevenue},
     yieldSource: manualYieldTonsHa != null
       ? 'manual'
-      : (gaezYield.available ? gaezYield.source : null),
+      : (gaezYield.available ? gaezYield.source : (gaezCropSummaryYield.available ? gaezCropSummaryYield.source : null)),
     yieldEvidence: gaezYield.available
       ? {unit:gaezYield.unit, samples:gaezYield.samples}
-      : null,
+      : (gaezCropSummaryYield.available
+        ? {unit:gaezCropSummaryYield.unit, samples:gaezCropSummaryYield.samples, importId:gaezCropSummaryYield.importId}
+        : null),
     priceSource: manualPricePerTon != null
       ? 'manual'
       : (faostatPrice.available ? faostatPrice.source : null),
@@ -308,7 +375,7 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
     evidenceAvailable: !!evidence,
     evidenceSummary: evidence ? evidence.evidenceQuality : null,
     assumptions:[
-      'Manual yieldTonsHa overrides GAEZ evidence. GAEZ yield is used only when stored evidence explicitly declares a yield-per-hectare unit.',
+      'Manual yieldTonsHa overrides GAEZ evidence. GAEZ yield is used only when stored evidence explicitly declares a yield-per-hectare unit and verified GAEZ v5 metadata is present.'
       'Manual pricePerTon overrides FAOSTAT. FAOSTAT price is used only when the ingested producer-price row explicitly provides a USD-per-ton unit; local-currency prices are not converted implicitly.',
       'CAPEX and OPEX remain manual unless an explicit cost-evidence record provides value, currency, unit and source.',
       'Logistics performance evidence from the World Bank LPI is reported separately and is not converted into a monetary cost. Monetary logistics costs remain manual unless an explicit logistics-cost record is supplied; farm-gate producer prices do not include transport beyond the farm gate.',
