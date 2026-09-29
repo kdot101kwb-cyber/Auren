@@ -8,6 +8,7 @@ import '../../messenger/presentation/messenger_screen.dart';
 import 'certifications_screen.dart';
 import 'learning_plan_screen.dart';
 import 'education_resources_screen.dart';
+import 'education_level_assessment_screen.dart';
 import '../../../services/education/education_resource_matcher.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
