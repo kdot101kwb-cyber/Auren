@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
+import 'agriculture_final_intelligence_screen.dart';
 
 class AurenAgricultureScreen extends StatefulWidget {
   const AurenAgricultureScreen({super.key});
@@ -69,6 +70,10 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               ]),
             ),
           ),
+          if (_type == 'crop' || _type == 'farm') ...[
+            const SizedBox(height: 8),
+            FilledButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgricultureFinalIntelligenceScreen())), icon: const Icon(Icons.smart_toy_outlined), label: const Text('الطقس والآفات والتنبيهات الذكية')),
+          ],
           FilledButton.icon(
             onPressed: () => _askAi(context),
             icon: const Icon(Icons.auto_awesome_rounded),
