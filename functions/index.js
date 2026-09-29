@@ -3656,7 +3656,8 @@ Object.assign(module.exports, require('./fao_agri_intelligence'));
 Object.assign(module.exports, require('./agriculture_suitability'));
 Object.assign(module.exports, require('./feasibility_agri_evidence'));
 Object.assign(module.exports, require('./agri_financial_feasibility'));
-Object.assign(module.exports, require('./agri_five_year_model'));\nObject.assign(module.exports, require('./opportunity_intelligence'));
+Object.assign(module.exports, require('./agri_five_year_model'));
+Object.assign(module.exports, require('./complete_agri_feasibility'));\nObject.assign(module.exports, require('./opportunity_intelligence'));
 Object.assign(module.exports, require('./match_everything_actions'));
 const MATCH_STOPWORDS = new Set(['اريد','أريد','ابحث','بحث','عن','لي','من','في','مع','للبيع','بسعر','مناسب','find','search','for','me','from','with','price','cheap','supplier','business','company','factory']);
 
