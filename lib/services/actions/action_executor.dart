@@ -70,6 +70,16 @@ class FirebaseAurenActionExecutor implements AurenActionExecutor {
           return (result['text'] as String?)?.trim().isNotEmpty == true
               ? result['text'] as String
               : 'تم تنفيذ الطلب بنجاح.';
+        case 'supplier_contact_draft_created':
+          final requestId = result['requestId']?.toString().trim() ?? '';
+          return requestId.isEmpty
+              ? 'تم إنشاء مسودة التواصل مع المورد. لم يتم إرسالها.'
+              : 'تم إنشاء مسودة التواصل مع المورد. رقم المسودة: $requestId. لم يتم إرسالها.';
+        case 'supplier_rfq_created':
+          final rfqId = result['rfqId']?.toString().trim() ?? '';
+          return rfqId.isEmpty
+              ? 'تم إنشاء مسودة طلب عرض السعر. لم يتم إرسالها.'
+              : 'تم إنشاء مسودة طلب عرض السعر. رقم المسودة: $rfqId. لم يتم إرسالها.';
       }
     }
     return 'تم تنفيذ الأمر بنجاح.';
