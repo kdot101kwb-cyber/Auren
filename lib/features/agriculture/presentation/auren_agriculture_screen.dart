@@ -45,7 +45,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
                 Wrap(spacing: 8, children: [
                   for (final item in const {
                     'all':'الكل','crop':'محاصيل','livestock':'مواشي','farm':'مزارع',
-                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير','design':'تصميم'
+                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير','design':'تصميم','business':'دراسة جدوى','production':'خط إنتاج','costing':'التكاليف','supply_chain':'الموردون','quality':'الجودة'
                   }.entries)
                     ChoiceChip(label: Text(item.value), selected: _type == item.key, onSelected: (_) => setState(() => _type = item.key)),
                 ]),
@@ -74,11 +74,11 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             icon: const Icon(Icons.auto_awesome_rounded),
             label: const Text('اسأل AUREN AI عن الحالة'),
           ),
-          if (_type == 'design') ...[
+          if (_type == 'design' || _type == 'business' || _type == 'production' || _type == 'costing' || _type == 'supply_chain' || _type == 'quality') ...[
             const SizedBox(height: 16),
-            const Text('AUREN Design Studio', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+            Text(_type == 'design' ? 'AUREN Design Studio' : 'AUREN Business & Production Studio', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
-            _designStudios(),
+            _businessStudios(),
           ],
           const SizedBox(height: 16),
           const Text('السوق والفرص', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
@@ -133,6 +133,81 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     }
   }
 
+
+  Widget _businessStudios() {
+    final studios = _type == 'design'
+        ? const [
+            ('Fashion & Footwear', 'ملابس، أحذية، حقائب، مقاسات وخامات', Icons.checkroom_outlined),
+            ('Architecture & Space', 'مبانٍ، غرف، مكاتب، محلات ومساحات', Icons.architecture_outlined),
+            ('Product & Industrial', 'منتجات، أجهزة، أثاث وعبوات', Icons.inventory_2_outlined),
+            ('Brand & Visual Identity', 'شعار، هوية، تغليف، إعلانات وواجهات', Icons.brush_outlined),
+            ('3D Prototype & Design-to-Make', 'نموذج أولي، مواد، مواصفات وتجهيز للتصنيع', Icons.view_in_ar_outlined),
+          ]
+        : const [
+            ('Feasibility Study', 'دراسة سوق وفنية ومالية ومخاطر ونقطة تعادل', Icons.analytics_outlined),
+            ('Production Line Planner', 'خط الإنتاج، مراحل التشغيل، المعدات، العمالة والطاقة', Icons.precision_manufacturing_outlined),
+            ('Cost & Unit Economics', 'تكلفة الوحدة، الاستثمار، التشغيل، الهدر والتسعير', Icons.calculate_outlined),
+            ('Supplier & Materials Plan', 'الخامات، الكميات، الموردون، البدائل والمخزون', Icons.local_shipping_outlined),
+            ('Quality & Launch Plan', 'الجودة، الاختبارات، التعبئة، التوزيع وخطة الإطلاق', Icons.verified_outlined),
+          ];
+    return Column(children: studios.map((s) => Card(
+      child: ListTile(
+        leading: CircleAvatar(child: Icon(s.$3)),
+        title: Text(s.$1, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(s.$2),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+        onTap: () => _openBusinessPrompt(s.$1),
+      ),
+    )).toList());
+  }
+
+  Future<void> _openBusinessPrompt(String studio) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(studio),
+        content: TextField(
+          controller: controller,
+          minLines: 5,
+          maxLines: 9,
+          decoration: const InputDecoration(
+            hintText: 'اسم المشروع، المنتج، السوق، الكمية المستهدفة، الميزانية، الموقع وأي معلومات متوفرة...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+              try {
+                final advice = await _repo.requestAiAdvice(
+                  type: _type == 'design' ? 'design' : _type,
+                  location: _location.text,
+                  observations: 'Studio: ' + studio + '\n' + controller.text.trim(),
+                );
+                if (context.mounted) Navigator.pop(context, advice);
+              } catch (_) {
+                if (context.mounted) Navigator.pop(context, 'تعذر الوصول إلى المستشار حالياً. حاول مرة أخرى.');
+              }
+            },
+            child: const Text('ابدأ التحليل'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || result == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('AUREN AI'),
+        content: SingleChildScrollView(child: Text(result)),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('تم'))],
+      ),
+    );
+  }
 
   Widget _designStudios() {
     const studios = [
