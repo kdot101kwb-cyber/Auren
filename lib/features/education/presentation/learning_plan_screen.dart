@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/education/learning_plan_service.dart';
+import '../../../services/education/education_learning_engine.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class LearningPlanScreen extends StatefulWidget {
@@ -10,6 +11,7 @@ class LearningPlanScreen extends StatefulWidget {
 
 class _LearningPlanScreenState extends State<LearningPlanScreen> {
   final service = LearningPlanService();
+  final engine = EducationLearningEngine();
   final subject = TextEditingController();
   final title = TextEditingController();
   int minutes = 30;
@@ -61,7 +63,30 @@ class _LearningPlanScreenState extends State<LearningPlanScreen> {
           Row(children: [Expanded(child: FilledButton.icon(onPressed: _save, icon: const Icon(Icons.save), label: const Text('حفظ الخطة'))), const SizedBox(width: 8), Expanded(child: OutlinedButton.icon(onPressed: _aiPlan, icon: const Icon(Icons.auto_awesome), label: const Text('AI Tutor')))]),
         ]))),
         const SizedBox(height: 12),
-        StreamBuilder<List<Map<String, dynamic>>>(stream: service.watchPlans(uid), builder: (context, snapshot) { final plans = snapshot.data ?? const <Map<String, dynamic>>[]; return Column(children: plans.map((p) => Card(child: ListTile(leading: const Icon(Icons.route), title: Text(p['title']?.toString() ?? 'خطة تعلم'), subtitle: Text((p['subject']?.toString() ?? '') + ' • ' + (p['level']?.toString() ?? '') + ' • ' + (p['minutesPerDay']?.toString() ?? '0') + ' دقيقة يومياً'), trailing: p['status'] == 'completed' ? const Icon(Icons.check_circle) : const Icon(Icons.arrow_forward_ios, size: 16)))).toList()); }),
+        StreamBuilder<List<Map<String, dynamic>>>(stream: service.watchPlans(uid), builder: (context, snapshot) {
+          final plans = snapshot.data ?? const <Map<String, dynamic>>[];
+          return Column(children: plans.map((p) {
+            final id = p['id']?.toString() ?? '';
+            final subjectName = p['subject']?.toString() ?? '';
+            final planLevel = p['level']?.toString() ?? 'Beginner';
+            final daily = (p['minutesPerDay'] as num?)?.toInt() ?? 30;
+            return Card(child: Column(children: [
+              ListTile(leading: const Icon(Icons.route), title: Text(p['title']?.toString() ?? 'خطة تعلم'), subtitle: Text('$subjectName • $planLevel • $daily دقيقة يومياً'), trailing: p['status'] == 'completed' ? const Icon(Icons.check_circle) : const Icon(Icons.arrow_forward_ios, size: 16)),
+              if (id.isNotEmpty) StreamBuilder<List<Map<String, dynamic>>>(
+                stream: service.watchTasks(uid, id),
+                builder: (context, taskSnapshot) {
+                  final tasks = taskSnapshot.data ?? const <Map<String, dynamic>>[];
+                  if (tasks.isEmpty) return Padding(padding: const EdgeInsets.fromLTRB(16,0,16,12), child: FilledButton.icon(onPressed: () => engine.buildNextSteps(uid: uid, planId: id, subject: subjectName, level: planLevel, minutesPerDay: daily), icon: const Icon(Icons.auto_awesome), label: const Text('أنشئ مسار اليوم')));
+                  return Padding(padding: const EdgeInsets.fromLTRB(16,0,16,12), child: Column(children: tasks.map((task) {
+                    final done = task['completed'] == true;
+                    return ListTile(dense: true, leading: Icon(done ? Icons.check_circle : Icons.play_circle_outline), title: Text(task['title']?.toString() ?? ''), subtitle: Text('${task['minutes']?.toString() ?? '5'} دقيقة • ${task['type']?.toString() ?? ''}'), trailing: done ? null : IconButton(icon: const Icon(Icons.check), onPressed: () => service.completeTask(uid, id, task['id'].toString())));
+                  }).toList()));
+                },
+              ),
+              if (id.isNotEmpty) Align(alignment: AlignmentDirectional.centerStart, child: Padding(padding: const EdgeInsets.fromLTRB(16,0,16,12), child: OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: engine.buildNextLessonPrompt(subject: subjectName, level: planLevel)))), icon: const Icon(Icons.auto_awesome), label: const Text('الدرس التالي مع AI')))),
+            ]));
+          }).toList());
+        }),
       ]),
     );
   }
