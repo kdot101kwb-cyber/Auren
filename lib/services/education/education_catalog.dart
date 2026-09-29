@@ -7,6 +7,29 @@ class EducationCatalog {
     'አማርኛ','Yorùbá','Igbo','isiZulu','Hausa'
   ];
 
+  static const learningTracks = <String>[
+    'Languages',
+    'School',
+    'Institute & Vocational',
+    'University',
+    'Professional Skills',
+    'Exam Preparation',
+  ];
+
+  static const levels = <String>[
+    'Beginner',
+    'Elementary',
+    'Intermediate',
+    'Upper Intermediate',
+    'Advanced',
+  ];
+
+  static const schoolStages = <String>[
+    'Primary',
+    'Middle School',
+    'Secondary School',
+  ];
+
   static const specialties = <String>[
     'Mathematics','Physics','Chemistry','Biology','Earth Science','Astronomy','Environmental Science',
     'Computer Science','Software Engineering','Web Development','Mobile Development','AI & Machine Learning',
