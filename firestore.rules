@@ -2647,5 +2647,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /supplier_contact_requests/{requestId} {
+      allow read: if request.auth != null && resource.data.requesterUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /supplier_rfqs/{rfqId} {
+      allow read: if request.auth != null && resource.data.requesterUid == request.auth.uid;
+      allow write: if false;
+    }
+
   }
 }
