@@ -203,21 +203,178 @@ exports.aurenGaezV5CropSummaryIngest = onCall(async (request) => {
   return {status:'imported',id:ref.id,rowCount:normalized.length,source:'FAO GAEZ v5 Crop Summary Data',resourceUrl:parsed.toString()};
 });
 
+function rowField(row, names) {
+  for (const name of names) {
+    if (row && row[name] !== undefined && row[name] !== null && String(row[name]).trim() !== '') {
+      return String(row[name]).trim();
+    }
+  }
+  return '';
+}
+
+function rowCountry(row) {
+  return rowField(row, ['iso3','ISO3','country_iso3','countryIso3','adm0_iso3','country_code','Country ISO3','country','Country','area','Area']);
+}
+
+function rowCrop(row) {
+  return rowField(row, ['crop','Crop','crop_name','Crop Name','commodity','Commodity','crop_lut']);
+}
+
+function chunk(items, size) {
+  const out = [];
+  for (let i=0;i<items.length;i+=size) out.push(items.slice(i,i+size));
+  return out;
+}
+
 exports.aurenGaezV5CropSummary = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
-  if (!GAEZ_V5_CROP_SUMMARY_URL) {
-    return {status:'configuration_required', source:'FAO GAEZ v5 Crop Summary', catalogUrl:CROP_SUMMARY_CATALOG_URL, reason:'GAEZ_V5_CROP_SUMMARY_URL is not configured'};
-  }
+
   const p=request.data||{};
+  const country=String(p.country || p.iso3 || '').trim();
+  const crop=String(p.crop || '').trim();
+
+  // Prefer globally ingested FAO v5 rows so every supported country uses
+  // the same verified source rather than a Sudan-specific path.
+  let query = db.collection('auren_gaez_v5_crop_summary_rows');
+  if (country) query=query.where('countryKey','==',country.toUpperCase());
+  if (crop) query=query.where('cropKey','==',crop.toLowerCase());
+
+  const imported = await query.limit(500).get();
+  if (!imported.empty) {
+    const rows=imported.docs.map(d => d.data().row || {});
+    return {
+      status:'ok',
+      source:'FAO GAEZ v5 Crop Summary Data',
+      scope:'global',
+      storage:'firestore_ingested_rows',
+      filters:{country:country||null,crop:crop||null},
+      count:rows.length,
+      data:rows
+    };
+  }
+
+  if (!GAEZ_V5_CROP_SUMMARY_URL) {
+    return {
+      status:'configuration_required',
+      source:'FAO GAEZ v5 Crop Summary',
+      catalogUrl:CROP_SUMMARY_CATALOG_URL,
+      reason:'GAEZ_V5_CROP_SUMMARY_URL is not configured and no imported global rows matched the request'
+    };
+  }
+
   const params=new URLSearchParams();
   for (const key of ['country','crop','climateSource','ssp','period','waterSupply','management']) {
     if (p[key]) params.set(key,String(p[key]));
   }
   const url=GAEZ_V5_CROP_SUMMARY_URL + (GAEZ_V5_CROP_SUMMARY_URL.includes('?')?'&':'?') + params.toString();
   const payload=await getJson(url);
-  return {status:'ok',source:'FAO GAEZ v5 Crop Summary',endpoint:url.split('?')[0],filters:Object.fromEntries(params.entries()),data:payload};
+  return {
+    status:'ok',
+    source:'FAO GAEZ v5 Crop Summary',
+    scope:'global',
+    endpoint:url.split('?')[0],
+    filters:Object.fromEntries(params.entries()),
+    data:payload
+  };
 });
 
+exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const url=String(request.data?.url || GAEZ_V5_CROP_SUMMARY_URL || '').trim();
+  if (!url) throw new Error('GAEZ_V5_CROP_SUMMARY_URL is not configured.');
+  const parsed=assertOfficialFaoResource(url);
+  const res=await fetch(parsed.toString(), {
+    headers:{accept:'text/csv,application/json,text/plain'},
+    signal:AbortSignal.timeout(60000)
+  });
+  if (!res.ok) throw new Error('GAEZ resource request failed: ' + res.status);
+  const body=await res.text();
+  const contentType=String(res.headers.get('content-type')||'');
+  let rows;
+  if (/json/i.test(contentType)) {
+    const payload=JSON.parse(body);
+    rows=Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : (Array.isArray(payload.rows) ? payload.rows : []));
+  } else {
+    rows=parseCsv(body);
+  }
+
+  const normalized=normalizeGaezRows(rows);
+  if (!normalized.length) throw new Error('No tabular GAEZ rows were found in the official global resource.');
+
+  const groups = new Map();
+  for (const row of normalized) {
+    const countryKey=rowCountry(row).toUpperCase();
+    const cropKey=rowCrop(row).toLowerCase();
+    if (!countryKey) continue;
+    const key=countryKey + '|' + cropKey;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  }
+
+  let stored=0;
+  const countrySet=new Set();
+  const cropSet=new Set();
+
+  for (const [key, group] of groups) {
+    const [countryKey,cropKey]=key.split('|');
+    countrySet.add(countryKey);
+    if (cropKey) cropSet.add(cropKey);
+
+    for (const batchRows of chunk(group, 400)) {
+      const batch=db.batch();
+      for (const row of batchRows) {
+        const ref=db.collection('auren_gaez_v5_crop_summary_rows').doc();
+        batch.set(ref, {
+          source:'FAO GAEZ v5 Crop Summary Data',
+          version:'GAEZ v5',
+          catalogUrl:CROP_SUMMARY_CATALOG_URL,
+          resourceUrl:parsed.toString(),
+          countryKey,
+          cropKey,
+          row,
+          importedBy:request.auth.uid,
+          importedAt:admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+      await batch.commit();
+      stored += batchRows.length;
+    }
+  }
+
+  return {
+    status:'imported',
+    scope:'global',
+    source:'FAO GAEZ v5 Crop Summary Data',
+    rowCount:stored,
+    countryCount:countrySet.size,
+    cropCount:cropSet.size,
+    countries:Array.from(countrySet).sort(),
+    resourceUrl:parsed.toString(),
+    note:'Rows are stored individually so the dataset can cover all countries without exceeding Firestore document limits.'
+  };
+});
+
+exports.aurenGaezV5GlobalCoverage = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const snap=await db.collection('auren_gaez_v5_crop_summary_rows').select('countryKey','cropKey').get();
+  const countries=new Set();
+  const crops=new Set();
+  snap.forEach(doc => {
+    const d=doc.data();
+    if (d.countryKey) countries.add(d.countryKey);
+    if (d.cropKey) crops.add(d.cropKey);
+  });
+  return {
+    status:'ok',
+    scope:'global',
+    source:'FAO GAEZ v5 Crop Summary Data',
+    importedRows:snap.size,
+    countryCount:countries.size,
+    cropCount:crops.size,
+    countries:Array.from(countries).sort(),
+    crops:Array.from(crops).sort()
+  };
+});
 exports.aurenGaezCropQuery = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
 
