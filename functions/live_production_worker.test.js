@@ -79,3 +79,11 @@ test('lifecycle output and history writes are deterministic',()=>{
   assert.match(source,/outputKey\(ref\.id, output\)/);
   assert.match(source,/lifecycleEventId\(\{\.\.\.task, id:ref\.id\}, event\)/);
 });
+
+test('generation attempts are terminally exhausted instead of silently stalling',()=>{
+  assert.match(source,/async function exhaustGenerationAttempts/);
+  assert.match(source,/Number\(data\.generationAttempts \|\| 0\) < MAX_ATTEMPTS/);
+  assert.match(source,/providerState:'attempts_exhausted'/);
+  assert.match(source,/Generation attempt limit/);
+  assert.match(source,/await exhaustGenerationAttempts\(\)/);
+});
