@@ -45,7 +45,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
                 Wrap(spacing: 8, children: [
                   for (final item in const {
                     'all':'الكل','crop':'محاصيل','livestock':'مواشي','farm':'مزارع',
-                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير','design':'تصميم','business':'دراسة جدوى','production':'خط إنتاج','costing':'التكاليف','supply_chain':'الموردون','quality', 'feasibility':'الجودة'
+                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير','design':'تصميم','business':'دراسة جدوى','production':'خط إنتاج','costing':'التكاليف','supply_chain':'الموردون','quality':'الجودة','feasibility':'دراسة الجدوى'
                   }.entries)
                     ChoiceChip(label: Text(item.value), selected: _type == item.key, onSelected: (_) => setState(() => _type = item.key)),
                 ]),
