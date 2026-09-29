@@ -20,6 +20,7 @@ const POLL_BACKOFF_MAX_MS = 15 * 60 * 1000;
 
 function isTransientProviderError(error) {
   const status = Number(error?.status || error?.statusCode || 0);
+  if (error?.name === 'AbortError') return true;
   return status === 408 || status === 425 || status === 429 || status >= 500;
 }
 
