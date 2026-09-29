@@ -104,6 +104,8 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+              _assessmentButton(),
+              const SizedBox(height: 8),
               _recommendedResources(),
               const SizedBox(height: 8),
               _myLearning(uid),
@@ -164,6 +166,20 @@ class _EducationState extends State<AurenAURENEducationScreen> {
           onSelected: (_) => setState(() => level = value),
         ),
       )).toList()),
+    );
+  }
+
+  Widget _assessmentButton() {
+    final subject = query.trim();
+    if (subject.isEmpty) return const SizedBox.shrink();
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.fact_check_outlined),
+        title: const Text('اختبر مستواي'),
+        subtitle: Text('تحديد المستوى في: $subject'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EducationLevelAssessmentScreen(subject: subject))),
+      ),
     );
   }
 
