@@ -139,6 +139,15 @@ function parseCsv(text) {
   });
 }
 
+function extractRowsFromPayload(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.rows)) return payload.rows;
+  if (Array.isArray(payload?.results)) return payload.results;
+  if (Array.isArray(payload?.data?.rows)) return payload.data.rows;
+  return [];
+}
+
 function normalizeGaezRows(rows) {
   return rows.map(row => {
     const out={};
@@ -185,7 +194,7 @@ exports.aurenGaezV5CropSummaryIngest = onCall(async (request) => {
   let rows;
   if (/json/i.test(contentType)) {
     const payload=JSON.parse(body);
-    rows=Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : (Array.isArray(payload.rows) ? payload.rows : []));
+    rows=extractRowsFromPayload(payload);
   } else {
     rows=parseCsv(body);
   }
@@ -320,7 +329,7 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
   let rows;
   if (/json/i.test(contentType)) {
     const payload=JSON.parse(body);
-    rows=Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : (Array.isArray(payload.rows) ? payload.rows : []));
+    rows=extractRowsFromPayload(payload);
   } else {
     rows=parseCsv(body);
   }
