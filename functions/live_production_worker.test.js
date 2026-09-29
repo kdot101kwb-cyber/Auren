@@ -102,3 +102,7 @@ test('transient provider polling failures use bounded backoff instead of termina
 test('scheduled worker skips tasks during provider backoff',()=>{
   assert.match(source,/if \(Number\(data\.nextPollAtMs \|\| 0\) > Date\.now\(\)\) return false/);
 });
+
+test('provider request timeouts are treated as transient',()=>{
+  assert.match(source,/error\?\.name === 'AbortError'/);
+});
