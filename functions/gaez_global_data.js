@@ -230,6 +230,18 @@ function rowCrop(row) {
   return rowField(row, ['crop','Crop','crop_name','Crop Name','commodity','Commodity','crop_lut']);
 }
 
+async function loadCountryRegistry() {
+  const snap = await db.collection('auren_global_countries').select('iso3','name').get();
+  const byName = new Map();
+  snap.forEach(doc => {
+    const d = doc.data() || {};
+    const iso3 = String(d.iso3 || doc.id || '').trim().toUpperCase();
+    const name = String(d.name || '').trim().toLowerCase();
+    if (/^[A-Z]{3}$/.test(iso3) && name) byName.set(name, iso3);
+  });
+  return byName;
+}
+
 function chunk(items, size) {
   const out = [];
   for (let i=0;i<items.length;i+=size) out.push(items.slice(i,i+size));
@@ -316,11 +328,16 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
   const normalized=normalizeGaezRows(rows);
   if (!normalized.length) throw new Error('No tabular GAEZ rows were found in the official global resource.');
 
+  const countryRegistry = await loadCountryRegistry();
   const groups = new Map();
   for (const row of normalized) {
-    const countryKey=normalizeCountryKey(rowCountry(row));
+    const rawCountry = rowCountry(row);
+    let countryKey = normalizeCountryKey(rawCountry);
+    if (!/^[A-Z]{3}$/.test(countryKey)) {
+      countryKey = countryRegistry.get(String(rawCountry || '').trim().toLowerCase()) || '';
+    }
     const cropKey=rowCrop(row).toLowerCase();
-    if (!countryKey) continue;
+    if (!countryKey || !/^[A-Z]{3}$/.test(countryKey)) continue;
     const key=countryKey + '|' + cropKey;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(row);
