@@ -2636,6 +2636,42 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /users/{userId}/production_jobs/{jobId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.type in ['short','film','seriesEpisode']
+        && request.resource.data.status == 'queued'
+        && request.resource.data.engine in ['moneyPrinterTurbo','skyReelsV3','skyReelsV2','ltx2','wan','hunyuan']
+        && request.resource.data.targetMinutes is int
+        && request.resource.data.targetMinutes >= 1
+        && request.resource.data.targetMinutes <= 240
+        && request.resource.data.progress == 0
+        && request.resource.data.retryCount == 0
+        && request.resource.data.cancelRequested == false
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','progress','error','cancelRequested','retryCount','updatedAt'])
+        && request.resource.data.updatedAt is timestamp
+        && (
+          (request.resource.data.status == 'cancelled'
+            && resource.data.status in ['queued','planning','generating','assembling','review']
+            && request.resource.data.cancelRequested == true
+            && request.resource.data.progress == resource.data.progress)
+          ||
+          (request.resource.data.status == 'queued'
+            && resource.data.status in ['failed','cancelled']
+            && request.resource.data.progress == 0
+            && request.resource.data.cancelRequested == false
+            && request.resource.data.retryCount == resource.data.retryCount + 1)
+        );
+      allow delete: if isOwner(userId);
+    }
+
 
     match /auren_global_countries/{iso3} {
       allow read: if request.auth != null;
