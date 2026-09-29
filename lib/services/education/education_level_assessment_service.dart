@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 class EducationAssessmentQuestion {
   final String id;
   final String prompt;
@@ -18,6 +19,15 @@ class EducationAssessmentResult {
 }
 
 class EducationLevelAssessmentService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  Future<void> saveResult({required String uid, required String subject, required EducationAssessmentResult result}) async {
+    await _db.collection('users').doc(uid).collection('educationAssessments').add({
+      'subject': subject, 'level': result.level, 'score': result.score, 'total': result.total,
+      'strengths': result.strengths, 'focusAreas': result.focusAreas, 'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   static const questions = <EducationAssessmentQuestion>[
     EducationAssessmentQuestion(id:'q1',prompt:'Which sentence is correct?',options:['She go to school.','She goes to school.','She going school.','She gone school.'],correctIndex:1,skill:'Grammar',level:'Beginner'),
     EducationAssessmentQuestion(id:'q2',prompt:'Choose the best meaning of “improve”.',options:['To make better','To make smaller','To stop','To forget'],correctIndex:0,skill:'Vocabulary',level:'Elementary'),
