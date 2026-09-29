@@ -56,7 +56,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
           final q = query.trim().toLowerCase();
           final courses = all.where((c) {
             final searchable = '${c.title} ${c.description} ${c.category} ${c.skills.join(' ')}'.toLowerCase();
-            return (q.isEmpty || searchable.contains(q)) && (category == null || c.category == category) && (level == 'All' || c.level == level) && (track == 'All' || c.category.toLowerCase().contains(track.toLowerCase()));
+            return (q.isEmpty || searchable.contains(q)) && (category == null || c.category == category) && (level == 'All' || c.level == level);
           }).toList();
 
           return ListView(
