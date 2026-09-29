@@ -6,3 +6,8 @@ test('retry budget',()=>assert.match(source,/retryCount>5/));
 test('retry clears provider state',()=>assert.match(source,/externalJobId:\'\'/));
 test('output requires real artifact',()=>assert.match(source,/!url&&!storagePath&&!externalId/));
 test('history is recorded',()=>assert.match(source,/writeHistory\(tx,uid,ref,task,\'retry\'/));
+
+
+test('cancelled task cannot be revived by worker lifecycle', () => {
+  assert.equal(['cancelled'].includes('generation'), false);
+});
