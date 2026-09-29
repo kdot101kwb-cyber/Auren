@@ -10,7 +10,11 @@ const {
 } = require('./provider_runtime');
 
 const REPLICATE_API_TOKEN = defineSecret('REPLICATE_API_TOKEN');
-const REPLICATE_VIDEO_MODEL_VERSION = defineString('REPLICATE_VIDEO_MODEL_VERSION', {default:'', description:'Replicate version ID for AUREN video generation. Leave empty until a real video model is configured.'});
+const MONEYPRINTERTURBO_API_KEY = defineSecret('MONEYPRINTERTURBO_API_KEY');
+const REPLICATE_VIDEO_MODEL_VERSION = defineString('REPLICATE_VIDEO_MODEL_VERSION', {default:'', description:'Replicate version ID for AUREN video generation.'});
+const MONEYPRINTERTURBO_BASE_URL = defineString('MONEYPRINTERTURBO_BASE_URL', {default:'', description:'MoneyPrinterTurbo API base URL. Example: http://127.0.0.1:8080 or a private hosted URL.'});
+const MONEYPRINTERTURBO_GENERATE_PATH = defineString('MONEYPRINTERTURBO_GENERATE_PATH', {default:'/v1/video/generate', description:'MoneyPrinterTurbo video generation endpoint path.'});
+const MONEYPRINTERTURBO_POLL_PATH = defineString('MONEYPRINTERTURBO_POLL_PATH', {default:'/v1/videos/{job_id}/status', description:'MoneyPrinterTurbo job polling endpoint path.'});
 const db = admin.firestore();
 
 const LOCK_MS = 6 * 60 * 1000;
@@ -211,7 +215,13 @@ async function processTask(ref) {
   if (task.externalJobId && task.providerId) {
     const polled=await pollAurenProviderJob({
       provider:String(task.providerId),
-      credentials:{token:REPLICATE_API_TOKEN.value()},
+      credentials: String(task.providerId) === 'moneyprinterturbo'
+        ? {
+            baseUrl:String(MONEYPRINTERTURBO_BASE_URL.value() || '').trim(),
+            apiKey:String(MONEYPRINTERTURBO_API_KEY.value() || '').trim(),
+            pollPath:String(MONEYPRINTERTURBO_POLL_PATH.value() || '/v1/videos/{job_id}/status'),
+          }
+        : {token:REPLICATE_API_TOKEN.value()},
       externalJobId:String(task.externalJobId),
     });
     if (!polled.ok) {
@@ -274,37 +284,52 @@ async function processTask(ref) {
 
   const candidates=Array.isArray(task.providerCandidates) && task.providerCandidates.length
     ? task.providerCandidates.map((id)=>String(id || '').trim()).filter(Boolean)
-    : ['replicate'];
+    : ['moneyprinterturbo','replicate'];
 
-  // The current live video adapter is Replicate. Provider/model selection and
-  // executable credentials are backend-controlled only.
-
-  // A video task must use the backend deployment configuration. The catalog
-  // alone is never treated as an executable integration.
+  // Provider/model selection and executable credentials are backend-controlled only.
   const version=String(REPLICATE_VIDEO_MODEL_VERSION.value() || '').trim();
-  if (!version) {
+  const mptBaseUrl=String(MONEYPRINTERTURBO_BASE_URL.value() || '').trim();
+  const provider = candidates.includes('moneyprinterturbo') && mptBaseUrl
+    ? 'moneyprinterturbo'
+    : (candidates.includes('replicate') && version ? 'replicate' : '');
+
+  if (!provider) {
+    const reason = mptBaseUrl || version
+      ? 'No live video provider adapter is configured for this task.'
+      : 'No MoneyPrinterTurbo endpoint or Replicate model version is configured for this video task.';
     await ref.set({
       status:'waiting_provider',
       providerState:'configuration_required',
       providerLockUntilMs:0,
-      lastError:'No Replicate model version configured for this video task.',
+      lastError:reason,
       updatedAt:admin.firestore.FieldValue.serverTimestamp(),
     },{merge:true});
-    await syncProductionLifecycle(ref, null, 'waiting_provider', 'No Replicate model version configured for this video task.');
+    await syncProductionLifecycle(ref, null, 'waiting_provider', reason);
     return;
   }
 
-  const provider = candidates.includes('replicate') ? 'replicate' : '';
-  if (!provider) {
-    await ref.set({status:'waiting_provider',providerState:'no_live_video_adapter',providerLockUntilMs:0,lastError:'No live video provider adapter is configured for this task.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
-    await syncProductionLifecycle(ref, null, 'waiting_provider', 'No live video provider adapter is configured for this task.');
-    return;
-  }
+  const credentials = provider === 'moneyprinterturbo'
+    ? {
+        baseUrl:mptBaseUrl,
+        apiKey:String(MONEYPRINTERTURBO_API_KEY.value() || '').trim(),
+        generatePath:String(MONEYPRINTERTURBO_GENERATE_PATH.value() || '/v1/video/generate'),
+        pollPath:String(MONEYPRINTERTURBO_POLL_PATH.value() || '/v1/videos/{job_id}/status'),
+      }
+    : {
+        token:REPLICATE_API_TOKEN.value(),
+        version,
+      };
 
   const result=await submitAurenProviderJob({
     provider,
-    credentials:{token:REPLICATE_API_TOKEN.value(),version},
-    task:{input:taskInput(task)},
+    credentials,
+    task:{
+      input:taskInput(task),
+      subject:String(task.subject || task.prompt || '').slice(0,3000),
+      language:String(task.language || 'en').slice(0,40),
+      aspectRatio:String(task.aspectRatio || task.input?.aspect_ratio || '16:9').slice(0,20),
+      voice:String(task.voice || '').slice(0,120),
+    },
     idempotencyKey,
   });
 
@@ -364,7 +389,7 @@ exports.runAurenLiveProductionProvider = onSchedule(
     timeoutSeconds:120,
     memory:'512MiB',
     concurrency:1,
-    secrets:[REPLICATE_API_TOKEN],
+    secrets:[REPLICATE_API_TOKEN, MONEYPRINTERTURBO_API_KEY],
   },
   async () => {
     await exhaustGenerationAttempts();
