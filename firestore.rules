@@ -2693,5 +2693,44 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /users/{userId}/livestockProduction/{recordId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.animalId is string
+        && request.resource.data.type in ['milk','eggs','meat','wool','honey','other']
+        && request.resource.data.quantity is number && request.resource.data.quantity >= 0
+        && request.resource.data.unit is string && request.resource.data.unit.size() <= 30
+        && request.resource.data.note is string && request.resource.data.note.size() <= 1000
+        && request.resource.data.recordedAt is timestamp
+        && request.resource.data.createdAt is timestamp;
+      allow update, delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/livestockGrowth/{recordId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.animalId is string
+        && request.resource.data.weightKg is number && request.resource.data.weightKg > 0 && request.resource.data.weightKg <= 5000
+        && request.resource.data.recordedAt is timestamp
+        && request.resource.data.createdAt is timestamp;
+      allow update, delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/livestockAlerts/{alertId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.animalId is string
+        && request.resource.data.type in ['vaccination','breeding','feeding','weight','observation','checkup','production']
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 160
+        && request.resource.data.note is string && request.resource.data.note.size() <= 1000
+        && request.resource.data.dueAt is timestamp
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','closedAt'])
+        && request.resource.data.status in ['open','closed'];
+      allow delete: if isOwner(userId);
+    }
+
   }
 }
