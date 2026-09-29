@@ -8,7 +8,7 @@ const db = admin.firestore();
 
 const GAEZ_CATALOG_URL = 'https://data.fao.org/catalog/dataset/gaez-v5-master-config';
 const CROP_SUMMARY_CATALOG_URL = 'https://data.fao.org/catalog/dataset/crop-summary-gaez';
-const GAEZ_V5_RES05 = 'https://gaez-services.fao.org/server/rest/services/res05/ImageServer';
+const GAEZ_V5_RES05 = process.env.GAEZ_V5_RES05 || 'https://gaez-services.fao.org/server/rest/services/res05/ImageServer';
 
 const THEMES = [
   'land_water_resources',
@@ -32,7 +32,8 @@ exports.aurenGaezCatalog = onCall(async (request) => {
       standard:'5 arc-minute (~10 km at equator)',
       selected:'30 arc-second (~1 km at equator)'
     },
-    note:'This catalog layer intentionally does not fabricate a raster/API endpoint. Data download/query endpoints should be added only after validating the current FAO catalog resource.'
+    endpointStatus: process.env.GAEZ_V5_RES05 ? 'configured' : 'not_verified',
+    note:'GAEZ v5 was launched by FAO in 2025; this deployment only treats a configured endpoint as verified and never labels the default endpoint as v5 without validation.'
   };
 });
 
@@ -71,6 +72,7 @@ exports.aurenGaezSuitabilityCatalog = onCall(async (request) => {
   return {
     status:'ok',
     source:'FAO GAEZ v5',
+    endpointStatus:process.env.GAEZ_V5_RES05 ? 'configured' : 'not_verified',
     service:GAEZ_V5_RES05,
     count:items.length,
     items:items.map(x => x.attributes || {})
