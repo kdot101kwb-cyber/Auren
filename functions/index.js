@@ -3644,7 +3644,8 @@ Object.assign(module.exports, require('./global_data_country_registry'));
 Object.assign(module.exports, require('./faostat_global_data'));
 Object.assign(module.exports, require('./faostat_bulk_ingest'));
 Object.assign(module.exports, require('./faostat_ingest_scheduler'));
-Object.assign(module.exports, require('./fao_agri_intelligence'));\nObject.assign(module.exports, require('./opportunity_intelligence'));
+Object.assign(module.exports, require('./fao_agri_intelligence'));
+Object.assign(module.exports, require('./agriculture_suitability'));\nObject.assign(module.exports, require('./opportunity_intelligence'));
 const MATCH_STOPWORDS = new Set(['اريد','أريد','ابحث','بحث','عن','لي','من','في','مع','للبيع','بسعر','مناسب','find','search','for','me','from','with','price','cheap','supplier','business','company','factory']);
 
 function normalizeMatchTokens(value) {
