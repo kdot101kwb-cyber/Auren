@@ -127,8 +127,7 @@ class CropIntelligenceService {
 
   Stream<List<CropPlan>> watchPlans(String uid) {
     return db.collection('users').doc(uid).collection('agricultureNotes')
-        .where('type', isEqualTo: 'field')
-        .orderBy('createdAt', descending: true)
+         .where('type', isEqualTo: 'field')
         .limit(100)
         .snapshots()
         .map((snapshot) {
@@ -140,6 +139,7 @@ class CropIntelligenceService {
           }
         } catch (_) {}
       }
+      plans.sort((a, b) => b.plantingDate.compareTo(a.plantingDate));
       return plans;
     });
   }
