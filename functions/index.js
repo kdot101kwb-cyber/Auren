@@ -3525,3 +3525,6 @@ exports.createAurenMusicProductionJob = require('firebase-functions/v2/https').o
     return {jobId:jobRef.id,status:'queued',taskId:'music'};
   }
 );
+
+
+Object.assign(exports, require('./production_lifecycle'));
