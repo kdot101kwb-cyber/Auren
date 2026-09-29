@@ -25,16 +25,65 @@ class AurenTvWatchTogetherService {
   bool _pushNotificationsReady = false;
   StreamSubscription<String>? _fcmTokenSubscription;
   StreamSubscription<RemoteMessage>? _fcmMessageSubscription;
+  StreamSubscription<RemoteMessage>? _fcmOpenedSubscription;
+  bool _notificationRoutingReady = false;
+  String? _pendingNotificationRoomId;
+  void Function(String roomId)? _notificationRoomHandler;
+
+  void setNotificationRoomHandler(void Function(String roomId) handler) {
+    _notificationRoomHandler = handler;
+    final pending = _pendingNotificationRoomId;
+    if (pending != null && pending.isNotEmpty) {
+      _pendingNotificationRoomId = null;
+      scheduleMicrotask(() => handler(pending));
+    }
+  }
+
+  Future<void> initializeNotificationRouting() async {
+    await initializeNotifications();
+    if (_notificationRoutingReady) return;
+    final messaging = FirebaseMessaging.instance;
+    _fcmOpenedSubscription = FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedRemoteMessage);
+    final initial = await messaging.getInitialMessage();
+    if (initial != null) _handleOpenedRemoteMessage(initial);
+    _notificationRoutingReady = true;
+  }
+
+  void _handleOpenedRemoteMessage(RemoteMessage message) {
+    final roomId = (message.data['roomId'] as String?)?.trim();
+    if (roomId == null || roomId.isEmpty) return;
+    _openNotificationRoom(roomId);
+  }
+
+  void _handleLocalNotificationTap(String? payload) {
+    final roomId = payload?.trim();
+    if (roomId == null || roomId.isEmpty) return;
+    _openNotificationRoom(roomId);
+  }
+
+  void _openNotificationRoom(String roomId) {
+    final handler = _notificationRoomHandler;
+    if (handler == null) {
+      _pendingNotificationRoomId = roomId;
+      return;
+    }
+    handler(roomId);
+  }
+
 
   Future<void> initializeNotifications() async {
     if (_localNotificationsReady) return;
     const settings = InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher'));
-    await _localNotifications.initialize(settings);
-    await _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+    await _localNotifications.initialize(settings, onDidReceiveNotificationResponse: (response) => _handleLocalNotificationTap(response.payload));
+    final android = _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await android?.createNotificationChannel(const AndroidNotificationChannel('auren_watch_together_chat', 'Watch Together Chat', description: 'رسائل المشاهدة الجماعية', importance: Importance.high));
+    await android?.createNotificationChannel(const AndroidNotificationChannel('auren_watch_together_activity', 'Watch Together Activity', description: 'تنبيهات نشاط غرف المشاهدة', importance: Importance.defaultImportance));
+    await android?.requestNotificationsPermission();
     _localNotificationsReady = true;
   }
 
   Future<void> initializePushNotifications() async {
+    await initializeNotificationRouting();
     if (_pushNotificationsReady) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -86,6 +135,13 @@ class AurenTvWatchTogetherService {
     _pushNotificationsReady = false;
   }
 
+  Future<void> disposeNotificationRouting() async {
+    await _fcmOpenedSubscription?.cancel();
+    _fcmOpenedSubscription = null;
+    _notificationRoutingReady = false;
+    _notificationRoomHandler = null;
+  }
+
   Future<void> notifyIncomingMessage({required String roomId, required String sender, required String message}) async {
     await initializeNotifications();
     const details = NotificationDetails(android: AndroidNotificationDetails('auren_watch_together_chat', 'Watch Together Chat', channelDescription: 'رسائل المشاهدة الجماعية', importance: Importance.high, priority: Priority.high));
@@ -115,6 +171,16 @@ class AurenTvWatchTogetherService {
     try { await notifyActivity(room.id, type: 'joined'); await sendSystemMessage(room.id, '${_displayName()} انضم للمشاهدة'); } catch (_) {}
     return room;
   }
+  Future<AurenTvWatchTogetherRoom?> getRoom(String roomId) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) return null;
+    final snap = await _rooms.doc(roomId).get();
+    if (!snap.exists) return null;
+    final room = AurenTvWatchTogetherRoom.fromDoc(snap);
+    if (!room.memberIds.contains(u.uid)) return null;
+    return room;
+  }
+
   Stream<AurenTvWatchTogetherRoom> watch(String roomId)=>_rooms.doc(roomId).snapshots().where((s)=>s.exists).map(AurenTvWatchTogetherRoom.fromDoc);
 
   CollectionReference<Map<String,dynamic>> _presence(String roomId) =>
