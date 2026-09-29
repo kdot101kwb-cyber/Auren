@@ -208,6 +208,7 @@ const AUREN_ACTION_DEFINITIONS = {
   'goal.create': { requiresApproval: true, riskLevel: 'low', approvalLevel: 1, keys: ['title'] },
   'message.send': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['conversationId', 'text'] },
   'content.create': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['text', 'mode', 'mood', 'length'] },
+  'supplier.workflow': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['operation', 'supplierId', 'message', 'channel', 'product', 'quantity', 'unit', 'currency', 'notes'] },
 };
 
 const AUREN_ACTION_TTL_MS = 15 * 60 * 1000;
@@ -396,6 +397,13 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
           createdAt:FieldValue.serverTimestamp(),
         });
         result={type:'message_sent',conversationId,messageId:messageRef.id};
+      } else if (action.type === 'supplier.workflow') {
+        const supplierActions=require('./supplier_actions');
+        try {
+          result=await supplierActions.createSupplierWorkflow({uid,operation:String(action.payload.operation||''),payload:action.payload});
+        } catch(e) {
+          throw aurenHttpsError('failed-precondition',String(e.message||e));
+        }
       } else if (action.type === 'content.create') {
         const text=String(action.payload.text || '').trim().slice(0,5000);
         const mode=normalizeEntertainmentMode(action.payload.mode || inferEntertainmentMode(text));
