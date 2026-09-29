@@ -126,3 +126,5 @@ test('transient provider submission failures use bounded backoff',()=>{
   assert.match(source,/providerSubmitFailures/);
   assert.match(source,/nextPollAtMs:nextSubmitAtMs/);
 });
+
+test('provider submission uses async creation to reduce lost-response duplicates',()=>{assert.match(source,/externalJobId:result\.result\.externalJobId/);assert.doesNotMatch(source,/prefer:'wait'/);});
