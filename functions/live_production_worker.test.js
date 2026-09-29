@@ -71,7 +71,7 @@ test('completed provider output skips an unnecessary polling cycle',()=>{
 
 
 test('cancelled tasks cannot be revived after provider polling',()=>{
-  assert.match(source,/latestTask\.status \\|\\| '') === 'cancelled'/);
+  assert.match(source,/latestTask\.status \|\| ''\) === 'cancelled'/);
   assert.match(source,/latestTask\.cancelRequested === true/);
 });
 
