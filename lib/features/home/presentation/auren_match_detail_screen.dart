@@ -19,6 +19,7 @@ import '../../profile/presentation/profile_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'auren_opportunity_detail_screen.dart';
 import 'auren_content_detail_screen.dart';
+import '../../supplier/presentation/auren_supplier_action_draft_screen.dart';
 
 class AurenMatchDetailScreen extends StatefulWidget {
   final AurenMatchItem item;
@@ -115,6 +116,40 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
     await _opportunities.apply(uid: uid, opportunity: opportunity, note: clean);
     if (mounted) setState(() => _applied = true);
     _toast('تم إرسال التقديم بنجاح.');
+    return true;
+  }
+
+  String? _supplierId() {
+    final value = widget.item.data['supplierId'] ??
+        widget.item.data['aurenSupplierId'];
+    final id = value?.toString().trim() ?? '';
+    return id.isEmpty ? null : id;
+  }
+
+  Future<bool> _openSupplierWorkflow(String operation) async {
+    final supplierId = _supplierId();
+    if (supplierId == null) return false;
+
+    final data = widget.item.data;
+    final initial = <String, dynamic>{
+      'product': data['product'] ?? data['category'] ?? widget.item.title,
+      'quantity': data['quantity'] ?? data['qty'] ?? '',
+      'unit': data['unit'] ?? '',
+      'currency': data['currency'] ?? '',
+      'notes': data['notes'] ?? widget.intent,
+      'message': data['message'] ?? '',
+    };
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AurenSupplierActionDraftScreen(
+          supplierId: supplierId,
+          operation: operation,
+          intent: widget.intent,
+          initialPayload: initial,
+        ),
+      ),
+    );
     return true;
   }
 
@@ -227,11 +262,15 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
       var didExecute = false;
       switch (widget.item.action) {
         case AurenMatchAction.contact:
-          await _contact();
-          didExecute = true;
+          didExecute = await _openSupplierWorkflow('contact');
+          if (!didExecute) {
+            await _contact();
+            didExecute = true;
+          }
           break;
         case AurenMatchAction.requestQuote:
-          didExecute = await _requestQuoteFlow();
+          didExecute = await _openSupplierWorkflow('rfq');
+          if (!didExecute) didExecute = await _requestQuoteFlow();
           break;
         case AurenMatchAction.addToCart:
           didExecute = await _confirmAndRun(() => _commerce.addToCart(uid: uid, productId: widget.item.id, quantity: 1), 'إضافة للسلة', 'سيتم إضافة المنتج إلى سلتك. لن يتم تنفيذ أي دفع.');
