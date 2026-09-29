@@ -39,7 +39,7 @@ class _AurenSupplierActionDraftScreenState extends State<AurenSupplierActionDraf
     final payload = <String,dynamic>{'operation':widget.operation,'supplierId':widget.supplierId,'channel':_channel};
     if (_isRfq) { payload.addAll({'product':_product.text.trim(),'quantity':_quantity.text.trim(),'unit':_unit.text.trim(),'currency':_currency.text.trim().toUpperCase(),'notes':_notes.text.trim()}); }
     else { payload['message'] = _message.text.trim(); }
-    final result = await call.call(payload);
+    final result = await call.call({'operation': widget.operation, 'payload': payload});
     final data = Map<String,dynamic>.from(result.data as Map);
     final id = '${data['actionId'] ?? ''}'.trim();
     if (id.isEmpty) throw StateError('لم يتم إنشاء الإجراء.');
