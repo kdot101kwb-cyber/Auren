@@ -1,0 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+class FarmAlert{final String id,title,message,severity,status;final DateTime? dueAt;const FarmAlert({required this.id,required this.title,required this.message,required this.severity,required this.status,required this.dueAt});}
+class SmartFarmAlertsService{
+ final FirebaseFirestore db;SmartFarmAlertsService({FirebaseFirestore?firestore}):db=firestore??FirebaseFirestore.instance;
+ List<FarmAlert> generate({required double temperatureC,required double soilMoisture,required double rainfallMm,required int daysSinceLastInspection}){final a=<FarmAlert>[];void add(String t,String m,String s)=>a.add(FarmAlert(id:'',title:t,message:m,severity:s,status:'open',dueAt:null));if(temperatureC>=40)add('حرارة مرتفعة','افحص الماء والإجهاد الحراري.','high');if(soilMoisture<15)add('رطوبة تربة منخفضة','افحص الري والتربة قبل زيادة الماء.','high');if(rainfallMm>=50)add('أمطار قوية','افحص التصريف وتجمع المياه.','medium');if(daysSinceLastInspection>=7)add('فحص مستحق','أجرِ جولة فحص للحقل وسجّل الملاحظات.','medium');return a;}
+ Future<String> save({required String uid,required FarmAlert alert})async{final r=db.collection('users').doc(uid).collection('agricultureNotes').doc();await r.set({'title':'Farm Alert • '+alert.title,'note':alert.message+'\nseverity: '+alert.severity,'type':'field','createdAt':FieldValue.serverTimestamp(),'updatedAt':FieldValue.serverTimestamp()});return r.id;}
+}
