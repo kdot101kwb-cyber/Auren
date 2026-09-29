@@ -15,6 +15,26 @@ const db = admin.firestore();
 const LOCK_MS = 6 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
+
+async function syncProductionLifecycle(ref, output, event = 'output', error = '') {
+  const parts = String(ref.path || '').split('/');
+  if (parts.length !== 4 || parts[0] !== 'users' || parts[2] !== 'productionTasks') return;
+  const uid = parts[1]; const taskId = parts[3];
+  const clean = output && typeof output === 'object' ? output : {};
+  const hasOutput = Boolean(clean.url || clean.storagePath || clean.externalId);
+  if (event === 'output' && !hasOutput) return;
+  const taskSnap = await ref.get(); if (!taskSnap.exists) return;
+  const task = taskSnap.data() || {};
+  const retryCount = Number(task.retryCount || 0); const attempt = Number(task.generationAttempts || 0);
+  const outputId = taskId + '_r' + retryCount + '_a' + attempt;
+  const outputRef = db.collection('users').doc(uid).collection('outputLibrary').doc(outputId);
+  const historyRef = db.collection('users').doc(uid).collection('productionHistory').doc();
+  await db.runTransaction(async tx => {
+    if (event === 'output') tx.set(outputRef, {taskId,taskPath:ref.path,type:String(task.type||task.kind||task.mediaType||'production'),title:String(task.title||task.name||'Untitled production').slice(0,200),output:{url:String(clean.url||'').trim()||null,storagePath:String(clean.storagePath||'').trim()||null,externalId:String(clean.externalId||'').trim()||null},createdAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    tx.set(historyRef,{taskId,taskPath:ref.path,event,status:String(task.status||''),type:String(task.type||task.kind||task.mediaType||'production'),title:String(task.title||task.name||'Untitled production').slice(0,200),attempt,retryCount,error:String(error||task.lastError||'').slice(0,700),outputLibraryId:event==='output'?outputId:null,createdAt:admin.firestore.FieldValue.serverTimestamp()});
+  });
+}
+
 async function claimTask() {
   const snap = await db.collectionGroup('productionTasks')
     .where('status','in',['generation','provider_pending','processing'])
@@ -76,6 +96,7 @@ async function processTask(ref) {
         providerLockUntilMs:0,
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      await syncProductionLifecycle(ref, polled.output, 'output');
       return;
     }
     if (state === 'failed' || state === 'canceled') {
@@ -87,6 +108,7 @@ async function processTask(ref) {
         lastError:String(polled.error || 'Provider job failed.').slice(0,700),
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      await syncProductionLifecycle(ref, null, 'failed', polled.error || 'Provider job failed.');
       return;
     }
     await ref.set({
@@ -157,6 +179,7 @@ async function processTask(ref) {
     providerLockUntilMs:0,
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
   },{merge:true});
+  if (realOutput) await syncProductionLifecycle(ref, realOutput, 'output');
 }
 
 exports.runAurenLiveProductionProvider = onSchedule(
@@ -181,6 +204,7 @@ exports.runAurenLiveProductionProvider = onSchedule(
         lastError:String(error?.message || error).slice(0,700),
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      await syncProductionLifecycle(ref, null, 'failed', error?.message || error);
     }
   }
 );
