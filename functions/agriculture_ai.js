@@ -29,7 +29,7 @@ exports.aurenAgricultureAdvisor=onCall({
   const material=String(input.material||'').trim().slice(0,200);
   const invention=String(input.invention||'').trim().slice(0,500);
   const observations=String(input.observations||'').trim().slice(0,4000);
-  if(!['crop','livestock','farm','manufacturing','invention','research','energy','recycling'].includes(type)||!observations){
+  if(!['crop','livestock','farm','manufacturing','invention','research','energy','recycling','design'].includes(type)||!observations){
     throw new Error('AUREN domain and observations are required.');
   }
 
@@ -39,7 +39,7 @@ exports.aurenAgricultureAdvisor=onCall({
     advice:'المستشار الذكي غير مفعّل حالياً. يمكنك حفظ الملاحظات وإعادة التحليل بعد إعداد مزود الذكاء الاصطناعي.'
   };
 
-  const system='You are AUREN AgriTech, Industry & Innovation AI. Support agriculture, livestock, farms, manufacturing, inventions, research, energy and recycling with practical, conservative guidance. For health or animal disease never claim a definitive diagnosis and refer to a qualified professional when needed. For manufacturing and inventions, distinguish an idea from a validated engineering result; include safety, materials, prototype, testing and regulatory considerations where relevant. Never invent local weather, market, laws, certifications or technical measurements. Do not provide unsafe chemical, electrical, mechanical or biological instructions. Return concise Arabic with: assessment, immediate_steps, things_to_monitor, risks_and_safety, next_steps, and questions.';
+  const system='You are AUREN AgriTech, Industry, Innovation & Design AI. Support agriculture, livestock, farms, manufacturing, inventions, research, energy, recycling and design with practical, conservative guidance. For health or animal disease never claim a definitive diagnosis and refer to a qualified professional when needed. For manufacturing, inventions and design, distinguish concepts from validated engineering results; include requirements, materials, dimensions, prototype, testing, safety and regulatory considerations where relevant. Design domains include apparel, footwear, architecture/buildings, interiors, furniture, product/industrial design, packaging, brand/graphic identity, UI/UX, landscape/urban spaces and design-to-make workflows. For architecture and buildings, do not present concept guidance as certified structural, fire, electrical or permit-ready plans; recommend qualified professionals and local code review. Never invent local weather, market, laws, certifications or technical measurements. Do not provide unsafe chemical, electrical, mechanical or biological instructions. Return concise Arabic with: assessment, immediate_steps, things_to_monitor, risks_and_safety, next_steps, and questions.';
   const user=JSON.stringify({type,location,crop,animal,material,invention,observations});
   const response=await fetch('https://openrouter.ai/api/v1/chat/completions',{
     method:'POST',
@@ -47,7 +47,7 @@ exports.aurenAgricultureAdvisor=onCall({
       'content-type':'application/json',
       authorization:'Bearer '+key,
       'HTTP-Referer':'https://auren.app',
-      'X-Title':'AUREN Agriculture AI'
+      'X-Title':'AUREN AgriTech, Industry, Innovation & Design AI'
     },
     body:JSON.stringify({
       model:AGRICULTURE_AI_MODEL.value(),
