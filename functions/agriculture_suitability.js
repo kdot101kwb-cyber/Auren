@@ -30,6 +30,34 @@ async function getJson(url) {
   return res.json();
 }
 
+async function getGaezYieldEvidence({crop, waterSupply, inputLevel, latitude, longitude}) {
+  const catalog = await getGaezCatalog(crop, waterSupply, inputLevel);
+  if (!latitude || !longitude || !catalog.length) return {catalog, samples:[]};
+
+  const samples = [];
+  for (const item of catalog.slice(0, 5)) {
+    const objectId = item.objectid;
+    if (!objectId) continue;
+    const params = new URLSearchParams({
+      geometry: JSON.stringify({x:Number(longitude), y:Number(latitude), spatialReference:{wkid:4326}}),
+      geometryType:'esriGeometryPoint',
+      returnGeometry:'false',
+      returnCatalogItems:'true',
+      returnAllPixelValues:'false',
+      mosaicRule: JSON.stringify({where:"OBJECTID = " + Number(objectId)}),
+      outFields:'*',
+      f:'json'
+    });
+    try {
+      const payload = await getJson(GAEZ_RES05 + '/identify?' + params.toString());
+      samples.push({resource:item, identify:payload});
+    } catch (e) {
+      samples.push({resource:item, error:String(e.message || e)});
+    }
+  }
+  return {catalog, samples};
+}
+
 async function getGaezCatalog(crop, waterSupply, inputLevel) {
   const where = ["crop = '" + crop.replace(/'/g, "''") + "'"];
   if (waterSupply) where.push("water_supply = '" + waterSupply.replace(/'/g, "''") + "'");
