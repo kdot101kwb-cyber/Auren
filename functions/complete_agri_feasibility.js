@@ -80,7 +80,8 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
         price: !!priceSource,
         costs: !!fi?.costEvidence?.available,
         logisticsPerformance: !!(fi?.logisticsEvidence?.available || lg),
-        sourcedCostItems: fi?.costEvidenceLedger?.sourcedItems?.length || 0
+        sourcedCostItems: fi?.costEvidenceLedger?.sourcedItems?.length || 0,
+        marketEvidenceItems: fi?.marketEvidence?.length || 0
       }
     },
     market:{
@@ -93,9 +94,11 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
       missing:['local demand','competitor/supply conditions','monetary logistics cost','buyer/offtake terms','current local price validation'],
       evidenceStatus:{
         producerPrice:!!fi?.priceEvidence,
+        marketEvidence:!!(fi?.marketEvidence?.length),
         logisticsPerformance:!!(fi?.logisticsEvidence?.available || lg),
         sourcedCosts:!!fi?.costEvidence?.available
-      }
+      },
+      evidence:fi?.marketEvidence || []
     },
     risks:[
       'Climate and water variability',
