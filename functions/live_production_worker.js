@@ -53,6 +53,46 @@ function taskInput(data) {
   };
 }
 
+
+async function syncProductionLifecycle(ref, output = null, event = 'output', error = '') {
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const task = snap.data() || {};
+  const uid = ref.parent.parent?.id;
+  if (!uid) return;
+  const history = db.collection('users').doc(uid).collection('productionHistory').doc();
+  const payload = {
+    taskId: ref.id,
+    taskPath: ref.path,
+    event,
+    status: String(task.status || ''),
+    type: String(task.type || task.kind || task.mediaType || 'production'),
+    title: String(task.title || task.name || 'Untitled production').slice(0, 200),
+    attempt: Number(task.generationAttempts || 0),
+    retryCount: Number(task.retryCount || 0),
+    error: String(error || task.lastError || '').slice(0, 700),
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  if (output && (output.url || output.storagePath || output.externalId)) {
+    const outputDoc = db.collection('users').doc(uid).collection('outputLibrary').doc();
+    const normalized = {
+      url: output.url || null,
+      storagePath: output.storagePath || null,
+      externalId: output.externalId || null,
+    };
+    await outputDoc.set({
+      taskId: ref.id,
+      taskPath: ref.path,
+      type: payload.type,
+      title: payload.title,
+      output: normalized,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    payload.outputLibraryId = outputDoc.id;
+  }
+  await history.set(payload);
+}
+
 async function processTask(ref) {
   const snap=await ref.get();
   if (!snap.exists) return;
@@ -76,17 +116,19 @@ async function processTask(ref) {
         providerLockUntilMs:0,
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      await syncProductionLifecycle(ref, polled.output, 'output');
       return;
     }
     if (state === 'failed' || state === 'canceled') {
       await ref.set({
-        status:'generation',
+        status:'failed',
         providerState:state,
         externalJobId:'',
         providerLockUntilMs:0,
         lastError:String(polled.error || 'Provider job failed.').slice(0,700),
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      await syncProductionLifecycle(ref, null, 'failed', polled.error || 'Provider job failed.');
       return;
     }
     await ref.set({
@@ -116,12 +158,14 @@ async function processTask(ref) {
       lastError:'No Replicate model version configured for this video task.',
       updatedAt:admin.firestore.FieldValue.serverTimestamp(),
     },{merge:true});
+    await syncProductionLifecycle(ref, null, 'waiting_provider', 'No Replicate model version configured for this video task.');
     return;
   }
 
   const provider = candidates.includes('replicate') ? 'replicate' : '';
   if (!provider) {
     await ref.set({status:'waiting_provider',providerState:'no_live_video_adapter',providerLockUntilMs:0,lastError:'No live video provider adapter is configured for this task.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    await syncProductionLifecycle(ref, null, 'waiting_provider', 'No live video provider adapter is configured for this task.');
     return;
   }
 
@@ -140,6 +184,7 @@ async function processTask(ref) {
       lastError:String(result.message || 'Provider rejected task').slice(0,700),
       updatedAt:admin.firestore.FieldValue.serverTimestamp(),
     },{merge:true});
+    await syncProductionLifecycle(ref, null, 'waiting_provider', result.message || 'Provider rejected task');
     return;
   }
 
@@ -157,6 +202,7 @@ async function processTask(ref) {
     providerLockUntilMs:0,
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
   },{merge:true});
+  if (realOutput) await syncProductionLifecycle(ref, realOutput, 'output');
 }
 
 exports.runAurenLiveProductionProvider = onSchedule(
@@ -176,7 +222,7 @@ exports.runAurenLiveProductionProvider = onSchedule(
       await processTask(ref);
     } catch (error) {
       await ref.set({
-        status:'generation',
+        status:'failed',
         providerLockUntilMs:0,
         lastError:String(error?.message || error).slice(0,700),
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
