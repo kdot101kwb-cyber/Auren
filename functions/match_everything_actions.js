@@ -6,7 +6,7 @@ const db = admin.firestore();
 
 const DEFINITIONS = {
   contact: ['message','channel'],
-  rfq: ['product','quantity','unit','currency','notes'],
+  rfq: ['product','quantity','unit','currency','notes','matchFlowId'],
 };
 
 function clean(value, max) {
