@@ -413,26 +413,29 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
   };
 });
 
-exports.aurenGaezV5GlobalIngestStatus = onCall(async (request) => {
-  if (!request.auth?.uid) throw new Error('Authentication is required.');
-
+async function getGaezGlobalCoverageSnapshot() {
   const [countrySnap, rowSnap] = await Promise.all([
     db.collection('auren_global_countries').select('iso3','name').get(),
-    db.collection('auren_gaez_v5_crop_summary_rows').select('countryKey').get()
+    db.collection('auren_gaez_v5_crop_summary_rows').select('countryKey','cropKey').get()
   ]);
-
   const expected = new Map();
   countrySnap.forEach(doc => {
     const d = doc.data() || {};
     const iso3 = String(d.iso3 || doc.id || '').trim().toUpperCase();
     if (/^[A-Z]{3}$/.test(iso3)) expected.set(iso3, String(d.name || iso3));
   });
-
   const imported = new Set();
   rowSnap.forEach(doc => {
     const iso3 = String(doc.data()?.countryKey || '').trim().toUpperCase();
     if (/^[A-Z]{3}$/.test(iso3)) imported.add(iso3);
   });
+  return {expected, imported, rowCount:rowSnap.size};
+}
+
+exports.aurenGaezV5GlobalIngestStatus = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+
+  const {expected, imported, rowCount} = await getGaezGlobalCoverageSnapshot();
 
   const missing = Array.from(expected.entries())
     .filter(([iso3]) => !imported.has(iso3))
@@ -445,7 +448,7 @@ exports.aurenGaezV5GlobalIngestStatus = onCall(async (request) => {
     scope:'global',
     expectedCountryCount:expected.size,
     importedCountryCount:imported.size,
-    importedRowCount:rowSnap.size,
+    importedRowCount:rowCount,
     coveragePercent:expected.size ? Number((imported.size / expected.size * 100).toFixed(2)) : 0,
     missingCountryCount:missing.length,
     missingCountries:missing
