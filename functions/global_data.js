@@ -47,124 +47,62 @@ exports.aurenWorldBankIndicators=onCall(async(request)=>{
   return {status:'ok',source:'world_bank_wdi',indicator,country,rows:rows.slice(0,100)};
 });
 
-
-function normalizeSearchText(value) {
-  return String(value || '').trim().toLowerCase().slice(0, 120);
-}
-
-function publicCountryProfile(doc) {
-  const d = doc.data() || {};
-  return {
-    iso2: d.iso2 || null,
-    iso3: d.iso3 || doc.id,
-    name: d.name || null,
-    region: d.region || null,
-    incomeLevel: d.incomeLevel || null,
-    lendingType: d.lendingType || null,
-    capitalCity: d.capitalCity || null,
-    latitude: Number.isFinite(Number(d.latitude)) ? Number(d.latitude) : null,
-    longitude: Number.isFinite(Number(d.longitude)) ? Number(d.longitude) : null,
-    source: d.source || 'world_bank_wdi',
-  };
-}
-
-function indicatorSnapshot(doc) {
-  const d = doc.data() || {};
-  const indicators = d.indicators && typeof d.indicators === 'object' ? d.indicators : {};
-  const result = {};
-  for (const [key, value] of Object.entries(indicators)) {
-    if (!value || value.value == null) continue;
-    result[key] = {
-      value: Number(value.value),
-      year: String(value.year || ''),
-      indicatorName: String(value.indicatorName || key).slice(0, 240),
-    };
+exports.aurenCountryIntelligence=onCall(async(request)=>{
+  if(!request.auth?.uid) throw new Error('Authentication is required.');
+  const query=String(request.data?.query||'').trim().toLowerCase().slice(0,120);
+  const iso3=String(request.data?.iso3||'').trim().toUpperCase().slice(0,3);
+  const limit=Math.min(Math.max(Number(request.data?.limit)||10,1),25);
+  let docs=[];
+  if(iso3){
+    const snap=await db.collection('auren_global_countries').doc(iso3).get();
+    if(snap.exists) docs=[snap];
+  }else{
+    const snap=await db.collection('auren_global_countries').orderBy('name').limit(250).get();
+    docs=snap.docs.filter(doc=>{
+      if(!query)return true;
+      const d=doc.data()||{};
+      return [d.name,d.iso2,d.iso3,d.capitalCity,d.region].some(v=>String(v||'').toLowerCase().includes(query));
+    }).slice(0,limit);
   }
-  return result;
-}
-
-exports.aurenCountryIntelligence = onCall(async (request) => {
-  if (!request.auth?.uid) throw new Error('Authentication is required.');
-
-  const query = normalizeSearchText(request.data?.query);
-  const iso3 = String(request.data?.iso3 || '').trim().toUpperCase().slice(0, 3);
-  const limit = Math.min(Math.max(Number(request.data?.limit) || 10, 1), 25);
-
-  let docs = [];
-  if (iso3) {
-    const snap = await db.collection('auren_global_countries').doc(iso3).get();
-    if (snap.exists) docs = [snap];
-  } else {
-    const snap = await db.collection('auren_global_countries').orderBy('name').limit(250).get();
-    docs = snap.docs.filter((doc) => {
-      if (!query) return true;
-      const d = doc.data() || {};
-      return [d.name, d.iso2, d.iso3, d.capitalCity, d.region]
-        .some((value) => normalizeSearchText(value).includes(query));
-    }).slice(0, limit);
-  }
-
-  const results = [];
-  for (const doc of docs.slice(0, limit)) {
-    const country = publicCountryProfile(doc);
-    const dataSnap = await db.collection('auren_global_data').doc(country.iso3).get();
+  const results=[];
+  for(const doc of docs.slice(0,limit)){
+    const d=doc.data()||{};
+    const iso=d.iso3||doc.id;
+    const dataSnap=await db.collection('auren_global_data').doc(iso).get();
+    const indicators=dataSnap.exists?dataSnap.data()?.indicators||:{};
     results.push({
-      ...country,
-      indicators: dataSnap.exists ? indicatorSnapshot(dataSnap) : {},
+      iso2:d.iso2||null,iso3:iso,name:d.name||null,region:d.region||null,
+      incomeLevel:d.incomeLevel||null,capitalCity:d.capitalCity||null,
+      source:d.source||'world_bank_wdi',indicators
     });
   }
-
-  return {
-    status: 'ok',
-    query: query || null,
-    iso3: iso3 || null,
-    results,
-    count: results.length,
-    source: 'auren_global_data',
-  };
+  return {status:'ok',query:query||null,iso3:iso3||null,results,count:results.length,source:'auren_global_data'};
 });
 
-exports.aurenOpportunityCountryScan = onCall(async (request) => {
-  if (!request.auth?.uid) throw new Error('Authentication is required.');
-
-  const query = normalizeSearchText(request.data?.query);
-  const region = normalizeSearchText(request.data?.region);
-  const limit = Math.min(Math.max(Number(request.data?.limit) || 10, 1), 25);
-
-  const snap = await db.collection('auren_global_countries').orderBy('name').limit(250).get();
-  const candidates = [];
-
-  for (const doc of snap.docs) {
-    const country = publicCountryProfile(doc);
-    if (query && ![country.name, country.iso2, country.iso3, country.capitalCity, country.region]
-      .some((value) => normalizeSearchText(value).includes(query))) continue;
-    if (region && !normalizeSearchText(country.region).includes(region)) continue;
-
-    const dataSnap = await db.collection('auren_global_data').doc(country.iso3).get();
-    const indicators = dataSnap.exists ? indicatorSnapshot(dataSnap) : {};
-    const signals = {
-      population: Number(indicators['SP.POP.TOTL']?.value || 0),
-      gdpPerCapita: Number(indicators['NY.GDP.PCAP.CD']?.value || 0),
-      unemployment: Number(indicators['SL.UEM.TOTL.ZS']?.value || 0),
-      agriculturalLand: Number(indicators['AG.LND.AGRI.ZS']?.value || 0),
+exports.aurenOpportunityCountryScan=onCall(async(request)=>{
+  if(!request.auth?.uid) throw new Error('Authentication is required.');
+  const query=String(request.data?.query||'').trim().toLowerCase().slice(0,120);
+  const region=String(request.data?.region||'').trim().toLowerCase().slice(0,120);
+  const limit=Math.min(Math.max(Number(request.data?.limit)||10,1),25);
+  const snap=await db.collection('auren_global_countries').orderBy('name').limit(250).get();
+  const candidates=[];
+  for(const doc of snap.docs){
+    const d=doc.data()||{};
+    if(query&&!([d.name,d.iso2,d.iso3,d.capitalCity,d.region].some(v=>String(v||'').toLowerCase().includes(query))))continue;
+    if(region&&!String(d.region||'').toLowerCase().includes(region))continue;
+    const dataSnap=await db.collection('auren_global_data').doc(d.iso3||doc.id).get();
+    const indicators=dataSnap.exists?dataSnap.data()?.indicators||:{};
+    const signals={
+      population:Number(indicators['SP.POP.TOTL']?.value||0),
+      gdpPerCapita:Number(indicators['NY.GDP.PCAP.CD']?.value||0),
+      unemployment:Number(indicators['SL.UEM.TOTL.ZS']?.value||0),
+      agriculturalLand:Number(indicators['AG.LND.AGRI.ZS']?.value||0)
     };
-    const completeness = Object.values(signals).filter((value) => Number.isFinite(value) && value > 0).length;
-    candidates.push({
-      ...country,
-      indicators,
-      dataCompleteness: completeness,
-      signals,
-    });
+    const completeness=Object.values(signals).filter(v=>Number.isFinite(v)&&v>0).length;
+    candidates.push({...d,indicators,dataCompleteness:completeness,signals});
   }
-
-  candidates.sort((a, b) => b.dataCompleteness - a.dataCompleteness || a.name.localeCompare(b.name));
-  return {
-    status: 'ok',
-    query: query || null,
-    region: region || null,
-    results: candidates.slice(0, limit),
-    count: Math.min(candidates.length, limit),
-    rankingBasis: 'data_completeness_then_name',
-    source: 'world_bank_wdi',
-  };
+  candidates.sort((a,b)=>b.dataCompleteness-a.dataCompleteness||String(a.name||'').localeCompare(String(b.name||'')));
+  return {status:'ok',query:query||null,region:region||null,results:candidates.slice(0,limit),count:Math.min(candidates.length,limit),rankingBasis:'data_completeness_then_name',source:'world_bank_wdi'};
 });
+
+Object.assign(module.exports,require('./agri_logistics_evidence'));
