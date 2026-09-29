@@ -8,6 +8,7 @@ const db = admin.firestore();
 
 const GAEZ_CATALOG_URL = 'https://data.fao.org/catalog/dataset/gaez-v5-master-config';
 const CROP_SUMMARY_CATALOG_URL = 'https://data.fao.org/catalog/dataset/crop-summary-gaez';
+const GAEZ_V5_RES05 = 'https://gaez-services.fao.org/server/rest/services/res05/ImageServer';
 
 const THEMES = [
   'land_water_resources',
@@ -32,6 +33,47 @@ exports.aurenGaezCatalog = onCall(async (request) => {
       selected:'30 arc-second (~1 km at equator)'
     },
     note:'This catalog layer intentionally does not fabricate a raster/API endpoint. Data download/query endpoints should be added only after validating the current FAO catalog resource.'
+  };
+});
+
+async function getJson(url) {
+  const res = await fetch(url, {
+    headers:{accept:'application/json'},
+    signal:AbortSignal.timeout(30000)
+  });
+  if (!res.ok) throw new Error('GAEZ request failed: ' + res.status);
+  return res.json();
+}
+
+exports.aurenGaezSuitabilityCatalog = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+
+  const crop = String(request.data?.crop || '').trim();
+  const waterSupply = String(request.data?.waterSupply || '').trim();
+  const inputLevel = String(request.data?.inputLevel || '').trim();
+
+  const where = [];
+  if (crop) where.push("crop = '" + crop.replace(/'/g, "''") + "'");
+  if (waterSupply) where.push("water_supply = '" + waterSupply.replace(/'/g, "''") + "'");
+  if (inputLevel) where.push("input_level = '" + inputLevel.replace(/'/g, "''") + "'");
+
+  const params = new URLSearchParams({
+    where: where.length ? where.join(' AND ') : '1=1',
+    outFields:'objectid,name,variable,year,model,rcp,crop,water_supply,input_level,units,download_url,file_id',
+    returnGeometry:'false',
+    resultRecordCount:'1000',
+    f:'json'
+  });
+
+  const payload = await getJson(GAEZ_V5_RES05 + '/query?' + params.toString());
+  const items = payload.features || [];
+
+  return {
+    status:'ok',
+    source:'FAO GAEZ v5',
+    service:GAEZ_V5_RES05,
+    count:items.length,
+    items:items.map(x => x.attributes || {})
   };
 });
 
@@ -61,7 +103,8 @@ exports.aurenGaezCropQuery = onCall(async (request) => {
     query,
     source:'FAO GAEZ v5 Crop Summary',
     catalogUrl:CROP_SUMMARY_CATALOG_URL,
-    status:'pending_data_connector',
+    gaezV5SuitabilityService:GAEZ_V5_RES05,
+    status:'queued',
     createdBy:request.auth.uid,
     createdAt:admin.firestore.FieldValue.serverTimestamp()
   });
