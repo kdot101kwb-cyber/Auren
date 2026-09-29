@@ -36,6 +36,21 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
     !!fy
   ].filter(Boolean).length;
 
+  const priceSource = fi?.priceSource || null;
+  const yieldSource = fi?.yieldSource || null;
+  const evidenceTrace = {
+    yield: {
+      source: yieldSource,
+      evidence: fi?.yieldEvidence || null,
+      input: fi?.inputs?.yieldTonsHa ?? null
+    },
+    price: {
+      source: priceSource,
+      evidence: fi?.priceEvidence || null,
+      input: fi?.inputs?.pricePerTon ?? null
+    }
+  };
+
   const report = {
     status:'ok',
     project:{iso3,crop,sector:'agriculture'},
@@ -46,16 +61,18 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
     },
     financial:{
       oneYear:fi?.outputs || null,
+      evidenceTrace,
       scenarios:fi?.scenarios || null,
       fiveYear:fy?.summary || null,
       fiveYearRows:fy?.years || null
     },
     market:{
-      status:'requires_market_inputs',
+      status:priceSource === 'FAOSTAT_producer_price' ? 'faostat_producer_price_loaded' : 'requires_market_inputs',
       inputsProvided:{
         sellingPrice:fi?.inputs?.pricePerTon ?? null,
         otherAnnualRevenue:fi?.inputs?.otherAnnualRevenue ?? null
       },
+      priceEvidence:fi?.priceEvidence || null,
       missing:['local demand','competitor/supply conditions','logistics cost','buyer/offtake terms','current local price validation']
     },
     risks:[
@@ -69,6 +86,7 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
     ],
     decision:{
       recommendation:'requires_validation',
+      evidenceStatus:{yieldSource,priceSource},
       reason:'The report combines available evidence and project assumptions but does not replace field, laboratory, legal or market due diligence.'
     },
     nextSteps:[
