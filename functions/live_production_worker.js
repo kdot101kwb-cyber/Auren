@@ -97,6 +97,11 @@ async function processTask(ref) {
   const snap=await ref.get();
   if (!snap.exists) return;
   const task=snap.data() || {};
+  // Cancellation is authoritative: never let an in-flight provider job revive a
+  // task after the user has cancelled it.
+  if (String(task.status || '') === 'cancelled' || task.cancelRequested === true) {
+    return;
+  }
   const idempotencyKey=String(task.idempotencyKey || ref.id);
 
   // Resume an already-submitted asynchronous job instead of submitting twice.
@@ -108,6 +113,12 @@ async function processTask(ref) {
     });
     if (!polled.ok) throw new Error(polled.message || 'Provider polling failed.');
     const state=String(polled.state || '').toLowerCase();
+    const latest = await ref.get();
+    if (!latest.exists) return;
+    const latestTask = latest.data() || {};
+    if (String(latestTask.status || '') === 'cancelled' || latestTask.cancelRequested === true) {
+      return;
+    }
     if (polled.output && (polled.output.url || polled.output.storagePath || polled.output.externalId)) {
       await ref.set({
         status:'output',
@@ -221,12 +232,21 @@ exports.runAurenLiveProductionProvider = onSchedule(
     try {
       await processTask(ref);
     } catch (error) {
+      const latest = await ref.get();
+      if (latest.exists && (String(latest.data()?.status || '') === 'cancelled' || latest.data()?.cancelRequested === true)) {
+        return;
+      }
       await ref.set({
         status:'failed',
         providerLockUntilMs:0,
         lastError:String(error?.message || error).slice(0,700),
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       },{merge:true});
+      try {
+        await syncProductionLifecycle(ref, null, 'failed', error?.message || error);
+      } catch (_) {
+        // Lifecycle telemetry must never crash the scheduled worker.
+      }
     }
   }
 );
