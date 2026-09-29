@@ -21,7 +21,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
 
   String? _uid;
   String? _busyActionId;
-  static const _knownActions = <String>['demo.echo', 'demo.create_note', 'memory.save'];
+  static const _knownActions = <String>['demo.echo', 'demo.create_note', 'memory.save', 'supplier.workflow'];
 
   @override
   void initState() {
