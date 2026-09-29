@@ -30,6 +30,7 @@ exports.aurenGaezCatalog = onCall(async (request) => {
     source:'FAO GAEZ v5',
     catalogUrl:GAEZ_CATALOG_URL,
     cropSummaryUrl:CROP_SUMMARY_CATALOG_URL,
+    cropSummaryQueryUrl:GAEZ_V5_CROP_SUMMARY_URL,
     themes:THEMES,
     resolution:{
       standard:'5 arc-minute (~10 km at equator)',
@@ -97,7 +98,7 @@ exports.aurenGaezSuitabilityCatalog = onCall(async (request) => {
   return {
     status:'ok',
     source:'FAO GAEZ v5',
-    endpointStatus:process.env.GAEZ_V5_RES05 ? 'configured' : 'not_verified',
+    endpointStatus:process.env.GAEZ_V5_RES05 ? 'configured_not_yet_proven' : 'not_configured',
     service:GAEZ_V5_RES05,
     count:items.length,
     items:items.map(x => x.attributes || {})
@@ -334,6 +335,7 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
         batch.set(ref, {
           source:'FAO GAEZ v5 Crop Summary Data',
           version:'GAEZ v5',
+          verification:{provider:'FAO',catalog:'Crop Summary Data',verifiedByCatalog:true},
           catalogUrl:CROP_SUMMARY_CATALOG_URL,
           resourceUrl:parsed.toString(),
           countryKey,
