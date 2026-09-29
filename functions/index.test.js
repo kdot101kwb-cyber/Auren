@@ -551,3 +551,26 @@ test('final package preserves normalized multilingual subtitle URLs',()=>{
   const worker=fs.readFileSync(new URL('./post_assembly_worker.js', import.meta.url), 'utf8');
   assert.match(worker,/episodes\[n\]\.subtitles = normalizeSubtitleOutput/);
 });
+
+
+test('Watch Together push triggers are server-owned and actor-excluded', () => {
+  assert.match(source, /exports\.onWatchTogetherMessageCreated/);
+  assert.match(source, /exports\.onWatchTogetherActivityCreated/);
+  assert.match(source, /actorUid\) \\{/);
+  assert.match(source, /uid !== actorUid/);
+  assert.match(source, /watchTogetherTokens/);
+  assert.match(source, /sendEachForMulticast/);
+});
+
+test('Watch Together push delivery cleans invalid FCM tokens', () => {
+  assert.match(source, /messaging\\/registration-token-not-registered/);
+  assert.match(source, /messaging\\/invalid-registration-token/);
+  assert.match(source, /watchTogetherTokens.*doc\(token\)\.delete/);
+});
+
+test('Watch Together push payloads carry room and event identity', () => {
+  assert.match(source, /roomId/);
+  assert.match(source, /eventId: String\(eventId/);
+  assert.match(source, /type: 'watch_together_chat'/);
+  assert.match(source, /type: 'watch_together_activity'/);
+});
