@@ -7,11 +7,12 @@ class AurenSupplierActionDraftScreen extends StatefulWidget {
   final String supplierId;
   final String operation;
   final String intent;
+  final String? matchFlowId;
   final Map<String, dynamic> initialPayload;
 
   const AurenSupplierActionDraftScreen({
     super.key, required this.supplierId, required this.operation,
-    required this.intent, this.initialPayload = const {},
+    required this.intent, this.matchFlowId, this.initialPayload = const {},
   });
 
   @override State<AurenSupplierActionDraftScreen> createState() => _AurenSupplierActionDraftScreenState();
@@ -39,6 +40,7 @@ class _AurenSupplierActionDraftScreenState extends State<AurenSupplierActionDraf
   Future<String> _createAction() async {
     final call = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('createAurenMatchAction');
     final payload = <String,dynamic>{'operation':widget.operation,'supplierId':widget.supplierId,'channel':_channel};
+    if (widget.matchFlowId != null && widget.matchFlowId!.trim().isNotEmpty) payload['matchFlowId'] = widget.matchFlowId!.trim();
     if (_isRfq) { payload.addAll({'product':_product.text.trim(),'quantity':_quantity.text.trim(),'unit':_unit.text.trim(),'currency':_currency.text.trim().toUpperCase(),'notes':_notes.text.trim()}); }
     else { payload['message'] = _message.text.trim(); }
     final result = await call.call({'operation': widget.operation, 'payload': payload});
