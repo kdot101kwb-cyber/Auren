@@ -9,6 +9,7 @@ const db = admin.firestore();
 const GAEZ_CATALOG_URL = 'https://data.fao.org/catalog/dataset/gaez-v5-master-config';
 const CROP_SUMMARY_CATALOG_URL = 'https://data.fao.org/catalog/dataset/crop-summary-gaez';
 const GAEZ_V5_RES05 = process.env.GAEZ_V5_RES05 || null;
+const GAEZ_V5_CROP_SUMMARY_URL = process.env.GAEZ_V5_CROP_SUMMARY_URL || null;
 
 const THEMES = [
   'land_water_resources',
@@ -99,6 +100,21 @@ exports.aurenGaezSuitabilityCatalog = onCall(async (request) => {
     count:items.length,
     items:items.map(x => x.attributes || {})
   };
+});
+
+exports.aurenGaezV5CropSummary = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  if (!GAEZ_V5_CROP_SUMMARY_URL) {
+    return {status:'configuration_required', source:'FAO GAEZ v5 Crop Summary', catalogUrl:CROP_SUMMARY_CATALOG_URL, reason:'GAEZ_V5_CROP_SUMMARY_URL is not configured'};
+  }
+  const p=request.data||{};
+  const params=new URLSearchParams();
+  for (const key of ['country','crop','climateSource','ssp','period','waterSupply','management']) {
+    if (p[key]) params.set(key,String(p[key]));
+  }
+  const url=GAEZ_V5_CROP_SUMMARY_URL + (GAEZ_V5_CROP_SUMMARY_URL.includes('?')?'&':'?') + params.toString();
+  const payload=await getJson(url);
+  return {status:'ok',source:'FAO GAEZ v5 Crop Summary',endpoint:url.split('?')[0],filters:Object.fromEntries(params.entries()),data:payload};
 });
 
 exports.aurenGaezCropQuery = onCall(async (request) => {
