@@ -170,6 +170,7 @@ exports.aurenGaezV5CropSummaryHealth = onCall(async (request) => {
   const parsed=assertOfficialFaoResource(GAEZ_V5_CROP_SUMMARY_URL);
   const res=await fetch(parsed.toString(), {headers:{accept:'text/csv,application/json,text/plain'},signal:AbortSignal.timeout(30000)});
   const body=await res.text();
+  const resourceSha256 = crypto.createHash('sha256').update(body).digest('hex');
   const contentType=String(res.headers.get('content-type')||'');
   return {
     status:res.ok ? 'reachable_official_fao_resource' : 'resource_error',
@@ -380,6 +381,7 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
           verification:{provider:'FAO',catalog:'Crop Summary Data',verifiedByCatalog:true},
           catalogUrl:CROP_SUMMARY_CATALOG_URL,
           resourceUrl:parsed.toString(),
+          resourceSha256,
           countryKey,
           cropKey,
           row,
@@ -404,6 +406,7 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
     cropCount:cropSet.size,
     countries:Array.from(countrySet).sort(),
     resourceUrl:parsed.toString(),
+    resourceSha256,
     note:'Rows are stored individually so the dataset can cover all countries without exceeding Firestore document limits. Use offset/nextOffset for resumable global ingestion.'
   };
 });
