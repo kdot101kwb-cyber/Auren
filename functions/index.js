@@ -3645,3 +3645,64 @@ Object.assign(module.exports, require('./faostat_global_data'));
 Object.assign(module.exports, require('./faostat_bulk_ingest'));
 Object.assign(module.exports, require('./faostat_ingest_scheduler'));
 Object.assign(module.exports, require('./fao_agri_intelligence'));\nObject.assign(module.exports, require('./opportunity_intelligence'));
+const MATCH_STOPWORDS = new Set(['اريد','أريد','ابحث','بحث','عن','لي','من','في','مع','للبيع','بسعر','مناسب','find','search','for','me','from','with','price','cheap','supplier','business','company','factory']);
+
+function normalizeMatchTokens(value) {
+  return String(value || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').split(/\s+/).filter((v) => v && !MATCH_STOPWORDS.has(v)).slice(0, 20);
+}
+
+function matchScore(item, tokens) {
+  const haystack = [
+    item.name, item.description, item.category, item.country, item.city,
+    item.region, item.industry, item.product, item.products, item.tags,
+  ].flatMap((v) => Array.isArray(v) ? v : [v]).join(' ').toLowerCase();
+  return tokens.reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
+}
+
+exports.aurenMatchEverythingIntelligence = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+
+    const query = String(request.data?.query || '').trim().slice(0, 500);
+    if (!query) throw aurenHttpsError('invalid-argument', 'query is required.');
+
+    const requestedCountry = String(request.data?.country || request.data?.iso3 || '').trim();
+    const limit = Math.min(Math.max(Number(request.data?.limit) || 10, 1), 25);
+    const intelligence = require('./opportunity_intelligence');
+    const search = await new Promise((resolve, reject) => {
+      try {
+        const handler = intelligence.aurenOpportunityIntelligence;
+        handler.run ? handler.run({auth:{uid}, data:{query, iso3: requestedCountry.length === 3 ? requestedCountry : '', region:'', limit}})
+          .then(resolve).catch(reject)
+          : resolve(null);
+      } catch (e) { reject(e); }
+    });
+
+    const raw = search?.data || search || {};
+    const tokens = normalizeMatchTokens(query);
+    const all = [
+      ...(raw.suppliers || []).map((x) => ({...x, resultType:'supplier'})),
+      ...(raw.businesses || []).map((x) => ({...x, resultType:'business'})),
+      ...(raw.opportunities || []).map((x) => ({...x, resultType:'opportunity'})),
+    ].map((item) => ({...item, matchScore:matchScore(item, tokens)}))
+      .sort((a,b) => b.matchScore - a.matchScore || String(a.name).localeCompare(String(b.name)));
+
+    const top = all.slice(0, limit);
+    const supplier = top.find((x) => x.resultType === 'supplier');
+
+    return {
+      status:'ok',
+      query,
+      context:{country:raw.country || null, countries:raw.countryMatches || []},
+      results:top,
+      nextActions: supplier ? [
+        {type:'supplier.contact', requiresApproval:true, supplierId:supplier.id, label:'Contact supplier'},
+        {type:'supplier.rfq', requiresApproval:true, supplierId:supplier.id, label:'Create RFQ'},
+      ] : [],
+      counts:raw.counts || {suppliers:0,businesses:0,opportunities:0,countries:0},
+    };
+  }
+);
+
