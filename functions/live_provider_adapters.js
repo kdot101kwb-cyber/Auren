@@ -101,6 +101,55 @@ async function pollReplicate({token, predictionId}) {
   };
 }
 
+/**
+ * MoneyPrinterTurbo adapter.
+ * The base URL/path are deployment-configured so AUREN can point at a local,
+ * LAN, VM, or hosted MPT instance without exposing its address to clients.
+ */
+async function submitMoneyPrinterTurbo({baseUrl, apiKey='', generatePath='/v1/video/generate', subject, language='en', aspectRatio='16:9', voice='', idempotencyKey=''}) {
+  const base = requireValue(baseUrl, 'MPT_BASE_URL').replace(/\\/$/, '');
+  const path = String(generatePath || '/v1/video/generate').startsWith('/') ? String(generatePath || '/v1/video/generate') : '/' + String(generatePath);
+  const headers = apiKey ? {authorization:'Bearer '+String(apiKey)} : {};
+  const result = await requestJson(base + path, {
+    method:'POST',
+    headers,
+    body:{
+      subject:String(subject || '').slice(0,3000),
+      video_subject:String(subject || '').slice(0,3000),
+      language:String(language || 'en'),
+      aspect_ratio:String(aspectRatio || '16:9'),
+      ...(voice ? {voice:String(voice).slice(0,120)} : {}),
+      idempotency_key:String(idempotencyKey || ''),
+    },
+    timeoutMs:30000,
+  });
+  if (!result.ok) return {ok:false, providerId:'moneyprinterturbo', ...result};
+  const data=result.data || {};
+  const jobId=String(data.task_id || data.job_id || data.id || data.taskId || '');
+  const output=normalizeGenericVideoOutput(data);
+  if (!jobId && !output) return {ok:false, providerId:'moneyprinterturbo', message:'MoneyPrinterTurbo returned neither a job id nor a video artifact.'};
+  return {ok:true, providerId:'moneyprinterturbo', state:String(data.status || (output ? 'completed' : 'pending')), externalJobId:jobId, idempotencyKey, output};
+}
+
+async function pollMoneyPrinterTurbo({baseUrl, apiKey='', jobId, pollPath='/v1/videos/{job_id}/status'}) {
+  const base = requireValue(baseUrl, 'MPT_BASE_URL').replace(/\\/$/, '');
+  const id = requireValue(jobId, 'MPT_JOB_ID');
+  const template=String(pollPath || '/v1/videos/{job_id}/status');
+  const path=(template.startsWith('/') ? template : '/' + template).replace('{job_id}', encodeURIComponent(id));
+  const result=await requestJson(base + path, {headers:apiKey ? {authorization:'Bearer '+String(apiKey)} : {}});
+  if (!result.ok) return {ok:false, providerId:'moneyprinterturbo', ...result};
+  const data=result.data || {};
+  const state=String(data.status || data.state || 'unknown').toLowerCase();
+  const output=normalizeGenericVideoOutput(data);
+  return {ok:true, providerId:'moneyprinterturbo', state, externalJobId:id, output, error:String(data.error || data.error_message || '').slice(0,700)};
+}
+
+function normalizeGenericVideoOutput(data) {
+  const candidates=[data?.video_url,data?.url,data?.output?.url,data?.result?.url,data?.result?.video_url,data?.result?.video_path,data?.video_path];
+  const url=candidates.find((v)=>typeof v==='string' && v.trim());
+  return url ? {url:String(url).trim()} : null;
+}
+
 async function cancelReplicate({token, predictionId}) {
   const key = requireValue(token, 'REPLICATE_API_TOKEN');
   const id = requireValue(predictionId, 'REPLICATE_PREDICTION_ID');
@@ -138,4 +187,7 @@ module.exports = {
   pollReplicate,
   cancelReplicate,
   normalizeReplicateOutput,
+  submitMoneyPrinterTurbo,
+  pollMoneyPrinterTurbo,
+  normalizeGenericVideoOutput,
 };
