@@ -15,6 +15,19 @@ const db = admin.firestore();
 
 const LOCK_MS = 6 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
+const POLL_BACKOFF_BASE_MS = 60 * 1000;
+const POLL_BACKOFF_MAX_MS = 15 * 60 * 1000;
+
+function isTransientProviderError(error) {
+  const status = Number(error?.status || error?.statusCode || 0);
+  return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+function nextPollAtMs(pollFailures) {
+  const failures = Math.max(1, Number(pollFailures || 0));
+  return Date.now() + Math.min(POLL_BACKOFF_MAX_MS, POLL_BACKOFF_BASE_MS * (2 ** Math.min(failures - 1, 4)));
+}
+
 
 async function exhaustGenerationAttempts() {
   const snap = await db.collectionGroup('productionTasks')
@@ -63,6 +76,7 @@ async function claimTask() {
       const data=fresh.data() || {};
       if (!['generation','provider_pending','processing'].includes(String(data.status || ''))) return false;
       if (Number(data.providerLockUntilMs || 0) > Date.now()) return false;
+      if (Number(data.nextPollAtMs || 0) > Date.now()) return false;
       if (Number(data.generationAttempts || 0) >= MAX_ATTEMPTS) return false;
       tx.update(item.ref,{
         status:'provider_pending',
@@ -155,7 +169,23 @@ async function processTask(ref) {
       credentials:{token:REPLICATE_API_TOKEN.value()},
       externalJobId:String(task.externalJobId),
     });
-    if (!polled.ok) throw new Error(polled.message || 'Provider polling failed.');
+    if (!polled.ok) {
+      if (isTransientProviderError(polled)) {
+        const pollFailures = Number(task.providerPollFailures || 0) + 1;
+        await ref.set({
+          status:'processing',
+          providerState:'poll_backoff',
+          providerPollFailures:pollFailures,
+          nextPollAtMs:nextPollAtMs(pollFailures),
+          providerLockUntilMs:0,
+          lastError:String(polled.message || 'Temporary provider polling failure.').slice(0,700),
+          updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+        },{merge:true});
+        await syncProductionLifecycle(ref, null, 'poll_backoff', polled.message || 'Temporary provider polling failure.');
+        return;
+      }
+      throw Object.assign(new Error(polled.message || 'Provider polling failed.'), {status:polled.status});
+    }
     const state=String(polled.state || '').toLowerCase();
     const latest = await ref.get();
     if (!latest.exists) return;
@@ -190,6 +220,8 @@ async function processTask(ref) {
       status:'processing',
       providerState:state,
       providerLockUntilMs:0,
+      providerPollFailures:0,
+      nextPollAtMs:0,
       updatedAt:admin.firestore.FieldValue.serverTimestamp(),
     },{merge:true});
     return;
@@ -255,6 +287,8 @@ async function processTask(ref) {
     output:realOutput,
     providerAttempts:result.attempts || [],
     providerLockUntilMs:0,
+    providerPollFailures:0,
+    nextPollAtMs:0,
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
   },{merge:true});
   if (realOutput) await syncProductionLifecycle(ref, realOutput, 'output');
