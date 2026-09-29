@@ -22,6 +22,19 @@ async function getJson(url) {
   return res.json();
 }
 
+async function ingestFaostatCountryInternal(iso3, domainKey) {
+  const domain = DOMAINS[domainKey];
+  if (!domain) throw new Error('Unsupported FAOSTAT domain.');
+  const url = FAOSTAT_BASE + '/data/' + domain + '?area_code=' + encodeURIComponent(iso3) + '&page_size=100';
+  const payload = await getJson(url);
+  await db.collection('auren_faostat').doc(iso3 + '_' + domain).set({
+    iso3, domain:domainKey, domainCode:domain, data:payload, source:'FAOSTAT',
+    ingestedBy:'aurenFaostatBulkIngest', updatedAt:admin.firestore.FieldValue.serverTimestamp()
+  }, {merge:true});
+}
+
+exports.ingestFaostatCountryInternal = ingestFaostatCountryInternal;
+
 exports.aurenFaostatBulkIngest = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
 
