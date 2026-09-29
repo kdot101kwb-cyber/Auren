@@ -8,6 +8,6 @@ test('output requires real artifact',()=>assert.match(source,/!url&&!storagePath
 test('history is recorded',()=>assert.match(source,/writeHistory\(tx,uid,ref,task,\'retry\'/));
 
 
-test('cancelled task cannot be revived by worker lifecycle', () => {
-  assert.equal(['cancelled'].includes('generation'), false);
-});
+test('cancelled task cannot be revived by worker lifecycle',()=>assert.match(source,/status.*cancelled.*cancelRequested/));
+test('history uses deterministic event ids',()=>assert.match(source,/lifecycleEventId\(taskRef,event,task\)/));
+test('outputs use deterministic ids',()=>assert.match(source,/outputKey\(ref\.id/));
