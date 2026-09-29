@@ -12,7 +12,8 @@ import '../../../services/tv/auren_tv_profile_service.dart';
 import '../../../services/tv/auren_tv_watch_together_service.dart';
 
 class AurenTvScreen extends StatefulWidget {
-  const AurenTvScreen({super.key});
+  final String? initialWatchTogetherRoomId;
+  const AurenTvScreen({super.key, this.initialWatchTogetherRoomId});
   @override State<AurenTvScreen> createState() => _AurenTvScreenState();
 }
 
@@ -50,6 +51,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   StreamSubscription<AurenTvWatchTogetherRoom>? _watchTogetherSubscription;
   StreamSubscription<QuerySnapshot<Map<String,dynamic>>>? _watchTogetherMessageSubscription;
   StreamSubscription<QuerySnapshot<Map<String,dynamic>>>? _watchTogetherActivitySubscription;
+  StreamSubscription<QuerySnapshot<Map<String,dynamic>>>? _watchTogetherReactionSubscription;
   bool _watchTogetherActivityInitialized = false;
   final Set<String> _seenWatchActivityIds = <String>{};
   int _watchTogetherUnreadCount = 0;
@@ -81,6 +83,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override void initState() {
     super.initState();
+    final initialRoomId = widget.initialWatchTogetherRoomId?.trim();
+    if (initialRoomId != null && initialRoomId.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openWatchTogetherRoom(initialRoomId));
+    }
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
     Future.wait([AurenTvProfileService.instance.profiles(), AurenTvProfileService.instance.activeProfileId()]).then((v) { if (!mounted) return; final ps=v[0] as List<AurenTvProfile>; final active=v[1] as String; setState(() { _activeTvProfile=active; _tvProfiles..clear()..addEntries(ps.map((p)=>MapEntry(p.id,p.name))); }); });
     AurenTvService.instance.autoRefreshSources(limit: 150).then((_) => AurenTvService.instance.refreshEpgAndSyncReminders()).catchError((_) {});
@@ -243,6 +249,85 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     }
   }
 
+  Future<void> _openWatchTogetherRoom(String roomId) async {
+    final service = AurenTvWatchTogetherService.instance;
+    try {
+      final room = await service.getRoom(roomId);
+      if (!mounted) return;
+      if (room == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الغرفة غير متاحة أو لم تعد عضواً فيها.')));
+        return;
+      }
+      await _connectWatchTogetherRoom(room, applyState: true);
+      if (mounted) await _showWatchTogetherStatus(room);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح غرفة Watch Together.')));
+    }
+  }
+
+  Future<void> _connectWatchTogetherRoom(AurenTvWatchTogetherRoom room, {bool applyState = false}) async {
+    final service = AurenTvWatchTogetherService.instance;
+    final roomId = room.id;
+    await _watchTogetherSubscription?.cancel();
+    await _watchTogetherMessageSubscription?.cancel();
+    await _watchTogetherActivitySubscription?.cancel();
+    await _watchTogetherReactionSubscription?.cancel();
+    _watchTogetherSyncTimer?.cancel();
+    _watchTogetherPresenceTimer?.cancel();
+    await service.initializePushNotifications();
+    if (!mounted) return;
+    setState(() {
+      _watchTogether = true;
+      _watchTogetherRoom = roomId;
+      _watchTogetherReconnectPending = false;
+      _watchTogetherWasOffline = false;
+      _watchTogetherActivityInitialized = false;
+      _watchTogetherMessagesInitialized = false;
+      _watchTogetherUnreadCount = 0;
+      _watchTogetherLastMessage = '';
+      _watchTogetherLastMessageId = null;
+      _seenWatchActivityIds.clear();
+    });
+    if (applyState) await _applyWatchTogetherRoomState(room);
+    await service.heartbeat(roomId);
+    _watchTogetherPresenceTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (_watchTogetherRoom == roomId) {
+        try { await service.heartbeat(roomId); } catch (_) {}
+      }
+    });
+    _watchTogetherSyncTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (_watchTogetherRoom != roomId || _applyingRemoteWatchState || player == null || !player!.value.isInitialized) return;
+      try {
+        await service.sync(roomId, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying);
+      } catch (_) {}
+    });
+    _startWatchTogetherMessageTracking(roomId);
+    _startWatchTogetherActivityTracking(roomId);
+    _watchTogetherSubscription = service.watch(roomId).listen((remote) async {
+      if (!mounted || remote.status == 'closed') return;
+      final current = playing;
+      if (current == null || remote.channelId != current.id) return;
+      final p = player;
+      if (p == null || !p.value.isInitialized) return;
+      _applyingRemoteWatchState = true;
+      try {
+        final remotePos = Duration(milliseconds: (remote.positionSeconds * 1000).round());
+        if ((p.value.position - remotePos).abs() > const Duration(seconds: 3)) await p.seekTo(remotePos);
+        if (remote.isPlaying && !p.value.isPlaying && !lowData) await p.play();
+        if (!remote.isPlaying && p.value.isPlaying) await p.pause();
+      } finally {
+        _applyingRemoteWatchState = false;
+      }
+    });
+    _watchTogetherReactionSubscription = service.reactions(roomId).listen((snap) {
+      if (!mounted) return;
+      for (final doc in snap.docChanges.where((change) => change.type == DocumentChangeType.added)) {
+        final emoji = doc.doc.data()['emoji'] as String?;
+        if (emoji != null && emoji.isNotEmpty) _showFloatingReaction(emoji);
+      }
+    });
+  }
+
   Future<void> _showWatchTogether() async {
     final service = AurenTvWatchTogetherService.instance;
     final action = await showDialog<String>(context: context, builder: (ctx) {
@@ -283,41 +368,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تأكد من تسجيل الدخول وبيانات الغرفة.')));
         return;
       }
-      await _watchTogetherSubscription?.cancel();
-      final roomId = room.id;
-      await service.initializePushNotifications();
-      setState(() { _watchTogether = true; _watchTogetherRoom = roomId; });
-      if (action == 'join') await _applyWatchTogetherRoomState(room);
-      _watchTogetherSyncTimer?.cancel();
-      _watchTogetherPresenceTimer?.cancel();
-      await service.heartbeat(roomId);
-      _watchTogetherPresenceTimer = Timer.periodic(const Duration(seconds: 10), (_) async { if (_watchTogetherRoom == roomId) { try { await service.heartbeat(roomId); } catch (_) {} } });
-      _watchTogetherSyncTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-        if (_watchTogetherRoom != roomId || _applyingRemoteWatchState || player == null || !player!.value.isInitialized) return;
-        await service.sync(roomId, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying);
-      });
-      _startWatchTogetherMessageTracking(roomId);
-      _startWatchTogetherActivityTracking(roomId);
-      _watchTogetherSubscription = service.watch(roomId).listen((remote) async {
-        if (!mounted) return;
-        final current = playing;
-        if (current == null || remote.channelId != current.id) return;
-        final p = player;
-        if (p == null || !p.value.isInitialized) return;
-        _applyingRemoteWatchState = true;
-        final remotePos = Duration(milliseconds: (remote.positionSeconds * 1000).round());
-        if ((p.value.position - remotePos).abs() > const Duration(seconds: 3)) await p.seekTo(remotePos);
-        if (remote.isPlaying && !p.value.isPlaying && !lowData) await p.play();
-        if (!remote.isPlaying && p.value.isPlaying) await p.pause();
-        _applyingRemoteWatchState = false;
-      });      service.reactions(roomId).listen((snap) {
-        if (!mounted) return;
-        for (final doc in snap.docChanges.where((change) => change.type == DocumentChangeType.added)) {
-          final emoji = doc.doc.data()['emoji'] as String?;
-          if (emoji != null && emoji.isNotEmpty) _showFloatingReaction(emoji);
-        }
-      });
-
+      await _connectWatchTogetherRoom(room, applyState: action == 'join');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('الغرفة جاهزة • الكود: ' + room.inviteCode + ' • الأعضاء: ' + room.memberIds.length.toString())));
       await _showWatchTogetherStatus(room);
     } catch (_) {
@@ -1059,6 +1110,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     _watchTogetherSubscription?.cancel();
     _watchTogetherMessageSubscription?.cancel();
     _watchTogetherActivitySubscription?.cancel();
+    _watchTogetherReactionSubscription?.cancel();
     _watchTogetherSyncTimer?.cancel();
     _watchTogetherPresenceTimer?.cancel();
     unawaited(AurenTvWatchTogetherService.instance.disposePushNotifications());
