@@ -361,6 +361,17 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
     }
   }
 
+  String _resultLabel(AurenActionRequest action) {
+    final result = action.result;
+    if (result is Map) {
+      final type = result['type']?.toString() ?? '';
+      final id = (result['requestId'] ?? result['rfqId'])?.toString().trim() ?? '';
+      if (type == 'supplier_contact_draft_created') return id.isEmpty ? 'Supplier contact draft created.' : 'Supplier contact draft created: $id.';
+      if (type == 'supplier_rfq_created') return id.isEmpty ? 'Supplier RFQ draft created.' : 'Supplier RFQ draft created: $id.';
+    }
+    return result?.toString() ?? '';
+  }
+
   Widget _actionCard(AurenActionRequest action, {bool history = false}) {
     final statusLabel = switch (action.status) {
       'completed' => 'اكتمل',
