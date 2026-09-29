@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const {onCall} = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
@@ -337,9 +338,16 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
   const normalized=normalizeGaezRows(rows);
   if (!normalized.length) throw new Error('No tabular GAEZ rows were found in the official global resource.');
 
+  const offset = Math.max(0, Number(request.data?.offset || 0));
+  const maxRows = Math.min(5000, Math.max(1, Number(request.data?.maxRows || 5000)));
+  const selectedRows = normalized.slice(offset, offset + maxRows);
+  if (!selectedRows.length) {
+    return {status:'complete',scope:'global',source:'FAO GAEZ v5 Crop Summary Data',offset,totalRows:normalized.length,nextOffset:null,rowCount:0,resourceUrl:parsed.toString()};
+  }
+
   const countryRegistry = await loadCountryRegistry();
   const groups = new Map();
-  for (const row of normalized) {
+  for (const row of selectedRows) {
     const rawCountry = rowCountry(row);
     let countryKey = normalizeCountryKey(rawCountry);
     if (!/^[A-Z]{3}$/.test(countryKey)) {
@@ -364,7 +372,7 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
     for (const batchRows of chunk(group, 400)) {
       const batch=db.batch();
       for (const row of batchRows) {
-        const stableId = Buffer.from(countryKey + '|' + cropKey + '|' + JSON.stringify(row)).toString('base64url').slice(0,120);
+        const stableId = crypto.createHash('sha256').update(countryKey + '|' + cropKey + '|' + JSON.stringify(row)).digest('hex');
         const ref=db.collection('auren_gaez_v5_crop_summary_rows').doc(stableId);
         batch.set(ref, {
           source:'FAO GAEZ v5 Crop Summary Data',
@@ -389,11 +397,14 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
     scope:'global',
     source:'FAO GAEZ v5 Crop Summary Data',
     rowCount:stored,
+    offset,
+    totalRows:normalized.length,
+    nextOffset: offset + selectedRows.length < normalized.length ? offset + selectedRows.length : null,
     countryCount:countrySet.size,
     cropCount:cropSet.size,
     countries:Array.from(countrySet).sort(),
     resourceUrl:parsed.toString(),
-    note:'Rows are stored individually so the dataset can cover all countries without exceeding Firestore document limits.'
+    note:'Rows are stored individually so the dataset can cover all countries without exceeding Firestore document limits. Use offset/nextOffset for resumable global ingestion.'
   };
 });
 
