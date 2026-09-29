@@ -3752,3 +3752,5 @@ const productionLifecycle = require('./production_lifecycle');
 exports.cancelAurenProduction = productionLifecycle.cancelAurenProduction;
 exports.retryAurenProduction = productionLifecycle.retryAurenProduction;
 exports.recordAurenProductionOutput = productionLifecycle.recordAurenProductionOutput;
+
+Object.assign(module.exports, require('./gaez_v5_ingest_scheduler'));
