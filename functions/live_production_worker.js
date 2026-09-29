@@ -16,6 +16,40 @@ const db = admin.firestore();
 const LOCK_MS = 6 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
+async function exhaustGenerationAttempts() {
+  const snap = await db.collectionGroup('productionTasks')
+    .where('status','==','generation')
+    .orderBy('updatedAt','asc')
+    .limit(10).get();
+
+  for (const item of snap.docs) {
+    let exhausted = false;
+    await db.runTransaction(async tx => {
+      const fresh = await tx.get(item.ref);
+      if (!fresh.exists) return;
+      const data = fresh.data() || {};
+      if (String(data.status || '') !== 'generation') return;
+      if (Number(data.generationAttempts || 0) < MAX_ATTEMPTS) return;
+      tx.update(item.ref, {
+        status:'failed',
+        providerState:'attempts_exhausted',
+        providerLockUntilMs:0,
+        lastError:`Generation attempt limit (${MAX_ATTEMPTS}) reached. Retry the task to start a new generation cycle.`,
+        updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+      });
+      exhausted = true;
+    });
+    if (exhausted) {
+      try {
+        await syncProductionLifecycle(item.ref, null, 'failed',
+          `Generation attempt limit (${MAX_ATTEMPTS}) reached.`);
+      } catch (_) {
+        // Lifecycle telemetry must never prevent other tasks from running.
+      }
+    }
+  }
+}
+
 async function claimTask() {
   const snap = await db.collectionGroup('productionTasks')
     .where('status','in',['generation','provider_pending','processing'])
@@ -237,6 +271,7 @@ exports.runAurenLiveProductionProvider = onSchedule(
     secrets:[REPLICATE_API_TOKEN],
   },
   async () => {
+    await exhaustGenerationAttempts();
     const ref=await claimTask();
     if (!ref) return;
     try {
