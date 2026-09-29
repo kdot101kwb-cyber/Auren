@@ -457,11 +457,20 @@ exports.aurenGaezV5GlobalCoverage = onCall(async (request) => {
   const snap=await db.collection('auren_gaez_v5_crop_summary_rows').select('countryKey','cropKey').get();
   const countries=new Set();
   const crops=new Set();
+  const countryCrops=new Map();
   snap.forEach(doc => {
-    const d=doc.data();
+    const d=doc.data() || {};
     if (d.countryKey) countries.add(d.countryKey);
-    if (d.cropKey) crops.add(d.cropKey);
+    if (d.cropKey) {
+      crops.add(d.cropKey);
+      if (!countryCrops.has(d.countryKey)) countryCrops.set(d.countryKey, new Set());
+      countryCrops.get(d.countryKey).add(d.cropKey);
+    }
   });
+  const coverage = Array.from(countryCrops.entries()).map(([countryKey, set]) => ({
+    countryKey,
+    cropCount:set.size
+  })).sort((a,b)=>a.countryKey.localeCompare(b.countryKey));
   return {
     status:'ok',
     scope:'global',
@@ -470,7 +479,8 @@ exports.aurenGaezV5GlobalCoverage = onCall(async (request) => {
     countryCount:countries.size,
     cropCount:crops.size,
     countries:Array.from(countries).sort(),
-    crops:Array.from(crops).sort()
+    crops:Array.from(crops).sort(),
+    countryCropCoverage:coverage
   };
 });
 exports.aurenGaezCropQuery = onCall(async (request) => {
