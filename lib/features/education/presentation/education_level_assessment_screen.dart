@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/education/education_level_assessment_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
@@ -14,12 +15,15 @@ class _EducationLevelAssessmentScreenState extends State<EducationLevelAssessmen
   final answers=<int>[];
   EducationAssessmentResult? result;
 
-  void _answer(int value) {
+  Future<void> _answer(int value) async {
     answers.add(value);
     if (index + 1 < EducationLevelAssessmentService.questions.length) {
       setState(()=>index++);
     } else {
-      setState(()=>result=service.evaluate(answers));
+      final evaluated=service.evaluate(answers);
+      setState(()=>result=evaluated);
+      final uid=FirebaseAuth.instance.currentUser?.uid;
+      if(uid!=null){ await service.saveResult(uid:uid,subject:widget.subject,result:evaluated); }
     }
   }
 
