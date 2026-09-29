@@ -2622,6 +2622,36 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    match /users/{userId}/livestockAnimals/{animalId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['tag','species','breed','sex','status','birthDate','weightKg','createdAt','updatedAt'])
+        && request.resource.data.tag is string && request.resource.data.tag.size() > 0 && request.resource.data.tag.size() <= 80
+        && request.resource.data.species in ['cattle','sheep','goats','camels','poultry']
+        && request.resource.data.breed is string && request.resource.data.breed.size() <= 120
+        && request.resource.data.sex in ['male','female']
+        && request.resource.data.status == 'active'
+        && (!request.resource.data.keys().hasAny(['weightKg']) || request.resource.data.weightKg is number)
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tag','species','breed','sex','status','birthDate','weightKg','updatedAt'])
+        && request.resource.data.species in ['cattle','sheep','goats','camels','poultry']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/livestockEvents/{eventId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['animalId','type','data','createdAt'])
+        && request.resource.data.animalId is string
+        && request.resource.data.type in ['weight','feeding','vaccination','breeding','observation','death']
+        && request.resource.data.data is map
+        && request.resource.data.createdAt is timestamp;
+      allow update, delete: if false;
+    }
+
     match /users/{userId}/agricultureAdvisories/{advisoryId} {
       allow read: if isOwner(userId);
       allow write: if false;
