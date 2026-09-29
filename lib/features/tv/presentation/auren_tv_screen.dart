@@ -53,6 +53,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String _watchTogetherLastMessage = '';
   String? _watchTogetherLastMessageId;
   bool _watchTogetherMessagesInitialized = false;
+  bool _watchTogetherChatOpen = false;
 
   Timer? _recoveryTimer;
   Timer? _watchTogetherSyncTimer;
@@ -307,9 +308,13 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     if (data == null) return 'غير متصل';
     final last = data['lastSeen'];
     if (last is Timestamp) {
-      final seconds = now.difference(last.toDate()).inSeconds;
+      final elapsed = now.difference(last.toDate());
+      final seconds = elapsed.inSeconds;
       if (data['online'] == true && seconds <= 30) return 'متصل الآن';
-      if (seconds <= 120) return 'اتصال ضعيف/عاد مؤخراً';
+      if (seconds <= 120) return 'عاد مؤخراً';
+      if (elapsed.inMinutes < 60) return 'آخر ظهور منذ ' + elapsed.inMinutes.toString() + ' دقيقة';
+      if (elapsed.inHours < 24) return 'آخر ظهور منذ ' + elapsed.inHours.toString() + ' ساعة';
+      return 'آخر ظهور منذ ' + elapsed.inDays.toString() + ' يوم';
     }
     return 'غير متصل';
   }
@@ -372,6 +377,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       }
       if (!isNew) return;
       _watchTogetherLastMessageId = newest.id;
+      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+      if (data['type'] != 'system' && data['senderUid'] != currentUid && !_watchTogetherChatOpen) {
+        unawaited(service.notifyIncomingMessage(roomId: roomId, sender: sender, message: textValue));
+      }
       if (mounted) setState(() {
         _watchTogetherLastMessage = preview;
         _watchTogetherUnreadCount += 1;
@@ -383,6 +392,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     final service = AurenTvWatchTogetherService.instance;
     final controller = TextEditingController();
     Timer? typingTimer;
+    _watchTogetherChatOpen = true;
     if (_watchTogetherRoom == room.id) {
       setState(() => _watchTogetherUnreadCount = 0);
       unawaited(service.markMessagesRead(room.id, lastMessageId: _watchTogetherLastMessageId));
@@ -491,6 +501,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         ),
       );
     } finally {
+      _watchTogetherChatOpen = false;
       typingTimer?.cancel();
       await service.clearTyping(room.id);
       controller.dispose();
