@@ -17,11 +17,18 @@ const LOCK_MS = 6 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const POLL_BACKOFF_BASE_MS = 60 * 1000;
 const POLL_BACKOFF_MAX_MS = 15 * 60 * 1000;
+const SUBMIT_BACKOFF_BASE_MS = 2 * 60 * 1000;
+const SUBMIT_BACKOFF_MAX_MS = 30 * 60 * 1000;
 
 function isTransientProviderError(error) {
   const status = Number(error?.status || error?.statusCode || 0);
   if (error?.name === 'AbortError') return true;
   return status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+function nextSubmitAtMs(submitFailures) {
+  const failures = Math.max(1, Number(submitFailures || 0));
+  return Date.now() + Math.min(SUBMIT_BACKOFF_MAX_MS, SUBMIT_BACKOFF_BASE_MS * (2 ** Math.min(failures - 1, 3)));
 }
 
 function nextPollAtMs(pollFailures) {
@@ -302,9 +309,25 @@ async function processTask(ref) {
   });
 
   if (!result.ok) {
+    if (isTransientProviderError(result)) {
+      const submitFailures = Number(task.providerSubmitFailures || 0) + 1;
+      await ref.set({
+        status:'provider_pending',
+        providerState:'submit_backoff',
+        providerSubmitFailures:submitFailures,
+        nextPollAtMs:nextSubmitAtMs(submitFailures),
+        providerLockUntilMs:0,
+        lastError:String(result.message || 'Temporary provider submission failure.').slice(0,700),
+        updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+      },{merge:true});
+      await syncProductionLifecycle(ref, null, 'submit_backoff', result.message || 'Temporary provider submission failure.');
+      return;
+    }
     await ref.set({
       status:'waiting_provider',
       providerState:'provider_unavailable',
+      providerSubmitFailures:0,
+      nextPollAtMs:0,
       providerLockUntilMs:0,
       lastError:String(result.message || 'Provider rejected task').slice(0,700),
       updatedAt:admin.firestore.FieldValue.serverTimestamp(),
@@ -326,6 +349,7 @@ async function processTask(ref) {
     providerAttempts:result.attempts || [],
     providerLockUntilMs:0,
     providerPollFailures:0,
+    providerSubmitFailures:0,
     nextPollAtMs:0,
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
   },{merge:true});
