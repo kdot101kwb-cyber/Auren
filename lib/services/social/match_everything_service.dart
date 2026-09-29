@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'adaptive_profile_service.dart';
 import 'profile_mode_service.dart';
@@ -450,6 +451,61 @@ class AurenIntentActionPlan {
   };
 }
 
+
+extension AurenMatchIntelligence on AurenMatchEverythingService {
+  Future<List<AurenMatchItem>> findSupplierIntelligence({
+    required String query,
+    String? country,
+    int limit = 10,
+  }) async {
+    final clean = query.trim();
+    if (clean.isEmpty) return const [];
+
+    final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('aurenMatchEverythingIntelligence');
+    final result = await callable.call({
+      'query': clean,
+      if (country != null && country.trim().isNotEmpty) 'country': country.trim(),
+      'limit': limit.clamp(1, 25),
+    });
+
+    final data = Map<String, dynamic>.from(result.data as Map);
+    final raw = data['results'];
+    if (raw is! List) return const [];
+
+    return raw.whereType<Map>().map((entry) {
+      final item = Map<String, dynamic>.from(entry);
+      final type = '${item['resultType'] ?? item['kind'] ?? ''}'.toLowerCase();
+      final isSupplier = type == 'supplier';
+      final id = '${item['id'] ?? ''}'.trim();
+      if (id.isEmpty) return null;
+
+      final score = (item['matchScore'] as num?)?.toInt() ?? 0;
+      final name = '${item['name'] ?? item['companyName'] ?? item['title'] ?? id}'.trim();
+      final description = '${item['description'] ?? item['category'] ?? 'مورد متاح عبر AUREN.'}'.trim();
+
+      return AurenMatchItem(
+        id: id,
+        title: name,
+        subtitle: description,
+        kind: isSupplier ? AurenMatchKind.business : AurenMatchKind.opportunity,
+        score: score.clamp(0, 100),
+        reasons: isSupplier
+            ? const ['مورد مطابق لطلبك عبر Match Everything']
+            : const ['نتيجة من ذكاء الفرص العالمي'],
+        data: {
+          ...item,
+          if (isSupplier) 'supplierId': id,
+        },
+        action: isSupplier ? AurenMatchAction.requestQuote : AurenMatchAction.open,
+        actionLabel: isSupplier ? 'طلب عرض سعر' : 'فتح',
+        actionReason: isSupplier
+            ? 'AUREN وجد مورداً مناسباً لطلبك؛ راجع RFQ وعدّل البيانات قبل الموافقة.'
+            : 'افتح النتيجة لمتابعة التفاصيل.',
+      );
+    }).whereType<AurenMatchItem>().toList();
+  }
+}
 
 extension AurenMatchActionExecution on AurenMatchEverythingService {
   Future<void> recordAction({
