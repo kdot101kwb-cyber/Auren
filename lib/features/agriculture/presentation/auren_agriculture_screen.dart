@@ -45,7 +45,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
                 Wrap(spacing: 8, children: [
                   for (final item in const {
                     'all':'الكل','crop':'محاصيل','livestock':'مواشي','farm':'مزارع',
-                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير','design':'تصميم','business':'دراسة جدوى','production':'خط إنتاج','costing':'التكاليف','supply_chain':'الموردون','quality':'الجودة'
+                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير','design':'تصميم','business':'دراسة جدوى','production':'خط إنتاج','costing':'التكاليف','supply_chain':'الموردون','quality', 'feasibility':'الجودة'
                   }.entries)
                     ChoiceChip(label: Text(item.value), selected: _type == item.key, onSelected: (_) => setState(() => _type = item.key)),
                 ]),
@@ -74,7 +74,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             icon: const Icon(Icons.auto_awesome_rounded),
             label: const Text('اسأل AUREN AI عن الحالة'),
           ),
-          if (_type == 'design' || _type == 'business' || _type == 'production' || _type == 'costing' || _type == 'supply_chain' || _type == 'quality') ...[
+          if (_type == 'design' || _type == 'business' || _type == 'production' || _type == 'costing' || _type == 'supply_chain' || _type == 'quality' || _type == 'feasibility') ...[
             const SizedBox(height: 16),
             Text(_type == 'design' ? 'AUREN Design Studio' : 'AUREN Business & Production Studio', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
@@ -126,6 +126,8 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
         return 'الطاقة: قِس الاستهلاك والقدرة المطلوبة ومصدر الطاقة والتخزين والسلامة قبل اختيار النظام.';
       case 'recycling':
         return 'إعادة التدوير: صنّف المواد، افصلها، قيّم إمكانية إعادة الاستخدام والتدوير، وراعِ السلامة والتخلص النظامي.';
+      case 'feasibility':
+        return 'دراسة الجدوى: السوق، الجانب الفني، الاستثمار والتشغيل، التكاليف، نقطة التعادل، التدفقات النقدية، المخاطر وخطة التنفيذ، مع تخصيصها للزراعة أو الثروة الحيوانية أو التصنيع أو الطاقة أو إعادة التدوير أو التصميم أو الاختراعات.';
       case 'design':
         return 'التصميم: صمّم الملابس والأحذية والمباني والأثاث والمنتجات والواجهات والمساحات. ابدأ بالاحتياج والمقاسات والخامات والميزانية، ثم التصور والنموذج والمراجعة الفنية.';
       default:
@@ -144,7 +146,11 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             ('3D Prototype & Design-to-Make', 'نموذج أولي، مواد، مواصفات وتجهيز للتصنيع', Icons.view_in_ar_outlined),
           ]
         : const [
-            ('Feasibility Study', 'دراسة سوق وفنية ومالية ومخاطر ونقطة تعادل', Icons.analytics_outlined),
+            ('Feasibility Study', 'دراسة جدوى كاملة لكل القطاعات', Icons.analytics_outlined),
+            ('Agriculture Feasibility', 'محاصيل، أرض، ماء، إنتاجية، تكاليف وتسويق', Icons.agriculture_outlined),
+            ('Livestock Feasibility', 'القطيع، الأعلاف، الصحة، الإنتاج والتكاليف', Icons.pets_outlined),
+            ('Manufacturing Feasibility', 'السوق، خط الإنتاج، المعدات، CAPEX وOPEX', Icons.precision_manufacturing_outlined),
+            ('Energy & Recycling Feasibility', 'التقنية، الاستثمار، التشغيل والعائد', Icons.bolt_outlined),
             ('Production Line Planner', 'خط الإنتاج، مراحل التشغيل، المعدات، العمالة والطاقة', Icons.precision_manufacturing_outlined),
             ('Cost & Unit Economics', 'تكلفة الوحدة، الاستثمار، التشغيل، الهدر والتسعير', Icons.calculate_outlined),
             ('Supplier & Materials Plan', 'الخامات، الكميات، الموردون، البدائل والمخزون', Icons.local_shipping_outlined),
@@ -172,7 +178,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
           minLines: 5,
           maxLines: 9,
           decoration: const InputDecoration(
-            hintText: 'اسم المشروع، المنتج، السوق، الكمية المستهدفة، الميزانية، الموقع وأي معلومات متوفرة...',
+            hintText: 'اسم المشروع، القطاع، المنتج أو النشاط، الموقع، السوق، الطاقة الإنتاجية، الميزانية، الأرض أو المبنى، الموارد، العمالة وأي معلومات متوفرة...',
             border: OutlineInputBorder(),
           ),
         ),
