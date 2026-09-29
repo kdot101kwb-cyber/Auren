@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class AurenTvWatchTogetherRoom {
   final String id,title,inviteCode,status;
@@ -17,6 +18,24 @@ class AurenTvWatchTogetherRoom {
 class AurenTvWatchTogetherService {
   static final instance=AurenTvWatchTogetherService._(); AurenTvWatchTogetherService._();
   final _db=FirebaseFirestore.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  bool _localNotificationsReady = false;
+
+  Future<void> initializeNotifications() async {
+    if (_localNotificationsReady) return;
+    const settings = InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher'));
+    await _localNotifications.initialize(settings);
+    await _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+    _localNotificationsReady = true;
+  }
+
+  Future<void> notifyIncomingMessage({required String roomId, required String sender, required String message}) async {
+    await initializeNotifications();
+    const details = NotificationDetails(android: AndroidNotificationDetails('auren_watch_together_chat', 'Watch Together Chat', channelDescription: 'رسائل المشاهدة الجماعية', importance: Importance.high, priority: Priority.high));
+    final body = message.length > 120 ? '${message.substring(0, 117)}...' : message;
+    await _localNotifications.show(roomId.hashCode & 0x7fffffff, 'رسالة من $sender', body, details, payload: roomId);
+  }
+
   CollectionReference<Map<String,dynamic>> get _rooms=>_db.collection('watch_together_rooms');
   String _code(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';var n=DateTime.now().microsecondsSinceEpoch;var o='';for(var i=0;i<6;i++){o+=chars[n%chars.length];n=n~/chars.length;}return o;}
   Future<AurenTvWatchTogetherRoom?> create({required String title,required String channelId,required String channelName}) async {
