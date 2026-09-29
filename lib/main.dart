@@ -59,7 +59,6 @@ class _AurenErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        navigatorKey: aurenNavigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'AUREN',
         theme: ThemeData.dark(useMaterial3: true),
@@ -92,6 +91,7 @@ class AurenApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
+        navigatorKey: aurenNavigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'AUREN',
         theme: ThemeData.dark(useMaterial3: true),
