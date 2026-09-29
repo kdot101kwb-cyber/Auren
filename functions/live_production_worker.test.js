@@ -106,3 +106,12 @@ test('scheduled worker skips tasks during provider backoff',()=>{
 test('provider request timeouts are treated as transient',()=>{
   assert.match(source,/error\?\.name === 'AbortError'/);
 });
+
+
+test('expired provider locks are recovered and released for retry',()=>{
+  assert.match(source,/async function recoverStaleLocks/);
+  assert.match(source,/providerLockUntilMs:0/);
+  assert.match(source,/providerState:'stale_lock_recovered'/);
+  assert.match(source,/Worker lock expired; task released for safe recovery/);
+  assert.match(source,/await recoverStaleLocks\(\)/);
+});
