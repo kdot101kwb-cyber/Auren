@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class AurenTvWatchTogetherRoom {
@@ -20,6 +22,9 @@ class AurenTvWatchTogetherService {
   final _db=FirebaseFirestore.instance;
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   bool _localNotificationsReady = false;
+  bool _pushNotificationsReady = false;
+  StreamSubscription<String>? _fcmTokenSubscription;
+  StreamSubscription<RemoteMessage>? _fcmMessageSubscription;
 
   Future<void> initializeNotifications() async {
     if (_localNotificationsReady) return;
@@ -27,6 +32,58 @@ class AurenTvWatchTogetherService {
     await _localNotifications.initialize(settings);
     await _localNotifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
     _localNotificationsReady = true;
+  }
+
+  Future<void> initializePushNotifications() async {
+    if (_pushNotificationsReady) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final messaging = FirebaseMessaging.instance;
+    await messaging.requestPermission(alert: true, badge: true, sound: true);
+    await _saveFcmToken(await messaging.getToken());
+    await _fcmTokenSubscription?.cancel();
+    _fcmTokenSubscription = messaging.onTokenRefresh.listen(_saveFcmToken);
+    await _fcmMessageSubscription?.cancel();
+    _fcmMessageSubscription = FirebaseMessaging.onMessage.listen(_handleForegroundPush);
+    _pushNotificationsReady = true;
+  }
+
+  Future<void> _saveFcmToken(String? token) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final value = token?.trim();
+    if (user == null || value == null || value.isEmpty) return;
+    await _db.collection('users').doc(user.uid).collection('watchTogetherTokens').doc(value).set({
+      'token': value,
+      'platform': 'android',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> _handleForegroundPush(RemoteMessage message) async {
+    final data = message.data;
+    final roomId = (data['roomId'] as String?)?.trim();
+    final type = (data['type'] as String?)?.trim();
+    if (roomId == null || roomId.isEmpty) return;
+    if (type == 'watch_together_chat') {
+      final sender = (data['senderName'] as String?)?.trim();
+      final body = (data['body'] as String?)?.trim();
+      if (body == null || body.isEmpty) return;
+      await notifyIncomingMessage(roomId: roomId, sender: sender?.isNotEmpty == true ? sender! : 'AUREN', message: body);
+    } else if (type == 'watch_together_activity') {
+      final title = (data['title'] as String?)?.trim();
+      final body = (data['body'] as String?)?.trim();
+      final eventId = (data['eventId'] as String?)?.trim() ?? message.messageId ?? DateTime.now().microsecondsSinceEpoch.toString();
+      if (body == null || body.isEmpty) return;
+      await notifyRoomActivity(roomId: roomId, title: title?.isNotEmpty == true ? title! : 'Watch Together', body: body, eventId: eventId);
+    }
+  }
+
+  Future<void> disposePushNotifications() async {
+    await _fcmTokenSubscription?.cancel();
+    await _fcmMessageSubscription?.cancel();
+    _fcmTokenSubscription = null;
+    _fcmMessageSubscription = null;
+    _pushNotificationsReady = false;
   }
 
   Future<void> notifyIncomingMessage({required String roomId, required String sender, required String message}) async {
