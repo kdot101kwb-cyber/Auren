@@ -51,7 +51,7 @@ test('provider-pending tasks remain claimable for later polling',()=>{
 });
 
 test('terminal provider failure clears the external job before retry',()=>{
-  assert.match(source,/status:'generation'/);
+  assert.match(source,/status:'failed'/);
   assert.match(source,/externalJobId:''/);
   assert.match(source,/lastError:String\(polled\.error/);
 });
@@ -67,4 +67,15 @@ test('completed provider output skips an unnecessary polling cycle',()=>{
   assert.match(source,/const realOutput=result\.result\.output/);
   assert.match(source,/status:realOutput \? 'output' : 'processing'/);
   assert.match(source,/externalJobId:realOutput \? '' :/);
+});
+
+
+test('cancelled tasks cannot be revived after provider polling',()=>{
+  assert.match(source,/latestTask\.status \\|\\| '') === 'cancelled'/);
+  assert.match(source,/latestTask\.cancelRequested === true/);
+});
+
+test('lifecycle output and history writes are deterministic',()=>{
+  assert.match(source,/outputKey\(ref\.id, output\)/);
+  assert.match(source,/lifecycleEventId\(\{\.\.\.task, id:ref\.id\}, event\)/);
 });
