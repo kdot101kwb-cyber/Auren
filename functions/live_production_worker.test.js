@@ -115,3 +115,14 @@ test('expired provider locks are recovered and released for retry',()=>{
   assert.match(source,/Worker lock expired; task released for safe recovery/);
   assert.match(source,/await recoverStaleLocks\(\)/);
 });
+
+
+test('transient provider submission failures use bounded backoff',()=>{
+  assert.match(source,/function nextSubmitAtMs/);
+  assert.match(source,/SUBMIT_BACKOFF_BASE_MS/);
+  assert.match(source,/SUBMIT_BACKOFF_MAX_MS/);
+  assert.match(source,/isTransientProviderError\(result\)/);
+  assert.match(source,/providerState:'submit_backoff'/);
+  assert.match(source,/providerSubmitFailures/);
+  assert.match(source,/nextPollAtMs:nextSubmitAtMs/);
+});
