@@ -40,7 +40,7 @@ class _AurenSupplierActionDraftScreenState extends State<AurenSupplierActionDraf
   Future<String> _createAction() async {
     final call = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('createAurenMatchAction');
     final payload = <String,dynamic>{'operation':widget.operation,'supplierId':widget.supplierId,'channel':_channel};
-    if (_isRfq && widget.matchFlowId != null && widget.matchFlowId!.trim().isNotEmpty) payload['matchFlowId'] = widget.matchFlowId!.trim();
+    
     if (_isRfq) { payload.addAll({'product':_product.text.trim(),'quantity':_quantity.text.trim(),'unit':_unit.text.trim(),'currency':_currency.text.trim().toUpperCase(),'notes':_notes.text.trim()}); }
     else { payload['message'] = _message.text.trim(); }
     final result = await call.call({'operation': widget.operation, 'payload': payload});
