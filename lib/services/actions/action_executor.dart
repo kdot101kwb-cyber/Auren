@@ -5,10 +5,12 @@ import '../../core/models/action_request.dart';
 class AurenActionExecutionResult {
   final String result;
   final String status;
+  final Map<String, dynamic>? data;
 
   const AurenActionExecutionResult({
     required this.result,
     required this.status,
+    this.data,
   });
 }
 
@@ -37,6 +39,7 @@ class FirebaseAurenActionExecutor implements AurenActionExecutor {
     return AurenActionExecutionResult(
       result: _friendlyResult(data['result']),
       status: data['status'] as String? ?? 'completed',
+      data: data,
     );
   }
 
