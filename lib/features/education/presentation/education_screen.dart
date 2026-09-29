@@ -31,6 +31,10 @@ class _EducationState extends State<AurenAURENEducationScreen>{
       ]);
     }));
   }
+  Widget _aiAction(BuildContext context, String title, IconData icon, String prompt) => OutlinedButton.icon(
+    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt))),
+    icon: Icon(icon), label: Text(title),
+  );
   Widget _card(BuildContext context,AurenCourse c,String uid)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
     title:Text(c.title),subtitle:Text(c.category+' • '+c.lessonCount.toString()+' lessons'+(c.skills.isEmpty?'':' • '+c.skills.take(3).join(', '))),leading:const CircleAvatar(child:Icon(Icons.school)),
     trailing:StreamBuilder<Set<String>>(stream:repo.watchSavedIds(uid),builder:(context,s)=>IconButton(icon:Icon((s.data??{}).contains(c.id)?Icons.bookmark:Icons.bookmark_border),onPressed:()=>repo.toggleSaved(uid,c.id,!((s.data??{}).contains(c.id))))),
