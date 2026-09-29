@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
+import 'crop_intelligence_screen.dart';
 
 class AurenAgricultureScreen extends StatefulWidget {
   const AurenAgricultureScreen({super.key});
@@ -74,6 +75,14 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             icon: const Icon(Icons.auto_awesome_rounded),
             label: const Text('اسأل AUREN AI عن الحالة'),
           ),
+          if (_type == 'crop') ...[
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CropIntelligenceScreen())),
+              icon: const Icon(Icons.agriculture_outlined),
+              label: const Text('فتح Crop Intelligence — تخطيط المحصول'),
+            ),
+          ],
           if (_type == 'design' || _type == 'business' || _type == 'production' || _type == 'costing' || _type == 'supply_chain' || _type == 'quality' || _type == 'feasibility') ...[
             const SizedBox(height: 16),
             Text(_type == 'design' ? 'AUREN Design Studio' : 'AUREN Business & Production Studio', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
