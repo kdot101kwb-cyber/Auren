@@ -3528,3 +3528,110 @@ exports.createAurenMusicProductionJob = require('firebase-functions/v2/https').o
 
 
 Object.assign(exports, require('./production_lifecycle'));
+
+
+function watchTogetherTriggerDeps() {
+  const {onDocumentCreated} = require('firebase-functions/v2/firestore');
+  const {getMessaging} = require('firebase-admin/messaging');
+  return {onDocumentCreated, getMessaging};
+}
+
+async function sendWatchTogetherPush({roomId, actorUid, type, title, body, eventId, extra = {}}) {
+  const roomSnap = await db.collection('watch_together_rooms').doc(roomId).get();
+  if (!roomSnap.exists) return {sent:0, skipped:true};
+  const room = roomSnap.data() || {};
+  const memberIds = Array.isArray(room.memberIds) ? room.memberIds.filter((uid) => typeof uid === 'string' && uid && uid !== actorUid) : [];
+  if (!memberIds.length) return {sent:0, skipped:true};
+
+  const tokenDocs = await Promise.all(memberIds.map((uid) =>
+    db.collection('users').doc(uid).collection('watchTogetherTokens').limit(20).get()
+  ));
+  const tokenSet = new Set();
+  tokenDocs.forEach((snap) => snap.forEach((doc) => {
+    const token = String(doc.data()?.token || doc.id || '').trim();
+    if (token) tokenSet.add(token);
+  }));
+  const tokens = [...tokenSet].slice(0, 500);
+  if (!tokens.length) return {sent:0, tokens:0};
+
+  const {getMessaging} = watchTogetherTriggerDeps();
+  const response = await getMessaging().sendEachForMulticast({
+    tokens,
+    notification: {title: String(title || 'Watch Together').slice(0, 120), body: String(body || '').slice(0, 500)},
+    data: {
+      type,
+      roomId,
+      eventId: String(eventId || ''),
+      ...Object.fromEntries(Object.entries(extra).map(([key, value]) => [key, String(value ?? '')])),
+    },
+    android: {
+      priority: 'high',
+      notification: {
+        channelId: type === 'watch_together_chat' ? 'auren_watch_together_chat' : 'auren_watch_together_activity',
+      },
+    },
+  });
+
+  const invalidTokens = [];
+  response.responses.forEach((result, index) => {
+    const code = result.error?.code || '';
+    if (code === 'messaging/registration-token-not-registered' || code === 'messaging/invalid-registration-token') {
+      invalidTokens.push(tokens[index]);
+    }
+  });
+  await Promise.all(invalidTokens.map(async (token) => {
+    for (const uid of memberIds) {
+      try {
+        await db.collection('users').doc(uid).collection('watchTogetherTokens').doc(token).delete();
+      } catch (_) {}
+    }
+  }));
+  return {sent:response.successCount, failed:response.failureCount};
+}
+
+exports.onWatchTogetherMessageCreated = watchTogetherTriggerDeps().onDocumentCreated(
+  'watch_together_rooms/{roomId}/messages/{messageId}',
+  async (event) => {
+    const data = event.data?.data() || {};
+    if (data.type === 'system') return null;
+    const actorUid = String(data.senderUid || '').trim();
+    const body = String(data.text || '').trim();
+    if (!actorUid || !body) return null;
+    await sendWatchTogetherPush({
+      roomId:event.params.roomId,
+      actorUid,
+      type:'watch_together_chat',
+      title:'رسالة جديدة في Watch Together',
+      body,
+      eventId:event.params.messageId,
+      extra:{senderName:String(data.senderName || 'عضو').slice(0,80)},
+    });
+    return null;
+  }
+);
+
+exports.onWatchTogetherActivityCreated = watchTogetherTriggerDeps().onDocumentCreated(
+  'watch_together_rooms/{roomId}/activity/{activityId}',
+  async (event) => {
+    const data = event.data?.data() || {};
+    const actorUid = String(data.actorUid || '').trim();
+    const type = String(data.type || '').trim();
+    const labels = {
+      joined: {title:'عضو جديد في Watch Together', body:'انضم عضو جديد إلى الغرفة.'},
+      left: {title:'عضو غادر Watch Together', body:'غادر عضو غرفة المشاهدة.'},
+      reconnected: {title:'عضو عاد إلى Watch Together', body:'عاد عضو إلى غرفة المشاهدة.'},
+    };
+    const label = labels[type];
+    if (!actorUid || !label) return null;
+    await sendWatchTogetherPush({
+      roomId:event.params.roomId,
+      actorUid,
+      type:'watch_together_activity',
+      title:label.title,
+      body:label.body,
+      eventId:event.params.activityId,
+    });
+    return null;
+  }
+);
+
