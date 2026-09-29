@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../services/education/education_repository.dart';
 import '../../../services/education/education_catalog.dart';
 import '../../../core/models/education.dart';
@@ -55,7 +56,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
           final q = query.trim().toLowerCase();
           final courses = all.where((c) {
             final searchable = '${c.title} ${c.description} ${c.category} ${c.skills.join(' ')}'.toLowerCase();
-            return (q.isEmpty || searchable.contains(q)) && (category == null || c.category == category);
+            return (q.isEmpty || searchable.contains(q)) && (category == null || c.category == category) && (level == 'All' || c.level == level) && (track == 'All' || c.category.toLowerCase().contains(track.toLowerCase()));
           }).toList();
 
           return ListView(
@@ -259,7 +260,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                 title: Text(resource['name'] ?? ''),
                 subtitle: Text('${resource['type'] ?? ''} • ${resource['languages'] ?? ''}', maxLines: 2, overflow: TextOverflow.ellipsis),
                 trailing: const Icon(Icons.open_in_new),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EducationResourcesScreen(initialSubject: subject, initialLanguage: language))),
+                onTap: () => _openResource(resource),
               );
             }),
             const SizedBox(height: 4),
@@ -281,6 +282,17 @@ class _EducationState extends State<AurenAURENEducationScreen> {
       ),
     );
   }
+  Future<void> _openResource(Map<String, String> resource) async {
+    final raw = resource['url'];
+    if (raw == null) return;
+    final uri = Uri.tryParse(raw);
+    if (uri == null) return;
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح المصدر الآن')));
+    }
+  }
+
   Widget _myLearning(String uid) {
     return StreamBuilder<List<AurenLearningProgress>>(
       stream: repo.watchMyLearning(uid),
