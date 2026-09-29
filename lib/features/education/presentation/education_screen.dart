@@ -7,6 +7,7 @@ import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'certifications_screen.dart';
 import 'learning_plan_screen.dart';
+import 'placement_test_screen.dart';
 import 'education_resources_screen.dart';
 import 'education_level_assessment_screen.dart';
 import '../../../services/education/education_resource_matcher.dart';
@@ -77,6 +78,13 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                 subtitle: const Text('Microsoft، Cisco، AWS، Google وغيرها في تخصصات متعددة'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CertificationsScreen())),
+              )),
+              Card(child: ListTile(
+                leading: const Icon(Icons.quiz_outlined),
+                title: const Text('اختبار تحديد المستوى'),
+                subtitle: const Text('اعرف مستواك ثم خلّي AUREN يبني لك المسار المناسب'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlacementTestScreen(subject: query.trim().isEmpty ? 'General' : query.trim()))),
               )),
               Card(child: ListTile(
                 leading: const Icon(Icons.route),
