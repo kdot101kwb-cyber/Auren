@@ -219,6 +219,13 @@ function rowCountry(row) {
   return rowField(row, ['iso3','ISO3','country_iso3','countryIso3','adm0_iso3','country_code','Country ISO3','country','Country','area','Area']);
 }
 
+function normalizeCountryKey(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^[A-Za-z]{3}$/.test(raw)) return raw.toUpperCase();
+  return raw.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').toUpperCase();
+}
+
 function rowCrop(row) {
   return rowField(row, ['crop','Crop','crop_name','Crop Name','commodity','Commodity','crop_lut']);
 }
@@ -233,7 +240,7 @@ exports.aurenGaezV5CropSummary = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
 
   const p=request.data||{};
-  const country=String(p.country || p.iso3 || '').trim();
+  const country=normalizeCountryKey(p.country || p.iso3 || '');
   const crop=String(p.crop || '').trim();
 
   // Prefer globally ingested FAO v5 rows so every supported country uses
@@ -255,6 +262,7 @@ exports.aurenGaezV5CropSummary = onCall(async (request) => {
       scope:'global',
       storage:'firestore_ingested_rows',
       filters:{country:country||null,crop:crop||null},
+      countryKey:country||null,
       count:rows.length,
       data:rows
     };
@@ -310,7 +318,7 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
 
   const groups = new Map();
   for (const row of normalized) {
-    const countryKey=rowCountry(row).toUpperCase();
+    const countryKey=normalizeCountryKey(rowCountry(row));
     const cropKey=rowCrop(row).toLowerCase();
     if (!countryKey) continue;
     const key=countryKey + '|' + cropKey;
