@@ -3640,3 +3640,4 @@ exports.onWatchTogetherActivityCreated = watchTogetherTriggerDeps().onDocumentCr
 
 // Global data connectors for AUREN feasibility and country intelligence.
 Object.assign(module.exports, require('./global_data'));
+Object.assign(module.exports, require('./global_data_country_registry'));
