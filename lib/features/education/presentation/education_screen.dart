@@ -4,6 +4,8 @@ import '../../../services/education/education_repository.dart';
 import '../../../services/education/education_catalog.dart';
 import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'certifications_screen.dart';
+import 'learning_plan_screen.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
   const AurenAURENEducationScreen({super.key});
@@ -64,6 +66,21 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                 subtitle: Text('لغة، مدرسة، معاهد، مهارات، ومدرس AI شخصي.'),
               ),
               _aiShortcuts(),
+              const SizedBox(height: 12),
+              Card(child: ListTile(
+                leading: const Icon(Icons.workspace_premium),
+                title: const Text('الشهادات العالمية'),
+                subtitle: const Text('Microsoft، Cisco، AWS، Google وغيرها في تخصصات متعددة'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CertificationsScreen())),
+              )),
+              Card(child: ListTile(
+                leading: const Icon(Icons.route),
+                title: const Text('خطتي الدراسية'),
+                subtitle: const Text('أنشئ خطة شخصية حسب هدفك ومستواك ووقتك'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LearningPlanScreen())),
+              )),
               const SizedBox(height: 12),
               TextField(
                 decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن لغة، مادة، تخصص أو دورة'),
