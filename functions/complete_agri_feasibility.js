@@ -15,17 +15,19 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
   if (!/^[A-Z]{3}$/.test(iso3) || !crop) throw new Error('iso3 and crop are required.');
 
   const slug = crop.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-  const [evidence, suitability, financial, fiveYear] = await Promise.all([
+  const [evidence, suitability, financial, fiveYear, logistics] = await Promise.all([
     db.collection('auren_feasibility_evidence').where('iso3','==',iso3).orderBy('generatedAt','desc').limit(1).get(),
     db.collection('auren_agri_suitability').doc(iso3 + '_' + slug).get(),
     db.collection('auren_agri_financial_feasibility').where('iso3','==',iso3).where('crop','==',crop).orderBy('generatedAt','desc').limit(1).get(),
-    db.collection('auren_agri_five_year_models').where('iso3','==',iso3).where('crop','==',crop).orderBy('generatedAt','desc').limit(1).get()
+    db.collection('auren_agri_five_year_models').where('iso3','==',iso3).where('crop','==',crop).orderBy('generatedAt','desc').limit(1).get(),
+    db.collection('auren_agri_logistics_evidence').doc(iso3).get()
   ]);
 
   const ev = evidence.empty ? null : evidence.docs[0].data();
   const su = suitability.exists ? suitability.data() : null;
   const fi = financial.empty ? null : financial.docs[0].data();
   const fy = fiveYear.empty ? null : fiveYear.docs[0].data();
+  const lg = logistics.exists ? logistics.data() : null;
 
   const evidenceScore = [
     ev?.evidenceQuality?.worldBank,
@@ -48,6 +50,14 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
       source: priceSource,
       evidence: fi?.priceEvidence || null,
       input: fi?.inputs?.pricePerTon ?? null
+    },
+    costs: fi?.costEvidenceLedger || null,
+    logistics: {
+      status: fi?.logisticsEvidence?.available ? 'world_bank_lpi_loaded' : 'requires_logistics_evidence',
+      source: fi?.logisticsEvidence?.source || lg?.source || null,
+      evidence: fi?.logisticsEvidence?.items || lg?.items || [],
+      monetaryCost: fi?.costEvidenceLedger?.logistics || null,
+      note: 'World Bank LPI is a logistics-performance signal and is not a freight-cost amount.'
     }
   };
 
@@ -64,7 +74,14 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
       evidenceTrace,
       scenarios:fi?.scenarios || null,
       fiveYear:fy?.summary || null,
-      fiveYearRows:fy?.years || null
+      fiveYearRows:fy?.years || null,
+      evidenceCompleteness: {
+        yield: !!yieldSource,
+        price: !!priceSource,
+        costs: !!fi?.costEvidence?.available,
+        logisticsPerformance: !!(fi?.logisticsEvidence?.available || lg),
+        sourcedCostItems: fi?.costEvidenceLedger?.sourcedItems?.length || 0
+      }
     },
     market:{
       status:priceSource === 'FAOSTAT_producer_price' ? 'faostat_producer_price_loaded' : 'requires_market_inputs',
@@ -73,7 +90,7 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
         otherAnnualRevenue:fi?.inputs?.otherAnnualRevenue ?? null
       },
       priceEvidence:fi?.priceEvidence || null,
-      missing:['local demand','competitor/supply conditions','logistics cost','buyer/offtake terms','current local price validation']
+      missing:['local demand','competitor/supply conditions','monetary logistics cost','buyer/offtake terms','current local price validation']
     },
     risks:[
       'Climate and water variability',
@@ -92,7 +109,7 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
     nextSteps:[
       'Validate soil and water conditions locally.',
       'Validate current local selling prices and buyer/offtake demand.',
-      'Replace planning assumptions with sourced project data.',
+      'Replace planning assumptions with sourced project data, with source/year/currency/unit recorded for each material cost.',
       'Run downside/base/upside cases before investment decisions.'
     ],
     generatedAt:admin.firestore.FieldValue.serverTimestamp()
