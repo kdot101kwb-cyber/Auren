@@ -81,52 +81,66 @@ async function getFaostatProducerPrice(iso3, crop) {
 }
 
 async function getGaezYieldFromCropSummary(iso3, crop) {
-  const snap = await db.collection('auren_gaez_v5_crop_summary')
-    .where('status','==','imported')
-    .orderBy('importedAt','desc')
-    .limit(1)
-    .get();
-  if (snap.empty) {
-    return {available:false, source:'FAO_GAEZ_v5_Crop_Summary', reason:'no_gaez_v5_crop_summary_ingested'};
-  }
-  const data = snap.docs[0].data() || {};
-  if (data.version !== 'GAEZ v5' || !String(data.source || '').includes('FAO GAEZ v5')) {
-    return {available:false, source:'FAO_GAEZ_v5_Crop_Summary', reason:'gaez_v5_metadata_not_verified'};
-  }
+  const countryKey = normalizeText(iso3).toUpperCase();
   const target = normalizeText(crop);
-  const rows = Array.isArray(data.rows) ? data.rows : [];
-  const matches = rows.filter(row => {
-    const country = normalizeText(row.country ?? row.Country ?? row.iso3 ?? row.ISO3 ?? row.country_code ?? row.Country_Code);
-    const item = normalizeText(row.crop ?? row.Crop ?? row.crop_name ?? row.Crop_Name ?? row.item ?? row.Item);
-    return (!country || country === normalizeText(iso3)) &&
-      item && (item === target || item.includes(target) || target.includes(item));
+
+  // Global GAEZ v5 rows are stored per country/crop, so feasibility works
+  // for every supported country instead of reading a Sudan-only import blob.
+  const snap = await db.collection('auren_gaez_v5_crop_summary_rows')
+    .where('countryKey','==',countryKey)
+    .limit(500)
+    .get();
+
+  if (snap.empty) {
+    return {available:false, source:'FAO_GAEZ_v5_Crop_Summary', reason:'no_gaez_v5_rows_for_country'};
+  }
+
+  const matches = [];
+  snap.forEach(doc => {
+    const data = doc.data() || {};
+    const row = data.row || {};
+    const item = normalizeText(
+      row.crop ?? row.Crop ?? row.crop_name ?? row.Crop_Name ??
+      row.item ?? row.Item ?? row.commodity ?? row.Commodity
+    );
+    if (item && (item === target || item.includes(target) || target.includes(item))) {
+      matches.push({row, id:doc.id, resourceUrl:data.resourceUrl || null});
+    }
   });
+
   const candidates = [];
-  for (const row of matches) {
+  for (const match of matches) {
+    const row = match.row;
+    const units = row.units ?? row.unit ?? row.Unit ?? row['Unit of measure'] ?? null;
     for (const [key, raw] of Object.entries(row)) {
       const value = finite(raw);
       const keyText = normalizeText(key);
-      if (value == null || value < 0) continue;
-      if (!keyText.includes('yield')) continue;
+      if (value == null || value < 0 || !keyText.includes('yield')) continue;
       if (!/(attainable|potential|yield)/.test(keyText)) continue;
-      candidates.push({value, field:key, units:row.units ?? row.unit ?? row.Unit ?? null});
+      candidates.push({value, field:key, units, rowId:match.id, resourceUrl:match.resourceUrl});
     }
   }
+
   const accepted = candidates.filter(x => {
     const u = normalizeText(x.units);
-    return /^(t\/?ha|tonnes?\s*per\s*ha|tons?\s*per\s*ha)$/.test(u) || u.includes('ton/ha') || u.includes('t/ha');
+    return /^(t\/?ha|tonnes?\s*per\s*ha|tons?\s*per\s*ha)$/.test(u) ||
+      u.includes('ton/ha') || u.includes('t/ha');
   });
+
   if (!accepted.length) {
     return {available:false, source:'FAO_GAEZ_v5_Crop_Summary', reason:'no_explicit_t_per_ha_attainable_yield'};
   }
+
   const average = accepted.reduce((sum, x) => sum + x.value, 0) / accepted.length;
   return {
     available:true,
     source:'FAO_GAEZ_v5_Crop_Summary',
+    version:'GAEZ v5',
     yieldTonsHa:average,
     unit:'t/ha',
     samples:accepted.slice(0,25),
-    importId:snap.docs[0].id
+    countryKey,
+    importRows:matches.length
   };
 }
 
