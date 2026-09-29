@@ -6,6 +6,8 @@ const admin = require('firebase-admin');
 if (!admin.apps.length) admin.initializeApp();
 const db = admin.firestore();
 
+const GAEZ_RES05 = 'https://gaez-services.fao.org/server/rest/services/res05/ImageServer';
+
 function num(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
@@ -17,6 +19,30 @@ function rangeScore(value, min, max) {
   const distance = value < min ? min - value : value - max;
   const span = Math.max(max - min, 1);
   return Math.max(0, 1 - distance / span);
+}
+
+async function getJson(url) {
+  const res = await fetch(url, {
+    headers:{accept:'application/json'},
+    signal:AbortSignal.timeout(30000)
+  });
+  if (!res.ok) throw new Error('GAEZ request failed: ' + res.status);
+  return res.json();
+}
+
+async function getGaezCatalog(crop, waterSupply, inputLevel) {
+  const where = ["crop = '" + crop.replace(/'/g, "''") + "'"];
+  if (waterSupply) where.push("water_supply = '" + waterSupply.replace(/'/g, "''") + "'");
+  if (inputLevel) where.push("input_level = '" + inputLevel.replace(/'/g, "''") + "'");
+  const params = new URLSearchParams({
+    where:where.join(' AND '),
+    outFields:'objectid,name,sub_theme_name,variable,file_description,year,model,rcp,crop,water_supply,input_level,units,download_url,file_id',
+    returnGeometry:'false',
+    resultRecordCount:'1000',
+    f:'json'
+  });
+  const payload = await getJson(GAEZ_RES05 + '/query?' + params.toString());
+  return (payload.features || []).map(x => x.attributes || {});
 }
 
 exports.aurenAgricultureSuitability = onCall(async (request) => {
@@ -62,6 +88,7 @@ exports.aurenAgricultureSuitability = onCall(async (request) => {
     score,
     status: score == null ? 'insufficient_data' : score >= 70 ? 'potentially_suitable' : score >= 45 ? 'needs_validation' : 'potential_constraints',
     criteria,
+    gaezEvidence,
     evidence: {
       worldBankIndicators: indicators,
       faostatAvailable: faoSnap.exists,
