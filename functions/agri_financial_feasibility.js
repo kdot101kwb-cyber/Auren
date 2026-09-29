@@ -256,6 +256,7 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
       : null,
     costEvidence,
     logisticsEvidence,
+    marketEvidence,
     costEvidenceLedger: {
       capex: {
         evidenceType: sourcedCapex && capex == null ? 'sourced' : 'manual',
