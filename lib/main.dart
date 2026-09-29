@@ -11,7 +11,11 @@ import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
 import 'features/shell/presentation/auren_shell.dart';
+import 'features/tv/presentation/auren_tv_screen.dart';
+import 'services/tv/auren_tv_watch_together_service.dart';
 import 'services/offline/auren_offline_sync_service.dart';
+
+final GlobalKey<NavigatorState> aurenNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +26,7 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await AurenTvWatchTogetherService.instance.initializeNotificationRouting();
     // Activate App Check before AUREN starts using Firebase services.
     // Enforcement is intentionally configured in Firebase Console after monitoring,
     // so existing development builds are not locked out.
@@ -40,6 +45,13 @@ Future<void> main() async {
   ErrorWidget.builder = (details) => const _AurenErrorView();
   await AurenOfflineSyncService.instance.start();
   runApp(AurenApp(firebaseError: firebaseError));
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    AurenTvWatchTogetherService.instance.setNotificationRoomHandler((roomId) {
+      final navigator = aurenNavigatorKey.currentState;
+      if (navigator == null) return;
+      navigator.push(MaterialPageRoute(builder: (_) => AurenTvScreen(initialWatchTogetherRoomId: roomId)));
+    });
+  });
 }
 
 class _AurenErrorView extends StatelessWidget {
@@ -47,6 +59,7 @@ class _AurenErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
+        navigatorKey: aurenNavigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'AUREN',
         theme: ThemeData.dark(useMaterial3: true),
