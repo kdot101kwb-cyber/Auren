@@ -38,8 +38,41 @@ class _AurenIntentMatchCardState extends State<AurenIntentMatchCard> {
         intent: intent,
         limitPerKind: 4,
       );
+
+      final normalized = intent.toLowerCase();
+      final supplierIntent = [
+        'مورد', 'توريد', 'مصنع', 'مصانع', 'جملة', 'شراء', 'اشترى',
+        'supplier', 'factory', 'manufacturer', 'wholesale', 'sourcing', 'rfq',
+      ].any(normalized.contains);
+
+      var merged = results;
+      if (supplierIntent) {
+        try {
+          final intelligence = await _service.findSupplierIntelligence(
+            query: intent,
+            limit: 8,
+          );
+          final existing = <String>{
+            ...results.map((item) => '\${item.kind.name}:\${item.id}'),
+          };
+          merged = [
+            ...intelligence.where(
+              (item) => existing.add('\${item.kind.name}:\${item.id}'),
+            ),
+            ...results,
+          ];
+          merged.sort((a, b) => b.score.compareTo(a.score));
+        } catch (_) {
+          // Keep the normal Match Everything results if the intelligence
+          // service is unavailable.
+        }
+      }
+
       if (!mounted) return;
-      setState(() { _items = results; _loading = false; });
+      setState(() {
+        _items = merged.take(12).toList();
+        _loading = false;
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() { _items = const []; _loading = false; });
