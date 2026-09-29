@@ -95,6 +95,9 @@ async function getGaezYieldFromSuitability(iso3, crop) {
       reason:'units_not_explicitly_yield_per_hectare'
     };
   }
+  if (data.gaezEvidence?.endpointVersionStatus !== 'verified_v5') {
+    return {available:false, source:'FAO_GAEZ_evidence', reason:'gaez_v5_endpoint_not_verified'};
+  }
   return {available:true, source:'FAO_GAEZ_evidence', ...normalized};
 }
 
