@@ -98,6 +98,24 @@ async function getGaezYieldFromSuitability(iso3, crop) {
   return {available:true, source:'FAO_GAEZ_evidence', ...normalized};
 }
 
+async function getLogisticsEvidence(iso3) {
+  const snap = await db.collection('auren_agri_logistics_evidence').doc(iso3).get();
+  if (!snap.exists) {
+    return {available:false, source:'World Bank Logistics Performance Index', reason:'no_logistics_evidence_ingested'};
+  }
+  const data = snap.data() || {};
+  const items = Array.isArray(data.items) ? data.items : [];
+  const accepted = items.filter(item =>
+    item?.indicator
+    && item?.code
+    && finite(item?.value) != null
+    && item?.source
+  );
+  return accepted.length
+    ? {available:true, source:'World Bank Logistics Performance Index', items:accepted}
+    : {available:false, source:'World Bank Logistics Performance Index', reason:'logistics_records_require_indicator_code_value_and_source'};
+}
+
 async function getCostEvidence(iso3, crop) {
   const snap = await db.collection('auren_agri_cost_evidence').doc(
     iso3 + '_' + cropSlug(crop)
@@ -160,7 +178,7 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
   const capex = finite(p.capex);
   const annualOpex = finite(p.annualOpex);
   const otherAnnualRevenue = finite(p.otherAnnualRevenue) || 0;
-  const costEvidence = await getCostEvidence(iso3, crop);
+  const [costEvidence, logisticsEvidence] = await Promise.all([getCostEvidence(iso3, crop), getLogisticsEvidence(iso3)]);
 
   const missing = [];
   for (const [name, value] of Object.entries({
@@ -229,6 +247,45 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
       }
       : null,
     costEvidence,
+    logisticsEvidence,
+    costEvidenceLedger: {
+      capex: {
+        evidenceType: 'manual',
+        value: capex,
+        currency: p.capexCurrency || null,
+        unit: p.capexUnit || null,
+        source: p.capexSource || null,
+        year: finite(p.capexYear),
+        note: 'Manual project input unless replaced by explicit sourced cost evidence.'
+      },
+      opex: {
+        evidenceType: 'manual',
+        value: annualOpex,
+        currency: p.opexCurrency || null,
+        unit: p.opexUnit || null,
+        source: p.opexSource || null,
+        year: finite(p.opexYear),
+        note: 'Manual project input unless replaced by explicit sourced cost evidence.'
+      },
+      logistics: {
+        evidenceType: 'manual',
+        value: finite(p.logisticsCost),
+        currency: p.logisticsCurrency || null,
+        unit: p.logisticsUnit || null,
+        source: p.logisticsSource || null,
+        year: finite(p.logisticsYear),
+        note: 'LPI is evidence about logistics performance, not a monetary freight cost.'
+      },
+      sourcedItems: costEvidence.available ? costEvidence.items.map(item => ({
+        evidenceType:'sourced',
+        category:item.category || null,
+        value:finite(item.value),
+        currency:item.currency || null,
+        unit:item.unit || null,
+        source:item.source || null,
+        year:finite(item.year ?? item.date)
+      })) : []
+    },
     missing,
     outputs:{
       annualProductionTons,
@@ -245,7 +302,7 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
       'Manual yieldTonsHa overrides GAEZ evidence. GAEZ yield is used only when stored evidence explicitly declares a yield-per-hectare unit.',
       'Manual pricePerTon overrides FAOSTAT. FAOSTAT price is used only when the ingested producer-price row explicitly provides a USD-per-ton unit; local-currency prices are not converted implicitly.',
       'CAPEX and OPEX remain manual unless an explicit cost-evidence record provides value, currency, unit and source.',
-      'Logistics costs remain manual unless an explicit logistics-cost record is supplied; farm-gate producer prices do not include transport beyond the farm gate.',
+      'Logistics performance evidence from the World Bank LPI is reported separately and is not converted into a monetary cost. Monetary logistics costs remain manual unless an explicit logistics-cost record is supplied; farm-gate producer prices do not include transport beyond the farm gate.',
       'This is a preliminary screening model; taxes, financing, depreciation, working capital, logistics, FX, inflation and detailed cash flow are not included unless supplied.',
       'A positive simple operating profit does not guarantee investment viability.'
     ],
