@@ -2606,7 +2606,7 @@ service cloud.firestore {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality']
+        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
       allow update: if isOwner(userId)
