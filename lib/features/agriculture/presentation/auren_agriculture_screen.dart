@@ -74,6 +74,12 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             icon: const Icon(Icons.auto_awesome_rounded),
             label: const Text('اسأل AUREN AI عن الحالة'),
           ),
+          if (_type == 'design') ...[
+            const SizedBox(height: 16),
+            const Text('AUREN Design Studio', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            _designStudios(),
+          ],
           const SizedBox(height: 16),
           const Text('السوق والفرص', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
@@ -125,6 +131,76 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
       default:
         return 'حدد المجال والمشكلة والموقع، ثم سجّل الملاحظات والبيانات والصور والمواد أو المواصفات بانتظام ليصبح التحليل أكثر فائدة.';
     }
+  }
+
+
+  Widget _designStudios() {
+    const studios = [
+      ('Fashion & Footwear', 'ملابس، أحذية، حقائب، مقاسات وخامات', Icons.checkroom_outlined),
+      ('Architecture & Space', 'مبانٍ، غرف، مكاتب، محلات ومساحات', Icons.architecture_outlined),
+      ('Product & Industrial', 'منتجات، أجهزة، أثاث وعبوات', Icons.inventory_2_outlined),
+      ('Brand & Visual Identity', 'شعار، هوية، تغليف، إعلانات وواجهات', Icons.brush_outlined),
+      ('3D Prototype & Design-to-Make', 'نموذج أولي، مواد، مواصفات وتجهيز للتصنيع', Icons.view_in_ar_outlined),
+    ];
+    return Column(
+      children: studios.map((s) => Card(
+        child: ListTile(
+          leading: CircleAvatar(child: Icon(s.$3)),
+          title: Text(s.$1, style: const TextStyle(fontWeight: FontWeight.w800)),
+          subtitle: Text(s.$2),
+          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+          onTap: () => _openDesignPrompt(s.$1),
+        ),
+      )).toList(),
+    );
+  }
+
+  Future<void> _openDesignPrompt(String studio) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(studio),
+        content: TextField(
+          controller: controller,
+          minLines: 4,
+          maxLines: 8,
+          decoration: const InputDecoration(
+            hintText: 'اكتب فكرتك، المقاسات، الخامات، الاستخدام والميزانية إن وجدت...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+              try {
+                final advice = await _repo.requestAiAdvice(
+                  type: 'design',
+                  location: _location.text,
+                  observations: 'Design studio: ' + studio + '\n' + controller.text.trim(),
+                );
+                if (context.mounted) Navigator.pop(context, advice);
+              } catch (_) {
+                if (context.mounted) Navigator.pop(context, 'تعذر الوصول إلى المستشار حالياً. حاول مرة أخرى.');
+              }
+            },
+            child: const Text('ابدأ التصميم'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || result == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('AUREN Design AI'),
+        content: SingleChildScrollView(child: Text(result)),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('تم'))],
+      ),
+    );
   }
 
   Widget _records(List<AurenAgricultureRecord> rows, IconData icon) {
