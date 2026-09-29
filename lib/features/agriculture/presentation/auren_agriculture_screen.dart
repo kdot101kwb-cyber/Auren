@@ -45,7 +45,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
                 Wrap(spacing: 8, children: [
                   for (final item in const {
                     'all':'الكل','crop':'محاصيل','livestock':'مواشي','farm':'مزارع',
-                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير'
+                    'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير','design':'تصميم'
                   }.entries)
                     ChoiceChip(label: Text(item.value), selected: _type == item.key, onSelected: (_) => setState(() => _type = item.key)),
                 ]),
@@ -120,6 +120,8 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
         return 'الطاقة: قِس الاستهلاك والقدرة المطلوبة ومصدر الطاقة والتخزين والسلامة قبل اختيار النظام.';
       case 'recycling':
         return 'إعادة التدوير: صنّف المواد، افصلها، قيّم إمكانية إعادة الاستخدام والتدوير، وراعِ السلامة والتخلص النظامي.';
+      case 'design':
+        return 'التصميم: صمّم الملابس والأحذية والمباني والأثاث والمنتجات والواجهات والمساحات. ابدأ بالاحتياج والمقاسات والخامات والميزانية، ثم التصور والنموذج والمراجعة الفنية.';
       default:
         return 'حدد المجال والمشكلة والموقع، ثم سجّل الملاحظات والبيانات والصور والمواد أو المواصفات بانتظام ليصبح التحليل أكثر فائدة.';
     }
@@ -149,7 +151,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
           minLines: 4,
           maxLines: 8,
           decoration: const InputDecoration(
-            hintText: 'اكتب الأعراض أو حالة المحصول/الحيوان أو المشكلة التي لاحظتها...',
+            hintText: 'اشرح فكرتك أو الشيء الذي تريد تصميمه: ملابس، أحذية، مبنى، منتج، أثاث، واجهة أو مساحة...',
             border: OutlineInputBorder(),
           ),
         ),
