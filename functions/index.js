@@ -3744,4 +3744,4 @@ exports.aurenMatchEverythingIntelligence = require('firebase-functions/v2/https'
     };
   }
 );
-
+Object.assign(module.exports, require('./gaez_global_data'));
