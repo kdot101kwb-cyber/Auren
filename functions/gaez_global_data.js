@@ -327,7 +327,8 @@ exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
     for (const batchRows of chunk(group, 400)) {
       const batch=db.batch();
       for (const row of batchRows) {
-        const ref=db.collection('auren_gaez_v5_crop_summary_rows').doc();
+        const stableId = Buffer.from(countryKey + '|' + cropKey + '|' + JSON.stringify(row)).toString('base64url').slice(0,120);
+        const ref=db.collection('auren_gaez_v5_crop_summary_rows').doc(stableId);
         batch.set(ref, {
           source:'FAO GAEZ v5 Crop Summary Data',
           version:'GAEZ v5',
