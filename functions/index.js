@@ -3663,6 +3663,29 @@ function normalizeMatchTokens(value) {
   return String(value || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').split(/\s+/).filter((v) => v && !MATCH_STOPWORDS.has(v)).slice(0, 20);
 }
 
+function inferMatchSupplierAction(query, supplier) {
+  const text = String(query || '').trim();
+  const lower = text.toLowerCase();
+  const isRfq = /(?:شراء|اشتري|اشترى|طلب|توريد|rfq|buy|purchase|source|sourcing)/i.test(text);
+  const quantityMatch = text.match(/(?:كمية|عدد|quantity|qty)\s*[:=]?\s*(\\d+(?:[.,]\\d+)?)/i);
+  const currencyMatch = text.match(/\\b(usd|eur|gbp|sar|aed|egp|sdg)\\b/i);
+  const product = text
+    .replace(/(?:اريد|أريد|ابحث|بحث|عن|لي|من|في|مع|للبيع|بسعر|مناسب|شراء|اشتري|اشترى|طلب|توريد|find|search|for|me|from|with|price|cheap|supplier|business|company|factory|rfq|buy|purchase|source|sourcing)/gi, ' ')
+    .replace(/(?:كمية|عدد|quantity|qty)\\s*[:=]?\\s*\\d+(?:[.,]\\d+)?/gi, ' ')
+    .replace(/\\s+/g, ' ').trim().slice(0,300);
+  const base = {supplierId:supplier.id, channel:'draft'};
+  if (isRfq) {
+    return {
+      operation:'rfq',
+      payload:{...base, product:product || supplier.product || supplier.category || supplier.name, quantity:quantityMatch?.[1] || '', unit:'', currency:currencyMatch?.[1]?.toUpperCase() || '', notes:text.slice(0,2000)}
+    };
+  }
+  return {
+    operation:'contact',
+    payload:{...base, message:text.slice(0,5000)}
+  };
+}
+
 function matchScore(item, tokens) {
   const haystack = [
     item.name, item.description, item.category, item.country, item.city,
@@ -3705,10 +3728,16 @@ exports.aurenMatchEverythingIntelligence = require('firebase-functions/v2/https'
       query,
       context:{country:raw.country || null, countries:raw.countryMatches || []},
       results:top,
-      nextActions: supplier ? [
-        {type:'supplier.workflow', operation:'contact', requiresApproval:true, supplierId:supplier.id, label:'Contact supplier', actionCreator:'createAurenMatchAction'},
-        {type:'supplier.workflow', operation:'rfq', requiresApproval:true, supplierId:supplier.id, label:'Create RFQ', actionCreator:'createAurenMatchAction'},
-      ] : [],
+      nextActions: supplier ? (() => {
+        const suggested = inferMatchSupplierAction(query, supplier);
+        const alternate = suggested.operation === 'rfq'
+          ? {operation:'contact',payload:{supplierId:supplier.id,channel:'draft',message:query.slice(0,5000)}}
+          : {operation:'rfq',payload:{supplierId:supplier.id,product:supplier.product || supplier.category || supplier.name,quantity:'',unit:'',currency:'',notes:query.slice(0,2000)}};
+        return [
+          {type:'supplier.workflow', operation:suggested.operation, requiresApproval:true, supplierId:supplier.id, label:suggested.operation==='rfq'?'Create RFQ':'Contact supplier', actionCreator:'createAurenMatchAction', suggestedPayload:suggested.payload},
+          {type:'supplier.workflow', operation:alternate.operation, requiresApproval:true, supplierId:supplier.id, label:alternate.operation==='rfq'?'Create RFQ':'Contact supplier', actionCreator:'createAurenMatchAction', suggestedPayload:alternate.payload},
+        ];
+      })() : [],
       counts:raw.counts || {suppliers:0,businesses:0,opportunities:0,countries:0},
     };
   }
