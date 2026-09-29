@@ -112,6 +112,14 @@ exports.aurenAgricultureSuitability = onCall(async (request) => {
     ? Math.round(criteria.reduce((a,b) => a + b.score, 0) / criteria.length * 100)
     : null;
 
+  const gaezEvidence = await getGaezYieldEvidence({
+    crop,
+    waterSupply: String(inputs.waterSupply || '').trim(),
+    inputLevel: String(inputs.inputLevel || '').trim(),
+    latitude: num(inputs.latitude),
+    longitude: num(inputs.longitude),
+  });
+
   const result = {
     iso3,
     crop,
