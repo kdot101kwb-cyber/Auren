@@ -2636,5 +2636,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+
+    match /auren_global_countries/{iso3} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /auren_global_data/{iso3} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
   }
 }
