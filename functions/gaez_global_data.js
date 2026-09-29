@@ -192,6 +192,7 @@ exports.aurenGaezV5CropSummaryIngest = onCall(async (request) => {
   const res=await fetch(parsed.toString(), {headers:{accept:'text/csv,application/json,text/plain'},signal:AbortSignal.timeout(60000)});
   if (!res.ok) throw new Error('GAEZ resource request failed: ' + res.status);
   const body=await res.text();
+  const resourceSha256 = crypto.createHash('sha256').update(body).digest('hex');
   const contentType=String(res.headers.get('content-type')||'');
   let rows;
   if (/json/i.test(contentType)) {
