@@ -7,7 +7,7 @@ const fs=require('node:fs');
 const source=fs.readFileSync(new URL('./live_production_worker.js',import.meta.url),'utf8');
 
 test('live production worker is fail-closed for unconfigured video providers',()=>{
-  assert.match(source,/No Replicate model version configured for this video task/);
+  assert.match(source,/No MoneyPrinterTurbo endpoint or Replicate model version is configured for this video task/);
   assert.match(source,/status:'waiting_provider'/);
   assert.match(source,/providerState:'configuration_required'/);
 });
@@ -32,7 +32,7 @@ test('worker binds provider credentials as server secrets',()=>{
 });
 
 test('worker never treats text-only Hugging Face output as a video artifact',()=>{
-  assert.match(source,/A video task must supply a Replicate model version/);
+  assert.match(source,/Provider\/model selection and executable credentials are backend-controlled only/);
   assert.match(source,/provider:'replicate'/);
 });
 
@@ -128,3 +128,13 @@ test('transient provider submission failures use bounded backoff',()=>{
 });
 
 test('provider submission uses async creation to reduce lost-response duplicates',()=>{assert.match(source,/externalJobId:result\.result\.externalJobId/);assert.doesNotMatch(source,/prefer:'wait'/);});
+
+
+test('MoneyPrinterTurbo is a real configurable video backend',()=>{
+  assert.match(source,/defineSecret\('MONEYPRINTERTURBO_API_KEY'\)/);
+  assert.match(source,/defineString\('MONEYPRINTERTURBO_BASE_URL'/);
+  assert.match(source,/moneyprinterturbo/);
+  assert.match(source,/MONEYPRINTERTURBO_GENERATE_PATH/);
+  assert.match(source,/MONEYPRINTERTURBO_POLL_PATH/);
+  assert.match(source,/secrets:\[REPLICATE_API_TOKEN, MONEYPRINTERTURBO_API_KEY\]/);
+});
