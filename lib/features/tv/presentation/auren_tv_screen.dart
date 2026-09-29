@@ -49,6 +49,9 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String _activeTvProfile = 'main';
   StreamSubscription<AurenTvWatchTogetherRoom>? _watchTogetherSubscription;
   StreamSubscription<QuerySnapshot<Map<String,dynamic>>>? _watchTogetherMessageSubscription;
+  StreamSubscription<QuerySnapshot<Map<String,dynamic>>>? _watchTogetherActivitySubscription;
+  bool _watchTogetherActivityInitialized = false;
+  final Set<String> _seenWatchActivityIds = <String>{};
   int _watchTogetherUnreadCount = 0;
   String _watchTogetherLastMessage = '';
   String? _watchTogetherLastMessageId;
@@ -277,6 +280,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         await service.sync(roomId, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying);
       });
       _startWatchTogetherMessageTracking(roomId);
+      _startWatchTogetherActivityTracking(roomId);
       _watchTogetherSubscription = service.watch(roomId).listen((remote) async {
         if (!mounted) return;
         final current = playing;
@@ -352,8 +356,41 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     return 'عضو ${uid.substring(0, uid.length > 6 ? 6 : uid.length)}';
   }
 
-  String _watchChatTime(dynamic value) {\n    if (value is! Timestamp) return '';\n    final d = value.toDate().toLocal();\n    final h = d.hour.toString().padLeft(2, '0');\n    final m = d.minute.toString().padLeft(2, '0');\n    return '\${h}:\${m}';\n  }\n\n  void _startWatchTogetherMessageTracking(String roomId) {
+  String _watchChatTime(dynamic value) {\n    if (value is! Timestamp) return '';\n    final d = value.toDate().toLocal();\n    final h = d.hour.toString().padLeft(2, '0');\n    final m = d.minute.toString().padLeft(2, '0');\n    return '\${h}:\${m}';\n  }\n\n  void _startWatchTogetherActivityTracking(String roomId) {
+    _watchTogetherActivitySubscription?.cancel();
+    _watchTogetherActivityInitialized = false;
+    _seenWatchActivityIds.clear();
+    final service = AurenTvWatchTogetherService.instance;
+    _watchTogetherActivitySubscription = service.activity(roomId).listen((snap) {
+      if (!mounted || _watchTogetherRoom != roomId) return;
+      final changes = snap.docChanges.where((change) => change.type == DocumentChangeType.added);
+      if (!_watchTogetherActivityInitialized) {
+        _seenWatchActivityIds.addAll(snap.docs.map((doc) => doc.id));
+        _watchTogetherActivityInitialized = true;
+        return;
+      }
+      for (final change in changes) {
+        final doc = change.doc;
+        if (!_seenWatchActivityIds.add(doc.id)) continue;
+        final data = doc.data();
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        final actor = data['actorUid'] as String?;
+        final type = data['type'] as String? ?? '';
+        if (actor == null || actor == uid || !{'joined', 'left', 'reconnected'}.contains(type)) continue;
+        final label = _watchActivityLabel(type);
+        unawaited(service.notifyRoomActivity(
+          roomId: roomId,
+          eventId: doc.id,
+          title: 'نشاط في غرفة المشاهدة',
+          body: label,
+        ));
+      }
+    });
+  }
+
+  void _startWatchTogetherMessageTracking(String roomId) {
     _watchTogetherMessageSubscription?.cancel();
+    _watchTogetherActivitySubscription?.cancel();
     _watchTogetherUnreadCount = 0;
     _watchTogetherLastMessage = '';
     _watchTogetherLastMessageId = null;
@@ -1004,6 +1041,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   @override void dispose() {
     _watchTogetherSubscription?.cancel();
     _watchTogetherMessageSubscription?.cancel();
+    _watchTogetherActivitySubscription?.cancel();
     _watchTogetherSyncTimer?.cancel();
     _watchTogetherPresenceTimer?.cancel();
     if (_watchTogetherRoom != null) unawaited(AurenTvWatchTogetherService.instance.heartbeat(_watchTogetherRoom!, online: false));
