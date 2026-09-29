@@ -111,20 +111,24 @@ async function getGaezYieldFromCropSummary(iso3, crop) {
   const candidates = [];
   for (const match of matches) {
     const row = match.row;
-    const units = row.units ?? row.unit ?? row.Unit ?? row['Unit of measure'] ?? null;
+    const declaredUnits = row.units ?? row.unit ?? row.Unit ?? row['Unit of measure'] ?? row['unit_of_measure'] ?? null;
     for (const [key, raw] of Object.entries(row)) {
       const value = finite(raw);
       const keyText = normalizeText(key);
       if (value == null || value < 0 || !keyText.includes('yield')) continue;
       if (!/(attainable|potential|yield)/.test(keyText)) continue;
+      // Some official tabular exports put the unit in the column heading
+      // instead of a separate Unit column. Treat that as explicit evidence.
+      const embeddedUnit = /(?:\(|\[|\b)(t\s*\/?\s*ha|tonnes?\s*(?:per|\/)\s*(?:ha|hectare)|tons?\s*(?:per|\/)\s*(?:ha|hectare))(?:\)|\])?/i.exec(String(key));
+      const units = declaredUnits || (embeddedUnit ? embeddedUnit[1] : null);
       candidates.push({value, field:key, units, rowId:match.id, resourceUrl:match.resourceUrl});
     }
   }
 
   const accepted = candidates.filter(x => {
     const u = normalizeText(x.units);
-    return /^(t\/?ha|tonnes?\s*per\s*ha|tons?\s*per\s*ha)$/.test(u) ||
-      u.includes('ton/ha') || u.includes('t/ha');
+    return /^(t\s*\/?\s*ha|tonnes?\s*(?:per|\/)\s*(?:ha|hectare)|tons?\s*(?:per|\/)\s*(?:ha|hectare))$/.test(u) ||
+      u.includes('ton/ha') || u.includes('tonnes/ha') || u.includes('t/ha') || u.includes('t ha');
   });
 
   if (!accepted.length) {
