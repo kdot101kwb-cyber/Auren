@@ -3655,6 +3655,7 @@ Object.assign(module.exports, require('./faostat_ingest_scheduler'));
 Object.assign(module.exports, require('./fao_agri_intelligence'));
 Object.assign(module.exports, require('./agriculture_suitability'));
 Object.assign(module.exports, require('./feasibility_agri_evidence'));\nObject.assign(module.exports, require('./opportunity_intelligence'));
+Object.assign(module.exports, require('./match_everything_actions'));
 const MATCH_STOPWORDS = new Set(['اريد','أريد','ابحث','بحث','عن','لي','من','في','مع','للبيع','بسعر','مناسب','find','search','for','me','from','with','price','cheap','supplier','business','company','factory']);
 
 function normalizeMatchTokens(value) {
@@ -3680,17 +3681,13 @@ exports.aurenMatchEverythingIntelligence = require('firebase-functions/v2/https'
 
     const requestedCountry = String(request.data?.country || request.data?.iso3 || '').trim();
     const limit = Math.min(Math.max(Number(request.data?.limit) || 10, 1), 25);
-    const intelligence = require('./opportunity_intelligence');
-    const search = await new Promise((resolve, reject) => {
-      try {
-        const handler = intelligence.aurenOpportunityIntelligence;
-        handler.run ? handler.run({auth:{uid}, data:{query, iso3: requestedCountry.length === 3 ? requestedCountry : '', region:'', limit}})
-          .then(resolve).catch(reject)
-          : resolve(null);
-      } catch (e) { reject(e); }
+    const intelligence = require('./opportunity_intelligence_core');
+    const raw = await intelligence.runOpportunityIntelligence({
+      query,
+      iso3: requestedCountry.length === 3 ? requestedCountry : '',
+      region: '',
+      limit,
     });
-
-    const raw = search?.data || search || {};
     const tokens = normalizeMatchTokens(query);
     const all = [
       ...(raw.suppliers || []).map((x) => ({...x, resultType:'supplier'})),
@@ -3708,8 +3705,8 @@ exports.aurenMatchEverythingIntelligence = require('firebase-functions/v2/https'
       context:{country:raw.country || null, countries:raw.countryMatches || []},
       results:top,
       nextActions: supplier ? [
-        {type:'supplier.contact', requiresApproval:true, supplierId:supplier.id, label:'Contact supplier'},
-        {type:'supplier.rfq', requiresApproval:true, supplierId:supplier.id, label:'Create RFQ'},
+        {type:'supplier.workflow', operation:'contact', requiresApproval:true, supplierId:supplier.id, label:'Contact supplier', actionCreator:'createAurenMatchAction'},
+        {type:'supplier.workflow', operation:'rfq', requiresApproval:true, supplierId:supplier.id, label:'Create RFQ', actionCreator:'createAurenMatchAction'},
       ] : [],
       counts:raw.counts || {suppliers:0,businesses:0,opportunities:0,countries:0},
     };
