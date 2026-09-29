@@ -34,13 +34,15 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
     return !item || item === crop.toLowerCase() || item.includes(crop.toLowerCase()) || crop.toLowerCase().includes(item);
   });
 
+  const gaezAvailable = gaezGlobalRows.length > 0;
   const evidenceScore = [
     ev?.evidenceQuality?.worldBank,
     ev?.evidenceQuality?.faostat,
     ev?.evidenceQuality?.faoAgricultureIntelligence,
     !!su,
     !!fi,
-    !!fy
+    !!fy,
+    gaezAvailable
   ].filter(Boolean).length;
 
   const priceSource = fi?.priceSource || null;
@@ -72,13 +74,15 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
     technical:{
       evidence:ev,
       suitability:su,
-      evidenceCompleteness:Math.round(evidenceScore / 6 * 100),
+      evidenceCompleteness:Math.round(evidenceScore / 7 * 100),
       gaezV5CropSummary:{
         source:'FAO GAEZ v5 Crop Summary Data',
         country:iso3,
         crop,
         importedRows:gaezGlobalRows.length,
-        available:gaezGlobalRows.length > 0
+        available:gaezAvailable,
+        verification:'official_fao_catalog_resource',
+        note:'Availability means an official FAO GAEZ v5 Crop Summary row was imported for this country/crop. Agronomic values are only used in financial calculations when their unit is explicit.'
       }
     },
     financial:{
@@ -89,6 +93,7 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
       fiveYearRows:fy?.years || null,
       evidenceCompleteness: {
         yield: !!yieldSource,
+        gaezV5CropSummary: gaezAvailable,
         price: !!priceSource,
         costs: !!fi?.costEvidence?.available,
         logisticsPerformance: !!(fi?.logisticsEvidence?.available || lg),
