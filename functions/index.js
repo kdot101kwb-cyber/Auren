@@ -3642,4 +3642,4 @@ exports.onWatchTogetherActivityCreated = watchTogetherTriggerDeps().onDocumentCr
 Object.assign(module.exports, require('./global_data'));
 Object.assign(module.exports, require('./global_data_country_registry'));
 Object.assign(module.exports, require('./faostat_global_data'));
-Object.assign(module.exports, require('./faostat_bulk_ingest'));
+Object.assign(module.exports, require('./faostat_bulk_ingest'));\nObject.assign(module.exports, require('./opportunity_intelligence'));
