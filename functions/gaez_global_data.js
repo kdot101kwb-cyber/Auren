@@ -8,7 +8,7 @@ const db = admin.firestore();
 
 const GAEZ_CATALOG_URL = 'https://data.fao.org/catalog/dataset/gaez-v5-master-config';
 const CROP_SUMMARY_CATALOG_URL = 'https://data.fao.org/catalog/dataset/crop-summary-gaez';
-const GAEZ_V5_RES05 = process.env.GAEZ_V5_RES05 || 'https://gaez-services.fao.org/server/rest/services/res05/ImageServer';
+const GAEZ_V5_RES05 = process.env.GAEZ_V5_RES05 || null;
 
 const THEMES = [
   'land_water_resources',
@@ -32,7 +32,7 @@ exports.aurenGaezCatalog = onCall(async (request) => {
       standard:'5 arc-minute (~10 km at equator)',
       selected:'30 arc-second (~1 km at equator)'
     },
-    endpointStatus: process.env.GAEZ_V5_RES05 ? 'configured' : 'not_verified',
+    endpointStatus: process.env.GAEZ_V5_RES05 ? 'configured_not_yet_proven' : 'missing',
     note:'GAEZ v5 was launched by FAO in 2025; this deployment only treats a configured endpoint as verified and never labels the default endpoint as v5 without validation.'
   };
 });
@@ -45,6 +45,27 @@ async function getJson(url) {
   if (!res.ok) throw new Error('GAEZ request failed: ' + res.status);
   return res.json();
 }
+
+exports.aurenGaezV5HealthCheck = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const configuredEndpoint = process.env.GAEZ_V5_RES05 || null;
+  let catalogReachable = false;
+  let catalogText = '';
+  try {
+    const res = await fetch(GAEZ_CATALOG_URL, {signal:AbortSignal.timeout(30000)});
+    catalogText = await res.text();
+    catalogReachable = res.ok && /GAEZ v5|gaez-v5/i.test(catalogText);
+  } catch (_) {}
+  return {
+    status: catalogReachable && configuredEndpoint ? 'ready_for_endpoint_validation' : 'configuration_required',
+    source:'FAO GAEZ v5',
+    catalogUrl:GAEZ_CATALOG_URL,
+    configuredEndpoint,
+    catalogReachable,
+    endpointStatus:configuredEndpoint ? 'configured_not_yet_proven' : 'missing',
+    next:'Configure GAEZ_V5_RES05 only with a verified FAO GAEZ v5 resource; do not infer v5 from a v4-compatible service URL.'
+  };
+});
 
 exports.aurenGaezSuitabilityCatalog = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
@@ -66,6 +87,7 @@ exports.aurenGaezSuitabilityCatalog = onCall(async (request) => {
     f:'json'
   });
 
+  if (!GAEZ_V5_RES05) throw new Error('GAEZ_V5_RES05 is not configured with a verified FAO GAEZ v5 endpoint.');
   const payload = await getJson(GAEZ_V5_RES05 + '/query?' + params.toString());
   const items = payload.features || [];
 
