@@ -4,6 +4,8 @@ const {
   submitHuggingFaceChat,
   submitReplicate,
   pollReplicate,
+  submitMoneyPrinterTurbo,
+  pollMoneyPrinterTurbo,
 } = require('./live_provider_adapters');
 
 /**
@@ -17,6 +19,7 @@ const {
 const DEFAULT_PROVIDER_ORDER = Object.freeze([
   'huggingface',
   'replicate',
+  'moneyprinterturbo',
 ]);
 
 function buildProviderOrder(candidates) {
@@ -30,6 +33,19 @@ async function submitAurenProviderJob({provider, credentials, task, idempotencyK
       token: credentials?.token,
       model: credentials?.model || 'openai/gpt-oss-120b:fastest',
       messages: task?.messages || [],
+      idempotencyKey,
+    });
+  }
+
+  if (provider === 'moneyprinterturbo') {
+    return submitMoneyPrinterTurbo({
+      baseUrl: credentials?.baseUrl,
+      apiKey: credentials?.apiKey,
+      generatePath: credentials?.generatePath,
+      subject: task?.subject || task?.input?.prompt,
+      language: task?.language || 'en',
+      aspectRatio: task?.aspectRatio || task?.input?.aspect_ratio || '16:9',
+      voice: task?.voice || '',
       idempotencyKey,
     });
   }
@@ -80,6 +96,14 @@ async function submitWithFallback({candidates, credentialsByProvider={}, task, i
 }
 
 async function pollAurenProviderJob({provider, credentials, externalJobId}) {
+  if (provider === 'moneyprinterturbo') {
+    return pollMoneyPrinterTurbo({
+      baseUrl: credentials?.baseUrl,
+      apiKey: credentials?.apiKey,
+      jobId: externalJobId,
+      pollPath: credentials?.pollPath,
+    });
+  }
   if (provider !== 'replicate') {
     return {ok:false, providerId:provider, state:'completed',
       message:'This adapter has no asynchronous poll operation.'};
