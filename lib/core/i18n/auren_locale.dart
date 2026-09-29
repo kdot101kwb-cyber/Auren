@@ -238,6 +238,14 @@ class AurenLocale {
     }
   }
 
+  static Locale resolvePreferred(List<Locale> preferred) {
+    for (final locale in preferred) {
+      final supported = localeFromPlatform(locale);
+      if (_supportedLanguages.contains(supported.languageCode)) return supported;
+    }
+    return const Locale('en');
+  }
+
   static Locale localeFromPlatform(Locale platformLocale) {
     final supported = _supportedLanguages.contains(platformLocale.languageCode);
     return supported ? platformLocale : const Locale('en');
