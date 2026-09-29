@@ -9,7 +9,9 @@ const db = admin.firestore();
 const GAEZ_CATALOG_URL = 'https://data.fao.org/catalog/dataset/gaez-v5-master-config';
 const CROP_SUMMARY_CATALOG_URL = 'https://data.fao.org/catalog/dataset/crop-summary-gaez';
 const GAEZ_V5_RES05 = process.env.GAEZ_V5_RES05 || null;
-const GAEZ_V5_CROP_SUMMARY_URL = process.env.GAEZ_V5_CROP_SUMMARY_URL || null;
+const GAEZ_V5_CROP_SUMMARY_SQL_URL = 'https://data.apps.fao.org/catalog/dataset/a55c337e-f7e6-4d2f-aa8e-6d2199171c37/resource/fef86116-be49-4ddc-8317-66cd368d4fda/download/gaez-crop-summary-query.sql';
+const GAEZ_V5_CROP_SUMMARY_API_URL = 'https://api.data.apps.fao.org/api/v2/bigquery?sql_url=' + encodeURIComponent(GAEZ_V5_CROP_SUMMARY_SQL_URL);
+const GAEZ_V5_CROP_SUMMARY_URL = process.env.GAEZ_V5_CROP_SUMMARY_URL || GAEZ_V5_CROP_SUMMARY_API_URL;
 
 const THEMES = [
   'land_water_resources',
