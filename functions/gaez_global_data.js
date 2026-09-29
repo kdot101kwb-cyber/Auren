@@ -102,6 +102,107 @@ exports.aurenGaezSuitabilityCatalog = onCall(async (request) => {
   };
 });
 
+
+function assertOfficialFaoResource(url) {
+  let parsed;
+  try { parsed = new URL(String(url)); } catch (_) { throw new Error('Invalid GAEZ resource URL.'); }
+  if (parsed.protocol !== 'https:' || !['data.apps.fao.org','data.fao.org'].includes(parsed.hostname)) {
+    throw new Error('GAEZ resource must be an official FAO data.apps.fao.org or data.fao.org HTTPS URL.');
+  }
+  return parsed;
+}
+
+function parseCsvLine(line) {
+  const cells=[]; let cell=''; let quoted=false;
+  for (let i=0;i<line.length;i++) {
+    const ch=line[i];
+    if (ch === '"') {
+      if (quoted && line[i+1] === '"') { cell+='"'; i++; }
+      else quoted=!quoted;
+    } else if (ch === ',' && !quoted) { cells.push(cell); cell=''; }
+    else cell+=ch;
+  }
+  cells.push(cell);
+  return cells;
+}
+
+function parseCsv(text) {
+  const lines=String(text||'').replace(/^\\uFEFF/,'').split(/\\r?\\n/).filter(line=>line.trim());
+  if (!lines.length) return [];
+  const headers=parseCsvLine(lines[0]).map(v=>v.trim());
+  return lines.slice(1).map(line => {
+    const values=parseCsvLine(line);
+    return Object.fromEntries(headers.map((h,i)=>[h, values[i] ?? '']));
+  });
+}
+
+function normalizeGaezRows(rows) {
+  return rows.slice(0,5000).map(row => {
+    const out={};
+    for (const [key,value] of Object.entries(row)) {
+      const clean=String(value ?? '').trim();
+      if (clean === '') continue;
+      const num=Number(clean.replace(/,/g,''));
+      out[key]=Number.isFinite(num) && /^-?\\d+(?:[.,]\\d+)?$/.test(clean) ? num : clean;
+    }
+    return out;
+  }).filter(row => Object.keys(row).length);
+}
+
+exports.aurenGaezV5CropSummaryHealth = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  if (!GAEZ_V5_CROP_SUMMARY_URL) {
+    return {status:'configuration_required', source:'FAO GAEZ v5 Crop Summary', catalogUrl:CROP_SUMMARY_CATALOG_URL};
+  }
+  const parsed=assertOfficialFaoResource(GAEZ_V5_CROP_SUMMARY_URL);
+  const res=await fetch(parsed.toString(), {headers:{accept:'text/csv,application/json,text/plain'},signal:AbortSignal.timeout(30000)});
+  const body=await res.text();
+  const contentType=String(res.headers.get('content-type')||'');
+  return {
+    status:res.ok ? 'reachable_official_fao_resource' : 'resource_error',
+    httpStatus:res.status,
+    source:'FAO GAEZ v5 Crop Summary',
+    endpoint:parsed.toString(),
+    contentType,
+    bytes:Buffer.byteLength(body,'utf8'),
+    csvDetected:/text\\/(csv|plain)|,/.test(contentType) || /,/.test(body.slice(0,1000)),
+    note:'The official FAO catalog identifies this resource as GAEZ v5 Crop Summary Data. AUREN does not mark agronomic values as verified v5 until the configured resource passes this reachability check and its imported rows retain source/version metadata.'
+  };
+});
+
+exports.aurenGaezV5CropSummaryIngest = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const url=String(request.data?.url || GAEZ_V5_CROP_SUMMARY_URL || '').trim();
+  if (!url) throw new Error('GAEZ_V5_CROP_SUMMARY_URL is not configured.');
+  const parsed=assertOfficialFaoResource(url);
+  const res=await fetch(parsed.toString(), {headers:{accept:'text/csv,application/json,text/plain'},signal:AbortSignal.timeout(60000)});
+  if (!res.ok) throw new Error('GAEZ resource request failed: ' + res.status);
+  const body=await res.text();
+  const contentType=String(res.headers.get('content-type')||'');
+  let rows;
+  if (/json/i.test(contentType)) {
+    const payload=JSON.parse(body);
+    rows=Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : (Array.isArray(payload.rows) ? payload.rows : []));
+  } else {
+    rows=parseCsv(body);
+  }
+  const normalized=normalizeGaezRows(rows);
+  if (!normalized.length) throw new Error('No tabular GAEZ rows were found in the official resource.');
+  const ref=db.collection('auren_gaez_v5_crop_summary').doc();
+  await ref.set({
+    source:'FAO GAEZ v5 Crop Summary Data',
+    catalogUrl:CROP_SUMMARY_CATALOG_URL,
+    resourceUrl:parsed.toString(),
+    version:'GAEZ v5',
+    status:'imported',
+    rowCount:normalized.length,
+    rows:normalized,
+    importedBy:request.auth.uid,
+    importedAt:admin.firestore.FieldValue.serverTimestamp()
+  });
+  return {status:'imported',id:ref.id,rowCount:normalized.length,source:'FAO GAEZ v5 Crop Summary Data',resourceUrl:parsed.toString()};
+});
+
 exports.aurenGaezV5CropSummary = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
   if (!GAEZ_V5_CROP_SUMMARY_URL) {
