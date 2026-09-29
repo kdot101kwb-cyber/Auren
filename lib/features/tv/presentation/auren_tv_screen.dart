@@ -132,12 +132,21 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     _watchTogetherWasOffline = false;
     try {
       final service = AurenTvWatchTogetherService.instance;
+      final room = await service.getRoom(roomId);
+      if (room == null) {
+        _watchTogetherWasOffline = true;
+        return;
+      }
       await service.heartbeat(roomId, online: true);
       await service.notifyActivity(roomId, type: 'reconnected');
+      _watchTogetherReconnectPending = true;
+      await _applyWatchTogetherRoomState(room);
+      _watchTogetherReconnectPending = false;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عاد اتصال Watch Together')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عاد اتصال Watch Together • تمت إعادة المزامنة')));
       }
     } catch (_) {
+      _watchTogetherReconnectPending = false;
       _watchTogetherWasOffline = true;
     }
   }
