@@ -3,12 +3,21 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../services/education/education_resource_catalog.dart';
 
 class EducationResourcesScreen extends StatefulWidget {
-  const EducationResourcesScreen({super.key});
+  final String initialSubject;
+  final String? initialLanguage;
+  const EducationResourcesScreen({super.key, this.initialSubject = '', this.initialLanguage});
   @override State<EducationResourcesScreen> createState() => _EducationResourcesScreenState();
 }
 
 class _EducationResourcesScreenState extends State<EducationResourcesScreen> {
-  String q = ''; String type = 'All'; String language = 'All';
+  late String q; String type = 'All'; late String language;
+
+  @override
+  void initState() {
+    super.initState();
+    q = widget.initialSubject;
+    language = widget.initialLanguage ?? 'All';
+  }
 
   Future<void> _openResource(Map<String, String> resource) async {
     final raw = resource['url'];
