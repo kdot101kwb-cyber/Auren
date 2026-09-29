@@ -1,6 +1,8 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
+import '../../personal_ai/presentation/action_center_screen.dart';
+
 class AurenSupplierActionDraftScreen extends StatefulWidget {
   final String supplierId;
   final String operation;
@@ -18,7 +20,7 @@ class AurenSupplierActionDraftScreen extends StatefulWidget {
 class _AurenSupplierActionDraftScreenState extends State<AurenSupplierActionDraftScreen> {
   late final TextEditingController _message, _product, _quantity, _unit, _currency, _notes;
   String _channel = 'draft';
-  String? _actionId, _status;
+  String? _actionId;
   bool _busy = false;
   bool get _isRfq => widget.operation == 'rfq';
 
@@ -50,35 +52,15 @@ class _AurenSupplierActionDraftScreenState extends State<AurenSupplierActionDraf
     if (_busy) return;
     if (_isRfq && (_product.text.trim().isEmpty || _quantity.text.trim().isEmpty)) { _show('أدخل المنتج والكمية أولاً.'); return; }
     if (!_isRfq && _message.text.trim().isEmpty) { _show('اكتب رسالة التواصل أولاً.'); return; }
-    setState(() { _busy=true; _status=null; });
-    try { final id=await _createAction(); if(!mounted)return; setState((){_actionId=id;_status='pending';}); _show('تم حفظ المسودة. لم يتم إرسالها.'); }
+    setState(() => _busy=true);
+    try { final id=await _createAction(); if(!mounted)return; setState(() => _actionId=id); _show('تم حفظ المسودة. لم يتم إرسالها.'); }
     catch(e){_show('تعذر حفظ المسودة: $e');} finally{if(mounted)setState(()=>_busy=false);}
   }
 
-  Future<void> _approveAndExecute() async {
-    final id=_actionId; if(_busy||id==null||id.isEmpty)return;
-    final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
-      title:const Text('موافقة قبل التنفيذ'),
-      content:Text(_isRfq?'سيتم اعتماد طلب عرض السعر بهذه البيانات ثم تشغيل الإجراء.':'سيتم اعتماد رسالة التواصل بهذه الصياغة ثم تشغيل الإجراء.'),
-      actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('مراجعة')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('موافق وتنفيذ'))],
-    ));
-    if(ok!=true)return;
-    setState(()=>_busy=true);
-    try {
-      final f=FirebaseFunctions.instanceFor(region:'us-central1');
-      await f.httpsCallable('approveAurenAction').call({'actionId':id});
-      if(mounted)setState(()=>_status='approved');
-      await f.httpsCallable('executeAurenAction').call({'actionId':id});
-      if(!mounted)return;
-      setState(()=>_status='completed');
-      _show(_isRfq?'تم تنفيذ الإجراء وإنشاء مسودة RFQ.':'تم تنفيذ الإجراء وإنشاء مسودة التواصل.');
-    } catch(e){if(mounted){_show('تعذر التنفيذ: $e');setState(()=>_status='pending');}} finally{if(mounted)setState(()=>_busy=false);}
-  }
   void _show(String s){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(s)));}
   Widget _field(String label,TextEditingController c,{int min=1,int max=3,TextInputType? keyboard})=>Padding(padding:const EdgeInsets.only(bottom:12),child:TextField(controller:c,minLines:min,maxLines:max,keyboardType:keyboard,decoration:InputDecoration(labelText:label,border:const OutlineInputBorder()));
 
   @override Widget build(BuildContext context){
-    final completed=_status=='completed';
     return Scaffold(appBar:AppBar(title:Text(_isRfq?'مسودة طلب عرض سعر':'مسودة تواصل')),body:ListView(padding:const EdgeInsets.all(16),children:[
       Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.auto_awesome)),title:Text(_isRfq?'راجع RFQ قبل الموافقة':'راجع رسالة التواصل قبل الموافقة',style:const TextStyle(fontWeight:FontWeight.w800)),subtitle:const Text('AUREN لا تنفذ الإجراء الحساس إلا بعد موافقة صريحة منك.'))),
       const SizedBox(height:12),
@@ -86,9 +68,12 @@ class _AurenSupplierActionDraftScreenState extends State<AurenSupplierActionDraf
       DropdownButtonFormField<String>(value:_channel,decoration:const InputDecoration(labelText:'القناة',border:OutlineInputBorder()),items:const[DropdownMenuItem(value:'draft',child:Text('مسودة داخل AUREN'))],onChanged:_busy?null:(v){if(v!=null)setState(()=>_channel=v);}),
       const SizedBox(height:16),
       if(_actionId==null) FilledButton.icon(onPressed:_busy?null:_saveDraft,icon:_busy?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.save_outlined),label:const Text('حفظ المسودة'))
-      else if(!completed) FilledButton.icon(onPressed:_busy?null:_approveAndExecute,icon:_busy?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.verified_user_outlined),label:const Text('موافقة وتنفيذ'))
-      else const FilledButton.icon(onPressed:null,icon:Icon(Icons.check_circle_outline),label:Text('تم التنفيذ')),
-      if(_actionId!=null)...[const SizedBox(height:10),Text(completed?'تمت العملية. التنفيذ الخارجي المباشر غير مفعل؛ الناتج محفوظ كمسودة داخل AUREN.':'المسودة محفوظة كإجراء معلّق. لم يتم إرسال شيء حتى تضغط «موافقة وتنفيذ».',textAlign:TextAlign.center)],
+      else ...[
+        FilledButton.icon(onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const AurenActionCenterScreen())), icon: const Icon(Icons.shield_outlined), label: const Text('فتح Action Center للموافقة')),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(onPressed: _busy ? null : () => setState(() => _actionId = null), icon: const Icon(Icons.edit_outlined), label: const Text('تعديل المسودة')),
+      ],
+      if(_actionId!=null)...[const SizedBox(height:10),const Text('المسودة محفوظة كإجراء معلّق. الموافقة والتنفيذ يتمان من Action Center باستخدام نظام AUREN الموحد.',textAlign:TextAlign.center)],
     ]));
   }
 }
