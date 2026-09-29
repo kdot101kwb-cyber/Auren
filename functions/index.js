@@ -3745,3 +3745,10 @@ exports.aurenMatchEverythingIntelligence = require('firebase-functions/v2/https'
   }
 );
 Object.assign(module.exports, require('./gaez_global_data'));
+
+
+// Production Worker lifecycle controls.
+const productionLifecycle = require('./production_lifecycle');
+exports.cancelAurenProduction = productionLifecycle.cancelAurenProduction;
+exports.retryAurenProduction = productionLifecycle.retryAurenProduction;
+exports.recordAurenProductionOutput = productionLifecycle.recordAurenProductionOutput;
