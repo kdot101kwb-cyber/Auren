@@ -2535,6 +2535,19 @@ service cloud.firestore {
       }
     }
 
+    match /users/{userId}/watchTogetherTokens/{tokenId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['token','platform','updatedAt'])
+        && request.resource.data.token == tokenId
+        && request.resource.data.token is string
+        && request.resource.data.token.size() > 0
+        && request.resource.data.token.size() <= 4096
+        && request.resource.data.platform in ['android','ios','web']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
     match /users/{userId}/actions/{actionId} {
       allow read: if isOwner(userId);
       // Action requests are created and mutated by trusted server code.
