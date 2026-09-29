@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const {onSchedule} = require('firebase-functions/v2/scheduler');
 const {defineSecret, defineString} = require('firebase-functions/params');
 const admin = require('firebase-admin');
@@ -54,13 +55,22 @@ function taskInput(data) {
 }
 
 
+function outputKey(taskId, output) {
+  const raw = [taskId, output?.externalId || '', output?.storagePath || '', output?.url || ''].join('|');
+  return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 32);
+}
+
+function lifecycleEventId(task, event) {
+  return `${String(task.id || task.taskId || 'task')}_${event}_${Number(task.generationAttempts || 0)}_${Number(task.retryCount || 0)}`.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 120);
+}
+
 async function syncProductionLifecycle(ref, output = null, event = 'output', error = '') {
   const snap = await ref.get();
   if (!snap.exists) return;
   const task = snap.data() || {};
   const uid = ref.parent.parent?.id;
   if (!uid) return;
-  const history = db.collection('users').doc(uid).collection('productionHistory').doc();
+  const history = db.collection('users').doc(uid).collection('productionHistory').doc(lifecycleEventId({...task, id:ref.id}, event));
   const payload = {
     taskId: ref.id,
     taskPath: ref.path,
@@ -74,7 +84,7 @@ async function syncProductionLifecycle(ref, output = null, event = 'output', err
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   };
   if (output && (output.url || output.storagePath || output.externalId)) {
-    const outputDoc = db.collection('users').doc(uid).collection('outputLibrary').doc();
+    const outputDoc = db.collection('users').doc(uid).collection('outputLibrary').doc(outputKey(ref.id, output));
     const normalized = {
       url: output.url || null,
       storagePath: output.storagePath || null,
