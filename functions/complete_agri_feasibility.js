@@ -15,12 +15,13 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
   if (!/^[A-Z]{3}$/.test(iso3) || !crop) throw new Error('iso3 and crop are required.');
 
   const slug = crop.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-  const [evidence, suitability, financial, fiveYear, logistics] = await Promise.all([
+  const [evidence, suitability, financial, fiveYear, logistics, gaezRows] = await Promise.all([
     db.collection('auren_feasibility_evidence').where('iso3','==',iso3).orderBy('generatedAt','desc').limit(1).get(),
     db.collection('auren_agri_suitability').doc(iso3 + '_' + slug).get(),
     db.collection('auren_agri_financial_feasibility').where('iso3','==',iso3).where('crop','==',crop).orderBy('generatedAt','desc').limit(1).get(),
     db.collection('auren_agri_five_year_models').where('iso3','==',iso3).where('crop','==',crop).orderBy('generatedAt','desc').limit(1).get(),
-    db.collection('auren_agri_logistics_evidence').doc(iso3).get()
+    db.collection('auren_agri_logistics_evidence').doc(iso3).get(),
+    db.collection('auren_gaez_v5_crop_summary_rows').where('countryKey','==',iso3).limit(500).get()
   ]);
 
   const ev = evidence.empty ? null : evidence.docs[0].data();
@@ -28,6 +29,10 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
   const fi = financial.empty ? null : financial.docs[0].data();
   const fy = fiveYear.empty ? null : fiveYear.docs[0].data();
   const lg = logistics.exists ? logistics.data() : null;
+  const gaezGlobalRows = gaezRows.docs.map(doc => doc.data() || {}).filter(row => {
+    const item = String(row.row?.crop ?? row.row?.Crop ?? row.row?.crop_name ?? row.row?.Crop_Name ?? '').trim().toLowerCase();
+    return !item || item === crop.toLowerCase() || item.includes(crop.toLowerCase()) || crop.toLowerCase().includes(item);
+  });
 
   const evidenceScore = [
     ev?.evidenceQuality?.worldBank,
@@ -67,7 +72,14 @@ exports.aurenCompleteAgriFeasibility = onCall(async (request) => {
     technical:{
       evidence:ev,
       suitability:su,
-      evidenceCompleteness:Math.round(evidenceScore / 6 * 100)
+      evidenceCompleteness:Math.round(evidenceScore / 6 * 100),
+      gaezV5CropSummary:{
+        source:'FAO GAEZ v5 Crop Summary Data',
+        country:iso3,
+        crop,
+        importedRows:gaezGlobalRows.length,
+        available:gaezGlobalRows.length > 0
+      }
     },
     financial:{
       oneYear:fi?.outputs || null,
