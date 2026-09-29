@@ -237,11 +237,15 @@ exports.aurenGaezV5CropSummary = onCall(async (request) => {
   // the same verified source rather than a Sudan-specific path.
   let query = db.collection('auren_gaez_v5_crop_summary_rows');
   if (country) query=query.where('countryKey','==',country.toUpperCase());
-  if (crop) query=query.where('cropKey','==',crop.toLowerCase());
+  else if (crop) query=query.where('cropKey','==',crop.toLowerCase());
 
   const imported = await query.limit(500).get();
-  if (!imported.empty) {
-    const rows=imported.docs.map(d => d.data().row || {});
+  const importedRows = imported.docs
+    .map(d => d.data() || {})
+    .filter(d => !crop || String(d.cropKey || '').toLowerCase() === crop.toLowerCase())
+    .map(d => d.row || {});
+  if (importedRows.length) {
+    const rows=importedRows;
     return {
       status:'ok',
       source:'FAO GAEZ v5 Crop Summary Data',
