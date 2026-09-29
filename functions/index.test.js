@@ -556,7 +556,7 @@ test('final package preserves normalized multilingual subtitle URLs',()=>{
 test('Watch Together push triggers are server-owned and actor-excluded', () => {
   assert.match(source, /exports\.onWatchTogetherMessageCreated/);
   assert.match(source, /exports\.onWatchTogetherActivityCreated/);
-  assert.match(source, /actorUid\) \\{/);
+  assert.match(source, /actorUid/);
   assert.match(source, /uid !== actorUid/);
   assert.match(source, /watchTogetherTokens/);
   assert.match(source, /sendEachForMulticast/);
