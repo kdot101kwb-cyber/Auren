@@ -69,9 +69,9 @@ async function submitReplicate({token, version, input, idempotencyKey=''}) {
   const v = requireValue(version, 'REPLICATE_VERSION');
   const result = await requestJson('https://api.replicate.com/v1/predictions', {
     method:'POST',
-    headers:{authorization:'Bearer '+key, prefer:'wait'},
+    headers:{authorization:'Bearer '+key},
     body:{version:v, input:input || {}},
-    timeoutMs:60000,
+    timeoutMs:30000,
   });
   if (!result.ok) return {ok:false, providerId:'replicate', ...result};
   const predictionId = String(result.data?.id || '');
@@ -101,6 +101,17 @@ async function pollReplicate({token, predictionId}) {
   };
 }
 
+async function cancelReplicate({token, predictionId}) {
+  const key = requireValue(token, 'REPLICATE_API_TOKEN');
+  const id = requireValue(predictionId, 'REPLICATE_PREDICTION_ID');
+  const result = await requestJson('https://api.replicate.com/v1/predictions/'+encodeURIComponent(id)+'/cancel', {
+    method:'POST',
+    headers:{authorization:'Bearer '+key},
+    timeoutMs:15000,
+  });
+  return result.ok ? {ok:true, providerId:'replicate', state:String(result.data?.status || 'canceled')} : {ok:false, providerId:'replicate', ...result};
+}
+
 function normalizeReplicateOutput(data) {
   const output=data?.output;
   if (typeof output==='string' && output) return {url:output};
@@ -125,5 +136,6 @@ module.exports = {
   submitHuggingFaceChat,
   submitReplicate,
   pollReplicate,
+  cancelReplicate,
   normalizeReplicateOutput,
 };
