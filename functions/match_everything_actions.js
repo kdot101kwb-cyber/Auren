@@ -42,6 +42,7 @@ exports.createAurenMatchAction = onCall(
       unit:clean(payload.unit,40),
       currency:clean(payload.currency,3).toUpperCase(),
       notes:clean(payload.notes,3000),
+      matchFlowId:clean(payload.matchFlowId,180),
     };
 
     if(operation==='contact' && !actionPayload.message) {
