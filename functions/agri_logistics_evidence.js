@@ -83,6 +83,7 @@ exports.aurenWorldBankLogisticsStore = onCall(async(request)=>{
     source:'World Bank Logistics Performance Index',
     sourceType:'country_indicator',
     rows:accepted,
+    items:accepted,
     updatedAt:admin.firestore.FieldValue.serverTimestamp(),
   },{merge:true});
 
