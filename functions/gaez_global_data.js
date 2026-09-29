@@ -108,7 +108,7 @@ exports.aurenGaezSuitabilityCatalog = onCall(async (request) => {
 function assertOfficialFaoResource(url) {
   let parsed;
   try { parsed = new URL(String(url)); } catch (_) { throw new Error('Invalid GAEZ resource URL.'); }
-  if (parsed.protocol !== 'https:' || !['data.apps.fao.org','data.fao.org'].includes(parsed.hostname)) {
+  if (parsed.protocol !== 'https:' || !['data.apps.fao.org','api.data.apps.fao.org','data.fao.org'].includes(parsed.hostname)) {
     throw new Error('GAEZ resource must be an official FAO data.apps.fao.org or data.fao.org HTTPS URL.');
   }
   return parsed;
