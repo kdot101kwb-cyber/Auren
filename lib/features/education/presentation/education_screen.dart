@@ -6,6 +6,8 @@ import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'certifications_screen.dart';
 import 'learning_plan_screen.dart';
+import 'education_resources_screen.dart';
+import '../../../services/education/education_resource_matcher.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
   const AurenAURENEducationScreen({super.key});
@@ -100,6 +102,8 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                   label: const Text('إلغاء تصفية الدورات'),
                 ),
               ),
+              const SizedBox(height: 8),
+              _recommendedResources(),
               const SizedBox(height: 8),
               _myLearning(uid),
               if (courses.isEmpty) _emptyState() else ...courses.map((c) => _card(context, c, uid)),
@@ -224,6 +228,59 @@ class _EducationState extends State<AurenAURENEducationScreen> {
     );
   }
 
+  Widget _recommendedResources() {
+    final subject = query.trim();
+    final recommendations = EducationResourceMatcher.recommend(
+      subject: subject,
+      language: language ?? '',
+      level: level == 'All' ? '' : level,
+      limit: 4,
+    );
+    if (subject.isEmpty && language == null && level == 'All') {
+      return const SizedBox.shrink();
+    }
+    if (recommendations.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('مصادر مناسبة لك', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(subject.isEmpty ? 'مصادر حسب اللغة والمستوى' : 'فيديو، كتاب، محاكاة وتمارين لـ $subject', style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 8),
+            ...recommendations.map((item) {
+              final resource = item.resource;
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(child: Icon(Icons.menu_book_outlined)),
+                title: Text(resource['name'] ?? ''),
+                subtitle: Text('${resource['type'] ?? ''} • ${resource['languages'] ?? ''}', maxLines: 2, overflow: TextOverflow.ellipsis),
+                trailing: const Icon(Icons.open_in_new),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EducationResourcesScreen(initialSubject: subject, initialLanguage: language))),
+              );
+            }),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EducationResourcesScreen(initialSubject: subject, initialLanguage: language))),
+                  icon: const Icon(Icons.library_books_outlined), label: const Text('كل المصادر'),
+                )),
+                const SizedBox(width: 8),
+                Expanded(child: FilledButton.icon(
+                  onPressed: subject.isEmpty ? null : () => _openTutor(EducationResourceMatcher.buildTutorPrompt(subject: subject, language: language ?? '', level: level == 'All' ? '' : level)),
+                  icon: const Icon(Icons.auto_awesome), label: const Text('AI Tutor'),
+                )),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   Widget _myLearning(String uid) {
     return StreamBuilder<List<AurenLearningProgress>>(
       stream: repo.watchMyLearning(uid),
