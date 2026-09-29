@@ -9,6 +9,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'core/i18n/auren_locale.dart';
+
 import 'firebase_options.dart';
 import 'features/shell/presentation/auren_shell.dart';
 import 'features/tv/presentation/auren_tv_screen.dart';
@@ -61,6 +63,9 @@ class _AurenErrorView extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'AUREN',
+        supportedLocales: AurenLocale.supportedLocales,
+        localeResolutionCallback: (deviceLocale, supported) =>
+            AurenLocale.localeFromPlatform(deviceLocale ?? const Locale('en')),
         theme: ThemeData.dark(useMaterial3: true),
         home: const Scaffold(
           body: SafeArea(
