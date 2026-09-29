@@ -2614,5 +2614,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /users/{userId}/productionHistory/{entryId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/outputLibrary/{outputId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
   }
 }
