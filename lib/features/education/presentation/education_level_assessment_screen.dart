@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/education/education_level_assessment_service.dart';
+import '../../../services/education/learning_plan_service.dart';
+import 'learning_plan_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class EducationLevelAssessmentScreen extends StatefulWidget {
@@ -11,6 +13,7 @@ class EducationLevelAssessmentScreen extends StatefulWidget {
 
 class _EducationLevelAssessmentScreenState extends State<EducationLevelAssessmentScreen> {
   final service=EducationLevelAssessmentService();
+  final plans=LearningPlanService();
   int index=0;
   final answers=<int>[];
   EducationAssessmentResult? result;
@@ -47,6 +50,16 @@ class _EducationLevelAssessmentScreenState extends State<EducationLevelAssessmen
           FilledButton.icon(
             onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:service.buildTutorPrompt(subject:widget.subject,result:r)))),
             icon:const Icon(Icons.auto_awesome),label:const Text('ابدأ مساري مع AI Tutor'),
+          ),
+          const SizedBox(height:10),
+          OutlinedButton.icon(
+            onPressed:() async {
+              final uid=FirebaseAuth.instance.currentUser?.uid;
+              if(uid==null) return;
+              await plans.savePlan(uid:uid,title:'مسار ${widget.subject}',track:'Adaptive Learning',subject:widget.subject,level:r.level,minutesPerDay:30,weeklyGoals:['التركيز: ${r.focusAreas.join('، ')}','درس يومي','تمارين','اختبار ومراجعة']);
+              if(mounted) Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const LearningPlanScreen()));
+            },
+            icon:const Icon(Icons.route),label:const Text('حوّل النتيجة إلى خطة تعلم'),
           ),
         ]),
       );
