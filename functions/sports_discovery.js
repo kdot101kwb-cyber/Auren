@@ -31,14 +31,42 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
   const apiKey=String(process.env.API_FOOTBALL_KEY||'').trim();
   const tsdbKey=String(process.env.THESPORTSDB_API_KEY||'').trim();
 
+  const apiSportMap={
+    football:'football', basketball:'basketball', tennis:'tennis', cricket:'cricket',
+    baseball:'baseball', hockey:'hockey', handball:'handball', volleyball:'volleyball',
+    rugby:'rugby', mma:'mma', formula1:'formula1', afl:'afl', nfl:'american-football'
+  };
+  const selectedApiSport=apiSportMap[sport]||'football';
   const providers=[];
+  const sourceUrls={
+    'API-Sports':'https://api-sports.io/',
+    'TheSportsDB':'https://www.thesportsdb.com/api.php'
+  };
+
   if(apiKey) {
     try {
-      const url=new URL('https://v3.football.api-sports.io/fixtures');
-      if(date) url.searchParams.set('date',date); else url.searchParams.set('next','20');
-      if(q) url.searchParams.set('team',q);
-      const data=await fetchJson(url,{headers:{'x-apisports-key':apiKey}});
-      providers.push(...mapFootball(data?.response,'API-Football'));
+      if(selectedApiSport==='football') {
+        const url=new URL('https://v3.football.api-sports.io/fixtures');
+        if(date) url.searchParams.set('date',date); else url.searchParams.set('next','20');
+        if(q) url.searchParams.set('team',q);
+        const data=await fetchJson(url,{headers:{'x-apisports-key':apiKey}});
+        providers.push(...mapFootball(data?.response,'API-Sports'));
+      } else {
+        const base='https://v1.'+selectedApiSport+'.api-sports.io/games';
+        const url=new URL(base);
+        if(date) url.searchParams.set('date',date); else url.searchParams.set('next','20');
+        if(q) url.searchParams.set('team',q);
+        const data=await fetchJson(url,{headers:{'x-apisports-key':apiKey}});
+        const rows=Array.isArray(data?.response)?data.response:[];
+        providers.push(...rows.map(x=>({
+          id:String(x.id||''), sport:selectedApiSport,
+          title:[x.teams?.home?.name,x.teams?.away?.name].filter(Boolean).join(' vs '),
+          status:String(x.status?.short||x.status?.long||''),
+          date:x.date||null, league:x.league?.name||'', country:x.country?.name||x.country?.code||'',
+          venue:x.venue?.name||'', homeLogo:x.teams?.home?.logo||'', awayLogo:x.teams?.away?.logo||'',
+          source:'API-Sports'
+        })).filter(x=>x.title));
+      }
     } catch (_) {}
   }
   if(tsdbKey && q) {
@@ -51,13 +79,13 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
   }
 
   const seen=new Set();
-  const results=providers.filter(x=>{const k=(x.source||'')+':'+x.id;if(!x.id||seen.has(k))return false;seen.add(k);return true;}).slice(0,50);
+  const results=providers.filter(x=>{const k=(x.sport||'')+':'+(x.id||'')+':'+(x.source||'');if(!x.id||seen.has(k))return false;seen.add(k);return true;}).slice(0,50);
   return {
     status: results.length ? 'ok' : 'not_configured',
-    providers: ['API-Football','TheSportsDB'],
+    providers: ['API-Sports','TheSportsDB'],
     results,
     sourceUrls:{
-      'API-Football':'https://www.api-football.com/',
+      'API-Sports':'https://api-sports.io/',
       'TheSportsDB':'https://www.thesportsdb.com/api.php'
     },
     message: results.length ? '' : 'Configure API_FOOTBALL_KEY and/or THESPORTSDB_API_KEY in Firebase Functions.'
