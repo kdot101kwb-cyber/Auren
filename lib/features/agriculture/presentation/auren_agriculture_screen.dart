@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'agriculture_market_prices_screen.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
 
 class AurenAgricultureScreen extends StatefulWidget {
