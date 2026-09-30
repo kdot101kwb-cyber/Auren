@@ -26,8 +26,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "20.x"
       - name: Install dependencies
         run: npm install
-      - name: Run Functions tests
+      - name: Run syntax and tests
         run: npm test
