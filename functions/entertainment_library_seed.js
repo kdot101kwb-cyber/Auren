@@ -88,6 +88,42 @@ function animeDoc(anime) {
   };
 }
 
+
+
+function journalDoc(journal, source) {
+  const issn = journal.ISSN || journal.issn || '';
+  const id = source + '_journal_' + String(issn || journal.id || journal.display_name || journal.title || 'unknown').replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 100);
+  const title = journal.title || journal.display_name || journal.name || 'Journal';
+  const host = journal.publisher || journal.host_organization_name || '';
+  return {
+    id,
+    title: clean(title, 160),
+    type: 'Journal',
+    description: clean(host ? 'Journal / periodical. Publisher: ' + host : 'Journal / periodical catalog entry.', 3000),
+    imageUrl: '',
+    mediaUrl: clean(journal.url || journal.homepage_url || ('https://api.crossref.org/journals/' + issn), 2000),
+    mediaKind: 'catalog',
+    creatorId: 'auren-library',
+    channelId: 'auren-library',
+    country: clean(journal.country || journal.country_code || '', 80),
+    language: '',
+    year: '',
+    genres: ['Journal', 'Periodical'],
+    seasons: 0,
+    episodes: 0,
+    trailerUrl: '',
+    artistName: '',
+    albumName: '',
+    visibility: 'public',
+    source: source,
+    sourceUrl: clean(journal.url || journal.homepage_url || '', 2000),
+    issn: clean(issn, 80),
+    licenseNote: 'Metadata/catalog entry only; AUREN does not host copyrighted journal or magazine issues.',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+}
+
 exports.seedAurenEntertainmentLibrary = onCall(
   {region: 'us-central1', timeoutSeconds: 120, memory: '256MiB', enforceAppCheck: true},
   async (request) => {
@@ -99,16 +135,20 @@ exports.seedAurenEntertainmentLibrary = onCall(
       return {status: 'ready', seeded: false, message: 'AUREN Entertainment Library is already populated.'};
     }
 
-    const [books, anime, manga] = await Promise.all([
+    const [books, anime, manga, crossref, openalex] = await Promise.all([
       getJson('https://gutendex.com/books?languages=en&copyright=false&sort=popular&page=1'),
       getJson('https://api.jikan.moe/v4/top/anime?limit=25'),
       getJson('https://api.jikan.moe/v4/top/manga?limit=25'),
+      getJson('https://api.crossref.org/journals?rows=100'),
+      getJson('https://api.openalex.org/sources?filter=type:journal&sort=-works_count&per-page=100'),
     ]);
 
     const docs = [
       ...(books.results || []).slice(0, 40).map(bookDoc),
       ...(anime.data || []).slice(0, 25).map(animeDoc),
       ...(manga.data || []).slice(0, 25).map(mangaDoc),
+      ...((crossref.message && crossref.message.items) || []).slice(0, 100).map((x) => journalDoc(x, 'Crossref')),
+      ...((openalex.results) || []).slice(0, 100).map((x) => journalDoc(x, 'OpenAlex')),
     ];
 
     const batchSize = 400;
@@ -128,9 +168,9 @@ exports.seedAurenEntertainmentLibrary = onCall(
       total: docs.length,
       seededBy: request.auth.uid,
       seededAt: admin.firestore.FieldValue.serverTimestamp(),
-      sources: ['Gutendex / Project Gutenberg', 'Jikan / MyAnimeList'],
+      sources: ['Gutendex / Project Gutenberg', 'Jikan / MyAnimeList', 'Crossref', 'OpenAlex'],
     }, {merge: true});
 
-    return {status: 'ready', seeded: true, books: Math.min((books.results || []).length, 40), anime: Math.min((anime.data || []).length, 25), total: docs.length};
+    return {status: 'ready', seeded: true, books: Math.min((books.results || []).length, 40), anime: Math.min((anime.data || []).length, 25), manga: Math.min((manga.data || []).length, 25), journals: Math.min(((crossref.message && crossref.message.items) || []).length, 100) + Math.min((openalex.results || []).length, 100), total: docs.length};
   },
 );
