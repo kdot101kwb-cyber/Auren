@@ -1,11 +1,8 @@
 const admin = require('firebase-admin');
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
+const {applyEducationActivitiesInTransaction, cleanString} = require('./education_gamification_core');
 
 const db = admin.firestore();
-
-function cleanString(value, max = 160) {
-  return typeof value === 'string' ? value.trim().slice(0, max) : '';
-}
 
 exports.completeAurenEducationLesson = onCall(
   {region: 'us-central1', timeoutSeconds: 20, memory: '256MiB', enforceAppCheck: true},
@@ -31,7 +28,7 @@ exports.completeAurenEducationLesson = onCall(
     }
 
     const ref = db.collection('users').doc(uid).collection('enrollments').doc(courseId);
-    const result = await db.runTransaction(async (tx) => {
+    return db.runTransaction(async (tx) => {
       const enrollmentSnap = await tx.get(ref);
       if (!enrollmentSnap.exists) {
         throw new HttpsError('failed-precondition', 'Enroll in the course first.');
@@ -48,6 +45,24 @@ exports.completeAurenEducationLesson = onCall(
 
       const progress = lessonCount === 0 ? 100 : Math.round((requestedCompleted / lessonCount) * 100);
       const status = progress >= 100 ? 'completed' : 'active';
+      const activities = [];
+
+      for (let lesson = previous + 1; lesson <= requestedCompleted; lesson++) {
+        activities.push({
+          type: 'lesson',
+          eventId: `lesson:${courseId}:${lesson}`,
+          sourceId: courseId,
+        });
+      }
+      if (previous < lessonCount && progress >= 100) {
+        activities.push({
+          type: 'course',
+          eventId: `course:${courseId}:completed`,
+          sourceId: courseId,
+        });
+      }
+
+      const gamification = await applyEducationActivitiesInTransaction(tx, uid, activities);
 
       tx.set(ref, {
         courseId,
@@ -57,9 +72,14 @@ exports.completeAurenEducationLesson = onCall(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, {merge: true});
 
-      return {previous, completedLessons: requestedCompleted, progress, status};
+      return {
+        courseId,
+        previous,
+        completedLessons: requestedCompleted,
+        progress,
+        status,
+        gamification,
+      };
     });
-
-    return {courseId, ...result};
   },
 );
