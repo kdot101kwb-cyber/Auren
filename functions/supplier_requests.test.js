@@ -21,6 +21,9 @@ test('supplier request lifecycle preserves user ownership and match flow', () =>
   assert.match(source, /users.*supplier_rfqs/);
   assert.match(source, /matchFlowId/);
   assert.match(source, /waiting_response/);
+  assert.match(source, /runTransaction/);
+  assert.match(source, /supplier_contact_requests/);
+  assert.match(source, /supplier_rfqs/);
 });
 
 test('supplier workflow creates user-scoped request mirrors and updates Match Flow', () => {
