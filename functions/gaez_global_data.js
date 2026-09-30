@@ -580,40 +580,23 @@ exports.aurenGaezV5GlobalCoverage = onCall(async (request) => {
 exports.aurenGaezCropQuery = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
 
-  const country = String(request.data?.country || '').trim();
-  const crop = String(request.data?.crop || '').trim();
-  const climateSource = String(request.data?.climateSource || '').trim();
-  const ssp = String(request.data?.ssp || '').trim();
-  const period = String(request.data?.period || '').trim();
-  const waterSupply = String(request.data?.waterSupply || '').trim();
-  const management = String(request.data?.management || '').trim();
-
   const query = {
-    country: country || null,
-    crop: crop || null,
-    climateSource: climateSource || null,
-    ssp: ssp || null,
-    period: period || null,
-    waterSupply: waterSupply || null,
-    management: management || null
+    country: String(request.data?.country || '').trim() || null,
+    crop: String(request.data?.crop || '').trim() || null,
+    climateSource: String(request.data?.climateSource || '').trim() || null,
+    ssp: String(request.data?.ssp || '').trim() || null,
+    period: String(request.data?.period || '').trim() || null,
+    waterSupply: String(request.data?.waterSupply || '').trim() || null,
+    management: String(request.data?.management || '').trim() || null
   };
 
-  const ref = db.collection('auren_gaez_queries').doc();
-  await ref.set({
-    query,
-    source:'FAO GAEZ v5 Crop Summary',
-    catalogUrl:CROP_SUMMARY_CATALOG_URL,
-    gaezV5SuitabilityService:GAEZ_V5_RES05,
-    status:'queued',
-    createdBy:request.auth.uid,
-    createdAt:admin.firestore.FieldValue.serverTimestamp()
+  const result = await exports.aurenGaezV5CropSummary.run({
+    auth: request.auth,
+    data: query
   });
 
   return {
-    status:'queued',
-    id:ref.id,
-    query,
-    source:'FAO GAEZ v5',
-    next:'connect the validated FAO catalog resource/query endpoint before returning agronomic values'
+    ...result,
+    query
   };
 });
