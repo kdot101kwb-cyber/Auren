@@ -3785,3 +3785,5 @@ Object.assign(module.exports, require('./auren_magazine_index'));
 Object.assign(module.exports, require('./auren_comics_index'));
 Object.assign(module.exports, require('./auren_research_index'));
 Object.assign(module.exports, require('./auren_library_graph'));
+Object.assign(module.exports, require('./auren_unified_library_search'));
+Object.assign(module.exports, require('./auren_library_sources'));
