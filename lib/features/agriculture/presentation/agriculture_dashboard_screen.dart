@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/agriculture_dashboard_service.dart';
 import '../../../services/agriculture/agriculture_production_intelligence_service.dart';
+import '../../../services/agriculture/agriculture_market_prices_service.dart';
 
 class AurenAgricultureDashboardScreen extends StatefulWidget {
   const AurenAgricultureDashboardScreen({super.key});
@@ -10,11 +11,13 @@ class AurenAgricultureDashboardScreen extends StatefulWidget {
 class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashboardScreen> {
   final _service = AgricultureDashboardService();
   final _productionService = AgricultureProductionIntelligenceService();
+  final _marketPricesService = AgricultureMarketPricesService();
   final _crop = TextEditingController(text: 'Sorghum');
   final _iso3 = TextEditingController();
   Map<String, dynamic>? data;
   Map<String, dynamic>? backtest;
   Map<String, dynamic>? forecastBundle;
+  List<AgricultureNormalizedLocalMarketPrice>? normalizedPrices;
   Object? error;
   bool loading = false;
 
@@ -24,6 +27,16 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
       final crop = _crop.text.trim().isEmpty ? 'Sorghum' : _crop.text.trim();
       final iso3 = _iso3.text.trim().toUpperCase();
       final result = await _service.load(crop: crop, iso3: iso3);
+      List<AgricultureNormalizedLocalMarketPrice>? normalized;
+      try {
+        normalized = await _marketPricesService.normalizeLocalPricesToUsdPerTonne(
+          iso3: iso3.isEmpty ? 'ALL' : iso3,
+          commodity: crop,
+          limit: 100,
+        );
+      } catch (_) {
+        normalized = null;
+      }
       Map<String, dynamic>? forecasted;
       Map<String, dynamic>? evaluated;
       try {
@@ -36,7 +49,7 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
       } catch (_) {
         evaluated = null;
       }
-      if (mounted) setState(() { data = result; forecastBundle = forecasted; backtest = evaluated; loading = false; });
+      if (mounted) setState(() { data = result; normalizedPrices = normalized; forecastBundle = forecasted; backtest = evaluated; loading = false; });
     } catch (e) {
       if (mounted) setState(() { error = e; loading = false; });
     }
@@ -80,6 +93,8 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
               ('USD/t coverage', '${snapshot['conversionCoveragePct'] ?? 0}%'),
             ]),
             const SizedBox(height: 14),
+            _normalizedPriceCard(context),
+            const SizedBox(height: 10),
             Card(child: ListTile(leading: const Icon(Icons.agriculture_outlined), title: const Text('Latest producer price'), subtitle: Text(latest.isEmpty ? 'No cached FAOSTAT producer observation yet.' : '${latest['priceUSDTonne'] ?? '—'} USD/tonne • ${latest['date'] ?? ''}'))),
             const SizedBox(height: 10),
             Card(child: ListTile(leading: Icon(readiness['faostatFxConfigured'] == true ? Icons.currency_exchange : Icons.currency_exchange_outlined), title: const Text('FAOSTAT exchange-rate bridge'), subtitle: Text(readiness['faostatFxConfigured'] == true ? 'Official FX bridge configured; USD/tonne conversion uses cached FAOSTAT rates when available.' : 'FX bridge code ready; configure the official FAOSTAT export endpoint to enable conversion.'))),
@@ -108,6 +123,38 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
     );
   }
 
+  Widget _normalizedPriceCard(BuildContext context) {
+    final rows = normalizedPrices ?? const <AgricultureNormalizedLocalMarketPrice>[];
+    final normalized = rows.where((r) => r.status == 'normalized' && r.priceUsdPerTonne != null).length;
+    final unresolved = rows.length - normalized;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.currency_exchange),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Local price normalization', style: TextStyle(fontWeight: FontWeight.bold))),
+            Text('$normalized/${rows.length}'),
+          ]),
+          const SizedBox(height: 6),
+          Text(rows.isEmpty
+              ? 'No matching local-market observations were returned.'
+              : '$normalized prices normalized to USD/tonne' + (unresolved > 0 ? ' • $unresolved still need unit or FX data' : '') + '.'),
+          if (rows.isNotEmpty) ...[
+            const Divider(height: 18),
+            ...rows.take(3).map((r) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(children: [
+                Expanded(child: Text('${r.iso3} • ${r.item}')),
+                Text(r.priceUsdPerTonne == null ? '—' : '${r.priceUsdPerTonne!.toStringAsFixed(2)} USD/t'),
+              ]),
+            )),
+          ],
+        ]),
+      ),
+    );
+  }
   Widget _forecastCard(BuildContext context) {
     final raw = forecastBundle;
     final rows = raw?['forecast'] is List ? List<dynamic>.from(raw!['forecast'] as List) : const <dynamic>[];
