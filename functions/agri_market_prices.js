@@ -512,3 +512,53 @@ function aurenAgriFxContract() {
   };
 }
 exports.aurenAgriFxContract = aurenAgriFxContract;
+
+
+// Canonical local-market normalization using cached official FAOSTAT FX.
+// Only explicit mass units (kg/tonne) are converted to USD/tonne; other units stay unresolved.
+exports.aurenAgriLocalMarketPriceUsdNormalization = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const p=request.data||{};
+  const iso3=String(p.iso3||p.country||'').trim().toUpperCase();
+  const commodity=normalizeText(p.commodity||p.crop);
+  const limit=Math.min(Math.max(Number(p.limit)||100,1),500);
+  const [localSnap,fxSnap]=await Promise.all([
+    db.collection('auren_agri_local_market_prices').limit(2000).get(),
+    db.collection('auren_agri_fx_rates').limit(5000).get()
+  ]);
+  const fxByIso3={};
+  for (const d of fxSnap.docs) {
+    const r=d.data();
+    const key=String(r.iso3||'').toUpperCase();
+    if (!key || !Number.isFinite(Number(r.usdPerLocalUnit))) continue;
+    const current=fxByIso3[key];
+    if (!current || String(r.date||'') > String(current.date||'')) fxByIso3[key]=r;
+  }
+  const rows=[];
+  for (const d of localSnap.docs) {
+    const r=d.data();
+    const rowIso=String(r.iso3||r.countryCode||'').toUpperCase();
+    const item=String(r.item||r.commodity||'');
+    if (iso3 && iso3!=='ALL' && rowIso!==iso3) continue;
+    if (commodity && normalizeText(item)!==commodity) continue;
+    const nativePrice=Number(r.priceLCU ?? r.price ?? r.value);
+    if (!Number.isFinite(nativePrice)) continue;
+    const unit=String(r.unit||'').toLowerCase();
+    let factor=null;
+    if (/^kg$|kilogram/.test(unit)) factor=1000;
+    else if (/ton|tonne|metric.?ton/.test(unit)) factor=1;
+    const tonneLocal=factor==null?null:nativePrice*factor;
+    const currency=String(r.currency||'').toUpperCase();
+    const fx=currency==='USD'?1:fxByIso3[rowIso]?.usdPerLocalUnit;
+    const usdPerTonne=tonneLocal!=null && Number.isFinite(Number(fx)) ? tonneLocal*Number(fx) : null;
+    rows.push({
+      id:d.id, iso3:rowIso, item, nativePrice, currency:currency||null, unit:r.unit||null,
+      priceLocalPerTonne:tonneLocal, usdPerLocalUnit:fx??null, priceUsdPerTonne:usdPerTonne,
+      fxDate:currency==='USD'?null:(fxByIso3[rowIso]?.date||null),
+      status:usdPerTonne!=null?'normalized':'needs_unit_or_fx', observedAt:r.observedAt||r.date||null,
+      source:r.source||null
+    });
+  }
+  rows.sort((a,b)=>String(b.observedAt||'').localeCompare(String(a.observedAt||'')));
+  return {status:rows.length?'ok':'no_data',iso3:iso3||'ALL',commodity:commodity||null,count:Math.min(rows.length,limit),rows:rows.slice(0,limit),source:'FAO GIEWS FPMA + FAOSTAT Exchange Rates',normalization:'kg/tonne to USD/tonne only; no implicit conversion for other units'};
+});
