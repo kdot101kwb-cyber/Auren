@@ -74,7 +74,7 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
     football:'football', basketball:'basketball', tennis:'tennis', cricket:'cricket',
     baseball:'baseball', hockey:'hockey', handball:'handball', volleyball:'volleyball',
     rugby:'rugby', mma:'mma', formula1:'formula1', afl:'afl', nfl:'nfl',
-    americanfootball:'nfl', formula1:'formula1'
+    americanfootball:'nfl'
   };
   const selectedApiSport=apiSportMap[sport]||'football';
   const apiKeysBySport={
