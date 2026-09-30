@@ -1,14 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../core/models/education.dart';
-import 'education_gamification_service.dart';
-
 class EducationRepository {
   final FirebaseFirestore db;
-  final EducationGamificationService gamification;
-  EducationRepository({FirebaseFirestore? firestore, EducationGamificationService? gamificationService})
-      : db = firestore ?? FirebaseFirestore.instance,
-        gamification = gamificationService ?? EducationGamificationService();
+  EducationRepository({FirebaseFirestore? firestore})
+      : db = firestore ?? FirebaseFirestore.instance;
 
   Stream<List<AurenCourse>> watchCourses() => db.collection('courses').where('status', isEqualTo: 'published').limit(100).snapshots().map((s) => s.docs.map((d) => AurenCourse.fromMap(d.id, d.data())).toList());
   Stream<Set<String>> watchSavedIds(String uid) => db.collection('users').doc(uid).collection('savedCourses').snapshots().map((s) => s.docs.map((d) => d.id).toSet());
