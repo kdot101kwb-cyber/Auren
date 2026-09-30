@@ -1,0 +1,115 @@
+'use strict';
+
+const admin = require('firebase-admin');
+const {onCall, HttpsError} = require('firebase-functions/v2/https');
+const db = admin.firestore();
+
+const clean = (v, max) => String(v ?? '').trim().slice(0, max);
+
+function requireAuth(request) {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
+  return uid;
+}
+
+function collectionFor(type) {
+  return type === 'rfq' ? 'supplier_rfqs' : 'supplier_contact_requests';
+}
+
+function typeFor(data) {
+  return String(data?.type || data?.requestType || '').toLowerCase() === 'rfq' ? 'rfq'
+    : String(data?.rfqId || '').trim() ? 'rfq' : 'contact';
+}
+
+function matchFlowRef(uid, flowId) {
+  const id = clean(flowId, 180);
+  if (!id) return null;
+  return db.collection('users').doc(uid).collection('matchFlows').doc(id);
+}
+
+async function updateMatchFlow(uid, flowId, status, extra = {}) {
+  const ref = matchFlowRef(uid, flowId);
+  if (!ref) return;
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  await ref.set({
+    status,
+    supplierWorkflowStatus: status,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    ...extra,
+  }, {merge:true});
+}
+
+exports.getAurenSupplierRequest = onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = requireAuth(request);
+    const requestId = clean(request.data?.requestId, 128);
+    const type = clean(request.data?.type, 20).toLowerCase();
+    if (!requestId || !['contact','rfq'].includes(type)) throw new HttpsError('invalid-argument','requestId and type are required.');
+    const snap = await db.collection('users').doc(uid).collection(collectionFor(type)).doc(requestId).get();
+    if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
+    return {id:snap.id, type, ...snap.data()};
+  }
+);
+
+exports.listAurenSupplierRequests = onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = requireAuth(request);
+    const status = clean(request.data?.status, 40).toLowerCase();
+    const limit = Math.min(Math.max(Number(request.data?.limit) || 30, 1), 100);
+    const [contacts, rfqs] = await Promise.all([
+      db.collection('users').doc(uid).collection('supplier_contact_requests').orderBy('createdAt','desc').limit(limit).get(),
+      db.collection('users').doc(uid).collection('supplier_rfqs').orderBy('createdAt','desc').limit(limit).get(),
+    ]);
+    const items = [
+      ...contacts.docs.map(d=>({id:d.id,type:'contact',...d.data()})),
+      ...rfqs.docs.map(d=>({id:d.id,type:'rfq',...d.data()})),
+    ].filter(x=>!status || String(x.status||'').toLowerCase()===status)
+      .sort((a,b)=>((b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0)))
+      .slice(0,limit);
+    return {requests:items,count:items.length};
+  }
+);
+
+exports.cancelAurenSupplierRequest = onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = requireAuth(request);
+    const requestId = clean(request.data?.requestId, 128);
+    const type = clean(request.data?.type, 20).toLowerCase();
+    if (!requestId || !['contact','rfq'].includes(type)) throw new HttpsError('invalid-argument','requestId and type are required.');
+    const ref = db.collection('users').doc(uid).collection(collectionFor(type)).doc(requestId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
+    const data = snap.data() || {};
+    if (['completed','cancelled'].includes(String(data.status||''))) throw new HttpsError('failed-precondition','Request cannot be cancelled in its current state.');
+    await ref.set({status:'cancelled',cancelledAt:admin.firestore.FieldValue.serverTimestamp(),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    await updateMatchFlow(uid,data.matchFlowId,'completed',{completionReason:'cancelled'});
+    return {ok:true,id:requestId,type,status:'cancelled'};
+  }
+);
+
+exports.retryAurenSupplierRequest = onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = requireAuth(request);
+    const requestId = clean(request.data?.requestId, 128);
+    const type = clean(request.data?.type, 20).toLowerCase();
+    if (!requestId || !['contact','rfq'].includes(type)) throw new HttpsError('invalid-argument','requestId and type are required.');
+    const ref = db.collection('users').doc(uid).collection(collectionFor(type)).doc(requestId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
+    const data = snap.data() || {};
+    if (!['failed','cancelled'].includes(String(data.status||''))) throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
+    const retryCount = Number(data.retryCount||0)+1;
+    if (retryCount > 5) throw new HttpsError('resource-exhausted','Retry limit reached.');
+    await ref.set({
+      status:'draft', retryCount, externalDispatch:false,
+      lastError:'', retriedAt:admin.firestore.FieldValue.serverTimestamp(), updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+    },{merge:true});
+    await updateMatchFlow(uid,data.matchFlowId,'waiting_response',{retryCount});
+    return {ok:true,id:requestId,type,status:'draft',retryCount};
+  }
+);
