@@ -243,8 +243,31 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
   const latestProducer = producer.length ? producer[producer.length-1] : null;
   const latestLocal = local.length ? local[local.length-1] : null;
 
+  // Use the latest cached FAOSTAT FX observation for the selected country.
+  let latestFx = null;
+  if (iso3) {
+    const fxSnap = await db.collection('auren_agri_fx_rates')
+      .where('iso3', '==', iso3)
+      .limit(24)
+      .get().catch(() => ({docs:[]}));
+    latestFx = fxSnap.docs.map(d => d.data()).sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')))[0] || null;
+  }
+
   const producerUsd = latestProducer ? num(latestProducer.priceUSDTonne) : null;
-  const localUsd = latestLocal ? num(latestLocal.priceUSDTonne) : null;
+  let localUsd = latestLocal ? num(latestLocal.priceUSDTonne) : null;
+  let localConversionStatus = latestLocal?.conversionStatus || (localUsd === null ? 'not_converted' : 'converted');
+  if (localUsd === null && latestLocal && num(latestLocal.priceLCUTonne) !== null) {
+    const localCurrency = String(latestLocal.currency || '').toUpperCase();
+    if (localCurrency === 'USD') {
+      localUsd = num(latestLocal.priceLCUTonne);
+      localConversionStatus = 'unit_converted';
+    } else if (latestFx && num(latestFx.usdPerLocalUnit) !== null) {
+      localUsd = num(latestLocal.priceLCUTonne) * num(latestFx.usdPerLocalUnit);
+      localConversionStatus = 'fx_converted';
+    } else {
+      localConversionStatus = 'fx_unavailable';
+    }
+  }
 
   const indicator = {
     producerPriceUsdTonne: producerUsd,
@@ -259,6 +282,9 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
     dataCoverage: {
       producerRows: producer.length,
       localRows: local.length,
+      fxSource: latestFx?.source || null,
+      fxDate: latestFx?.date || null,
+      fxRateUsdPerLocalUnit: latestFx ? num(latestFx.usdPerLocalUnit) : null,
       producerSource: latestProducer?.source || 'FAOSTAT',
       localSource: latestLocal?.source || null
     }
