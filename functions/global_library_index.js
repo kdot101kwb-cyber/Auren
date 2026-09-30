@@ -72,6 +72,63 @@ function crossrefResults(data) {
   }));
 }
 
+
+function doajResults(data) {
+  return (data.results || []).slice(0, 15).map((x) => {
+    const b = x.bibjson || {};
+    const title = b.title || '';
+    const authors = (b.author || []).slice(0, 4).map((a) => a.name).filter(Boolean).join(', ');
+    const link = (b.link || []).map((l) => l.url).find(Boolean) || '';
+    return result({
+      id: 'doaj_' + (x.id || title),
+      title,
+      kind: 'Open Access Article',
+      description: b.abstract || 'Open-access article indexed by DOAJ.',
+      author: authors,
+      publisher: b.publisher || '',
+      year: b.year || '',
+      language: Array.isArray(b.language) ? b.language.join(', ') : (b.language || ''),
+      source: 'DOAJ',
+      sourceUrl: link || 'https://doaj.org/',
+      externalId: x.id || '',
+    });
+  }).filter((x) => x.title);
+}
+
+const GLOBAL_SUBJECTS = [
+  ['Literature','الأدب','روايات، شعر، مسرح، قصة قصيرة، نقد أدبي'],
+  ['History','التاريخ','الحضارات، التاريخ العالمي، الآثار والتراث'],
+  ['Arts','الفنون','الرسم، النحت، التصوير، السينما، المسرح، الموسيقى والتصميم'],
+  ['Fiction','الروايات والقصص','كلاسيكيات، بوليسي، خيال علمي، فانتازيا ورعب'],
+  ['Children','كتب الأطفال','أدب الأطفال، القصص المصورة والمجلات'],
+  ['Philosophy','الفلسفة','الفلسفة، الأخلاق، المنطق والأفكار'],
+  ['Science','العلوم','العلوم الطبيعية، الرياضيات والعلوم المبسطة'],
+  ['Education','التعليم','التعلم، المراجع والمناهج'],
+  ['Biography','السير والشخصيات','السير الذاتية والمذكرات والشخصيات'],
+  ['Culture','الثقافة','اللغة، المجتمع، الثقافة والتراث'],
+  ['Magazines','المجلات','المجلات، الدوريات وأعدادها'],
+  ['Arabic Heritage','التراث العربي','الأدب والمجلات والسلاسل والمؤلفون والرسامون والناشرون العرب'],
+];
+
+exports.getAurenGlobalLibrarySubjects = onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
+    return {
+      status:'ok',
+      subjects: GLOBAL_SUBJECTS.map((x) => ({
+        id:'subject_' + x[0].toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+        title:x[1],
+        kind:'Subject',
+        description:x[2],
+        source:'AUREN Global Library Index',
+        sourceUrl:'https://openlibrary.org/subjects',
+        rights:'Subject metadata only.',
+      })),
+    };
+  },
+);
+
 function openAlexResults(data) {
   return (data.results || []).slice(0, 20).map((x) => result({
     id: 'oa_' + (x.id || x.doi || x.title || ''),
@@ -131,6 +188,7 @@ exports.searchAurenGlobalLibrary = onCall(
       getJson('https://openlibrary.org/search.json?q=' + encoded + '&page=' + page + '&limit=20'),
       getJson('https://api.crossref.org/works?query=' + encoded + '&rows=20'),
       getJson('https://api.openalex.org/works?search=' + encoded + '&per-page=20&page=' + page),
+      getJson('https://doaj.org/api/search/articles/' + encoded + '?pageSize=15'),
     ]);
 
     const out = [
@@ -138,6 +196,7 @@ exports.searchAurenGlobalLibrary = onCall(
       ...(tasks[0].status === 'fulfilled' ? openLibraryResults(tasks[0].value) : []),
       ...(tasks[1].status === 'fulfilled' ? crossrefResults(tasks[1].value) : []),
       ...(tasks[2].status === 'fulfilled' ? openAlexResults(tasks[2].value) : []),
+      ...(tasks[3].status === 'fulfilled' ? doajResults(tasks[3].value) : []),
     ];
 
     const seen = new Set();
@@ -153,7 +212,7 @@ exports.searchAurenGlobalLibrary = onCall(
       query,
       page,
       results,
-      sources:[SOURCES.openLibrary, SOURCES.crossref, SOURCES.openAlex, 'AUREN Arabic Heritage Index'],
+      sources:[SOURCES.openLibrary, SOURCES.crossref, SOURCES.openAlex, 'DOAJ', 'AUREN Arabic Heritage Index'],
       note:'Global federated metadata search. Full scans/issues are not copied or hosted by this index.',
     };
   },
