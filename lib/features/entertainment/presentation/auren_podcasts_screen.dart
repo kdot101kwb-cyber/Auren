@@ -6,6 +6,7 @@ import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../data/auren_podcast_catalog.dart';
 import 'auren_audio_player_screen.dart';
+import 'auren_podcast_video_player_screen.dart';
 
 class AurenPodcastsScreen extends StatefulWidget {
   const AurenPodcastsScreen({super.key});
@@ -186,7 +187,14 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     subtitle: Text(episode['publishedAt']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
                     onTap: episode['audioUrl']?.toString().isEmpty != false
                         ? null
-                        : () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: _episodeItem(item, episode)))),
+                        : () => Navigator.push(context, MaterialPageRoute(builder: (_) => episode['isVideo'] == true
+                            ? AurenPodcastVideoPlayerScreen(
+                                title: episode['title']?.toString() ?? 'Video Podcast',
+                                videoUrl: episode['audioUrl']?.toString() ?? '',
+                                description: episode['description']?.toString() ?? '',
+                                imageUrl: episode['imageUrl']?.toString() ?? item['artworkUrl']?.toString() ?? '',
+                              )
+                            : AurenAudioPlayerScreen(item: _episodeItem(item, episode)))),
                   ),
                 )),
                 const SizedBox(height: 14),
