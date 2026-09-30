@@ -31,24 +31,23 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
 
   const p = request.data || {};
   const country = String(p.country || 'Sudan').trim();
+  const iso3 = String(p.iso3 || '').trim().toUpperCase();
   const crop = String(p.crop || 'Sorghum').trim();
 
   const producerSnap = await db.collection('auren_agri_producer_prices')
-    .where('countryName', '==', country)
     .where('item', '==', crop)
     .limit(60)
     .get();
 
-  const producer = producerSnap.docs.map(d => d.data()).sort((a,b) => String(a.date||'').localeCompare(String(b.date||''))).slice(-24);
+  const producer = producerSnap.docs.map(d => d.data()).filter(r => !iso3 || String(r.iso3 || r.countryIso3 || '').toUpperCase() === iso3 || String(r.countryName || '').toLowerCase() === country.toLowerCase()).sort((a,b) => String(a.date||'').localeCompare(String(b.date||''))).slice(-24);
 
   // Optional local-market feed. A future GIEWS/market adapter can write the same schema.
   const localSnap = await db.collection('auren_agri_local_market_prices')
-    .where('countryName', '==', country)
     .where('item', '==', crop)
     .limit(60)
     .get().catch(() => ({docs:[]}));
 
-  const local = localSnap.docs.map(d => d.data()).sort((a,b) => String(a.date||'').localeCompare(String(b.date||''))).slice(-24);
+  const local = localSnap.docs.map(d => d.data()).filter(r => !iso3 || String(r.iso3 || '').toUpperCase() === iso3 || String(r.countryName || '').toLowerCase() === country.toLowerCase()).sort((a,b) => String(a.date||'').localeCompare(String(b.date||''))).slice(-24);
 
   const latestProducer = producer.length ? producer[producer.length-1] : null;
   const latestLocal = local.length ? local[local.length-1] : null;
@@ -60,6 +59,10 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
     producerPriceUsdTonne: producerUsd,
     localMarketPriceUsdTonne: localUsd,
     localVsProducerPct: pct(localUsd, producerUsd),
+    localNativePrice: latestLocal?.priceLCU ?? null,
+    localNativeUnit: latestLocal?.unit ?? null,
+    localCurrency: latestLocal?.currency ?? null,
+    localConversionStatus: latestLocal?.conversionStatus ?? (localUsd === null ? 'not_converted' : 'converted'),
     producerTrend: trend(producer, 'priceUSDTonne'),
     localTrend: trend(local, 'priceUSDTonne'),
     dataCoverage: {
@@ -73,6 +76,7 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
   return {
     status: producer.length || local.length ? 'ok' : 'no_data',
     country,
+    iso3: iso3 || null,
     crop,
     indicator,
     latest: {
