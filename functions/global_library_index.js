@@ -584,13 +584,37 @@ exports.searchAurenGlobalLibrary = onCall(
       return true;
     }).slice(0, 60);
 
+    const heritage = GLOBAL_HERITAGE_STORIES.filter((x) => {
+      const q = query.toLowerCase();
+      return [x.title, x.kind, x.country, x.language, x.description].some((v) => String(v || '').toLowerCase().includes(q));
+    }).map((x) => result({
+      id:'heritage_' + x.id,
+      title:x.title,
+      kind:x.kind,
+      description:x.description,
+      year:x.year,
+      language:x.language,
+      country:x.country,
+      source:'UNESCO Intangible Cultural Heritage / AUREN Heritage Index',
+      sourceUrl:x.sourceUrl,
+      externalId:x.id,
+    }));
+    const merged = [...heritage, ...results];
+    const mergedSeen = new Set();
+    const finalResults = merged.filter((x) => {
+      const key=(x.title+'|'+x.source).toLowerCase();
+      if(mergedSeen.has(key)) return false;
+      mergedSeen.add(key);
+      return true;
+    }).slice(0,80);
     return {
       status:'ok',
       query,
       page,
-      results,
-      sources:[SOURCES.openLibrary, SOURCES.crossref, SOURCES.openAlex, 'DOAJ', 'AUREN Arabic Heritage Index'],
-      note:'Global federated metadata search. Full scans/issues are not copied or hosted by this index.',
+      results:finalResults,
+      heritageCount:heritage.length,
+      sources:[SOURCES.openLibrary, SOURCES.crossref, SOURCES.openAlex, 'DOAJ', 'UNESCO Intangible Cultural Heritage', 'AUREN Arabic Heritage Index'],
+      note:'Global federated metadata search. UNESCO heritage records are indexed with links to official sources; copyrighted scans/issues are not copied or hosted.',
     };
   },
 );
