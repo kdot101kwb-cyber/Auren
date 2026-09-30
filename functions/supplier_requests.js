@@ -16,11 +16,6 @@ function collectionFor(type) {
   return type === 'rfq' ? 'supplier_rfqs' : 'supplier_contact_requests';
 }
 
-function typeFor(data) {
-  return String(data?.type || data?.requestType || '').toLowerCase() === 'rfq' ? 'rfq'
-    : String(data?.rfqId || '').trim() ? 'rfq' : 'contact';
-}
-
 function matchFlowRef(uid, flowId) {
   const id = clean(flowId, 180);
   if (!id) return null;
@@ -85,7 +80,11 @@ exports.cancelAurenSupplierRequest = onCall(
     if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
     const data = snap.data() || {};
     if (['completed','cancelled'].includes(String(data.status||''))) throw new HttpsError('failed-precondition','Request cannot be cancelled in its current state.');
-    await ref.set({status:'cancelled',cancelledAt:admin.firestore.FieldValue.serverTimestamp(),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    const update = {status:'cancelled',cancelledAt:admin.firestore.FieldValue.serverTimestamp(),updatedAt:admin.firestore.FieldValue.serverTimestamp()};
+    await db.runTransaction(async tx => {
+      tx.set(ref, update, {merge:true});
+      tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
+    });
     await updateMatchFlow(uid,data.matchFlowId,'completed',{completionReason:'cancelled'});
     return {ok:true,id:requestId,type,status:'cancelled'};
   }
@@ -105,10 +104,14 @@ exports.retryAurenSupplierRequest = onCall(
     if (!['failed','cancelled'].includes(String(data.status||''))) throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
     const retryCount = Number(data.retryCount||0)+1;
     if (retryCount > 5) throw new HttpsError('resource-exhausted','Retry limit reached.');
-    await ref.set({
+    const update = {
       status:'draft', retryCount, externalDispatch:false,
       lastError:'', retriedAt:admin.firestore.FieldValue.serverTimestamp(), updatedAt:admin.firestore.FieldValue.serverTimestamp(),
-    },{merge:true});
+    };
+    await db.runTransaction(async tx => {
+      tx.set(ref, update, {merge:true});
+      tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
+    });
     await updateMatchFlow(uid,data.matchFlowId,'waiting_response',{retryCount});
     return {ok:true,id:requestId,type,status:'draft',retryCount};
   }
