@@ -82,16 +82,53 @@ async function latestCost(iso3,item){
 exports.aurenAgriProductionForecast=onCall(async request=>{
  auth(request);const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase(),item=clean(request.data?.item||request.data?.crop),horizon=Math.min(Math.max(num(request.data?.horizon)||5,1),10);
  const rows=await loadRows(iso3,item),pm=linearModel(rows,'production'),ym=linearModel(rows,'yieldValue'),am=linearModel(rows,'area'),production=forecast(pm,horizon),yieldForecast=forecast(ym,horizon),areaForecast=forecast(am,horizon),price=await latestPrice(iso3,item),cost=await latestCost(iso3,item);
- const revenueForecast=production.map((p,i)=>{const revenue=price?p.predicted*price.value:null,profit=revenue!=null&&cost?revenue-cost.value:null;return{year:p.year,predictedProduction:p.predicted,predictedYield:yieldForecast[i]?.predicted??null,predictedArea:areaForecast[i]?.predicted??null,revenue,profit,revenueCurrency:price?.currency??null,revenueUnit:price?.unit??null,profitCurrency:price?.currency&&cost?.currency===price.currency?price.currency:null};});
- return{status:production.length?'ok':'no_data',iso3,item,horizon,historyYears:rows.length,forecast:production,yieldForecast,areaForecast,revenueForecast,baseline:{production:pm.metrics,yield:ym.metrics,area:am.metrics,model:pm.model,cagrPct:{production:cagr(rows,'production'),yield:cagr(rows,'yieldValue'),area:cagr(rows,'area')}},market:{price,cost},profitabilityStatus:compatibleFinancials?'calculated':priceCompatible?'needs_compatible_opex':'needs_compatible_market_price',limitations:['Baseline trend model; not an agronomic causal forecast.','Revenue requires a market price compatible with the production unit.','Profit requires price and OPEX values with compatible units and currency; otherwise it remains null.','Revenue assumes the latest compatible price remains constant across forecast years.']};
+ const revenueForecast=production.map((p,i)=>{const priceCompatible=price&&(!price.unit||/ton|tonne|kg/i.test(String(price.unit)));const costCompatible=cost&&(!cost.unit||!price?.unit||String(cost.unit).toLowerCase()===String(price.unit).toLowerCase());const revenue=priceCompatible?p.predicted*price.value:null,profit=revenue!=null&&costCompatible?revenue-cost.value:null;return{year:p.year,predictedProduction:p.predicted,predictedYield:yieldForecast[i]?.predicted??null,predictedArea:areaForecast[i]?.predicted??null,revenue,profit,revenueCurrency:price?.currency??null,revenueUnit:price?.unit??null,profitCurrency:price?.currency&&cost?.currency===price.currency?price.currency:null};});
+ return{status:production.length?'ok':'no_data',iso3,item,horizon,historyYears:rows.length,forecast:production,yieldForecast,areaForecast,revenueForecast,baseline:{production:pm.metrics,yield:ym.metrics,area:am.metrics,model:pm.model,cagrPct:{production:cagr(rows,'production'),yield:cagr(rows,'yieldValue'),area:cagr(rows,'area')}},market:{price,cost},profitabilityStatus:price&&cost?'calculated':price?'needs_compatible_opex':'needs_compatible_market_price',limitations:['Baseline trend model; not an agronomic causal forecast.','Revenue requires a market price compatible with the production unit.','Profit requires price and OPEX values with compatible units and currency; otherwise it remains null.','Revenue assumes the latest compatible price remains constant across forecast years.']};
 });
 
 exports.aurenAgriForecastBacktest=onCall(async request=>{
- auth(request);const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase(),item=clean(request.data?.item||request.data?.crop),rows=await loadRows(iso3,item);
+ auth(request);
+ const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase();
+ const item=clean(request.data?.item||request.data?.crop);
+ const rows=await loadRows(iso3,item);
  const fields={production:'production',yield:'yieldValue',area:'area'};
- const backtests={},movingAverages={};
- for(const [key,field] of Object.entries(fields)){backtests[key]={linear:backtest(rows,field,3),movingAverage:movingAverageBacktest(rows,field,3,3)};const linearModelForFuture=linearModel(rows,field);movingAverages[key]={linear:forecast(linearModelForFuture,5),movingAverage:movingAverageForecast(rows,field,5,3)};}
- return{status:rows.length?'ok':'no_data',iso3,item,backtests,movingAverages,comparison:{purpose:'Compare simple baselines before introducing more complex models.',candidates:['linear_trend_baseline','moving_average_baseline'],selectionRule:'Use diagnostics and backtesting evidence; no automatic claim of superiority.'}};
+ const backtests={},selectedBaseline={},futureForecasts={};
+ for(const [key,field] of Object.entries(fields)){
+   const linear=backtest(rows,field,3);
+   const movingAverage=movingAverageBacktest(rows,field,3,3);
+   backtests[key]={linear,movingAverage};
+   const candidates=[{method:'linear_trend_baseline',...linear},{method:'moving_average_baseline',...movingAverage}]
+     .filter(x=>x.status==='ok'&&Number.isFinite(x.rmse));
+   const selected=candidates.length?candidates.reduce((a,b)=>b.rmse<a.rmse?b:a):null;
+   selectedBaseline[key]=selected?{method:selected.method,mae:selected.mae,rmse:selected.rmse,mapePct:selected.mapePct,folds:selected.folds}:{method:'linear_trend_baseline',reason:'insufficient_backtest_data'};
+   futureForecasts[key]=selected?.method==='moving_average_baseline'
+     ? movingAverageForecast(rows,field,5,3)
+     : forecast(linearModel(rows,field),5);
+ }
+ const productionSelected=selectedBaseline.production||{};
+ return{
+   status:rows.length?'ok':'no_data',
+   iso3,item,
+   folds:backtests.production?.linear?.folds??0,
+   backtests,
+   modelComparison:[
+     {method:'linear_trend_baseline',...(backtests.production?.linear||{})},
+     {method:'moving_average_baseline',...(backtests.production?.movingAverage||{})}
+   ],
+   selectedBaseline:productionSelected,
+   selectedBaselinesByMetric:selectedBaseline,
+   selectedForecasts:futureForecasts,
+   movingAverages:{
+     linear:futureForecasts.production,
+     movingAverage:movingAverageForecast(rows,'production',5,3)
+   },
+   comparison:{
+     purpose:'Compare simple baselines using walk-forward historical diagnostics.',
+     candidates:['linear_trend_baseline','moving_average_baseline'],
+     selectionRule:'For each metric, select the candidate with lower RMSE when sufficient backtest folds exist; otherwise fall back to linear trend.',
+     limitation:'Historical backtest performance does not guarantee future accuracy.'
+   }
+ }; 
 });
 
 exports.aurenAgriSeasonComparison=onCall(async request=>{
