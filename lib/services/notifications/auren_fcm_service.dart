@@ -16,9 +16,24 @@ class AurenFcmService {
 
   bool _initialized = false;
   void Function(RemoteMessage message)? _openHandler;
+  RemoteMessage? _pendingOpenMessage;
 
   void setOpenHandler(void Function(RemoteMessage message) handler) {
     _openHandler = handler;
+    final pending = _pendingOpenMessage;
+    if (pending != null) {
+      _pendingOpenMessage = null;
+      Future<void>.microtask(() => handler(pending));
+    }
+  }
+
+  void _handleOpen(RemoteMessage message) {
+    final handler = _openHandler;
+    if (handler != null) {
+      handler(message);
+    } else {
+      _pendingOpenMessage = message;
+    }
   }
 
   Future<void> initialize() async {
@@ -47,10 +62,10 @@ class AurenFcmService {
     );
 
     FirebaseMessaging.onMessage.listen(_showForeground);
-    FirebaseMessaging.onMessageOpenedApp.listen((message) => _openHandler?.call(message));
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleOpen);
     final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
-      Future<void>.delayed(const Duration(milliseconds: 700), () => _openHandler?.call(initialMessage));
+      Future<void>.delayed(const Duration(milliseconds: 700), () => _handleOpen(initialMessage));
     }
     _messaging.onTokenRefresh.listen(_saveToken);
 
