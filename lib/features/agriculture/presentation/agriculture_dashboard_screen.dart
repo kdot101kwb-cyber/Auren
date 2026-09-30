@@ -30,6 +30,7 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
   Widget build(BuildContext context) {
     final snapshot = data?['globalLocalMarket'] is Map ? Map<String, dynamic>.from(data!['globalLocalMarket'] as Map) : const <String, dynamic>{};
     final readiness = data?['readiness'] is Map ? Map<String, dynamic>.from(data!['readiness'] as Map) : const <String, dynamic>{};
+    final snapshotFx = snapshot['fx'] is Map ? Map<String, dynamic>.from(snapshot['fx'] as Map) : const <String, dynamic>{};
     final countries = snapshot['countries'] is List ? List<dynamic>.from(snapshot['countries'] as List) : const <dynamic>[];
     final producer = data?['producer'] is Map ? Map<String, dynamic>.from(data!['producer'] as Map) : const <String, dynamic>{};
     final latest = producer['latest'] is Map ? Map<String, dynamic>.from(producer['latest'] as Map) : const <String, dynamic>{};
@@ -62,6 +63,8 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
             ]),
             const SizedBox(height: 14),
             Card(child: ListTile(leading: const Icon(Icons.agriculture_outlined), title: const Text('Latest producer price'), subtitle: Text(latest.isEmpty ? 'No cached FAOSTAT producer observation yet.' : '${latest['priceUSDTonne'] ?? '—'} USD/tonne • ${latest['date'] ?? ''}'))),
+            const SizedBox(height: 10),
+            Card(child: ListTile(leading: Icon(readiness['faostatFxConfigured'] == true ? Icons.currency_exchange : Icons.currency_exchange_outlined), title: const Text('FAOSTAT exchange-rate bridge'), subtitle: Text(readiness['faostatFxConfigured'] == true ? 'Official FX bridge configured; USD/tonne conversion uses cached FAOSTAT rates when available.' : 'FX bridge code ready; configure the official FAOSTAT export endpoint to enable conversion.'))),
             const SizedBox(height: 10),
             _gaezCard(context, data?['gaez']),
 
