@@ -218,9 +218,10 @@ exports.aurenGaezV5CropSummaryHealth = onCall(async (request) => {
 exports.aurenGaezV5CropSummarySmokeTest = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
 
-  const targetCountry = String(request.data?.country || 'Sudan').trim().toLowerCase();
-  const targetCrop = String(request.data?.crop || 'Sorghum').trim().toLowerCase();
-  const parsed = assertOfficialFaoResource(GAEZ_V5_CROP_SUMMARY_URL);
+  const targetCountry = String(request.data?.country || 'Sudan').trim();
+  const targetCrop = String(request.data?.crop || 'Sorghum').trim();
+  const queryUrl = buildGaezCropSummaryUrl({country:targetCountry,crop:targetCrop});
+  const parsed = assertOfficialFaoResource(queryUrl);
   const res = await fetch(parsed.toString(), {
     headers:{accept:'text/csv,application/json,text/plain'},
     signal:AbortSignal.timeout(60000)
