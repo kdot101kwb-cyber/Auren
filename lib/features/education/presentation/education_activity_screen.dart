@@ -63,20 +63,20 @@ class _EducationActivityScreenState extends State<EducationActivityScreen> {
   }
 
   Widget _quizBody() {
-    if (_completed) return _doneCard('Quiz completed', 'نتيجتك: \${_quizScore}/\${_questions.length}');
+    if (_completed) return _doneCard('Quiz completed', 'نتيجتك: ${_quizScore}/${_questions.length}');
     final q = _questions[_quizIndex];
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Question \${_quizIndex + 1}/\${_questions.length}', style: Theme.of(context).textTheme.labelLarge),
+        Text('Question ${_quizIndex + 1}/${_questions.length}', style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: 12),
-        Text(q.\$1, style: Theme.of(context).textTheme.headlineSmall),
+        Text(q.$1, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 20),
-        ...List.generate(q.\$2.length, (i) => Padding(
+        ...List.generate(q.$2.length, (i) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: FilledButton.tonal(
-            onPressed: _busy ? null : () => _answerQuiz(i == q.\$3),
-            child: Align(alignment: Alignment.centerLeft, child: Text(q.\$2[i])),
+            onPressed: _busy ? null : () => _answerQuiz(i == q.$3),
+            child: Align(alignment: Alignment.centerLeft, child: Text(q.$2[i])),
           ),
         )),
       ]),
@@ -88,7 +88,7 @@ class _EducationActivityScreenState extends State<EducationActivityScreen> {
     if (_quizIndex + 1 < _questions.length) {
       setState(() => _quizIndex++);
     } else {
-      _finish('quiz:education:\${DateTime.now().millisecondsSinceEpoch}');
+      _finish('quiz:education:${DateTime.now().millisecondsSinceEpoch}');
     }
   }
 
@@ -103,7 +103,7 @@ class _EducationActivityScreenState extends State<EducationActivityScreen> {
       )),
       const SizedBox(height: 16),
       FilledButton.icon(
-        onPressed: _busy || _completed ? null : () => _finish('language:practice:\${DateTime.now().millisecondsSinceEpoch}', sourceId: 'general'),
+        onPressed: _busy || _completed ? null : () => _finish('language:practice:${DateTime.now().millisecondsSinceEpoch}', sourceId: 'general'),
         icon: const Icon(Icons.check),
         label: const Text('Complete practice'),
       ),
@@ -124,7 +124,7 @@ class _EducationActivityScreenState extends State<EducationActivityScreen> {
       ),
       const SizedBox(height: 12),
       FilledButton.tonal(
-        onPressed: _busy || _completed ? null : () => _finish('voiceTutor:session:\${DateTime.now().millisecondsSinceEpoch}'),
+        onPressed: _busy || _completed ? null : () => _finish('voiceTutor:session:${DateTime.now().millisecondsSinceEpoch}'),
         child: const Text('Mark session complete'),
       ),
     ]),
