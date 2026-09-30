@@ -33,7 +33,7 @@ class EducationGamificationService {
         .httpsCallable('getAurenEducationLeaderboard')
         .call();
     final data = Map<String, dynamic>.from(result.data as Map);
-    final users = (data['users'] as List? ?? const []);
+    final users = (data['entries'] as List? ?? const []);
     return users
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
