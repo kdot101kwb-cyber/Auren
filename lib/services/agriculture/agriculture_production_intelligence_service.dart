@@ -28,7 +28,7 @@ class AgricultureProductionIntelligenceService {
 
  Future<List<AgricultureProductionPoint>> history({String? iso3,String? item,int? fromYear,int? toYear}) async {
   final r=await _functions.httpsCallable('aurenAgriProductionHistory').call({'iso3':iso3,'item':item,'fromYear':fromYear,'toYear':toYear});
-  final d=Map<String,dynamic>.from(r.data as Map),rows=(d['rows'] as List???const[]);
+  final d=Map<String,dynamic>.from(r.data as Map),rows=(d['rows'] is List ? List<dynamic>.from(d['rows'] as List) : const <dynamic>[]);
   return rows.map((e)=>AgricultureProductionPoint.fromMap(Map<dynamic,dynamic>.from(e as Map))).toList();
  }
  Future<Map<String,dynamic>> forecastBundle({String? iso3,String? item,int horizon=5}) async {
@@ -36,19 +36,19 @@ class AgricultureProductionIntelligenceService {
   return Map<String,dynamic>.from(r.data as Map);
  }
  Future<List<AgricultureForecastPoint>> forecast({String? iso3,String? item,int horizon=5}) async {
-  final d=await forecastBundle(iso3:iso3,item:item,horizon:horizon),rows=(d['forecast'] as List???const[]);
+  final d=await forecastBundle(iso3:iso3,item:item,horizon:horizon),rows=(d['forecast'] is List ? List<dynamic>.from(d['forecast'] as List) : const <dynamic>[]);
   return rows.map((e)=>AgricultureForecastPoint.fromMap(Map<dynamic,dynamic>.from(e as Map))).toList();
  }
  Future<List<AgricultureMetricForecast>> yieldForecast({String? iso3,String? item,int horizon=5}) async {
-  final d=await forecastBundle(iso3:iso3,item:item,horizon:horizon),rows=(d['yieldForecast'] as List???const[]);
+  final d=await forecastBundle(iso3:iso3,item:item,horizon:horizon),rows=(d['yieldForecast'] is List ? List<dynamic>.from(d['yieldForecast'] as List) : const <dynamic>[]);
   return rows.map((e)=>AgricultureMetricForecast.fromMap(Map<dynamic,dynamic>.from(e as Map))).toList();
  }
  Future<List<AgricultureMetricForecast>> areaForecast({String? iso3,String? item,int horizon=5}) async {
-  final d=await forecastBundle(iso3:iso3,item:item,horizon:horizon),rows=(d['areaForecast'] as List???const[]);
+  final d=await forecastBundle(iso3:iso3,item:item,horizon:horizon),rows=(d['areaForecast'] is List ? List<dynamic>.from(d['areaForecast'] as List) : const <dynamic>[]);
   return rows.map((e)=>AgricultureMetricForecast.fromMap(Map<dynamic,dynamic>.from(e as Map))).toList();
  }
  Future<List<AgricultureRevenueProfitForecast>> revenueProfitForecast({String? iso3,String? item,int horizon=5}) async {
-  final d=await forecastBundle(iso3:iso3,item:item,horizon:horizon),rows=(d['revenueForecast'] as List???const[]);
+  final d=await forecastBundle(iso3:iso3,item:item,horizon:horizon),rows=(d['revenueForecast'] is List ? List<dynamic>.from(d['revenueForecast'] as List) : const <dynamic>[]);
   return rows.map((e)=>AgricultureRevenueProfitForecast.fromMap(Map<dynamic,dynamic>.from(e as Map))).toList();
  }
  Future<Map<String,dynamic>> seasonComparison({String? iso3,String? item}) async {
