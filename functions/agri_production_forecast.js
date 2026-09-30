@@ -116,8 +116,9 @@ async function latestCost(iso3,item){
  const slug=item.toLowerCase().replace(/[^a-z0-9]+/g,'_'),snap=await db.collection('auren_agri_cost_evidence').doc(iso3+'_'+slug).get();
  if(!snap.exists)return null;
  const items=Array.isArray(snap.data()?.items)?snap.data().items:[],
-   opex=items.find(x=>String(x.category||'').toLowerCase()==='opex'&&num(x.value)!=null);
- if(!opex)return null;
+   opexCandidates=items.filter(x=>String(x.category||'').toLowerCase()==='opex'&&num(x.value)!=null);
+ if(!opexCandidates.length)return null;
+ const opex=opexCandidates.sort((a,b)=>String(b.observedAt||b.date||b.year||'').localeCompare(String(a.observedAt||a.date||a.year||'')))[0];
  const nativeValue=num(opex.value),currency=clean(opex.currency).toUpperCase(),unit=clean(opex.unit).toLowerCase();
  if(nativeValue==null)return null;
  // Financial forecasts are expressed as USD per tonne. Only explicit, auditable
@@ -151,6 +152,23 @@ async function latestCost(iso3,item){
    compatibleWithUsdPerTonne:true
  };
 }
+
+exports.aurenAgriCostEvidenceStatus=onCall(async request=>{
+ auth(request);
+ const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase();
+ const item=clean(request.data?.item||request.data?.crop);
+ const slug=item.toLowerCase().replace(/[^a-z0-9]+/g,'_');
+ const ref=db.collection('auren_agri_cost_evidence').doc(iso3+'_'+slug);
+ const snap=await ref.get();
+ if(!snap.exists)return{status:'missing',iso3,item,documentId:iso3+'_'+slug,requirements:['country/iso3','crop/item','opex value','currency','unit','source','observedAt/year']};
+ const data=snap.data()||{},items=Array.isArray(data.items)?data.items:[];
+ const opex=items.filter(x=>String(x.category||'').toLowerCase()==='opex'&&num(x.value)!=null)
+   .sort((a,b)=>String(b.observedAt||b.date||b.year||'').localeCompare(String(a.observedAt||a.date||a.year||'')))[0]||null;
+ if(!opex)return{status:'no_opex',iso3,item,documentId:iso3+'_'+slug};
+ const missing=[];
+ for(const [key,value] of Object.entries({currency:opex.currency,unit:opex.unit,source:opex.source,observedAt:opex.observedAt||opex.date||opex.year}))if(!clean(value))missing.push(key);
+ return{status:missing.length?'incomplete':'ready',iso3,item,documentId:iso3+'_'+slug,latestOpex:{value:num(opex.value),currency:opex.currency||null,unit:opex.unit||null,source:opex.source||null,observedAt:opex.observedAt||opex.date||opex.year||null},missingFields:missing,normalizationTarget:'USD/tonne'};
+});
 
 exports.aurenAgriForecastTestKit={linearModel,predict,forecast,backtest,movingAveragePredict,movingAverageForecast,movingAverageBacktest,cagr};
 
