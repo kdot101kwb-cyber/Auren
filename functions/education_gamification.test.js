@@ -2,12 +2,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const {XP, DAILY_CAPS, WEEKLY_CHALLENGE, BADGES} = require('./education_gamification_core');
 
-test('education gamification XP map is defined by the server module contract', () => {
-  assert.deepEqual(
-    {lesson: 10, course: 100, quiz: 20, language: 15, voiceTutor: 10},
-    {lesson: 10, course: 100, quiz: 20, language: 15, voiceTutor: 10},
-  );
+test('education gamification server constants match the product contract', () => {
+  assert.deepEqual(XP, {lesson: 10, course: 100, quiz: 20, language: 15, voiceTutor: 10});
+  assert.deepEqual(DAILY_CAPS, {voiceTutor: 5, language: 20});
+  assert.deepEqual(WEEKLY_CHALLENGE, {targetActivities: 5, bonusXp: 50});
+  assert.deepEqual(BADGES, [
+    {id: 'learner-25', threshold: 25},
+    {id: 'learner-100', threshold: 100},
+  ]);
 });
 
 test('education event ids are intended to be idempotency keys', () => {
