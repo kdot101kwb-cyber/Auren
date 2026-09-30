@@ -105,6 +105,25 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
         const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'leagues',country?{country}:{});
         return {status:'ok',resource:'leagues',providers:['API-Sports'],results:mapCompetitionRows(rows,selectedApiSport),sourceUrls};
       }
+      if(resource==='standings') {
+        const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'standings',leagueId?{league:leagueId,season:request.data?.season}:country?{country,season:request.data?.season}:{season:request.data?.season});
+        return {status:'ok',resource:'standings',providers:['API-Sports'],results:rows,sourceUrls};
+      }
+      if(resource==='players') {
+        const params=q?{search:q}:leagueId?{league:leagueId,season:request.data?.season}:{};
+        const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'players',params);
+        return {status:'ok',resource:'players',providers:['API-Sports'],results:rows,sourceUrls};
+      }
+      if(resource==='team_stats') {
+        const teamId=String(request.data?.teamId||'').trim();
+        const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'teams/statistics',teamId?{team:teamId,league:leagueId,season:request.data?.season}:{});
+        return {status:'ok',resource:'team_stats',providers:['API-Sports'],results:rows,sourceUrls};
+      }
+      if(resource==='game_details') {
+        const gameId=String(request.data?.gameId||'').trim();
+        const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'games',gameId?{id:gameId}:{});
+        return {status:'ok',resource:'game_details',providers:['API-Sports'],results:rows,sourceUrls};
+      }
       if(resource==='teams') {
         const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'teams',q?{search:q}:country?{country}:{});
         return {status:'ok',resource:'teams',providers:['API-Sports'],results:mapTeamRows(rows,selectedApiSport),sourceUrls};
