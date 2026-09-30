@@ -7,30 +7,51 @@ function clean(value, max) {
   return String(value || '').trim().slice(0, max);
 }
 
+async function updateMatchFlow(uid, flowId, status, extra = {}) {
+  const id = clean(flowId, 180);
+  if (!id) return;
+  const ref = db.collection('users').doc(uid).collection('matchFlows').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  await ref.set({
+    status, supplierWorkflowStatus: status,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    ...extra,
+  }, {merge:true});
+}
+
 async function createSupplierWorkflow({uid, operation, payload}) {
   const supplierId = clean(payload?.supplierId, 128);
+  const matchFlowId = clean(payload?.matchFlowId, 180);
   if (!supplierId) throw new Error('Supplier is required.');
 
   const supplierSnap = await db.collection('auren_suppliers').doc(supplierId).get();
   if (!supplierSnap.exists) throw new Error('Supplier not found.');
   const supplier = supplierSnap.data() || {};
   const supplierName = clean(supplier.name || supplier.companyName || supplierId, 200);
+  const common = {
+    supplierId, supplierName, requesterUid: uid, matchFlowId,
+    status:'draft', externalDispatch:false,
+    createdAt:admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+  };
 
   if (operation === 'contact') {
     const message = clean(payload?.message, 5000);
     if (!message) throw new Error('Message is required.');
     const ref = db.collection('supplier_contact_requests').doc();
-    await ref.set({
-      supplierId, supplierName, requesterUid: uid, message,
+    const userRef = db.collection('users').doc(uid).collection('supplier_contact_requests').doc(ref.id);
+    const data = {
+      ...common, message,
       channel: clean(payload?.channel || 'draft', 40),
-      status: 'draft',
-      externalDispatch: false,
       contactEmail: supplier.email || supplier.contactEmail || null,
       contactPhone: supplier.phone || supplier.contactPhone || null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-    return {type:'supplier_contact_draft_created', requestId:ref.id, supplierId, status:'draft', externalDispatch:false};
+    };
+    const batch=db.batch();
+    batch.set(ref,data); batch.set(userRef,data);
+    await batch.commit();
+    await updateMatchFlow(uid,matchFlowId,'waiting_response',{supplierRequestId:ref.id,supplierRequestType:'contact'});
+    return {type:'supplier_contact_draft_created', requestId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
   if (operation === 'rfq') {
@@ -38,17 +59,18 @@ async function createSupplierWorkflow({uid, operation, payload}) {
     const quantity = clean(payload?.quantity, 80);
     if (!product || !quantity) throw new Error('Product and quantity are required.');
     const ref = db.collection('supplier_rfqs').doc();
-    await ref.set({
-      supplierId, supplierName, requesterUid: uid, product, quantity,
+    const userRef = db.collection('users').doc(uid).collection('supplier_rfqs').doc(ref.id);
+    const data = {
+      ...common, product, quantity,
       unit: clean(payload?.unit, 40),
       currency: clean(payload?.currency, 3).toUpperCase(),
       notes: clean(payload?.notes, 3000),
-      status: 'draft',
-      externalDispatch: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-    return {type:'supplier_rfq_created', rfqId:ref.id, supplierId, status:'draft', externalDispatch:false};
+    };
+    const batch=db.batch();
+    batch.set(ref,data); batch.set(userRef,data);
+    await batch.commit();
+    await updateMatchFlow(uid,matchFlowId,'waiting_response',{supplierRequestId:ref.id,supplierRequestType:'rfq'});
+    return {type:'supplier_rfq_created', rfqId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
   throw new Error('Unsupported supplier operation.');
