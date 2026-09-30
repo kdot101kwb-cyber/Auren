@@ -27,6 +27,11 @@ exports.refreshAurenSportsAlerts=onSchedule(
  {schedule:'every 1 minutes',region:'us-central1',timeoutSeconds:50,memory:'256MiB'},
  async()=>{
   const live=await fetchLive();
+  const runRef=db.collection('sports_alert_runs').doc('live');
+  const runSnap=await runRef.get();
+  const lastRunMs=runSnap.exists?Number(runSnap.data()?.startedAtMs||0):0;
+  if(Date.now()-lastRunMs<45000)return {skipped:true,reason:'recent_run'};
+  await runRef.set({startedAtMs:Date.now(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
   const batch=db.batch();
   const followingByTeam=new Map();
   const followingSnap=await db.collectionGroup('sportsFollowing').where('sport','==','football').limit(500).get();
