@@ -21,6 +21,33 @@ class EducationGamificationService {
     return Map<String, dynamic>.from(result.data as Map);
   }
 
+  Future<Map<String, dynamic>> recordQuiz({
+    required String quizId,
+    String? courseId,
+  }) => recordActivity(
+    type: 'quiz',
+    eventId: 'quiz:${quizId}:completed',
+    sourceId: courseId ?? quizId,
+  );
+
+  Future<Map<String, dynamic>> recordLanguage({
+    required String activityId,
+    String? language,
+  }) => recordActivity(
+    type: 'language',
+    eventId: 'language:${activityId}:completed',
+    sourceId: language ?? activityId,
+  );
+
+  Future<Map<String, dynamic>> recordVoiceTutor({
+    required String sessionId,
+    String? lessonId,
+  }) => recordActivity(
+    type: 'voiceTutor',
+    eventId: 'voiceTutor:${sessionId}:completed',
+    sourceId: lessonId ?? sessionId,
+  );
+
   Future<Map<String, dynamic>> getProfile() async {
     final result = await _functions
         .httpsCallable('getAurenEducationGamification')
