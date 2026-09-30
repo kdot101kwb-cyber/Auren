@@ -191,10 +191,22 @@ function normalizeFpmaRow(row) {
   const unit = String(pick('unit','Unit','measure_unit') || '').trim();
   const currency = String(pick('currency','Currency','currency_code') || '').trim().toUpperCase();
   const frequency = String(pick('frequency','Frequency') || 'monthly').trim().toLowerCase();
+  const unitKey = unit.toLowerCase().replace(/\\s+/g, ' ').trim();
+  const tonneFactor = ({
+    't': 1, 'tonne': 1, 'tonnes': 1, 'metric ton': 1, 'metric tons': 1,
+    'kg': 1000, 'kilogram': 1000, 'kilograms': 1000,
+    'g': 1000000, 'gram': 1000000, 'grams': 1000000,
+    'lb': 2204.62262185, 'lbs': 2204.62262185, 'pound': 2204.62262185, 'pounds': 2204.62262185,
+    'quintal': 10, 'quintals': 10, 'q': 10
+  })[unitKey] ?? null;
+  const priceLCUTonne = price !== null && tonneFactor !== null ? price * tonneFactor : null;
+  const nativeUnitCanonical = tonneFactor !== null ? 'tonne' : unit;
+  const usdPrice = numberOrNull(pick('price_usd_tonne','price_usd_per_tonne','usd_per_tonne','price_usd'));
   return {
     countryName, iso3, item, market, region, city, date,
-    priceLCU: price, unit, currency, frequency,
-    priceUSDTonne: null, conversionStatus: 'not_converted',
+    priceLCU: price, unit, nativeUnitCanonical, priceLCUTonne, currency, frequency,
+    priceUSDTonne: currency === 'USD' && priceLCUTonne !== null ? priceLCUTonne : usdPrice,
+    conversionStatus: currency === 'USD' && priceLCUTonne !== null ? 'unit_converted' : usdPrice !== null ? 'source_usd' : 'currency_not_converted',
     source: 'FAO GIEWS FPMA'
   };
 }
