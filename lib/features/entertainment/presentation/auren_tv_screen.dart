@@ -17,10 +17,12 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   String _region = 'الكل';
   String _query = '';
   String _language = 'الكل';
+  String _audience = 'الكل';
   bool _liveOnly = false;
   bool _showEpg = false;
 
   static const _regions = ['الكل', 'Africa', 'Middle East', 'Europe', 'Asia', 'Americas'];
+  static const _audiences = ['الكل', 'Kids', 'Cartoon', 'Anime'];
 
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _channels() {
     return _db
@@ -59,8 +61,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     final hay = '${data['title'] ?? ''} ${data['description'] ?? ''} ${data['country'] ?? ''}'.toLowerCase();
 
     final language = (data['language'] ?? '').toString();
+    final audience = '${data['audience'] ?? ''} ${data['category'] ?? ''} ${data['genre'] ?? ''} ${data['tags'] ?? ''}'.toLowerCase();
     if (_region != 'الكل' && region != _region) return false;
     if (_language != 'الكل' && language != _language) return false;
+    if (_audience != 'الكل' && !audience.contains(_audience.toLowerCase())) return false;
     if (_liveOnly && data['isLive'] != true) return false;
     if (q.isNotEmpty && !hay.contains(q)) return false;
     return true;
@@ -134,6 +138,20 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                   )).toList(),
                 ),
               ),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _audiences.map((audience) => Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8),
+                    child: ChoiceChip(
+                      label: Text(audience == 'Kids' ? 'أطفال' : audience == 'Cartoon' ? 'كرتون' : audience == 'Anime' ? 'أنمي' : 'الكل'),
+                      selected: _audience == audience,
+                      onSelected: (_) => setState(() => _audience = audience),
+                    ),
+                  )).toList(),
+                ),
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -186,9 +204,9 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         children: [
           Icon(Icons.tv_rounded, size: 38),
           SizedBox(height: 10),
-          Text('TV + IPTV', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+          Text('TV + IPTV + Kids + Cartoon + Anime', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
           SizedBox(height: 7),
-          Text('قنوات مباشرة ومحتوى تلفزيوني من داخل AUREN، مع بحث واكتشاف موحّد.'),
+          Text('قنوات مباشرة ومحتوى تلفزيوني من داخل AUREN، مع مساحات للأطفال والكرتون والأنمي وبحث واكتشاف موحّد.'),
         ],
       ),
     );
