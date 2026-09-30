@@ -73,12 +73,10 @@ exports.recordAurenEducationActivity = onCall(
     const dayRef = db.collection('users').doc(uid).collection('educationDailyActivity').doc(day);
 
     const result = await db.runTransaction(async (tx) => {
-      const [eventSnap, profileSnap, weekSnap, daySnap] = await Promise.all([
-        tx.get(eventRef),
-        tx.get(profileRef),
-        tx.get(weekRef),
-        tx.get(dayRef),
-      ]);
+      const eventSnap = await tx.get(eventRef);
+      const profileSnap = await tx.get(profileRef);
+      const weekSnap = await tx.get(weekRef);
+      const daySnap = await tx.get(dayRef);
 
       if (eventSnap.exists) {
         const existing = eventSnap.data() || {};
@@ -158,9 +156,16 @@ exports.getAurenEducationLeaderboard = onCall(
     const requestedWeek = cleanString(request.data?.week, 20);
     const week = /^\d{4}-\d{2}$/.test(requestedWeek) ? requestedWeek : weekKey();
     const snap = await db.collection('educationLeaderboards').doc(week).collection('users')
-      .orderBy('weeklyXp', 'desc').orderBy('uid', 'asc').limit(100).get();
+      .orderBy('weeklyXp', 'desc').limit(100).get();
 
-    const rows = await Promise.all(snap.docs.map(async (doc, index) => {
+    const sortedDocs = [...snap.docs].sort((a, b) => {
+      const ax = Number(a.data()?.weeklyXp || 0);
+      const bx = Number(b.data()?.weeklyXp || 0);
+      if (bx !== ax) return bx - ax;
+      return a.id.localeCompare(b.id);
+    });
+
+    const rows = await Promise.all(sortedDocs.map(async (doc, index) => {
       const d = doc.data() || {};
       const profile = await getUserDisplay(doc.id);
       return {
