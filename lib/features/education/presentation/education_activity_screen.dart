@@ -16,6 +16,13 @@ class _EducationActivityScreenState extends State<EducationActivityScreen> {
   int _quizScore = 0;
   bool _busy = false;
   bool _completed = false;
+  late final String _activityId;
+
+  @override
+  void initState() {
+    super.initState();
+    _activityId = '${widget.mode}:education:${DateTime.now().microsecondsSinceEpoch}';
+  }
 
   static const _questions = [
     ('Which action best supports active learning?', ['Practice and feedback', 'Only reading', 'Skipping exercises'], 0),
@@ -88,7 +95,7 @@ class _EducationActivityScreenState extends State<EducationActivityScreen> {
     if (_quizIndex + 1 < _questions.length) {
       setState(() => _quizIndex++);
     } else {
-      _finish('quiz:education:${DateTime.now().millisecondsSinceEpoch}');
+      _finish(_activityId);
     }
   }
 
@@ -103,7 +110,7 @@ class _EducationActivityScreenState extends State<EducationActivityScreen> {
       )),
       const SizedBox(height: 16),
       FilledButton.icon(
-        onPressed: _busy || _completed ? null : () => _finish('language:practice:${DateTime.now().millisecondsSinceEpoch}', sourceId: 'general'),
+        onPressed: _busy || _completed ? null : () => _finish(_activityId, sourceId: 'general'),
         icon: const Icon(Icons.check),
         label: const Text('Complete practice'),
       ),
@@ -124,7 +131,7 @@ class _EducationActivityScreenState extends State<EducationActivityScreen> {
       ),
       const SizedBox(height: 12),
       FilledButton.tonal(
-        onPressed: _busy || _completed ? null : () => _finish('voiceTutor:session:${DateTime.now().millisecondsSinceEpoch}'),
+        onPressed: _busy || _completed ? null : () => _finish(_activityId),
         child: const Text('Mark session complete'),
       ),
     ]),
