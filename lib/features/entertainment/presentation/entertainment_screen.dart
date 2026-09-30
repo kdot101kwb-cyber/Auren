@@ -14,6 +14,7 @@ import 'watch_history_screen.dart';
 import 'watch_together_screen.dart';
 import 'auren_gaming_screen.dart';
 import 'auren_radio_screen.dart';
+import 'auren_podcasts_screen.dart';
 import 'auren_tv_screen.dart';
 import 'auren_books_manga_screen.dart';
 import 'auren_anime_world_screen.dart';
@@ -46,6 +47,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.sports_esports_rounded, 'Gaming', 'Games, challenges & social play'),
     _EntertainmentAction(Icons.auto_awesome_rounded, 'Create', 'Create music, stories & shows'),
     _EntertainmentAction(Icons.tv_rounded, 'AI Series', 'Build an original season with AI'),
+    _EntertainmentAction(Icons.podcasts_rounded, 'Podcasts', 'Shows, episodes & audio discovery'),
     _EntertainmentAction(Icons.public_rounded, 'AUREN World', 'Explore interactive worlds'),
     _EntertainmentAction(Icons.download_rounded, 'Offline', 'Save entertainment for low-data use'),
     _EntertainmentAction(Icons.menu_book_rounded, 'Library', 'Books, Manga & Anime'),
@@ -405,6 +407,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBooksMangaScreen()));
                   } else if (action.title == 'Create') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentCreateScreen()));
+                  } else if (action.title == 'Podcasts') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenPodcastsScreen()));
                   } else if (action.title == 'AI Series') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAiSeriesStudioScreen()));
                   } else {
