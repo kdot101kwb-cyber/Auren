@@ -16,6 +16,16 @@ const DAILY_CAPS = Object.freeze({
   language: 20,
 });
 
+const WEEKLY_CHALLENGE = Object.freeze({
+  targetActivities: 5,
+  bonusXp: 50,
+});
+
+const BADGES = Object.freeze([
+  {id: 'learner-25', threshold: 25, title: '25 Activities'},
+  {id: 'learner-100', threshold: 100, title: '100 Activities'},
+]);
+
 function weekKey(date = new Date()) {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   const day = d.getUTCDay() || 7;
@@ -87,6 +97,10 @@ exports.recordAurenEducationActivity = onCall(
       const currentProfile = profileSnap.data() || {};
       const currentWeek = weekSnap.data() || {};
       const currentCount = Number(currentDay[type] || 0);
+      const previousTotalActivities = Number(currentProfile.totalActivities || 0);
+      const previousWeeklyXp = currentProfile.currentWeek === week
+        ? Number(currentProfile.weeklyXp || 0)
+        : 0;
 
       if (DAILY_CAPS[type] && currentCount >= DAILY_CAPS[type]) {
         tx.set(eventRef, {
@@ -96,14 +110,24 @@ exports.recordAurenEducationActivity = onCall(
         return {duplicate: false, capped: true, xpAwarded: 0, totalXp: Number(currentProfile.totalXp || 0)};
       }
 
-      const awarded = XP[type];
+      const baseAwarded = XP[type];
+      const totalActivities = previousTotalActivities + 1;
+      const challengeAlreadyCompleted = currentProfile.currentWeek === week && currentProfile.weeklyChallengeCompleted === true;
+      const challengeCompletedNow = !challengeAlreadyCompleted
+        && totalActivities - Number(currentProfile.weekStartActivities || 0) >= WEEKLY_CHALLENGE.targetActivities;
+      const challengeBonus = challengeCompletedNow ? WEEKLY_CHALLENGE.bonusXp : 0;
+      const awarded = baseAwarded + challengeBonus;
       const totalXp = Number(currentProfile.totalXp || 0) + awarded;
-      const weeklyXp = Number(currentWeek.weeklyXp || 0) + awarded;
-      const totalActivities = Number(currentProfile.totalActivities || 0) + 1;
+      const weeklyXp = previousWeeklyXp + awarded;
+      const earnedBadges = Array.isArray(currentProfile.badges) ? currentProfile.badges.filter((x) => typeof x === 'string') : [];
+      const newlyEarned = BADGES
+        .filter((badge) => totalActivities >= badge.threshold && !earnedBadges.includes(badge.id))
+        .map((badge) => badge.id);
+      const badges = [...new Set([...earnedBadges, ...newlyEarned])];
 
       tx.set(eventRef, {
-        type, sourceId, subject, xpAwarded: awarded,
-        week, day, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        type, sourceId, subject, xpAwarded: awarded, baseXp: baseAwarded,
+        challengeBonus, week, day, createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
       tx.set(dayRef, {
         [type]: currentCount + 1,
@@ -114,6 +138,11 @@ exports.recordAurenEducationActivity = onCall(
         totalActivities,
         weeklyXp,
         currentWeek: week,
+        weekStartActivities: currentProfile.currentWeek === week
+          ? Number(currentProfile.weekStartActivities || 0)
+          : previousTotalActivities,
+        weeklyChallengeCompleted: challengeAlreadyCompleted || challengeCompletedNow,
+        badges,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, {merge: true});
       tx.set(weekRef, {
@@ -123,7 +152,19 @@ exports.recordAurenEducationActivity = onCall(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       }, {merge: true});
 
-      return {duplicate: false, capped: false, xpAwarded: awarded, totalXp, weeklyXp};
+      return {
+        duplicate: false,
+        capped: false,
+        xpAwarded: awarded,
+        baseXp: baseAwarded,
+        challengeBonus,
+        challengeCompleted: challengeCompletedNow,
+        newlyEarnedBadges: newlyEarned,
+        totalXp,
+        weeklyXp,
+        totalActivities,
+        badges,
+      };
     });
 
     return {...result, week};
@@ -142,7 +183,13 @@ exports.getAurenEducationGamification = onCall(
     ]);
     return {
       week,
-      profile: profileSnap.exists ? profileSnap.data() : {totalXp: 0, totalActivities: 0, weeklyXp: 0},
+      profile: profileSnap.exists ? profileSnap.data() : {
+        totalXp: 0,
+        totalActivities: 0,
+        weeklyXp: 0,
+        weeklyChallengeCompleted: false,
+        badges: [],
+      },
       weekly: weekSnap.exists ? weekSnap.data() : {weeklyXp: 0, totalActivities: 0},
     };
   },
