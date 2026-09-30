@@ -3781,3 +3781,7 @@ Object.assign(module.exports, require('./sports_alerts'));
 
 Object.assign(module.exports, require('./unesco_world_explorer'));
 Object.assign(module.exports, require('./auren_magazine_index'));
+
+Object.assign(module.exports, require('./auren_comics_index'));
+Object.assign(module.exports, require('./auren_research_index'));
+Object.assign(module.exports, require('./auren_library_graph'));
