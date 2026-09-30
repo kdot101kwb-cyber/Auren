@@ -220,3 +220,23 @@ exports.unfollowAurenSportsTeam=onCall({region:'us-central1',timeoutSeconds:15,m
 
 exports.setAurenSportsAlertPreferences=onCall({region:'us-central1',timeoutSeconds:15,memory:'256MiB'},async(request)=>{const uid=request.auth?.uid;if(!uid)throw new HttpsError('unauthenticated','Authentication is required.');const enabled=request.data?.enabled!==false;const types=Array.isArray(request.data?.types)?request.data.types.map(v=>String(v)).filter(v=>['kickoff','goal','red_card','full_time'].includes(v)):['kickoff','goal','red_card','full_time'];await sportsDb.collection('users').doc(uid).collection('sportsSettings').doc('alerts').set({enabled,types,updatedAt:FieldValue.serverTimestamp()},{merge:true});return {status:'ok',enabled,types};});
 exports.getAurenSportsAlertPreferences=onCall({region:'us-central1',timeoutSeconds:15,memory:'256MiB'},async(request)=>{const uid=request.auth?.uid;if(!uid)throw new HttpsError('unauthenticated','Authentication is required.');const snap=await sportsDb.collection('users').doc(uid).collection('sportsSettings').doc('alerts').get();const d=snap.exists?snap.data():{};return {status:'ok',enabled:d.enabled!==false,types:Array.isArray(d.types)?d.types:['kickoff','goal','red_card','full_time']};});
+
+
+exports.getAurenSportsAlerts = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated','Authentication required');
+  const snap = await db.collection('users').doc(uid).collection('sportsAlerts').orderBy('createdAt','desc').limit(50).get();
+  return { alerts: snap.docs.map(d => ({ id:d.id, ...d.data() })) };
+});
+
+exports.markAurenSportsAlertRead = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated','Authentication required');
+  const id = String(request.data?.alertId || '');
+  if (!id) throw new HttpsError('invalid-argument','alertId is required');
+  const ref = db.collection('users').doc(uid).collection('sportsAlerts').doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found','Alert not found');
+  await ref.set({read:true},{merge:true});
+  return {ok:true};
+});
