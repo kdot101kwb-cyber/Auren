@@ -33,3 +33,12 @@ test('client exposes all education XP activity types', () => {
     assert.match(source, new RegExp(method));
   }
 });
+
+
+test('weekly challenge baseline resets at a new week', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'education_gamification.js'), 'utf8');
+  assert.match(source, /const isCurrentWeek = currentProfile\.currentWeek === week/);
+  assert.match(source, /const weekStartActivities = isCurrentWeek/);
+  assert.match(source, /totalActivities - weekStartActivities >= WEEKLY_CHALLENGE\.targetActivities/);
+  assert.match(source, /weekStartActivities,/);
+});
