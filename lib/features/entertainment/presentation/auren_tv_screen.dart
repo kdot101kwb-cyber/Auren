@@ -16,6 +16,9 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
   final _db = FirebaseFirestore.instance;
   String _region = 'الكل';
   String _query = '';
+  String _language = 'الكل';
+  bool _liveOnly = false;
+  bool _showEpg = false;
 
   static const _regions = ['الكل', 'Africa', 'Middle East', 'Europe', 'Asia', 'Americas'];
 
@@ -41,12 +44,24 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     });
   }
 
+  List<String> _languages(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+    final values = <String>{};
+    for (final doc in docs) {
+      final value = (doc.data()['language'] ?? '').toString().trim();
+      if (value.isNotEmpty) values.add(value);
+    }
+    return ['الكل', ...values.toList()..sort()];
+  }
+
   bool _matches(Map<String, dynamic> data) {
     final q = _query.trim().toLowerCase();
     final region = (data['region'] ?? data['countryRegion'] ?? '').toString();
     final hay = '${data['title'] ?? ''} ${data['description'] ?? ''} ${data['country'] ?? ''}'.toLowerCase();
 
+    final language = (data['language'] ?? '').toString();
     if (_region != 'الكل' && region != _region) return false;
+    if (_language != 'الكل' && language != _language) return false;
+    if (_liveOnly && data['isLive'] != true) return false;
     if (q.isNotEmpty && !hay.contains(q)) return false;
     return true;
   }
@@ -74,7 +89,9 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final channels = snapshot.data?.where((d) => _matches(d.data())).toList() ?? [];
+          final allChannels = snapshot.data ?? const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+          final channels = allChannels.where((d) => _matches(d.data())).toList();
+          final languages = _languages(allChannels);
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
@@ -102,6 +119,38 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                     ),
                   )).toList(),
                 ),
+              ),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: languages.map((language) => Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8),
+                    child: ChoiceChip(
+                      label: Text(language),
+                      selected: _language == language,
+                      onSelected: (_) => setState(() => _language = language),
+                    ),
+                  )).toList(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  FilterChip(
+                    avatar: const Icon(Icons.live_tv_rounded, size: 18),
+                    label: const Text('Live فقط'),
+                    selected: _liveOnly,
+                    onSelected: (value) => setState(() => _liveOnly = value),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    avatar: const Icon(Icons.calendar_month_rounded, size: 18),
+                    label: const Text('EPG'),
+                    selected: _showEpg,
+                    onSelected: (value) => setState(() => _showEpg = value),
+                  ),
+                ],
               ),
               const SizedBox(height: 18),
               Row(
@@ -157,6 +206,13 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     final nextProgram = epg is List && epg.isNotEmpty && epg.first is Map
         ? (epg.first as Map)['title']?.toString()
         : null;
+    final epgItems = epg is List
+        ? epg.whereType<Map>().take(3).map((item) {
+            final title = item['title']?.toString() ?? 'برنامج';
+            final start = item['start']?.toString() ?? item['startTime']?.toString();
+            return start == null ? title : '$start • $title';
+          }).toList()
+        : const <String>[];
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -212,6 +268,19 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                     if (nextProgram != null)
                       Text('التالي: $nextProgram',
                           maxLines: 1, overflow: TextOverflow.ellipsis),
+                    if (_showEpg && epgItems.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: epgItems.map((line) => Text(
+                            line,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12),
+                          )).toList(),
+                        ),
+                      ),
                     if (description.isNotEmpty)
                       Text(description, maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
