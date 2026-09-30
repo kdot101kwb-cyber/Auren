@@ -126,6 +126,47 @@ const GLOBAL_HERITAGE_STORIES = [
   {id:'togo_gelede',title:'Guin Oral Traditions',kind:'Oral Tradition',country:'Togo',language:'Multiple',description:'سرد وطقوس مرتبطة بالذاكرة المجتمعية والاحتفالات في تقاليد شعب Guin.',sourceUrl:'https://ich.unesco.org/en/lists',year:'2025'},
 ];
 
+
+const GLOBAL_HERITAGE_REGIONS = [
+  {id:'africa',title:'Africa',ar:'أفريقيا',countries:['Sudan','Egypt','Morocco','Algeria','Tunisia','Mauritania','Senegal','Mali','Guinea','Nigeria','Ghana','Benin','Togo','Ethiopia','Kenya','Tanzania','Uganda','Rwanda','Cameroon','Gabon','Congo','South Africa','Madagascar']},
+  {id:'asia',title:'Asia',ar:'آسيا',countries:['China','Japan','South Korea','India','Pakistan','Bangladesh','Nepal','Bhutan','Sri Lanka','Indonesia','Malaysia','Brunei','Thailand','Vietnam','Cambodia','Philippines','Mongolia','Uzbekistan','Kazakhstan','Kyrgyzstan','Türkiye','Iran','Iraq','Jordan','Saudi Arabia','United Arab Emirates','Oman','Yemen','Palestine']},
+  {id:'europe',title:'Europe',ar:'أوروبا',countries:['Ireland','United Kingdom','France','Spain','Portugal','Italy','Germany','Austria','Switzerland','Belgium','Netherlands','Denmark','Sweden','Norway','Finland','Iceland','Poland','Czechia','Hungary','Romania','Bulgaria','Greece','Albania','Serbia','Croatia','Bosnia and Herzegovina','Ukraine','Georgia','Armenia','Azerbaijan']},
+  {id:'americas',title:'Americas',ar:'الأمريكتان',countries:['Canada','United States','Mexico','Guatemala','Belize','Cuba','Jamaica','Haiti','Dominican Republic','Colombia','Venezuela','Ecuador','Peru','Bolivia','Brazil','Argentina','Chile','Uruguay','Paraguay']},
+  {id:'oceania',title:'Oceania',ar:'أوقيانوسيا',countries:['Australia','New Zealand','Papua New Guinea','Vanuatu','Fiji','Samoa','Tonga','Solomon Islands']},
+];
+
+const GLOBAL_HERITAGE_TYPES = [
+  {id:'folktales',title:'Folktales',ar:'حكايات شعبية'},
+  {id:'legends',title:'Legends',ar:'أساطير'},
+  {id:'myths',title:'Myths',ar:'موروثات وأساطير كونية'},
+  {id:'epics',title:'Epics',ar:'ملاحم'},
+  {id:'oral',title:'Oral Storytelling',ar:'الحكاية الشفوية'},
+  {id:'proverbs',title:'Proverbs & Riddles',ar:'أمثال وألغاز'},
+  {id:'children',title:'Children Stories',ar:'قصص الأطفال'},
+  {id:'heroes',title:'Heroes & Characters',ar:'الأبطال والشخصيات'},
+  {id:'creation',title:'Creation Stories',ar:'قصص الخلق'},
+  {id:'tricksters',title:'Trickster Tales',ar:'حكايات الشخصيات الماكرة'},
+  {id:'history',title:'Historical Stories',ar:'قصص تاريخية'},
+  {id:'nature',title:'Nature & Animal Tales',ar:'حكايات الطبيعة والحيوانات'},
+];
+
+exports.getAurenGlobalHeritageExplorer = onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
+    return {
+      status:'ok',
+      regions:GLOBAL_HERITAGE_REGIONS,
+      types:GLOBAL_HERITAGE_TYPES,
+      coverage:{
+        model:'country → region → language → tradition → story → character → source',
+        source:'UNESCO Intangible Cultural Heritage and open/public-domain library sources',
+        note:'Coverage is designed to expand country by country; records are metadata/source indexes unless content rights permit full text.',
+      },
+    };
+  },
+);
+
 exports.getAurenGlobalHeritageStories = onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
