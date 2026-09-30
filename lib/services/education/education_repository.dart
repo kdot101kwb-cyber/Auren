@@ -12,7 +12,18 @@ class EducationRepository {
 
   Stream<List<AurenCourse>> watchCourses() => db.collection('courses').where('status', isEqualTo: 'published').limit(100).snapshots().map((s) => s.docs.map((d) => AurenCourse.fromMap(d.id, d.data())).toList());
   Stream<Set<String>> watchSavedIds(String uid) => db.collection('users').doc(uid).collection('savedCourses').snapshots().map((s) => s.docs.map((d) => d.id).toSet());
-  Future<void> enroll(String uid, String courseId) => db.collection('users').doc(uid).collection('enrollments').doc(courseId).set({'courseId': courseId, 'completedLessons': 0, 'progress': 0, 'status':'active', 'createdAt': FieldValue.serverTimestamp(), 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge:true));
+  Future<void> enroll(String uid, String courseId) async {
+    final ref = db.collection('users').doc(uid).collection('enrollments').doc(courseId);
+    if ((await ref.get()).exists) return;
+    await ref.set({
+      'courseId': courseId,
+      'completedLessons': 0,
+      'progress': 0,
+      'status': 'active',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 
   Future<void> completeLesson(String uid, AurenCourse course, int completed) async {
     if (completed < 0 || completed > course.lessonCount) throw ArgumentError('عدد الدروس غير صالح');
