@@ -19,6 +19,9 @@ exports.completeAurenEducationLesson = onCall(
     const courseSnap = await db.collection('courses').doc(courseId).get();
     if (!courseSnap.exists) throw new HttpsError('not-found', 'Course not found.');
     const course = courseSnap.data() || {};
+    if (course.status !== 'published') {
+      throw new HttpsError('failed-precondition', 'Course is not published.');
+    }
     const lessonCount = Number(course.lessonCount || 0);
     if (!Number.isInteger(lessonCount) || lessonCount < 0) {
       throw new HttpsError('failed-precondition', 'Course lessonCount is invalid.');
