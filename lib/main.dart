@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'features/shell/presentation/auren_shell.dart';
 import 'features/tv/presentation/auren_tv_screen.dart';
+import 'features/entertainment/presentation/auren_sports_entertainment_screen.dart';
 import 'services/tv/auren_tv_watch_together_service.dart';
 import 'services/offline/auren_offline_sync_service.dart';
 import 'services/notifications/auren_fcm_service.dart';
@@ -47,6 +48,14 @@ Future<void> main() async {
   ErrorWidget.builder = (details) => const _AurenErrorView();
   await AurenOfflineSyncService.instance.start();
   runApp(AurenApp(firebaseError: firebaseError));
+  AurenFcmService.instance.setOpenHandler((message) {
+    final data = message.data;
+    if (data['type'] == 'goal' || data['type'] == 'kickoff' || data['type'] == 'red_card' || data['type'] == 'full_time') {
+      final navigator = aurenNavigatorKey.currentState;
+      if (navigator == null) return;
+      navigator.push(MaterialPageRoute(builder: (_) => const AurenSportsEntertainmentScreen()));
+    }
+  });
   WidgetsBinding.instance.addPostFrameCallback((_) {
     AurenTvWatchTogetherService.instance.setNotificationRoomHandler((roomId) {
       final navigator = aurenNavigatorKey.currentState;
