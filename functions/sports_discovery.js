@@ -208,3 +208,12 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
     message: results.length ? '' : 'Configure API_FOOTBALL_KEY and/or THESPORTSDB_API_KEY in Firebase Functions.'
   };
 });
+
+
+const {getFirestore,FieldValue}=require('firebase-admin/firestore');
+const sportsDb=getFirestore();
+function cleanSportsFollow(value,max=180){return String(value??'').trim().slice(0,max);}
+function normalizeSportsFollow(item){return {id:cleanSportsFollow(item.id||item.teamId,160),sport:cleanSportsFollow(item.sport||'football',40).toLowerCase(),name:cleanSportsFollow(item.name||item.title,180),country:cleanSportsFollow(item.country,100),logo:cleanSportsFollow(item.logo,500),league:cleanSportsFollow(item.league,160),source:cleanSportsFollow(item.source||'API-Sports',80),updatedAt:FieldValue.serverTimestamp()};}
+exports.getAurenSportsFollowing=onCall({region:'us-central1',timeoutSeconds:15,memory:'256MiB'},async(request)=>{const uid=request.auth?.uid;if(!uid)throw new HttpsError('unauthenticated','Authentication is required.');const snap=await sportsDb.collection('users').doc(uid).collection('sportsFollowing').orderBy('name').limit(100).get();return {status:'ok',results:snap.docs.map(d=>({id:d.id,...d.data()}))};});
+exports.followAurenSportsTeam=onCall({region:'us-central1',timeoutSeconds:15,memory:'256MiB'},async(request)=>{const uid=request.auth?.uid;if(!uid)throw new HttpsError('unauthenticated','Authentication is required.');const team=normalizeSportsFollow(request.data||{});if(!team.id||!team.name)throw new HttpsError('invalid-argument','Team id and name are required.');await sportsDb.collection('users').doc(uid).collection('sportsFollowing').doc(team.id).set(team,{merge:true});return {status:'followed',team:{id:team.id,...team}};});
+exports.unfollowAurenSportsTeam=onCall({region:'us-central1',timeoutSeconds:15,memory:'256MiB'},async(request)=>{const uid=request.auth?.uid;if(!uid)throw new HttpsError('unauthenticated','Authentication is required.');const id=cleanSportsFollow(request.data?.id,160);if(!id)throw new HttpsError('invalid-argument','Team id is required.');await sportsDb.collection('users').doc(uid).collection('sportsFollowing').doc(id).delete();return {status:'unfollowed',id};});
