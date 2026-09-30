@@ -150,3 +150,108 @@ exports.aurenAgriProducerPriceCache = onCall(async (request)=>{
 
   return {status:'cached',source:result.source,itemCode,resultRows:result.rows.length};
 });
+
+
+// FPMA/GIEWS local-market adapter.
+// The FPMA web application is dynamic; keep the machine-readable source configurable
+// and restricted to official FAO hosts until FAO exposes a stable public export URL.
+const FPMA_DATA_URL = process.env.FPMA_DATA_URL || '';
+
+function officialFpmaUrl(value) {
+  const u = new URL(value);
+  const allowed = new Set(['fpma.fao.org', 'www.fao.org']);
+  if (!['https:', 'http:'].includes(u.protocol) || !allowed.has(u.hostname)) {
+    throw new Error('Only official FAO/FPMA resources are allowed.');
+  }
+  return u;
+}
+
+function normalizeFpmaRow(row) {
+  const pick = (...keys) => {
+    for (const key of keys) {
+      if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') return row[key];
+    }
+    return '';
+  };
+  const numberOrNull = (v) => {
+    if (v === '' || v === null || v === undefined) return null;
+    const n = Number(String(v).replace(/,/g, ''));
+    return Number.isFinite(n) ? n : null;
+  };
+  const countryName = String(pick('country_name_en','country','Country','country_name') || '').trim();
+  const item = String(pick('item','commodity','Commodity','commodity_name','item_name') || '').trim();
+  const market = String(pick('market','Market','market_name') || '').trim();
+  const date = String(pick('date','Date','period','Period','month') || '').trim();
+  const price = numberOrNull(pick('price','Price','value','Value','price_lcu','price_local'));
+  const unit = String(pick('unit','Unit','measure_unit') || '').trim();
+  const currency = String(pick('currency','Currency','currency_code') || '').trim();
+  const frequency = String(pick('frequency','Frequency') || 'monthly').trim().toLowerCase();
+  return {
+    countryName, item, market, date, priceLCU: price, unit, currency,
+    frequency, source: 'FAO GIEWS FPMA'
+  };
+}
+
+async function fetchFpmaRows() {
+  if (!FPMA_DATA_URL) {
+    throw new Error('FPMA_DATA_URL is not configured. Configure an official FAO/FPMA CSV or JSON export URL before ingestion.');
+  }
+  const url = officialFpmaUrl(FPMA_DATA_URL);
+  const res = await fetch(url, {
+    headers: {accept:'text/csv,application/json,text/plain'},
+    signal: AbortSignal.timeout(60000)
+  });
+  const body = await res.text();
+  if (!res.ok) throw new Error('FPMA request failed: ' + res.status);
+  let rows;
+  try {
+    rows = JSON.parse(body);
+    if (!Array.isArray(rows)) rows = rows.data || rows.rows || [];
+  } catch (_) {
+    rows = parseCsv(body);
+  }
+  if (!Array.isArray(rows)) throw new Error('FPMA response is not a supported CSV/JSON table.');
+  return rows.map(normalizeFpmaRow).filter(r => r.countryName && r.item && r.date);
+}
+
+exports.aurenAgriLocalMarketPriceIngest = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const rows = await fetchFpmaRows();
+  const country = normalizeText(request.data?.country);
+  const crop = normalizeText(request.data?.crop);
+  const filtered = rows.filter(r =>
+    (!country || normalizeText(r.countryName) === country) &&
+    (!crop || normalizeText(r.item) === crop)
+  );
+  const batch = db.batch();
+  let written = 0;
+  for (const row of filtered.slice(-2000)) {
+    const id = [row.countryName,row.item,row.market,row.date,row.unit]
+      .join('_').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0, 300);
+    batch.set(db.collection('auren_agri_local_market_prices').doc(id), {
+      ...row,
+      priceUSDTonne: null,
+      importedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+    written++;
+  }
+  if (written) await batch.commit();
+  return {
+    status: written ? 'cached' : 'no_matching_rows',
+    source: 'FAO GIEWS FPMA',
+    configured: true,
+    fetchedRows: rows.length,
+    writtenRows: written
+  };
+});
+
+exports.aurenAgriLocalMarketPriceStatus = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const snap = await db.collection('auren_agri_local_market_prices').limit(1).get();
+  return {
+    source: 'FAO GIEWS FPMA',
+    configured: Boolean(FPMA_DATA_URL),
+    cached: !snap.empty,
+    officialTool: 'https://fpma.fao.org/'
+  };
+});
