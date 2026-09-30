@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
+import 'soil_intelligence_screen.dart';
+import 'crop_disease_intelligence_screen.dart';
 
 class AurenAgricultureScreen extends StatefulWidget {
   const AurenAgricultureScreen({super.key});
@@ -69,6 +71,20 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               ]),
             ),
           ),
+          if (_type == 'crop' || _type == 'farm') ...[
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SoilIntelligenceScreen())),
+                icon: const Icon(Icons.science_outlined), label: const Text('ذكاء التربة'),
+              )),
+              const SizedBox(width: 8),
+              Expanded(child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CropDiseaseIntelligenceScreen())),
+                icon: const Icon(Icons.health_and_safety_outlined), label: const Text('أمراض وآفات'),
+              )),
+            ]),
+          ],
           FilledButton.icon(
             onPressed: () => _askAi(context),
             icon: const Icon(Icons.auto_awesome_rounded),
