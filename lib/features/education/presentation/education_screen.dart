@@ -4,6 +4,7 @@ import '../../../services/education/education_repository.dart';
 import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'language_learning_play_screen.dart';
+import 'education_gamification_screen.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
   const AurenAURENEducationScreen({super.key});
@@ -20,6 +21,7 @@ class _EducationState extends State<AurenAURENEducationScreen>{
       final q=query.toLowerCase(); final courses=all.where((c)=>(q.isEmpty||(c.title+' '+c.description+' '+c.category).toLowerCase().contains(q))&&(category==null||c.category==category)).toList();
       return ListView(padding:const EdgeInsets.all(16),children:[
         const ListTile(contentPadding:EdgeInsets.zero,leading:Icon(Icons.school,size:34),title:Text('Learn with AUREN',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold)),subtitle:Text('دورات، تقدم، ومدرس شخصي بالذكاء الاصطناعي.')),
+        Card(child:ListTile(leading:const Icon(Icons.emoji_events),title:const Text('XP + Streak + Badges'),subtitle:const Text('تابع مستواك وإنجازاتك ومهمتك اليومية'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const EducationGamificationScreen())))),
         Card(child:ListTile(leading:const Icon(Icons.sports_esports),title:const Text('Language Learning + Play'),subtitle:const Text('تعلم اللغات بالكلمات والتحديات والنقاط'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const LanguageLearningPlayScreen())))),
         TextField(decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن دورة أو مهارة'),onChanged:(v)=>setState(()=>query=v)),
         const SizedBox(height:8),SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[null,...cats].map((c)=>Padding(padding:const EdgeInsets.only(right:8),child:ChoiceChip(label:Text(c??'All'),selected:category==c,onSelected:(_)=>setState(()=>category=c))).toList()))),
