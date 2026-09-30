@@ -63,6 +63,48 @@ function extractProducerPrice(rows, crop) {
   return priced[0] || null;
 }
 
+async function getLatestLocalMarketPrice(iso3, crop, state, city) {
+  const countryCode = String(iso3 || '').trim().toUpperCase();
+  const target = normalizeText(crop);
+  if (!countryCode || !target) return {available:false, source:'AUREN_local_market_price', reason:'missing_country_or_crop'};
+
+  let query = db.collection('agri_local_market_prices')
+    .where('countryCode','==',countryCode)
+    .orderBy('updatedAt','desc')
+    .limit(100);
+  const snap = await query.get();
+  const wantedState = normalizeText(state);
+  const wantedCity = normalizeText(city);
+  const matches = snap.docs.map(doc => ({id:doc.id, data:doc.data() || {}})).filter(item => {
+    const d = item.data;
+    const itemCrop = normalizeText(d.commodityKey || d.commodity);
+    if (!(itemCrop === target || itemCrop.includes(target) || target.includes(itemCrop))) return false;
+    if (wantedState && normalizeText(d.stateKey || d.state) !== wantedState) return false;
+    if (wantedCity && normalizeText(d.cityKey || d.city) !== wantedCity) return false;
+    return finite(d.price) != null && finite(d.price) >= 0;
+  });
+  const perTon = matches.find(item => {
+    const unit = normalizeText(item.data.unit);
+    return /(^|[^a-z])(t|ton|tonne|tons|tonnes)([^a-z]|$)/.test(unit) ||
+      /(?:per|\/|each)\s*(?:t|ton|tonne|tons|tonnes)/.test(unit);
+  });
+  if (!perTon) return {available:false, source:'AUREN_local_market_price', reason:'no_latest_price_explicitly_per_ton'};
+  const d = perTon.data;
+  return {
+    available:true,
+    source:'AUREN_local_market_price',
+    pricePerTon:finite(d.price),
+    currency:String(d.currency || ''),
+    unit:String(d.unit || ''),
+    marketName:String(d.marketName || ''),
+    state:String(d.state || ''),
+    city:String(d.city || ''),
+    observedAt:d.updatedAt?.toDate?.()?.toISOString?.() || d.updatedAt || null,
+    sourceUrl:d.sourceUrl || null,
+    verified:Boolean(d.verified)
+  };
+}
+
 async function getFaostatProducerPrice(iso3, crop) {
   const snap = await db.collection('auren_faostat').doc(iso3 + '_PP').get();
   if (!snap.exists) return {available:false, source:'FAOSTAT_PP', reason:'no_price_domain_ingested'};
@@ -242,12 +284,15 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
     : (gaezYield.available ? gaezYield.yieldTonsHa : (gaezCropSummaryYield.available ? gaezCropSummaryYield.yieldTonsHa : null));
 
   const manualPricePerTon = finite(p.pricePerTon);
-  const faostatPrice = manualPricePerTon == null
-    ? await getFaostatProducerPrice(iso3, crop)
+  const localMarketPrice = manualPricePerTon == null
+    ? await getLatestLocalMarketPrice(iso3, crop, p.state, p.city)
     : {available:false, source:'manual_override'};
+  const faostatPrice = manualPricePerTon == null && !localMarketPrice.available
+    ? await getFaostatProducerPrice(iso3, crop)
+    : {available:false, source:'manual_or_local_override'};
   const pricePerTon = manualPricePerTon != null
     ? manualPricePerTon
-    : (faostatPrice.available ? faostatPrice.pricePerTon : null);
+    : (localMarketPrice.available ? localMarketPrice.pricePerTon : (faostatPrice.available ? faostatPrice.pricePerTon : null));
 
   const capex = finite(p.capex);
   const annualOpex = finite(p.annualOpex);
@@ -330,15 +375,26 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
         : null),
     priceSource: manualPricePerTon != null
       ? 'manual'
-      : (faostatPrice.available ? faostatPrice.source : null),
-    priceEvidence: faostatPrice.available
+      : (localMarketPrice.available ? localMarketPrice.source : (faostatPrice.available ? faostatPrice.source : null)),
+    priceEvidence: localMarketPrice.available
       ? {
-        currency:faostatPrice.currency,
-        unit:faostatPrice.unit,
-        year:faostatPrice.year,
-        item:faostatPrice.item
+        currency:localMarketPrice.currency,
+        unit:localMarketPrice.unit,
+        marketName:localMarketPrice.marketName,
+        state:localMarketPrice.state,
+        city:localMarketPrice.city,
+        observedAt:localMarketPrice.observedAt,
+        sourceUrl:localMarketPrice.sourceUrl,
+        verified:localMarketPrice.verified
       }
-      : null,
+      : (faostatPrice.available
+        ? {
+          currency:faostatPrice.currency,
+          unit:faostatPrice.unit,
+          year:faostatPrice.year,
+          item:faostatPrice.item
+        }
+        : null),
     costEvidence,
     logisticsEvidence,
     marketEvidence,
