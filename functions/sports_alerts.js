@@ -3,6 +3,7 @@
 const {onSchedule}=require('firebase-functions/v2/scheduler');
 const {getFirestore,FieldValue}=require('firebase-admin/firestore');
 const {getMessaging}=require('firebase-admin/messaging');
+const {fixtureId,detectFreshEvents,buildPushMessage,chunk}=require('./sports_alerts_logic');
 
 const db=getFirestore();
 const API_BASE='https://v3.football.api-sports.io';
@@ -41,14 +42,6 @@ async function enrichFixtures(rows,key){
   return detailed.length?detailed:rows;
 }
 
-function fixtureId(f){return String(f?.fixture?.id||'').trim();}
-function eventType(e){
-  const t=String(e?.type||'').toLowerCase();
-  if(t==='goal') return 'goal';
-  if(t==='card' && String(e?.detail||'').toLowerCase().includes('red')) return 'red_card';
-  return '';
-}
-
 exports.refreshAurenSportsAlerts=onSchedule(
  {schedule:'every 1 minutes',region:'us-central1',timeoutSeconds:50,memory:'256MiB'},
  async()=>{
@@ -83,16 +76,16 @@ exports.refreshAurenSportsAlerts=onSchedule(
     const status=String(f?.fixture?.status?.short||'');
     const previousStatus=String(previous.status||'');
     const seen=Array.isArray(previous.eventKeys)?previous.eventKeys:[];
-    const fresh=events.map(e=>({key:String(e?.time?.elapsed||'')+'|'+String(e?.player?.id||e?.player?.name||'')+'|'+String(e?.type||'')+'|'+String(e?.detail||''),type:eventType(e),minute:Number(e?.time?.elapsed||0),player:String(e?.player?.name||'') })).filter(e=>e.type && e.key && !seen.includes(e.key));
-    if(snap.exists && previousStatus && previousStatus!=='1H' && previousStatus!=='HT' && previousStatus!=='2H' && previousStatus!=='ET' && previousStatus!=='P' && ['1H','HT','2H','ET','P'].includes(status)){
-      fresh.push({key:'kickoff|'+status,type:'kickoff',minute:Number(f?.fixture?.status?.elapsed||0),player:''});
-    }
-    if(snap.exists && previousStatus!=='FT' && status==='FT'){
-      fresh.push({key:'full_time|FT',type:'full_time',minute:Number(f?.fixture?.status?.elapsed||0),player:''});
-    }
-    if(snap.exists && !fresh.some(e=>e.type==='goal') && (score.home!==Number(previous.homeScore??score.home)||score.away!==Number(previous.awayScore??score.away))){
-      fresh.push({key:'score|'+score.home+'|'+score.away,type:'goal',minute:0,player:''});
-    }
+    const fresh=detectFreshEvents({
+      events,
+      seen,
+      previousStatus,
+      status,
+      fixtureStatusElapsed:f?.fixture?.status?.elapsed,
+      previousExists:snap.exists,
+      score,
+      previousScore:{home:previous.homeScore,away:previous.awayScore},
+    });
     const users=new Set([...(followingByTeam.get(String(f?.teams?.home?.id||''))||[]),...(followingByTeam.get(String(f?.teams?.away?.id||''))||[])]);
     for(const uid of users){
       const pref=await db.collection('users').doc(uid).collection('sportsSettings').doc('alerts').get();
@@ -119,9 +112,9 @@ exports.refreshAurenSportsAlerts=onSchedule(
     writes.push({ref,data:{homeScore:score.home,awayScore:score.away,status,eventKeys:[...new Set([...seen,...fresh.map(e=>e.key)])].slice(-100),updatedAt:FieldValue.serverTimestamp()},merge:true});
   }
   // Firestore batches are capped at 500 writes. Keep headroom for future fields.
-  for(let i=0;i<writes.length;i+=450){
+  for(const group of chunk(writes,450)){
     const batch=db.batch();
-    for(const write of writes.slice(i,i+450)) batch.set(write.ref,write.data,{merge:write.merge!==false});
+    for(const write of group) batch.set(write.ref,write.data,{merge:write.merge!==false});
     await batch.commit();
   }
 
@@ -131,19 +124,7 @@ exports.refreshAurenSportsAlerts=onSchedule(
     const tokenSnap=await db.collection('users').doc(job.uid).collection('fcmTokens').where('enabled','==',true).limit(100).get();
     const tokens=tokenSnap.docs.map(d=>String(d.data()?.token||'').trim()).filter(Boolean);
     if(!tokens.length) continue;
-    const response=await getMessaging().sendEachForMulticast({
-      tokens,
-      notification:{title:job.title,body:job.body},
-      data:{
-        type:job.type,
-        fixtureId:job.fixtureId,
-        notificationId:job.notificationId,
-      },
-      android:{
-        priority:'high',
-        notification:{channelId:'auren_sports_alerts'},
-      },
-    });
+    const response=await getMessaging().sendEachForMulticast(buildPushMessage({...job,tokens}));
     pushSent+=response.successCount;
     pushFailed+=response.failureCount;
     const invalid=[];
