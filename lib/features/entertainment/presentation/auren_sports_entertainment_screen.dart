@@ -2,31 +2,89 @@ import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
-import 'entertainment_detail_screen.dart';
 import 'auren_sports_detail_screen.dart';
+import 'entertainment_detail_screen.dart';
 
 class AurenSportsEntertainmentScreen extends StatefulWidget {
   const AurenSportsEntertainmentScreen({super.key});
   @override State<AurenSportsEntertainmentScreen> createState() => _AurenSportsEntertainmentScreenState();
 }
 class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmentScreen> {
-  final _repo = EntertainmentRepository(); String _query = ''; String _sport = 'الكل'; String _resource = 'games'; String _country = ''; String _leagueId = ''; String _season = ''; List<Map<String,dynamic>> _directory = []; bool _loadingDirectory = false; List<Map<String,dynamic>> _remote = []; bool _loadingRemote = false;
-  static const _sports = ['الكل', 'Football', 'Basketball', 'Tennis', 'Cricket', 'Baseball', 'Hockey', 'Handball', 'Volleyball', 'Rugby', 'MMA', 'Formula 1', 'NFL', 'Other'];
-  Future<void> _loadDirectory() async { setState(() => _loadingDirectory = true); try { final r = await FirebaseFunctions.instance.httpsCallable('searchAurenSports').call({'query': _query, 'sport': _sport == 'الكل' ? 'football' : _sport.toLowerCase().replaceAll(' ', ''), 'resource': _resource, 'country': _country, 'leagueId': _leagueId, 'season': _season}); final data = Map<String,dynamic>.from(r.data as Map); if (mounted) setState(() => _directory = List<Map<String,dynamic>>.from(data['results'] ?? const [])); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تحميل البيانات: $e'))); } finally { if (mounted) setState(() => _loadingDirectory = false); } }
-  Future<void> _loadRemote() async { setState(() => _loadingRemote = true); try { final r = await FirebaseFunctions.instance.httpsCallable('searchAurenSports').call({'query': _query, 'sport': _sport == 'الكل' ? 'football' : _sport.toLowerCase().replaceAll(' ', '')}); final data = Map<String,dynamic>.from(r.data as Map); if (data['status'] == 'ok') setState(() => _remote = List<Map<String,dynamic>>.from(data['results'] ?? const [])); if (data['status'] == 'not_configured' && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مصدر الرياضة يحتاج API key في Firebase Functions.'))); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر جلب الرياضة: $e'))); } finally { if (mounted) setState(() => _loadingRemote = false); } }
-  @override Widget build(BuildContext context) => Scaffold(backgroundColor: Theme.of(context).colorScheme.surface, body: StreamBuilder<List<AurenEntertainmentItem>>(stream: _repo.watchItems(), builder: (context, snapshot) {
-    if (snapshot.hasError) return Center(child: Text('تعذر تحميل الرياضة: '+snapshot.error.toString()));
-    if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-    final items = (snapshot.data ?? const <AurenEntertainmentItem>[]).where((item) {
-      final text = ('${item.title} ${item.description} ${item.type} ${item.genres.join(' ')}').toLowerCase(); final q = _query.trim().toLowerCase();
-      final sports = text.contains('sport') || text.contains('football') || text.contains('soccer') || text.contains('basketball') || text.contains('tennis') || text.contains('cricket') || item.type.toLowerCase().contains('sports');
-      return sports && (_sport == 'الكل' || text.contains(_sport.toLowerCase())) && (q.isEmpty || text.contains(q));
-    }).toList();
-    return CustomScrollView(slivers: [SliverToBoxAdapter(child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.secondary])), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Container(width:48,height:48,decoration:BoxDecoration(color:Colors.white.withValues(alpha:.16),shape:BoxShape.circle),child:const Icon(Icons.sports_score,color:Colors.white)),const Spacer(),Container(padding:const EdgeInsets.symmetric(horizontal:10,vertical:6),decoration:BoxDecoration(color:Colors.white.withValues(alpha:.14),borderRadius:BorderRadius.circular(18)),child:const Text('GLOBAL SPORTS',style:TextStyle(color:Colors.white,fontWeight:FontWeight.w800,fontSize:11)))]),const SizedBox(height:18),const Text('Sports, بطريقة AUREN',style:TextStyle(color:Colors.white,fontSize:26,fontWeight:FontWeight.w900)),const SizedBox(height:7),Text('المباراة، البطولة، الفريق واللاعب في تجربة واحدة.',style:TextStyle(color:Colors.white.withValues(alpha:.88),fontSize:14)),])),
-      const SizedBox(height: 14), Card(elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(22)),child: Padding(padding:const EdgeInsets.all(14),child: Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('استكشف الرياضة',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900)),const SizedBox(height:10), TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فريق، مباراة، دوري أو رياضة'), onChanged: (v) => setState(() => _query = v))),
-      const SizedBox(height: 10), SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: ['games','leagues','teams','standings','players','team_stats','game_details'].map((r) => Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: ChoiceChip(label: Text(r), selected: _resource == r, onSelected: (_) => setState(() => _resource = r))).toList()))), const SizedBox(height: 8), Row(children: [Expanded(child: TextField(decoration: const InputDecoration(labelText: 'Country'), onChanged: (v)=>_country=v)), const SizedBox(width: 8), Expanded(child: TextField(decoration: const InputDecoration(labelText: 'League ID'), onChanged: (v)=>_leagueId=v)), const SizedBox(width: 8), Expanded(child: TextField(decoration: const InputDecoration(labelText: 'Season'), onChanged: (v)=>_season=v))]), const SizedBox(height: 8), FilledButton.icon(onPressed: _loadingDirectory ? null : _loadDirectory, icon: _loadingDirectory ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.account_tree), label: const Text('استكشاف البطولات والفرق والترتيب واللاعبين')), if (_directory.isNotEmpty) ...[const SizedBox(height: 10), ..._directory.map((x)=>Card(elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(18)),child:ListTile(title:Text((x['name'] ?? x['title'] ?? '').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),subtitle:Text((x['country'] ?? '').toString()+' • '+(x['season'] ?? '').toString()+' • '+(x['source'] ?? '').toString()),trailing:const Icon(Icons.arrow_forward_ios,size:15),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenSportsDetailScreen(sport:_sport == 'الكل' ? 'football' : _sport.toLowerCase().replaceAll(' ', ''),resource:_resource,data:x))))))], const SizedBox(height: 10), SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: _sports.map((s) => Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: ChoiceChip(label: Text(s), selected: _sport == s, onSelected: (_) => setState(() => _sport = s)))).toList())),
-      const SizedBox(height: 8), SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:['games','leagues','teams','standings','players','team_stats','game_details'].map((r)=>Padding(padding:const EdgeInsetsDirectional.only(end:8),child:ChoiceChip(label:Text(r),selected:false,onSelected:(_){setState((){});}))).toList())), const SizedBox(height: 10), FilledButton.icon(onPressed: _loadingRemote ? null : _loadRemote, icon: _loadingRemote ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.cloud_download), label: const Text('جلب المباريات من المصدر الموثوق')), if (_remote.isNotEmpty) ...[const SizedBox(height:12), const Text('مباريات من المصدر الموثوق',style:TextStyle(fontWeight:FontWeight.w800)), ..._remote.map((x)=>Card(child:ListTile(title:Text(x['title']?.toString()??''),subtitle:Text('${x['league']??''} • ${x['date']??''} • ${x['source']??''}'),leading:const Icon(Icons.sports_soccer))))],
-      const SizedBox(height: 14), if (items.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد عناصر رياضية منشورة حالياً. عند إضافة بيانات رياضية إلى AUREN ستظهر هنا تلقائياً.'))) else ...items.map((item) => Card(child: ListTile(leading: item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.sports_soccer)) : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)), title: Text(item.title), subtitle: Text('${item.type} • ${item.description}', maxLines: 2, overflow: TextOverflow.ellipsis), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id))))))
-    )))]);
-  });
+  final repo = EntertainmentRepository();
+  final query = TextEditingController(), country = TextEditingController(), league = TextEditingController(), season = TextEditingController();
+  static const sports = ['الكل','Football','Basketball','Tennis','Cricket','Baseball','Hockey','Handball','Volleyball','Rugby','MMA','Formula 1','NFL'];
+  static const resources = {'games':'المباريات','leagues':'البطولات','teams':'الفرق','standings':'الترتيب','players':'اللاعبون','team_stats':'إحصائيات الفريق','game_details':'تفاصيل المباراة'};
+  String sport='الكل', resource='games';
+  bool loading=false;
+  List<Map<String,dynamic>> remote=[];
+  String get apiSport => sport=='الكل' ? 'football' : sport.toLowerCase().replaceAll(' ','');
+  @override void dispose(){query.dispose();country.dispose();league.dispose();season.dispose();super.dispose();}
+  Future<void> searchRemote() async {
+    setState(()=>loading=true);
+    try {
+      final r=await FirebaseFunctions.instance.httpsCallable('searchAurenSports').call({
+        'query':query.text.trim(),'sport':apiSport,'resource':resource,
+        'country':country.text.trim(),'leagueId':league.text.trim(),'season':season.text.trim(),
+      });
+      final d=Map<String,dynamic>.from(r.data as Map);
+      if(mounted)setState(()=>remote=List<Map<String,dynamic>>.from(d['results']??const []));
+      if(mounted&&d['status']=='not_configured'&&remote.isEmpty)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أضف مفاتيح مصادر الرياضة في Firebase Functions.')));
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر جلب بيانات الرياضة: $e')));}
+    finally{if(mounted)setState(()=>loading=false);}
+  }
+  @override Widget build(BuildContext context){
+    final cs=Theme.of(context).colorScheme;
+    return Scaffold(body:StreamBuilder<List<AurenEntertainmentItem>>(stream:repo.watchItems(),builder:(context,snapshot){
+      final q=query.text.trim().toLowerCase();
+      final published=(snapshot.data??const <AurenEntertainmentItem>[]).where((x){
+        final h=(x.title+' '+x.description+' '+x.type+' '+x.genres.join(' ')).toLowerCase();
+        final isSports=h.contains('sport')||h.contains('football')||h.contains('soccer')||h.contains('basketball')||h.contains('tennis')||h.contains('cricket');
+        return isSports&&(sport=='الكل'||h.contains(sport.toLowerCase()))&&(q.isEmpty||h.contains(q));
+      }).toList();
+      return CustomScrollView(slivers:[
+        SliverToBoxAdapter(child:_Hero(cs)),
+        SliverToBoxAdapter(child:_Explorer(query:query,country:country,league:league,season:season,sport:sport,resource:resource,loading:loading,onSport:(v){setState((){sport=v;remote=[];});},onResource:(v)=>setState(()=>resource=v),onSearch:searchRemote)),
+        if(remote.isNotEmpty)SliverToBoxAdapter(child:_Section(title:'من المصدر',icon:Icons.public,child:Column(children:remote.take(30).map((x)=>ListTile(
+          leading:CircleAvatar(backgroundColor:cs.primaryContainer,child:const Icon(Icons.sports)),
+          title:Text((x['title']??x['name']??'بيانات رياضية').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
+          subtitle:Text([x['league'],x['country'],x['date'],x['status'],x['source']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:2,overflow:TextOverflow.ellipsis),
+          trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenSportsDetailScreen(sport:apiSport,resource:resource,data:x))),
+        )).toList()))),
+        if(published.isNotEmpty)SliverToBoxAdapter(child:_Section(title:'داخل AUREN',icon:Icons.auto_awesome,child:Column(children:published.map((x)=>ListTile(
+          leading:x.imageUrl.isEmpty?const CircleAvatar(child:Icon(Icons.sports)):CircleAvatar(backgroundImage:NetworkImage(x.imageUrl)),
+          title:Text(x.title),subtitle:Text(x.type+' • '+x.description,maxLines:2,overflow:TextOverflow.ellipsis),
+          onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenEntertainmentDetailScreen(itemId:x.id))),
+        )).toList()))),
+        if(remote.isEmpty&&published.isEmpty)const SliverToBoxAdapter(child:Padding(padding:EdgeInsets.all(24),child:_Empty())),
+        const SliverToBoxAdapter(child:SizedBox(height:28)),
+      ]);
+    }));
+  }
 }
+class _Hero extends StatelessWidget{
+  final ColorScheme cs;const _Hero(this.cs);
+  @override Widget build(BuildContext context)=>Container(margin:const EdgeInsets.fromLTRB(16,16,16,10),padding:const EdgeInsets.all(22),decoration:BoxDecoration(borderRadius:BorderRadius.circular(30),gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:[cs.primary,cs.secondary])),child:const Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+    Icon(Icons.sports_score,color:Colors.white,size:34),SizedBox(height:18),
+    Text('كل الرياضة في مكان واحد',style:TextStyle(color:Colors.white,fontSize:27,fontWeight:FontWeight.w900)),SizedBox(height:7),
+    Text('مباريات • بطولات • فرق • لاعبين • ترتيب • إحصائيات',style:TextStyle(color:Colors.white70,fontSize:14)),
+  ]));
+}
+class _Explorer extends StatelessWidget{
+  final TextEditingController query,country,league,season;final String sport,resource;final bool loading;final ValueChanged<String> onSport,onResource;final Future<void> Function() onSearch;
+  const _Explorer({required this.query,required this.country,required this.league,required this.season,required this.sport,required this.resource,required this.loading,required this.onSport,required this.onResource,required this.onSearch});
+  @override Widget build(BuildContext context)=>_Section(title:'استكشف',icon:Icons.explore_rounded,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+    TextField(controller:query,decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'فريق، لاعب، مباراة أو بطولة',border:OutlineInputBorder())),
+    const SizedBox(height:12),const Text('الرياضة',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:8),
+    _chips(sports,sport,onSport),const SizedBox(height:14),const Text('المحتوى',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:8),
+    _chips(resources.keys.toList(),resource,onResource,resources),const SizedBox(height:12),
+    Row(children:[Expanded(child:_field(country,'الدولة')),const SizedBox(width:8),Expanded(child:_field(league,'League ID')),const SizedBox(width:8),Expanded(child:_field(season,'الموسم'))]),const SizedBox(height:14),
+    SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:loading?null:onSearch,icon:loading?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.public),label:Text(loading?'جاري البحث…':'ابحث في المصادر'))),
+  ]));
+  Widget _chips(List<String> values,String selected,ValueChanged<String> tap,[Map<String,String>? labels])=>SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:values.map((v)=>Padding(padding:const EdgeInsetsDirectional.only(end:8),child:ChoiceChip(label:Text(labels?[v]??v),selected:selected==v,onSelected:(_)=>tap(v)))).toList()));
+  Widget _field(TextEditingController c,String label)=>TextField(controller:c,decoration:InputDecoration(labelText:label,border:const OutlineInputBorder()));
+}
+class _Section extends StatelessWidget{
+  final String title;final IconData icon;final Widget child;const _Section({required this.title,required this.icon,required this.child});
+  @override Widget build(BuildContext context)=>Card(margin:const EdgeInsets.fromLTRB(16,8,16,8),elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(24)),child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Row(children:[Icon(icon),const SizedBox(width:8),Text(title,style:const TextStyle(fontSize:19,fontWeight:FontWeight.w900))]),const SizedBox(height:12),child])));
+}
+class _Empty extends StatelessWidget{const _Empty();@override Widget build(BuildContext context)=>Card(elevation:0,child:Padding(padding:const EdgeInsets.all(24),child:Column(children:[Icon(Icons.sports_score,size:44,color:Theme.of(context).colorScheme.primary),const SizedBox(height:12),const Text('ابدأ بالبحث عن رياضة أو فريق أو بطولة.',textAlign:TextAlign.center,style:TextStyle(fontWeight:FontWeight.w700))])));}
