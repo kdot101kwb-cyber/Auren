@@ -3749,6 +3749,7 @@ Object.assign(module.exports, require('./gaez_global_data'));
 
 // Education gamification handlers.
 Object.assign(module.exports, require('./education_gamification'));
+Object.assign(module.exports, require('./education_progress'));
 
 
 // Production Worker lifecycle controls.
