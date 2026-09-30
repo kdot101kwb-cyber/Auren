@@ -102,6 +102,16 @@ exports.aurenAgriAgricultureDashboard = onCall(async (request) => {
     limit: p.limit
   });
 
+  const gaezSnap = await db.collection('auren_gaez_v5_crop_summary_rows')
+    .where('cropKey', '==', crop.toLowerCase())
+    .limit(100)
+    .get()
+    .catch(() => ({docs:[]}));
+  const gaezRows = gaezSnap.docs.map(d => d.data() || {}).filter(r =>
+    !iso3 || String(r.countryKey || '').toUpperCase() === iso3
+  );
+  const gaezEvidence = gaezRows.map(r => r.row || {}).filter(r => Object.keys(r).length).slice(0, 20);
+
   const producerSnap = await db.collection('auren_agri_producer_prices')
     .where('item', '==', crop)
     .limit(60)
@@ -123,11 +133,18 @@ exports.aurenAgriAgricultureDashboard = onCall(async (request) => {
     iso3: iso3 || null,
     country: country || null,
     globalLocalMarket: snapshot,
+    gaez: {
+      status: gaezRows.length ? 'ok' : 'no_data',
+      source: 'FAO GAEZ v5 Crop Summary Data',
+      rows: gaezRows.length,
+      countriesCovered: new Set(gaezRows.map(r => String(r.countryKey || '').toUpperCase()).filter(Boolean)).size,
+      evidence: gaezEvidence
+    },
     producer: {
       latest: latestProducer,
       source: latestProducer?.source || 'FAOSTAT'
     },
-    sources: ['FAO GIEWS FPMA', 'FAOSTAT Agricultural Producer Prices'],
+    sources: ['FAO GAEZ v5 Crop Summary Data', 'FAO GIEWS FPMA', 'FAOSTAT Agricultural Producer Prices'],
     readiness: {
       globalAggregation: true,
       dashboardApi: true,
