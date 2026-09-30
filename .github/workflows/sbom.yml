@@ -1,0 +1,41 @@
+name: AUREN SBOM
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'pubspec.lock'
+      - 'functions/package-lock.json'
+      - 'backend/**'
+      - '.github/workflows/sbom.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbom-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: auren-sbom.spdx.json
+          artifact-name: auren-sbom.spdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-sbom
+          path: auren-sbom.spdx.json
+          retention-days: 30
