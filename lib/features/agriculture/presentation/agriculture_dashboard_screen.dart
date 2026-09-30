@@ -18,6 +18,7 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
   Map<String, dynamic>? backtest;
   Map<String, dynamic>? forecastBundle;
   List<AgricultureNormalizedLocalMarketPrice>? normalizedPrices;
+  Map<String, dynamic>? costEvidenceStatus;
   Object? error;
   bool loading = false;
 
@@ -37,6 +38,15 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
       } catch (_) {
         normalized = null;
       }
+      Map<String, dynamic>? costStatus;
+      if (iso3.isNotEmpty) {
+        try {
+          costStatus = await _productionService.costEvidenceStatus(iso3: iso3, item: crop);
+        } catch (_) {
+          costStatus = null;
+        }
+      }
+
       Map<String, dynamic>? forecasted;
       Map<String, dynamic>? evaluated;
       try {
@@ -49,7 +59,7 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
       } catch (_) {
         evaluated = null;
       }
-      if (mounted) setState(() { data = result; normalizedPrices = normalized; forecastBundle = forecasted; backtest = evaluated; loading = false; });
+      if (mounted) setState(() { data = result; normalizedPrices = normalized; costEvidenceStatus = costStatus; forecastBundle = forecasted; backtest = evaluated; loading = false; });
     } catch (e) {
       if (mounted) setState(() { error = e; loading = false; });
     }
@@ -94,6 +104,8 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
             ]),
             const SizedBox(height: 14),
             _normalizedPriceCard(context),
+            const SizedBox(height: 10),
+            _costEvidenceCard(context),
             const SizedBox(height: 10),
             Card(child: ListTile(leading: const Icon(Icons.agriculture_outlined), title: const Text('Latest producer price'), subtitle: Text(latest.isEmpty ? 'No cached FAOSTAT producer observation yet.' : '${latest['priceUSDTonne'] ?? '—'} USD/tonne • ${latest['date'] ?? ''}'))),
             const SizedBox(height: 10),
@@ -152,6 +164,68 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
             )),
           ],
         ]),
+      ),
+    );
+  }
+  Widget _costEvidenceCard(BuildContext context) {
+    final raw = costEvidenceStatus;
+    if (raw == null) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.fact_check_outlined),
+          title: Text('OPEX cost evidence'),
+          subtitle: Text('Enter a country ISO3 to validate the latest crop OPEX evidence.'),
+        ),
+      );
+    }
+
+    final status = '${raw['status'] ?? 'missing'}';
+    final normalized = status == 'ready';
+    final missing = raw['missingFields'] is List
+        ? List<dynamic>.from(raw['missingFields'] as List)
+        : const <dynamic>[];
+    final latest = raw['latestOpex'] is Map
+        ? Map<String, dynamic>.from(raw['latestOpex'] as Map)
+        : const <String, dynamic>{};
+
+    final label = switch (status) {
+      'ready' => 'Ready',
+      'incomplete' => 'Incomplete',
+      'no_opex' => 'Missing OPEX',
+      _ => 'Missing',
+    };
+
+    final detail = normalized
+        ? 'Latest OPEX evidence has the fields required for USD/tonne normalization.'
+        : status == 'incomplete'
+            ? 'Missing: ${missing.join(', ')}.'
+            : 'No usable OPEX evidence is stored for this country/crop.';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(normalized ? Icons.verified_outlined : Icons.warning_amber_outlined),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('OPEX cost evidence', style: TextStyle(fontWeight: FontWeight.bold))),
+              Text(label),
+            ]),
+            const SizedBox(height: 6),
+            Text(detail),
+            if (latest.isNotEmpty) ...[
+              const Divider(height: 18),
+              Text('${latest['value'] ?? '—'} ${latest['currency'] ?? ''} / ${latest['unit'] ?? ''}'),
+              const SizedBox(height: 3),
+              Text(
+                '${latest['source'] ?? 'Source not recorded'} • ${latest['observedAt'] ?? 'Date not recorded'}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
