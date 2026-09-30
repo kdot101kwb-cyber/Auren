@@ -34,13 +34,22 @@ async function fetchGlobalCommodity(item) {
 }
 
 async function readLocalPrices({country, state, city, commodity, limit}) {
-  let query = db.collection('agri_local_market_prices').orderBy('updatedAt', 'desc').limit(Math.min(limit * 4, 200));
-  if (country) query = query.where('countryCode', '==', country.toUpperCase());
-  if (state) query = query.where('stateKey', '==', state.toLowerCase());
-  if (city) query = query.where('cityKey', '==', city.toLowerCase());
-  if (commodity) query = query.where('commodityKey', '==', commodity.toLowerCase());
+  // Keep the Firestore query index-friendly: country + updatedAt is the only
+  // composite query. Narrow state/city/commodity after reading the recent rows.
+  let query = db.collection('agri_local_market_prices')
+    .where('countryCode', '==', country.toUpperCase())
+    .orderBy('updatedAt', 'desc')
+    .limit(Math.min(Math.max(limit * 8, 50), 400));
   const snap = await query.get();
-  return snap.docs.slice(0, limit).map((doc) => {
+  const wantedState = state.toLowerCase();
+  const wantedCity = city.toLowerCase();
+  const wantedCommodity = commodity.toLowerCase();
+  return snap.docs.filter((doc) => {
+    const d = doc.data() || {};
+    return (!wantedState || d.stateKey === wantedState)
+      && (!wantedCity || d.cityKey === wantedCity)
+      && (!wantedCommodity || d.commodityKey === wantedCommodity);
+  }).slice(0, limit).map((doc) => {
     const d = doc.data() || {};
     return {
       id:doc.id, market:'local', country:d.country || country || '', countryCode:d.countryCode || '',
@@ -63,7 +72,9 @@ async function upsertGlobalPrices() {
     if (result.status !== 'fulfilled' || result.value.price == null) continue;
     const item = result.value;
     const ref = db.collection('agri_global_market_prices').doc(item.id);
+    const historyRef = db.collection('agri_market_price_history').doc();
     batch.set(ref, {...item, updatedAt:FieldValue.serverTimestamp()}, {merge:true});
+    batch.set(historyRef, {...item, observedAt:FieldValue.serverTimestamp()}, {merge:false});
     count++;
   }
   if (count) await batch.commit();
@@ -86,6 +97,7 @@ exports.aurenAgricultureMarketPrices = onCall(
     const global = globalSettled.filter((x) => x.status === 'fulfilled').map((x) => x.value);
     return {
       status:'ok', asOf:new Date().toISOString(), global, local,
+      priceHistory:{collection:'agri_market_price_history', retention:'append-only observations from scheduled refreshes'},
       localDataNote:local.length ? null : 'لا توجد أسعار محلية مستوردة لهذا الموقع حالياً.',
       sources:{global:'Omkar Commodity Price API', local:'AUREN local market price imports; source metadata is stored per record.'},
     };
