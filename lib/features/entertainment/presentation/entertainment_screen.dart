@@ -14,6 +14,7 @@ import 'watch_history_screen.dart';
 import 'watch_together_screen.dart';
 import 'auren_gaming_screen.dart';
 import 'auren_radio_screen.dart';
+import 'auren_tv_screen.dart';
 import 'auren_entertainment_create_screen.dart';
 import 'auren_ai_series_studio_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -38,7 +39,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.movie_filter_rounded, 'Movies', 'Global movies with smart discovery'),
     _EntertainmentAction(Icons.groups_rounded, 'Watch Together', 'Watch with friends in one room'),
     _EntertainmentAction(Icons.music_note_rounded, 'Music', 'Songs, playlists & AI music'),
-    _EntertainmentAction(Icons.live_tv_rounded, 'Live', 'Channels, live events & radio'),
+    _EntertainmentAction(Icons.live_tv_rounded, 'Live', 'Live events & radio'),
+    _EntertainmentAction(Icons.tv_rounded, 'TV', 'TV channels, IPTV & EPG'),
     _EntertainmentAction(Icons.sports_esports_rounded, 'Gaming', 'Games, challenges & social play'),
     _EntertainmentAction(Icons.auto_awesome_rounded, 'Create', 'Create music, stories & shows'),
     _EntertainmentAction(Icons.tv_rounded, 'AI Series', 'Build an original season with AI'),
@@ -389,6 +391,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()));
                   } else if (action.title == 'Live') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()));
+                  } else if (action.title == 'TV') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTvScreen()));
                   } else if (action.title == 'Create') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentCreateScreen()));
                   } else if (action.title == 'AI Series') {
