@@ -38,19 +38,35 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
     americanfootball:'nfl', formula1:'formula1'
   };
   const selectedApiSport=apiSportMap[sport]||'football';
+  const apiKeysBySport={
+    football:process.env.API_FOOTBALL_KEY,
+    basketball:process.env.API_BASKETBALL_KEY,
+    baseball:process.env.API_BASEBALL_KEY,
+    hockey:process.env.API_HOCKEY_KEY,
+    handball:process.env.API_HANDBALL_KEY,
+    volleyball:process.env.API_VOLLEYBALL_KEY,
+    rugby:process.env.API_RUGBY_KEY,
+    mma:process.env.API_MMA_KEY,
+    formula1:process.env.API_FORMULA1_KEY,
+    afl:process.env.API_AFL_KEY,
+    nfl:process.env.API_NFL_KEY,
+    tennis:process.env.API_TENNIS_KEY,
+    cricket:process.env.API_CRICKET_KEY
+  };
+  const selectedApiKey=String(apiKeysBySport[selectedApiSport]||apiKey||'').trim();
   const providers=[];
   const sourceUrls={
     'API-Sports':'https://api-sports.io/',
     'TheSportsDB':'https://www.thesportsdb.com/api.php'
   };
 
-  if(apiKey) {
+  if(selectedApiKey) {
     try {
       if(selectedApiSport==='football') {
         const url=new URL('https://v3.football.api-sports.io/fixtures');
         if(date) url.searchParams.set('date',date); else url.searchParams.set('next','20');
         if(q) url.searchParams.set('team',q);
-        const data=await fetchJson(url,{headers:{'x-apisports-key':apiKey}});
+        const data=await fetchJson(url,{headers:{'x-apisports-key':selectedApiKey}});
         providers.push(...mapFootball(data?.response,'API-Sports'));
       } else {
         const base='https://v1.'+selectedApiSport+'.api-sports.io/games';
