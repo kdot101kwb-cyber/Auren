@@ -2,6 +2,11 @@ name: AUREN CI Diagnostic
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ci-diagnostic.yml"
 
 permissions:
   contents: read
@@ -10,27 +15,35 @@ jobs:
   runner-smoke-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
     steps:
       - name: Runner started
         run: |
           echo "runner-started"
           uname -a
           pwd
+
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Node smoke test
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: |
+
+      - name: Verify Node and npm
+        run: |
           node --version
           npm --version
           echo "node-smoke-ok"
+
       - name: Flutter smoke test
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: false
-      - run: |
+
+      - name: Verify Flutter
+        run: |
           flutter --version
           echo "flutter-smoke-ok"
