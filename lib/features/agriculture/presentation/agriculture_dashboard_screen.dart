@@ -63,6 +63,9 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
             const SizedBox(height: 14),
             Card(child: ListTile(leading: const Icon(Icons.agriculture_outlined), title: const Text('Latest producer price'), subtitle: Text(latest.isEmpty ? 'No cached FAOSTAT producer observation yet.' : '${latest['priceUSDTonne'] ?? '—'} USD/tonne • ${latest['date'] ?? ''}'))),
             const SizedBox(height: 10),
+            _gaezCard(context, data?['gaez']),
+
+            const SizedBox(height: 10),
             Card(child: ListTile(leading: Icon(readiness['fpmaLiveFeedConfigured'] == true ? Icons.cloud_done_outlined : Icons.cloud_off_outlined), title: const Text('FPMA local-market feed'), subtitle: Text(readiness['fpmaLiveFeedConfigured'] == true ? 'Configured' : 'Adapter ready; official export URL still needs configuration.'))),
             const SizedBox(height: 16),
             Text('Countries covered', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
@@ -76,6 +79,22 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
               }),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _gaezCard(BuildContext context, dynamic raw) {
+    final g = raw is Map ? Map<String, dynamic>.from(raw) : const <String, dynamic>{};
+    final status = g['status'] ?? 'no_data';
+    final rows = g['rows'] ?? 0;
+    final countries = g['countriesCovered'] ?? 0;
+    return Card(
+      child: ListTile(
+        leading: Icon(status == 'ok' ? Icons.verified_outlined : Icons.landscape_outlined),
+        title: const Text('GAEZ v5 crop evidence'),
+        subtitle: Text(status == 'ok'
+            ? '$rows rows • $countries countries covered'
+            : 'No imported GAEZ v5 rows for this crop yet.'),
       ),
     );
   }
