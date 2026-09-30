@@ -23,6 +23,13 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   bool _heritageLoading = false;
   List<String> _heritageCountries = const [];
   String _heritageCountry = '';
+  String _heritageRegion = '';
+  String _heritageType = '';
+  String _heritageYear = '';
+  List<Map<String, dynamic>> _heritageRegions = const [];
+  List<String> _heritageTypes = const [];
+  List<String> _heritageYears = const [];
+  int _heritageTotal = 0;
 
   Future<void> _ensureLibrarySeeded() async {
     if (_seeding) return;
@@ -76,11 +83,15 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
     setState(() => _heritageLoading = true);
     try {
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
-          .httpsCallable('getAurenGlobalHeritageStories').call({'country': country ?? _heritageCountry, 'query': query ?? ''});
+          .httpsCallable('getAurenGlobalHeritageStories').call({'country': country ?? _heritageCountry, 'region': _heritageRegion, 'type': _heritageType, 'year': _heritageYear, 'query': query ?? ''});
       final data = Map<String, dynamic>.from(response.data as Map);
       final rows = (data['results'] as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
       final countries = (data['countries'] as List? ?? const []).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toSet().toList()..sort();
-      if (mounted) setState(() { _heritageStories = rows; _heritageCountries = countries; });
+      final regions = (data['regions'] as List? ?? const []).whereType<Map>().map((e) => Map<String,dynamic>.from(e)).toList();
+      final types = (data['types'] as List? ?? const []).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toSet().toList()..sort();
+      final years = rows.map((e) => e['year']?.toString() ?? '').where((e) => e.isNotEmpty).toSet().toList()..sort((a,b)=>b.compareTo(a));
+      final total = (data['total'] as num?)?.toInt() ?? rows.length;
+      if (mounted) setState(() { _heritageStories = rows; _heritageCountries = countries; _heritageRegions = regions; _heritageTypes = types; _heritageYears = years; _heritageTotal = total; });
     } catch (_) { if (mounted) setState(() => _heritageStories = const []); }
     finally { if (mounted) setState(() => _heritageLoading = false); }
   }
@@ -145,11 +156,14 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
               const Expanded(child:Text('Global Heritage • قصص الشعوب',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
               IconButton(tooltip:'تحديث',onPressed:_heritageLoading?null:()=>_loadHeritage(country:_heritageCountry),icon:const Icon(Icons.refresh_rounded)),
             ]),
-            if (_heritageCountries.isNotEmpty)
-              SizedBox(height:42,child:ListView.separated(scrollDirection:Axis.horizontal,itemCount:_heritageCountries.length+1,separatorBuilder:(_,__)=>const SizedBox(width:6),itemBuilder:(context,index){
-                final country=index==0?'':_heritageCountries[index-1];
-                return ChoiceChip(label:Text(country.isEmpty?'كل الدول':country),selected:_heritageCountry==country,onSelected:(_){setState(()=>_heritageCountry=country);_loadHeritage(country:country);});
-              })),
+            Padding(padding:const EdgeInsets.only(bottom:8),child:Text('$_heritageTotal records • القارات والدول واللغات والتقاليد',style:const TextStyle(fontSize:12))),
+            _heritageFilterRow('القارة / المنطقة', _heritageRegions.map((e)=>e['title']?.toString() ?? '').toList(), _heritageRegion, (value){ setState(()=>_heritageRegion=value); _loadHeritage(); }),
+            const SizedBox(height:6),
+            _heritageFilterRow('الدولة', ['كل الدول', ..._heritageCountries], _heritageCountry.isEmpty?'كل الدول':_heritageCountry, (value){ final v=value=='كل الدول'?'':value; setState(()=>_heritageCountry=v); _loadHeritage(country:v); }),
+            const SizedBox(height:6),
+            _heritageFilterRow('نوع التراث', ['كل الأنواع', ..._heritageTypes], _heritageType.isEmpty?'كل الأنواع':_heritageType, (value){ final v=value=='كل الأنواع'?'':value; setState(()=>_heritageType=v); _loadHeritage(); }),
+            const SizedBox(height:6),
+            _heritageFilterRow('السنة', ['كل السنوات', ..._heritageYears], _heritageYear.isEmpty?'كل السنوات':_heritageYear, (value){ final v=value=='كل السنوات'?'':value; setState(()=>_heritageYear=v); _loadHeritage(); }),
             const SizedBox(height:8),
             SizedBox(height:150,child:_heritageLoading?const Center(child:CircularProgressIndicator()):ListView.separated(scrollDirection:Axis.horizontal,itemCount:_heritageStories.length,separatorBuilder:(_,__)=>const SizedBox(width:10),itemBuilder:(context,index){
               final s=_heritageStories[index];
@@ -185,6 +199,18 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
       },
     ),
   );
+
+  Widget _heritageFilterRow(String label, List<String> values, String selected, ValueChanged<String> onSelected) {
+    final unique = values.where((v)=>v.trim().isNotEmpty).toSet().toList();
+    return Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Text(label,style:const TextStyle(fontSize:11,fontWeight:FontWeight.w700)),
+      const SizedBox(height:4),
+      SizedBox(height:38,child:ListView.separated(scrollDirection:Axis.horizontal,itemCount:unique.length,separatorBuilder:(_,__)=>const SizedBox(width:6),itemBuilder:(context,index){
+        final value=unique[index];
+        return ChoiceChip(label:Text(value,maxLines:1,overflow:TextOverflow.ellipsis),selected:selected==value,onSelected:(_)=>onSelected(value));
+      })),
+    ]);
+  }
 
   void _openGlobalResult(Map<String, dynamic> item) {
     final url = item['sourceUrl']?.toString() ?? '';
