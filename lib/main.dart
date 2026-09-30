@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'features/shell/presentation/auren_shell.dart';
 import 'features/tv/presentation/auren_tv_screen.dart';
 import 'features/entertainment/presentation/auren_sports_entertainment_screen.dart';
+import 'features/entertainment/presentation/auren_sports_detail_screen.dart';
 import 'services/tv/auren_tv_watch_together_service.dart';
 import 'services/offline/auren_offline_sync_service.dart';
 import 'services/notifications/auren_fcm_service.dart';
@@ -53,7 +54,15 @@ Future<void> main() async {
     if (data['type'] == 'goal' || data['type'] == 'kickoff' || data['type'] == 'red_card' || data['type'] == 'full_time') {
       final navigator = aurenNavigatorKey.currentState;
       if (navigator == null) return;
-      navigator.push(MaterialPageRoute(builder: (_) => const AurenSportsEntertainmentScreen()));
+      final fixtureId = String(data['fixtureId'] ?? '').trim();
+      if (fixtureId.isNotEmpty) {
+        navigator.push(MaterialPageRoute(builder: (_) => AurenSportsDetailScreen(
+          sport: 'football', resource: 'game_details',
+          data: {'fixtureId': fixtureId, 'id': fixtureId},
+        )));
+      } else {
+        navigator.push(MaterialPageRoute(builder: (_) => const AurenSportsEntertainmentScreen()));
+      }
     }
   });
   WidgetsBinding.instance.addPostFrameCallback((_) {
