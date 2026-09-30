@@ -3756,3 +3756,4 @@ exports.recordAurenProductionOutput = productionLifecycle.recordAurenProductionO
 Object.assign(module.exports, require('./gaez_v5_ingest_scheduler'));
 
 Object.assign(module.exports, require('./supplier_requests'));
+Object.assign(module.exports, require('./agriculture_market_prices'));
