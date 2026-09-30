@@ -1,0 +1,33 @@
+name: AUREN Dependency Review
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '**/package.json'
+      - '**/package-lock.json'
+      - '.github/workflows/**'
+      - '.github/dependabot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-review-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
