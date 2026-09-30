@@ -1,6 +1,6 @@
 const {onCall,HttpsError}=require('firebase-functions/v2/https');
 
-const clean=(v,max=1200)=>String(v??'').replace(/\\s+/g,' ').trim().slice(0,max);
+const clean=(v,max=1200)=>String(v??'').replace(/\s+/g,' ').trim().slice(0,max);
 const curated=[
   ['مجلة ماجد','مجلة أطفال','الإمارات العربية المتحدة','أبوظبي للإعلام / مؤسسة الاتحاد للصحافة والنشر','العربية','https://www.majid.ae/'],
   ['مجلة ميكي','مجلة أطفال وكوميكس','مصر','دار الهلال','العربية','https://www.daralhilal.com.eg/'],
