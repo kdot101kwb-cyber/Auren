@@ -10,7 +10,7 @@ class AurenSportsEntertainmentScreen extends StatefulWidget {
 }
 class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmentScreen> {
   final _repo = EntertainmentRepository(); String _query = ''; String _sport = 'الكل';
-  static const _sports = ['الكل', 'Football', 'Basketball', 'Tennis', 'Cricket', 'Other'];
+  static const _sports = ['الكل', 'Football', 'Basketball', 'Tennis', 'Cricket', 'Baseball', 'Hockey', 'Handball', 'Volleyball', 'Rugby', 'MMA', 'Formula 1', 'NFL', 'Other'];
   Future<void> _loadRemote() async { setState(() => _loadingRemote = true); try { final r = await FirebaseFunctions.instance.httpsCallable('searchAurenSports').call({'query': _query}); final data = Map<String,dynamic>.from(r.data as Map); if (data['status'] == 'ok') setState(() => _remote = List<Map<String,dynamic>>.from(data['results'] ?? const [])); if (data['status'] == 'not_configured' && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مصدر الرياضة يحتاج API key في Firebase Functions.'))); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر جلب الرياضة: $e'))); } finally { if (mounted) setState(() => _loadingRemote = false); } }
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('AUREN Sports')), body: StreamBuilder<List<AurenEntertainmentItem>>(stream: _repo.watchItems(), builder: (context, snapshot) {
     if (snapshot.hasError) return Center(child: Text('تعذر تحميل الرياضة: '+snapshot.error.toString()));
