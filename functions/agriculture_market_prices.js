@@ -34,12 +34,11 @@ async function fetchGlobalCommodity(item) {
 }
 
 async function readLocalPrices({country, state, city, commodity, limit}) {
-  // Keep the Firestore query index-friendly: country + updatedAt is the only
-  // composite query. Narrow state/city/commodity after reading the recent rows.
-  let query = db.collection('agri_local_market_prices')
-    .where('countryCode', '==', country.toUpperCase())
-    .orderBy('updatedAt', 'desc')
-    .limit(Math.min(Math.max(limit * 8, 50), 400));
+  // Country is optional: ALL returns the latest sourced rows across countries.
+  // State/city/commodity remain in-memory filters so one global index serves the browse screen.
+  let query = db.collection('agri_local_market_prices').orderBy('updatedAt', 'desc')
+    .limit(country === 'ALL' ? 1000 : Math.min(Math.max(limit * 8, 50), 400));
+  if (country !== 'ALL') query = query.where('countryCode', '==', country.toUpperCase());
   const snap = await query.get();
   const wantedState = state.toLowerCase();
   const wantedCity = city.toLowerCase();
@@ -85,8 +84,8 @@ exports.aurenAgricultureMarketPrices = onCall(
   {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     if (!request.auth?.uid) throw new Error('Authentication is required.');
-    const country = String(request.data?.country || 'SDN').trim().toUpperCase().slice(0, 3);
-    if (!/^[A-Z]{3}$/.test(country)) throw new Error('country must be a valid ISO3 code.');
+    const country = String(request.data?.country || 'ALL').trim().toUpperCase();
+    if (country !== 'ALL' && !/^[A-Z]{3}$/.test(country)) throw new Error('country must be a valid ISO3 code or ALL.');
     const state = String(request.data?.state || '').trim().slice(0, 100);
     const city = String(request.data?.city || '').trim().slice(0, 100);
     const commodity = String(request.data?.commodity || '').trim().slice(0, 100);
@@ -97,7 +96,7 @@ exports.aurenAgricultureMarketPrices = onCall(
     ]);
     const global = globalSettled.filter((x) => x.status === 'fulfilled').map((x) => x.value);
     return {
-      status:'ok', asOf:new Date().toISOString(), global, local,
+      status:'ok', asOf:new Date().toISOString(), country, global, local,
       priceHistory:{collection:'agri_market_price_history', retention:'append-only observations from scheduled refreshes'},
       localDataNote:local.length ? null : 'لا توجد أسعار محلية مستوردة لهذا الموقع حالياً.',
       sources:{global:'Omkar Commodity Price API', local:'AUREN local market price imports; source metadata is stored per record.'},
