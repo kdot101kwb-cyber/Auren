@@ -55,7 +55,7 @@ class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmen
         return isSports&&(sport=='الكل'||h.contains(sport.toLowerCase()))&&(q.isEmpty||h.contains(q));
       }).toList();
       return CustomScrollView(slivers:[
-        SliverToBoxAdapter(child:_Hero(cs,onLive:loadLive,liveLoading:liveLoading)),
+        SliverToBoxAdapter(child:_Hero(cs,onLive:loadLive,liveLoading:liveLoading,onFollowing:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const _SportsFollowingInline())))),
         if(live.isNotEmpty)SliverToBoxAdapter(child:_Section(title:'مباشر الآن',icon:Icons.circle,child:Column(children:live.take(30).map((x)=>ListTile(
           leading:const CircleAvatar(child:Icon(Icons.sports_score)),
           title:Text((x['title']??'مباراة مباشرة').toString(),style:const TextStyle(fontWeight:FontWeight.w900)),
@@ -82,8 +82,8 @@ class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmen
   }
 }
 class _Hero extends StatelessWidget{
-  final ColorScheme cs;final Future<void> Function() onLive;final bool liveLoading;
-  const _Hero(this.cs,{required this.onLive,required this.liveLoading});
+  final ColorScheme cs;final Future<void> Function() onLive;final bool liveLoading;final VoidCallback onFollowing;
+  const _Hero(this.cs,{required this.onLive,required this.liveLoading,required this.onFollowing});
   @override Widget build(BuildContext context)=>Container(margin:const EdgeInsets.fromLTRB(16,16,16,10),padding:const EdgeInsets.all(22),decoration:BoxDecoration(borderRadius:BorderRadius.circular(30),gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:[cs.primary,cs.secondary])),child:const Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     Icon(Icons.sports_score,color:Colors.white,size:34),SizedBox(height:18),
     Text('كل الرياضة في مكان واحد',style:TextStyle(color:Colors.white,fontSize:27,fontWeight:FontWeight.w900)),SizedBox(height:7),
@@ -117,3 +117,6 @@ class _Section extends StatelessWidget{
   @override Widget build(BuildContext context)=>Card(margin:const EdgeInsets.fromLTRB(16,8,16,8),elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(24)),child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Row(children:[Icon(icon),const SizedBox(width:8),Text(title,style:const TextStyle(fontSize:19,fontWeight:FontWeight.w900))]),const SizedBox(height:12),child])));
 }
 class _Empty extends StatelessWidget{const _Empty();@override Widget build(BuildContext context)=>Card(elevation:0,child:Padding(padding:const EdgeInsets.all(24),child:Column(children:[Icon(Icons.sports_score,size:44,color:Theme.of(context).colorScheme.primary),const SizedBox(height:12),const Text('ابدأ بالبحث عن رياضة أو فريق أو بطولة.',textAlign:TextAlign.center,style:TextStyle(fontWeight:FontWeight.w700))])));}
+
+class _SportsFollowingInline extends StatefulWidget{const _SportsFollowingInline();@override State<_SportsFollowingInline> createState()=>_SportsFollowingInlineState();}
+class _SportsFollowingInlineState extends State<_SportsFollowingInline>{bool loading=true;List<Map<String,dynamic>> teams=[];List<Map<String,dynamic>> alerts=[];@override void initState(){super.initState();_load();}Future<void> _load()async{setState(()=>loading=true);try{final f=FirebaseFunctions.instance;final a=await Future.wait([f.httpsCallable('getAurenSportsFollowing').call(),f.httpsCallable('getAurenSportsAlerts').call()]);final t=Map<String,dynamic>.from(a[0].data as Map);final n=Map<String,dynamic>.from(a[1].data as Map);if(mounted)setState(()=>{teams=List<Map<String,dynamic>>.from(t['results']??const[]),alerts=List<Map<String,dynamic>>.from(n['alerts']??const[]),loading=false});}catch(e){if(mounted){setState(()=>loading=false);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحميل رياضتي: $e')));}}}Future<void> _read(String id)async{try{await FirebaseFunctions.instance.httpsCallable('markAurenSportsAlertRead').call({'alertId':id});await _load();}catch(_){}}@override Widget build(BuildContext context){return Scaffold(appBar:AppBar(title:const Text('رياضتي'),actions:[IconButton(onPressed:_load,icon:const Icon(Icons.refresh))]),body:loading?const Center(child:CircularProgressIndicator()):RefreshIndicator(onRefresh:_load,child:ListView(padding:const EdgeInsets.all(16),children:[Card(child:ListTile(leading:const Icon(Icons.favorite_rounded),title:Text('الفرق التي أتابعها'),subtitle:Text(teams.isEmpty?'لم تتابع أي فريق بعد.':teams.map((e)=>(e['name']??'فريق').toString()).join(' • '))),),const SizedBox(height:12),Card(child:Column(children:[const ListTile(leading:Icon(Icons.notifications_active),title:Text('التنبيهات الرياضية')),if(alerts.isEmpty)const Padding(padding:EdgeInsets.all(16),child:Text('لا توجد تنبيهات بعد.')),for(final a in alerts)ListTile(title:Text((a['title']??'تنبيه رياضي').toString(),style:TextStyle(fontWeight:a['read']==true?FontWeight.w600:FontWeight.w900)),subtitle:Text((a['body']??'').toString()),leading:Icon(a['read']==true?Icons.notifications_none:Icons.notifications_active),onTap:a['read']==true?null:()=>_read((a['id']??'').toString()))]))]));}}
