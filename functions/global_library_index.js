@@ -221,6 +221,41 @@ exports.getAurenGlobalHeritageStories = onCall(
   },
 );
 
+
+const GLOBAL_HERITAGE_STORY_DETAILS = {
+  sudan_folklore:{stories:[{title:'حكايات شعبية سودانية',summary:'مدخل لفهرسة الحكايات الشعبية والرواية الشفوية السودانية حسب المجتمع واللغة والمنطقة.',languages:['Arabic','Nubian','Beja'],regions:['Sudan']}],characters:[],variants:[],sources:['UNESCO Intangible Cultural Heritage']},
+  egypt_hilali:{stories:[{title:'السيرة الهلالية',summary:'ملحمة شعبية تتناقلها الأجيال عبر السرد والغناء والأداء، وتدور حول سيرة بني هلال ورحلتهم.',languages:['Arabic'],regions:['Egypt','North Africa']}],characters:['أبو زيد الهلالي','الجازية الهلالية'],variants:['روايات وأداءات محلية متعددة'],sources:['UNESCO Intangible Cultural Heritage']},
+  china_yimakan:{stories:[{title:'Yimakan',summary:'سرد شفهي لدى شعب Hezhen يجمع الحكاية والغناء ويحفظ الذاكرة الجماعية.',languages:['Hezhen'],regions:['China']}],characters:[],variants:['روايات شفهية متعددة'],sources:['UNESCO Intangible Cultural Heritage']},
+  morocco_jemaa:{stories:[{title:'حكايات جامع الفنا',summary:'مدخل لاكتشاف تقاليد الحكواتي والرواة والأداءات الشفوية في ساحة جامع الفنا بمراكش.',languages:['Arabic','Amazigh'],regions:['Morocco']}],characters:[],variants:['روايات وأداءات محلية متعددة'],sources:['UNESCO Intangible Cultural Heritage']},
+  palestine_hikaye:{stories:[{title:'الحكواتي الفلسطيني',summary:'تقليد سردي نسائي ينقل القصص والقيم والذاكرة الاجتماعية عبر الأجيال.',languages:['Arabic'],regions:['State of Palestine']}],characters:[],variants:['روايات عائلية ومحلية متعددة'],sources:['UNESCO Intangible Cultural Heritage']},
+  philippines_hudhud:{stories:[{title:'Hudhud',summary:'أناشيد شفوية تروي أبطالاً وأسلافاً وقوانين وعادات ومعتقدات تقليدية لدى Ifugao.',languages:['Ifugao'],regions:['Philippines']}],characters:[],variants:['أداءات وروايات شفوية متعددة'],sources:['UNESCO Intangible Cultural Heritage']},
+  indonesia_wayang:{stories:[{title:'Wayang',summary:'مسرح دمى تقليدي يروي قصصاً وشخصيات عبر الأداء والموسيقى والسرد.',languages:['Javanese','Sundanese','Indonesian'],regions:['Indonesia']}],characters:['شخصيات Wayang المحلية'],variants:['تقاليد Java وSunda وغيرها'],sources:['UNESCO Intangible Cultural Heritage']},
+  japan_kabuki:{stories:[{title:'Kabuki',summary:'مسرح تقليدي ياباني يعتمد على السرد والأداء والموسيقى والحركة والشخصيات.',languages:['Japanese'],regions:['Japan']}],characters:[],variants:['مدارس وأساليب أداء متعددة'],sources:['UNESCO Intangible Cultural Heritage']},
+};
+
+exports.getAurenGlobalHeritageStoryDetail = onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
+    const id = clean(request.data?.id, 120).replace(/^heritage_/, '');
+    if (!id) throw new HttpsError('invalid-argument', 'Heritage story id is required.');
+    const detail = GLOBAL_HERITAGE_STORY_DETAILS[id];
+    const base = GLOBAL_HERITAGE_STORIES.find((x) => x.id === id);
+    if (!detail && !base) throw new HttpsError('not-found', 'Heritage story was not found.');
+    return {
+      status:'ok',
+      story: base ? result({id:'heritage_' + base.id,title:base.title,kind:base.kind,description:base.description,year:base.year,language:base.language,country:base.country,source:'UNESCO Intangible Cultural Heritage / AUREN Heritage Index',sourceUrl:base.sourceUrl,externalId:base.id}) : null,
+      stories:detail?.stories || [],
+      characters:detail?.characters || [],
+      variants:detail?.variants || [],
+      languages:detail?.languages || [],
+      regions:detail?.regions || [],
+      sources:detail?.sources || [],
+      note:'Indexed cultural record; copyrighted text and recordings are not reproduced without permission.',
+    };
+  },
+);
+
 exports.getAurenGlobalLibrarySubjects = onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
