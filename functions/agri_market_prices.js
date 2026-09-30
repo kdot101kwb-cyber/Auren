@@ -279,6 +279,17 @@ exports.aurenAgriLocalMarketPriceStatus = onCall(async (request) => {
 // FX is sourced only from FAOSTAT-provided observations when the caller supplies
 // an official machine-readable export URL. No third-party FX provider is used.
 const FAOSTAT_FX_DATA_URL = process.env.FAOSTAT_FX_DATA_URL || '';
+// The official FAOSTAT API supports machine-readable JSON/CSV access.
+// Keep the endpoint configurable because the API portal can change query/resource routes.
+const FAOSTAT_FX_API_URL = process.env.FAOSTAT_FX_API_URL || '';
+function officialFaostatApiUrl(value) {
+  const u = new URL(value);
+  const allowed = new Set(['fenixservices.fao.org','faostat.fao.org','api.fao.org','api.data.apps.fao.org','data.apps.fao.org','api-digital.apps.fao.org']);
+  if (!['https:','http:'].includes(u.protocol) || !allowed.has(u.hostname)) {
+    throw new Error('Only official FAOSTAT API resources are allowed for FX.');
+  }
+  return u;
+}
 
 function officialFaostatFxUrl(value) {
   const u = new URL(value);
@@ -303,8 +314,9 @@ function normalizeFxRow(row) {
 }
 
 async function fetchFaostatFxRows() {
-  if (!FAOSTAT_FX_DATA_URL) throw new Error('FAOSTAT_FX_DATA_URL is not configured.');
-  const url=officialFaostatFxUrl(FAOSTAT_FX_DATA_URL);
+  const configuredUrl = FAOSTAT_FX_DATA_URL || FAOSTAT_FX_API_URL;
+  if (!configuredUrl) throw new Error('FAOSTAT_FX_DATA_URL or FAOSTAT_FX_API_URL is not configured.');
+  const url = FAOSTAT_FX_DATA_URL ? officialFaostatFxUrl(FAOSTAT_FX_DATA_URL) : officialFaostatApiUrl(FAOSTAT_FX_API_URL);
   const res=await fetch(url,{headers:{accept:'text/csv,application/json,text/plain'},signal:AbortSignal.timeout(60000)});
   const body=await res.text();
   if(!res.ok) throw new Error('FAOSTAT FX request failed: '+res.status);
@@ -317,7 +329,7 @@ async function fetchFaostatFxRows() {
 
 exports.aurenAgriFxStatus = onCall(async (request)=>{
   if(!request.auth?.uid) throw new Error('Authentication is required.');
-  return {source:'FAOSTAT Exchange Rates',configured:Boolean(FAOSTAT_FX_DATA_URL),cached:!(await db.collection('auren_agri_fx_rates').limit(1).get()).empty};
+  return {source:'FAOSTAT Exchange Rates',configured:Boolean(FAOSTAT_FX_DATA_URL || FAOSTAT_FX_API_URL),cached:!(await db.collection('auren_agri_fx_rates').limit(1).get()).empty};
 });
 
 exports.aurenAgriFxIngest = onCall(async (request)=>{
