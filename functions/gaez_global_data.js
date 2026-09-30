@@ -44,11 +44,24 @@ exports.aurenGaezCatalog = onCall(async (request) => {
 
 async function getJson(url) {
   const res = await fetch(url, {
-    headers:{accept:'application/json'},
-    signal:AbortSignal.timeout(30000)
+    headers:{accept:'application/json,text/csv,text/plain'},
+    signal:AbortSignal.timeout(60000)
   });
+  const body = await res.text();
   if (!res.ok) throw new Error('GAEZ request failed: ' + res.status);
-  return res.json();
+  const contentType = String(res.headers.get('content-type') || '');
+  if (/json/i.test(contentType)) return JSON.parse(body);
+  return parseCsv(body);
+}
+
+function buildGaezCropSummaryUrl(filters = {}) {
+  const parsed = assertOfficialFaoResource(GAEZ_V5_CROP_SUMMARY_URL);
+  for (const key of ['country','crop','climateSource','ssp','period','waterSupply','management']) {
+    if (filters[key] !== undefined && filters[key] !== null && String(filters[key]).trim() !== '') {
+      parsed.searchParams.set(key, String(filters[key]).trim());
+    }
+  }
+  return parsed.toString();
 }
 
 exports.aurenGaezV5HealthCheck = onCall(async (request) => {
