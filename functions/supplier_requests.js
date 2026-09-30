@@ -90,6 +90,43 @@ exports.cancelAurenSupplierRequest = onCall(
   }
 );
 
+
+exports.updateAurenSupplierRequestStatus = onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = requireAuth(request);
+    const requestId = clean(request.data?.requestId, 128);
+    const type = clean(request.data?.type, 20).toLowerCase();
+    const nextStatus = clean(request.data?.status, 40).toLowerCase();
+    const allowed = new Set(['draft','waiting_response','replied','completed','failed','cancelled']);
+    if (!requestId || !['contact','rfq'].includes(type) || !allowed.has(nextStatus)) {
+      throw new HttpsError('invalid-argument','requestId, type and a valid status are required.');
+    }
+    const ref = db.collection('users').doc(uid).collection(collectionFor(type)).doc(requestId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
+    const data = snap.data() || {};
+    if (nextStatus === 'replied' && data.externalDispatch !== true) {
+      throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as replied.');
+    }
+    const update = {
+      status: nextStatus,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      ...(nextStatus === 'replied' ? {repliedAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
+      ...(nextStatus === 'completed' ? {completedAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
+    };
+    await db.runTransaction(async tx => {
+      tx.set(ref, update, {merge:true});
+      tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
+    });
+    await updateMatchFlow(uid, data.matchFlowId, nextStatus, {
+      supplierRequestId: requestId,
+      supplierRequestType: type,
+    });
+    return {ok:true,id:requestId,type,status:nextStatus};
+  }
+);
+
 exports.retryAurenSupplierRequest = onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
