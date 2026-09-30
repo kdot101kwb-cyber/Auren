@@ -2368,6 +2368,26 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /users/{userId}/educationXpEvents/{eventId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /users/{userId}/educationGamification/{docId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /users/{userId}/educationDailyActivity/{day} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /educationLeaderboards/{week}/users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     match /users/{userId}/education_enrollments/{courseId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)

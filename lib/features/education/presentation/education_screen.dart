@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/education/education_repository.dart';
 import '../../../core/models/education.dart';
+import '../../../services/education/education_gamification_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
@@ -9,7 +10,9 @@ class AurenAURENEducationScreen extends StatefulWidget {
   @override State<AurenAURENEducationScreen> createState()=>_EducationState();
 }
 class _EducationState extends State<AurenAURENEducationScreen>{
-  final repo=EducationRepository(); String query=''; String? category;
+  final repo=EducationRepository();
+  final gamification=EducationGamificationService();
+  String query=''; String? category;
   @override Widget build(BuildContext context){
     final uid=FirebaseAuth.instance.currentUser?.uid;
     if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول عشان تستخدم التعلم.')));
@@ -20,6 +23,46 @@ class _EducationState extends State<AurenAURENEducationScreen>{
       return ListView(padding:const EdgeInsets.all(16),children:[
         const ListTile(contentPadding:EdgeInsets.zero,leading:Icon(Icons.school,size:34),title:Text('Learn with AUREN',style:TextStyle(fontSize:22,fontWeight:FontWeight.bold)),subtitle:Text('دورات، تقدم، ومدرس شخصي بالذكاء الاصطناعي.')),
         TextField(decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن دورة أو مهارة'),onChanged:(v)=>setState(()=>query=v)),
+        const SizedBox(height:12),
+        FutureBuilder<Map<String, dynamic>>(
+          future: gamification.getProfile(),
+          builder: (context, snap) {
+            final profile = snap.data?['profile'] as Map?;
+            final xp = (profile?['totalXp'] ?? 0).toString();
+            final weekly = (profile?['weeklyXp'] ?? 0).toString();
+            final activities = (profile?['totalActivities'] ?? 0).toString();
+            return Card(
+              child: ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.emoji_events_outlined)),
+                title: Text('XP $xp'),
+                subtitle: Text('هذا الأسبوع: $weekly XP • الأنشطة: $activities'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.leaderboard_outlined),
+                  tooltip: 'Leaderboard',
+                  onPressed: () async {
+                    final entries = await gamification.getLeaderboard();
+                    if (!context.mounted) return;
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (_) => ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: entries.length,
+                        itemBuilder: (_, i) {
+                          final e = entries[i];
+                          return ListTile(
+                            leading: CircleAvatar(child: Text('${e['rank'] ?? i + 1}')),
+                            title: Text((e['displayName'] ?? 'AUREN Learner').toString()),
+                            subtitle: Text('${e['weeklyXp'] ?? 0} XP'),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
         const SizedBox(height:8),SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[null,...cats].map((c)=>Padding(padding:const EdgeInsets.only(right:8),child:ChoiceChip(label:Text(c??'All'),selected:category==c,onSelected:(_)=>setState(()=>category=c))).toList()))),
         const SizedBox(height:12),
           StreamBuilder<List<AurenLearningProgress>>(stream:repo.watchMyLearning(uid),builder:(context,p){
