@@ -3778,3 +3778,6 @@ Object.assign(module.exports, require('./events_discovery'));
 Object.assign(module.exports, require('./sports_provider_registry'));
 
 Object.assign(module.exports, require('./sports_alerts'));
+
+Object.assign(module.exports, require('./unesco_world_explorer'));
+Object.assign(module.exports, require('./auren_magazine_index'));
