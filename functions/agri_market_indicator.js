@@ -45,8 +45,7 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
   const localSnap = await db.collection('auren_agri_local_market_prices')
     .where('countryName', '==', country)
     .where('item', '==', crop)
-    .orderBy('date', 'desc')
-    .limit(24)
+    .limit(60)
     .get().catch(() => ({docs:[]}));
 
   const local = localSnap.docs.map(d => d.data()).sort((a,b) => String(a.date||'').localeCompare(String(b.date||''))).slice(-24);
