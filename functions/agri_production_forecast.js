@@ -24,7 +24,7 @@ function linearModel(rows,field){
  return {data,xs,ys,slope,intercept,metrics:{observations:n,mae,rmse,mapePct:mape,slope,intercept,lastHistoricalYear:xs[n-1]},model:{name:'linear_trend_baseline',type:'ordinary_least_squares_trend',nonNegativeFloor:true}};
 }
 function predict(model,year){return Math.max(0,model.intercept+model.slope*year);}
-function forecast(model,horizon){const last=model.xs[model.xs.length-1];return Array.from({length:horizon},(_,i)=>{const year=last+i+1;return{year,predicted:predict(model,year),method:'linear_trend_baseline'};});}
+function forecast(model,horizon){if(!model?.xs?.length)return [];const last=model.xs[model.xs.length-1];return Array.from({length:horizon},(_,i)=>{const year=last+i+1;return{year,predicted:predict(model,year),method:'linear_trend_baseline'};});}
 
 function backtest(rows,field,minTrain=3){
  const data=rows.filter(r=>num(r.year)!=null&&num(r[field])!=null).sort((a,b)=>num(a.year)-num(b.year));
@@ -39,6 +39,14 @@ function backtest(rows,field,minTrain=3){
  const valid=errors.filter(e=>e.ape!=null);
  return {status:'ok',observations:data.length,folds:errors.length,mae:errors.reduce((s,e)=>s+e.absoluteError,0)/errors.length,rmse:Math.sqrt(errors.reduce((s,e)=>s+e.squaredError,0)/errors.length),mapePct:valid.length?valid.reduce((s,e)=>s+e.ape,0)/valid.length:null,foldsDetail:errors};
 }
+function movingAverageBacktest(rows,field,minTrain=3,window=3){
+ const data=rows.filter(r=>num(r.year)!=null&&num(r[field])!=null).sort((a,b)=>num(a.year)-num(b.year));
+ if(data.length<=minTrain)return {status:'insufficient_data',observations:data.length,folds:0};
+ const errors=[];
+ for(let i=minTrain;i<data.length;i++){const train=data.slice(0,i).map(r=>num(r[field]));const actual=num(data[i][field]),pred=movingAveragePredict(train,window);errors.push({year:num(data[i].year),actual,predicted:pred,absoluteError:Math.abs(actual-pred),squaredError:(actual-pred)**2,ape:actual!==0?Math.abs((actual-pred)/actual)*100:null});}
+ const valid=errors.filter(e=>e.ape!=null);
+ return {status:'ok',observations:data.length,folds:errors.length,mae:errors.reduce((s,e)=>s+e.absoluteError,0)/errors.length,rmse:Math.sqrt(errors.reduce((s,e)=>s+e.squaredError,0)/errors.length),mapePct:valid.length?valid.reduce((s,e)=>s+e.ape,0)/valid.length:null,window,foldsDetail:errors};
+}
 function cagr(rows,field){
  const d=rows.filter(r=>num(r.year)!=null&&num(r[field])!=null).sort((a,b)=>num(a.year)-num(b.year));
  if(d.length<2)return null;
@@ -46,6 +54,7 @@ function cagr(rows,field){
  if(first<=0||last<0||years<=0)return null;
  return (Math.pow(last/first,1/years)-1)*100;
 }
+function movingAveragePredict(history,window=3){const values=history.map(v=>num(v)).filter(v=>v!=null);if(!values.length)return null;const slice=values.slice(-Math.max(1,window));return slice.reduce((a,b)=>a+b,0)/slice.length;}
 function movingAverageForecast(rows,field,horizon,window=3){
  const d=rows.filter(r=>num(r.year)!=null&&num(r[field])!=null).sort((a,b)=>num(a.year)-num(b.year));
  if(!d.length)return [];
@@ -81,7 +90,7 @@ exports.aurenAgriForecastBacktest=onCall(async request=>{
  auth(request);const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase(),item=clean(request.data?.item||request.data?.crop),rows=await loadRows(iso3,item);
  const fields={production:'production',yield:'yieldValue',area:'area'};
  const backtests={},movingAverages={};
- for(const [key,field] of Object.entries(fields)){backtests[key]=backtest(rows,field,3);movingAverages[key]=movingAverageForecast(rows,field,5,3);}
+ for(const [key,field] of Object.entries(fields)){backtests[key]={linear:backtest(rows,field,3),movingAverage:movingAverageBacktest(rows,field,3,3)};movingAverages[key]={linear:movingAverageForecast(rows,field,5,3),movingAverage:movingAverageForecast(rows,field,5,3)};}
  return{status:rows.length?'ok':'no_data',iso3,item,backtests,movingAverages,comparison:{purpose:'Compare simple baselines before introducing more complex models.',candidates:['linear_trend_baseline','moving_average_baseline'],selectionRule:'Use diagnostics and backtesting evidence; no automatic claim of superiority.'}};
 });
 
