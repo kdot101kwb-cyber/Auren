@@ -135,6 +135,7 @@ exports.aurenAgriProducerPriceCache = onCall(async (request)=>{
     batch.set(db.collection('auren_agri_producer_prices').doc(id), {
       source:result.source,
       countryKey:String(row.m49_code||''),
+      countryIso3:String(row.iso3 || row.country_iso3 || row.iso3_code || '').toUpperCase(),
       countryName:String(row.country_name_en||''),
       itemCode:Number(row.item_code||itemCode),
       item:String(row.item||''),
