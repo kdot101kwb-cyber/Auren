@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: functions-ci-${{ github.ref }}
@@ -33,21 +33,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "22.x"
-
-      - name: Bootstrap lockfile
-        if: github.event_name != 'pull_request'
-        run: |
-          if [ ! -f package-lock.json ]; then
-            npm install
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "chore(functions): add package lockfile"
-            git push
-          fi
+          cache: "npm"
+          cache-dependency-path: functions/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Run tests
         run: npm test
