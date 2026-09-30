@@ -256,14 +256,39 @@ exports.getAurenGlobalHeritageExplorer = onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
+    const countries = [...new Set(GLOBAL_HERITAGE_STORIES.flatMap((x) => x.country.split(';').map((c) => c.trim()).filter(Boolean)))].sort();
+    const languages = [...new Set(GLOBAL_HERITAGE_STORIES.flatMap((x) => x.language.split(';').map((c) => c.trim()).filter(Boolean)))].sort();
+    const years = [...new Set(GLOBAL_HERITAGE_STORIES.map((x) => String(x.year || '')).filter(Boolean))].sort((a,b) => b.localeCompare(a));
+    const typeCounts = {};
+    const countryCounts = {};
+    for (const x of GLOBAL_HERITAGE_STORIES) {
+      typeCounts[x.kind] = (typeCounts[x.kind] || 0) + 1;
+      for (const country of x.country.split(';').map((v) => v.trim()).filter(Boolean)) countryCounts[country] = (countryCounts[country] || 0) + 1;
+    }
     return {
       status:'ok',
       regions:GLOBAL_HERITAGE_REGIONS,
       types:GLOBAL_HERITAGE_TYPES,
+      countries,
+      languages,
+      years,
+      statistics:{
+        indexedStories:GLOBAL_HERITAGE_STORIES.length,
+        countries:countries.length,
+        languages:languages.length,
+        recordsWithDetails:Object.keys(GLOBAL_HERITAGE_STORY_DETAILS || {}).length,
+        typeCounts,
+        countryCounts,
+      },
+      navigation:{
+        levels:['Region','Country','Language','Heritage Type','Tradition','Story','Character','Variant','Source'],
+        filters:['region','country','language','type','year','query'],
+        actions:['browse','search','openDetail','openSource'],
+      },
       coverage:{
-        model:'country → region → language → tradition → story → character → source',
+        model:'region → country → language → heritage type → tradition → story → character → variant → source',
         source:'UNESCO Intangible Cultural Heritage and open/public-domain library sources',
-        note:'Coverage is designed to expand country by country; records are metadata/source indexes unless content rights permit full text.',
+        note:'Records are metadata/source indexes unless content rights permit full text. Source links remain the canonical place for nomination files, photos, videos and community-consent evidence.',
       },
     };
   },
@@ -275,27 +300,53 @@ exports.getAurenGlobalHeritageStories = onCall(
     if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
     const country = clean(request.data?.country, 100).toLowerCase();
     const language = clean(request.data?.language, 80).toLowerCase();
+    const type = clean(request.data?.type, 100).toLowerCase();
+    const year = clean(request.data?.year, 40).toLowerCase();
+    const region = clean(request.data?.region, 100).toLowerCase();
     const query = clean(request.data?.query, 160).toLowerCase();
     const stories = GLOBAL_HERITAGE_STORIES
       .filter((x) => !country || x.country.toLowerCase().includes(country))
       .filter((x) => !language || x.language.toLowerCase().includes(language))
-      .filter((x) => !query || [x.title,x.kind,x.country,x.description].join(' ').toLowerCase().includes(query))
-      .map((x) => result({
-        id:'heritage_' + x.id,
-        title:x.title,
-        kind:x.kind,
-        description:x.description,
-        year:x.year,
-        language:x.language,
-        country:x.country,
-        source:'UNESCO Intangible Cultural Heritage / AUREN Heritage Index',
-        sourceUrl:x.sourceUrl,
-        externalId:x.id,
+      .filter((x) => !type || x.kind.toLowerCase().includes(type))
+      .filter((x) => !year || String(x.year).toLowerCase().includes(year))
+      .filter((x) => {
+        if (!region) return true;
+        const r = GLOBAL_HERITAGE_REGIONS.find((entry) => entry.id === region || entry.title.toLowerCase() === region);
+        return r ? r.countries.some((c) => x.country.toLowerCase().includes(c.toLowerCase())) : false;
+      })
+      .filter((x) => !query || [x.title,x.kind,x.country,x.language,x.description,x.year].join(' ').toLowerCase().includes(query))
+      .map((x) => {
+        const detail = GLOBAL_HERITAGE_STORY_DETAILS?.[x.id];
+        const detailRegions = detail?.regions || [];
+        const matchedRegion = GLOBAL_HERITAGE_REGIONS.find((entry) => entry.countries.some((c) => x.country.toLowerCase().includes(c.toLowerCase())));
+        return result({
+          id:'heritage_' + x.id,
+          title:x.title,
+          kind:x.kind,
+          description:x.description,
+          year:x.year,
+          language:x.language,
+          country:x.country,
+          source:'UNESCO Intangible Cultural Heritage / AUREN Heritage Index',
+          sourceUrl:x.sourceUrl,
+          externalId:x.id,
+        });
+      }).map((item) => ({
+        ...item,
+        heritageType:item.kind,
+        hasDetail:Boolean(GLOBAL_HERITAGE_STORY_DETAILS?.[item.externalId]),
+        region:GLOBAL_HERITAGE_REGIONS.find((entry) => entry.countries.some((c) => item.country.toLowerCase().includes(c.toLowerCase())))?.title || '',
+        detailLanguages:GLOBAL_HERITAGE_STORY_DETAILS?.[item.externalId]?.languages || [],
+        detailRegions:GLOBAL_HERITAGE_STORY_DETAILS?.[item.externalId]?.regions || [],
       }));
     return {
       status:'ok',
       results:stories,
       countries:[...new Set(GLOBAL_HERITAGE_STORIES.flatMap((x) => x.country.split(';').map((c) => c.trim())))].sort(),
+      languages:[...new Set(GLOBAL_HERITAGE_STORIES.flatMap((x) => x.language.split(';').map((c) => c.trim())))].sort(),
+      types:[...new Set(GLOBAL_HERITAGE_STORIES.map((x) => x.kind))].sort(),
+      regions:GLOBAL_HERITAGE_REGIONS,
+      total:stories.length,
       note:'AUREN indexes cultural heritage metadata and source records; it does not reproduce copyrighted stories or scans.',
     };
   },
