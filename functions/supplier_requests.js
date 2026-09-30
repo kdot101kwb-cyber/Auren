@@ -19,7 +19,7 @@ function collectionFor(type) {
 function matchFlowRef(uid, flowId) {
   const id = clean(flowId, 180);
   if (!id) return null;
-  return db.collection('users').doc(uid).collection('matchFlows').doc(id);
+  return db.collection('users').doc(uid).collection('match_action_flows').doc(id);
 }
 
 async function updateMatchFlow(uid, flowId, status, extra = {}) {
