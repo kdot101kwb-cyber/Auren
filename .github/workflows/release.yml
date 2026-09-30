@@ -26,8 +26,15 @@ jobs:
     permissions:
       contents: read
 
+  flutter-check:
+    uses: ./.github/workflows/reusable-flutter-check.yml
+    with:
+      flutter-channel: "stable"
+    permissions:
+      contents: read
+
   release:
-    needs: library-check
+    needs: [library-check, flutter-check]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
