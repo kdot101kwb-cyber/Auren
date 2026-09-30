@@ -1,5 +1,5 @@
 class AurenEntertainmentItem {
-  final String id, title, type, description, imageUrl, mediaUrl, mediaKind, creatorId, channelId, country, language, year, trailerUrl, artistName, albumName;
+  final String id, title, type, description, imageUrl, mediaUrl, mediaKind, creatorId, channelId, country, language, year, trailerUrl, artistName, albumName, source, sourceUrl, licenseNote, issn;
   final List<String> genres;
   final int seasons, episodes;
   const AurenEntertainmentItem({
@@ -7,7 +7,7 @@ class AurenEntertainmentItem {
     required this.description, required this.imageUrl,
     required this.mediaUrl, required this.mediaKind,
     this.creatorId = '', this.channelId = '', this.country = '', this.language = '', this.year = '',
-    this.genres = const [], this.seasons = 0, this.episodes = 0, this.trailerUrl = '', this.artistName = '', this.albumName = '',
+    this.genres = const [], this.seasons = 0, this.episodes = 0, this.trailerUrl = '', this.artistName = '', this.albumName = '', this.source = '', this.sourceUrl = '', this.licenseNote = '', this.issn = '',
   });
 
   bool get isVideo => mediaKind == 'video' || mediaUrl.toLowerCase().endsWith('.mp4') || mediaUrl.toLowerCase().contains('.m3u8');
@@ -27,6 +27,7 @@ class AurenEntertainmentItem {
     trailerUrl: (d['trailerUrl'] ?? d['trailer'] ?? '').toString(),
     artistName: (d['artistName'] ?? d['artist'] ?? '').toString(),
     albumName: (d['albumName'] ?? d['album'] ?? '').toString(),
+    source: (d['source'] ?? '').toString(), sourceUrl: (d['sourceUrl'] ?? '').toString(), licenseNote: (d['licenseNote'] ?? '').toString(), issn: (d['issn'] ?? '').toString(),
     genres: ((d['genres'] as List?)?.whereType<String>().take(10).toList() ?? const []),
     seasons: (d['seasons'] as num?)?.toInt() ?? 0, episodes: (d['episodes'] as num?)?.toInt() ?? 0,
   );
