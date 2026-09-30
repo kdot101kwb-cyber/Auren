@@ -278,10 +278,12 @@ exports.aurenAgriLocalMarketPriceStatus = onCall(async (request) => {
 // FAOSTAT exchange-rate bridge.
 // FX is sourced only from FAOSTAT-provided observations when the caller supplies
 // an official machine-readable export URL. No third-party FX provider is used.
+const FAOSTAT_FX_SQL_URL = 'https://data.apps.fao.org/catalog/dataset/b4ff0967-8f04-456e-8b7a-5f68d6f01000/resource/95d5fa99-0f01-45da-b17d-c5b10c433236/download/prices-pe-exchange-rate-query.sql';
 const FAOSTAT_FX_DATA_URL = process.env.FAOSTAT_FX_DATA_URL || '';
+const FAOSTAT_FX_API_URL = process.env.FAOSTAT_FX_API_URL || 'https://api.data.apps.fao.org/api/v2/bigquery?download=true&frequency=monthly&item_code=LCU&sql_url='+encodeURIComponent(FAOSTAT_FX_SQL_URL);
 // The official FAOSTAT API supports machine-readable JSON/CSV access.
 // Keep the endpoint configurable because the API portal can change query/resource routes.
-const FAOSTAT_FX_API_URL = process.env.FAOSTAT_FX_API_URL || '';
+
 function officialFaostatApiUrl(value) {
   const u = new URL(value);
   const allowed = new Set(['fenixservices.fao.org','faostat.fao.org','api.fao.org','api.data.apps.fao.org','data.apps.fao.org','api-digital.apps.fao.org']);
@@ -302,13 +304,14 @@ function officialFaostatFxUrl(value) {
 
 function normalizeFxRow(row) {
   const pick=(...keys)=>{ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && String(row[k]).trim()!=='') return row[k]; } return ''; };
-  const rate=Number(String(pick('rate','exchange_rate','Exchange Rate','value','Value')).replace(/,/g,''));
+  const localPerUsd=Number(String(pick('rate','exchange_rate','Exchange Rate','value','Value')).replace(/,/g,''));
   return {
     countryName:String(pick('country_name_en','country','Country','area_name')||'').trim(),
-    iso3:String(pick('iso3','ISO3','country_iso3','area_code_iso3')||'').trim().toUpperCase(),
-    currency:String(pick('currency','Currency','currency_code')||'').trim().toUpperCase(),
+    iso3:String(pick('iso3','ISO3','country_iso3','iso_code','area_code_iso3')||'').trim().toUpperCase(),
+    currency:String(pick('iso_currency_code','currency','Currency','currency_code')||'').trim().toUpperCase(),
     date:String(pick('date','Date','year','Year','period','Period')||'').trim(),
-    usdPerLocalUnit:Number.isFinite(rate) ? rate : null,
+    localCurrencyPerUsd:Number.isFinite(localPerUsd) ? localPerUsd : null,
+    usdPerLocalUnit:Number.isFinite(localPerUsd) && localPerUsd > 0 ? 1 / localPerUsd : null,
     source:'FAOSTAT Exchange Rates'
   };
 }
