@@ -18,6 +18,8 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   bool _globalSearching = false;
   List<Map<String, dynamic>> _globalResults = const [];
   List<Map<String, dynamic>> _subjects = const [];
+  List<Map<String, dynamic>> _heritageStories = const [];
+  bool _heritageLoading = false;
 
   Future<void> _ensureLibrarySeeded() async {
     if (_seeding) return;
@@ -66,13 +68,41 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
     } catch (_) {}
   }
 
+  Future<void> _loadHeritage({String? country, String? query}) async {
+    if (_heritageLoading) return;
+    setState(() => _heritageLoading = true);
+    try {
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('getAurenGlobalHeritageStories').call({'country': country ?? '', 'query': query ?? ''});
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final rows = (data['results'] as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      if (mounted) setState(() => _heritageStories = rows);
+    } catch (_) { if (mounted) setState(() => _heritageStories = const []); }
+    finally { if (mounted) setState(() => _heritageLoading = false); }
+  }
+
+  Future<void> _openHeritage(Map<String, dynamic> item) async {
+    try {
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('getAurenGlobalHeritageStoryDetail').call({'id': item['id']});
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final story = Map<String, dynamic>.from(data['story'] as Map? ?? item);
+      if (!mounted) return;
+      showDialog(context: context, builder: (_) => AlertDialog(
+        title: Text(story['title']?.toString() ?? 'Heritage'),
+        content: SingleChildScrollView(child: Text([story['description'], 'الشخصيات: ' + ((data['characters'] as List? ?? const []).join(', ')), 'اللغات: ' + ((data['languages'] as List? ?? const []).join(', ')), 'الروايات: ' + ((data['variants'] as List? ?? const []).join(', ')), 'المصدر: ' + (story['source']?.toString() ?? '')].where((v)=>v.trim().length>0).join('\\n\\n'))),
+        actions: [TextButton(onPressed: ()=>Navigator.pop(context), child: const Text('إغلاق'))],
+      ));
+    } catch (_) { _openGlobalResult(item); }
+  }
+
   void _searchSubject(String title) {
     setState(() => _query = title);
     _searchGlobalLibrary();
   }
 
   @override
-  void initState() { super.initState(); _loadSubjects(); }
+  void initState() { super.initState(); _loadSubjects(); _loadHeritage(); }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -104,6 +134,12 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
               trailing:const Icon(Icons.open_in_new_rounded),
               onTap:()=>_openGlobalResult(item),
             ))),
+          ],
+          if (_heritageStories.isNotEmpty || _heritageLoading) ...[
+            const SizedBox(height:18),
+            const Text('Global Heritage • قصص الشعوب', style: TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+            const SizedBox(height:8),
+            SizedBox(height:150, child:_heritageLoading ? const Center(child:CircularProgressIndicator()) : ListView.separated(scrollDirection:Axis.horizontal,itemCount:_heritageStories.length,separatorBuilder:(_,__)=>const SizedBox(width:10),itemBuilder:(context,index){final s=_heritageStories[index];return SizedBox(width:230,child:Card(child:InkWell(onTap:()=>_openHeritage(s),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Icon(Icons.public_rounded,size:28),const SizedBox(height:8),Text(s['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:5),Text([s['country'],s['kind'],s['language']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:1,overflow:TextOverflow.ellipsis),const SizedBox(height:5),Text(s['description']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11))]))));}))
           ],
           if (_subjects.isNotEmpty) ...[
             const SizedBox(height:18),
