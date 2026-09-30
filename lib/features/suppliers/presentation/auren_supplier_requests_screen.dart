@@ -35,9 +35,27 @@ class _AurenSupplierRequestsScreenState extends State<AurenSupplierRequestsScree
       if(r.status=='failed'||r.status=='cancelled')const PopupMenuItem(value:'retry',child:Text('إعادة المحاولة')),
     ]),onTap:()=>_details(r)));
   Future<void> _action(String a,AurenSupplierRequest r) async{
-    try{if(a=='details'){await _details(r);return;}if(a=='cancel')await _repo.cancel(r);if(a=='retry')await _repo.retry(r);
-      if(mounted){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(a=='cancel'?'تم إلغاء الطلب.':'تمت إعادة المحاولة.')));setState(_load);}
-    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تنفيذ العملية.')));}
+    if(a=='details'){await _details(r);return;}
+    if(a=='cancel'){
+      final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
+        title:const Text('إلغاء طلب المورد؟'),
+        content:const Text('سيتم إلغاء الطلب داخل AUREN ولن يتم إرسال أي رسالة خارجية.'),
+        actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('رجوع')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('إلغاء الطلب'))],
+      ));
+      if(ok!=true)return;
+    }
+    if(a=='retry'){
+      final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
+        title:const Text('إعادة المحاولة؟'),
+        content:const Text('سيعود الطلب إلى مسودة. لن يتم الإرسال الخارجي تلقائياً.'),
+        actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('رجوع')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('إعادة المحاولة'))],
+      ));
+      if(ok!=true)return;
+    }
+    try{
+      if(a=='cancel')await _repo.cancel(r);if(a=='retry')await _repo.retry(r);
+      if(mounted){ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(a=='cancel'?'تم إلغاء الطلب.':'تمت إعادة الطلب إلى المسودة.')));setState(_load);}
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر تنفيذ العملية. حاول مرة أخرى.')));}
   }
   Future<void> _details(AurenSupplierRequest r)=>showModalBottomSheet<void>(context:context,showDragHandle:true,builder:(_)=>SafeArea(child:Padding(
     padding:const EdgeInsets.all(20),child:ListView(shrinkWrap:true,children:[
@@ -45,7 +63,8 @@ class _AurenSupplierRequestsScreenState extends State<AurenSupplierRequestsScree
       const SizedBox(height:12),_row('النوع',r.type=='rfq'?'طلب عرض سعر':'تواصل'),_row('الحالة',_status(r.status)),
       if(r.product.isNotEmpty)_row('المنتج',r.product),if(r.quantity.isNotEmpty)_row('الكمية',r.quantity),if(r.currency.isNotEmpty)_row('العملة',r.currency),if(r.message.isNotEmpty)_row('الرسالة',r.message),
       _row('الإرسال الخارجي',r.externalDispatch?'تم الإرسال':'غير مُرسل'),if(r.retryCount>0)_row('المحاولات',r.retryCount.toString()),if(r.matchFlowId.isNotEmpty)_row('Match Flow',r.matchFlowId),
-      if(r.status=='waiting_response'&&!r.externalDispatch)const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('الطلب محفوظ داخل AUREN ولم يتم إرسال رسالة خارجية بعد.'))),
+      if(r.status=='failed')const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('حدث فشل في الطلب. يمكنك استخدام «إعادة المحاولة».'))),
+      if(r.status=='waiting_response'&&!r.externalDispatch)const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('الحالة «بانتظار الرد» تعني أن Match Flow ينتظر الخطوة التالية؛ الطلب محفوظ داخل AUREN ولم يتم إرسال رسالة خارجية بعد.'))),
     ]))));
   Widget _row(String a,String b)=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[SizedBox(width:110,child:Text(a,style:const TextStyle(fontWeight:FontWeight.bold))),Expanded(child:Text(b))]));
   Widget _message(String t,[Future<void> Function()? action])=>Center(child:Column(mainAxisSize:MainAxisSize.min,children:[Text(t),if(action!=null)FilledButton.icon(onPressed:action,icon:const Icon(Icons.refresh),label:const Text('إعادة المحاولة'))]));
