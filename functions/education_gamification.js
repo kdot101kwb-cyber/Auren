@@ -98,9 +98,13 @@ exports.recordAurenEducationActivity = onCall(
       const currentWeek = weekSnap.data() || {};
       const currentCount = Number(currentDay[type] || 0);
       const previousTotalActivities = Number(currentProfile.totalActivities || 0);
-      const previousWeeklyXp = currentProfile.currentWeek === week
+      const isCurrentWeek = currentProfile.currentWeek === week;
+      const previousWeeklyXp = isCurrentWeek
         ? Number(currentProfile.weeklyXp || 0)
         : 0;
+      const weekStartActivities = isCurrentWeek
+        ? Number(currentProfile.weekStartActivities || 0)
+        : previousTotalActivities;
 
       if (DAILY_CAPS[type] && currentCount >= DAILY_CAPS[type]) {
         tx.set(eventRef, {
@@ -114,7 +118,7 @@ exports.recordAurenEducationActivity = onCall(
       const totalActivities = previousTotalActivities + 1;
       const challengeAlreadyCompleted = currentProfile.currentWeek === week && currentProfile.weeklyChallengeCompleted === true;
       const challengeCompletedNow = !challengeAlreadyCompleted
-        && totalActivities - Number(currentProfile.weekStartActivities || 0) >= WEEKLY_CHALLENGE.targetActivities;
+        && totalActivities - weekStartActivities >= WEEKLY_CHALLENGE.targetActivities;
       const challengeBonus = challengeCompletedNow ? WEEKLY_CHALLENGE.bonusXp : 0;
       const awarded = baseAwarded + challengeBonus;
       const totalXp = Number(currentProfile.totalXp || 0) + awarded;
@@ -138,9 +142,7 @@ exports.recordAurenEducationActivity = onCall(
         totalActivities,
         weeklyXp,
         currentWeek: week,
-        weekStartActivities: currentProfile.currentWeek === week
-          ? Number(currentProfile.weekStartActivities || 0)
-          : previousTotalActivities,
+        weekStartActivities,
         weeklyChallengeCompleted: challengeAlreadyCompleted || challengeCompletedNow,
         badges,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
