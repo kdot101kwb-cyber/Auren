@@ -114,8 +114,42 @@ async function latestPrice(iso3,item){
 }
 async function latestCost(iso3,item){
  const slug=item.toLowerCase().replace(/[^a-z0-9]+/g,'_'),snap=await db.collection('auren_agri_cost_evidence').doc(iso3+'_'+slug).get();
- if(!snap.exists)return null;const items=Array.isArray(snap.data()?.items)?snap.data().items:[],opex=items.find(x=>String(x.category||'').toLowerCase()==='opex'&&num(x.value)!=null);
- return opex?{value:num(opex.value),currency:opex.currency||null,unit:opex.unit||null,source:opex.source||null}:null;
+ if(!snap.exists)return null;
+ const items=Array.isArray(snap.data()?.items)?snap.data().items:[],
+   opex=items.find(x=>String(x.category||'').toLowerCase()==='opex'&&num(x.value)!=null);
+ if(!opex)return null;
+ const nativeValue=num(opex.value),currency=clean(opex.currency).toUpperCase(),unit=clean(opex.unit).toLowerCase();
+ if(nativeValue==null)return null;
+ // Financial forecasts are expressed as USD per tonne. Only explicit, auditable
+ // currency/unit conversions are applied; unknown units remain incompatible.
+ let unitFactor=null;
+ if(/^kg$|kilogram/.test(unit))unitFactor=1000;
+ else if(/ton|tonne|metric.?ton/.test(unit))unitFactor=1;
+ if(unitFactor==null)return {
+   value:nativeValue,currency:opex.currency||null,unit:opex.unit||null,
+   source:opex.source||null,normalizationStatus:'unsupported_unit',
+   compatibleWithUsdPerTonne:false
+ };
+ const fxSnap=currency==='USD'?null:await db.collection('auren_agri_fx_rates').where('iso3','==',iso3).limit(100).get();
+ let usdPerLocal=currency==='USD'?1:null,fxDate=null;
+ if(fxSnap){
+   for(const d of fxSnap.docs){
+     const r=d.data()||{},v=num(r.usdPerLocalUnit);
+     if(v!=null&&(!fxDate||String(r.date||'')>String(fxDate))){usdPerLocal=v;fxDate=r.date||null;}
+   }
+ }
+ if(usdPerLocal==null)return {
+   value:nativeValue,currency:opex.currency||null,unit:opex.unit||null,
+   source:opex.source||null,normalizationStatus:'missing_fx',
+   compatibleWithUsdPerTonne:false
+ };
+ return {
+   value:nativeValue*unitFactor*usdPerLocal,currency:'USD',unit:'tonne',
+   source:opex.source||'Agriculture cost evidence + FAOSTAT Exchange Rates',
+   nativeValue,currency:opex.currency||null,nativeUnit:opex.unit||null,
+   usdPerLocalUnit:usdPerLocal,fxDate,normalizationStatus:'normalized',
+   compatibleWithUsdPerTonne:true
+ };
 }
 
 exports.aurenAgriForecastTestKit={linearModel,predict,forecast,backtest,movingAveragePredict,movingAverageForecast,movingAverageBacktest,cagr};
@@ -124,7 +158,7 @@ exports.aurenAgriProductionForecast=onCall(async request=>{
  auth(request);const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase(),item=clean(request.data?.item||request.data?.crop),horizon=Math.min(Math.max(num(request.data?.horizon)||5,1),10);
  const rows=await loadRows(iso3,item),productionModel=selectForecast(rows,'production',horizon),yieldModel=selectForecast(rows,'yieldValue',horizon),areaModel=selectForecast(rows,'area',horizon),production=productionModel.forecast,yieldForecast=yieldModel.forecast,areaForecast=areaModel.forecast,pm=linearModel(rows,'production'),ym=linearModel(rows,'yieldValue'),am=linearModel(rows,'area'),price=await latestPrice(iso3,item),cost=await latestCost(iso3,item);
  const revenueForecast=production.map((p,i)=>{const priceCompatible=price&&(!price.unit||/ton|tonne|kg/i.test(String(price.unit)));const costCompatible=cost&&(!cost.unit||!price?.unit||String(cost.unit).toLowerCase()===String(price.unit).toLowerCase());const revenue=priceCompatible?p.predicted*price.value:null,profit=revenue!=null&&costCompatible?revenue-cost.value:null;return{year:p.year,predictedProduction:p.predicted,predictedYield:yieldForecast[i]?.predicted??null,predictedArea:areaForecast[i]?.predicted??null,revenue,profit,revenueCurrency:price?.currency??null,revenueUnit:price?.unit??null,profitCurrency:price?.currency&&cost?.currency===price.currency?price.currency:null};});
- return{status:production.length?'ok':'no_data',iso3,item,horizon,historyYears:rows.length,forecast:production,yieldForecast,areaForecast,revenueForecast,baseline:{production:pm.metrics,yield:ym.metrics,area:am.metrics,selectedProduction:productionModel.selected,selectedYield:yieldModel.selected,selectedArea:areaModel.selected,model:pm.model,cagrPct:{production:cagr(rows,'production'),yield:cagr(rows,'yieldValue'),area:cagr(rows,'area')}},market:{price,cost},profitabilityStatus:price&&cost?'calculated':price?'needs_compatible_opex':'needs_compatible_market_price',limitations:['Baseline trend model; not an agronomic causal forecast.','Revenue requires a market price compatible with the production unit.','Profit requires price and OPEX values with compatible units and currency; otherwise it remains null.','Revenue assumes the latest compatible price remains constant across forecast years.']};
+ return{status:production.length?'ok':'no_data',iso3,item,horizon,historyYears:rows.length,forecast:production,yieldForecast,areaForecast,revenueForecast,baseline:{production:pm.metrics,yield:ym.metrics,area:am.metrics,selectedProduction:productionModel.selected,selectedYield:yieldModel.selected,selectedArea:areaModel.selected,model:pm.model,cagrPct:{production:cagr(rows,'production'),yield:cagr(rows,'yieldValue'),area:cagr(rows,'area')}},market:{price,cost},profitabilityStatus:price&&cost?.compatibleWithUsdPerTonne?'calculated':price?'needs_compatible_opex':'needs_compatible_market_price',limitations:['Baseline trend model; not an agronomic causal forecast.','Revenue requires a market price compatible with the production unit.','Profit requires normalized USD/tonne market price and OPEX evidence; unsupported units or missing FX keep profit null.','Revenue assumes the latest compatible price remains constant across forecast years.']};
 });
 
 exports.aurenAgriForecastBacktest=onCall(async request=>{
