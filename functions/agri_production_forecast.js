@@ -112,62 +112,150 @@ async function latestPrice(iso3,item){
  const r=globalRows[0];
  return{value:priceValue(r),currency:r.currency||null,unit:r.unit||null,source:r.source||r.exchange||'market'};
 }
-async function latestCost(iso3,item){
- const slug=item.toLowerCase().replace(/[^a-z0-9]+/g,'_'),snap=await db.collection('auren_agri_cost_evidence').doc(iso3+'_'+slug).get();
- if(!snap.exists)return null;
- const items=Array.isArray(snap.data()?.items)?snap.data().items:[],
-   opexCandidates=items.filter(x=>String(x.category||'').toLowerCase()==='opex'&&num(x.value)!=null);
- if(!opexCandidates.length)return null;
- const opex=opexCandidates.sort((a,b)=>String(b.observedAt||b.date||b.year||'').localeCompare(String(a.observedAt||a.date||a.year||'')))[0];
- const nativeValue=num(opex.value),currency=clean(opex.currency).toUpperCase(),unit=clean(opex.unit).toLowerCase();
- if(nativeValue==null)return null;
- // Financial forecasts are expressed as USD per tonne. Only explicit, auditable
- // currency/unit conversions are applied; unknown units remain incompatible.
- let unitFactor=null;
- if(/^kg$|kilogram/.test(unit))unitFactor=1000;
- else if(/ton|tonne|metric.?ton/.test(unit))unitFactor=1;
- if(unitFactor==null)return {
-   value:nativeValue,currency:opex.currency||null,unit:opex.unit||null,
-   source:opex.source||null,normalizationStatus:'unsupported_unit',
-   compatibleWithUsdPerTonne:false
- };
- const fxSnap=currency==='USD'?null:await db.collection('auren_agri_fx_rates').where('iso3','==',iso3).limit(100).get();
- let usdPerLocal=currency==='USD'?1:null,fxDate=null;
- if(fxSnap){
-   for(const d of fxSnap.docs){
-     const r=d.data()||{},v=num(r.usdPerLocalUnit);
-     if(v!=null&&(!fxDate||String(r.date||'')>String(fxDate))){usdPerLocal=v;fxDate=r.date||null;}
+async function loadCostEvidenceRecords(iso3, item) {
+ const normalizedIso = clean(iso3).toUpperCase();
+ const normalizedItem = clean(item).toLowerCase();
+ const slug = normalizedItem.replace(/[^a-z0-9]+/g,'_');
+ const snap = await db.collection('auren_agri_cost_evidence').limit(5000).get();
+ const records = [];
+ for (const doc of snap.docs) {
+   const data = doc.data() || {};
+   const docIso = clean(data.iso3 || data.countryIso3 || data.country || '').toUpperCase();
+   const docItem = clean(data.item || data.crop || data.commodity || '').toLowerCase();
+   const docMatches = doc.id.toUpperCase() === normalizedIso + '_' + slug.toUpperCase();
+   if (docIso && docIso !== normalizedIso) continue;
+   if (docItem && docItem !== normalizedItem) continue;
+   if (!docMatches && (!docIso || !docItem)) {
+     const idParts = doc.id.split('_');
+     if (idParts[0].toUpperCase() !== normalizedIso || idParts.slice(1).join('_').toLowerCase() !== slug) continue;
+   }
+   const items = Array.isArray(data.items) ? data.items : [data];
+   for (const itemRow of items) {
+     if (String(itemRow.category || '').toLowerCase() !== 'opex' || num(itemRow.value) == null) continue;
+     records.push({
+       ...itemRow,
+       iso3: docIso || normalizedIso,
+       item: docItem || normalizedItem,
+       documentId: doc.id,
+     });
    }
  }
- if(usdPerLocal==null)return {
-   value:nativeValue,currency:opex.currency||null,unit:opex.unit||null,
-   source:opex.source||null,normalizationStatus:'missing_fx',
-   compatibleWithUsdPerTonne:false
- };
+ return records;
+}
+
+function costObservationTimestamp(x) {
+ return String(x.observedAt || x.date || x.year || x.updatedAt || '');
+}
+
+async function normalizeOpexObservation(opex, iso3) {
+ const nativeValue = num(opex.value);
+ const currency = clean(opex.currency).toUpperCase();
+ const unit = clean(opex.unit).toLowerCase();
+ if (nativeValue == null) return null;
+
+ let unitFactor = null;
+ if (/^kg$|kilogram/.test(unit)) unitFactor = 1000;
+ else if (/ton|tonne|metric.?ton/.test(unit)) unitFactor = 1;
+ if (unitFactor == null) {
+   return {
+     value: nativeValue, currency: opex.currency || null, unit: opex.unit || null,
+     source: opex.source || null, normalizationStatus: 'unsupported_unit',
+     compatibleWithUsdPerTonne: false, documentId: opex.documentId || null,
+   };
+ }
+
+ const fxSnap = currency === 'USD'
+   ? null
+   : await db.collection('auren_agri_fx_rates').where('iso3','==',iso3).limit(100).get();
+ let usdPerLocal = currency === 'USD' ? 1 : null;
+ let fxDate = null;
+ if (fxSnap) {
+   for (const d of fxSnap.docs) {
+     const r = d.data() || {}, v = num(r.usdPerLocalUnit);
+     if (v != null && (!fxDate || String(r.date || '') > String(fxDate))) {
+       usdPerLocal = v;
+       fxDate = r.date || null;
+     }
+   }
+ }
+ if (usdPerLocal == null) {
+   return {
+     value: nativeValue, currency: opex.currency || null, unit: opex.unit || null,
+     source: opex.source || null, normalizationStatus: 'missing_fx',
+     compatibleWithUsdPerTonne: false, documentId: opex.documentId || null,
+   };
+ }
  return {
-   value:nativeValue*unitFactor*usdPerLocal,currency:'USD',unit:'tonne',
-   source:opex.source||'Agriculture cost evidence + FAOSTAT Exchange Rates',
-   nativeValue,currency:opex.currency||null,nativeUnit:opex.unit||null,
-   usdPerLocalUnit:usdPerLocal,fxDate,normalizationStatus:'normalized',
-   compatibleWithUsdPerTonne:true
+   value: nativeValue * unitFactor * usdPerLocal,
+   currency: 'USD',
+   unit: 'tonne',
+   source: opex.source || 'Agriculture cost evidence + FAOSTAT Exchange Rates',
+   nativeValue,
+   currencyNative: opex.currency || null,
+   nativeUnit: opex.unit || null,
+   usdPerLocalUnit: usdPerLocal,
+   fxDate,
+   observedAt: costObservationTimestamp(opex),
+   documentId: opex.documentId || null,
+   normalizationStatus: 'normalized',
+   compatibleWithUsdPerTonne: true,
  };
+}
+
+async function latestCost(iso3,item){
+ const candidates = await loadCostEvidenceRecords(iso3, item);
+ if (!candidates.length) return null;
+ candidates.sort((a,b)=>costObservationTimestamp(b).localeCompare(costObservationTimestamp(a)));
+ for (const candidate of candidates) {
+   const normalized = await normalizeOpexObservation(candidate, iso3);
+   if (normalized?.compatibleWithUsdPerTonne) return normalized;
+ }
+ const latest = candidates[0];
+ return normalizeOpexObservation(latest, iso3);
 }
 
 exports.aurenAgriCostEvidenceStatus=onCall(async request=>{
  auth(request);
  const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase();
  const item=clean(request.data?.item||request.data?.crop);
- const slug=item.toLowerCase().replace(/[^a-z0-9]+/g,'_');
- const ref=db.collection('auren_agri_cost_evidence').doc(iso3+'_'+slug);
- const snap=await ref.get();
- if(!snap.exists)return{status:'missing',iso3,item,documentId:iso3+'_'+slug,requirements:['country/iso3','crop/item','opex value','currency','unit','source','observedAt/year']};
- const data=snap.data()||{},items=Array.isArray(data.items)?data.items:[];
- const opex=items.filter(x=>String(x.category||'').toLowerCase()==='opex'&&num(x.value)!=null)
-   .sort((a,b)=>String(b.observedAt||b.date||b.year||'').localeCompare(String(a.observedAt||a.date||a.year||'')))[0]||null;
- if(!opex)return{status:'no_opex',iso3,item,documentId:iso3+'_'+slug};
+ const candidates=await loadCostEvidenceRecords(iso3,item);
+ if(!candidates.length)return{
+   status:'missing',iso3,item,
+   requirements:['country/iso3','crop/item','opex value','currency','unit','source','observedAt/year'],
+   normalizationTarget:'USD/tonne'
+ };
+ candidates.sort((a,b)=>costObservationTimestamp(b).localeCompare(costObservationTimestamp(a)));
+ const latest=candidates[0];
  const missing=[];
- for(const [key,value] of Object.entries({currency:opex.currency,unit:opex.unit,source:opex.source,observedAt:opex.observedAt||opex.date||opex.year}))if(!clean(value))missing.push(key);
- return{status:missing.length?'incomplete':'ready',iso3,item,documentId:iso3+'_'+slug,latestOpex:{value:num(opex.value),currency:opex.currency||null,unit:opex.unit||null,source:opex.source||null,observedAt:opex.observedAt||opex.date||opex.year||null},missingFields:missing,normalizationTarget:'USD/tonne'};
+ for(const [key,value] of Object.entries({
+   currency:latest.currency,
+   unit:latest.unit,
+   source:latest.source,
+   observedAt:latest.observedAt||latest.date||latest.year
+ })) if(!clean(value)) missing.push(key);
+ const normalized=await normalizeOpexObservation(latest,iso3);
+ return{
+   status:missing.length?'incomplete':normalized?.compatibleWithUsdPerTonne?'ready':'incomplete',
+   iso3,item,
+   recordsFound:candidates.length,
+   latestOpex:{
+     value:num(latest.value),
+     currency:latest.currency||null,
+     unit:latest.unit||null,
+     source:latest.source||null,
+     observedAt:latest.observedAt||latest.date||latest.year||null,
+     documentId:latest.documentId||null
+   },
+   normalized:{
+     value:normalized?.value??null,
+     currency:normalized?.currency??null,
+     unit:normalized?.unit??null,
+     status:normalized?.normalizationStatus??'unavailable',
+     fxDate:normalized?.fxDate??null
+   },
+   missingFields:missing,
+   normalizationTarget:'USD/tonne'
+ };
 });
 
 exports.aurenAgriForecastTestKit={linearModel,predict,forecast,backtest,movingAveragePredict,movingAverageForecast,movingAverageBacktest,cagr};
