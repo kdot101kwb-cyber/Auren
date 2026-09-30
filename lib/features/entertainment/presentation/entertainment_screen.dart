@@ -22,6 +22,8 @@ import 'auren_books_manga_screen.dart';
 import 'auren_anime_world_screen.dart';
 import 'auren_entertainment_create_screen.dart';
 import 'auren_ai_series_studio_screen.dart';
+import 'auren_sports_entertainment_screen.dart';
+import 'auren_events_entertainment_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../core/models/entertainment.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -48,6 +50,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.tv_rounded, 'TV', 'TV + Kids + Cartoon + Anime channels'),
     _EntertainmentAction(Icons.play_circle_fill_rounded, 'Videos', 'Long videos, Shorts & shows'),
     _EntertainmentAction(Icons.sports_esports_rounded, 'Gaming', 'Games, challenges & social play'),
+    _EntertainmentAction(Icons.emoji_events_rounded, 'Sports', 'Matches, leagues & sports content'),
+    _EntertainmentAction(Icons.event_rounded, 'Events', 'Concerts, festivals & experiences'),
     _EntertainmentAction(Icons.auto_awesome_rounded, 'Create', 'Create music, stories & shows'),
     _EntertainmentAction(Icons.tv_rounded, 'AI Series', 'Build an original season with AI'),
     _EntertainmentAction(Icons.podcasts_rounded, 'Podcasts', 'Shows, episodes & audio discovery'),
@@ -410,6 +414,10 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAnimeWorldScreen()));
                   } else if (action.title == 'Library') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBooksMangaScreen()));
+                  } else if (action.title == 'Sports') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSportsEntertainmentScreen()));
+                  } else if (action.title == 'Events') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEventsEntertainmentScreen()));
                   } else if (action.title == 'Create') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentCreateScreen()));
                   } else if (action.title == 'Podcasts') {
