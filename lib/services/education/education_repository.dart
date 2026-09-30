@@ -16,19 +16,11 @@ class EducationRepository {
 
   Future<void> completeLesson(String uid, AurenCourse course, int completed) async {
     if (completed < 0 || completed > course.lessonCount) throw ArgumentError('عدد الدروس غير صالح');
-    final ref=db.collection('users').doc(uid).collection('enrollments').doc(course.id);
-    final snap=await ref.get();
-    if(!snap.exists) throw StateError('سجّل في الدورة أولاً');
-    final previous=(snap.data()?['completedLessons'] as num?)?.toInt() ?? 0;
-    final progress=course.lessonCount==0?100:((completed/course.lessonCount)*100).round();
-    await CloudFunctions.instanceFor(region: 'us-central1').httpsCallable('completeAurenEducationLesson').call({'courseId': course.id, 'completed': completed});
-
-    for (var lesson = previous + 1; lesson <= completed; lesson++) {
-      await gamification.recordActivity(type: 'lesson', eventId: 'lesson:${course.id}:$lesson', sourceId: course.id);
-    }
-    if (previous < course.lessonCount && progress >= 100) {
-      await gamification.recordActivity(type: 'course', eventId: 'course:${course.id}:completed', sourceId: course.id);
-    }
+    final result = await CloudFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('completeAurenEducationLesson')
+        .call({'courseId': course.id, 'completed': completed});
+    final response = Map<String, dynamic>.from(result.data as Map);
+    final progress = (response['progress'] as num?)?.toInt() ?? 0;
 
     if(progress>=100 && course.skills.isNotEmpty){
       final profile=db.collection('users').doc(uid).collection('profile_modes').doc('professional');
