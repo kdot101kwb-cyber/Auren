@@ -129,7 +129,7 @@ exports.seedAurenEntertainmentLibrary = onCall(
   async (request) => {
     if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
 
-    const marker = db.collection('entertainment_library_meta').doc('global');
+    const marker = db.collection('entertainment_library_meta').doc('global_v2');
     const existing = await marker.get();
     if (existing.exists && existing.data()?.status === 'ready') {
       return {status: 'ready', seeded: false, message: 'AUREN Entertainment Library is already populated.'};
