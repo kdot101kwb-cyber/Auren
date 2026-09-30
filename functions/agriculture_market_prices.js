@@ -122,17 +122,33 @@ exports.upsertAurenLocalMarketPrice = onCall(
     if (!commodity || !Number.isFinite(price) || price < 0 || !/^[A-Z]{3}$/.test(String(d.countryCode || '').trim().toUpperCase())) {
       throw new Error('Valid commodity, non-negative price, and ISO3 countryCode are required.');
     }
-    const ref = db.collection('agri_local_market_prices').doc();
-    await ref.set({
-      country:String(d.country || '').trim().slice(0, 80), countryCode:String(d.countryCode || '').trim().slice(0, 3).toUpperCase(),
-      state:String(d.state || '').trim().slice(0, 100), stateKey:String(d.state || '').trim().toLowerCase().slice(0, 100),
-      city:String(d.city || '').trim().slice(0, 100), cityKey:String(d.city || '').trim().toLowerCase().slice(0, 100),
+    const countryCode = String(d.countryCode || '').trim().toUpperCase();
+    const state = String(d.state || '').trim().slice(0, 100);
+    const city = String(d.city || '').trim().slice(0, 100);
+    const marketName = String(d.marketName || '').trim().slice(0, 120);
+    const currency = String(d.currency || '').trim().slice(0, 10);
+    const unit = String(d.unit || '').trim().slice(0, 40);
+    const source = String(d.source || 'AUREN local market import').trim().slice(0, 200);
+    if (!currency || !unit || !source) throw new Error('currency, unit, and source are required for sourced local prices.');
+    const key = [countryCode, commodity, state, city, marketName]
+      .map(x => String(x).trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''))
+      .join('__');
+    const ref = db.collection('agri_local_market_prices').doc(key.slice(0, 500));
+    const record = {
+      country:String(d.country || '').trim().slice(0, 80), countryCode,
+      state, stateKey:state.toLowerCase(), city, cityKey:city.toLowerCase(),
       commodity, commodityKey:commodity.toLowerCase(), category:String(d.category || 'agriculture').trim().slice(0, 60),
-      price, currency:String(d.currency || 'SDG').trim().slice(0, 10), unit:String(d.unit || '').trim().slice(0, 40),
-      marketName:String(d.marketName || '').trim().slice(0, 120), source:String(d.source || 'AUREN local market import').trim().slice(0, 200),
-      sourceUrl:String(d.sourceUrl || '').trim().slice(0, 500), verified:Boolean(d.verified), importedBy:uid,
+      price, currency, unit, marketName, source,
+      sourceUrl:String(d.sourceUrl || '').trim().slice(0, 500),
+      sourceType:String(d.sourceType || 'admin').trim().slice(0, 40),
+      verified:Boolean(d.verified), importedBy:uid,
+      observedAt:d.observedAt ? new Date(d.observedAt) : FieldValue.serverTimestamp(),
       updatedAt:FieldValue.serverTimestamp(),
+    };
+    await ref.set(record, {merge:true});
+    await db.collection('agri_market_price_history').add({
+      ...record, market:'local', importedAt:FieldValue.serverTimestamp(),
     });
-    return {status:'ok', id:ref.id};
+    return {status:'ok', id:ref.id, historyRecorded:true};
   }
 );
