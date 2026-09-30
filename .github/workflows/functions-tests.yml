@@ -14,20 +14,26 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: functions-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-functions:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     defaults:
       run:
         working-directory: functions
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Node
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
         with:
-          node-version: "20.x"
-      - name: Install dependencies
-        run: npm install
-      - name: Run syntax and tests
-        run: npm test
+          node-version: "22.x"
+
+      - run: npm install
+
+      - run: npm test
