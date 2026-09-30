@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/entertainment.dart';
@@ -16,11 +17,36 @@ class AurenPodcastsScreen extends StatefulWidget {
 class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   String _category = 'الكل';
   String _query = '';
+  bool _discovering = false;
+  List<Map<String, dynamic>> _remoteResults = const [];
 
   List<String> get _categories => [
         'الكل',
         ...aurenPodcastCatalog.map((e) => e.category).toSet(),
       ];
+
+  Future<void> _discoverPodcasts() async {
+    final query = _query.trim();
+    if (query.isEmpty) return;
+    setState(() => _discovering = true);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('searchAurenPodcasts');
+      final response = await callable.call({'query': query, 'country': 'US'});
+      final raw = response.data is Map ? response.data['results'] : null;
+      final results = raw is List
+          ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : <Map<String, dynamic>>[];
+      if (mounted) setState(() => _remoteResults = results);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر جلب البودكاست الآن: ' + e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _discovering = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +104,42 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                 onChanged: (value) => setState(() => _query = value),
               ),
               const SizedBox(height: 10),
+              FilledButton.icon(
+                onPressed: _discovering ? null : _discoverPodcasts,
+                icon: _discovering
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.travel_explore),
+                label: Text(_discovering ? 'جاري الاكتشاف...' : 'اكتشف بودكاست عالمي'),
+              ),
+              const SizedBox(height: 10),
+              if (_remoteResults.isNotEmpty) ...[
+                const Text(
+                  'نتائج حية من دليل البودكاست',
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                ..._remoteResults.take(12).map((item) => Card(
+                  child: ListTile(
+                    leading: item['artworkUrl']?.toString().isNotEmpty == true
+                        ? CircleAvatar(
+                            backgroundImage: NetworkImage(item['artworkUrl'].toString()),
+                          )
+                        : const CircleAvatar(child: Icon(Icons.podcasts)),
+                    title: Text(item['name']?.toString() ?? 'Podcast'),
+                    subtitle: Text(
+                      (item['artist']?.toString() ?? '') + ' • ' + (item['genre']?.toString() ?? ''),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.open_in_new),
+                  ),
+                )),
+                const SizedBox(height: 14),
+              ],
               SizedBox(
                 height: 42,
                 child: ListView.separated(
