@@ -88,17 +88,56 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
     final status = g['status'] ?? 'no_data';
     final rows = g['rows'] ?? 0;
     final countries = g['countriesCovered'] ?? 0;
+    final metrics = g['metrics'] is Map ? Map<String, dynamic>.from(g['metrics'] as Map) : const <String, dynamic>{};
+    final samples = metrics['sampleMetrics'] is List ? List<dynamic>.from(metrics['sampleMetrics'] as List) : const <dynamic>[];
+    final first = samples.isNotEmpty && samples.first is Map
+        ? Map<String, dynamic>.from(samples.first as Map)
+        : const <String, dynamic>{};
+
+    String show(dynamic v, String suffix) => v == null || v.toString().isEmpty ? '—' : '${v}${suffix}';
+
     return Card(
-      child: ListTile(
-        leading: Icon(status == 'ok' ? Icons.verified_outlined : Icons.landscape_outlined),
-        title: const Text('GAEZ v5 crop evidence'),
-        subtitle: Text(status == 'ok'
-            ? '$rows rows • $countries countries covered'
-            : 'No imported GAEZ v5 rows for this crop yet.'),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(status == 'ok' ? Icons.verified_outlined : Icons.landscape_outlined),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('GAEZ v5 crop intelligence', style: TextStyle(fontWeight: FontWeight.bold))),
+              Text('${rows} rows'),
+            ]),
+            const SizedBox(height: 6),
+            Text(status == 'ok'
+                ? '${countries} countries covered'
+                : 'No imported GAEZ v5 rows for this crop yet.'),
+            if (first.isNotEmpty) ...[
+              const Divider(height: 20),
+              _gaezMetricLine('Suitability class', show(first['suitabilityClass'], '')),
+              _gaezMetricLine('Suitable land', show(first['suitableLandHa'], ' ha')),
+              _gaezMetricLine('Attainable yield', show(first['attainableYield'], '')),
+              _gaezMetricLine('Potential production', show(first['potentialProduction'], '')),
+              if (first['country'] != null || first['crop'] != null)
+                Text('${first['country'] ?? '—'} • ${first['crop'] ?? '—'}', style: Theme.of(context).textTheme.bodySmall),
+            ] else if (status == 'ok')
+              const Padding(
+                padding: EdgeInsets.only(top: 10),
+                child: Text('GAEZ rows are available, but metric field names were not present in the imported sample.'),
+              ),
+          ],
+        ),
       ),
     );
   }
 
+  Widget _gaezMetricLine(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(children: [
+      Expanded(child: Text(label)),
+      Flexible(child: Text(value, textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w600))),
+    ]),
+  );
   Widget _metricGrid(BuildContext context, List<(String, String)> values) => GridView.count(
     crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
     mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 2.3,
