@@ -89,6 +89,54 @@ exports.aurenAgriGlobalLocalMarketSnapshot = onCall(async (request) => {
   return {status:snapshot.totalRows?'ok':'no_data', source:'FAO GIEWS FPMA', ...snapshot};
 });
 
+exports.aurenAgriAgricultureDashboard = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const p = request.data || {};
+  const crop = String(p.crop || 'Sorghum').trim();
+  const iso3 = String(p.iso3 || '').trim().toUpperCase();
+  const country = String(p.country || '').trim();
+
+  const snapshot = await buildGlobalLocalMarketSnapshot({
+    crop,
+    iso3,
+    limit: p.limit
+  });
+
+  const producerSnap = await db.collection('auren_agri_producer_prices')
+    .where('item', '==', crop)
+    .limit(60)
+    .get();
+
+  const producerRows = producerSnap.docs.map(d => d.data()).filter(r =>
+    (!iso3 || String(r.iso3 || r.countryIso3 || '').toUpperCase() === iso3) &&
+    (!country || String(r.countryName || '').toLowerCase() === country.toLowerCase())
+  );
+
+  const latestProducer = producerRows.sort((a,b) =>
+    String(b.date || '').localeCompare(String(a.date || ''))
+  )[0] || null;
+
+  return {
+    status: snapshot.totalRows || latestProducer ? 'ok' : 'no_data',
+    generatedAt: new Date().toISOString(),
+    crop,
+    iso3: iso3 || null,
+    country: country || null,
+    globalLocalMarket: snapshot,
+    producer: {
+      latest: latestProducer,
+      source: latestProducer?.source || 'FAOSTAT'
+    },
+    sources: ['FAO GIEWS FPMA', 'FAOSTAT Agricultural Producer Prices'],
+    readiness: {
+      globalAggregation: true,
+      dashboardApi: true,
+      fpmaLiveFeedConfigured: false,
+      usdTonneConversion: snapshot.convertedRows > 0
+    }
+  };
+});
+
 exports.aurenAgriMarketIndicator = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
 
