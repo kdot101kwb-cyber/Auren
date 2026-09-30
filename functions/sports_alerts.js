@@ -28,6 +28,9 @@ exports.refreshAurenSportsAlerts=onSchedule(
  async()=>{
   const live=await fetchLive();
   const batch=db.batch();
+  const followingByTeam=new Map();
+  const followingSnap=await db.collectionGroup('sportsFollowing').where('sport','==','football').limit(500).get();
+  for(const d of followingSnap.docs){const data=d.data()||{};const uid=d.ref.parent.parent?.id;const teamId=String(data.id||'');if(uid&&teamId){if(!followingByTeam.has(teamId))followingByTeam.set(teamId,new Set());followingByTeam.get(teamId).add(uid);}}
   for(const f of live){
     const id=fixtureId(f); if(!id) continue;
     const home=String(f?.teams?.home?.name||'Home');
@@ -42,9 +45,7 @@ exports.refreshAurenSportsAlerts=onSchedule(
     if(snap.exists && (score.home!==Number(previous.homeScore??score.home)||score.away!==Number(previous.awayScore??score.away))){
       fresh.push({key:'score|'+score.home+'|'+score.away,type:'goal',minute:0,player:''});
     }
-    const following=await db.collectionGroup('sportsFollowing').where('sport','==','football').where('id','==',String(f?.teams?.home?.id||'')).limit(100).get();
-    const awayFollowing=await db.collectionGroup('sportsFollowing').where('sport','==','football').where('id','==',String(f?.teams?.away?.id||'')).limit(100).get();
-    const users=new Set([...following.docs.map(d=>d.ref.parent.parent?.id),...awayFollowing.docs.map(d=>d.ref.parent.parent?.id)].filter(Boolean));
+    const users=new Set([...(followingByTeam.get(String(f?.teams?.home?.id||''))||[]),...(followingByTeam.get(String(f?.teams?.away?.id||''))||[])]);
     for(const uid of users){
       const pref=await db.collection('users').doc(uid).collection('sportsSettings').doc('alerts').get();
       const settings=pref.exists?pref.data():{enabled:true,types:['kickoff','goal','red_card','full_time']};
