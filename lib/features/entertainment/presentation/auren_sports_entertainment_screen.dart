@@ -16,9 +16,22 @@ class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmen
   static const resources = {'games':'المباريات','leagues':'البطولات','teams':'الفرق','standings':'الترتيب','players':'اللاعبون','team_stats':'إحصائيات الفريق','game_details':'تفاصيل المباراة'};
   String sport='الكل', resource='games';
   bool loading=false;
+  bool liveLoading=false;
   List<Map<String,dynamic>> remote=[];
+  List<Map<String,dynamic>> live=[];
   String get apiSport => sport=='الكل' ? 'football' : sport.toLowerCase().replaceAll(' ','');
   @override void dispose(){query.dispose();country.dispose();league.dispose();season.dispose();super.dispose();}
+  Future<void> loadLive() async {
+    setState(()=>liveLoading=true);
+    try {
+      final r=await FirebaseFunctions.instance.httpsCallable('searchAurenSports').call({
+        'sport':'football','resource':'live',
+      });
+      final d=Map<String,dynamic>.from(r.data as Map);
+      if(mounted)setState(()=>live=List<Map<String,dynamic>>.from(d['results']??const []));
+    } catch (_) {} finally { if(mounted)setState(()=>liveLoading=false); }
+  }
+
   Future<void> searchRemote() async {
     setState(()=>loading=true);
     try {
@@ -42,7 +55,14 @@ class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmen
         return isSports&&(sport=='الكل'||h.contains(sport.toLowerCase()))&&(q.isEmpty||h.contains(q));
       }).toList();
       return CustomScrollView(slivers:[
-        SliverToBoxAdapter(child:_Hero(cs)),
+        SliverToBoxAdapter(child:_Hero(cs,onLive:loadLive,liveLoading:liveLoading)),
+        if(live.isNotEmpty)SliverToBoxAdapter(child:_Section(title:'مباشر الآن',icon:Icons.circle,child:Column(children:live.take(30).map((x)=>ListTile(
+          leading:const CircleAvatar(child:Icon(Icons.sports_score)),
+          title:Text((x['title']??'مباراة مباشرة').toString(),style:const TextStyle(fontWeight:FontWeight.w900)),
+          subtitle:Text([x['status'],x['date'],x['league']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • ')),
+          trailing:const Icon(Icons.chevron_right),
+          onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenSportsDetailScreen(sport:'football',resource:'game_details',data:x))),
+        )).toList()))),
         SliverToBoxAdapter(child:_Explorer(query:query,country:country,league:league,season:season,sport:sport,resource:resource,loading:loading,onSport:(v){setState((){sport=v;remote=[];});},onResource:(v)=>setState(()=>resource=v),onSearch:searchRemote)),
         if(remote.isNotEmpty)SliverToBoxAdapter(child:_Section(title:'من المصدر',icon:Icons.public,child:Column(children:remote.take(30).map((x)=>ListTile(
           leading:CircleAvatar(backgroundColor:cs.primaryContainer,child:const Icon(Icons.sports)),
@@ -62,12 +82,21 @@ class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmen
   }
 }
 class _Hero extends StatelessWidget{
-  final ColorScheme cs;const _Hero(this.cs);
+  final ColorScheme cs;final Future<void> Function() onLive;final bool liveLoading;
+  const _Hero(this.cs,{required this.onLive,required this.liveLoading});
   @override Widget build(BuildContext context)=>Container(margin:const EdgeInsets.fromLTRB(16,16,16,10),padding:const EdgeInsets.all(22),decoration:BoxDecoration(borderRadius:BorderRadius.circular(30),gradient:LinearGradient(begin:Alignment.topLeft,end:Alignment.bottomRight,colors:[cs.primary,cs.secondary])),child:const Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     Icon(Icons.sports_score,color:Colors.white,size:34),SizedBox(height:18),
     Text('كل الرياضة في مكان واحد',style:TextStyle(color:Colors.white,fontSize:27,fontWeight:FontWeight.w900)),SizedBox(height:7),
-    Text('مباريات • بطولات • فرق • لاعبين • ترتيب • إحصائيات',style:TextStyle(color:Colors.white70,fontSize:14)),
+    Text('مباريات • بطولات • فرق • لاعبين • ترتيب • إحصائيات',style:TextStyle(color:Colors.white70,fontSize:14)),SizedBox(height:14),
+    _LiveButton(),
   ]));
+}
+class _LiveButton extends StatelessWidget{
+  const _LiveButton();
+  @override Widget build(BuildContext context){
+    final hero=context.findAncestorWidgetOfExactType<_Hero>();
+    return OutlinedButton.icon(onPressed:hero?.liveLoading==true?null:hero?.onLive,style:OutlinedButton.styleFrom(foregroundColor:Colors.white,side:const BorderSide(color:Colors.white54)),icon:hero?.liveLoading==true?const SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.circle,size:12),label:Text(hero?.liveLoading==true?'جاري التحديث…':'مباشر الآن'));
+  }
 }
 class _Explorer extends StatelessWidget{
   final TextEditingController query,country,league,season;final String sport,resource;final bool loading;final ValueChanged<String> onSport,onResource;final Future<void> Function() onSearch;
