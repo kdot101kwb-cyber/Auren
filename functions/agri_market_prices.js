@@ -496,4 +496,15 @@ exports.aurenAgricultureMarketPrices = onCall(async (request)=>{
     }
   };
 });
-\n\n// Static contract checks for the agriculture FX bridge.\nfunction aurenAgriFxContract() {\n  return {\n    configured: Boolean(FAOSTAT_FX_DATA_URL || FAOSTAT_FX_API_URL),\n    source: 'FAOSTAT Exchange Rates',\n    collection: 'auren_agri_fx_rates',\n    officialHosts: ['fenixservices.fao.org','faostat.fao.org','api.fao.org','api.data.apps.fao.org','data.apps.fao.org','api-digital.apps.fao.org']\n  };\n}\nexports.aurenAgriFxContract = aurenAgriFxContract;\n
+
+
+// Static contract checks for the agriculture FX bridge.
+function aurenAgriFxContract() {
+  return {
+    configured: Boolean(FAOSTAT_FX_DATA_URL || FAOSTAT_FX_API_URL),
+    source: 'FAOSTAT Exchange Rates',
+    collection: 'auren_agri_fx_rates',
+    officialHosts: ['fenixservices.fao.org','faostat.fao.org','api.fao.org','api.data.apps.fao.org','data.apps.fao.org','api-digital.apps.fao.org']
+  };
+}
+exports.aurenAgriFxContract = aurenAgriFxContract;
