@@ -32,11 +32,16 @@ class _EducationState extends State<AurenAURENEducationScreen>{
             final xp = (profile?['totalXp'] ?? 0).toString();
             final weekly = (profile?['weeklyXp'] ?? 0).toString();
             final activities = (profile?['totalActivities'] ?? 0).toString();
+            final challengeDone = profile?['weeklyChallengeCompleted'] == true;
+            final badges = (profile?['badges'] as List? ?? const []).length;
             return Card(
               child: ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.emoji_events_outlined)),
                 title: Text('XP $xp'),
-                subtitle: Text('هذا الأسبوع: $weekly XP • الأنشطة: $activities'),
+                subtitle: Text(
+                  'هذا الأسبوع: $weekly XP • الأنشطة: $activities • '
+                  'التحدي: \${challengeDone ? 'مكتمل' : '5 أنشطة'} • الشارات: $badges',
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.leaderboard_outlined),
                   tooltip: 'Leaderboard',
