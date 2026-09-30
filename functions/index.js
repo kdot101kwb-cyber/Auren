@@ -3770,6 +3770,7 @@ Object.assign(module.exports, require('./podcast_feed'));
 
 Object.assign(module.exports, require('./global_library_index'));
 Object.assign(module.exports, require('./unesco_heritage_datahub'));
+Object.assign(module.exports, require('./unesco_heritage_search'));
 
 Object.assign(module.exports, require('./sports_discovery'));
 Object.assign(module.exports, require('./events_discovery'));
