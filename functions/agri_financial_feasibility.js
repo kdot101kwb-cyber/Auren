@@ -286,10 +286,10 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
   const annualRevenue =
     cropRevenue != null ? cropRevenue + otherAnnualRevenue : null;
   const annualOperatingProfit =
-    annualRevenue != null && annualOpex != null
+    annualRevenue != null && effectiveAnnualOpex != null
       ? annualRevenue - effectiveAnnualOpex : null;
   const simplePaybackYears =
-    annualOperatingProfit != null && annualOperatingProfit > 0 && capex != null
+    annualOperatingProfit != null && annualOperatingProfit > 0 && effectiveCapex != null
       ? effectiveCapex / annualOperatingProfit : null;
   const breakEvenPrice =
     annualProductionTons != null && annualProductionTons > 0 && annualOpex != null
