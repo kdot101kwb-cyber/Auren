@@ -17,7 +17,7 @@ test('education event ids are intended to be idempotency keys', () => {
 
 
 test('server contract contains weekly challenge and protected badge state', () => {
-  const source = fs.readFileSync(path.join(__dirname, 'education_gamification.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, 'education_gamification_core.js'), 'utf8');
   assert.match(source, /WEEKLY_CHALLENGE/);
   assert.match(source, /weeklyChallengeCompleted/);
   assert.match(source, /const BADGES/);
@@ -36,15 +36,15 @@ test('client exposes all education XP activity types', () => {
 
 
 test('weekly challenge baseline resets at a new week', () => {
-  const source = fs.readFileSync(path.join(__dirname, 'education_gamification.js'), 'utf8');
-  assert.match(source, /const isCurrentWeek = currentProfile\.currentWeek === week/);
-  assert.match(source, /const weekStartActivities = isCurrentWeek/);
-  assert.match(source, /totalActivities - weekStartActivities >= WEEKLY_CHALLENGE\.targetActivities/);
-  assert.match(source, /weekStartActivities,/);
+  const source = fs.readFileSync(path.join(__dirname, 'education_gamification_core.js'), 'utf8');
+  assert.match(source, /const currentWeek = profile.currentWeek === week/);
+  assert.match(source, /const weekStartActivities = currentWeek/);
+  assert.match(source, /totalActivities - weekStartActivities >= WEEKLY_CHALLENGE.targetActivities/);
+  assert.match(source, /weekStartActivities/);
 });
 
 test('weekly profile reads are normalized across week rollover', () => {
-  const source = fs.readFileSync(path.join(__dirname, 'education_gamification.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, 'education_gamification_core.js'), 'utf8');
   assert.match(source, /const storedProfile = profileSnap\.exists/);
   assert.match(source, /const isCurrentWeek = storedProfile\.currentWeek === week/);
   assert.match(source, /weeklyXp: isCurrentWeek \? Number\(storedProfile\.weeklyXp \|\| 0\) : 0/);
