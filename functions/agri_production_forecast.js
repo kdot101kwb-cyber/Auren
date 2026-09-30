@@ -88,6 +88,8 @@ async function latestCost(iso3,item){
  return opex?{value:num(opex.value),currency:opex.currency||null,unit:opex.unit||null,source:opex.source||null}:null;
 }
 
+exports.aurenAgriForecastTestKit={linearModel,predict,forecast,backtest,movingAveragePredict,movingAverageForecast,movingAverageBacktest,cagr};
+
 exports.aurenAgriProductionForecast=onCall(async request=>{
  auth(request);const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase(),item=clean(request.data?.item||request.data?.crop),horizon=Math.min(Math.max(num(request.data?.horizon)||5,1),10);
  const rows=await loadRows(iso3,item),productionModel=selectForecast(rows,'production',horizon),yieldModel=selectForecast(rows,'yieldValue',horizon),areaModel=selectForecast(rows,'area',horizon),production=productionModel.forecast,yieldForecast=yieldModel.forecast,areaForecast=areaModel.forecast,pm=linearModel(rows,'production'),ym=linearModel(rows,'yieldValue'),am=linearModel(rows,'area'),price=await latestPrice(iso3,item),cost=await latestCost(iso3,item);
