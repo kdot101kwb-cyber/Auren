@@ -450,7 +450,7 @@ exports.aurenAgriFinancialFeasibility = onCall(async (request) => {
     evidenceSummary: evidence ? evidence.evidenceQuality : null,
     assumptions:[
       'Manual yieldTonsHa overrides GAEZ evidence. GAEZ yield is used only when stored evidence explicitly declares a yield-per-hectare unit and verified GAEZ v5 metadata is present.',
-      'Manual pricePerTon overrides FAOSTAT. FAOSTAT price is used only when the ingested producer-price row explicitly provides a USD-per-ton unit; local-currency prices are not converted implicitly.',
+      'Manual pricePerTon overrides all sourced prices. Otherwise AUREN may use a latest local market record only when its unit explicitly represents price per ton; currency is preserved and never converted implicitly. If no suitable local record exists, FAOSTAT producer price may be used when its ingested row explicitly provides a USD-per-ton unit.',
       'CAPEX and OPEX remain manual unless an explicit cost-evidence record provides value, currency, unit and source.',
       'Logistics performance evidence from the World Bank LPI is reported separately and is not converted into a monetary cost. Monetary logistics costs remain manual unless an explicit logistics-cost record is supplied; farm-gate producer prices do not include transport beyond the farm gate.',
       'This is a preliminary screening model; taxes, financing, depreciation, working capital, logistics, FX, inflation and detailed cash flow are not included unless supplied.',
