@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import 'entertainment_detail_screen.dart';
@@ -9,6 +10,9 @@ class AurenEventsEntertainmentScreen extends StatefulWidget {
 }
 class _AurenEventsEntertainmentScreenState extends State<AurenEventsEntertainmentScreen> {
   final _repo = EntertainmentRepository(); String _query = '';
+  bool _loadingRemote = false;
+  List<Map<String,dynamic>> _remote = [];
+  Future<void> _loadRemote() async { setState(() => _loadingRemote = true); try { final r = await FirebaseFunctions.instance.httpsCallable('searchAurenEvents').call({'query': _query, 'countryCode': 'US'}); final data = Map<String,dynamic>.from(r.data as Map); if (data['status'] == 'ok') setState(() => _remote = List<Map<String,dynamic>>.from(data['results'] ?? const [])); if (data['status'] == 'not_configured' && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مصدر الفعاليات يحتاج API key في Firebase Functions.'))); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر جلب الفعاليات: $e'))); } finally { if (mounted) setState(() => _loadingRemote = false); } }
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('AUREN Events')), body: StreamBuilder<List<AurenEntertainmentItem>>(stream: _repo.watchItems(), builder: (context, snapshot) {
     if (snapshot.hasError) return Center(child: Text('تعذر تحميل الفعاليات: '+snapshot.error.toString()));
     if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
@@ -19,6 +23,7 @@ class _AurenEventsEntertainmentScreenState extends State<AurenEventsEntertainmen
     }).toList();
     return ListView(padding: const EdgeInsets.all(16), children: [Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer])), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Events & Experiences', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), SizedBox(height: 7), Text('حفلات • مهرجانات • عروض • فعاليات • تجارب ترفيهية')])),
       const SizedBox(height: 14), TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فعالية أو مهرجان أو حفلة'), onChanged: (v) => setState(() => _query = v)),
+      const SizedBox(height: 10), FilledButton.icon(onPressed: _loadingRemote ? null : _loadRemote, icon: _loadingRemote ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.cloud_download), label: const Text('جلب الفعاليات من المصدر الموثوق')), if (_remote.isNotEmpty) ...[const SizedBox(height:12), const Text('فعاليات من المصدر الموثوق',style:TextStyle(fontWeight:FontWeight.w800)), ..._remote.map((x)=>Card(child:ListTile(title:Text(x['title']?.toString()??''),subtitle:Text('${x['venue']??''} • ${x['city']??''} • ${x['date']??''}'),leading:const Icon(Icons.event))))],
       const SizedBox(height: 14), if (items.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد فعاليات منشورة حالياً. عند إضافة فعاليات إلى AUREN ستظهر هنا تلقائياً.'))) else ...items.map((item) => Card(child: ListTile(leading: item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.event)) : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)), title: Text(item.title), subtitle: Text('${item.country.isEmpty ? 'Global' : item.country} • ${item.description}', maxLines: 2, overflow: TextOverflow.ellipsis), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id))))))
     ]);
   });
