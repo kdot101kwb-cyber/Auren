@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../data/auren_tv_channel_catalog.dart';
 import 'entertainment_detail_screen.dart';
 
 /// AUREN TV / IPTV hub.
@@ -180,10 +181,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              if (channels.isEmpty)
-                _emptyState()
-              else
-                ...channels.map(_channelCard),
+              if (channels.isEmpty) _emptyState()
+              else ...channels.map(_channelCard),
+              const SizedBox(height: 20),
+              _catalogExamples(),
             ],
           );
         },
@@ -309,6 +310,36 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _catalogExamples() {
+    final examples = aurenTvCatalogExamples.where((item) {
+      final q = _query.trim().toLowerCase();
+      if (_region != 'الكل' && item.region != _region) return false;
+      if (_audience != 'الكل' && item.category.toLowerCase() != _audience.toLowerCase()) return false;
+      if (_language != 'الكل' && item.language != _language) return false;
+      if (q.isNotEmpty && !'${item.name} ${item.description} ${item.category}'.toLowerCase().contains(q)) return false;
+      return true;
+    }).toList();
+    if (examples.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('أمثلة القنوات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 6),
+        const Text('دليل أسماء فقط — لا نضيف روابط بث غير مرخّصة.'),
+        const SizedBox(height: 10),
+        ...examples.map((item) => Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.tv_rounded)),
+            title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text('${item.category} • ${item.region} • ${item.language}'),
+            trailing: const Icon(Icons.verified_outlined),
+          ),
+        )),
+      ],
     );
   }
 
