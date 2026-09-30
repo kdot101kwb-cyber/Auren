@@ -43,7 +43,7 @@ class AgricultureMarketPricesService {
       : functions = functions ?? FirebaseFunctions.instanceFor(region:'us-central1');
 
   Future<Map<String, dynamic>> getPrices({
-    String country = 'SDN', String state = '', String city = '', String commodity = '',
+    String country = 'ALL', String state = '', String city = '', String commodity = '',
   }) async {
     final result = await functions.httpsCallable('aurenAgricultureMarketPrices').call({
       'country':country, 'state':state, 'city':city, 'commodity':commodity, 'limit':50,
