@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
+import 'agriculture_gaez_screen.dart';
 
 class AurenAgricultureScreen extends StatefulWidget {
   const AurenAgricultureScreen({super.key});
@@ -69,6 +70,14 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               ]),
             ),
           ),
+          if (_type == 'crop' || _type == 'farm' || _type == 'feasibility') ...[
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AgricultureGaezScreen())),
+              icon: const Icon(Icons.public_outlined),
+              label: const Text('تحليل GAEZ v5 للمحصول'),
+            ),
+          ],
           FilledButton.icon(
             onPressed: () => _askAi(context),
             icon: const Icon(Icons.auto_awesome_rounded),
