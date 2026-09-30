@@ -52,18 +52,21 @@ function eventType(e){
 exports.refreshAurenSportsAlerts=onSchedule(
  {schedule:'every 1 minutes',region:'us-central1',timeoutSeconds:50,memory:'256MiB'},
  async()=>{
+  // Claim the run before provider calls so overlapping scheduler invocations do not
+  // spend API quota while one run is already active.
+  const runRef=db.collection('sports_alert_runs').doc('live');
+  const runSnap=await runRef.get();
+  const lastRunMs=runSnap.exists?Number(runSnap.data()?.startedAtMs||0):0;
+  if(Date.now()-lastRunMs<45000)return {skipped:true,reason:'recent_run'};
+  await runRef.set({startedAtMs:Date.now(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+
   const live=await fetchLive();
   const today=await fetchToday();
   const fixturesById=new Map();
   for(const f of today){const id=fixtureId(f);if(id)fixturesById.set(id,f);}
   for(const f of live){const id=fixtureId(f);if(id)fixturesById.set(id,f);}
   const fixtures=[...fixturesById.values()];
-  const runRef=db.collection('sports_alert_runs').doc('live');
-  const runSnap=await runRef.get();
-  const lastRunMs=runSnap.exists?Number(runSnap.data()?.startedAtMs||0):0;
-  if(Date.now()-lastRunMs<45000)return {skipped:true,reason:'recent_run'};
-  await runRef.set({startedAtMs:Date.now(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
-  const batch=db.batch();
+  const writes=[];
   const pushJobs=[];
   const followingByTeam=new Map();
   const followingSnap=await db.collectionGroup('sportsFollowing').where('sport','==','football').limit(500).get();
@@ -98,11 +101,11 @@ exports.refreshAurenSportsAlerts=onSchedule(
       const allowed=Array.isArray(settings.types)?settings.types:[];
       for(const e of fresh.filter(x=>allowed.includes(x.type))){
         const notificationId=id+'_'+e.key.replace(/[^a-zA-Z0-9_-]/g,'_');
-        batch.set(db.collection('users').doc(uid).collection('sportsAlerts').doc(notificationId),{
+        writes.push({ref:db.collection('users').doc(uid).collection('sportsAlerts').doc(notificationId),data:{
           fixtureId:id,type:e.type,title:e.type==='goal'?'هدف في المباراة':e.type==='red_card'?'بطاقة حمراء':e.type==='kickoff'?'بدأت المباراة':e.type==='full_time'?'انتهت المباراة':'تحديث المباراة',
           body:home+' × '+away+(e.player?' — '+e.player:'')+(e.minute?' ('+e.minute+"')":''),
           home,away,score,createdAt:FieldValue.serverTimestamp(),read:false,
-        },{merge:true});
+        },merge:true});
         pushJobs.push({
           uid,
           notificationId,
@@ -113,9 +116,14 @@ exports.refreshAurenSportsAlerts=onSchedule(
         });
       }
     }
-    batch.set(ref,{homeScore:score.home,awayScore:score.away,status,eventKeys:[...new Set([...seen,...fresh.map(e=>e.key)])].slice(-100),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+    writes.push({ref,data:{homeScore:score.home,awayScore:score.away,status,eventKeys:[...new Set([...seen,...fresh.map(e=>e.key)])].slice(-100),updatedAt:FieldValue.serverTimestamp()},merge:true});
   }
-  await batch.commit();
+  // Firestore batches are capped at 500 writes. Keep headroom for future fields.
+  for(let i=0;i<writes.length;i+=450){
+    const batch=db.batch();
+    for(const write of writes.slice(i,i+450)) batch.set(write.ref,write.data,{merge:write.merge!==false});
+    await batch.commit();
+  }
 
   let pushSent=0;
   let pushFailed=0;
