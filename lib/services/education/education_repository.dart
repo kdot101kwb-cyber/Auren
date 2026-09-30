@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../core/models/education.dart';
 import 'education_gamification_service.dart';
 
@@ -20,7 +21,7 @@ class EducationRepository {
     if(!snap.exists) throw StateError('سجّل في الدورة أولاً');
     final previous=(snap.data()?['completedLessons'] as num?)?.toInt() ?? 0;
     final progress=course.lessonCount==0?100:((completed/course.lessonCount)*100).round();
-    await ref.update({'completedLessons':completed,'progress':progress,'status':progress>=100?'completed':'active','updatedAt':FieldValue.serverTimestamp()});
+    await CloudFunctions.instanceFor(region: 'us-central1').httpsCallable('completeAurenEducationLesson').call({'courseId': course.id, 'completed': completed});
 
     for (var lesson = previous + 1; lesson <= completed; lesson++) {
       await gamification.recordActivity(type: 'lesson', eventId: 'lesson:${course.id}:$lesson', sourceId: course.id);
@@ -39,7 +40,9 @@ class EducationRepository {
     }
   }
 
-  Future<void> setProgress(String uid, String courseId, int completed) => db.collection('users').doc(uid).collection('enrollments').doc(courseId).update({'completedLessons': completed, 'updatedAt': FieldValue.serverTimestamp()});
+  Future<void> setProgress(String uid, String courseId, int completed) async {
+    await CloudFunctions.instanceFor(region: 'us-central1').httpsCallable('completeAurenEducationLesson').call({'courseId': courseId, 'completed': completed});
+  }
   Stream<List<AurenLearningProgress>> watchMyLearning(String uid) => db.collection('users').doc(uid).collection('enrollments').snapshots().map((s) => s.docs.map((d) => AurenLearningProgress(courseId: d.id, completedLessons: (d.data()['completedLessons'] as num?)?.toInt() ?? 0, enrolled: true)).toList());
   Future<void> toggleSaved(String uid, String courseId, bool saved) => saved ? db.collection('users').doc(uid).collection('savedCourses').doc(courseId).set({'courseId': courseId, 'createdAt': FieldValue.serverTimestamp()}) : db.collection('users').doc(uid).collection('savedCourses').doc(courseId).delete();
   Stream<List<AurenCourse>> watchSavedCourses(String uid) => db.collection('users').doc(uid).collection('savedCourses').snapshots().asyncMap((s) async { final out=<AurenCourse>[]; for(final d in s.docs){ final c=await db.collection('courses').doc(d.id).get(); if(c.exists && (c.data()?['status']=='published')) out.add(AurenCourse.fromMap(c.id,c.data()!)); } return out; });
