@@ -19,6 +19,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   String _query = '';
   bool _discovering = false;
   List<Map<String, dynamic>> _remoteResults = const [];
+  Map<String, List<Map<String, dynamic>>> _episodes = {};
+  String? _loadingFeed;
 
   List<String> get _categories => [
         'الكل',
@@ -48,6 +50,41 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     }
   }
 
+  Future<void> _loadEpisodes(Map<String, dynamic> podcast) async {
+    final feedUrl = podcast['feedUrl']?.toString() ?? '';
+    if (feedUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('لا يوجد RSS رسمي متاح لهذا البرنامج.')));
+      return;
+    }
+    setState(() => _loadingFeed = feedUrl);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('fetchAurenPodcastFeed');
+      final response = await callable.call({'feedUrl': feedUrl});
+      final raw = response.data is Map ? response.data['episodes'] : null;
+      final episodes = raw is List ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
+      if (mounted) setState(() => _episodes[podcast['id'].toString()] = episodes);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر قراءة حلقات RSS: ' + e.toString())));
+    } finally {
+      if (mounted) setState(() => _loadingFeed = null);
+    }
+  }
+
+  AurenEntertainmentItem _episodeItem(Map<String, dynamic> podcast, Map<String, dynamic> episode) {
+    return AurenEntertainmentItem(
+      id: 'rss_' + podcast['id'].toString() + '_' + episode['id'].toString(),
+      title: episode['title']?.toString() ?? 'Episode',
+      type: 'Podcast',
+      description: episode['description']?.toString() ?? '',
+      imageUrl: episode['imageUrl']?.toString().isNotEmpty == true ? episode['imageUrl'].toString() : (podcast['artworkUrl']?.toString() ?? ''),
+      mediaUrl: episode['audioUrl']?.toString() ?? '',
+      mediaKind: 'audio',
+      creatorId: '', channelId: '',
+      country: podcast['country']?.toString() ?? '',
+      language: podcast['language']?.toString() ?? '',
+      artistName: podcast['artist']?.toString() ?? '',
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final repo = EntertainmentRepository();
@@ -135,7 +172,21 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    trailing: const Icon(Icons.open_in_new),
+                    trailing: _loadingFeed == item['feedUrl']
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.library_music_outlined),
+                    onTap: () => _loadEpisodes(item),
+                  ),
+                )),
+                ...(_episodes[item['id']?.toString()] ?? const <Map<String, dynamic>>[]).map((episode) => Card(
+                  margin: const EdgeInsetsDirectional.only(start: 22, top: 4),
+                  child: ListTile(
+                    leading: const Icon(Icons.play_circle_outline),
+                    title: Text(episode['title']?.toString() ?? 'Episode', maxLines: 2, overflow: TextOverflow.ellipsis),
+                    subtitle: Text(episode['publishedAt']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                    onTap: episode['audioUrl']?.toString().isEmpty != false
+                        ? null
+                        : () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: _episodeItem(item, episode)))),
                   ),
                 )),
                 const SizedBox(height: 14),
