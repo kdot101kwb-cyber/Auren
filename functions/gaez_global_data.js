@@ -600,3 +600,50 @@ exports.aurenGaezCropQuery = onCall(async (request) => {
     next:'connect the validated FAO catalog resource/query endpoint before returning agronomic values'
   };
 });
+
+
+exports.aurenGaezCropInsights = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+
+  const country = String(request.data?.country || '').trim();
+  const crop = String(request.data?.crop || '').trim();
+  const climateSource = String(request.data?.climateSource || '').trim();
+  const ssp = String(request.data?.ssp || '').trim();
+  const period = String(request.data?.period || '').trim();
+  const waterSupply = String(request.data?.waterSupply || '').trim();
+  const management = String(request.data?.management || '').trim();
+  const limit = Math.min(100, Math.max(1, Number(request.data?.limit || 25)));
+
+  let query = db.collection('auren_gaez_v5_crop_summary_rows');
+  if (country) query = query.where('countryKey', '==', country.toUpperCase());
+  if (crop) query = query.where('cropKey', '==', normalizeCountryKey(crop));
+  const snap = await query.limit(500).get();
+
+  const rows = [];
+  snap.forEach(doc => {
+    const stored = doc.data() || {};
+    const row = stored.row || {};
+    const text = JSON.stringify(row).toLowerCase();
+    const matches = (value) => !value || text.includes(String(value).toLowerCase());
+    if (!matches(climateSource) || !matches(ssp) || !matches(period) || !matches(waterSupply) || !matches(management)) return;
+    rows.push({
+      id: doc.id,
+      country: stored.countryKey || country || null,
+      crop: stored.cropKey || crop || null,
+      row,
+      source: stored.source || 'FAO GAEZ v5 Crop Summary Data',
+      version: stored.version || 'GAEZ v5',
+      resourceUrl: stored.resourceUrl || null,
+    });
+  });
+
+  return {
+    status: rows.length ? 'ok' : 'no_imported_match',
+    source: 'FAO GAEZ v5 Crop Summary Data',
+    filters: {country, crop, climateSource, ssp, period, waterSupply, management},
+    importedRowsScanned: snap.size,
+    count: Math.min(rows.length, limit),
+    rows: rows.slice(0, limit),
+    next: rows.length ? null : 'Run the official FAO GAEZ v5 Crop Summary ingest first.'
+  };
+});
