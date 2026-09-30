@@ -211,7 +211,7 @@ exports.aurenAgriAgricultureDashboard = onCall(async (request) => {
       globalAggregation: true,
       dashboardApi: true,
       fpmaLiveFeedConfigured: Boolean(process.env.FPMA_DATA_URL),
-      usdTonneConversion: snapshot.convertedRows > 0,
+      usdTonneConversion: snapshot.convertedRows > 0,\n      faostatFxConfigured: Boolean(process.env.FAOSTAT_FX_DATA_URL),\n      faostatFxCollection: 'auren_agri_fx_rates',
       contractVersion: 'agriculture-dashboard.v1'
     }
   };
@@ -276,7 +276,7 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
     localNativePrice: latestLocal?.priceLCU ?? null,
     localNativeUnit: latestLocal?.unit ?? null,
     localCurrency: latestLocal?.currency ?? null,
-    localConversionStatus: latestLocal?.conversionStatus ?? (localUsd === null ? 'not_converted' : 'converted'),
+    localConversionStatus,
     producerTrend: trend(producer, 'priceUSDTonne'),
     localTrend: trend(local, 'priceUSDTonne'),
     dataCoverage: {
