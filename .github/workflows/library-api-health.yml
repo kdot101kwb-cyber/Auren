@@ -1,0 +1,35 @@
+name: AUREN Library API Health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: library-api-health
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check library sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          declare -A URLS=(
+            [openlibrary]="https://openlibrary.org/search.json?q=aure n"
+            [crossref]="https://api.crossref.org/works?query.title=auren&rows=1"
+            [gutendex]="https://gutendex.com/books/?search=auren"
+            [unesco]="https://data.unesco.org/api/explore/v2.1/catalog/datasets/ich001/records?limit=1"
+          )
+
+          for name in "${!URLS[@]}"; do
+            url="${URLS[$name]}"
+            echo "Checking $name: $url"
+            curl --fail --silent --show-error --location               --max-time 15               --retry 2               --retry-delay 2               -A "AUREN-Library-Health/1.0"               "$url" > /dev/null
+          done
