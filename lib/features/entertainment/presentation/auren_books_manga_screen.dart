@@ -43,6 +43,12 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   String _worldYear = '';
   bool _magazineLoading = false;
   List<Map<String, dynamic>> _magazineResults = const [];
+  bool _comicLoading=false; List<Map<String,dynamic>> _comicResults=const [];
+  bool _researchLoading=false; List<Map<String,dynamic>> _researchResults=const [];
+  Map<String,dynamic>? _graph;
+  Future<void> _searchComics() async { final q=_query.trim(); if(q.length<2)return; setState(()=>_comicLoading=true); try { final r=await FirebaseFunctions.instanceFor(region:'us-central1').httpsCallable('searchAurenComics').call({'query':q,'limit':30}); final d=Map<String,dynamic>.from(r.data as Map); if(mounted)setState(()=>_comicResults=(d['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()); } catch(_){if(mounted)setState(()=>_comicResults=const []);} finally{if(mounted)setState(()=>_comicLoading=false);} }
+  Future<void> _searchResearch() async { final q=_query.trim(); if(q.length<2)return; setState(()=>_researchLoading=true); try { final r=await FirebaseFunctions.instanceFor(region:'us-central1').httpsCallable('searchAurenResearch').call({'query':q,'limit':30}); final d=Map<String,dynamic>.from(r.data as Map); if(mounted)setState(()=>_researchResults=(d['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()); } catch(_){if(mounted)setState(()=>_researchResults=const []);} finally{if(mounted)setState(()=>_researchLoading=false);} }
+  Future<void> _loadGraph(Map<String,dynamic> item) async { try { final r=await FirebaseFunctions.instanceFor(region:'us-central1').httpsCallable('getAurenLibraryGraph').call(item); final d=Map<String,dynamic>.from(r.data as Map); if(mounted)setState(()=>_graph=d); } catch(_){} }
 
   Future<void> _loadWorldHeritage() async {
     if (_worldLoading) return;
@@ -202,9 +208,9 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
           _hero(context),
           if (_seeding) const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: LinearProgressIndicator()),
           const SizedBox(height:16),
-          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText:'ابحث: ماجد، ميكي، رجل المستحيل، مؤلف، ناشر، مجلة...'), onChanged:(v)=>setState(()=>_query=v), onSubmitted:(_){_searchGlobalLibrary();_searchMagazines();}),
+          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText:'ابحث: ماجد، ميكي، رجل المستحيل، مؤلف، ناشر، مجلة...'), onChanged:(v)=>setState(()=>_query=v), onSubmitted:(_){_searchGlobalLibrary();_searchMagazines();_searchComics();_searchResearch();}),
           const SizedBox(height:8),
-          SizedBox(width:double.infinity, child:FilledButton.icon(onPressed:_globalSearching?null:(){_searchGlobalLibrary();_searchMagazines();}, icon:_globalSearching?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.travel_explore_rounded), label:const Text('البحث في Global Library Index'))),
+          SizedBox(width:double.infinity, child:FilledButton.icon(onPressed:_globalSearching?null:(){_searchGlobalLibrary();_searchMagazines();_searchComics();_searchResearch();}, icon:_globalSearching?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.travel_explore_rounded), label:const Text('البحث في Global Library Index'))),
           if (_globalResults.isNotEmpty) ...[
             const SizedBox(height:16),
             const Text('Global Library Index', style: TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
@@ -301,6 +307,17 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
                 const SizedBox(height:5),Text(s['description']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11))
               ]))));
             }))
+          ],
+          if (_comicResults.isNotEmpty || _comicLoading) ...[
+            const SizedBox(height:18), Row(children:[const Expanded(child:Text('Comics • Manga • Graphic Novels',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),if(_comicLoading)const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2))]),
+            ..._comicResults.take(12).map((m)=>Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.auto_stories_rounded)),title:Text(m['title']?.toString()??''),subtitle:Text([m['kind'],m['country'],m['publisher'],m['language']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • ')),onTap:()=>_loadGraph(m)))),
+          ],
+          if (_researchResults.isNotEmpty || _researchLoading) ...[
+            const SizedBox(height:18), Row(children:[const Expanded(child:Text('Research & References • الأبحاث والمراجع',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),if(_researchLoading)const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2))]),
+            ..._researchResults.take(12).map((m)=>Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.science_rounded)),title:Text(m['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text([m['author'],m['journal'],m['year'],m['doi']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • ')),onTap:()=>_loadGraph(m)))),
+          ],
+          if (_graph != null) ...[
+            const SizedBox(height:18), Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Knowledge Graph • شبكة المعرفة',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),const SizedBox(height:6),Text(((_graph!['nodes'] as List?)??const []).length.toString()+' nodes • '+(((_graph!['edges'] as List?)??const []).length.toString())+' relations'),const SizedBox(height:8),...((_graph!['nodes'] as List?)??const []).take(10).map((n)=>Text('• '+n['type'].toString()+': '+n['label'].toString()))]))),
           ],
           if (_subjects.isNotEmpty) ...[
             const SizedBox(height:18),
