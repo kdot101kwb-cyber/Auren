@@ -275,6 +275,72 @@ exports.aurenAgriLocalMarketPriceStatus = onCall(async (request) => {
 });
 
     
+// FAOSTAT exchange-rate bridge.
+// FX is sourced only from FAOSTAT-provided observations when the caller supplies
+// an official machine-readable export URL. No third-party FX provider is used.
+const FAOSTAT_FX_DATA_URL = process.env.FAOSTAT_FX_DATA_URL || '';
+
+function officialFaostatFxUrl(value) {
+  const u = new URL(value);
+  const allowed = new Set(['fenixservices.fao.org','faostat.fao.org','api.fao.org','api.data.apps.fao.org','data.apps.fao.org']);
+  if (!['https:','http:'].includes(u.protocol) || !allowed.has(u.hostname)) {
+    throw new Error('Only official FAOSTAT resources are allowed for FX.');
+  }
+  return u;
+}
+
+function normalizeFxRow(row) {
+  const pick=(...keys)=>{ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && String(row[k]).trim()!=='') return row[k]; } return ''; };
+  const rate=Number(String(pick('rate','exchange_rate','Exchange Rate','value','Value')).replace(/,/g,''));
+  return {
+    countryName:String(pick('country_name_en','country','Country','area_name')||'').trim(),
+    iso3:String(pick('iso3','ISO3','country_iso3','area_code_iso3')||'').trim().toUpperCase(),
+    currency:String(pick('currency','Currency','currency_code')||'').trim().toUpperCase(),
+    date:String(pick('date','Date','year','Year','period','Period')||'').trim(),
+    usdPerLocalUnit:Number.isFinite(rate) ? rate : null,
+    source:'FAOSTAT Exchange Rates'
+  };
+}
+
+async function fetchFaostatFxRows() {
+  if (!FAOSTAT_FX_DATA_URL) throw new Error('FAOSTAT_FX_DATA_URL is not configured.');
+  const url=officialFaostatFxUrl(FAOSTAT_FX_DATA_URL);
+  const res=await fetch(url,{headers:{accept:'text/csv,application/json,text/plain'},signal:AbortSignal.timeout(60000)});
+  const body=await res.text();
+  if(!res.ok) throw new Error('FAOSTAT FX request failed: '+res.status);
+  let rows;
+  try { rows=JSON.parse(body); if(!Array.isArray(rows)) rows=rows.data||rows.rows||[]; }
+  catch(_) { rows=parseCsv(body); }
+  if(!Array.isArray(rows)) throw new Error('FAOSTAT FX response is not a supported table.');
+  return rows.map(normalizeFxRow).filter(r=>r.iso3 && r.currency && r.usdPerLocalUnit!==null);
+}
+
+exports.aurenAgriFxStatus = onCall(async (request)=>{
+  if(!request.auth?.uid) throw new Error('Authentication is required.');
+  return {source:'FAOSTAT Exchange Rates',configured:Boolean(FAOSTAT_FX_DATA_URL),cached:!(await db.collection('auren_agri_fx_rates').limit(1).get()).empty};
+});
+
+exports.aurenAgriFxIngest = onCall(async (request)=>{
+  if(!request.auth?.uid) throw new Error('Authentication is required.');
+  const rows=await fetchFaostatFxRows();
+  const batch=db.batch();
+  for(const row of rows.slice(-5000)) {
+    const id=[row.iso3,row.currency,row.date].join('_').replace(/[^a-zA-Z0-9_-]/g,'_');
+    batch.set(db.collection('auren_agri_fx_rates').doc(id),{...row,importedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  }
+  if(rows.length) await batch.commit();
+  return {status:rows.length?'cached':'no_data',count:rows.length,source:'FAOSTAT Exchange Rates'};
+});
+
+function convertLocalPriceToUsdPerTonne(row, fxByIso3) {
+  const localTonne=Number(row.priceLCUTonne);
+  if(!Number.isFinite(localTonne)) return {usd:null,status:'unit_not_normalized'};
+  if(String(row.currency||'').toUpperCase()==='USD') return {usd:localTonne,status:'unit_converted'};
+  const fx=fxByIso3[String(row.iso3||'').toUpperCase()];
+  if(!fx || !Number.isFinite(fx.usdPerLocalUnit)) return {usd:null,status:'fx_unavailable'};
+  return {usd:localTonne*fx.usdPerLocalUnit,status:'fx_converted'};
+}
+
 // Global commodity benchmark layer.
 // This is intentionally separate from local/producer prices: the provider may
 // expose a market/futures benchmark with its own unit. AUREN never silently
