@@ -1,5 +1,6 @@
 const DATASET = 'ich001';
 const API = 'https://data.unesco.org/api/explore/v2.1/catalog/datasets/' + DATASET + '/records';
+const LISTS = {RL:'Representative List', USL:'Urgent Safeguarding List', GSP:'Register of Good Safeguarding Practices'};
 
 function clean(value, max = 1200) {
   return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -36,7 +37,7 @@ async function searchUNESCO({query = '', country = '', year = '', list = '', lim
       description: clean(x.description_en || x.description_fr, 1800),
       year: String(x.inscription_year || '').slice(0, 4),
       list: clean(x.type_acronym, 20),
-      listName: clean(x.type_of_element_en || '', 100),
+      listName: LISTS[clean(x.type_acronym, 20)] || clean(x.type_of_element_en || '', 100),
       countries: clean(x.countries, 300),
       source: 'UNESCO Intangible Cultural Heritage DataHub',
       sourceUrl: clean(x.http_url_en, 2000),
@@ -45,6 +46,8 @@ async function searchUNESCO({query = '', country = '', year = '', list = '', lim
       images: images.slice(0, 10),
       videos: videos.slice(0, 10),
       concepts: clean([x.concepts_primary_names, x.concepts_secondary_names].filter(Boolean).join(', '), 1200),
+      whc: String(x.whc || '').toLowerCase() === 'true',
+      whcSites: x.whc_sites || '',
       externalId: clean(x.ich_public_ref || x.uuid, 100),
     };
   }).filter((x) => x.title);
