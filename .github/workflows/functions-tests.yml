@@ -11,7 +11,6 @@ on:
       - ".github/workflows/functions-tests.yml"
   workflow_dispatch:
 
-# Trigger Functions CI on every Functions change.
 permissions:
   contents: read
 
@@ -28,9 +27,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "20"
-          cache: npm
-          cache-dependency-path: functions/package-lock.json
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Run Functions tests
         run: npm test
