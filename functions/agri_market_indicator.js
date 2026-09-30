@@ -131,8 +131,9 @@ exports.aurenAgriAgricultureDashboard = onCall(async (request) => {
     readiness: {
       globalAggregation: true,
       dashboardApi: true,
-      fpmaLiveFeedConfigured: false,
-      usdTonneConversion: snapshot.convertedRows > 0
+      fpmaLiveFeedConfigured: Boolean(process.env.FPMA_DATA_URL),
+      usdTonneConversion: snapshot.convertedRows > 0,
+      contractVersion: 'agriculture-dashboard.v1'
     }
   };
 });
