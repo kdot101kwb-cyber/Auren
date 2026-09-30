@@ -26,6 +26,38 @@ function trend(rows, valueKey) {
   };
 }
 
+async function buildGlobalLocalMarketSnapshot({crop='', iso3='', limit=500}={}) {
+  let q = db.collection('auren_agri_local_market_prices').limit(Math.min(Math.max(Number(limit)||500,1),1000));
+  const snap = await q.get();
+  const rows = snap.docs.map(d => d.data()).filter(r =>
+    (!crop || String(r.item||'').toLowerCase() === crop.toLowerCase()) &&
+    (!iso3 || String(r.iso3||'').toUpperCase() === iso3.toUpperCase())
+  );
+  const byCountry = new Map();
+  for (const r of rows) {
+    const key = String(r.iso3 || r.countryName || 'UNKNOWN').toUpperCase();
+    const bucket = byCountry.get(key) || {iso3:r.iso3||null,countryName:r.countryName||null,markets:0,rows:0,nativePrices:0,convertedPrices:0};
+    bucket.rows++;
+    if (r.market) bucket.markets++;
+    if (num(r.priceLCU) !== null) bucket.nativePrices++;
+    if (num(r.priceUSDTonne) !== null) bucket.convertedPrices++;
+    byCountry.set(key,bucket);
+  }
+  return {
+    countries:[...byCountry.values()].sort((a,b)=>String(a.countryName||a.iso3).localeCompare(String(b.countryName||b.iso3))),
+    totalRows:rows.length,
+    countriesCovered:byCountry.size,
+    convertedRows:rows.filter(r=>num(r.priceUSDTonne)!==null).length
+  };
+}
+
+exports.aurenAgriGlobalLocalMarketSnapshot = onCall(async (request) => {
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const p=request.data||{};
+  const snapshot=await buildGlobalLocalMarketSnapshot({crop:String(p.crop||''),iso3:String(p.iso3||''),limit:p.limit});
+  return {status:snapshot.totalRows?'ok':'no_data', source:'FAO GIEWS FPMA', ...snapshot};
+});
+
 exports.aurenAgriMarketIndicator = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
 
