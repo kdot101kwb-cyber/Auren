@@ -10,7 +10,7 @@ function clean(value, max) {
 async function updateMatchFlow(uid, flowId, status, extra = {}) {
   const id = clean(flowId, 180);
   if (!id) return;
-  const ref = db.collection('users').doc(uid).collection('matchFlows').doc(id);
+  const ref = db.collection('users').doc(uid).collection('match_action_flows').doc(id);
   const snap = await ref.get();
   if (!snap.exists) return;
   await ref.set({
