@@ -332,7 +332,8 @@ async function fetchFaostatFxRows() {
 
 exports.aurenAgriFxStatus = onCall(async (request)=>{
   if(!request.auth?.uid) throw new Error('Authentication is required.');
-  return {source:'FAOSTAT Exchange Rates',configured:Boolean(FAOSTAT_FX_DATA_URL || FAOSTAT_FX_API_URL),cached:!(await db.collection('auren_agri_fx_rates').limit(1).get()).empty};
+  const cachedSnap=await db.collection('auren_agri_fx_rates').limit(1).get();
+  return {source:'FAOSTAT Exchange Rates',configured:Boolean(FAOSTAT_FX_DATA_URL || FAOSTAT_FX_API_URL),cached:!cachedSnap.empty,apiDefault:!FAOSTAT_FX_DATA_URL && Boolean(FAOSTAT_FX_API_URL),catalogUrl:'https://data.fao.org/catalog/dataset/b4ff0967-8f04-456e-8b7a-5f68d6f01000'};
 });
 
 exports.aurenAgriFxIngest = onCall(async (request)=>{
