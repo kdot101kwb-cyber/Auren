@@ -183,17 +183,26 @@ exports.getAurenEducationGamification = onCall(
       db.collection('users').doc(uid).collection('educationGamification').doc('profile').get(),
       db.collection('educationLeaderboards').doc(week).collection('users').doc(uid).get(),
     ]);
-    return {
-      week,
-      profile: profileSnap.exists ? profileSnap.data() : {
-        totalXp: 0,
-        totalActivities: 0,
-        weeklyXp: 0,
-        weeklyChallengeCompleted: false,
-        badges: [],
-      },
-      weekly: weekSnap.exists ? weekSnap.data() : {weeklyXp: 0, totalActivities: 0},
+    const storedProfile = profileSnap.exists ? (profileSnap.data() || {}) : {};
+    const isCurrentWeek = storedProfile.currentWeek === week;
+    const normalizedProfile = {
+      ...storedProfile,
+      totalXp: Number(storedProfile.totalXp || 0),
+      totalActivities: Number(storedProfile.totalActivities || 0),
+      weeklyXp: isCurrentWeek ? Number(storedProfile.weeklyXp || 0) : 0,
+      weeklyChallengeCompleted: isCurrentWeek && storedProfile.weeklyChallengeCompleted === true,
+      badges: Array.isArray(storedProfile.badges)
+        ? storedProfile.badges.filter((x) => typeof x === 'string')
+        : [],
     };
+    const weekly = weekSnap.exists
+      ? {
+        ...weekSnap.data(),
+        weeklyXp: Number(weekSnap.data()?.weeklyXp || 0),
+        totalActivities: Number(weekSnap.data()?.totalActivities || 0),
+      }
+      : {weeklyXp: 0, totalActivities: 0};
+    return {week, profile: normalizedProfile, weekly};
   },
 );
 
