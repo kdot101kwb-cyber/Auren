@@ -15,6 +15,7 @@ import 'watch_together_screen.dart';
 import 'auren_gaming_screen.dart';
 import 'auren_radio_screen.dart';
 import 'auren_tv_screen.dart';
+import 'auren_books_manga_screen.dart';
 import 'auren_entertainment_create_screen.dart';
 import 'auren_ai_series_studio_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -46,6 +47,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.tv_rounded, 'AI Series', 'Build an original season with AI'),
     _EntertainmentAction(Icons.public_rounded, 'AUREN World', 'Explore interactive worlds'),
     _EntertainmentAction(Icons.download_rounded, 'Offline', 'Save entertainment for low-data use'),
+    _EntertainmentAction(Icons.menu_book_rounded, 'Library', 'Books, Manga & Anime'),
   ];
 
   void _setMood(String mood, String prompt) => setState(() { _mood = mood; query = prompt; });
@@ -395,6 +397,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()));
                   } else if (action.title == 'TV') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTvScreen()));
+                  } else if (action.title == 'Library') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBooksMangaScreen()));
                   } else if (action.title == 'Create') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentCreateScreen()));
                   } else if (action.title == 'AI Series') {
