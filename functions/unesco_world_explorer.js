@@ -1,7 +1,7 @@
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 
 const API = 'https://data.unesco.org/api/explore/v2.1/catalog/datasets/whc001/records';
-const clean = (v, max=3000) => String(v ?? '').replace(/\\s+/g, ' ').trim().slice(0,max);
+const clean = (v, max=3000) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0,max);
 const arr = (v) => Array.isArray(v) ? v.map(x=>clean(x)).filter(Boolean) : typeof v==='string' ? v.split(/[;,|]/).map(x=>clean(x)).filter(Boolean) : [];
 
 function mapSite(record) {
