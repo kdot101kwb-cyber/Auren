@@ -338,3 +338,70 @@ exports.aurenAgriGlobalCommodityPriceCache = onCall(async (request)=>{
   if (rows.length) await batch.commit();
   return {status:rows.length?'cached':'no_data',count:rows.length};
 });
+
+    
+exports.aurenAgricultureMarketPrices = onCall(async (request)=>{
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const country=String(request.data?.country || 'ALL').trim().toUpperCase();
+  if (country !== 'ALL' && !/^[A-Z]{3}$/.test(country)) {
+    throw new Error('country must be a valid ISO3 code or ALL.');
+  }
+  const state=normalizeText(request.data?.state);
+  const city=normalizeText(request.data?.city);
+  const commodity=normalizeText(request.data?.commodity);
+  const limit=Math.min(Math.max(Number(request.data?.limit)||25,1),100);
+
+  const [global, primarySnap, legacySnap]=await Promise.all([
+    fetchGlobalCommodityBenchmarks(),
+    db.collection('auren_agri_local_market_prices').limit(country==='ALL'?1000:400).get(),
+    db.collection('agri_local_market_prices').limit(country==='ALL'?1000:400).get().catch(()=>({docs:[]}))
+  ]);
+
+  const local=[];
+  const seen=new Set();
+  for (const snap of [primarySnap,legacySnap]) {
+    for (const doc of snap.docs) {
+      const d=doc.data()||{};
+      const iso=String(d.iso3 || d.countryCode || '').toUpperCase();
+      const item=String(d.item || d.commodity || '').trim();
+      const row={
+        id:doc.id,
+        market:'local',
+        country:d.countryName || d.country || '',
+        countryCode:iso,
+        state:d.region || d.state || '',
+        city:d.city || '',
+        commodity:item,
+        category:d.category || 'agriculture',
+        price:Number(d.priceLCU ?? d.price),
+        currency:d.currency || '',
+        unit:d.unit || '',
+        marketName:d.market || d.marketName || '',
+        source:d.source || 'FAO GIEWS FPMA',
+        sourceUrl:d.sourceUrl || null,
+        verified:Boolean(d.verified),
+        observedAt:d.date || d.observedAt || d.updatedAt || null
+      };
+      if (country!=='ALL' && iso!==country) continue;
+      if (state && normalizeText(row.state)!==state) continue;
+      if (city && normalizeText(row.city)!==city) continue;
+      if (commodity && normalizeText(item)!==commodity) continue;
+      const key=[iso,normalizeText(item),normalizeText(row.state),normalizeText(row.city),normalizeText(row.marketName),String(row.observedAt)].join('|');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (Number.isFinite(row.price) && row.price>=0) local.push(row);
+    }
+  }
+  local.sort((a,b)=>String(b.observedAt).localeCompare(String(a.observedAt)));
+  return {
+    status:(global.length||local.length)?'ok':'no_data',
+    asOf:new Date().toISOString(),
+    country,
+    global:global.slice(0,50),
+    local:local.slice(0,limit),
+    sources:{
+      global:'Omkar Commodity Price API',
+      local:'FAO GIEWS FPMA / AUREN local imports'
+    }
+  };
+});
