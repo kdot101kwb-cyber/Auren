@@ -42,3 +42,12 @@ test('weekly challenge baseline resets at a new week', () => {
   assert.match(source, /totalActivities - weekStartActivities >= WEEKLY_CHALLENGE\.targetActivities/);
   assert.match(source, /weekStartActivities,/);
 });
+
+test('weekly profile reads are normalized across week rollover', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'education_gamification.js'), 'utf8');
+  assert.match(source, /const storedProfile = profileSnap\.exists/);
+  assert.match(source, /const isCurrentWeek = storedProfile\.currentWeek === week/);
+  assert.match(source, /weeklyXp: isCurrentWeek \? Number\(storedProfile\.weeklyXp \|\| 0\) : 0/);
+  assert.match(source, /weeklyChallengeCompleted: isCurrentWeek && storedProfile\.weeklyChallengeCompleted === true/);
+  assert.match(source, /totalXp: Number\(storedProfile\.totalXp \|\| 0\)/);
+});
