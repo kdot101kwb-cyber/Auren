@@ -12,7 +12,18 @@ async function fetchLive(){
   const response=await fetch(API_BASE+'/fixtures?live=all',{headers:{'x-apisports-key':key}});
   if(!response.ok) throw new Error('API-Football live request failed: '+response.status);
   const data=await response.json();
-  return Array.isArray(data.response)?data.response:[];
+  const live=Array.isArray(data.response)?data.response:[];
+  const detailed=[];
+  for(let i=0;i<live.length;i+=20){
+    const ids=live.slice(i,i+20).map(f=>f?.fixture?.id).filter(Boolean).join('-');
+    if(!ids) continue;
+    const detail=await fetch(API_BASE+'/fixtures?ids='+ids,{headers:{'x-apisports-key':key}});
+    if(detail.ok){
+      const detailData=await detail.json();
+      detailed.push(...(Array.isArray(detailData.response)?detailData.response:[]));
+    }
+  }
+  return detailed.length?detailed:live;
 }
 
 function fixtureId(f){return String(f?.fixture?.id||'').trim();}
