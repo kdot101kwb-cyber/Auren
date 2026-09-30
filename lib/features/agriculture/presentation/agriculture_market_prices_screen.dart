@@ -7,6 +7,7 @@ class AgricultureMarketPricesScreen extends StatefulWidget {
 }
 
 class _AgricultureMarketPricesScreenState extends State<AgricultureMarketPricesScreen> {
+  final _country = TextEditingController(text:'ALL');
   final _state = TextEditingController();
   final _city = TextEditingController();
   final _commodity = TextEditingController();
@@ -17,12 +18,13 @@ class _AgricultureMarketPricesScreenState extends State<AgricultureMarketPricesS
   bool _loading = false;
 
   @override
-  void dispose() { _state.dispose(); _city.dispose(); _commodity.dispose(); super.dispose(); }
+  void dispose() { _country.dispose(); _state.dispose(); _city.dispose(); _commodity.dispose(); super.dispose(); }
 
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final data = await _service.getPrices(state:_state.text, city:_city.text, commodity:_commodity.text);
+      final country = _country.text.trim().toUpperCase();
+      final data = await _service.getPrices(country:country.isEmpty ? 'ALL' : country, state:_state.text, city:_city.text, commodity:_commodity.text);
       if (!mounted) return;
       setState(() {
         _global = List<AgricultureMarketPrice>.from(data['global'] as List);
@@ -49,13 +51,14 @@ class _AgricultureMarketPricesScreenState extends State<AgricultureMarketPricesS
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('أسعار الزراعة والثروة الحيوانية', style: TextStyle(fontSize:21,fontWeight:FontWeight.w900)),
               const SizedBox(height:6),
-              const Text('البورصات العالمية + الأسعار المحلية الموثقة حسب الدولة والولاية والمدينة والسوق.'),
+              const Text('البورصات العالمية + الأسعار المحلية الموثقة لكل الدول، حسب ISO3 ثم الولاية والمدينة والسوق.'),
               const SizedBox(height:12),
               Row(children:[
-                Expanded(child:_field(_state,'الولاية')),
+                Expanded(child:_field(_country,'الدولة ISO3 أو ALL')),
                 const SizedBox(width:8),
-                Expanded(child:_field(_city,'المدينة')),
+                Expanded(child:_field(_state,'الولاية')),
               ]),
+              _field(_city,'المدينة'),
               _field(_commodity,'المحصول / السلعة (اختياري)'),
               SizedBox(width:double.infinity,child:FilledButton.icon(
                 onPressed:_loading ? null : _load,
