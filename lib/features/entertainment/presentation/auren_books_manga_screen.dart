@@ -17,7 +17,9 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   String _query = '';
   bool _seeding = false;
   bool _globalSearching = false;
+  bool _unescoSearching = false;
   List<Map<String, dynamic>> _globalResults = const [];
+  List<Map<String, dynamic>> _unescoResults = const [];
   List<Map<String, dynamic>> _subjects = const [];
   List<Map<String, dynamic>> _heritageStories = const [];
   bool _heritageLoading = false;
@@ -47,7 +49,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   Future<void> _searchGlobalLibrary() async {
     final q = _query.trim();
     if (q.length < 2) return;
-    setState(() => _globalSearching = true);
+    setState(() { _globalSearching = true; _unescoSearching = true; });
     try {
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
           .httpsCallable('searchAurenGlobalLibrary').call({'query': q, 'page': 1});
@@ -61,6 +63,21 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
       if (mounted) setState(() => _globalResults = const []);
     } finally {
       if (mounted) setState(() => _globalSearching = false);
+    }
+    try {
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('searchAurenUNESCOHeritage')
+          .call({'query': q, 'limit': 40});
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final rows = (data['results'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+      if (mounted) setState(() => _unescoResults = rows);
+    } catch (_) {
+      if (mounted) setState(() => _unescoResults = const []);
+    } finally {
+      if (mounted) setState(() => _unescoSearching = false);
     }
   }
 
@@ -146,6 +163,28 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
               leading: item['imageUrl']?.toString().isNotEmpty == true ? CircleAvatar(backgroundImage:NetworkImage(item['imageUrl'].toString())) : const CircleAvatar(child:Icon(Icons.library_books_rounded)),
               title:Text(item['title']?.toString() ?? 'بدون عنوان',maxLines:2,overflow:TextOverflow.ellipsis),
               subtitle:Text([item['kind'],item['author'],item['publisher'],item['year'],item['source']].where((v)=>v!=null&&v.toString().trim().isNotEmpty).map((v)=>v.toString()).join(' • '),maxLines:3,overflow:TextOverflow.ellipsis),
+              trailing:const Icon(Icons.open_in_new_rounded),
+              onTap:()=>_openGlobalResult(item),
+            ))),
+          ],
+          if (_unescoResults.isNotEmpty || _unescoSearching) ...[
+            const SizedBox(height:18),
+            Row(children:[
+              const Expanded(child:Text('UNESCO Heritage • التراث العالمي',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
+              if (_unescoSearching) const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)),
+            ]),
+            const Padding(
+              padding: EdgeInsets.only(bottom:8),
+              child: Text('بحث حي من UNESCO DataHub • المصدر الرسمي محفوظ مع كل نتيجة', style: TextStyle(fontSize:12)),
+            ),
+            ..._unescoResults.take(20).map((item)=>Card(child:ListTile(
+              leading: item['imageUrl']?.toString().isNotEmpty == true
+                  ? CircleAvatar(backgroundImage:NetworkImage(item['imageUrl'].toString()))
+                  : const CircleAvatar(child:Icon(Icons.public_rounded)),
+              title:Text(item['title']?.toString() ?? 'بدون عنوان',maxLines:2,overflow:TextOverflow.ellipsis),
+              subtitle:Text([
+                item['listName'], item['year'], item['countries'], item['concepts'],
+              ].where((v)=>v!=null&&v.toString().trim().isNotEmpty).map((v)=>v.toString()).join(' • '),maxLines:3,overflow:TextOverflow.ellipsis),
               trailing:const Icon(Icons.open_in_new_rounded),
               onTap:()=>_openGlobalResult(item),
             ))),
