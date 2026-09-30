@@ -1,30 +1,48 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import '../../../services/education/education_gamification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class EducationGamificationScreen extends StatelessWidget {
-  const EducationGamificationScreen({super.key});
-  @override Widget build(BuildContext context){
-    final uid=FirebaseAuth.instance.currentUser?.uid;
-    if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول أولاً.')));
-    final service=EducationGamificationService();
-    return Scaffold(appBar:AppBar(title:const Text('تعلم + إنجازات')),body:StreamBuilder<EducationGamificationState>(
-      stream:service.watch(uid),builder:(context,s){
-        final x=s.data??const EducationGamificationState();
-        return ListView(padding:const EdgeInsets.all(16),children:[
-          Card(child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            Text('المستوى ${x.level}',style:const TextStyle(fontSize:26,fontWeight:FontWeight.bold)),
-            const SizedBox(height:8),LinearProgressIndicator(value:x.progress),
-            const SizedBox(height:8),Text('${x.levelXp}/100 XP للمستوى التالي • إجمالي ${x.xp} XP'),
-            const SizedBox(height:12),Row(mainAxisAlignment:MainAxisAlignment.spaceAround,children:[_stat(Icons.local_fire_department,'${x.streak}','Streak'),_stat(Icons.task_alt,'${x.completedMissions}','أنشطة'),_stat(Icons.workspace_premium,'${x.badges.length}','Badges')])
-          ]))),
-          const SizedBox(height:12),const Text('المهمة اليومية',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
-          Card(child:ListTile(leading:const Icon(Icons.today),title:const Text('أكمل نشاطاً تعليمياً اليوم'),subtitle:Text(x.lastActiveDay==_today()?'مكتملة اليوم':'غير مكتملة'),trailing:const Text('+10 XP'))),
-          const SizedBox(height:12),const Text('الإنجازات',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
-          ...EducationGamificationService.badges.map((b)=>Card(child:ListTile(leading:Icon(x.badges.contains(b.id)?Icons.workspace_premium:Icons.lock_outline),title:Text(b.title),subtitle:Text(b.description),trailing:Text('+${b.xp} XP'))))
-        ]);
-      }));
+class EducationBadge {
+  final String id, title, description;
+  final int xp;
+  const EducationBadge(this.id,this.title,this.description,this.xp);
+}
+class EducationGamificationState {
+  final int xp, streak, completedMissions;
+  final String lastActiveDay;
+  final List<String> badges;
+  const EducationGamificationState({this.xp=0,this.streak=0,this.completedMissions=0,this.lastActiveDay='',this.badges=const []});
+  int get level => (xp ~/ 100) + 1;
+  int get levelXp => xp % 100;
+  double get progress => levelXp / 100;
+  Map<String,dynamic> toMap()=>{'xp':xp,'streak':streak,'completedMissions':completedMissions,'lastActiveDay':lastActiveDay,'badges':badges};
+  factory EducationGamificationState.fromMap(Map<String,dynamic> m)=>EducationGamificationState(
+    xp:(m['xp'] as num?)?.toInt()??0,streak:(m['streak'] as num?)?.toInt()??0,
+    completedMissions:(m['completedMissions'] as num?)?.toInt()??0,lastActiveDay:(m['lastActiveDay'] as String?)??'',
+    badges:List<String>.from(m['badges']??const []));
+}
+class EducationGamificationService {
+  final FirebaseFirestore db;
+  EducationGamificationService({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
+  DocumentReference<Map<String,dynamic>> _ref(String uid)=>db.collection('users').doc(uid).collection('education').doc('gamification');
+  Stream<EducationGamificationState> watch(String uid)=>_ref(uid).snapshots().map((s)=>EducationGamificationState.fromMap(s.data()??{}));
+  static const badges=[
+    EducationBadge('first_game','أول لعبة','أكملت أول نشاط تعليمي',20),
+    EducationBadge('ten_games','10 أنشطة','أكملت 10 أنشطة تعليمية',50),
+    EducationBadge('seven_streak','أسبوع متواصل','حافظت على 7 أيام متتالية',100),
+    EducationBadge('xp_500','500 XP','جمعت 500 نقطة خبرة',100),
+    EducationBadge('xp_1000','1000 XP','جمعت 1000 نقطة خبرة',200),
+  ];
+  Future<EducationGamificationState> awardActivity(String uid,{int xp=10}) async {
+    final ref=_ref(uid), snap=await ref.get(), old=EducationGamificationState.fromMap(snap.data()??{});
+    final d=DateTime.now().toUtc();
+    String key(DateTime x)=>x.year.toString().padLeft(4,'0')+'-'+x.month.toString().padLeft(2,'0')+'-'+x.day.toString().padLeft(2,'0');
+    final day=key(d), yesterday=key(d.subtract(const Duration(days:1)));
+    if(old.lastActiveDay==day)return old;
+    final streak=old.lastActiveDay==yesterday?old.streak+1:1;
+    final newXp=old.xp+xp, completed=old.completedMissions+1;
+    final earned=<String>[...old.badges];
+    void add(String id){if(!earned.contains(id))earned.add(id);}
+    add('first_game'); if(completed>=10)add('ten_games'); if(streak>=7)add('seven_streak'); if(newXp>=500)add('xp_500'); if(newXp>=1000)add('xp_1000');
+    final next=EducationGamificationState(xp:newXp,streak:streak,completedMissions:completed,lastActiveDay:day,badges:earned);
+    await ref.set(next.toMap(),SetOptions(merge:true)); return next;
   }
-  static String _today(){final d=DateTime.now().toUtc();return d.year.toString().padLeft(4,'0')+'-'+d.month.toString().padLeft(2,'0')+'-'+d.day.toString().padLeft(2,'0');}
-  static Widget _stat(IconData i,String v,String l)=>Column(children:[Icon(i),Text(v,style:const TextStyle(fontWeight:FontWeight.bold)),Text(l)]);
 }
