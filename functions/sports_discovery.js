@@ -23,11 +23,50 @@ function mapFootball(rows, source) {
   })).filter(x=>x.title);
 }
 
+async function fetchApiSportResource(apiKey, sport, resource, params={}) {
+  const base = sport === 'football'
+    ? 'https://v3.football.api-sports.io'
+    : 'https://v1.' + sport + '.api-sports.io';
+  const url = new URL(base + '/' + resource);
+  Object.entries(params).forEach(([k,v]) => {
+    if (v !== undefined && v !== null && String(v).trim() !== '') url.searchParams.set(k,String(v));
+  });
+  const data = await fetchJson(url,{headers:{'x-apisports-key':apiKey}});
+  return Array.isArray(data?.response) ? data.response : [];
+}
+
+function mapCompetitionRows(rows, sport) {
+  return rows.map(x => ({
+    id:String(x.league?.id || x.id || ''),
+    sport,
+    name:x.league?.name || x.name || '',
+    country:x.country?.name || x.country?.code || x.league?.country || '',
+    logo:x.league?.logo || x.logo || '',
+    type:x.league?.type || x.type || '',
+    season:x.seasons?.[0]?.year || x.season?.year || null,
+    source:'API-Sports'
+  })).filter(x=>x.id && x.name);
+}
+
+function mapTeamRows(rows, sport) {
+  return rows.map(x => ({
+    id:String(x.team?.id || x.id || ''),
+    sport,
+    name:x.team?.name || x.name || '',
+    country:x.team?.country || x.country?.name || '',
+    logo:x.team?.logo || x.logo || '',
+    source:'API-Sports'
+  })).filter(x=>x.id && x.name);
+}
+
 exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:'256MiB'},async(request)=>{
   if(!request.auth?.uid) throw new HttpsError('unauthenticated','Authentication is required.');
   const q=String(request.data?.query||'').trim().slice(0,100);
   const sport=String(request.data?.sport||'football').trim().toLowerCase() || 'football';
   const date=String(request.data?.date||'').trim().slice(0,10);
+  const resource=String(request.data?.resource||'games').trim().toLowerCase();
+  const country=String(request.data?.country||'').trim().slice(0,80);
+  const leagueId=String(request.data?.leagueId||'').trim();
   const apiKey=String(process.env.API_FOOTBALL_KEY||'').trim();
   const tsdbKey=String(process.env.THESPORTSDB_API_KEY||'').trim();
 
@@ -61,6 +100,17 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
   };
 
   if(selectedApiKey) {
+    try {
+      if(resource==='leagues' || resource==='competitions') {
+        const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'leagues',country?{country}:{});
+        return {status:'ok',resource:'leagues',providers:['API-Sports'],results:mapCompetitionRows(rows,selectedApiSport),sourceUrls};
+      }
+      if(resource==='teams') {
+        const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'teams',q?{search:q}:country?{country}:{});
+        return {status:'ok',resource:'teams',providers:['API-Sports'],results:mapTeamRows(rows,selectedApiSport),sourceUrls};
+      }
+    } catch (_) {}
+
     try {
       if(selectedApiSport==='football') {
         const url=new URL('https://v3.football.api-sports.io/fixtures');
