@@ -85,7 +85,8 @@ exports.aurenAgricultureMarketPrices = onCall(
   {region:'us-central1', timeoutSeconds:30, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
     if (!request.auth?.uid) throw new Error('Authentication is required.');
-    const country = String(request.data?.country || 'SDN').trim().slice(0, 3);
+    const country = String(request.data?.country || 'SDN').trim().toUpperCase().slice(0, 3);
+    if (!/^[A-Z]{3}$/.test(country)) throw new Error('country must be a valid ISO3 code.');
     const state = String(request.data?.state || '').trim().slice(0, 100);
     const city = String(request.data?.city || '').trim().slice(0, 100);
     const commodity = String(request.data?.commodity || '').trim().slice(0, 100);
@@ -119,10 +120,12 @@ exports.upsertAurenLocalMarketPrice = onCall(
     const d = request.data || {};
     const price = Number(d.price);
     const commodity = String(d.commodity || '').trim().slice(0, 120);
-    if (!commodity || !Number.isFinite(price) || price < 0) throw new Error('Valid commodity and price are required.');
+    if (!commodity || !Number.isFinite(price) || price < 0 || !/^[A-Z]{3}$/.test(String(d.countryCode || '').trim().toUpperCase())) {
+      throw new Error('Valid commodity, non-negative price, and ISO3 countryCode are required.');
+    }
     const ref = db.collection('agri_local_market_prices').doc();
     await ref.set({
-      country:String(d.country || 'Sudan').trim().slice(0, 80), countryCode:String(d.countryCode || 'SDN').trim().slice(0, 3).toUpperCase(),
+      country:String(d.country || '').trim().slice(0, 80), countryCode:String(d.countryCode || '').trim().slice(0, 3).toUpperCase(),
       state:String(d.state || '').trim().slice(0, 100), stateKey:String(d.state || '').trim().toLowerCase().slice(0, 100),
       city:String(d.city || '').trim().slice(0, 100), cityKey:String(d.city || '').trim().toLowerCase().slice(0, 100),
       commodity, commodityKey:commodity.toLowerCase(), category:String(d.category || 'agriculture').trim().slice(0, 60),
