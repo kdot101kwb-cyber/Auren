@@ -208,9 +208,9 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
           _hero(context),
           if (_seeding) const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: LinearProgressIndicator()),
           const SizedBox(height:16),
-          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText:'ابحث: ماجد، ميكي، رجل المستحيل، مؤلف، ناشر، مجلة...'), onChanged:(v)=>setState(()=>_query=v), onSubmitted:(_){_searchGlobalLibrary();_searchMagazines();_searchComics();_searchResearch();}),
+          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText:'ابحث: ماجد، ميكي، رجل المستحيل، مؤلف، ناشر، مجلة...'), onChanged:(v)=>setState(()=>_query=v), onSubmitted:(_){_searchGlobalLibrary();_searchMagazines();_searchComics();_searchResearch();_searchUnified();}),
           const SizedBox(height:8),
-          SizedBox(width:double.infinity, child:FilledButton.icon(onPressed:_globalSearching?null:(){_searchGlobalLibrary();_searchMagazines();_searchComics();_searchResearch();}, icon:_globalSearching?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.travel_explore_rounded), label:const Text('البحث في Global Library Index'))),
+          SizedBox(width:double.infinity, child:FilledButton.icon(onPressed:_globalSearching?null:(){_searchGlobalLibrary();_searchMagazines();_searchComics();_searchResearch();_searchUnified();}, icon:_globalSearching?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.travel_explore_rounded), label:const Text('البحث في Global Library Index'))),
           if (_globalResults.isNotEmpty) ...[
             const SizedBox(height:16),
             const Text('Global Library Index', style: TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
@@ -318,6 +318,17 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
           ],
           if (_graph != null) ...[
             const SizedBox(height:18), Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Knowledge Graph • شبكة المعرفة',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),const SizedBox(height:6),Text(((_graph!['nodes'] as List?)??const []).length.toString()+' nodes • '+(((_graph!['edges'] as List?)??const []).length.toString())+' relations'),const SizedBox(height:8),...((_graph!['nodes'] as List?)??const []).take(10).map((n)=>Text('• '+n['type'].toString()+': '+n['label'].toString()))]))),
+          ],
+          if (_unifiedResults.isNotEmpty || _unifiedLoading) ...[
+            const SizedBox(height:18),
+            Row(children:[const Expanded(child:Text('Global Library Search • البحث الموحد',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),if(_unifiedLoading)const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2))]),
+            const Text('كتب • مجلات • كوميكس • أبحاث • تراث',style:TextStyle(fontSize:12)),
+            ..._unifiedResults.take(20).map((m)=>Card(child:ListTile(
+              leading:const CircleAvatar(child:Icon(Icons.search_rounded)),
+              title:Text(m['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis),
+              subtitle:Text([m['kind'],m['author'],m['country'],m['source']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:3,overflow:TextOverflow.ellipsis),
+              onTap:()=>_loadGraph(m),
+            ))),
           ],
           if (_subjects.isNotEmpty) ...[
             const SizedBox(height:18),
