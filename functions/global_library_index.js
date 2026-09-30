@@ -72,7 +72,6 @@ function crossrefResults(data) {
   }));
 }
 
-
 function doajResults(data) {
   return (data.results || []).slice(0, 15).map((x) => {
     const b = x.bibjson || {};
@@ -108,7 +107,56 @@ const GLOBAL_SUBJECTS = [
   ['Culture','الثقافة','اللغة، المجتمع، الثقافة والتراث'],
   ['Magazines','المجلات','المجلات، الدوريات وأعدادها'],
   ['Arabic Heritage','التراث العربي','الأدب والمجلات والسلاسل والمؤلفون والرسامون والناشرون العرب'],
+  ['World Heritage Stories','قصص الشعوب','حكايات شعبية، أساطير، ملاحم، أمثال وتقاليد السرد من دول العالم'],
+  ['Country Stories','قصص من الدول','اكتشف القصص والتراث حسب الدولة والقارة واللغة والمجتمع'],
 ];
+
+const GLOBAL_HERITAGE_STORIES = [
+  {id:'sudan_jertiq',title:'الجرتق السوداني',kind:'Heritage Tradition',country:'Sudan',language:'ar',description:'ممارسات وطقوس وتعبيرات سودانية مرتبطة بالحفظ والحماية والوفرة والخصوبة.',sourceUrl:'https://ich.unesco.org/en/RL/al-jertiq-practices-rituals-and-expressions-for-preservation-protection-abundance-and-fertility-in-sudan-02214',year:'2025'},
+  {id:'china_yimakan',title:'Hezhen Yimakan Storytelling',kind:'Storytelling Tradition',country:'China',language:'Hezhen',description:'تقليد سرد شفهي لدى شعب Hezhen يجمع الحكايات والأغاني والذاكرة الجماعية.',sourceUrl:'https://ich.unesco.org/en/RL/hezhen-yimakan-storytelling-02152',year:'2025'},
+  {id:'mauritania_samba',title:'The Epic of Samba Gueladio',kind:'Epic',country:'Mauritania',language:'Fulani',description:'ملحمة شفوية متوارثة مرتبطة بالذاكرة والسرد والموسيقى في موريتانيا.',sourceUrl:'https://ich.unesco.org/en/RL/the-epic-of-samba-gueladio-01941',year:'2024'},
+  {id:'azerbaijan_nasreddin',title:'Nasreddin Anecdotes',kind:'Folktales',country:'Azerbaijan; Kazakhstan; Kyrgyzstan; Tajikistan; Türkiye; Turkmenistan; Uzbekistan',language:'Multiple',description:'تقليد سرد النوادر المنسوبة إلى نصر الدين، مع اختلافات محلية في الشخصيات والصور والحكايات.',sourceUrl:'https://ich.unesco.org/en/RL/telling-tradition-of-nasreddin-aneecdotes-01705',year:'2022'},
+  {id:'benin_geleda',title:'Oral Heritage of Gelede',kind:'Oral Heritage',country:'Benin; Nigeria; Togo',language:'Yoruba',description:'تراث شفهي وفني مرتبط بمجتمعات اليوروبا وانتقال الذاكرة الثقافية عبر الأجيال.',sourceUrl:'https://ich.unesco.org/en/RL/oral-heritage-of-gelede-00002',year:'2008'},
+  {id:'uzbekistan_bakhshi',title:'Bakhshi Art',kind:'Epic Storytelling',country:'Uzbekistan',language:'Uzbek',description:'فن سرد ملحمي يجمع الحكاية والموسيقى والأداء ويُتناقل بين الرواة.',sourceUrl:'https://ich.unesco.org/en/RL/bakhshi-art-01515',year:'2021'},
+  {id:'japan_folk_tales',title:'Japanese Folk Tales',kind:'Folktales',country:'Japan',language:'Japanese',description:'مجموعة موضوعية لحكايات وموروثات السرد الياباني، تُبحث عبر مصادر المكتبات والتراث المفتوحة.',sourceUrl:'https://www.loc.gov/collections/world-digital-library/about-this-collection/',year:'Global Index'},
+  {id:'morocco_jemaa',title:'Jemaa el-Fna Storytelling Culture',kind:'Storytelling Culture',country:'Morocco',language:'ar; Amazigh',description:'فضاء ثقافي حي ارتبط بالرواة والعروض الشفوية والموسيقى والحكايات في مراكش.',sourceUrl:'https://ich.unesco.org/en/RL/cultural-space-of-jemaa-el-fna-square-00014',year:'2008'},
+  {id:'vanuatu_sand',title:'Vanuatu Sand Drawings',kind:'Storytelling Art',country:'Vanuatu',language:'Multiple',description:'رسومات رملية تقليدية تحمل معرفة وقصصاً ورموزاً تنتقل داخل المجتمعات.',sourceUrl:'https://ich.unesco.org/en/RL/vanuatu-sand-drawings-00073',year:'2008'},
+  {id:'bangladesh_baul',title:'Baul Songs and Stories',kind:'Folk Storytelling',country:'Bangladesh',language:'Bengali',description:'تراث غنائي شفهي يحمل أفكاراً وحكايات وتجارب اجتماعية وروحية.',sourceUrl:'https://ich.unesco.org/en/RL/baul-songs-00107',year:'2008'},
+  {id:'korea_arirang',title:'Arirang Folk Song Tradition',kind:'Folk Tradition',country:'Republic of Korea',language:'Korean',description:'تقليد غنائي شعبي واسع الانتشار، يصلح كبوابة لاكتشاف القصص والذاكرة الشعبية الكورية.',sourceUrl:'https://ich.unesco.org/en/RL/arirang-lyrical-folk-song-in-the-republic-of-korea-00445',year:'2012'},
+  {id:'togo_gelede',title:'Guin Oral Traditions',kind:'Oral Tradition',country:'Togo',language:'Multiple',description:'سرد وطقوس مرتبطة بالذاكرة المجتمعية والاحتفالات في تقاليد شعب Guin.',sourceUrl:'https://ich.unesco.org/en/lists',year:'2025'},
+];
+
+exports.getAurenGlobalHeritageStories = onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
+    const country = clean(request.data?.country, 100).toLowerCase();
+    const language = clean(request.data?.language, 80).toLowerCase();
+    const query = clean(request.data?.query, 160).toLowerCase();
+    const stories = GLOBAL_HERITAGE_STORIES
+      .filter((x) => !country || x.country.toLowerCase().includes(country))
+      .filter((x) => !language || x.language.toLowerCase().includes(language))
+      .filter((x) => !query || [x.title,x.kind,x.country,x.description].join(' ').toLowerCase().includes(query))
+      .map((x) => result({
+        id:'heritage_' + x.id,
+        title:x.title,
+        kind:x.kind,
+        description:x.description,
+        year:x.year,
+        language:x.language,
+        country:x.country,
+        source:'UNESCO Intangible Cultural Heritage / AUREN Heritage Index',
+        sourceUrl:x.sourceUrl,
+        externalId:x.id,
+      }));
+    return {
+      status:'ok',
+      results:stories,
+      countries:[...new Set(GLOBAL_HERITAGE_STORIES.flatMap((x) => x.country.split(';').map((c) => c.trim())))].sort(),
+      note:'AUREN indexes cultural heritage metadata and source records; it does not reproduce copyrighted stories or scans.',
+    };
+  },
+);
 
 exports.getAurenGlobalLibrarySubjects = onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
