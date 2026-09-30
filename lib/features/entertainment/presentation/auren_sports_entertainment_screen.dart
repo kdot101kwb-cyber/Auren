@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import 'entertainment_detail_screen.dart';
@@ -10,6 +11,7 @@ class AurenSportsEntertainmentScreen extends StatefulWidget {
 class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmentScreen> {
   final _repo = EntertainmentRepository(); String _query = ''; String _sport = 'الكل';
   static const _sports = ['الكل', 'Football', 'Basketball', 'Tennis', 'Cricket', 'Other'];
+  Future<void> _loadRemote() async { setState(() => _loadingRemote = true); try { final r = await FirebaseFunctions.instance.httpsCallable('searchAurenSports').call({'query': _query}); final data = Map<String,dynamic>.from(r.data as Map); if (data['status'] == 'ok') setState(() => _remote = List<Map<String,dynamic>>.from(data['results'] ?? const [])); if (data['status'] == 'not_configured' && mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مصدر الرياضة يحتاج API key في Firebase Functions.'))); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر جلب الرياضة: $e'))); } finally { if (mounted) setState(() => _loadingRemote = false); } }
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('AUREN Sports')), body: StreamBuilder<List<AurenEntertainmentItem>>(stream: _repo.watchItems(), builder: (context, snapshot) {
     if (snapshot.hasError) return Center(child: Text('تعذر تحميل الرياضة: '+snapshot.error.toString()));
     if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
@@ -21,6 +23,7 @@ class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmen
     return ListView(padding: const EdgeInsets.all(16), children: [Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer])), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Sports Entertainment', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), SizedBox(height: 7), Text('مباريات • دوريات • بطولات • فرق • محتوى رياضي')])),
       const SizedBox(height: 14), TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فريق، مباراة، دوري أو رياضة'), onChanged: (v) => setState(() => _query = v)),
       const SizedBox(height: 10), SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: _sports.map((s) => Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: ChoiceChip(label: Text(s), selected: _sport == s, onSelected: (_) => setState(() => _sport = s)))).toList())),
+      const SizedBox(height: 10), FilledButton.icon(onPressed: _loadingRemote ? null : _loadRemote, icon: _loadingRemote ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.cloud_download), label: const Text('جلب المباريات من المصدر الموثوق')), if (_remote.isNotEmpty) ...[const SizedBox(height:12), const Text('مباريات من المصدر الموثوق',style:TextStyle(fontWeight:FontWeight.w800)), ..._remote.map((x)=>Card(child:ListTile(title:Text(x['title']?.toString()??''),subtitle:Text('${x['league']??''} • ${x['date']??''}'),leading:const Icon(Icons.sports_soccer))))],
       const SizedBox(height: 14), if (items.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد عناصر رياضية منشورة حالياً. عند إضافة بيانات رياضية إلى AUREN ستظهر هنا تلقائياً.'))) else ...items.map((item) => Card(child: ListTile(leading: item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.sports_soccer)) : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)), title: Text(item.title), subtitle: Text('${item.type} • ${item.description}', maxLines: 2, overflow: TextOverflow.ellipsis), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id))))))
     ]);
   });
