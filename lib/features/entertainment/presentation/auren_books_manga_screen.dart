@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -13,6 +14,21 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   final repo = EntertainmentRepository();
   String _type = 'Book';
   String _query = '';
+  bool _seeding = false;
+
+  Future<void> _ensureLibrarySeeded() async {
+    if (_seeding) return;
+    setState(() => _seeding = true);
+    try {
+      await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('seedAurenEntertainmentLibrary')
+          .call();
+    } catch (_) {
+      // The catalog can still be browsed if seeding is unavailable.
+    } finally {
+      if (mounted) setState(() => _seeding = false);
+    }
+  }
   static const _types = <String, String>{'Book':'Books','Manga':'Manga','Anime':'Anime'};
 
   @override
@@ -22,10 +38,15 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
       stream: repo.watchItems(type: _type),
       builder: (context, snapshot) {
         final items = snapshot.data ?? const <AurenEntertainmentItem>[];
+        if (items.isEmpty && snapshot.connectionState == ConnectionState.active && !_seeding) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _ensureLibrarySeeded());
+        }
         final q = _query.trim().toLowerCase();
         final filtered = items.where((item) => q.isEmpty || (item.title + ' ' + item.description).toLowerCase().contains(q)).toList();
         return ListView(padding: const EdgeInsets.fromLTRB(16,12,16,28), children: [
-          _hero(context), const SizedBox(height:16),
+          _hero(context),
+          if (_seeding) const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: LinearProgressIndicator()),
+          const SizedBox(height:16),
           TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText:'ابحث في الكتب أو المانجا أو الأنمي'), onChanged:(v)=>setState(()=>_query=v)),
           const SizedBox(height:12),
           SingleChildScrollView(scrollDirection:Axis.horizontal, child:Row(children:_types.entries.map((e)=>Padding(padding:const EdgeInsetsDirectional.only(end:8), child:ChoiceChip(label:Text(e.value), selected:_type==e.key, onSelected:(_)=>setState(()=>_type=e.key)))).toList())),
