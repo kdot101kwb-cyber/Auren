@@ -143,7 +143,7 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
       }
       if(resource==='game_details') {
         const gameId=String(request.data?.gameId||'').trim();
-        const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'games',gameId?{id:gameId}:{});
+        const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,selectedApiSport==='football'?'fixtures':'games',gameId?{id:gameId}:{});
         return {status:'ok',resource:'game_details',providers:['API-Sports'],results:rows,sourceUrls};
       }
       if(resource==='teams') {
