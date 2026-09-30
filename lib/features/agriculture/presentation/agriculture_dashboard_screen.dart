@@ -14,6 +14,7 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
   final _iso3 = TextEditingController();
   Map<String, dynamic>? data;
   Map<String, dynamic>? backtest;
+  Map<String, dynamic>? forecastBundle;
   Object? error;
   bool loading = false;
 
@@ -23,13 +24,19 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
       final crop = _crop.text.trim().isEmpty ? 'Sorghum' : _crop.text.trim();
       final iso3 = _iso3.text.trim().toUpperCase();
       final result = await _service.load(crop: crop, iso3: iso3);
+      Map<String, dynamic>? forecasted;
       Map<String, dynamic>? evaluated;
+      try {
+        forecasted = await _productionService.forecastBundle(iso3: iso3, item: crop, horizon: 5);
+      } catch (_) {
+        forecasted = null;
+      }
       try {
         evaluated = await _productionService.forecastBacktest(iso3: iso3, item: crop);
       } catch (_) {
         evaluated = null;
       }
-      if (mounted) setState(() { data = result; backtest = evaluated; loading = false; });
+      if (mounted) setState(() { data = result; forecastBundle = forecasted; backtest = evaluated; loading = false; });
     } catch (e) {
       if (mounted) setState(() { error = e; loading = false; });
     }
@@ -80,6 +87,8 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
             _gaezCard(context, data?['gaez']),
             const SizedBox(height: 10),
             _baselineEvaluationCard(context),
+            const SizedBox(height: 10),
+            _forecastCard(context),
 
             const SizedBox(height: 10),
             Card(child: ListTile(leading: Icon(readiness['fpmaLiveFeedConfigured'] == true ? Icons.cloud_done_outlined : Icons.cloud_off_outlined), title: const Text('FPMA local-market feed'), subtitle: Text(readiness['fpmaLiveFeedConfigured'] == true ? 'Configured' : 'Adapter ready; official export URL still needs configuration.'))),
@@ -97,6 +106,55 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
         ),
       ),
     );
+  }
+
+  Widget _forecastCard(BuildContext context) {
+    final raw = forecastBundle;
+    final rows = raw?['forecast'] is List ? List<dynamic>.from(raw!['forecast'] as List) : const <dynamic>[];
+    final yieldRows = raw?['yieldForecast'] is List ? List<dynamic>.from(raw!['yieldForecast'] as List) : const <dynamic>[];
+    if (raw == null || rows.isEmpty) {
+      return const Card(child: ListTile(
+        leading: Icon(Icons.insights_outlined),
+        title: Text('Production forecast'),
+        subtitle: Text('No historical production data is available for this crop/country yet.'),
+      ));
+    }
+    return Card(child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.insights_outlined),
+          const SizedBox(width: 8),
+          const Expanded(child: Text('5-year production forecast', style: TextStyle(fontWeight: FontWeight.bold))),
+          Text('${raw['status'] ?? 'ok'}'),
+        ]),
+        const SizedBox(height: 8),
+        ...rows.asMap().entries.map((entry) {
+          final i = entry.key;
+          final r = entry.value is Map ? Map<String,dynamic>.from(entry.value as Map) : const <String,dynamic>{};
+          final y = i < yieldRows.length && yieldRows[i] is Map ? Map<String,dynamic>.from(yieldRows[i] as Map) : const <String,dynamic>{};
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(children: [
+              SizedBox(width: 48, child: Text('${r['year'] ?? '—'}')),
+              Expanded(child: Text('Production ${_formatAgriNumber(r['predicted'] ?? r['predictedProduction'])}')),
+              Text('Yield ${_formatAgriNumber(y['predicted'])}'),
+            ]),
+          );
+        }),
+        const SizedBox(height: 6),
+        Text(
+          'Baseline trend forecast; results are estimates, not guaranteed outcomes.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ]),
+    ));
+  }
+
+  String _formatAgriNumber(dynamic value) {
+    if (value == null) return '—';
+    if (value is num) return value.toStringAsFixed(value.abs() >= 100 ? 0 : 2);
+    return value.toString();
   }
 
   Widget _baselineEvaluationCard(BuildContext context) {
