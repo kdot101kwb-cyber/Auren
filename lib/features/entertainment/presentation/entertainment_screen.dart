@@ -385,7 +385,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGamingScreen()));
                   } else if (action.title == 'Watch Together') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchTogetherScreen()));
-                  } else if (action.title == 'Movies') {\n                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMoviesHubScreen()));\n                  } else if (action.title == 'Watch AI') {
+                  } else if (action.title == 'Movies') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMoviesHubScreen()));
+                  } else if (action.title == 'Watch AI') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchConciergeScreen()));
                   } else if (action.title == 'Music') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()));
