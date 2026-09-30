@@ -12,6 +12,7 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/social/random_call_service.dart';
 import '../../../services/social/notification_service.dart';
 import '../../notifications/presentation/notification_center_screen.dart';
+import '../../education/presentation/education_screen.dart';
 
 class AurenShell extends StatefulWidget{const AurenShell({super.key});@override State<AurenShell> createState()=>_AurenShellState();}
 class _AurenShellState extends State<AurenShell>{
