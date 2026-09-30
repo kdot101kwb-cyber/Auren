@@ -20,6 +20,8 @@ test('supplier request lifecycle preserves user ownership and match flow', () =>
   assert.match(source, /users.*supplier_contact_requests/);
   assert.match(source, /users.*supplier_rfqs/);
   assert.match(source, /matchFlowId/);
+  assert.match(source, /match_action_flows/);
+  assert.doesNotMatch(source, /matchFlows/);
   assert.match(source, /waiting_response/);
   assert.match(source, /runTransaction/);
   assert.match(source, /supplier_contact_requests/);
