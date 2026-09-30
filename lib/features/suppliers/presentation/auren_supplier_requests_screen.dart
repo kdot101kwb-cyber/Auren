@@ -33,6 +33,8 @@ class _AurenSupplierRequestsScreenState extends State<AurenSupplierRequestsScree
       const PopupMenuItem(value:'details',child:Text('التفاصيل')),
       if(r.status!='completed'&&r.status!='cancelled')const PopupMenuItem(value:'cancel',child:Text('إلغاء')),
       if(r.status=='failed'||r.status=='cancelled')const PopupMenuItem(value:'retry',child:Text('إعادة المحاولة')),
+      if(r.externalDispatch&&r.status=='waiting_response')const PopupMenuItem(value:'replied',child:Text('تسجيل الرد')),
+      if(r.status=='replied')const PopupMenuItem(value:'completed',child:Text('إكمال الطلب')),
     ]),onTap:()=>_details(r)));
   Future<void> _action(String a,AurenSupplierRequest r) async{
     if(a=='details'){await _details(r);return;}
@@ -43,6 +45,12 @@ class _AurenSupplierRequestsScreenState extends State<AurenSupplierRequestsScree
         actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('رجوع')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('إلغاء الطلب'))],
       ));
       if(ok!=true)return;
+    }
+    if(a=='replied'||a=='completed'){
+      final label=a=='replied'?'تسجيل أن المورد رد؟':'إكمال الطلب؟';
+      final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:Text(label),content:const Text('سيتم تحديث الحالة داخل AUREN فقط.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('رجوع')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('تأكيد'))]));
+      if(ok==true){try{await _repo.updateStatus(r,a);if(mounted){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم تحديث الحالة.')));setState(_load);}}catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر تحديث الحالة.')));}} 
+      return;
     }
     if(a=='retry'){
       final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(
