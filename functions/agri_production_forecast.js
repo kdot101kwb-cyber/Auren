@@ -63,6 +63,15 @@ function movingAverageForecast(rows,field,horizon,window=3){
  for(let i=0;i<horizon;i++){const start=Math.max(0,values.length-window),slice=values.slice(start);const v=slice.reduce((a,b)=>a+b,0)/slice.length;out.push({year:num(d[d.length-1].year)+i+1,predicted:Math.max(0,v),method:'moving_average_baseline',window});values.push(v);}
  return out;
 }
+function selectForecast(rows,field,horizon){
+ const linear=backtest(rows,field,3),ma=movingAverageBacktest(rows,field,3,3);
+ const candidates=[{method:'linear_trend_baseline',...linear},{method:'moving_average_baseline',...ma}].filter(x=>x.status==='ok'&&Number.isFinite(x.rmse));
+ const selected=candidates.length?candidates.reduce((a,b)=>b.rmse<a.rmse?b:a):{method:'linear_trend_baseline',reason:'insufficient_backtest_data'};
+ const values=selected.method==='moving_average_baseline'
+   ? movingAverageForecast(rows,field,horizon,3)
+   : forecast(linearModel(rows,field),horizon);
+ return {forecast:values,selected:{method:selected.method,mae:selected.mae??null,rmse:selected.rmse??null,mapePct:selected.mapePct??null,folds:selected.folds??0,reason:selected.reason??null}};
+}
 async function loadRows(iso3,item){
  const snap=await db.collection('auren_agri_production_history').limit(2000).get();
  return snap.docs.map(d=>d.data()).filter(r=>(!iso3||String(r.iso3||'').toUpperCase()===iso3)&&(!item||clean(r.item).toLowerCase()===item.toLowerCase()));
@@ -81,9 +90,9 @@ async function latestCost(iso3,item){
 
 exports.aurenAgriProductionForecast=onCall(async request=>{
  auth(request);const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase(),item=clean(request.data?.item||request.data?.crop),horizon=Math.min(Math.max(num(request.data?.horizon)||5,1),10);
- const rows=await loadRows(iso3,item),pm=linearModel(rows,'production'),ym=linearModel(rows,'yieldValue'),am=linearModel(rows,'area'),production=forecast(pm,horizon),yieldForecast=forecast(ym,horizon),areaForecast=forecast(am,horizon),price=await latestPrice(iso3,item),cost=await latestCost(iso3,item);
+ const rows=await loadRows(iso3,item),productionModel=selectForecast(rows,'production',horizon),yieldModel=selectForecast(rows,'yieldValue',horizon),areaModel=selectForecast(rows,'area',horizon),production=productionModel.forecast,yieldForecast=yieldModel.forecast,areaForecast=areaModel.forecast,pm=linearModel(rows,'production'),ym=linearModel(rows,'yieldValue'),am=linearModel(rows,'area'),price=await latestPrice(iso3,item),cost=await latestCost(iso3,item);
  const revenueForecast=production.map((p,i)=>{const priceCompatible=price&&(!price.unit||/ton|tonne|kg/i.test(String(price.unit)));const costCompatible=cost&&(!cost.unit||!price?.unit||String(cost.unit).toLowerCase()===String(price.unit).toLowerCase());const revenue=priceCompatible?p.predicted*price.value:null,profit=revenue!=null&&costCompatible?revenue-cost.value:null;return{year:p.year,predictedProduction:p.predicted,predictedYield:yieldForecast[i]?.predicted??null,predictedArea:areaForecast[i]?.predicted??null,revenue,profit,revenueCurrency:price?.currency??null,revenueUnit:price?.unit??null,profitCurrency:price?.currency&&cost?.currency===price.currency?price.currency:null};});
- return{status:production.length?'ok':'no_data',iso3,item,horizon,historyYears:rows.length,forecast:production,yieldForecast,areaForecast,revenueForecast,baseline:{production:pm.metrics,yield:ym.metrics,area:am.metrics,model:pm.model,cagrPct:{production:cagr(rows,'production'),yield:cagr(rows,'yieldValue'),area:cagr(rows,'area')}},market:{price,cost},profitabilityStatus:price&&cost?'calculated':price?'needs_compatible_opex':'needs_compatible_market_price',limitations:['Baseline trend model; not an agronomic causal forecast.','Revenue requires a market price compatible with the production unit.','Profit requires price and OPEX values with compatible units and currency; otherwise it remains null.','Revenue assumes the latest compatible price remains constant across forecast years.']};
+ return{status:production.length?'ok':'no_data',iso3,item,horizon,historyYears:rows.length,forecast:production,yieldForecast,areaForecast,revenueForecast,baseline:{production:pm.metrics,yield:ym.metrics,area:am.metrics,selectedProduction:productionModel.selected,selectedYield:yieldModel.selected,selectedArea:areaModel.selected,model:pm.model,cagrPct:{production:cagr(rows,'production'),yield:cagr(rows,'yieldValue'),area:cagr(rows,'area')}},market:{price,cost},profitabilityStatus:price&&cost?'calculated':price?'needs_compatible_opex':'needs_compatible_market_price',limitations:['Baseline trend model; not an agronomic causal forecast.','Revenue requires a market price compatible with the production unit.','Profit requires price and OPEX values with compatible units and currency; otherwise it remains null.','Revenue assumes the latest compatible price remains constant across forecast years.']};
 });
 
 exports.aurenAgriForecastBacktest=onCall(async request=>{
