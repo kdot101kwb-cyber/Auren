@@ -14,6 +14,62 @@ function pct(a,b) {
   return ((a-b)/b)*100;
 }
 
+function firstMetric(row, patterns) {
+  const entries = Object.entries(row || {});
+  for (const [key, value] of entries) {
+    const k = String(key).toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    if (!patterns.some(re => re.test(k))) continue;
+    const n = num(value);
+    if (n !== null) return {key, value:n};
+  }
+  return null;
+}
+
+function firstText(row, patterns) {
+  for (const [key, value] of Object.entries(row || {})) {
+    const k = String(key).toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    if (patterns.some(re => re.test(k)) && value !== null && value !== undefined && String(value).trim()) {
+      return {key, value:String(value).trim()};
+    }
+  }
+  return null;
+}
+
+function buildGaezMetrics(rows, fallbackCrop) {
+  const samples = rows.slice(0, 20).map(r => {
+    const row = r.row || {};
+    const suitability = firstText(row, [/suitability_class/, /suitability.*class/, /class.*suitability/]);
+    const land = firstMetric(row, [/suitable.*land/, /suitable.*area/, /suitability.*area/, /area.*suitable/]);
+    const yieldMetric = firstMetric(row, [/attainable.*yield/, /yield.*attainable/, /agro.*ecological.*yield/]);
+    const production = firstMetric(row, [/potential.*production/, /production.*potential/]);
+    const crop = firstText(row, [/^crop$/, /crop_name/, /commodity/]);
+    const country = firstText(row, [/^country$/, /country_name/, /area_name/]);
+    return {
+      country: country?.value || r.countryKey || null,
+      crop: crop?.value || fallbackCrop,
+      suitabilityClass: suitability?.value || null,
+      suitableLandHa: land?.value ?? null,
+      attainableYield: yieldMetric?.value ?? null,
+      potentialProduction: production?.value ?? null
+    };
+  });
+  const nonNull = key => samples.filter(x => x[key] !== null).length;
+  return {
+    sampleMetrics: samples.filter(x =>
+      x.suitabilityClass !== null ||
+      x.suitableLandHa !== null ||
+      x.attainableYield !== null ||
+      x.potentialProduction !== null
+    ),
+    fieldCoverage: {
+      suitabilityClass: nonNull('suitabilityClass'),
+      suitableLandHa: nonNull('suitableLandHa'),
+      attainableYield: nonNull('attainableYield'),
+      potentialProduction: nonNull('potentialProduction')
+    }
+  };
+}
+
 function trend(rows, valueKey) {
   const values = rows.map(r => num(r[valueKey])).filter(v => v !== null);
   if (values.length < 2) return {direction:'unknown', changePct:null};
@@ -111,6 +167,7 @@ exports.aurenAgriAgricultureDashboard = onCall(async (request) => {
     !iso3 || String(r.countryKey || '').toUpperCase() === iso3
   );
   const gaezEvidence = gaezRows.map(r => r.row || {}).filter(r => Object.keys(r).length).slice(0, 20);
+  const gaezMetrics = buildGaezMetrics(gaezRows, crop);
 
   const producerSnap = await db.collection('auren_agri_producer_prices')
     .where('item', '==', crop)
@@ -138,7 +195,8 @@ exports.aurenAgriAgricultureDashboard = onCall(async (request) => {
       source: 'FAO GAEZ v5 Crop Summary Data',
       rows: gaezRows.length,
       countriesCovered: new Set(gaezRows.map(r => String(r.countryKey || '').toUpperCase()).filter(Boolean)).size,
-      evidence: gaezEvidence
+      evidence: gaezEvidence,
+      metrics: gaezMetrics
     },
     producer: {
       latest: latestProducer,
