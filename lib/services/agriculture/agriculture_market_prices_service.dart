@@ -62,6 +62,58 @@ class AgricultureMarketPrice {
   }
 }
 
+
+class AgricultureNormalizedLocalMarketPrice {
+  final String id;
+  final String iso3;
+  final String item;
+  final double? nativePrice;
+  final String? currency;
+  final String? unit;
+  final double? priceLocalPerTonne;
+  final double? usdPerLocalUnit;
+  final double? priceUsdPerTonne;
+  final String? fxDate;
+  final String status;
+  final String? observedAt;
+  final String? source;
+
+  const AgricultureNormalizedLocalMarketPrice({
+    required this.id,
+    required this.iso3,
+    required this.item,
+    required this.nativePrice,
+    required this.currency,
+    required this.unit,
+    required this.priceLocalPerTonne,
+    required this.usdPerLocalUnit,
+    required this.priceUsdPerTonne,
+    required this.fxDate,
+    required this.status,
+    required this.observedAt,
+    required this.source,
+  });
+
+  factory AgricultureNormalizedLocalMarketPrice.fromMap(Map<String, dynamic> d) {
+    double? number(dynamic value) => value is num ? value.toDouble() : double.tryParse(value?.toString() ?? '');
+    return AgricultureNormalizedLocalMarketPrice(
+      id: (d['id'] ?? '').toString(),
+      iso3: (d['iso3'] ?? '').toString(),
+      item: (d['item'] ?? '').toString(),
+      nativePrice: number(d['nativePrice']),
+      currency: d['currency']?.toString(),
+      unit: d['unit']?.toString(),
+      priceLocalPerTonne: number(d['priceLocalPerTonne']),
+      usdPerLocalUnit: number(d['usdPerLocalUnit']),
+      priceUsdPerTonne: number(d['priceUsdPerTonne']),
+      fxDate: d['fxDate']?.toString(),
+      status: (d['status'] ?? 'needs_unit_or_fx').toString(),
+      observedAt: d['observedAt']?.toString(),
+      source: d['source']?.toString(),
+    );
+  }
+}
+
 class AgricultureMarketPricesService {
   final FirebaseFunctions functions;
   AgricultureMarketPricesService({FirebaseFunctions? functions})
@@ -103,5 +155,26 @@ class AgricultureMarketPricesService {
       }).toList();
     }
     return {'global': parse('global'), 'local': parse('local')};
+  }
+  
+  Future<List<AgricultureNormalizedLocalMarketPrice>> normalizeLocalPricesToUsdPerTonne({
+    String iso3 = 'ALL',
+    String commodity = '',
+    int limit = 100,
+  }) async {
+    final result = await functions
+        .httpsCallable('aurenAgriLocalMarketPriceUsdNormalization')
+        .call({
+      'iso3': iso3.trim().isEmpty ? 'ALL' : iso3.trim().toUpperCase(),
+      'commodity': commodity.trim(),
+      'limit': limit.clamp(1, 500),
+    });
+    final data = result.data is Map ? result.data as Map : const {};
+    final rows = data['rows'] is List ? data['rows'] as List : const [];
+    return rows.whereType<Map>().map((e) {
+      return AgricultureNormalizedLocalMarketPrice.fromMap(
+        Map<String, dynamic>.from(e),
+      );
+    }).toList();
   }
 }
