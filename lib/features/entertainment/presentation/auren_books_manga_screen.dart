@@ -32,6 +32,56 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   List<String> _heritageTypes = const [];
   List<String> _heritageYears = const [];
   int _heritageTotal = 0;
+  bool _worldLoading = false;
+  List<Map<String, dynamic>> _worldResults = const [];
+  List<String> _worldRegions = const [];
+  List<String> _worldCountries = const [];
+  List<String> _worldCategories = const [];
+  String _worldRegion = '';
+  String _worldCountry = '';
+  String _worldCategory = '';
+  String _worldYear = '';
+  bool _magazineLoading = false;
+  List<Map<String, dynamic>> _magazineResults = const [];
+
+  Future<void> _loadWorldHeritage() async {
+    if (_worldLoading) return;
+    setState(() => _worldLoading = true);
+    try {
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('getAurenWorldHeritageExplorer')
+          .call({'region': _worldRegion, 'country': _worldCountry, 'category': _worldCategory, 'year': _worldYear, 'query': ''});
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final rows = (data['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
+      if (mounted) setState(() {
+        _worldResults=rows;
+        _worldRegions=(data['regions'] as List? ?? const []).map((e)=>e.toString()).toList();
+        _worldCountries=(data['countries'] as List? ?? const []).map((e)=>e.toString()).toList();
+        _worldCategories=(data['categories'] as List? ?? const []).map((e)=>e.toString()).toList();
+      });
+    } catch (_) {
+      if (mounted) setState(()=>_worldResults=const []);
+    } finally {
+      if (mounted) setState(()=>_worldLoading=false);
+    }
+  }
+
+  Future<void> _searchMagazines() async {
+    final q=_query.trim();
+    if(q.length<2) return;
+    setState(()=>_magazineLoading=true);
+    try {
+      final response=await FirebaseFunctions.instanceFor(region:'us-central1')
+          .httpsCallable('searchAurenMagazines').call({'query':q,'limit':40});
+      final data=Map<String,dynamic>.from(response.data as Map);
+      final rows=(data['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
+      if(mounted) setState(()=>_magazineResults=rows);
+    } catch (_) {
+      if(mounted) setState(()=>_magazineResults=const []);
+    } finally {
+      if(mounted) setState(()=>_magazineLoading=false);
+    }
+  }
 
   Future<void> _ensureLibrarySeeded() async {
     if (_seeding) return;
@@ -134,7 +184,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   }
 
   @override
-  void initState() { super.initState(); _loadSubjects(); _loadHeritage(); }
+  void initState() { super.initState(); _loadSubjects(); _loadHeritage(); _loadWorldHeritage(); }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -152,7 +202,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
           _hero(context),
           if (_seeding) const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: LinearProgressIndicator()),
           const SizedBox(height:16),
-          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText:'ابحث: ماجد، ميكي، رجل المستحيل، مؤلف، ناشر، مجلة...'), onChanged:(v)=>setState(()=>_query=v), onSubmitted:(_)=>_searchGlobalLibrary()),
+          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText:'ابحث: ماجد، ميكي، رجل المستحيل، مؤلف، ناشر، مجلة...'), onChanged:(v)=>setState(()=>_query=v), onSubmitted:(_){_searchGlobalLibrary();_searchMagazines();}),
           const SizedBox(height:8),
           SizedBox(width:double.infinity, child:FilledButton.icon(onPressed:_globalSearching?null:_searchGlobalLibrary, icon:_globalSearching?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.travel_explore_rounded), label:const Text('البحث في Global Library Index'))),
           if (_globalResults.isNotEmpty) ...[
@@ -187,6 +237,44 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
               ].where((v)=>v!=null&&v.toString().trim().isNotEmpty).map((v)=>v.toString()).join(' • '),maxLines:3,overflow:TextOverflow.ellipsis),
               trailing:const Icon(Icons.open_in_new_rounded),
               onTap:()=>_openGlobalResult(item),
+            ))),
+          ],
+          if (_worldResults.isNotEmpty || _worldLoading) ...[
+            const SizedBox(height:18),
+            Row(children:[
+              const Expanded(child:Text('World Heritage Explorer • مواقع التراث العالمي',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
+              if(_worldLoading) const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)),
+            ]),
+            const Text('UNESCO World Heritage List • فلترة حسب المنطقة والدولة والنوع والسنة',style:TextStyle(fontSize:12)),
+            const SizedBox(height:8),
+            _heritageFilterRow('المنطقة', ['كل المناطق', ..._worldRegions], _worldRegion.isEmpty?'كل المناطق':_worldRegion, (v){setState(()=>_worldRegion=v=='كل المناطق'?'':v);_loadWorldHeritage();}),
+            _heritageFilterRow('الدولة', ['كل الدول', ..._worldCountries], _worldCountry.isEmpty?'كل الدول':_worldCountry, (v){setState(()=>_worldCountry=v=='كل الدول'?'':v);_loadWorldHeritage();}),
+            _heritageFilterRow('النوع', ['كل الأنواع', ..._worldCategories], _worldCategory.isEmpty?'كل الأنواع':_worldCategory, (v){setState(()=>_worldCategory=v=='كل الأنواع'?'':v);_loadWorldHeritage();}),
+            const SizedBox(height:8),
+            SizedBox(height:150,child:_worldLoading?const Center(child:CircularProgressIndicator()):ListView.separated(scrollDirection:Axis.horizontal,itemCount:_worldResults.length,separatorBuilder:(_,__)=>const SizedBox(width:10),itemBuilder:(context,index){
+              final s=_worldResults[index];
+              return SizedBox(width:250,child:Card(child:InkWell(onTap:()=>_openGlobalResult(s),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                Icon(s['category']?.toString().toLowerCase().contains('natural')==true?Icons.landscape_rounded:Icons.account_balance_rounded,size:28),
+                const SizedBox(height:7),Text(s['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),
+                const SizedBox(height:5),Text([s['category'],s['year'],s['region']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:1,overflow:TextOverflow.ellipsis),
+                const SizedBox(height:5),Text(s['countries']?.toString()??'',maxLines:1,overflow:TextOverflow.ellipsis),
+              ]))));
+            })),
+          ],
+          if (_magazineResults.isNotEmpty || _magazineLoading) ...[
+            const SizedBox(height:18),
+            Row(children:[
+              const Expanded(child:Text('Magazines & Series • المجلات والسلاسل',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
+              if(_magazineLoading) const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)),
+            ]),
+            const Text('فهرس metadata وروابط المصادر • بدون استضافة نسخ محمية',style:TextStyle(fontSize:12)),
+            const SizedBox(height:8),
+            ..._magazineResults.take(15).map((m)=>Card(child:ListTile(
+              leading:const CircleAvatar(child:Icon(Icons.article_rounded)),
+              title:Text(m['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis),
+              subtitle:Text([m['kind'],m['country'],m['publisher'],m['language'],m['source']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:3,overflow:TextOverflow.ellipsis),
+              trailing:const Icon(Icons.open_in_new_rounded),
+              onTap:()=>_openGlobalResult(m),
             ))),
           ],
           if (_heritageStories.isNotEmpty || _heritageLoading) ...[
