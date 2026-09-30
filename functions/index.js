@@ -3761,3 +3761,4 @@ Object.assign(module.exports, require('./agri_market_indicator'));
 Object.assign(module.exports, require('./agri_market_intelligence'));
 Object.assign(module.exports, require('./agri_production_intelligence'));
 Object.assign(module.exports, require('./agri_production_forecast'));
+Object.assign(module.exports, require('./agri_production_linkage'));
