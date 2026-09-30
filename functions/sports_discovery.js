@@ -103,6 +103,15 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
     'TheSportsDB':'https://www.thesportsdb.com/api.php'
   };
 
+  if(selectedApiKey && selectedApiSport==='football' && (resource==='live' || resource==='today')) {
+    try {
+      const endpoint='fixtures';
+      const params=resource==='live'?{live:'all'}:{date:date||new Date().toISOString().slice(0,10)};
+      const rows=await fetchApiSportResource(selectedApiKey,'football',endpoint,params);
+      return {status:'ok',resource,providers:['API-Sports'],results:mapFootball(rows,'API-Sports'),sourceUrls};
+    } catch (_) {}
+  }
+
   if(selectedApiKey) {
     try {
       if(resource==='leagues' || resource==='competitions') {
