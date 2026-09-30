@@ -34,20 +34,51 @@ async function buildGlobalLocalMarketSnapshot({crop='', iso3='', limit=500}={}) 
     (!iso3 || String(r.iso3||'').toUpperCase() === iso3.toUpperCase())
   );
   const byCountry = new Map();
+  const globalMarkets = new Set();
   for (const r of rows) {
     const key = String(r.iso3 || r.countryName || 'UNKNOWN').toUpperCase();
-    const bucket = byCountry.get(key) || {iso3:r.iso3||null,countryName:r.countryName||null,markets:0,rows:0,nativePrices:0,convertedPrices:0};
+    const bucket = byCountry.get(key) || {
+      iso3:r.iso3||null,
+      countryName:r.countryName||null,
+      markets:0,
+      rows:0,
+      nativePrices:0,
+      convertedPrices:0,
+      latestDate:null,
+      latestNativePrice:null,
+      latestUnit:null,
+      latestCurrency:null
+    };
     bucket.rows++;
-    if (r.market) bucket.markets++;
+    if (r.market) {
+      bucket._marketKeys ||= new Set();
+      bucket._marketKeys.add(String(r.market).trim().toLowerCase());
+      globalMarkets.add(key + '|' + String(r.market).trim().toLowerCase());
+    }
     if (num(r.priceLCU) !== null) bucket.nativePrices++;
     if (num(r.priceUSDTonne) !== null) bucket.convertedPrices++;
+    if (!bucket.latestDate || String(r.date||'') > String(bucket.latestDate)) {
+      bucket.latestDate = r.date || null;
+      bucket.latestNativePrice = num(r.priceLCU);
+      bucket.latestUnit = r.unit || null;
+      bucket.latestCurrency = r.currency || null;
+    }
     byCountry.set(key,bucket);
   }
+  const countries=[...byCountry.values()].map(bucket => {
+    bucket.markets = bucket._marketKeys ? bucket._marketKeys.size : 0;
+    delete bucket._marketKeys;
+    return bucket;
+  }).sort((a,b)=>String(a.countryName||a.iso3).localeCompare(String(b.countryName||b.iso3)));
   return {
-    countries:[...byCountry.values()].sort((a,b)=>String(a.countryName||a.iso3).localeCompare(String(b.countryName||b.iso3))),
+    countries,
     totalRows:rows.length,
     countriesCovered:byCountry.size,
-    convertedRows:rows.filter(r=>num(r.priceUSDTonne)!==null).length
+    marketsCovered:globalMarkets.size,
+    nativePriceRows:rows.filter(r=>num(r.priceLCU)!==null).length,
+    convertedRows:rows.filter(r=>num(r.priceUSDTonne)!==null).length,
+    conversionCoveragePct:rows.length ? Math.round((rows.filter(r=>num(r.priceUSDTonne)!==null).length/rows.length)*10000)/100 : 0,
+    source:'FAO GIEWS FPMA'
   };
 }
 
