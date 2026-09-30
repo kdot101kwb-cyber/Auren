@@ -9,14 +9,14 @@ class EducationGamificationState {
   final int xp, streak, completedMissions;
   final String lastActiveDay;
   final List<String> badges;
-  const EducationGamificationState({this.xp=0,this.streak=0,this.completedMissions=0,this.lastActiveDay='',this.badges=const []});
+  const EducationGamificationState({this.xp=0,this.streak=0,this.completedMissions=0,this.totalActivities=0,this.weeklyXp=0,this.lastActiveDay='',this.badges=const []});
   int get level => (xp ~/ 100) + 1;
   int get levelXp => xp % 100;
   double get progress => levelXp / 100;
-  Map<String,dynamic> toMap()=>{'xp':xp,'streak':streak,'completedMissions':completedMissions,'lastActiveDay':lastActiveDay,'badges':badges};
+  Map<String,dynamic> toMap()=>{'xp':xp,'streak':streak,'completedMissions':completedMissions,'totalActivities':totalActivities,'weeklyXp':weeklyXp,'lastActiveDay':lastActiveDay,'badges':badges};
   factory EducationGamificationState.fromMap(Map<String,dynamic> m)=>EducationGamificationState(
     xp:(m['xp'] as num?)?.toInt()??0,streak:(m['streak'] as num?)?.toInt()??0,
-    completedMissions:(m['completedMissions'] as num?)?.toInt()??0,lastActiveDay:(m['lastActiveDay'] as String?)??'',
+    completedMissions:(m['completedMissions'] as num?)?.toInt()??0,totalActivities:(m['totalActivities'] as num?)?.toInt()??0,weeklyXp:(m['weeklyXp'] as num?)?.toInt()??0,lastActiveDay:(m['lastActiveDay'] as String?)??'',
     badges:List<String>.from(m['badges']??const []));
 }
 class EducationGamificationService {
@@ -38,11 +38,11 @@ class EducationGamificationService {
     final day=key(d), yesterday=key(d.subtract(const Duration(days:1)));
     if(old.lastActiveDay==day)return old;
     final streak=old.lastActiveDay==yesterday?old.streak+1:1;
-    final newXp=old.xp+xp, completed=old.completedMissions+1;
+    final newXp=old.xp+xp, completed=old.completedMissions+1, total=old.totalActivities+1, weekly=old.weeklyXp+xp;
     final earned=<String>[...old.badges];
     void add(String id){if(!earned.contains(id))earned.add(id);}
-    add('first_game'); if(completed>=10)add('ten_games'); if(streak>=7)add('seven_streak'); if(newXp>=500)add('xp_500'); if(newXp>=1000)add('xp_1000');
-    final next=EducationGamificationState(xp:newXp,streak:streak,completedMissions:completed,lastActiveDay:day,badges:earned);
+    add('first_game'); if(completed>=10)add('ten_games'); if(streak>=7)add('seven_streak'); if(newXp>=500)add('xp_500'); if(newXp>=1000)add('xp_1000'); if(total>=25)add('twenty_five');
+    final next=EducationGamificationState(xp:newXp,streak:streak,completedMissions:completed,totalActivities:total,weeklyXp:weekly,lastActiveDay:day,badges:earned);
     await ref.set(next.toMap(),SetOptions(merge:true)); return next;
   }
 }
