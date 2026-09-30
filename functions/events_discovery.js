@@ -8,7 +8,7 @@ exports.searchAurenEvents=onCall({region:'us-central1',timeoutSeconds:20,memory:
   const query=String(request.data?.query||'').trim().slice(0,120);
   const country=String(request.data?.countryCode||'').trim().toUpperCase().slice(0,2);
   const url=new URL('https://app.ticketmaster.com/discovery/v2/events.json');
-  url.searchParams.set('apikey',key); url.searchParams.set('size','25');
+  url.searchParams.set('apikey',key); url.searchParams.set('size','50');
   if(query) url.searchParams.set('keyword',query);
   if(country) url.searchParams.set('countryCode',country);
   const response=await fetch(url,{headers:{'user-agent':'AUREN-Events/1.0'}});
