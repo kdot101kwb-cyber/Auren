@@ -2,6 +2,7 @@
 
 const {onSchedule}=require('firebase-functions/v2/scheduler');
 const {getFirestore,FieldValue}=require('firebase-admin/firestore');
+const {getMessaging}=require('firebase-admin/messaging');
 
 const db=getFirestore();
 const API_BASE='https://v3.football.api-sports.io';
@@ -63,6 +64,7 @@ exports.refreshAurenSportsAlerts=onSchedule(
   if(Date.now()-lastRunMs<45000)return {skipped:true,reason:'recent_run'};
   await runRef.set({startedAtMs:Date.now(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
   const batch=db.batch();
+  const pushJobs=[];
   const followingByTeam=new Map();
   const followingSnap=await db.collectionGroup('sportsFollowing').where('sport','==','football').limit(500).get();
   for(const d of followingSnap.docs){const data=d.data()||{};const uid=d.ref.parent.parent?.id;const teamId=String(data.id||'');if(uid&&teamId){if(!followingByTeam.has(teamId))followingByTeam.set(teamId,new Set());followingByTeam.get(teamId).add(uid);}}
@@ -101,10 +103,54 @@ exports.refreshAurenSportsAlerts=onSchedule(
           body:home+' × '+away+(e.player?' — '+e.player:'')+(e.minute?' ('+e.minute+"')":''),
           home,away,score,createdAt:FieldValue.serverTimestamp(),read:false,
         },{merge:true});
+        pushJobs.push({
+          uid,
+          notificationId,
+          title:e.type==='goal'?'هدف في المباراة':e.type==='red_card'?'بطاقة حمراء':e.type==='kickoff'?'بدأت المباراة':e.type==='full_time'?'انتهت المباراة':'تحديث المباراة',
+          body:home+' × '+away+(e.player?' — '+e.player:'')+(e.minute?' ('+e.minute+"')":''),
+          type:e.type,
+          fixtureId:id,
+        });
       }
     }
     batch.set(ref,{homeScore:score.home,awayScore:score.away,status,eventKeys:[...new Set([...seen,...fresh.map(e=>e.key)])].slice(-100),updatedAt:FieldValue.serverTimestamp()},{merge:true});
   }
   await batch.commit();
-  return {fixtures:fixtures.length,live:live.length,today:today.length};
+
+  let pushSent=0;
+  let pushFailed=0;
+  for(const job of pushJobs){
+    const tokenSnap=await db.collection('users').doc(job.uid).collection('fcmTokens').where('enabled','==',true).limit(100).get();
+    const tokens=tokenSnap.docs.map(d=>String(d.data()?.token||'').trim()).filter(Boolean);
+    if(!tokens.length) continue;
+    const response=await getMessaging().sendEachForMulticast({
+      tokens,
+      notification:{title:job.title,body:job.body},
+      data:{
+        type:job.type,
+        fixtureId:job.fixtureId,
+        notificationId:job.notificationId,
+      },
+      android:{
+        priority:'high',
+        notification:{channelId:'auren_sports_alerts'},
+      },
+    });
+    pushSent+=response.successCount;
+    pushFailed+=response.failureCount;
+    const invalid=[];
+    response.responses.forEach((result,index)=>{
+      const code=result.error?.code||'';
+      if(code==='messaging/registration-token-not-registered'||code==='messaging/invalid-registration-token'){
+        invalid.push(tokens[index]);
+      }
+    });
+    for(const token of invalid){
+      for(const doc of tokenSnap.docs){
+        if(String(doc.data()?.token||'')===token) await doc.ref.delete();
+      }
+    }
+  }
+
+  return {fixtures:fixtures.length,live:live.length,today:today.length,pushSent,pushFailed};
 });
