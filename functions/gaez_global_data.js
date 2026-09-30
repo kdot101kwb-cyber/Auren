@@ -343,8 +343,7 @@ async function runAurenGaezV5CropSummary(request) {
   const country=normalizeCountryKey(p.country || p.iso3 || '');
   const crop=String(p.crop || '').trim();
 
-  // Prefer globally ingested FAO v5 rows so every supported country uses
-  // the same verified source rather than a Sudan-specific path.
+  // Use verified FAO v5 rows already ingested into Firestore when available.
   let query = db.collection('auren_gaez_v5_crop_summary_rows');
   if (country) query=query.where('countryKey','==',country.toUpperCase());
   else if (crop) query=query.where('cropKey','==',crop.toLowerCase());
@@ -354,8 +353,8 @@ async function runAurenGaezV5CropSummary(request) {
     .map(d => d.data() || {})
     .filter(d => !crop || String(d.cropKey || '').toLowerCase() === crop.toLowerCase())
     .map(d => d.row || {});
+
   if (importedRows.length) {
-    const rows=importedRows;
     return {
       status:'ok',
       source:'FAO GAEZ v5 Crop Summary Data',
@@ -363,8 +362,8 @@ async function runAurenGaezV5CropSummary(request) {
       storage:'firestore_ingested_rows',
       filters:{country:country||null,crop:crop||null},
       countryKey:country||null,
-      count:rows.length,
-      data:rows
+      count:importedRows.length,
+      data:importedRows
     };
   }
 
@@ -386,21 +385,26 @@ async function runAurenGaezV5CropSummary(request) {
     waterSupply: p.waterSupply || null,
     management: p.management || null
   };
-  const url = buildGaezCropSummaryUrl(filters);
+
+  // FAO's published Crop Summary query resource is SQL-backed. The SQL
+  // resource is not guaranteed to interpret arbitrary URL query parameters,
+  // so never treat those parameters as authoritative filtering. Fetch the
+  // official response, then apply the requested filters locally.
+  const url = buildGaezCropSummaryUrl({});
   const payload = await getJson(url);
   const rows = normalizeGaezRows(Array.isArray(payload) ? payload : extractRowsFromPayload(payload));
-  const countryKey=normalizeCountryKey(country);
   const filtered=rows.filter(row => {
     const rc=normalizeCountryKey(rowCountry(row));
     const rr=String(rowCrop(row)||'').toLowerCase();
-    return (!countryKey || rc===countryKey || rc===String(country||'').trim().toLowerCase()) &&
+    return (!country || rc===country || rc===String(p.country||'').trim().toLowerCase()) &&
       (!crop || rr===crop.toLowerCase() || rr.includes(crop.toLowerCase()));
   });
+
   return {
     status: filtered.length ? 'ok' : 'no_matching_rows',
     source:'FAO GAEZ v5 Crop Summary',
     scope:'global',
-    endpoint:url.split('?')[0],
+    endpoint:url,
     filters,
     data:filtered,
     returnedRows:rows.length,
