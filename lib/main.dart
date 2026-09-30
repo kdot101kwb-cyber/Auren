@@ -14,6 +14,7 @@ import 'features/shell/presentation/auren_shell.dart';
 import 'features/tv/presentation/auren_tv_screen.dart';
 import 'services/tv/auren_tv_watch_together_service.dart';
 import 'services/offline/auren_offline_sync_service.dart';
+import 'services/notifications/auren_fcm_service.dart';
 
 final GlobalKey<NavigatorState> aurenNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -27,6 +28,7 @@ Future<void> main() async {
     );
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await AurenTvWatchTogetherService.instance.initializeNotificationRouting();
+    await AurenFcmService.instance.initialize();
     // Activate App Check before AUREN starts using Firebase services.
     // Enforcement is intentionally configured in Firebase Console after monitoring,
     // so existing development builds are not locked out.
