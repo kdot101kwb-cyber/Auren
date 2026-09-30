@@ -42,19 +42,22 @@ async function enrichFixtures(rows,key){
   return detailed.length?detailed:rows;
 }
 
-exports.refreshAurenSportsAlerts=onSchedule(
- {schedule:'every 1 minutes',region:'us-central1',timeoutSeconds:50,memory:'256MiB'},
- async()=>{
-  // Claim the run before provider calls so overlapping scheduler invocations do not
-  // spend API quota while one run is already active.
-  const runRef=db.collection('sports_alert_runs').doc('live');
-  const runSnap=await runRef.get();
-  const lastRunMs=runSnap.exists?Number(runSnap.data()?.startedAtMs||0):0;
-  if(Date.now()-lastRunMs<45000)return {skipped:true,reason:'recent_run'};
-  await runRef.set({startedAtMs:Date.now(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+async function runAurenSportsAlerts(options={}){
+  const store=options.db||db;
+  const fetchLiveFn=options.fetchLiveFn||fetchLive;
+  const fetchTodayFn=options.fetchTodayFn||fetchToday;
+  const messagingFn=options.getMessagingFn||getMessaging;
+  const skipRunGuard=options.skipRunGuard===true;
+  if(!skipRunGuard){
+    const runRef=store.collection('sports_alert_runs').doc('live');
+    const runSnap=await runRef.get();
+    const lastRunMs=runSnap.exists?Number(runSnap.data()?.startedAtMs||0):0;
+    if(Date.now()-lastRunMs<45000)return {skipped:true,reason:'recent_run'};
+    await runRef.set({startedAtMs:Date.now(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
+  }
 
-  const live=await fetchLive();
-  const today=await fetchToday();
+  const live=await fetchLiveFn();
+  const today=await fetchTodayFn();
   const fixturesById=new Map();
   for(const f of today){const id=fixtureId(f);if(id)fixturesById.set(id,f);}
   for(const f of live){const id=fixtureId(f);if(id)fixturesById.set(id,f);}
@@ -62,14 +65,14 @@ exports.refreshAurenSportsAlerts=onSchedule(
   const writes=[];
   const pushJobs=[];
   const followingByTeam=new Map();
-  const followingSnap=await db.collectionGroup('sportsFollowing').where('sport','==','football').limit(500).get();
+  const followingSnap=await store.collectionGroup('sportsFollowing').where('sport','==','football').limit(500).get();
   for(const d of followingSnap.docs){const data=d.data()||{};const uid=d.ref.parent.parent?.id;const teamId=String(data.id||'');if(uid&&teamId){if(!followingByTeam.has(teamId))followingByTeam.set(teamId,new Set());followingByTeam.get(teamId).add(uid);}}
   for(const f of fixtures){
     const id=fixtureId(f); if(!id) continue;
     const home=String(f?.teams?.home?.name||'Home');
     const away=String(f?.teams?.away?.name||'Away');
     const score={home:Number(f?.goals?.home??0),away:Number(f?.goals?.away??0)};
-    const ref=db.collection('sports_live_state').doc(id);
+    const ref=store.collection('sports_live_state').doc(id);
     const snap=await ref.get();
     const previous=snap.exists?snap.data():{};
     const events=Array.isArray(f?.events)?f.events:[];
@@ -88,13 +91,13 @@ exports.refreshAurenSportsAlerts=onSchedule(
     });
     const users=new Set([...(followingByTeam.get(String(f?.teams?.home?.id||''))||[]),...(followingByTeam.get(String(f?.teams?.away?.id||''))||[])]);
     for(const uid of users){
-      const pref=await db.collection('users').doc(uid).collection('sportsSettings').doc('alerts').get();
+      const pref=await store.collection('users').doc(uid).collection('sportsSettings').doc('alerts').get();
       const settings=pref.exists?pref.data():{enabled:true,types:['kickoff','goal','red_card','full_time']};
       if(settings.enabled===false) continue;
       const allowed=Array.isArray(settings.types)?settings.types:[];
       for(const e of fresh.filter(x=>allowed.includes(x.type))){
         const notificationId=id+'_'+e.key.replace(/[^a-zA-Z0-9_-]/g,'_');
-        writes.push({ref:db.collection('users').doc(uid).collection('sportsAlerts').doc(notificationId),data:{
+        writes.push({ref:store.collection('users').doc(uid).collection('sportsAlerts').doc(notificationId),data:{
           fixtureId:id,type:e.type,title:e.type==='goal'?'هدف في المباراة':e.type==='red_card'?'بطاقة حمراء':e.type==='kickoff'?'بدأت المباراة':e.type==='full_time'?'انتهت المباراة':'تحديث المباراة',
           body:home+' × '+away+(e.player?' — '+e.player:'')+(e.minute?' ('+e.minute+"')":''),
           home,away,score,createdAt:FieldValue.serverTimestamp(),read:false,
@@ -113,7 +116,7 @@ exports.refreshAurenSportsAlerts=onSchedule(
   }
   // Firestore batches are capped at 500 writes. Keep headroom for future fields.
   for(const group of chunk(writes,450)){
-    const batch=db.batch();
+    const batch=store.batch();
     for(const write of group) batch.set(write.ref,write.data,{merge:write.merge!==false});
     await batch.commit();
   }
@@ -121,10 +124,10 @@ exports.refreshAurenSportsAlerts=onSchedule(
   let pushSent=0;
   let pushFailed=0;
   for(const job of pushJobs){
-    const tokenSnap=await db.collection('users').doc(job.uid).collection('fcmTokens').where('enabled','==',true).limit(100).get();
+    const tokenSnap=await store.collection('users').doc(job.uid).collection('fcmTokens').where('enabled','==',true).limit(100).get();
     const tokens=tokenSnap.docs.map(d=>String(d.data()?.token||'').trim()).filter(Boolean);
     if(!tokens.length) continue;
-    const response=await getMessaging().sendEachForMulticast(buildPushMessage({...job,tokens}));
+    const response=await messagingFn().sendEachForMulticast(buildPushMessage({...job,tokens}));
     pushSent+=response.successCount;
     pushFailed+=response.failureCount;
     const invalid=[];
@@ -142,4 +145,10 @@ exports.refreshAurenSportsAlerts=onSchedule(
   }
 
   return {fixtures:fixtures.length,live:live.length,today:today.length,pushSent,pushFailed};
-});
+}
+
+exports.runAurenSportsAlerts=runAurenSportsAlerts;
+exports.refreshAurenSportsAlerts=onSchedule(
+ {schedule:'every 1 minutes',region:'us-central1',timeoutSeconds:50,memory:'256MiB'},
+ async()=>runAurenSportsAlerts()
+);
