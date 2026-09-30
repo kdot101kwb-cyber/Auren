@@ -101,14 +101,6 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
 
   Widget _baselineEvaluationCard(BuildContext context) {
     final raw = backtest;
-    final comparison = raw?['modelComparison'] is List
-        ? List<dynamic>.from(raw!['modelComparison'] as List)
-        : const <dynamic>[];
-    final selected = raw?['selectedBaseline'] is Map
-        ? Map<String, dynamic>.from(raw!['selectedBaseline'] as Map)
-        : const <String, dynamic>{};
-    final folds = raw?['folds'] ?? 0;
-
     if (raw == null) {
       return const Card(
         child: ListTile(
@@ -119,7 +111,22 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
       );
     }
 
-    String metric(dynamic value) => value == null ? '—' : value.toString();
+    final backtests = raw['backtests'] is Map
+        ? Map<String, dynamic>.from(raw['backtests'] as Map)
+        : const <String, dynamic>{};
+    final production = backtests['production'] is Map
+        ? Map<String, dynamic>.from(backtests['production'] as Map)
+        : const <String, dynamic>{};
+    final linear = production['linear'] is Map
+        ? Map<String, dynamic>.from(production['linear'] as Map)
+        : const <String, dynamic>{};
+    final movingAverage = production['movingAverage'] is Map
+        ? Map<String, dynamic>.from(production['movingAverage'] as Map)
+        : const <String, dynamic>{};
+
+    String metric(dynamic value) => value == null ? '—' : value is num ? value.toStringAsFixed(2) : value.toString();
+    final folds = linear['folds'] ?? movingAverage['folds'] ?? 0;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -128,39 +135,33 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
             const Icon(Icons.analytics_outlined),
             const SizedBox(width: 8),
             const Expanded(child: Text('Forecast baseline evaluation', style: TextStyle(fontWeight: FontWeight.bold))),
-            Text('$folds folds'),
+            Text('${folds} folds'),
           ]),
           const SizedBox(height: 8),
-          Text(selected.isEmpty
-              ? 'No baseline selected from the available backtest.'
-              : 'Selected baseline: ${selected['method'] ?? '—'}'),
-          if (comparison.isNotEmpty) ...[
-            const Divider(height: 20),
-            ...comparison.map((rawModel) {
-              final model = rawModel is Map
-                  ? Map<String, dynamic>.from(rawModel)
-                  : const <String, dynamic>{};
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Row(children: [
-                  Expanded(child: Text('${model['method'] ?? 'Model'}')),
-                  Text('MAE ${metric(model['mae'])}'),
-                  const SizedBox(width: 10),
-                  Text('RMSE ${metric(model['rmse'])}'),
-                  const SizedBox(width: 10),
-                  Text('MAPE ${metric(model['mapePct'])}%'),
-                ]),
-              );
-            }),
-          ],
+          const Text('Production forecast — walk-forward historical diagnostics'),
+          const Divider(height: 20),
+          _forecastMetricRow('Linear trend', linear, metric),
+          const SizedBox(height: 8),
+          _forecastMetricRow('Moving average', movingAverage, metric),
           const SizedBox(height: 8),
           Text(
-            'Metrics are walk-forward historical backtest diagnostics; they are not a guarantee of future accuracy.',
+            'These diagnostics compare simple baselines; they are not a guarantee of future accuracy.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ]),
       ),
     );
+  }
+
+  Widget _forecastMetricRow(String label, Map<String, dynamic> model, String Function(dynamic) metric) {
+    return Row(children: [
+      Expanded(child: Text(label)),
+      Text('MAE ${metric(model['mae'])}'),
+      const SizedBox(width: 8),
+      Text('RMSE ${metric(model['rmse'])}'),
+      const SizedBox(width: 8),
+      Text('MAPE ${metric(model['mapePct'])}%'),
+    ]);
   }
 
   Widget _gaezCard(BuildContext context, dynamic raw) {
