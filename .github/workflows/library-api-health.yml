@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           declare -A URLS=(
-            [openlibrary]="https://openlibrary.org/search.json?q=aure n"
+            [openlibrary]="https://openlibrary.org/search.json?q=auren"
             [crossref]="https://api.crossref.org/works?query.title=auren&rows=1"
             [gutendex]="https://gutendex.com/books/?search=auren"
             [unesco]="https://data.unesco.org/api/explore/v2.1/catalog/datasets/ich001/records?limit=1"
