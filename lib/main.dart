@@ -1,8 +1,3 @@
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-}
-
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -15,6 +10,11 @@ import 'features/tv/presentation/auren_tv_screen.dart';
 import 'services/tv/auren_tv_watch_together_service.dart';
 import 'services/offline/auren_offline_sync_service.dart';
 import 'services/notifications/auren_fcm_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+}
 
 final GlobalKey<NavigatorState> aurenNavigatorKey = GlobalKey<NavigatorState>();
 
