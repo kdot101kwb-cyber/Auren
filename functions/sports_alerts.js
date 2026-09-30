@@ -66,7 +66,7 @@ exports.refreshAurenSportsAlerts=onSchedule(
   const followingByTeam=new Map();
   const followingSnap=await db.collectionGroup('sportsFollowing').where('sport','==','football').limit(500).get();
   for(const d of followingSnap.docs){const data=d.data()||{};const uid=d.ref.parent.parent?.id;const teamId=String(data.id||'');if(uid&&teamId){if(!followingByTeam.has(teamId))followingByTeam.set(teamId,new Set());followingByTeam.get(teamId).add(uid);}}
-  for(const f of live){
+  for(const f of fixtures){
     const id=fixtureId(f); if(!id) continue;
     const home=String(f?.teams?.home?.name||'Home');
     const away=String(f?.teams?.away?.name||'Away');
@@ -85,7 +85,7 @@ exports.refreshAurenSportsAlerts=onSchedule(
     if(snap.exists && previousStatus!=='FT' && status==='FT'){
       fresh.push({key:'full_time|FT',type:'full_time',minute:Number(f?.fixture?.status?.elapsed||0),player:''});
     }
-    if(snap.exists && (score.home!==Number(previous.homeScore??score.home)||score.away!==Number(previous.awayScore??score.away))){
+    if(snap.exists && !fresh.some(e=>e.type==='goal') && (score.home!==Number(previous.homeScore??score.home)||score.away!==Number(previous.awayScore??score.away))){
       fresh.push({key:'score|'+score.home+'|'+score.away,type:'goal',minute:0,player:''});
     }
     const users=new Set([...(followingByTeam.get(String(f?.teams?.home?.id||''))||[]),...(followingByTeam.get(String(f?.teams?.away?.id||''))||[])]);
@@ -97,7 +97,7 @@ exports.refreshAurenSportsAlerts=onSchedule(
       for(const e of fresh.filter(x=>allowed.includes(x.type))){
         const notificationId=id+'_'+e.key.replace(/[^a-zA-Z0-9_-]/g,'_');
         batch.set(db.collection('users').doc(uid).collection('sportsAlerts').doc(notificationId),{
-          fixtureId:id,type:e.type,title:e.type==='goal'?'هدف في المباراة':e.type==='red_card'?'بطاقة حمراء':'تحديث المباراة',
+          fixtureId:id,type:e.type,title:e.type==='goal'?'هدف في المباراة':e.type==='red_card'?'بطاقة حمراء':e.type==='kickoff'?'بدأت المباراة':e.type==='full_time'?'انتهت المباراة':'تحديث المباراة',
           body:home+' × '+away+(e.player?' — '+e.player:'')+(e.minute?' ('+e.minute+"')":''),
           home,away,score,createdAt:FieldValue.serverTimestamp(),read:false,
         },{merge:true});
