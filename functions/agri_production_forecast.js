@@ -81,9 +81,36 @@ async function loadRows(iso3,item){
 }
 function priceValue(r){return num(r.price??r.Price??r.value??r.Value??r.pricePerTon);}
 async function latestPrice(iso3,item){
- const [local,global]=await Promise.all([db.collection('auren_agri_local_market_prices').limit(2000).get(),db.collection('auren_agri_global_commodity_prices').limit(500).get()]);
- const rows=[...local.docs.map(d=>d.data()).filter(r=>String(r.iso3||r.countryCode||'').toUpperCase()===iso3&&clean(r.item||r.commodity).toLowerCase()===item.toLowerCase()),...global.docs.map(d=>d.data()).filter(r=>clean(r.commodity||r.id).toLowerCase().includes(item.toLowerCase()))].filter(r=>priceValue(r)!=null).sort((a,b)=>String(b.observedAt||b.date||'').localeCompare(String(a.observedAt||a.date||'')));
- if(!rows.length)return null;const r=rows[0];return{value:priceValue(r),currency:r.currency||null,unit:r.unit||null,source:r.source||r.exchange||'market'};
+ const [local,fx,global]=await Promise.all([
+  db.collection('auren_agri_local_market_prices').limit(2000).get(),
+  db.collection('auren_agri_fx_rates').limit(5000).get(),
+  db.collection('auren_agri_global_commodity_prices').limit(500).get()
+ ]);
+ const fxByIso3={};
+ for(const d of fx.docs){
+  const r=d.data()||{},key=String(r.iso3||'').toUpperCase(),v=num(r.usdPerLocalUnit);
+  if(!key||v==null)continue;
+  if(!fxByIso3[key]||String(r.date||'')>String(fxByIso3[key].date||''))fxByIso3[key]=r;
+ }
+ const normalizedLocal=local.docs.map(d=>{
+  const r=d.data()||{},rowIso=String(r.iso3||r.countryCode||'').toUpperCase();
+  const itemName=clean(r.item||r.commodity),native=num(r.priceLCU??r.price??r.value);
+  if(rowIso!==iso3||itemName.toLowerCase()!==item.toLowerCase()||native==null)return null;
+  const unit=clean(r.unit).toLowerCase(),currency=clean(r.currency).toUpperCase();
+  let factor=null;
+  if(/^kg$|kilogram/.test(unit))factor=1000;
+  else if(/ton|tonne|metric.?ton/.test(unit))factor=1;
+  if(factor==null)return null;
+  const localPerTonne=native*factor;
+  const usdPerLocal=currency==='USD'?1:num(fxByIso3[rowIso]?.usdPerLocalUnit);
+  if(usdPerLocal==null)return null;
+  return {value:localPerTonne*usdPerLocal,currency:'USD',unit:'tonne',source:r.source||'FAO GIEWS FPMA + FAOSTAT Exchange Rates',observedAt:r.observedAt||r.date||''};
+ }).filter(Boolean).sort((a,b)=>String(b.observedAt).localeCompare(String(a.observedAt)));
+ if(normalizedLocal.length)return normalizedLocal[0];
+ const globalRows=global.docs.map(d=>d.data()).filter(r=>clean(r.commodity||r.id).toLowerCase().includes(item.toLowerCase())&&priceValue(r)!=null).sort((a,b)=>String(b.observedAt||b.date||'').localeCompare(String(a.observedAt||a.date||'')));
+ if(!globalRows.length)return null;
+ const r=globalRows[0];
+ return{value:priceValue(r),currency:r.currency||null,unit:r.unit||null,source:r.source||r.exchange||'market'};
 }
 async function latestCost(iso3,item){
  const slug=item.toLowerCase().replace(/[^a-z0-9]+/g,'_'),snap=await db.collection('auren_agri_cost_evidence').doc(iso3+'_'+slug).get();
