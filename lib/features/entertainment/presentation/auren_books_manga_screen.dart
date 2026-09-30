@@ -17,6 +17,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   bool _seeding = false;
   bool _globalSearching = false;
   List<Map<String, dynamic>> _globalResults = const [];
+  List<Map<String, dynamic>> _subjects = const [];
 
   Future<void> _ensureLibrarySeeded() async {
     if (_seeding) return;
@@ -53,6 +54,26 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
 
   static const _types = <String, String>{'Book':'Books','Manga':'Manga','Anime':'Anime','Journal':'Journals & Magazines'};
 
+  Future<void> _loadSubjects() async {
+    try {
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('getAurenGlobalLibrarySubjects').call();
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final rows = (data['subjects'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e)).toList();
+      if (mounted) setState(() => _subjects = rows);
+    } catch (_) {}
+  }
+
+  void _searchSubject(String title) {
+    setState(() => _query = title);
+    _searchGlobalLibrary();
+  }
+
+  @override
+  void initState() { super.initState(); _loadSubjects(); }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN Library')),
@@ -84,6 +105,19 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
               onTap:()=>_openGlobalResult(item),
             ))),
           ],
+          if (_subjects.isNotEmpty) ...[
+            const SizedBox(height:18),
+            const Text('Explore the World Library', style: TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+            const SizedBox(height:10),
+            SizedBox(height:118, child: ListView.separated(scrollDirection:Axis.horizontal, itemCount:_subjects.length, separatorBuilder:(_,__)=>const SizedBox(width:10), itemBuilder:(context,index){
+              final s=_subjects[index];
+              return SizedBox(width:170, child:Card(child:InkWell(borderRadius:BorderRadius.circular(12), onTap:()=>_searchSubject(s['title']?.toString() ?? ''), child:Padding(padding:const EdgeInsets.all(12), child:Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
+                Icon(_subjectIcon(s['id']?.toString() ?? ''), size:28), const SizedBox(height:8),
+                Text(s['title']?.toString() ?? '', maxLines:1, overflow:TextOverflow.ellipsis, style:const TextStyle(fontWeight:FontWeight.w800)),
+                const SizedBox(height:4), Text(s['description']?.toString() ?? '', maxLines:2, overflow:TextOverflow.ellipsis, style:const TextStyle(fontSize:11)),
+              ]))));
+            })),
+          ],
           const SizedBox(height:12),
           SingleChildScrollView(scrollDirection:Axis.horizontal, child:Row(children:_types.entries.map((e)=>Padding(padding:const EdgeInsetsDirectional.only(end:8), child:ChoiceChip(label:Text(e.value), selected:_type==e.key, onSelected:(_)=>setState(()=>_type=e.key)))).toList())),
           const SizedBox(height:16),
@@ -107,5 +141,18 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   }
 
   Widget _hero(BuildContext context) => Container(padding:const EdgeInsets.all(22), decoration:BoxDecoration(borderRadius:BorderRadius.circular(24), gradient:LinearGradient(colors:[Theme.of(context).colorScheme.primaryContainer,Theme.of(context).colorScheme.tertiaryContainer])), child:const Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(Icons.menu_book_rounded,size:42),SizedBox(height:8),Text('Read. Explore. Discover.',style:TextStyle(fontSize:24,fontWeight:FontWeight.w800)),SizedBox(height:6),Text('Books • Manga • Anime • One smart library')]));
-  IconData _iconFor(String type)=>type=='Manga'?Icons.auto_stories_rounded:type=='Anime'?Icons.animation_rounded:Icons.menu_book_rounded;
+  IconData _iconFor(String type)=>type=='Manga'?Icons.auto_stories_rounded:type=='Anime'?Icons.animation_rounded:type=='Journal'?Icons.article_rounded:Icons.menu_book_rounded;
+
+  IconData _subjectIcon(String id) {
+    if (id.contains('literature') || id.contains('fiction')) return Icons.auto_stories_rounded;
+    if (id.contains('history')) return Icons.account_balance_rounded;
+    if (id.contains('arts')) return Icons.palette_rounded;
+    if (id.contains('children')) return Icons.child_care_rounded;
+    if (id.contains('science')) return Icons.science_rounded;
+    if (id.contains('philosophy')) return Icons.psychology_rounded;
+    if (id.contains('biography')) return Icons.person_rounded;
+    if (id.contains('magazine')) return Icons.article_rounded;
+    if (id.contains('arabic')) return Icons.public_rounded;
+    return Icons.library_books_rounded;
+  }
 }
