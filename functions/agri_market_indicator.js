@@ -36,11 +36,10 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
   const producerSnap = await db.collection('auren_agri_producer_prices')
     .where('countryName', '==', country)
     .where('item', '==', crop)
-    .orderBy('date', 'desc')
-    .limit(24)
+    .limit(60)
     .get();
 
-  const producer = producerSnap.docs.map(d => d.data()).reverse();
+  const producer = producerSnap.docs.map(d => d.data()).sort((a,b) => String(a.date||'').localeCompare(String(b.date||''))).slice(-24);
 
   // Optional local-market feed. A future GIEWS/market adapter can write the same schema.
   const localSnap = await db.collection('auren_agri_local_market_prices')
@@ -50,7 +49,7 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
     .limit(24)
     .get().catch(() => ({docs:[]}));
 
-  const local = localSnap.docs.map(d => d.data()).reverse();
+  const local = localSnap.docs.map(d => d.data()).sort((a,b) => String(a.date||'').localeCompare(String(b.date||''))).slice(-24);
 
   const latestProducer = producer.length ? producer[producer.length-1] : null;
   const latestLocal = local.length ? local[local.length-1] : null;
@@ -83,7 +82,11 @@ exports.aurenAgriMarketIndicator = onCall(async (request) => {
     },
     sources: [
       'FAOSTAT Agricultural Producer Prices',
-      'FAO GIEWS Food Price Monitoring and Analysis'
-    ]
+      'FAO GIEWS Food Price Monitoring and Analysis (FPMA)'
+    ],
+    sourceLinks: {
+      producer: 'https://data.fao.org/catalog/dataset/47c17894-8ca1-4bd0-ba4d-6078e919e9b1',
+      localMarket: 'https://fpma.fao.org/giews/fpmat4/global/'
+    }
   };
 });
