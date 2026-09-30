@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -20,6 +21,8 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   List<Map<String, dynamic>> _subjects = const [];
   List<Map<String, dynamic>> _heritageStories = const [];
   bool _heritageLoading = false;
+  List<String> _heritageCountries = const [];
+  String _heritageCountry = '';
 
   Future<void> _ensureLibrarySeeded() async {
     if (_seeding) return;
@@ -73,10 +76,11 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
     setState(() => _heritageLoading = true);
     try {
       final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
-          .httpsCallable('getAurenGlobalHeritageStories').call({'country': country ?? '', 'query': query ?? ''});
+          .httpsCallable('getAurenGlobalHeritageStories').call({'country': country ?? _heritageCountry, 'query': query ?? ''});
       final data = Map<String, dynamic>.from(response.data as Map);
       final rows = (data['results'] as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      if (mounted) setState(() => _heritageStories = rows);
+      final countries = (data['countries'] as List? ?? const []).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toSet().toList()..sort();
+      if (mounted) setState(() { _heritageStories = rows; _heritageCountries = countries; });
     } catch (_) { if (mounted) setState(() => _heritageStories = const []); }
     finally { if (mounted) setState(() => _heritageLoading = false); }
   }
@@ -137,9 +141,25 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
           ],
           if (_heritageStories.isNotEmpty || _heritageLoading) ...[
             const SizedBox(height:18),
-            const Text('Global Heritage • قصص الشعوب', style: TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
+            Row(children:[
+              const Expanded(child:Text('Global Heritage • قصص الشعوب',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
+              IconButton(tooltip:'تحديث',onPressed:_heritageLoading?null:()=>_loadHeritage(country:_heritageCountry),icon:const Icon(Icons.refresh_rounded)),
+            ]),
+            if (_heritageCountries.isNotEmpty)
+              SizedBox(height:42,child:ListView.separated(scrollDirection:Axis.horizontal,itemCount:_heritageCountries.length+1,separatorBuilder:(_,__)=>const SizedBox(width:6),itemBuilder:(context,index){
+                final country=index==0?'':_heritageCountries[index-1];
+                return ChoiceChip(label:Text(country.isEmpty?'كل الدول':country),selected:_heritageCountry==country,onSelected:(_){setState(()=>_heritageCountry=country);_loadHeritage(country:country);});
+              })),
             const SizedBox(height:8),
-            SizedBox(height:150, child:_heritageLoading ? const Center(child:CircularProgressIndicator()) : ListView.separated(scrollDirection:Axis.horizontal,itemCount:_heritageStories.length,separatorBuilder:(_,__)=>const SizedBox(width:10),itemBuilder:(context,index){final s=_heritageStories[index];return SizedBox(width:230,child:Card(child:InkWell(onTap:()=>_openHeritage(s),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Icon(Icons.public_rounded,size:28),const SizedBox(height:8),Text(s['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:5),Text([s['country'],s['kind'],s['language']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:1,overflow:TextOverflow.ellipsis),const SizedBox(height:5),Text(s['description']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11))]))));}))
+            SizedBox(height:150,child:_heritageLoading?const Center(child:CircularProgressIndicator()):ListView.separated(scrollDirection:Axis.horizontal,itemCount:_heritageStories.length,separatorBuilder:(_,__)=>const SizedBox(width:10),itemBuilder:(context,index){
+              final s=_heritageStories[index];
+              return SizedBox(width:230,child:Card(child:InkWell(onTap:()=>_openHeritage(s),child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                const Icon(Icons.public_rounded,size:28),const SizedBox(height:8),
+                Text(s['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),
+                const SizedBox(height:5),Text([s['country'],s['kind'],s['language']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:1,overflow:TextOverflow.ellipsis),
+                const SizedBox(height:5),Text(s['description']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11))
+              ]))));
+            }))
           ],
           if (_subjects.isNotEmpty) ...[
             const SizedBox(height:18),
@@ -172,7 +192,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
     showDialog(context: context, builder: (_) => AlertDialog(
       title: Text(item['title']?.toString() ?? 'المصدر'),
       content: Text([item['description'], item['author'], item['publisher'], item['rights']].where((v)=>v!=null&&v.toString().trim().isNotEmpty).map((v)=>v.toString()).join('\\n\\n')),
-      actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إغلاق')),TextButton(onPressed:(){Navigator.pop(context);},child:const Text('المصدر'))],
+      actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إغلاق')),TextButton.icon(icon:const Icon(Icons.open_in_new_rounded),label:const Text('المصدر'),onPressed:() async { final uri=Uri.tryParse(url); if (uri != null) await launchUrl(uri,mode:LaunchMode.externalApplication); })],
     ));
   }
 
