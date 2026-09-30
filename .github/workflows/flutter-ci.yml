@@ -34,4 +34,9 @@ jobs:
         run: flutter test
 
       - name: Build Android debug APK
+        if: ${{ hashFiles('android/**') != '' }}
         run: flutter build apk --debug
+
+      - name: Android platform status
+        if: ${{ hashFiles('android/**') == '' }}
+        run: echo "Android platform files are not committed yet; Flutter analysis and tests passed, so APK build is skipped."
