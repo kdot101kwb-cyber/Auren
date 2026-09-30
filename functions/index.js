@@ -208,7 +208,7 @@ const AUREN_ACTION_DEFINITIONS = {
   'goal.create': { requiresApproval: true, riskLevel: 'low', approvalLevel: 1, keys: ['title'] },
   'message.send': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['conversationId', 'text'] },
   'content.create': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['text', 'mode', 'mood', 'length'] },
-  'supplier.workflow': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['operation', 'supplierId', 'message', 'channel', 'product', 'quantity', 'unit', 'currency', 'notes'] },
+  'supplier.workflow': { requiresApproval: true, riskLevel: 'medium', approvalLevel: 1, keys: ['operation', 'supplierId', 'matchFlowId', 'message', 'channel', 'product', 'quantity', 'unit', 'currency', 'notes'] },
 };
 
 const AUREN_ACTION_TTL_MS = 15 * 60 * 1000;
