@@ -260,3 +260,81 @@ exports.aurenAgriLocalMarketPriceStatus = onCall(async (request) => {
     officialTool: 'https://fpma.fao.org/'
   };
 });
+
+    
+// Global commodity benchmark layer.
+// This is intentionally separate from local/producer prices: the provider may
+// expose a market/futures benchmark with its own unit. AUREN never silently
+// converts units or currencies.
+const GLOBAL_COMMODITIES = Object.freeze([
+  {key:'wheat', name:'Wheat', providerName:'wheat', category:'grains'},
+  {key:'corn', name:'Corn', providerName:'corn', category:'grains'},
+  {key:'soybean', name:'Soybean', providerName:'soybean', category:'oilseeds'},
+  {key:'coffee', name:'Coffee', providerName:'coffee', category:'beverages'},
+  {key:'cocoa', name:'Cocoa', providerName:'cocoa', category:'beverages'},
+  {key:'sugar', name:'Sugar', providerName:'sugar', category:'food'},
+  {key:'cotton', name:'Cotton', providerName:'cotton', category:'fiber'},
+  {key:'rough_rice', name:'Rough Rice', providerName:'rough_rice', category:'grains'},
+  {key:'live_cattle', name:'Live Cattle', providerName:'live_cattle', category:'livestock'}
+]);
+
+async function fetchGlobalCommodityBenchmark(item) {
+  const url='https://www.omkar.cloud/api/commodity-price?name='+encodeURIComponent(item.providerName);
+  const res=await fetch(url,{headers:{accept:'application/json'},signal:AbortSignal.timeout(15000)});
+  const body=await res.text();
+  let data={};
+  try { data=JSON.parse(body); } catch (_) {}
+  if (!res.ok) throw new Error(item.key+': provider HTTP '+res.status);
+  const price=Number(data.price_usd);
+  if (!Number.isFinite(price)) return null;
+  return {
+    id:item.key,
+    market:'global_benchmark',
+    commodity:item.name,
+    category:item.category,
+    price,
+    currency:'USD',
+    unit:String(data.unit || 'provider_unit'),
+    exchange:String(data.exchange || 'global benchmark').slice(0,120),
+    observedAt:String(data.updated_at || new Date().toISOString()),
+    source:'Omkar Commodity Price API',
+    sourceUrl:'https://www.omkar.cloud/tools/commodity-price-api',
+    providerStatus:'live'
+  };
+}
+
+async function fetchGlobalCommodityBenchmarks() {
+  const settled=await Promise.allSettled(GLOBAL_COMMODITIES.map(fetchGlobalCommodityBenchmark));
+  return settled.filter(x=>x.status==='fulfilled' && x.value).map(x=>x.value);
+}
+
+exports.aurenAgriGlobalCommodityPrices = onCall(async (request)=>{
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const requested=normalizeText(request.data?.commodity);
+  const rows=await fetchGlobalCommodityBenchmarks();
+  const filtered=requested
+    ? rows.filter(r=>normalizeText(r.commodity)===requested || r.id===requested)
+    : rows;
+  return {
+    status:filtered.length?'ok':'no_data',
+    asOf:new Date().toISOString(),
+    source:'Omkar Commodity Price API',
+    sourceUrl:'https://www.omkar.cloud/tools/commodity-price-api',
+    data:filtered
+  };
+});
+
+exports.aurenAgriGlobalCommodityPriceCache = onCall(async (request)=>{
+  if (!request.auth?.uid) throw new Error('Authentication is required.');
+  const rows=await fetchGlobalCommodityBenchmarks();
+  const batch=db.batch();
+  for (const row of rows) {
+    const ref=db.collection('auren_agri_global_commodity_prices').doc(row.id);
+    batch.set(ref,{...row,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    batch.set(db.collection('auren_agri_market_price_history').doc(),{
+      ...row,observedAt:admin.firestore.FieldValue.serverTimestamp(),historyType:'global_benchmark'
+    });
+  }
+  if (rows.length) await batch.commit();
+  return {status:rows.length?'cached':'no_data',count:rows.length};
+});
