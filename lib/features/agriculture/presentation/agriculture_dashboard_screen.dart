@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/agriculture_dashboard_service.dart';
+import '../../../services/agriculture/agriculture_production_intelligence_service.dart';
 
 class AurenAgricultureDashboardScreen extends StatefulWidget {
   const AurenAgricultureDashboardScreen({super.key});
@@ -8,17 +9,27 @@ class AurenAgricultureDashboardScreen extends StatefulWidget {
 }
 class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashboardScreen> {
   final _service = AgricultureDashboardService();
+  final _productionService = AgricultureProductionIntelligenceService();
   final _crop = TextEditingController(text: 'Sorghum');
   final _iso3 = TextEditingController();
   Map<String, dynamic>? data;
+  Map<String, dynamic>? backtest;
   Object? error;
   bool loading = false;
 
   Future<void> _load() async {
     setState(() { loading = true; error = null; });
     try {
-      final result = await _service.load(crop: _crop.text.trim().isEmpty ? 'Sorghum' : _crop.text.trim(), iso3: _iso3.text.trim().toUpperCase());
-      if (mounted) setState(() { data = result; loading = false; });
+      final crop = _crop.text.trim().isEmpty ? 'Sorghum' : _crop.text.trim();
+      final iso3 = _iso3.text.trim().toUpperCase();
+      final result = await _service.load(crop: crop, iso3: iso3);
+      Map<String, dynamic>? evaluated;
+      try {
+        evaluated = await _productionService.forecastBacktest(iso3: iso3, item: crop);
+      } catch (_) {
+        evaluated = null;
+      }
+      if (mounted) setState(() { data = result; backtest = evaluated; loading = false; });
     } catch (e) {
       if (mounted) setState(() { error = e; loading = false; });
     }
@@ -67,6 +78,8 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
             Card(child: ListTile(leading: Icon(readiness['faostatFxConfigured'] == true ? Icons.currency_exchange : Icons.currency_exchange_outlined), title: const Text('FAOSTAT exchange-rate bridge'), subtitle: Text(readiness['faostatFxConfigured'] == true ? 'Official FX bridge configured; USD/tonne conversion uses cached FAOSTAT rates when available.' : 'FX bridge code ready; configure the official FAOSTAT export endpoint to enable conversion.'))),
             const SizedBox(height: 10),
             _gaezCard(context, data?['gaez']),
+            const SizedBox(height: 10),
+            _baselineEvaluationCard(context),
 
             const SizedBox(height: 10),
             Card(child: ListTile(leading: Icon(readiness['fpmaLiveFeedConfigured'] == true ? Icons.cloud_done_outlined : Icons.cloud_off_outlined), title: const Text('FPMA local-market feed'), subtitle: Text(readiness['fpmaLiveFeedConfigured'] == true ? 'Configured' : 'Adapter ready; official export URL still needs configuration.'))),
@@ -82,6 +95,70 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
               }),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _baselineEvaluationCard(BuildContext context) {
+    final raw = backtest;
+    final comparison = raw?['modelComparison'] is List
+        ? List<dynamic>.from(raw!['modelComparison'] as List)
+        : const <dynamic>[];
+    final selected = raw?['selectedBaseline'] is Map
+        ? Map<String, dynamic>.from(raw!['selectedBaseline'] as Map)
+        : const <String, dynamic>{};
+    final folds = raw?['folds'] ?? 0;
+
+    if (raw == null) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.analytics_outlined),
+          title: Text('Forecast baseline evaluation'),
+          subtitle: Text('Backtesting data is not available for this crop/country yet.'),
+        ),
+      );
+    }
+
+    String metric(dynamic value) => value == null ? '—' : value.toString();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.analytics_outlined),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Forecast baseline evaluation', style: TextStyle(fontWeight: FontWeight.bold))),
+            Text('$folds folds'),
+          ]),
+          const SizedBox(height: 8),
+          Text(selected.isEmpty
+              ? 'No baseline selected from the available backtest.'
+              : 'Selected baseline: ${selected['method'] ?? '—'}'),
+          if (comparison.isNotEmpty) ...[
+            const Divider(height: 20),
+            ...comparison.map((rawModel) {
+              final model = rawModel is Map
+                  ? Map<String, dynamic>.from(rawModel)
+                  : const <String, dynamic>{};
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(children: [
+                  Expanded(child: Text('${model['method'] ?? 'Model'}')),
+                  Text('MAE ${metric(model['mae'])}'),
+                  const SizedBox(width: 10),
+                  Text('RMSE ${metric(model['rmse'])}'),
+                  const SizedBox(width: 10),
+                  Text('MAPE ${metric(model['mapePct'])}%'),
+                ]),
+              );
+            }),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            'Metrics are walk-forward historical backtest diagnostics; they are not a guarantee of future accuracy.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ]),
       ),
     );
   }
