@@ -1,0 +1,29 @@
+name: AUREN Reusable Library Check
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: "22"
+
+permissions:
+  contents: read
+
+jobs:
+  library-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: node scripts/library_ci_check.js
+      - name: Validate Functions syntax
+        working-directory: functions
+        run: |
+          for file in *.js; do
+            node --check "$file"
+          done
