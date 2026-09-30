@@ -1166,7 +1166,17 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
     }
     match /users/{userId}/enrollments/{courseId} {
-      allow read, create, update, delete: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && request.resource.data.completedLessons == 0
+        && request.resource.data.progress == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if false;
+      allow delete: if isOwner(userId);
     }
     match /users/{userId}/savedCourses/{courseId} {
       allow read, create, delete: if isOwner(userId);
