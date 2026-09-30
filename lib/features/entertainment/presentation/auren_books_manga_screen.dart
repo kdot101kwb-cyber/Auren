@@ -204,7 +204,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
           const SizedBox(height:16),
           TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText:'ابحث: ماجد، ميكي، رجل المستحيل، مؤلف، ناشر، مجلة...'), onChanged:(v)=>setState(()=>_query=v), onSubmitted:(_){_searchGlobalLibrary();_searchMagazines();}),
           const SizedBox(height:8),
-          SizedBox(width:double.infinity, child:FilledButton.icon(onPressed:_globalSearching?null:_searchGlobalLibrary, icon:_globalSearching?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.travel_explore_rounded), label:const Text('البحث في Global Library Index'))),
+          SizedBox(width:double.infinity, child:FilledButton.icon(onPressed:_globalSearching?null:(){_searchGlobalLibrary();_searchMagazines();}, icon:_globalSearching?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.travel_explore_rounded), label:const Text('البحث في Global Library Index'))),
           if (_globalResults.isNotEmpty) ...[
             const SizedBox(height:16),
             const Text('Global Library Index', style: TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
