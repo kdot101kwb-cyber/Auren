@@ -364,18 +364,30 @@ exports.aurenGaezV5CropSummary = onCall(async (request) => {
   }
 
   const params=new URLSearchParams();
+  // The FAO resource is a query service driven by its SQL resource.
+  // Only pass documented filter names; never pretend arbitrary URL params are filters.
   for (const key of ['country','crop','climateSource','ssp','period','waterSupply','management']) {
     if (p[key]) params.set(key,String(p[key]));
   }
   const url=GAEZ_V5_CROP_SUMMARY_URL + (GAEZ_V5_CROP_SUMMARY_URL.includes('?')?'&':'?') + params.toString();
   const payload=await getJson(url);
+  const rows=normalizeGaezRows(extractRowsFromPayload(payload));
+  const countryKey=normalizeCountryKey(country);
+  const filtered=rows.filter(row => {
+    const rc=normalizeCountryKey(rowCountry(row));
+    const rr=String(rowCrop(row)||'').toLowerCase();
+    return (!countryKey || rc===countryKey || rc===String(country||'').trim().toLowerCase()) &&
+      (!crop || rr===crop.toLowerCase() || rr.includes(crop.toLowerCase()));
+  });
   return {
     status:'ok',
     source:'FAO GAEZ v5 Crop Summary',
     scope:'global',
     endpoint:url.split('?')[0],
     filters:Object.fromEntries(params.entries()),
-    data:payload
+    data:filtered.length ? filtered : rows,
+    returnedRows:rows.length,
+    matchingRows:filtered.length
   };
 });
 
