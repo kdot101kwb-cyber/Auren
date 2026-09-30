@@ -29,7 +29,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
       if (mounted) setState(() => _seeding = false);
     }
   }
-  static const _types = <String, String>{'Book':'Books','Manga':'Manga','Anime':'Anime'};
+  static const _types = <String, String>{'Book':'Books','Manga':'Manga','Anime':'Anime','Journal':'Journals & Magazines'};
 
   @override
   Widget build(BuildContext context) => Scaffold(
