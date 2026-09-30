@@ -14,7 +14,7 @@ permissions:
 jobs:
   flutter:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +24,14 @@ jobs:
         with:
           channel: ${{ inputs.flutter-channel }}
           cache: true
+
+      - name: Prepare Android platform
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name auren .
+          else
+            echo "Android platform already exists."
+          fi
 
       - name: Get dependencies
         run: flutter pub get
@@ -38,17 +46,11 @@ jobs:
         run: flutter test
 
       - name: Build Android debug APK
-        if: ${{ hashFiles('android/**') != '' }}
         run: flutter build apk --debug
 
       - name: Upload Android debug APK
-        if: ${{ hashFiles('android/**') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: auren-android-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
-
-      - name: Android platform status
-        if: ${{ hashFiles('android/**') == '' }}
-        run: echo "Android platform is not committed yet; APK build is skipped."
