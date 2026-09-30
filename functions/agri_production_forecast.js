@@ -75,13 +75,13 @@ function selectForecast(rows,field,horizon){
 async function loadRows(iso3,item){
  let query=db.collection('auren_agri_production_history');
  if(iso3) query=query.where('iso3','==',iso3);
- const snap=await query.orderBy('year','asc').limit(5000).get();
+ const snap=await query.limit(5000).get();
  const normalizedItem=clean(item).toLowerCase();
- return snap.docs.map(d=>d.data()).filter(r=>!normalizedItem||clean(r.item).toLowerCase()===normalizedItem);
+ return snap.docs.map(d=>d.data()).filter(r=>!normalizedItem||clean(r.item).toLowerCase()===normalizedItem).sort((a,b)=>num(a.year)-num(b.year));
 }
 function priceValue(r){return num(r.price??r.Price??r.value??r.Value??r.pricePerTon);}
 async function latestPrice(iso3,item){
- const [local,global]=await Promise.all([db.collection('auren_agri_local_market_prices').orderBy('observedAt','desc').limit(2000).get(),db.collection('auren_agri_global_commodity_prices').orderBy('observedAt','desc').limit(500).get()]);
+ const [local,global]=await Promise.all([db.collection('auren_agri_local_market_prices').limit(2000).get(),db.collection('auren_agri_global_commodity_prices').limit(500).get()]);
  const rows=[...local.docs.map(d=>d.data()).filter(r=>String(r.iso3||r.countryCode||'').toUpperCase()===iso3&&clean(r.item||r.commodity).toLowerCase()===item.toLowerCase()),...global.docs.map(d=>d.data()).filter(r=>clean(r.commodity||r.id).toLowerCase().includes(item.toLowerCase()))].filter(r=>priceValue(r)!=null).sort((a,b)=>String(b.observedAt||b.date||'').localeCompare(String(a.observedAt||a.date||'')));
  if(!rows.length)return null;const r=rows[0];return{value:priceValue(r),currency:r.currency||null,unit:r.unit||null,source:r.source||r.exchange||'market'};
 }
