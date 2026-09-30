@@ -18,6 +18,7 @@ import '../../safety/presentation/offline_safety_screen.dart';
 import '../../travel/presentation/travel_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
+import '../../agriculture/presentation/agriculture_dashboard_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
 import '../../entertainment/presentation/auren_production_studio_screen.dart';
 import '../../profile/presentation/adaptive_profile_surface.dart';
@@ -47,6 +48,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Local Intelligence', 'الأعمال والخدمات والفرص في منطقتك', Icons.location_searching_outlined),
     _DiscoverItem('Creators', 'مبدعون ومحتوى يستحق المتابعة', Icons.movie_creation_outlined),
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
+    _DiscoverItem('Agriculture Intelligence', 'أسعار المحاصيل والأسواق والبيانات الزراعية عالميًا', Icons.agriculture_outlined),
     _DiscoverItem('Wallet', 'محفظة ورصيد وحدود إنفاق', Icons.account_balance_wallet_outlined),
     _DiscoverItem('Business Growth', 'نمو، عملاء، حملات وشراكات', Icons.trending_up),
     _DiscoverItem('Entertainment', 'Series • Music • Gaming • Live', Icons.play_circle_outline),
@@ -134,6 +136,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     if (item.title == 'AI Production Studio') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenProductionStudioScreen())); return; }
     if (item.title == 'Entertainment') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEntertainmentScreen()));
+      return;
+    }
+    if (item.title == 'Agriculture Intelligence') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAgricultureDashboardScreen()));
       return;
     }
     if (item.title == 'Communities') {
