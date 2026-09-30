@@ -504,8 +504,9 @@ exports.aurenAgricultureMarketPrices = onCall(async (request)=>{
 
 // Static contract checks for the agriculture FX bridge.
 function aurenAgriFxContract() {
+  const configured = Boolean(FAOSTAT_FX_DATA_URL || FAOSTAT_FX_API_URL);
   return {
-    configured: Boolean(FAOSTAT_FX_DATA_URL || FAOSTAT_FX_API_URL),
+    configured,
     source: 'FAOSTAT Exchange Rates',
     collection: 'auren_agri_fx_rates',
     officialHosts: ['fenixservices.fao.org','faostat.fao.org','api.fao.org','api.data.apps.fao.org','data.apps.fao.org','api-digital.apps.fao.org']
