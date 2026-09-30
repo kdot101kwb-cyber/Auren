@@ -153,8 +153,9 @@ exports.aurenAgriProducerPriceCache = onCall(async (request)=>{
 
 
 // FPMA/GIEWS local-market adapter.
-// The FPMA web application is dynamic; keep the machine-readable source configurable
-// and restricted to official FAO hosts until FAO exposes a stable public export URL.
+// FPMA data may be reported in different native units/currencies. Preserve the
+// native observation and only populate a canonical USD/tonne value when an
+// explicit conversion is supplied; never invent FX or unit factors.
 const FPMA_DATA_URL = process.env.FPMA_DATA_URL || '';
 
 function officialFpmaUrl(value) {
@@ -179,16 +180,21 @@ function normalizeFpmaRow(row) {
     return Number.isFinite(n) ? n : null;
   };
   const countryName = String(pick('country_name_en','country','Country','country_name') || '').trim();
+  const iso3 = String(pick('iso3','ISO3','country_iso3','country_code_iso3') || '').trim().toUpperCase();
   const item = String(pick('item','commodity','Commodity','commodity_name','item_name') || '').trim();
   const market = String(pick('market','Market','market_name') || '').trim();
+  const region = String(pick('region','Region','state','province') || '').trim();
+  const city = String(pick('city','City','town','market_city') || '').trim();
   const date = String(pick('date','Date','period','Period','month') || '').trim();
   const price = numberOrNull(pick('price','Price','value','Value','price_lcu','price_local'));
   const unit = String(pick('unit','Unit','measure_unit') || '').trim();
-  const currency = String(pick('currency','Currency','currency_code') || '').trim();
+  const currency = String(pick('currency','Currency','currency_code') || '').trim().toUpperCase();
   const frequency = String(pick('frequency','Frequency') || 'monthly').trim().toLowerCase();
   return {
-    countryName, item, market, date, priceLCU: price, unit, currency,
-    frequency, source: 'FAO GIEWS FPMA'
+    countryName, iso3, item, market, region, city, date,
+    priceLCU: price, unit, currency, frequency,
+    priceUSDTonne: null, conversionStatus: 'not_converted',
+    source: 'FAO GIEWS FPMA'
   };
 }
 
@@ -220,17 +226,16 @@ exports.aurenAgriLocalMarketPriceIngest = onCall(async (request) => {
   const country = normalizeText(request.data?.country);
   const crop = normalizeText(request.data?.crop);
   const filtered = rows.filter(r =>
-    (!country || normalizeText(r.countryName) === country) &&
+    (!country || normalizeText(r.countryName) === country || normalizeText(r.iso3) === country) &&
     (!crop || normalizeText(r.item) === crop)
   );
   const batch = db.batch();
   let written = 0;
   for (const row of filtered.slice(-2000)) {
-    const id = [row.countryName,row.item,row.market,row.date,row.unit]
+    const id = [row.iso3 || row.countryName,row.item,row.market,row.city,row.date,row.unit]
       .join('_').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0, 300);
     batch.set(db.collection('auren_agri_local_market_prices').doc(id), {
       ...row,
-      priceUSDTonne: null,
       importedAt: admin.firestore.FieldValue.serverTimestamp()
     }, {merge:true});
     written++;
