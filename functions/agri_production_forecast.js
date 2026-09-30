@@ -214,6 +214,42 @@ async function latestCost(iso3,item){
  return normalizeOpexObservation(latest, iso3);
 }
 
+exports.aurenAgriCostEvidenceUpsert=onCall(async request=>{
+ auth(request);
+ const data=request.data||{};
+ const iso3=clean(data.iso3||data.country).toUpperCase();
+ const item=clean(data.item||data.crop);
+ const category=clean(data.category||'opex').toLowerCase();
+ if(!iso3||!item) throw new Error('iso3 and item are required.');
+ if(category!=='opex') throw new Error('Only OPEX evidence is supported by this endpoint.');
+ const value=num(data.value);
+ if(value==null||value<0) throw new Error('A non-negative numeric value is required.');
+ const currency=clean(data.currency).toUpperCase();
+ const unit=clean(data.unit).toLowerCase();
+ const source=clean(data.source);
+ const observedAt=clean(data.observedAt||data.date||data.year);
+ if(!currency||!unit||!source||!observedAt) throw new Error('currency, unit, source and observedAt/year are required.');
+ const slug=item.toLowerCase().replace(/[^a-z0-9]+/g,'_');
+ const ref=db.collection('auren_agri_cost_evidence').doc(iso3+'_'+slug);
+ const snap=await ref.get();
+ const existing=snap.exists&&Array.isArray(snap.data()?.items)?snap.data().items:[];
+ const fingerprint=[iso3,item,category,value,currency,unit,source,observedAt].join('|').toLowerCase();
+ const duplicate=existing.some(x=>[iso3,item,x.category||'',x.value??'',x.currency||'',x.unit||'',x.source||'',x.observedAt||x.date||x.year||''].join('|').toLowerCase()===fingerprint);
+ if(duplicate)return{status:'duplicate',documentId:ref.id,iso3,item,category,records:existing.length};
+ const record={
+   category,item,iso3,value,currency,unit,source,observedAt,
+   createdAt:new Date().toISOString(),
+ };
+ const next=[...existing,record].sort((a,b)=>String(b.observedAt||'').localeCompare(String(a.observedAt||'')));
+ await ref.set({
+   iso3,item,
+   updatedAt:new Date().toISOString(),
+   items:next,
+   schemaVersion:2,
+ },{merge:true});
+ return{status:'upserted',documentId:ref.id,iso3,item,category,records:next.length,latest:next[0]};
+});
+
 exports.aurenAgriCostEvidenceStatus=onCall(async request=>{
  auth(request);
  const iso3=clean(request.data?.iso3||request.data?.country).toUpperCase();
