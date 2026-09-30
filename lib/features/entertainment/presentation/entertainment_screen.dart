@@ -40,7 +40,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.groups_rounded, 'Watch Together', 'Watch with friends in one room'),
     _EntertainmentAction(Icons.music_note_rounded, 'Music', 'Songs, playlists & AI music'),
     _EntertainmentAction(Icons.live_tv_rounded, 'Live', 'Live events & radio'),
-    _EntertainmentAction(Icons.tv_rounded, 'TV', 'TV channels, IPTV & EPG'),
+    _EntertainmentAction(Icons.tv_rounded, 'TV', 'TV + Kids + Cartoon + Anime channels'),
     _EntertainmentAction(Icons.sports_esports_rounded, 'Gaming', 'Games, challenges & social play'),
     _EntertainmentAction(Icons.auto_awesome_rounded, 'Create', 'Create music, stories & shows'),
     _EntertainmentAction(Icons.tv_rounded, 'AI Series', 'Build an original season with AI'),
