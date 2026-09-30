@@ -33,8 +33,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "22.x"
-          cache: "npm"
-          cache-dependency-path: functions/package-lock.json
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
