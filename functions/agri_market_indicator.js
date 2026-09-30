@@ -102,8 +102,10 @@ async function buildGlobalLocalMarketSnapshot({crop='', iso3='', limit=500}={}) 
       convertedPrices:0,
       latestDate:null,
       latestNativePrice:null,
+      latestNativePricePerTonne:null,
       latestUnit:null,
-      latestCurrency:null
+      latestCurrency:null,
+      latestConversionStatus:null
     };
     bucket.rows++;
     if (r.market) {
@@ -116,8 +118,10 @@ async function buildGlobalLocalMarketSnapshot({crop='', iso3='', limit=500}={}) 
     if (!bucket.latestDate || String(r.date||'') > String(bucket.latestDate)) {
       bucket.latestDate = r.date || null;
       bucket.latestNativePrice = num(r.priceLCU);
-      bucket.latestUnit = r.unit || null;
+      bucket.latestNativePricePerTonne = num(r.priceLCUTonne);
+      bucket.latestUnit = r.nativeUnitCanonical || r.unit || null;
       bucket.latestCurrency = r.currency || null;
+      bucket.latestConversionStatus = r.conversionStatus || (bucket.latestNativePricePerTonne !== null ? 'unit_converted' : 'not_converted');
     }
     byCountry.set(key,bucket);
   }
