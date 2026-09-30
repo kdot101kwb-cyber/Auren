@@ -45,6 +45,6 @@ exports.aurenAgriProductionIntelligence = onCall(async request=>{
       productionToGlobalPrice:production.length>0&&globalPrices.length>0,
       readyForFinancialFeasibility:Boolean(production.length&& (localPrices.length||globalPrices.length))
     },
-    generatedAt:admin.firestore.FieldValue.serverTimestamp()
+    generatedAt:new Date().toISOString()
   };
 });
