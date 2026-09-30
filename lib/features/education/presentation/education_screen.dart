@@ -40,7 +40,7 @@ class _EducationState extends State<AurenAURENEducationScreen>{
                 title: Text('XP $xp'),
                 subtitle: Text(
                   'هذا الأسبوع: $weekly XP • الأنشطة: $activities • '
-                  'التحدي: \${challengeDone ? "مكتمل" : "5 أنشطة"} • الشارات: $badges',
+                  'التحدي: ${challengeDone ? "مكتمل" : "5 أنشطة"} • الشارات: $badges',
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.leaderboard_outlined),
