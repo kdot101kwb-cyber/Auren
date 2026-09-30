@@ -44,10 +44,27 @@ test('weekly challenge baseline resets at a new week', () => {
 });
 
 test('weekly profile reads are normalized across week rollover', () => {
-  const source = fs.readFileSync(path.join(__dirname, 'education_gamification_core.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, 'education_gamification.js'), 'utf8');
   assert.match(source, /const storedProfile = profileSnap\.exists/);
   assert.match(source, /const isCurrentWeek = storedProfile\.currentWeek === week/);
   assert.match(source, /weeklyXp: isCurrentWeek \? Number\(storedProfile\.weeklyXp \|\| 0\) : 0/);
   assert.match(source, /weeklyChallengeCompleted: isCurrentWeek && storedProfile\.weeklyChallengeCompleted === true/);
   assert.match(source, /totalXp: Number\(storedProfile\.totalXp \|\| 0\)/);
+});
+
+
+test('lesson completion awards progress and XP through one server transaction', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'education_progress.js'), 'utf8');
+  assert.match(source, /db\.runTransaction/);
+  assert.match(source, /applyEducationActivitiesInTransaction/);
+  assert.match(source, /type: 'lesson'/);
+  assert.match(source, /type: 'course'/);
+  assert.match(source, /tx\.set\(ref/);
+});
+
+test('enrollment progress cannot be updated directly by clients', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
+  const match = source.match(/match \/users\/\{userId\}\/enrollments\/\{courseId\} \{[\s\S]*?allow delete: if isOwner\(userId\);\n    \}/);
+  assert.ok(match);
+  assert.match(match[0], /allow update: if false;/);
 });
