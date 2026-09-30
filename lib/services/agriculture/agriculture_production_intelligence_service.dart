@@ -64,6 +64,14 @@ class AgricultureProductionIntelligenceService {
   return Map<String,dynamic>.from(r.data as Map);
  }
 
+  Future<Map<String, dynamic>> costEvidenceStatus({required String iso3, required String item}) async {
+    final r = await _functions.httpsCallable('aurenAgriCostEvidenceStatus').call({
+      'iso3': iso3,
+      'item': item,
+    });
+    return Map<String, dynamic>.from(r.data as Map);
+  }
+
   Future<Map<String, dynamic>> forecastBacktest({String? iso3, String? item}) async {
     final r = await _functions.httpsCallable('aurenAgriForecastBacktest').call({'iso3': iso3, 'item': item});
     return Map<String, dynamic>.from(r.data as Map);
