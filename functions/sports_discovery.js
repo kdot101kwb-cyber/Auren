@@ -10,6 +10,10 @@ async function fetchJson(url, options={}) {
 function mapFootball(rows, source) {
   return (Array.isArray(rows)?rows:[]).map(x=>({
     id:String(x.fixture?.id||x.idEvent||''),
+    fixtureId:String(x.fixture?.id||x.idEvent||''),
+    homeTeamId:String(x.teams?.home?.id||''),
+    awayTeamId:String(x.teams?.away?.id||''),
+    score:(x.goals?.home!=null||x.goals?.away!=null)?String(x.goals?.home??'-')+'-'+String(x.goals?.away??'-'):'',
     sport:'football',
     title:[x.teams?.home?.name,x.teams?.away?.name].filter(Boolean).join(' vs ') || String(x.strEvent||''),
     status:String(x.fixture?.status?.short||x.strStatus||''),
