@@ -15,6 +15,11 @@ class AurenFcmService {
   final FlutterLocalNotificationsPlugin _local = FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+  void Function(RemoteMessage message)? _openHandler;
+
+  void setOpenHandler(void Function(RemoteMessage message) handler) {
+    _openHandler = handler;
+  }
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -42,6 +47,11 @@ class AurenFcmService {
     );
 
     FirebaseMessaging.onMessage.listen(_showForeground);
+    FirebaseMessaging.onMessageOpenedApp.listen((message) => _openHandler?.call(message));
+    final initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      Future<void>.delayed(const Duration(milliseconds: 700), () => _openHandler?.call(initialMessage));
+    }
     _messaging.onTokenRefresh.listen(_saveToken);
 
     await _registerCurrentToken();
