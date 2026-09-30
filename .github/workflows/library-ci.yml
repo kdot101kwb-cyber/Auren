@@ -1,0 +1,49 @@
+name: AUREN Library CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'lib/features/entertainment/**'
+      - 'scripts/library_ci_check.js'
+      - '.github/workflows/library-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'lib/features/entertainment/**'
+      - 'scripts/library_ci_check.js'
+      - '.github/workflows/library-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: library-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  library-integrity:
+    name: Library integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate library services
+        run: node scripts/library_ci_check.js
+
+      - name: Validate Functions syntax
+        working-directory: functions
+        run: |
+          for file in *.js; do
+            node --check "$file"
+          done
