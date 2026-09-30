@@ -4,6 +4,7 @@ import '../../../services/education/education_repository.dart';
 import '../../../core/models/education.dart';
 import '../../../services/education/education_gamification_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'education_activity_screen.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
   const AurenAURENEducationScreen({super.key});
@@ -62,6 +63,30 @@ class _EducationState extends State<AurenAURENEducationScreen>{
               ),
             );
           },
+        ),
+        const SizedBox(height:8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                const Icon(Icons.bolt_outlined),
+                const SizedBox(width: 10),
+                const Expanded(child: Text('أنشطة التعليم: Quiz • Language • Voice Tutor')),
+                PopupMenuButton<String>(
+                  onSelected: (mode) => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => EducationActivityScreen(mode: mode)),
+                  ),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'quiz', child: Text('Quiz')),
+                    PopupMenuItem(value: 'language', child: Text('Language')),
+                    PopupMenuItem(value: 'voiceTutor', child: Text('Voice Tutor')),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
         const SizedBox(height:8),SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:[null,...cats].map((c)=>Padding(padding:const EdgeInsets.only(right:8),child:ChoiceChip(label:Text(c??'All'),selected:category==c,onSelected:(_)=>setState(()=>category=c))).toList()))),
         const SizedBox(height:12),
