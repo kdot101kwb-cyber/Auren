@@ -336,7 +336,7 @@ function chunk(items, size) {
   return out;
 }
 
-exports.aurenGaezV5CropSummary = onCall(async (request) => {
+async function runAurenGaezV5CropSummary(request) {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
 
   const p=request.data||{};
@@ -406,7 +406,9 @@ exports.aurenGaezV5CropSummary = onCall(async (request) => {
     returnedRows:rows.length,
     matchingRows:filtered.length
   };
-});
+}
+
+exports.aurenGaezV5CropSummary = onCall(runAurenGaezV5CropSummary);
 
 exports.aurenGaezV5GlobalIngest = onCall(async (request) => {
   if (!request.auth?.uid) throw new Error('Authentication is required.');
@@ -590,7 +592,7 @@ exports.aurenGaezCropQuery = onCall(async (request) => {
     management: String(request.data?.management || '').trim() || null
   };
 
-  const result = await exports.aurenGaezV5CropSummary.run({
+  const result = await runAurenGaezV5CropSummary({
     auth: request.auth,
     data: query
   });
