@@ -119,6 +119,24 @@ exports.searchAurenSports=onCall({region:'us-central1',timeoutSeconds:25,memory:
         const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'teams/statistics',teamId?{team:teamId,league:leagueId,season:request.data?.season}:{});
         return {status:'ok',resource:'team_stats',providers:['API-Sports'],results:rows,sourceUrls};
       }
+      if(selectedApiSport==='football' && ['match_events','match_lineups','match_stats','match_players','h2h'].includes(resource)) {
+        const fixtureId=String(request.data?.gameId||request.data?.fixtureId||'').trim();
+        let endpoint='fixtures';
+        let params={};
+        if(resource==='match_events'){ endpoint='fixtures/events'; params={fixture:fixtureId}; }
+        if(resource==='match_lineups'){ endpoint='fixtures/lineups'; params={fixture:fixtureId}; }
+        if(resource==='match_stats'){ endpoint='fixtures/statistics'; params={fixture:fixtureId}; }
+        if(resource==='match_players'){ endpoint='fixtures/players'; params={fixture:fixtureId}; }
+        if(resource==='h2h'){
+          const home=String(request.data?.homeTeamId||'').trim();
+          const away=String(request.data?.awayTeamId||'').trim();
+          endpoint='fixtures/headtohead'; params={h2h:home+'-'+away,last:10};
+        }
+        if(resource!=='h2h' && !fixtureId) return {status:'invalid',resource,providers:['API-Sports'],results:[],sourceUrls};
+        if(resource==='h2h' && (!request.data?.homeTeamId || !request.data?.awayTeamId)) return {status:'invalid',resource,providers:['API-Sports'],results:[],sourceUrls};
+        const rows=await fetchApiSportResource(selectedApiKey,'football',endpoint,params);
+        return {status:'ok',resource,providers:['API-Sports'],results:rows,sourceUrls};
+      }
       if(resource==='game_details') {
         const gameId=String(request.data?.gameId||'').trim();
         const rows=await fetchApiSportResource(selectedApiKey,selectedApiSport,'games',gameId?{id:gameId}:{});
