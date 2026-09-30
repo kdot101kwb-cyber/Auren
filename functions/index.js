@@ -3759,3 +3759,4 @@ Object.assign(module.exports, require('./gaez_v5_ingest_scheduler'));
 Object.assign(module.exports, require('./supplier_requests'));
 Object.assign(module.exports, require('./agri_market_indicator'));
 Object.assign(module.exports, require('./agri_market_intelligence'));
+Object.assign(module.exports, require('./agri_production_intelligence'));
