@@ -48,6 +48,13 @@ function bookDoc(book) {
   };
 }
 
+function mangaDoc(manga) {
+  const id = 'manga_mal_' + String(manga.mal_id);
+  const genres = Array.isArray(manga.genres) ? manga.genres.slice(0, 8).map((g) => clean(g?.name, 80)) : [];
+  const image = manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url || '';
+  return {id,title:clean(manga.title,160),type:'Manga',description:clean(manga.synopsis || 'Manga catalog entry.',3000),imageUrl:clean(image,2000),mediaUrl:'https://myanimelist.net/manga/' + manga.mal_id,mediaKind:'catalog',creatorId:'auren-library',channelId:'auren-library',country:'Japan',language:'ja',year:manga.published?.from ? String(new Date(manga.published.from).getFullYear()) : '',genres,seasons:0,episodes:0,trailerUrl:'',artistName:'',albumName:'',visibility:'public',source:'Jikan / MyAnimeList',sourceUrl:'https://myanimelist.net/manga/' + manga.mal_id,licenseNote:'Metadata/catalog entry only; AUREN does not host copyrighted manga scans.',createdAt:admin.firestore.FieldValue.serverTimestamp(),updatedAt:admin.firestore.FieldValue.serverTimestamp()};
+}
+
 function animeDoc(anime) {
   const id = 'anime_mal_' + String(anime.mal_id);
   const genres = Array.isArray(anime.genres) ? anime.genres.slice(0, 8).map((g) => clean(g?.name, 80)) : [];
@@ -92,14 +99,16 @@ exports.seedAurenEntertainmentLibrary = onCall(
       return {status: 'ready', seeded: false, message: 'AUREN Entertainment Library is already populated.'};
     }
 
-    const [books, anime] = await Promise.all([
+    const [books, anime, manga] = await Promise.all([
       getJson('https://gutendex.com/books?languages=en&copyright=false&sort=popular&page=1'),
       getJson('https://api.jikan.moe/v4/top/anime?limit=25'),
+      getJson('https://api.jikan.moe/v4/top/manga?limit=25'),
     ]);
 
     const docs = [
       ...(books.results || []).slice(0, 40).map(bookDoc),
       ...(anime.data || []).slice(0, 25).map(animeDoc),
+      ...(manga.data || []).slice(0, 25).map(mangaDoc),
     ];
 
     const batchSize = 400;
