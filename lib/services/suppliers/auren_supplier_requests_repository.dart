@@ -26,4 +26,5 @@ class AurenSupplierRequestsRepository {
   }
   Future<void> cancel(AurenSupplierRequest r) async{await _functions.httpsCallable('cancelAurenSupplierRequest').call({'requestId':r.id,'type':r.type});}
   Future<void> retry(AurenSupplierRequest r) async{await _functions.httpsCallable('retryAurenSupplierRequest').call({'requestId':r.id,'type':r.type});}
+  Future<void> updateStatus(AurenSupplierRequest r,String status) async{await _functions.httpsCallable('updateAurenSupplierRequestStatus').call({'requestId':r.id,'type':r.type,'status':status});}
 }
