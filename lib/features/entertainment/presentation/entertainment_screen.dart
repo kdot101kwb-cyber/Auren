@@ -17,6 +17,7 @@ import 'auren_radio_screen.dart';
 import 'auren_podcasts_screen.dart';
 import 'auren_tv_screen.dart';
 import 'auren_videos_screen.dart';
+import 'auren_live_entertainment_screen.dart';
 import 'auren_books_manga_screen.dart';
 import 'auren_anime_world_screen.dart';
 import 'auren_entertainment_create_screen.dart';
@@ -43,7 +44,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.movie_filter_rounded, 'Movies', 'Global movies with smart discovery'),
     _EntertainmentAction(Icons.groups_rounded, 'Watch Together', 'Watch with friends in one room'),
     _EntertainmentAction(Icons.music_note_rounded, 'Music', 'Songs, playlists & AI music'),
-    _EntertainmentAction(Icons.live_tv_rounded, 'Live', 'Live events & radio'),
+    _EntertainmentAction(Icons.live_tv_rounded, 'Live', 'Live video, events & broadcasts'),
     _EntertainmentAction(Icons.tv_rounded, 'TV', 'TV + Kids + Cartoon + Anime channels'),
     _EntertainmentAction(Icons.play_circle_fill_rounded, 'Videos', 'Long videos, Shorts & shows'),
     _EntertainmentAction(Icons.sports_esports_rounded, 'Gaming', 'Games, challenges & social play'),
@@ -400,7 +401,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   } else if (action.title == 'Music') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()));
                   } else if (action.title == 'Live') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenLiveEntertainmentScreen()));
                   } else if (action.title == 'TV') {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTvScreen()));
                   } else if (action.title == 'Videos') {
