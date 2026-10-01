@@ -36,7 +36,7 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           final languageOk = _language == 'الكل' || _norm(x.language) == _norm(_language);
           final searchOk = _search.isEmpty || text.contains(_norm(_search)) || _norm(x.country).contains(_norm(_search)) || _norm(x.language).contains(_norm(_search));
           return genreOk && countryOk && languageOk && searchOk;
-        }).toList();
+        })\n          .toList()\n          ..sort((a, b) {\n            final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());\n            return byTitle != 0 ? byTitle : a.id.compareTo(b.id);\n          });
         return ListView(padding: const EdgeInsets.all(16), children: [
           Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Movie Universe', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
