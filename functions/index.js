@@ -618,7 +618,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         if (provider === 'legacy') {
           const apiKey = AUREN_AI_API_KEY.value().trim();
           if (!apiKey) continue;
-          const baseUrl = (process.env.AUREN_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\\/$/, '');
+          const baseUrl = (process.env.AUREN_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
           const model = process.env.AUREN_AI_MODEL || 'gpt-4o-mini';
           const controller = new AbortController();
           const timeout = setTimeout(() => controller.abort(), 30000);
