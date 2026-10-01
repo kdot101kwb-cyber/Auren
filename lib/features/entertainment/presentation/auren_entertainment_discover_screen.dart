@@ -66,7 +66,10 @@ class _AurenEntertainmentDiscoverScreenState extends State<AurenEntertainmentDis
     );
 
     return Column(
-      children:items.take(20).map((item)=>Card(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children:[
+        Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('النتائج: ${items.length}', style: const TextStyle(fontWeight: FontWeight.w700))),
+        ...items.take(20).map((item)=>Card(
         child:ListTile(
           onTap:()=>_openItem(item),
           leading:CircleAvatar(
