@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -651,13 +652,44 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     leading: const Icon(Icons.play_circle_outline),
                     title: Text(episode['title']?.toString() ?? 'Episode', maxLines: 2, overflow: TextOverflow.ellipsis),
                     subtitle: Text(episode['publishedAt']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: _analyzingEpisode == '${item['id']}_${episode['id']}'
-                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
-                        : IconButton(
+                    trailing: Wrap(
+                      spacing: 2,
+                      children: [
+                        IconButton(
+                          tooltip: 'إعجاب',
+                          icon: const Icon(Icons.favorite_border),
+                          onPressed: () => _recordPodcastEvent('like', {
+                            ...item,
+                            'id': _episodeItem(item, episode).id,
+                            'name': episode['title']?.toString() ?? item['name']?.toString() ?? 'Podcast',
+                            'description': episode['description']?.toString() ?? '',
+                            'artworkUrl': episode['imageUrl']?.toString() ?? item['artworkUrl']?.toString() ?? '',
+                          }),
+                        ),
+                        IconButton(
+                          tooltip: 'مشاركة',
+                          icon: const Icon(Icons.share_outlined),
+                          onPressed: () async {
+                            final title = episode['title']?.toString() ?? 'Podcast episode';
+                            final url = episode['link']?.toString() ?? '';
+                            await Share.share(url.isEmpty ? title : title + '\\n' + url);
+                            await _recordPodcastEvent('share', {
+                              ...item,
+                              'id': _episodeItem(item, episode).id,
+                              'name': title,
+                            });
+                          },
+                        ),
+                        if (_analyzingEpisode == '${item['id']}_${episode['id']}')
+                          const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+                        else
+                          IconButton(
                             tooltip: 'AI Summary',
                             icon: const Icon(Icons.auto_awesome_outlined),
                             onPressed: () => _analyzeEpisode(item, episode),
                           ),
+                      ],
+                    ),
                     onTap: episode['audioUrl']?.toString().isEmpty != false
                         ? null
                         : () {
