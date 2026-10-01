@@ -20,7 +20,7 @@ class AurenSavedMusicScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Saved Music')),
+      appBar: AppBar(title: const Text('Saved Music'), actions: [IconButton(tooltip: 'تحديث', icon: const Icon(Icons.refresh_rounded), onPressed: () => setState(() {}))]),
       body: StreamBuilder<List<AurenEntertainmentItem>>(
         stream: repo.watchSavedItems(uid),
         builder: (context, snapshot) {
