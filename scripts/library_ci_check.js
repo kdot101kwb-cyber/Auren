@@ -99,7 +99,7 @@ if (duplicateIds.length) {
 
 const urlMatches = [
   ...globalIndex.matchAll(/sourceUrl:\s*['"]([^'"]+)['"]/g),
-  ...unified.matchAll(/https?:\\/\\/[^'"]+/g),
+  ...unified.matchAll(/https?:\/\/[^'"]+/g),
   ...sources.matchAll(/url:\s*['"]([^'"]+)['"]/g),
 ].map((match) => match[1] || match[0]);
 
