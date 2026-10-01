@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -170,6 +171,43 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
               Text(item.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Text(item.description, style: Theme.of(context).textTheme.bodyLarge),
+              if (item.type == 'Global Series' && (item.source.isNotEmpty || item.licenseNote.isNotEmpty || item.sourceUrl.isNotEmpty)) ...[
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          const Icon(Icons.info_outline),
+                          const SizedBox(width: 8),
+                          Text('معلومات الكتالوج', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        ]),
+                        const SizedBox(height: 8),
+                        if (item.source.isNotEmpty) Text('المصدر: ${item.source}'),
+                        if (item.licenseNote.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(item.licenseNote, style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                        if (item.sourceUrl.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              final uri = Uri.tryParse(item.sourceUrl);
+                              if (uri != null && await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('فتح المصدر'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               if (item.type == 'Movie' && item.trailerUrl.isNotEmpty && item.trailerUrl != item.mediaUrl) ...[
                 OutlinedButton.icon(
                   onPressed: _starting ? null : () => _openPlayer(item.trailerUrl, item),
