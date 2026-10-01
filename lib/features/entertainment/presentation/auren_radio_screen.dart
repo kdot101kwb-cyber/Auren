@@ -196,7 +196,7 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
           ],
           if (_discovered.isNotEmpty) ...[
             const SizedBox(height: 18),
-            const Text('محطات مباشرة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            Text('محطات مباشرة (${_discovered.length})', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             ..._discovered.map((station) => Card(
               child: ListTile(
