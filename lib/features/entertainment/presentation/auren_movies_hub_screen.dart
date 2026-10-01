@@ -56,7 +56,7 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           const SizedBox(height: 8),
           if (snapshot.hasError) Text('تعذر تحميل الأفلام: ${snapshot.error}'),
           if (filtered.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(24), child: Center(child: Text('لا توجد أفلام مضافة بعد. يمكن لـ AUREN استقبال المحتوى المرخص أو الذي يملكه المنشئ.')))),
-          for (final item in filtered) Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(leading: _lowData || item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie)) : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)), title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis), trailing: const Icon(Icons.play_arrow), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EntertainmentDetailScreen(itemId: item.id))))),
+          for (final item in filtered) Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(leading: _lowData || item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie)) : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl), onBackgroundImageError: (_, __) {}), title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis), trailing: const Icon(Icons.play_arrow), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EntertainmentDetailScreen(itemId: item.id))))),
         ]);
       },
     ),
