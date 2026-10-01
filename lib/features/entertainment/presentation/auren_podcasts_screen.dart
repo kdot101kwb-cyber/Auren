@@ -148,6 +148,109 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     return '${minutes}:${seconds.toString().padLeft(2, '0')}';
   }
 
+  Widget _buildRecentlyPlayed() {
+    final items = _player.history
+        .where((item) => item.type.toLowerCase() == 'podcast')
+        .take(10)
+        .toList();
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('استمعت إليها مؤخراً', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 150,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, index) {
+              final item = items[index];
+              return SizedBox(
+                width: 220,
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          item.imageUrl.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.network(item.imageUrl, width: 52, height: 52, fit: BoxFit.cover),
+                                )
+                              : const SizedBox(width: 52, height: 52, child: Icon(Icons.podcasts)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(item.title, maxLines: 3, overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
+    );
+  }
+
+  Widget _buildSavedRail(List<AurenEntertainmentItem> items) {
+    final podcasts = items.where((item) => item.type.toLowerCase() == 'podcast').take(10).toList();
+    if (podcasts.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('بودكاست محفوظ', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 150,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: podcasts.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, index) {
+              final item = podcasts[index];
+              return SizedBox(
+                width: 220,
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(10),
+                    leading: item.imageUrl.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(item.imageUrl, width: 48, height: 48, fit: BoxFit.cover),
+                          )
+                        : const Icon(Icons.bookmark),
+                    title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    onTap: item.mediaUrl.isEmpty
+                        ? null
+                        : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item)),
+                          ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
+    );
+  }
+
   Widget _buildPodcastRail(String title, List<Map<String, dynamic>> items) {
     if (items.isEmpty) return const SizedBox.shrink();
     return Column(
@@ -415,6 +518,13 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                 ),
               _buildContinueListening(),
               const SizedBox(height: 8),
+              _buildRecentlyPlayed(),
+              if (uid != null)
+                StreamBuilder<List<AurenEntertainmentItem>>(
+                  stream: repo.watchSavedItems(uid),
+                  builder: (context, savedSnapshot) =>
+                      _buildSavedRail(savedSnapshot.data ?? const <AurenEntertainmentItem>[]),
+                ),
               _buildPodcastRail('For You — AUREN', _personalized),
               _buildPodcastRail('لأنك استمعت إلى', _becauseYouListened),
               _buildPodcastRail('الأكثر رواجاً عالمياً', _trending),
