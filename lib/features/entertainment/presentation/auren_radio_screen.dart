@@ -91,6 +91,8 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
       appBar: AppBar(
         title: const Text('AUREN Radio'),
         actions: [
+          if (_country.isNotEmpty || _tag.isNotEmpty || _searchController.text.isNotEmpty)
+            IconButton(tooltip: 'مسح الفلاتر', icon: const Icon(Icons.filter_alt_off_rounded), onPressed: () { _searchController.clear(); setState(() { _country = ''; _tag = ''; _discovered = const []; }); }),
           IconButton(
             tooltip: 'اكتشاف',
             onPressed: _loading ? null : _discover,
