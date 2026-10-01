@@ -1,6 +1,6 @@
 function buildTournamentBracket(players) {
   const p=[...players].slice(0,8);
-  while(p.length<8)p.push(null);
+  // Only create playable quarterfinal slots for actual participants; preserve a single BYE for an odd final pairing.\n  // Do not pad to eight, which creates phantom BYE matches for missing players.
   const makeMatch=(id,round,p1,p2)=>{
     if(p1 && !p2)return {id,round,p1,p2:null,status:'finished',winnerId:p1,bye:true};
     return {id,round,p1:p1||null,p2:p2||null,status:'pending',winnerId:null};
