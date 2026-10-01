@@ -159,7 +159,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   ],
                   if (uid != null && items.where((i) => i.type.toLowerCase() == 'global series').isEmpty && !_seriesSeeding)
                     _buildSeriesSeedPrompt(context),
-                  _buildDailySeries(context, items),
+                  _buildDailySeries(context, items, uid),
                   const SizedBox(height: 14),
                   _buildHero(context),
                   if (uid != null) ...[
@@ -328,7 +328,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     }
   }
 
-  Widget _buildDailySeries(BuildContext context, List<AurenEntertainmentItem> items) {
+  Widget _buildDailySeries(BuildContext context, List<AurenEntertainmentItem> items, String? uid) {
     final series = items.where((item) {
       final t = item.type.toLowerCase();
       return t == 'global series' || t == 'series' || t == 'tv series';
@@ -362,13 +362,18 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 178,
+          height: 220,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: daily.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, index) {
               final item = daily[index];
+              final meta = [
+                if (item.country.isNotEmpty) item.country,
+                if (item.year.isNotEmpty) item.year,
+              ].join(' • ');
+
               return SizedBox(
                 width: 210,
                 child: Card(
@@ -377,28 +382,48 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => AurenEntertainmentDetailScreen(
-                          itemId: item.id,
-                        ),
+                        builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id),
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: item.imageUrl.isEmpty
-                              ? const Center(child: Icon(Icons.tv_rounded, size: 42))
-                              : Image.network(
-                                  item.imageUrl,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const Center(
-                                    child: Icon(Icons.tv_rounded, size: 42),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              item.imageUrl.isEmpty
+                                  ? const Center(child: Icon(Icons.tv_rounded, size: 42))
+                                  : Image.network(
+                                      item.imageUrl,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Center(
+                                        child: Icon(Icons.tv_rounded, size: 42),
+                                      ),
+                                    ),
+                              if (uid != null)
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.bookmark_border, color: Colors.white),
+                                      tooltip: 'حفظ',
+                                      onPressed: () => repo.save(uid, item.id),
+                                    ),
                                   ),
                                 ),
+                            ],
+                          ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
                           child: Text(
                             item.title,
                             maxLines: 1,
@@ -406,6 +431,18 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
+                        if (meta.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                            child: Text(
+                              meta,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          )
+                        else
+                          const SizedBox(height: 10),
                       ],
                     ),
                   ),
