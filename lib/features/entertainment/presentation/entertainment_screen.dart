@@ -434,6 +434,12 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
 
     if (series.isEmpty) return const SizedBox.shrink();
 
+    // Keep the daily selection stable even if Firestore returns documents in a different order.
+    series.sort((a, b) {
+      final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+      return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
+    });
+
     final daySeed = DateTime.now().toUtc().difference(DateTime.utc(2020, 1, 1)).inDays;
     final start = daySeed % series.length;
     final daily = List.generate(
