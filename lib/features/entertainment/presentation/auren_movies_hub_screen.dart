@@ -34,7 +34,8 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           final genreOk = _genre == 'الكل' || x.genres.any((g) => _norm(g) == _norm(_genre)) || text.contains(_norm(_genre));
           final countryOk = _country == 'الكل' || _norm(x.country) == _norm(_country);
           final languageOk = _language == 'الكل' || _norm(x.language) == _norm(_language);
-          final searchOk = _search.isEmpty || text.contains(_norm(_search)) || _norm(x.country).contains(_norm(_search)) || _norm(x.language).contains(_norm(_search));
+          final searchTerms = _norm(_search).split(' ').where((v) => v.isNotEmpty).toList();
+          final searchOk = searchTerms.isEmpty || searchTerms.every((term) => _norm('${x.title} ${x.description} ${x.genres.join(' ')} ${x.country} ${x.language}').contains(term));
           return genreOk && countryOk && languageOk && searchOk;
         })\n          .toList()\n          ..sort((a, b) {\n            final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());\n            return byTitle != 0 ? byTitle : a.id.compareTo(b.id);\n          });
         return ListView(padding: const EdgeInsets.all(16), children: [
