@@ -282,6 +282,66 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     );
   }
 
+  Future<void> _openSavedEpisode(Map<String, dynamic> saved) async {
+    final savedId = saved['episodeId']?.toString() ?? saved['id']?.toString() ?? '';
+    var audioUrl = saved['audioUrl']?.toString() ?? '';
+    var title = saved['title']?.toString() ?? 'Episode';
+    var description = saved['description']?.toString() ?? '';
+    var artwork = saved['artworkUrl']?.toString() ?? '';
+    var language = saved['language']?.toString() ?? '';
+    var country = saved['country']?.toString() ?? '';
+    var podcastName = saved['podcastName']?.toString() ?? '';
+    if (audioUrl.isEmpty && (saved['feedUrl']?.toString() ?? '').isNotEmpty) {
+      try {
+        final callable = FirebaseFunctions.instance.httpsCallable('fetchAurenPodcastFeed');
+        final response = await callable.call({'feedUrl': saved['feedUrl']});
+        final raw = response.data is Map ? response.data['episodes'] : null;
+        final episodes = raw is List ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
+        final suffix = savedId.split('_').last;
+        final match = episodes.where((e) =>
+          e['id']?.toString() == suffix ||
+          e['title']?.toString() == title).cast<Map<String, dynamic>?>().firstWhere((e) => e != null, orElse: () => null);
+        if (match != null) {
+          audioUrl = match['audioUrl']?.toString() ?? '';
+          title = match['title']?.toString() ?? title;
+          description = match['description']?.toString() ?? description;
+          artwork = match['imageUrl']?.toString() ?? artwork;
+        }
+      } catch (_) {}
+    }
+    if (audioUrl.isEmpty || !mounted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر استعادة رابط تشغيل هذه الحلقة. افتح البرنامج من جديد لتحميل الحلقة.')));
+      }
+      return;
+    }
+    final item = AurenEntertainmentItem(
+      id: savedId,
+      title: title,
+      type: 'Podcast',
+      description: description,
+      imageUrl: artwork,
+      mediaUrl: audioUrl,
+      mediaKind: 'audio',
+      creatorId: '',
+      channelId: '',
+      country: country,
+      language: language,
+      artistName: podcastName,
+    );
+    await _recordPodcastEvent('play', {
+      'id': savedId,
+      'name': title,
+      'description': description,
+      'artworkUrl': artwork,
+      'language': language,
+      'country': country,
+      'artist': podcastName,
+    });
+    if (!mounted) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item)));
+  }
+
   Widget _buildSavedEpisodesRail() {
     final episodes = _savedEpisodeItems.take(20).toList();
     if (episodes.isEmpty) return const SizedBox.shrink();
@@ -319,23 +379,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    onTap: audioUrl.isEmpty ? null : () {
-                      final item = AurenEntertainmentItem(
-                        id: episode['id']?.toString() ?? episode['episodeId']?.toString() ?? '',
-                        title: title,
-                        type: 'Podcast',
-                        description: episode['description']?.toString() ?? '',
-                        imageUrl: artwork,
-                        mediaUrl: audioUrl,
-                        mediaKind: 'audio',
-                        creatorId: '',
-                        channelId: '',
-                        country: episode['country']?.toString() ?? '',
-                        language: episode['language']?.toString() ?? '',
-                        artistName: episode['podcastName']?.toString() ?? '',
-                      );
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item)));
-                    },
+                    onTap: () => _openSavedEpisode(episode),
                   ),
                 ),
               );
