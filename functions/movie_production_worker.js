@@ -19,7 +19,7 @@ async function validateArtifact(o) {
   if (!hasOutput(o)) return {ok:false, reason:'missing_artifact'};
   if (o.storagePath || o.externalId) return {ok:true,referenceOnly:true};
   const url=String(o.url||'');
-  if (!/^https?:\\/\\//i.test(url)) return {ok:false,reason:'invalid_url'};
+  if (!/^https?:\/\//i.test(url)) return {ok:false,reason:'invalid_url'};
   const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),10000);
   try {
     const r=await fetch(url,{method:'HEAD',signal:controller.signal});
