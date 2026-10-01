@@ -64,11 +64,28 @@ jobs:
           cache: true
 
       - name: Prepare Android platform
+        shell: bash
         run: |
           set -euo pipefail
           if [ ! -d android ]; then
-            flutter create --platforms=android --project-name auren .
+            flutter create --platforms=android --org com.auren --project-name auren .
           fi
+          if [ -f android/app/build.gradle ]; then
+            sed -i 's/applicationId "com\.auren\.auren"/applicationId "com.auren.app"/' android/app/build.gradle
+            sed -i 's/namespace "com\.auren\.auren"/namespace "com.auren.app"/' android/app/build.gradle || true
+          fi
+          if [ -f android/app/build.gradle.kts ]; then
+            sed -i 's/applicationId = "com\.auren\.auren"/applicationId = "com.auren.app"/' android/app/build.gradle.kts
+            sed -i 's/namespace = "com\.auren\.auren"/namespace = "com.auren.app"/' android/app/build.gradle.kts || true
+          fi
+          echo "AUREN Android package target: com.auren.app"
+
+      - name: Verify Firebase project binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '"default": "auren-90ccc"' .firebaserc
+          echo "Firebase project binding verified: auren-90ccc"
 
       - name: Get Flutter dependencies
         run: flutter pub get
@@ -80,7 +97,7 @@ jobs:
         run: |
           set -euo pipefail
           if grep -q "Run flutterfire configure" lib/firebase_options.dart; then
-            echo "::warning::Firebase platform options are still placeholders. APK is buildable, but Firebase runtime setup requires flutterfire configure."
+            echo "::warning::Firebase platform options are still placeholders. APK is buildable, but Firebase runtime setup requires generated FlutterFire options."
           else
             echo "Firebase platform options are configured."
           fi
@@ -104,7 +121,9 @@ jobs:
             "commit": "${{ github.sha }}",
             "repository": "${{ github.repository }}",
             "workflow": "${{ github.workflow }}",
-            "ref": "${{ github.ref_name }}"
+            "ref": "${{ github.ref_name }}",
+            "androidPackage": "com.auren.app",
+            "firebaseProject": "auren-90ccc"
           }
           EOF
 
