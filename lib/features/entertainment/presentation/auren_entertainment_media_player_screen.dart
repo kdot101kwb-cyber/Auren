@@ -68,7 +68,7 @@ class _AurenEntertainmentMoviePlayerScreenState extends State<AurenEntertainment
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title, maxLines:1, overflow:TextOverflow.ellipsis),
-        actions:[IconButton(onPressed:()=>SharePlus.instance.share(ShareParams(text:'شاهد فيلم AUREN: '+widget.title)),icon:const Icon(Icons.share_rounded))]
+        actions:[IconButton(tooltip:'مشاركة',onPressed:()=>SharePlus.instance.share(ShareParams(text:'شاهد فيلم AUREN: '+widget.title)),icon:const Icon(Icons.share_rounded))]
       ),
       body: c==null ? const Center(child:CircularProgressIndicator()) :
         FutureBuilder<void>(future:_init,builder:(context,s){
