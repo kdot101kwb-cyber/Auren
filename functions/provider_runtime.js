@@ -51,12 +51,22 @@ async function submitWithFallback({candidates, credentialsByProvider={}, task, i
   const attempts = [];
 
   for (const provider of order) {
-    const result = await submitAurenProviderJob({
-      provider,
-      credentials: credentialsByProvider[provider] || {},
-      task,
-      idempotencyKey,
-    });
+    let result;
+    try {
+      result = await submitAurenProviderJob({
+        provider,
+        credentials: credentialsByProvider[provider] || {},
+        task,
+        idempotencyKey,
+      });
+    } catch (error) {
+      result = {
+        ok:false,
+        providerId:provider,
+        unavailable:true,
+        message:String(error?.message || error).slice(0,500),
+      };
+    }
     attempts.push({
       providerId:provider,
       ok:Boolean(result.ok),
