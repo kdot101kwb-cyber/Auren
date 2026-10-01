@@ -9,7 +9,7 @@ test('plugin package signatures verify',()=>{
   assert.equal(verifyPackageSignature(meta,sig,'wrong-secret'),false);
 });
 test('package metadata size is bounded',()=>{
-  assert.throws(()=>validatePackageMetadata({pluginId:'x',version:'1.0.0',sha256:'a'.repeat(64),sizeBytes:6*1024*1024}),/exceeds/);
+  assert.throws(()=>validatePackageMetadata({pluginId:'auren.demo.plugin',version:'1.0.0',sha256:'a'.repeat(64),sizeBytes:6*1024*1024}),/exceeds/);
 });
 
 test('dependency metadata is bounded and unique',()=>{
