@@ -43,7 +43,7 @@ class AurenWatchHistoryScreen extends StatelessWidget {
                       : const CircleAvatar(child: Icon(Icons.history)),
                   title: Text(e['title']?.toString() ?? 'محتوى'),
                   subtitle: Text(completed ? 'تمت المشاهدة' : '${(progress * 100).round()}% تمت مشاهدته'),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Icon(completed ? Icons.check_circle_rounded : Icons.play_circle_outline_rounded),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
