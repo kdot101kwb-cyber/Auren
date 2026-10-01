@@ -856,8 +856,29 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                                   setState(() {
                                     if (next) {
                                       _savedEpisodes.add(episodeItem.id);
+                                      _savedEpisodeItems = [
+                                        {
+                                          'id': episodeItem.id,
+                                          'episodeId': episodeItem.id,
+                                          'title': episodeItem.title,
+                                          'podcastId': item['id']?.toString() ?? '',
+                                          'podcastName': item['name']?.toString() ?? item['artist']?.toString() ?? '',
+                                          'feedUrl': item['feedUrl']?.toString() ?? '',
+                                          'description': episodeItem.description,
+                                          'artworkUrl': episodeItem.imageUrl,
+                                          'audioUrl': episodeItem.mediaUrl,
+                                          'publishedAt': episode['publishedAt']?.toString() ?? '',
+                                          'language': episodeItem.language,
+                                          'country': episodeItem.country,
+                                          'isVideo': episode['isVideo'] == true,
+                                        },
+                                        ..._savedEpisodeItems.where((e) =>
+                                            (e['episodeId']?.toString() ?? e['id']?.toString() ?? '') != episodeItem.id),
+                                      ].take(50).toList();
                                     } else {
                                       _savedEpisodes.remove(episodeItem.id);
+                                      _savedEpisodeItems = _savedEpisodeItems.where((e) =>
+                                          (e['episodeId']?.toString() ?? e['id']?.toString() ?? '') != episodeItem.id).toList();
                                     }
                                   });
                                   await _recordPodcastEvent(next ? 'save' : 'unsave', {
