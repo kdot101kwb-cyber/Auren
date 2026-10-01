@@ -75,7 +75,8 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
   }
 
   Future<void> _openPlayer(String url, AurenEntertainmentItem item, {Duration? resume}) async {
-    final uri = Uri.tryParse(url);\n    final isWebMedia = uri != null && (uri.scheme == 'https' || uri.scheme == 'http');
+    final uri = Uri.tryParse(url);
+    final isWebMedia = uri != null && (uri.scheme == 'https' || uri.scheme == 'http');
     final isCatalogOnly = item.isCatalogOnly;
     final hasPlayableMedia = item.hasPlayableMedia;
     if (!isWebMedia || _starting) return;
