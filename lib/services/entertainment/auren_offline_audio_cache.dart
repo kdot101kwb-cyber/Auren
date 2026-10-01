@@ -55,7 +55,9 @@ class AurenOfflineAudioCache {
     if (await temp.exists()) await temp.delete();
     final client = http.Client();
     try {
-      final response = await client.send(http.Request('GET', Uri.parse(url)));
+      final request = http.Request('GET', Uri.parse(url));
+      request.headers['Accept'] = 'audio/*,video/*;q=0.8,*/*;q=0.1';
+      final response = await client.send(request);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw Exception('offline download failed');
       }
