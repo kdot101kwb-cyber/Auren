@@ -74,7 +74,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   }
 
   Future<void> _analyzeEpisode(Map<String, dynamic> podcast, Map<String, dynamic> episode) async {
-    final episodeId = '\${podcast['id']}_\${episode['id']}';
+    final episodeId = '${podcast['id']}_${episode['id']}';
     final title = episode['title']?.toString() ?? 'Episode';
     setState(() => _analyzingEpisode = episodeId);
     try {
@@ -105,7 +105,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
 
   Future<void> _showEpisodeAnalysis(String title, Map<String, dynamic> analysis) async {
     String listText(dynamic value) => value is List
-        ? value.map((e) => '• \${e.toString()}').join('\n')
+        ? value.map((e) => '• ${e.toString()}').join('\n')
         : '';
     await showModalBottomSheet<void>(
       context: context,
@@ -124,7 +124,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
               Text(analysis['summary']?.toString() ?? '', style: const TextStyle(fontSize: 16, height: 1.45)),
               if ((analysis['category']?.toString() ?? '').isNotEmpty) ...[
                 const SizedBox(height: 14),
-                Text('التصنيف: \${analysis['category']}'),
+                Text('التصنيف: ${analysis['category']}'),
               ],
               if (listText(analysis['topics']).isNotEmpty) ...[
                 const SizedBox(height: 14),
@@ -275,7 +275,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     leading: const Icon(Icons.play_circle_outline),
                     title: Text(episode['title']?.toString() ?? 'Episode', maxLines: 2, overflow: TextOverflow.ellipsis),
                     subtitle: Text(episode['publishedAt']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: _analyzingEpisode == '\${item['id']}_\${episode['id']}'
+                    trailing: _analyzingEpisode == '${item['id']}_${episode['id']}'
                         ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
                         : IconButton(
                             tooltip: 'AI Summary',
