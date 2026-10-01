@@ -160,6 +160,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   if (uid != null && items.where((i) => i.type.toLowerCase() == 'global series').isEmpty && !_seriesSeeding)
                     _buildSeriesSeedPrompt(context),
                   _buildDailySeries(context, items, uid, saved),
+                  _buildSavedSeries(context, items, uid, saved),
                   const SizedBox(height: 14),
                   _buildHero(context),
                   if (uid != null) ...[
@@ -326,6 +327,103 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     } finally {
       if (mounted) setState(() => _seriesSeeding = false);
     }
+  }
+
+  Widget _buildSavedSeries(BuildContext context, List<AurenEntertainmentItem> items, String? uid, Set<String> saved) {
+    if (uid == null) return const SizedBox.shrink();
+
+    final series = items.where((item) {
+      final t = item.type.toLowerCase();
+      return saved.contains(item.id) &&
+          (t == 'global series' || t == 'series' || t == 'tv series');
+    }).take(10).toList();
+
+    if (series.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'My Saved Series',
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+              ),
+            ),
+            Text(
+              'محفوظاتي',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 205,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: series.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, index) {
+              final item = series[index];
+              return SizedBox(
+                width: 190,
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: item.imageUrl.isEmpty
+                              ? const Center(child: Icon(Icons.bookmark_rounded, size: 40))
+                              : Image.network(
+                                  item.imageUrl,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Center(
+                                    child: Icon(Icons.bookmark_rounded, size: 40),
+                                  ),
+                                ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              IconButton(
+                                visualDensity: VisualDensity.compact,
+                                tooltip: 'إزالة من المحفوظات',
+                                icon: const Icon(Icons.bookmark),
+                                onPressed: () => repo.unsave(uid, item.id),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildDailySeries(BuildContext context, List<AurenEntertainmentItem> items, String? uid, Set<String> saved) {
