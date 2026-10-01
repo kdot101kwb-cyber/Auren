@@ -368,7 +368,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
             itemCount: visibleSeries.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, index) {
-              final item = series[index];
+              final item = visibleSeries[index];
               return SizedBox(
                 width: 190,
                 child: Card(
