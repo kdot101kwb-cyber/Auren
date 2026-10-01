@@ -33,6 +33,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   String? _loadingFeed;
   String? _analyzingEpisode;
   final Map<String, Map<String, dynamic>> _episodeAnalysis = {};
+  final Set<String> _likedEpisodes = <String>{};
 
   @override
   void initState() {
@@ -655,16 +656,28 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     trailing: Wrap(
                       spacing: 2,
                       children: [
-                        IconButton(
-                          tooltip: 'إعجاب',
-                          icon: const Icon(Icons.favorite_border),
-                          onPressed: () => _recordPodcastEvent('like', {
-                            ...item,
-                            'id': _episodeItem(item, episode).id,
-                            'name': episode['title']?.toString() ?? item['name']?.toString() ?? 'Podcast',
-                            'description': episode['description']?.toString() ?? '',
-                            'artworkUrl': episode['imageUrl']?.toString() ?? item['artworkUrl']?.toString() ?? '',
-                          }),
+                        Builder(
+                          builder: (context) {
+                            final episodeItem = _episodeItem(item, episode);
+                            final liked = _likedEpisodes.contains(episodeItem.id);
+                            return IconButton(
+                              tooltip: liked ? 'تم الإعجاب' : 'إعجاب',
+                              icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
+                              onPressed: () async {
+                                if (liked) return;
+                                setState(() => _likedEpisodes.add(episodeItem.id));
+                                await _recordPodcastEvent('like', {
+                                  ...item,
+                                  'id': episodeItem.id,
+                                  'name': episodeItem.title,
+                                  'description': episodeItem.description,
+                                  'artworkUrl': episodeItem.imageUrl,
+                                  'language': episodeItem.language,
+                                  'country': episodeItem.country,
+                                });
+                              },
+                            );
+                          },
                         ),
                         IconButton(
                           tooltip: 'مشاركة',
