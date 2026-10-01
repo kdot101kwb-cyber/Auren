@@ -23,6 +23,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   List<Map<String, dynamic>> _recommendations = const [];
   List<Map<String, dynamic>> _personalized = const [];
   List<Map<String, dynamic>> _becauseYouListened = const [];
+  List<Map<String, dynamic>> _trending = const [];
+  List<Map<String, dynamic>> _newForYou = const [];
   bool _loadingPersonalized = false;
   Map<String, List<Map<String, dynamic>>> _episodes = {};
   String? _loadingFeed;
@@ -56,12 +58,16 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
         setState(() {
           _personalized = list(data['forYou']);
           _becauseYouListened = list(data['becauseYouListened']);
+          _trending = list(data['trending']);
+          _newForYou = list(data['newForYou']);
         });
       }
     } catch (_) {
       if (mounted) setState(() {
         _personalized = const [];
         _becauseYouListened = const [];
+        _trending = const [];
+        _newForYou = const [];
       });
     } finally {
       if (mounted) setState(() => _loadingPersonalized = false);
@@ -335,6 +341,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                 ),
               _buildPodcastRail('For You — AUREN', _personalized),
               _buildPodcastRail('لأنك استمعت إلى', _becauseYouListened),
+              _buildPodcastRail('الأكثر رواجاً عالمياً', _trending),
+              _buildPodcastRail('جديد ومناسب لك', _newForYou),
               TextField(
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
