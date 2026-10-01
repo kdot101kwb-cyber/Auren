@@ -75,7 +75,8 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
   }
 
   Future<void> _openPlayer(String url, AurenEntertainmentItem item, {Duration? resume}) async {
-    final uri = Uri.tryParse(url);\n    final isWebMedia = uri != null && (uri.scheme == 'https' || uri.scheme == 'http');\n    if (!isWebMedia || _starting) return;
+    final uri = Uri.tryParse(url);\n    final isWebMedia = uri != null && (uri.scheme == 'https' || uri.scheme == 'http');
+    final isCatalogOnly = item.isCatalogOnly;\n    if (!isWebMedia || _starting) return;
     setState(() => _starting = true);
     try {
       await _controller?.dispose();
@@ -201,7 +202,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                             ),
                           ),
                         if (item.mediaUrl.isEmpty) const SizedBox(height: 8),
-                        if (item.source.isNotEmpty) Text('المصدر: ${item.source}'),
+                        if (isCatalogOnly || item.source.isNotEmpty) Text('المصدر: ${item.source}'),
                         if (item.licenseNote.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(item.licenseNote, style: Theme.of(context).textTheme.bodySmall),
