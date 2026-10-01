@@ -10,7 +10,7 @@ class EntertainmentRepository {
     final needle=query.trim().toLowerCase();
     if(needle.isEmpty) return watchItems();
     return watchItems().map((items)=>items.where((item){
-      final hay=item.title.toLowerCase() + ' ' + item.description.toLowerCase();
+      final hay='${item.title} ${item.description} ${item.type} ${item.country} ${item.language} ${item.year} ${item.genres.join(' ')} ${item.artistName} ${item.albumName} ${item.source}'.toLowerCase();
       return hay.contains(needle);
     }).toList());
   }
