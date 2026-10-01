@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../profile/presentation/adaptive_profile_surface.dart';
 import '../../../services/social/adaptive_profile_service.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
   String query = '';
   String? type;
   String _mood = 'الكل';
+  bool _seriesSeeding = false;
 
   static const _quickActions = <_EntertainmentAction>[
     _EntertainmentAction(Icons.movie_filter_rounded, 'Movies', 'Global movies with smart discovery'),
@@ -155,6 +157,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  if (uid != null && items.where((i) => i.type.toLowerCase() == 'global series').isEmpty && !_seriesSeeding)
+                    _buildSeriesSeedPrompt(context),
                   _buildDailySeries(context, items),
                   const SizedBox(height: 14),
                   _buildHero(context),
@@ -276,6 +280,52 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
         label: const Text('AUREN AI'),
       ),
     );
+  }
+
+  Widget _buildSeriesSeedPrompt(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            const Icon(Icons.public_rounded),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'نقدر نجهز لك مكتبة Global Series من مصادر الكتالوج.',
+                maxLines: 2,
+              ),
+            ),
+            TextButton(
+              onPressed: _seedGlobalSeries,
+              child: const Text('جهزها'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _seedGlobalSeries() async {
+    setState(() => _seriesSeeding = true);
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('seedAurenGlobalSeriesLibrary')
+          .call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تجهيز Global Series.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تجهيز Global Series: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _seriesSeeding = false);
+    }
   }
 
   Widget _buildDailySeries(BuildContext context, List<AurenEntertainmentItem> items) {
