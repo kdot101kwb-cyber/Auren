@@ -35,7 +35,7 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           final countryOk = _country == 'الكل' || _norm(x.country) == _norm(_country);
           final languageOk = _language == 'الكل' || _norm(x.language) == _norm(_language);
           final searchTerms = _norm(_search).split(' ').where((v) => v.isNotEmpty).toList();
-          final searchOk = searchTerms.isEmpty || searchTerms.every((term) => _norm('${x.title} ${x.description} ${x.genres.join(' ')} ${x.country} ${x.language}').contains(term));
+          final searchOk = searchTerms.isEmpty || searchTerms.every((term) => _norm('${x.title} ${x.description} ${x.genres.join(' ')} ${x.country} ${x.language} ${x.year} ${x.source}').contains(term));
           return genreOk && countryOk && languageOk && searchOk;
         })
           .toList()
