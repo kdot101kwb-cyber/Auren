@@ -78,12 +78,17 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
 
   Widget _buildContinueListening() {
     final item = _player.item;
-    if (item == null || item.mediaUrl.isEmpty || _player.duration == Duration.zero) {
+    final duration = _player.duration;
+    final position = _player.position;
+    if (item == null || item.mediaUrl.isEmpty ||
+        position <= const Duration(seconds: 10) ||
+        (duration > Duration.zero && position >= duration * 0.95)) {
       return const SizedBox.shrink();
     }
-    final total = _player.duration.inMilliseconds;
-    final position = _player.position.inMilliseconds.clamp(0, total).toDouble();
-    final progress = total <= 0 ? 0.0 : position / total;
+    final total = duration.inMilliseconds;
+    final progress = total <= 0
+        ? 0.0
+        : position.inMilliseconds.clamp(0, total).toDouble() / total;
     return AnimatedBuilder(
       animation: _player,
       builder: (context, _) => Card(
@@ -111,8 +116,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                       const SizedBox(height: 4),
                       Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 8),
-                      LinearProgressIndicator(value: progress),
-                      const SizedBox(height: 4),
+                      if (duration > Duration.zero) LinearProgressIndicator(value: progress),
+                      if (duration > Duration.zero) const SizedBox(height: 4),
                       Text(
                         '${_formatDuration(_player.position)} / ${_formatDuration(_player.duration)}',
                         style: Theme.of(context).textTheme.bodySmall,
