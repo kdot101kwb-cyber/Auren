@@ -9,6 +9,7 @@ import '../data/auren_podcast_catalog.dart';
 import 'auren_audio_player_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 import 'auren_podcast_video_player_screen.dart';
+import '../../../services/entertainment/auren_offline_audio_cache.dart';
 
 class AurenPodcastsScreen extends StatefulWidget {
   const AurenPodcastsScreen({super.key});
@@ -36,6 +37,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   final Set<String> _likedEpisodes = <String>{};
   final Set<String> _savedEpisodes = <String>{};
   List<Map<String, dynamic>> _savedEpisodeItems = const [];
+  final Set<String> _offlineEpisodes = <String>{};
+  final Set<String> _offlineBusy = <String>{};
 
   @override
   void initState() {
@@ -57,6 +60,9 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
         _savedEpisodes
           ..clear()
           ..addAll(saved.map((e) => e['episodeId']?.toString() ?? e['id']?.toString() ?? '').where((e) => e.isNotEmpty));
+        _offlineEpisodes
+          ..clear()
+          ..addAll(saved.where((e) => e['offline'] == true).map((e) => e['episodeId']?.toString() ?? e['id']?.toString() ?? '').where((e) => e.isNotEmpty));
       });
     } catch (_) {}
   }
@@ -282,6 +288,34 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     );
   }
 
+  Future<void> _toggleOfflineEpisode(Map<String, dynamic> episode) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final id = episode['episodeId']?.toString() ?? episode['id']?.toString() ?? '';
+    final url = episode['audioUrl']?.toString() ?? '';
+    if (uid == null || id.isEmpty || url.isEmpty) return;
+    final currentlyOffline = _offlineEpisodes.contains(id);
+    setState(() => _offlineBusy.add(id));
+    try {
+      if (currentlyOffline) {
+        await AurenOfflineAudioCache.delete(id);
+        await EntertainmentRepository().setPodcastEpisodeOffline(uid, id, false);
+        if (mounted) setState(() => _offlineEpisodes.remove(id));
+      } else {
+        await AurenOfflineAudioCache.download(id, url);
+        await EntertainmentRepository().setPodcastEpisodeOffline(uid, id, true);
+        if (mounted) setState(() => _offlineEpisodes.add(id));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تجهيز الحلقة للاستخدام دون اتصال.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _offlineBusy.remove(id));
+    }
+  }
+
   Future<void> _openSavedEpisode(Map<String, dynamic> saved) async {
     final savedId = saved['episodeId']?.toString() ?? saved['id']?.toString() ?? '';
     var audioUrl = saved['audioUrl']?.toString() ?? '';
@@ -378,6 +412,19 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                       episode['podcastName']?.toString() ?? '',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      tooltip: _offlineEpisodes.contains(episode['episodeId']?.toString() ?? episode['id']?.toString() ?? '')
+                          ? 'إزالة النسخة دون اتصال'
+                          : 'حفظ دون اتصال',
+                      onPressed: _offlineBusy.contains(episode['episodeId']?.toString() ?? episode['id']?.toString() ?? '')
+                          ? null
+                          : () => _toggleOfflineEpisode(episode),
+                      icon: _offlineBusy.contains(episode['episodeId']?.toString() ?? episode['id']?.toString() ?? '')
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          : Icon(_offlineEpisodes.contains(episode['episodeId']?.toString() ?? episode['id']?.toString() ?? '')
+                              ? Icons.download_done_rounded
+                              : Icons.download_for_offline_outlined),
                     ),
                     onTap: () => _openSavedEpisode(episode),
                   ),
