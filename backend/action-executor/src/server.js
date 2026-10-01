@@ -664,7 +664,7 @@ app.post('/api/ai/chat', requireUser, async (req, res) => {
     const aiKey = `${req.uid}:${req.body?.conversationId || ''}`;
     if (aiInFlight.has(aiKey)) return error(res, 429, 'An AI request is already in progress for this conversation.');
     aiInFlight.add(aiKey);
-    const baseUrl = (process.env.AUREN_AI_BASE_URL || '').trim().replace(/\\/$/, '');
+    const baseUrl = (process.env.AUREN_AI_BASE_URL || '').trim().replace(/\/$/, '');
     const apiKey = (process.env.AUREN_AI_API_KEY || '').trim();
     const model = (process.env.AUREN_AI_MODEL || '').trim();
     if (!baseUrl || !apiKey || !model) {
