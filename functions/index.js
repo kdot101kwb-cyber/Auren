@@ -1,3 +1,23 @@
+'use strict';
+
+const {onCall, onRequest, HttpsError} = require('firebase-functions/v2/https');
+const {onDocumentCreated, onDocumentUpdated} = require('firebase-functions/v2/firestore');
+const {defineSecret} = require('firebase-functions/params');
+const {initializeApp} = require('firebase-admin/app');
+const {getFirestore, FieldValue} = require('firebase-admin/firestore');
+
+initializeApp();
+const db = getFirestore();
+
+const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
+const CLOUDFLARE_ACCOUNT_ID = defineSecret('CLOUDFLARE_ACCOUNT_ID');
+const CLOUDFLARE_API_TOKEN = defineSecret('CLOUDFLARE_API_TOKEN');
+const HF_TOKEN = defineSecret('HF_TOKEN');
+
+const aurenHttpsError = (code, message, details) => new HttpsError(code, message, details);
+
+async function recordAurenAiProviderHealth(provider, ok, message) {
+  await db.collection('ai_provider_health').doc(provider).set({
     lastError: ok ? '' : String(message || '').slice(0, 500),
     updatedAt: FieldValue.serverTimestamp(),
   }, {merge:true});
