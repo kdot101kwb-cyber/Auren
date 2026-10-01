@@ -520,7 +520,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                                     child: IconButton(
                                       visualDensity: VisualDensity.compact,
                                       icon: Icon(saved.contains(item.id) ? Icons.bookmark : Icons.bookmark_border, color: Colors.white),
-                                      tooltip: 'حفظ',
+                                      tooltip: saved.contains(item.id) ? 'محفوظ' : 'حفظ',
                                       onPressed: () => saved.contains(item.id) ? repo.unsave(uid, item.id) : repo.save(uid, item.id),
                                     ),
                                   ),
