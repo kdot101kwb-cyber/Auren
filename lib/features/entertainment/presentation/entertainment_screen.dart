@@ -365,7 +365,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
           height: 205,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: series.length,
+            itemCount: visibleSeries.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, index) {
               final item = series[index];
