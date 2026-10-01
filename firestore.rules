@@ -1234,6 +1234,16 @@ service cloud.firestore {
       }
     }
 
+        match /users/{userId}/podcastEpisodeSaves/{episodeId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.episodeId == episodeId
+        && request.resource.data.episodeId is string
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
         match /users/{userId}/podcastLikes/{episodeId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
