@@ -44,7 +44,7 @@ class _AurenEntertainmentDiscoverScreenState extends State<AurenEntertainmentDis
             const SizedBox(height:20),
           ],
           Text(
-            _query.isEmpty?'استكشف المحتوى':'نتائج البحث',
+            _query.isEmpty?'استكشف المحتوى':'نتائج البحث • ${_query.trim()}',
             style:const TextStyle(fontSize:19,fontWeight:FontWeight.w900),
           ),
           const SizedBox(height:8),
