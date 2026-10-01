@@ -127,12 +127,12 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                 : repo.watchSavedIds(uid),
             builder: (context, ss) {
               final saved = ss.data ?? <String>{};
-              final q = query.trim().toLowerCase();
+              final terms = query.trim().toLowerCase().split(' ').where((v) => v.isNotEmpty).toList();
 
               final filtered = items.where((i) {
                 final haystack =
                     '${i.title} ${i.description} ${i.type} ${i.country} ${i.language} ${i.year} ${i.genres.join(' ')} ${i.artistName} ${i.albumName} ${i.source}'.toLowerCase();
-                return q.isEmpty || haystack.contains(q);
+                return terms.isEmpty || terms.every(haystack.contains);
               }).toList();
 
               return ListView(
