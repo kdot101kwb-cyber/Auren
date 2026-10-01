@@ -34,12 +34,14 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   String? _analyzingEpisode;
   final Map<String, Map<String, dynamic>> _episodeAnalysis = {};
   final Set<String> _likedEpisodes = <String>{};
+  final Set<String> _savedEpisodes = <String>{};
 
   @override
   void initState() {
     super.initState();
     _loadPersonalizedFeed();
     _loadLikedEpisodes();
+    _loadSavedEpisodes();
   }
 
   Future<void> _loadLikedEpisodes() async {
@@ -689,6 +691,47 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                                   'artworkUrl': episodeItem.imageUrl,
                                   'language': episodeItem.language,
                                   'country': episodeItem.country,
+                                  });
+                                } catch (_) {}
+                              },
+                            );
+                          },
+                        ),
+                        Builder(
+                          builder: (context) {
+                            final episodeItem = _episodeItem(item, episode);
+                            final saved = _savedEpisodes.contains(episodeItem.id);
+                            return IconButton(
+                              tooltip: saved ? 'تم الحفظ' : 'حفظ',
+                              icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
+                              onPressed: () async {
+                                final uid = FirebaseAuth.instance.currentUser?.uid;
+                                if (uid == null) return;
+                                try {
+                                  final next = !saved;
+                                  await EntertainmentRepository().togglePodcastEpisodeSave(
+                                    uid,
+                                    episodeItem.id,
+                                    next,
+                                    title: episodeItem.title,
+                                    podcastId: item['id']?.toString(),
+                                  );
+                                  if (!mounted) return;
+                                  setState(() {
+                                    if (next) {
+                                      _savedEpisodes.add(episodeItem.id);
+                                    } else {
+                                      _savedEpisodes.remove(episodeItem.id);
+                                    }
+                                  });
+                                  await _recordPodcastEvent(next ? 'save' : 'unsave', {
+                                    ...item,
+                                    'id': episodeItem.id,
+                                    'name': episodeItem.title,
+                                    'description': episodeItem.description,
+                                    'artworkUrl': episodeItem.imageUrl,
+                                    'language': episodeItem.language,
+                                    'country': episodeItem.country,
                                   });
                                 } catch (_) {}
                               },
