@@ -738,6 +738,155 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
   }
 );
 
+
+
+exports.analyzeAurenPodcastEpisode = require('firebase-functions/v2/https').onCall(
+  {
+    region: 'us-central1',
+    timeoutSeconds: 45,
+    memory: '256MiB',
+    enforceAppCheck: true,
+    secrets: [AUREN_AI_API_KEY, OPENROUTER_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, HF_TOKEN],
+  },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+
+    const input = request.data || {};
+    const title = String(input.title || '').trim().slice(0, 500);
+    const description = String(input.description || '').trim().slice(0, 5000);
+    const podcastName = String(input.podcastName || '').trim().slice(0, 300);
+    const publishedAt = String(input.publishedAt || '').trim().slice(0, 120);
+    const language = String(input.language || '').trim().slice(0, 80);
+    const transcript = String(input.transcript || '').trim().slice(0, 12000);
+
+    if (!title && !description && !transcript) {
+      throw aurenHttpsError('invalid-argument', 'Podcast episode metadata is required.');
+    }
+
+    const system = [
+      'You are AUREN Podcast Intelligence.',
+      'Analyze only the metadata or transcript supplied by the user.',
+      'Do not fetch, download, reproduce, or infer missing copyrighted audio.',
+      'Return ONLY valid JSON.',
+      'Schema: {summary:string, topics:string[], category:string, language:string,',
+      'keyPoints:string[], learningPoints:string[], actionPoints:string[],',
+      'audience:string, contentNote:string}',
+      'Keep summary under 700 characters, arrays concise (max 6 items each).',
+      'Use the same primary language as the supplied episode text when possible.',
+      'If the description is insufficient, say so in contentNote rather than inventing facts.'
+    ].join(' ');
+
+    const source = [
+      podcastName ? 'Podcast: ' + podcastName : '',
+      title ? 'Episode title: ' + title : '',
+      publishedAt ? 'Published: ' + publishedAt : '',
+      language ? 'Declared language: ' + language : '',
+      description ? 'Description: ' + description : '',
+      transcript ? 'User-provided transcript: ' + transcript : '',
+    ].filter(Boolean).join('\n');
+
+    const messages = [
+      {role: 'system', content: system},
+      {role: 'user', content: source},
+    ];
+
+    const providers = ['openrouter', 'cloudflare_workers_ai', 'huggingface', 'legacy'];
+    let rawText = '';
+    let selectedProvider = '';
+    let lastError = '';
+
+    for (const provider of providers) {
+      try {
+        if (provider !== 'legacy') {
+          const health = await getAurenAiProviderHealth(provider);
+          if (!health.available) continue;
+        }
+
+        if (provider === 'legacy') {
+          const apiKey = AUREN_AI_API_KEY.value().trim();
+          if (!apiKey) continue;
+          const baseUrl = (process.env.AUREN_AI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
+          const model = process.env.AUREN_AI_MODEL || 'gpt-4o-mini';
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 30000);
+          try {
+            const response = await fetch(baseUrl + '/chat/completions', {
+              method: 'POST',
+              headers: {'content-type': 'application/json', authorization: 'Bearer ' + apiKey},
+              body: JSON.stringify({model, messages, temperature: 0.2}),
+              signal: controller.signal,
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) {
+              lastError = String(result?.error?.message || ('HTTP ' + response.status)).slice(0, 500);
+              continue;
+            }
+            rawText = result?.choices?.[0]?.message?.content || '';
+          } finally {
+            clearTimeout(timeout);
+          }
+        } else {
+          const result = await callAurenTextProvider(provider, messages, {task: 'summarization'});
+          if (!result.ok) {
+            lastError = String(result.message || provider + ' failed').slice(0, 500);
+            if (!result.unavailable) await updateAurenAiProviderHealth(provider, false, lastError);
+            continue;
+          }
+          rawText = typeof result.text === 'string' ? result.text : '';
+        }
+
+        if (rawText.trim()) {
+          selectedProvider = provider;
+          if (provider !== 'legacy') await updateAurenAiProviderHealth(provider, true);
+          break;
+        }
+      } catch (error) {
+        lastError = String(error?.message || error).slice(0, 500);
+        if (provider !== 'legacy') await updateAurenAiProviderHealth(provider, false, lastError);
+      }
+    }
+
+    if (!rawText.trim()) {
+      throw aurenHttpsError('unavailable', lastError || 'AUREN AI is temporarily unavailable.');
+    }
+
+    let analysis;
+    try {
+      const cleaned = rawText.trim()
+        .replace(/^\`\`\`(?:json)?\s*/i, '')
+        .replace(/\s*\`\`\`$/i, '');
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start < 0 || end <= start) throw new Error('AI response was not JSON.');
+      analysis = JSON.parse(cleaned.slice(start, end + 1));
+    } catch (_) {
+      throw aurenHttpsError('internal', 'AUREN AI returned an invalid analysis.');
+    }
+
+    const list = (value, max = 6) => Array.isArray(value)
+      ? value.map((item) => String(item || '').trim().slice(0, 240)).filter(Boolean).slice(0, max)
+      : [];
+
+    return {
+      status: 'ok',
+      provider: selectedProvider,
+      episode: {title, podcastName, publishedAt, language},
+      analysis: {
+        summary: String(analysis.summary || '').trim().slice(0, 700),
+        topics: list(analysis.topics),
+        category: String(analysis.category || 'عام').trim().slice(0, 100),
+        language: String(analysis.language || language || 'غير محدد').trim().slice(0, 80),
+        keyPoints: list(analysis.keyPoints),
+        learningPoints: list(analysis.learningPoints),
+        actionPoints: list(analysis.actionPoints),
+        audience: String(analysis.audience || '').trim().slice(0, 200),
+        contentNote: String(analysis.contentNote || '').trim().slice(0, 500),
+      },
+    };
+  }
+);
+
 exports.claimAurenMiniGameReward = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
