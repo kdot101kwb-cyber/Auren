@@ -415,7 +415,10 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('حلقاتي المحفوظة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text('حلقاتي المحفوظة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+          Text('Offline: $storageLabel', style: Theme.of(context).textTheme.bodySmall),
+        ]),
         const SizedBox(height: 8),
         SizedBox(
           height: 158,
