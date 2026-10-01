@@ -151,6 +151,31 @@ class EntertainmentRepository {
     return snap.docs.map((d) => d.id).toSet();
   }
 
+  Future<Set<String>> getSavedPodcastEpisodeIds(String uid) async {
+    final snap = await db.collection('users').doc(uid).collection('podcastEpisodeSaves').get();
+    return snap.docs.map((d) => d.id).toSet();
+  }
+
+  Future<void> togglePodcastEpisodeSave(
+    String uid,
+    String episodeId,
+    bool saved, {
+    String? title,
+    String? podcastId,
+  }) async {
+    final ref = db.collection('users').doc(uid).collection('podcastEpisodeSaves').doc(episodeId);
+    if (saved) {
+      await ref.set({
+        'episodeId': episodeId,
+        'title': title ?? '',
+        'podcastId': podcastId ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      await ref.delete();
+    }
+  }
+
   Future<void> togglePodcastLike(String uid, String episodeId, bool liked, {String? title, String? podcastId}) async {
     final ref = db.collection('users').doc(uid).collection('podcastLikes').doc(episodeId);
     if (liked) {
