@@ -224,6 +224,7 @@ class _AurenAiSeriesStudioScreenState extends State<AurenAiSeriesStudioScreen> {
               hintText: 'مثلاً: شاب سوداني يجد جهازاً قديماً يفتح له طريقاً إلى مدينة مستقبلية...',
               alignLabelWithHint: true,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+              suffixIcon: _idea.text.isEmpty ? null : IconButton(tooltip: 'مسح الفكرة', icon: const Icon(Icons.clear_rounded), onPressed: () { _idea.clear(); setState(() {}); }),
             ),
           ),
           const SizedBox(height: 20),
