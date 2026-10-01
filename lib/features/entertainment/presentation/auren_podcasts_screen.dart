@@ -445,7 +445,10 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     trailing: _loadingFeed == item['feedUrl']
                         ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.library_music_outlined),
-                    onTap: () => _loadEpisodes(item),
+                    onTap: () {
+                      _recordPodcastEvent('open', item);
+                      _loadEpisodes(item);
+                    },
                   ),
                 )),
                 ...(_episodes[item['id']?.toString()] ?? const <Map<String, dynamic>>[]).map((episode) => Card(
@@ -473,6 +476,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                                 imageUrl: episode['imageUrl']?.toString() ?? item['artworkUrl']?.toString() ?? '',
                               )
                             : AurenAudioPlayerScreen(item: _episodeItem(item, episode)))),
+                            );
+                          },
                   ),
                 )),
                 const SizedBox(height: 14),
@@ -521,7 +526,18 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                           ? null
                           : IconButton(
                               icon: const Icon(Icons.bookmark_border),
-                              onPressed: () => repo.save(uid, item.id),
+                              onPressed: () async {
+                                await repo.save(uid, item.id);
+                                _recordPodcastEvent('save', {
+                                  'id': item.id,
+                                  'name': item.title,
+                                  'description': item.description,
+                                  'artworkUrl': item.imageUrl,
+                                  'genre': item.type,
+                                  'language': item.language,
+                                  'country': item.country,
+                                });
+                              },
                             ),
                       onTap: item.mediaUrl.isEmpty
                           ? null
