@@ -76,7 +76,8 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
 
   Future<void> _openPlayer(String url, AurenEntertainmentItem item, {Duration? resume}) async {
     final uri = Uri.tryParse(url);\n    final isWebMedia = uri != null && (uri.scheme == 'https' || uri.scheme == 'http');
-    final isCatalogOnly = item.isCatalogOnly;\n    if (!isWebMedia || _starting) return;
+    final isCatalogOnly = item.isCatalogOnly;
+    final hasPlayableMedia = item.hasPlayableMedia;\n    if (!isWebMedia || _starting) return;
     setState(() => _starting = true);
     try {
       await _controller?.dispose();
@@ -133,7 +134,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                   errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black12, child: Center(child: Icon(Icons.broken_image_outlined, size: 48)))) )
               else
                 Container(height: 210, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xff4527a0), Color(0xff1565c0), Color(0xffad1457)])), child: const Center(child: Icon(Icons.play_circle_outline, size: 72))),
-              if (item.isVideo && item.mediaUrl.isNotEmpty && (_controller == null || !_controller!.value.isInitialized)) ...[
+              if (hasPlayableMedia && (_controller == null || !_controller!.value.isInitialized)) ...[
                 const SizedBox(height: 12),
                 FutureBuilder<Map<String, dynamic>?>(
                   future: uid == null ? Future.value(null) : repo.getWatchProgress(uid, item.id),
@@ -328,7 +329,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد معرفة المزيد عن ' + item.title + '، واقترح لي محتوى مشابهًا له.'))),
                 icon: const Icon(Icons.auto_awesome), label: const Text('اسأل AUREN عنه'),
               ),
-              if (item.isVideo && item.mediaUrl.isNotEmpty) ...[
+              if (hasPlayableMedia) ...[
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenWatchTogetherScreen(title: item.title, mediaUrl: item.mediaUrl, mediaId: item.id))),
