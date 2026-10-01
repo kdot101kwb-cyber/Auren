@@ -22,7 +22,7 @@ class _Auren3DWorldScreenState extends State<Auren3DWorldScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: Text(widget.title),
-      actions: [IconButton(onPressed: () => setState(() { yaw = 0; pitch = .22; zoom = 1; }), icon: const Icon(Icons.center_focus_strong))],
+      actions: [IconButton(onPressed: () => setState(() { yaw = 0; pitch = .22; zoom = 1; }), tooltip: 'إعادة ضبط المنظور', icon: const Icon(Icons.center_focus_strong))],
     ),
     body: Column(children: [
       Expanded(
