@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -325,6 +326,12 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     var language = saved['language']?.toString() ?? '';
     var country = saved['country']?.toString() ?? '';
     var podcastName = saved['podcastName']?.toString() ?? '';
+    if (saved['offline'] == true) {
+      try {
+        final local = await AurenOfflineAudioCache.download(savedId, audioUrl);
+        if (local != null && await File(local).exists()) audioUrl = local;
+      } catch (_) {}
+    }
     if (audioUrl.isEmpty && (saved['feedUrl']?.toString() ?? '').isNotEmpty) {
       try {
         final callable = FirebaseFunctions.instance.httpsCallable('fetchAurenPodcastFeed');
