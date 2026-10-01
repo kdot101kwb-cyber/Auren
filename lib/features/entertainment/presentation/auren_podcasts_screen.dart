@@ -6,6 +6,7 @@ import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../data/auren_podcast_catalog.dart';
 import 'auren_audio_player_screen.dart';
+import '../../../services/entertainment/auren_music_player_controller.dart';
 import 'auren_podcast_video_player_screen.dart';
 
 class AurenPodcastsScreen extends StatefulWidget {
@@ -26,6 +27,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   List<Map<String, dynamic>> _trending = const [];
   List<Map<String, dynamic>> _newForYou = const [];
   bool _loadingPersonalized = false;
+  final AurenMusicPlayerController _player = AurenMusicPlayerController.instance;
   Map<String, List<Map<String, dynamic>>> _episodes = {};
   String? _loadingFeed;
   String? _analyzingEpisode;
@@ -72,6 +74,73 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     } finally {
       if (mounted) setState(() => _loadingPersonalized = false);
     }
+  }
+
+  Widget _buildContinueListening() {
+    final item = _player.item;
+    if (item == null || item.mediaUrl.isEmpty || _player.duration == Duration.zero) {
+      return const SizedBox.shrink();
+    }
+    final total = _player.duration.inMilliseconds;
+    final position = _player.position.inMilliseconds.clamp(0, total).toDouble();
+    final progress = total <= 0 ? 0.0 : position / total;
+    return AnimatedBuilder(
+      animation: _player,
+      builder: (context, _) => Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                item.imageUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(item.imageUrl, width: 64, height: 64, fit: BoxFit.cover),
+                      )
+                    : const SizedBox(width: 64, height: 64, child: Icon(Icons.podcasts, size: 34)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('تابع الاستماع', style: TextStyle(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 4),
+                      Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(value: progress),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_formatDuration(_player.position)} / ${_formatDuration(_player.duration)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'استمرار',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item)),
+                  ),
+                  icon: const Icon(Icons.play_circle_fill_rounded, size: 36),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes % 60;
+    final seconds = d.inSeconds % 60;
+    if (hours > 0) return '${hours}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    return '${minutes}:${seconds.toString().padLeft(2, '0')}';
   }
 
   Widget _buildPodcastRail(String title, List<Map<String, dynamic>> items) {
@@ -339,6 +408,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                   padding: EdgeInsets.only(bottom: 12),
                   child: LinearProgressIndicator(),
                 ),
+              _buildContinueListening(),
+              const SizedBox(height: 8),
               _buildPodcastRail('For You — AUREN', _personalized),
               _buildPodcastRail('لأنك استمعت إلى', _becauseYouListened),
               _buildPodcastRail('الأكثر رواجاً عالمياً', _trending),
