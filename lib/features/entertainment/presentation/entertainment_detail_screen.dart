@@ -211,8 +211,13 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                           OutlinedButton.icon(
                             onPressed: () async {
                               final uri = Uri.tryParse(item.sourceUrl);
-                              if (uri != null && await canLaunchUrl(uri)) {
+                              final isWebSource = uri != null && (uri.scheme == 'https' || uri.scheme == 'http');
+                              if (isWebSource && await canLaunchUrl(uri)) {
                                 await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              } else if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('رابط المصدر غير صالح حالياً.')),
+                                );
                               }
                             },
                             icon: const Icon(Icons.open_in_new),
