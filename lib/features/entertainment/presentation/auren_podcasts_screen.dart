@@ -39,6 +39,16 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   void initState() {
     super.initState();
     _loadPersonalizedFeed();
+    _loadLikedEpisodes();
+  }
+
+  Future<void> _loadLikedEpisodes() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final liked = await EntertainmentRepository().getLikedPodcastEpisodeIds(uid);
+      if (mounted) setState(() => _likedEpisodes.addAll(liked));
+    } catch (_) {}
   }
 
   Future<void> _recordPodcastEvent(String event, Map<String, dynamic> item) async {
@@ -665,8 +675,13 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                               icon: Icon(liked ? Icons.favorite : Icons.favorite_border),
                               onPressed: () async {
                                 if (liked) return;
-                                setState(() => _likedEpisodes.add(episodeItem.id));
-                                await _recordPodcastEvent('like', {
+                                final uid = FirebaseAuth.instance.currentUser?.uid;
+                                if (uid == null) return;
+                                try {
+                                  await EntertainmentRepository().togglePodcastLike(uid, episodeItem.id, true, title: episodeItem.title, podcastId: item['id']?.toString());
+                                  if (!mounted) return;
+                                  setState(() => _likedEpisodes.add(episodeItem.id));
+                                  await _recordPodcastEvent('like', {
                                   ...item,
                                   'id': episodeItem.id,
                                   'name': episodeItem.title,
@@ -674,7 +689,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                                   'artworkUrl': episodeItem.imageUrl,
                                   'language': episodeItem.language,
                                   'country': episodeItem.country,
-                                });
+                                  });
+                                } catch (_) {}
                               },
                             );
                           },
