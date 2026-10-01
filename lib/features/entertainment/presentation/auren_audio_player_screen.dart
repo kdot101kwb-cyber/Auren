@@ -66,7 +66,7 @@ class _AurenAudioPlayerScreenState extends State<AurenAudioPlayerScreen> {
               const SizedBox(height: 24),
               Text(item.title, style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
-              Text(item.description),
+              Text(item.description.isEmpty ? 'تشغيل صوتي داخل AUREN' : item.description),
               const SizedBox(height: 24),
               Slider(
                 value: value,
