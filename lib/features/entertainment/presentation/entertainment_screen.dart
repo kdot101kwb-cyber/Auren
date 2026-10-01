@@ -155,6 +155,8 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  _buildDailySeries(context, items),
+                  const SizedBox(height: 14),
                   _buildHero(context),
                   if (uid != null) ...[
                     const SizedBox(height: 14),
@@ -273,6 +275,96 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
         icon: const Icon(Icons.auto_awesome),
         label: const Text('AUREN AI'),
       ),
+    );
+  }
+
+  Widget _buildDailySeries(BuildContext context, List<AurenEntertainmentItem> items) {
+    final series = items.where((item) {
+      final t = item.type.toLowerCase();
+      return t == 'global series' || t == 'series' || t == 'tv series';
+    }).toList();
+
+    if (series.isEmpty) return const SizedBox.shrink();
+
+    final daySeed = DateTime.now().toUtc().difference(DateTime.utc(2020, 1, 1)).inDays;
+    final start = daySeed % series.length;
+    final daily = List.generate(
+      series.length < 5 ? series.length : 5,
+      (index) => series[(start + index) % series.length],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                '5 Series Today',
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+              ),
+            ),
+            Text(
+              'اختيارات اليوم',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 178,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: daily.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, index) {
+              final item = daily[index];
+              return SizedBox(
+                width: 210,
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AurenEntertainmentDetailScreen(
+                          itemId: item.id,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: item.imageUrl.isEmpty
+                              ? const Center(child: Icon(Icons.tv_rounded, size: 42))
+                              : Image.network(
+                                  item.imageUrl,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Center(
+                                    child: Icon(Icons.tv_rounded, size: 42),
+                                  ),
+                                ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                          child: Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
