@@ -131,7 +131,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
 
               final filtered = items.where((i) {
                 final haystack =
-                    '${i.title} ${i.description} ${i.type} ${i.country} ${i.language} ${i.year} ${i.genres.join(' ')}'.toLowerCase();
+                    '${i.title} ${i.description} ${i.type} ${i.country} ${i.language} ${i.year} ${i.genres.join(' ')} ${i.artistName} ${i.albumName} ${i.source}'.toLowerCase();
                 return q.isEmpty || haystack.contains(q);
               }).toList();
 
