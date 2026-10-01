@@ -473,8 +473,30 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
               PopupMenuButton<String>(
                 padding: EdgeInsets.zero,
                 onSelected: (value) async {
-                  if (value == 'cleanup') await _cleanupOfflineStorage();
-                  if (value == 'clear') await _clearOfflineStorage();
+                  if (value == 'cleanup') {
+                    await _cleanupOfflineStorage();
+                    return;
+                  }
+                  if (value == 'clear' && mounted) {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Text('حذف كل النسخ Offline؟'),
+                        content: const Text('سيتم حذف الملفات المحلية فقط، ويمكن تنزيل الحلقات مرة أخرى لاحقاً.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext, false),
+                            child: const Text('إلغاء'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(dialogContext, true),
+                            child: const Text('حذف الكل'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true) await _clearOfflineStorage();
+                  }
                 },
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'cleanup', child: Text('تنظيف الملفات التالفة')),
