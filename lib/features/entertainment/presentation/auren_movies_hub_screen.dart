@@ -35,9 +35,14 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           final countryOk = _country == 'الكل' || _norm(x.country) == _norm(_country);
           final languageOk = _language == 'الكل' || _norm(x.language) == _norm(_language);
           final searchTerms = _norm(_search).split(' ').where((v) => v.isNotEmpty).toList();
-          final searchOk = searchTerms.isEmpty || searchTerms.every((term) => _norm('${x.title} ${x.description} ${x.genres.join(' ')} ${x.country} ${x.language}').contains(term));
+          final searchOk = searchTerms.isEmpty || searchTerms.every((term) => _norm('${x.title} ${x.description} ${x.genres.join(' ')} ${x.country} ${x.language} ${x.year} ${x.source}').contains(term));
           return genreOk && countryOk && languageOk && searchOk;
-        })\n          .toList()\n          ..sort((a, b) {\n            final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());\n            return byTitle != 0 ? byTitle : a.id.compareTo(b.id);\n          });
+        })
+          .toList()
+          ..sort((a, b) {
+            final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+            return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
+          });
         return ListView(padding: const EdgeInsets.all(16), children: [
           Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Movie Universe', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),

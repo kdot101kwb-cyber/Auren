@@ -14,7 +14,7 @@ class AurenEntertainmentItem {
   bool get isAudio => mediaKind == 'audio';
   bool get isCatalogOnly => mediaUrl.trim().isEmpty && source.isNotEmpty;
   bool get hasExternalSource => sourceUrl.trim().isNotEmpty && (sourceUrl.startsWith('https://') || sourceUrl.startsWith('http://'));
-  bool get hasPlayableMedia => mediaUrl.trim().isNotEmpty && isVideo || mediaUrl.trim().isNotEmpty && isAudio;
+  bool get hasPlayableMedia => mediaUrl.trim().isNotEmpty && (isVideo || isAudio);
 
   factory AurenEntertainmentItem.fromMap(String id, Map<String, dynamic> d) => AurenEntertainmentItem(
     id: id,
