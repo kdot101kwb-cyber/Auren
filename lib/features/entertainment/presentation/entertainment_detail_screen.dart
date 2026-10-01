@@ -75,11 +75,11 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
   }
 
   Future<void> _openPlayer(String url, AurenEntertainmentItem item, {Duration? resume}) async {
-    if (url.isEmpty || _starting) return;
+    final uri = Uri.tryParse(url);\n    final isWebMedia = uri != null && (uri.scheme == 'https' || uri.scheme == 'http');\n    if (!isWebMedia || _starting) return;
     setState(() => _starting = true);
     try {
       await _controller?.dispose();
-      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      final controller = VideoPlayerController.networkUrl(uri);
       await controller.initialize();
       if (!mounted) { await controller.dispose(); return; }
       _activeItem = item;
