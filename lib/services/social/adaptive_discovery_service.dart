@@ -215,7 +215,9 @@ class AurenAdaptiveDiscoveryService {
     return (20 + common * 12).clamp(20, 80);
   }
 
-  int _safeLimit(int value) => value < 1 ? 1 : (value > 50 ? 50 : value);\n\n  Set<String> _tokens(String value) => value
+  int _safeLimit(int value) => value < 1 ? 1 : (value > 50 ? 50 : value);
+
+  Set<String> _tokens(String value) => value
       .toLowerCase()
       .split(RegExp(r'[^a-z0-9\u0600-\u06ff]+'))
       .where((v) => v.length >= 3)
