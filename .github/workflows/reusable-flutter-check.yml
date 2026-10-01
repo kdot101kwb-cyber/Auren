@@ -26,12 +26,30 @@ jobs:
           cache: true
 
       - name: Prepare Android platform
+        shell: bash
         run: |
+          set -euo pipefail
           if [ ! -d android ]; then
-            flutter create --platforms=android --project-name auren .
+            flutter create --platforms=android --org com.auren --project-name auren .
           else
             echo "Android platform already exists."
           fi
+          if [ -f android/app/build.gradle ]; then
+            sed -i 's/applicationId "com\.auren\.auren"/applicationId "com.auren.app"/' android/app/build.gradle
+            sed -i 's/namespace "com\.auren\.auren"/namespace "com.auren.app"/' android/app/build.gradle || true
+          fi
+          if [ -f android/app/build.gradle.kts ]; then
+            sed -i 's/applicationId = "com\.auren\.auren"/applicationId = "com.auren.app"/' android/app/build.gradle.kts
+            sed -i 's/namespace = "com\.auren\.auren"/namespace = "com.auren.app"/' android/app/build.gradle.kts || true
+          fi
+          echo "AUREN Android package target: com.auren.app"
+
+      - name: Verify Firebase project binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '"default": "auren-90ccc"' .firebaserc
+          echo "Firebase project binding verified: auren-90ccc"
 
       - name: Get dependencies
         run: flutter pub get
