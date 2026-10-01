@@ -146,6 +146,20 @@ class EntertainmentRepository {
   Future<void> unsave(String uid, String itemId) =>
       db.collection('users').doc(uid).collection('savedEntertainment').doc(itemId).delete();
 
+  Future<Set<String>> getLikedPodcastEpisodeIds(String uid) async {
+    final snap = await db.collection('users').doc(uid).collection('podcastLikes').get();
+    return snap.docs.map((d) => d.id).toSet();
+  }
+
+  Future<void> togglePodcastLike(String uid, String episodeId, bool liked, {String? title, String? podcastId}) async {
+    final ref = db.collection('users').doc(uid).collection('podcastLikes').doc(episodeId);
+    if (liked) {
+      await ref.set({'episodeId': episodeId, 'title': title ?? '', 'podcastId': podcastId ?? '', 'createdAt': FieldValue.serverTimestamp()});
+    } else {
+      await ref.delete();
+    }
+  }
+
   Future<void> toggleLike(String uid, String itemId, bool liked) =>
       toggleShortLike(uid, itemId, liked);
 
