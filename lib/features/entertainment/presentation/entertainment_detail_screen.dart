@@ -185,6 +185,22 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                           Text('معلومات الكتالوج', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                         ]),
                         const SizedBox(height: 8),
+                        if (item.mediaUrl.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.info_outline, size: 18),
+                                SizedBox(width: 8),
+                                Expanded(child: Text('بيانات كتالوج فقط — لا يتم استضافة الحلقات هنا.')),
+                              ],
+                            ),
+                          ),
+                        if (item.mediaUrl.isEmpty) const SizedBox(height: 8),
                         if (item.source.isNotEmpty) Text('المصدر: ${item.source}'),
                         if (item.licenseNote.isNotEmpty) ...[
                           const SizedBox(height: 4),
