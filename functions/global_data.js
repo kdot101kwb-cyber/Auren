@@ -69,7 +69,7 @@ exports.aurenCountryIntelligence=onCall(async(request)=>{
     const d=doc.data()||{};
     const iso=d.iso3||doc.id;
     const dataSnap=await db.collection('auren_global_data').doc(iso).get();
-    const indicators=dataSnap.exists?dataSnap.data()?.indicators||{};
+    const indicators = dataSnap.exists ? (dataSnap.data()?.indicators || {}) : {};
     results.push({
       iso2:d.iso2||null,iso3:iso,name:d.name||null,region:d.region||null,
       incomeLevel:d.incomeLevel||null,capitalCity:d.capitalCity||null,
