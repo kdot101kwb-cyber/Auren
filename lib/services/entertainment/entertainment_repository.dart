@@ -202,6 +202,11 @@ class EntertainmentRepository {
     }
   }
 
+  Future<void> setPodcastEpisodeOffline(String uid, String episodeId, bool offline) async {
+    final ref = db.collection('users').doc(uid).collection('podcastEpisodeSaves').doc(episodeId);
+    await ref.set({'offline': offline}, SetOptions(merge: true));
+  }
+
   Future<void> togglePodcastLike(String uid, String episodeId, bool liked, {String? title, String? podcastId}) async {
     final ref = db.collection('users').doc(uid).collection('podcastLikes').doc(episodeId);
     if (liked) {
