@@ -156,12 +156,29 @@ class EntertainmentRepository {
     return snap.docs.map((d) => d.id).toSet();
   }
 
+  Future<List<Map<String, dynamic>>> getSavedPodcastEpisodes(String uid) async {
+    final snap = await db.collection('users').doc(uid).collection('podcastEpisodeSaves')
+        .orderBy('createdAt', descending: true)
+        .limit(50)
+        .get();
+    return snap.docs.map((d) => {'id': d.id, ...d.data()}).toList();
+  }
+
   Future<void> togglePodcastEpisodeSave(
     String uid,
     String episodeId,
     bool saved, {
     String? title,
     String? podcastId,
+    String? podcastName,
+    String? feedUrl,
+    String? description,
+    String? artworkUrl,
+    String? audioUrl,
+    String? publishedAt,
+    String? language,
+    String? country,
+    bool isVideo = false,
   }) async {
     final ref = db.collection('users').doc(uid).collection('podcastEpisodeSaves').doc(episodeId);
     if (saved) {
@@ -169,6 +186,15 @@ class EntertainmentRepository {
         'episodeId': episodeId,
         'title': title ?? '',
         'podcastId': podcastId ?? '',
+        'podcastName': podcastName ?? '',
+        'feedUrl': feedUrl ?? '',
+        'description': description ?? '',
+        'artworkUrl': artworkUrl ?? '',
+        'audioUrl': audioUrl ?? '',
+        'publishedAt': publishedAt ?? '',
+        'language': language ?? '',
+        'country': country ?? '',
+        'isVideo': isVideo,
         'createdAt': FieldValue.serverTimestamp(),
       });
     } else {
