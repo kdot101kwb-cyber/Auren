@@ -77,6 +77,7 @@ class _AurenAnimeWorldScreenState extends State<AurenAnimeWorldScreen> {
                       ),
                     ),
                   ),
+                  Text('${items.length} عمل', style: Theme.of(context).textTheme.bodySmall),
                   if (query.isNotEmpty)
                     Text(
                       '${items.length} نتيجة',
