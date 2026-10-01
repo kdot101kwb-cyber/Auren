@@ -58,7 +58,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.tv_rounded, 'AI Series', 'Build an original season with AI'),
     _EntertainmentAction(Icons.podcasts_rounded, 'Podcasts', 'Shows, episodes & audio discovery'),
     _EntertainmentAction(Icons.public_rounded, 'AUREN World', 'Explore interactive worlds'),
-    _EntertainmentAction(Icons.download_rounded, 'Offline', 'Save entertainment for low-data use'),
+    _EntertainmentAction(Icons.auto_awesome_rounded, 'Watch AI', 'Let AUREN choose what to watch'),
     _EntertainmentAction(Icons.menu_book_rounded, 'Library', 'Books, Manga & Anime'),
     _EntertainmentAction(Icons.animation_rounded, 'Anime World', 'Anime discovery & channels'),
   ];
