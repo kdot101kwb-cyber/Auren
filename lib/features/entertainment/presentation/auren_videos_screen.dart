@@ -37,7 +37,7 @@ class _AurenVideosScreenState extends State<AurenVideosScreen> {
           return ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 28), children: [
             Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.secondaryContainer])), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('فيديوهات AUREN', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800)), SizedBox(height: 7), Text('فيديوهات طويلة • Shorts • أفلام • مسلسلات • أنمي • محتوى أطفال')])),
             const SizedBox(height: 14),
-            TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث في الفيديوهات…'), onChanged: (v) => setState(() => _query = v.trim())),
+            TextField(decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: 'ابحث في الفيديوهات…', suffixIcon: _query.isEmpty ? null : IconButton(icon: const Icon(Icons.clear), onPressed: () => setState(() => _query = ''))), onChanged: (v) => setState(() => _query = v.trim())),
             const SizedBox(height: 10),
             SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: categories.map((c) => Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: ChoiceChip(label: Text(c), selected: _category == c, onSelected: (_) => setState(() => _category = c)))).toList())),
             const SizedBox(height: 16),
