@@ -187,7 +187,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   TextField(
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search),
-                      hintText: 'ابحث عن فيلم، مسلسل، أنمي، بودكاست...',
+                      hintText: 'ابحث عن فيلم، مسلسل، أنمي، بودكاست، دولة أو Genre...',
                       suffixIcon: query.isEmpty
                           ? null
                           : IconButton(
