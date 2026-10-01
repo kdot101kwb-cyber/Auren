@@ -212,7 +212,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                           const SizedBox(height: 4),
                           Text(item.licenseNote, style: Theme.of(context).textTheme.bodySmall),
                         ],
-                        if (item.sourceUrl.isNotEmpty) ...[
+                        if (item.hasExternalSource) ...[
                           const SizedBox(height: 10),
                           OutlinedButton.icon(
                             onPressed: () async {
