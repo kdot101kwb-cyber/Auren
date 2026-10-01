@@ -35,6 +35,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   final Map<String, Map<String, dynamic>> _episodeAnalysis = {};
   final Set<String> _likedEpisodes = <String>{};
   final Set<String> _savedEpisodes = <String>{};
+  List<Map<String, dynamic>> _savedEpisodeItems = const [];
 
   @override
   void initState() {
@@ -42,6 +43,22 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     _loadPersonalizedFeed();
     _loadLikedEpisodes();
     _loadSavedEpisodes();
+  }
+
+  Future<void> _loadSavedEpisodes() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final repo = EntertainmentRepository();
+      final saved = await repo.getSavedPodcastEpisodes(uid);
+      if (!mounted) return;
+      setState(() {
+        _savedEpisodeItems = saved;
+        _savedEpisodes
+          ..clear()
+          ..addAll(saved.map((e) => e['episodeId']?.toString() ?? e['id']?.toString() ?? '').where((e) => e.isNotEmpty));
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadLikedEpisodes() async {
@@ -254,6 +271,71 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                             context,
                             MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item)),
                           ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
+    );
+  }
+
+  Widget _buildSavedEpisodesRail() {
+    final episodes = _savedEpisodeItems.take(20).toList();
+    if (episodes.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('حلقاتي المحفوظة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 158,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: episodes.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, index) {
+              final episode = episodes[index];
+              final audioUrl = episode['audioUrl']?.toString() ?? '';
+              final title = episode['title']?.toString() ?? 'Episode';
+              final artwork = episode['artworkUrl']?.toString() ?? '';
+              return SizedBox(
+                width: 240,
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(10),
+                    leading: artwork.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(artwork, width: 52, height: 52, fit: BoxFit.cover),
+                          )
+                        : const Icon(Icons.bookmark),
+                    title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    subtitle: Text(
+                      episode['podcastName']?.toString() ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: audioUrl.isEmpty ? null : () {
+                      final item = AurenEntertainmentItem(
+                        id: episode['id']?.toString() ?? episode['episodeId']?.toString() ?? '',
+                        title: title,
+                        type: 'Podcast',
+                        description: episode['description']?.toString() ?? '',
+                        imageUrl: artwork,
+                        mediaUrl: audioUrl,
+                        mediaKind: 'audio',
+                        creatorId: '',
+                        channelId: '',
+                        country: episode['country']?.toString() ?? '',
+                        language: episode['language']?.toString() ?? '',
+                        artistName: episode['podcastName']?.toString() ?? '',
+                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(item: item)));
+                    },
                   ),
                 ),
               );
@@ -533,6 +615,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
               _buildContinueListening(),
               const SizedBox(height: 8),
               _buildRecentlyPlayed(),
+              _buildSavedEpisodesRail(),
               if (uid != null)
                 StreamBuilder<List<AurenEntertainmentItem>>(
                   stream: repo.watchSavedItems(uid),
