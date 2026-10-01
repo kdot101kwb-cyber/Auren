@@ -45,7 +45,7 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
             Text('${items.length} فيلم متاح • اكتشاف عالمي + توصيات ذكية'),
           ]))),
           const SizedBox(height: 14),
-          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فيلم، دولة أو لغة'), onChanged: (v) => setState(() => _search = v)),
+          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فيلم، دولة، لغة أو Genre'), onChanged: (v) => setState(() => _search = v)),
           const SizedBox(height: 12),
           SizedBox(height: 42, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: countries.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(countries[i]), selected: _country == countries[i], onSelected: (_) => setState(() => _country = countries[i])))),
           const SizedBox(height: 8),
