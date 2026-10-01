@@ -798,6 +798,15 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                                     next,
                                     title: episodeItem.title,
                                     podcastId: item['id']?.toString(),
+                                    podcastName: item['name']?.toString() ?? item['artist']?.toString(),
+                                    feedUrl: item['feedUrl']?.toString(),
+                                    description: episodeItem.description,
+                                    artworkUrl: episodeItem.imageUrl,
+                                    audioUrl: episodeItem.mediaUrl,
+                                    publishedAt: episode['publishedAt']?.toString(),
+                                    language: episodeItem.language,
+                                    country: episodeItem.country,
+                                    isVideo: episode['isVideo'] == true,
                                   );
                                   if (!mounted) return;
                                   setState(() {
