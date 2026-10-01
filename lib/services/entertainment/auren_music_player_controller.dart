@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import 'entertainment_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -89,6 +90,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     if (state != ProcessingState.completed) return;
     _sessionCompletionCount++;
     await _trackPlayback(completed: true);
+    await _recordPodcastEvent('complete');
     await _maybeAutoAdaptSession();
     // A completed item should no longer appear in Continue Listening.
     // Keep it in history/queue, but remove only the resume checkpoint.
@@ -172,6 +174,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
   Future<void> toggle() async {
     if (_player.playing) {
       await _player.pause();
+      await _recordPodcastEvent('pause');
     } else if (_item != null) {
       if (_player.duration == null) await restorePlayback();
       await _player.play();
@@ -364,6 +367,27 @@ class AurenMusicPlayerController extends ChangeNotifier {
   }
 
   bool get shouldAdaptSession => _sessionSkipCount >= 2 || _sessionCompletionCount >= 2;
+
+  Future<void> _recordPodcastEvent(String event) async {
+    final item = _item;
+    if (item == null || item.type.toLowerCase() != 'podcast') return;
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('recordAurenPodcastEvent');
+      await callable.call({
+        'event': event,
+        'item': {
+          'id': item.id,
+          'name': item.title,
+          'description': item.description,
+          'artworkUrl': item.imageUrl,
+          'genre': item.type,
+          'language': item.language,
+          'country': item.country,
+          'artist': item.artistName,
+        },
+      });
+    } catch (_) {}
+  }
 
   Future<void> _trackAction(String action) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
