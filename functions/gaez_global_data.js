@@ -210,7 +210,7 @@ exports.aurenGaezV5CropSummaryHealth = onCall(async (request) => {
     endpoint:parsed.toString(),
     contentType,
     bytes:Buffer.byteLength(body,'utf8'),
-    csvDetected:/text\\/(csv|plain)|,/.test(contentType) || /,/.test(body.slice(0,1000)),
+    csvDetected:/text\/(csv|plain)|,/.test(contentType) || /,/.test(body.slice(0,1000)),
     note:'The official FAO catalog identifies this resource as GAEZ v5 Crop Summary Data. AUREN does not mark agronomic values as verified v5 until the configured resource passes this reachability check and its imported rows retain source/version metadata.'
   };
 });
