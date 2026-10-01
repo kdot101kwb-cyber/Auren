@@ -90,6 +90,9 @@ class AurenMusicPlayerController extends ChangeNotifier {
     _sessionCompletionCount++;
     await _trackPlayback(completed: true);
     await _maybeAutoAdaptSession();
+    // A completed item should no longer appear in Continue Listening.
+    // Keep it in history/queue, but remove only the resume checkpoint.
+    await _clearContinueCheckpoint();
     if (_queue.length > 1) {
       await playNextInQueue();
     } else {
@@ -442,18 +445,28 @@ class AurenMusicPlayerController extends ChangeNotifier {
         creatorId: map['creatorId'] ?? '',
       );
       _position = Duration(milliseconds: (map['positionMs'] ?? 0) as int);
-      notifyListeners();
+      if (_position > Duration.zero) {
+        // Restore metadata immediately, then resolve the duration so the
+        // Continue Listening card can render after app restart.
+        await restorePlayback();
+      } else {
+        notifyListeners();
+      }
     } catch (_) {
       await prefs.remove('auren_continue_listening');
     }
+  }
+
+  Future<void> _clearContinueCheckpoint() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auren_continue_listening');
   }
 
   Future<void> clearContinueListening() async {
     _item = null;
     _position = Duration.zero;
     await _player.stop();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auren_continue_listening');
+    await _clearContinueCheckpoint();
     await _saveQueueAndHistory();
     notifyListeners();
   }
