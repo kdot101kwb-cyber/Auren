@@ -27,7 +27,7 @@ class _AurenVideosScreenState extends State<AurenVideosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AUREN Videos'), actions: [IconButton(icon: const Icon(Icons.video_library_outlined), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentShortsScreen())))]),
+      appBar: AppBar(title: const Text('AUREN Videos'), actions: [if (_query.isNotEmpty || _category != 'الكل') IconButton(tooltip: 'مسح الفلاتر', icon: const Icon(Icons.filter_alt_off_rounded), onPressed: () => setState(() { _query = ''; _category = 'الكل'; })), IconButton(icon: const Icon(Icons.video_library_outlined), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentShortsScreen())))]),
       body: StreamBuilder<List<AurenEntertainmentItem>>(
         stream: repo.watchItems(),
         builder: (context, snapshot) {
