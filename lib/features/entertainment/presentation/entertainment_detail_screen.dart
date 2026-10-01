@@ -77,7 +77,8 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
   Future<void> _openPlayer(String url, AurenEntertainmentItem item, {Duration? resume}) async {
     final uri = Uri.tryParse(url);\n    final isWebMedia = uri != null && (uri.scheme == 'https' || uri.scheme == 'http');
     final isCatalogOnly = item.isCatalogOnly;
-    final hasPlayableMedia = item.hasPlayableMedia;\n    if (!isWebMedia || _starting) return;
+    final hasPlayableMedia = item.hasPlayableMedia;
+    if (!isWebMedia || _starting) return;
     setState(() => _starting = true);
     try {
       await _controller?.dispose();
@@ -114,6 +115,8 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
           final item = snapshot.data;
           if (item == null) return const Center(child: Text('هذا المحتوى غير متاح حالياً.'));
+          final isCatalogOnly = item.isCatalogOnly;
+          final hasPlayableMedia = item.hasPlayableMedia;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
