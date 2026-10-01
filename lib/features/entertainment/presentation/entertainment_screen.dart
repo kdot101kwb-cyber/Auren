@@ -127,7 +127,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                 : repo.watchSavedIds(uid),
             builder: (context, ss) {
               final saved = ss.data ?? <String>{};
-              final q = query.toLowerCase();
+              final q = query.trim().toLowerCase();
 
               final filtered = items.where((i) {
                 final haystack =
