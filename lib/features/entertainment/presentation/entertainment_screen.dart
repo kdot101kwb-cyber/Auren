@@ -336,9 +336,11 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
       final t = item.type.toLowerCase();
       return saved.contains(item.id) &&
           (t == 'global series' || t == 'series' || t == 'tv series');
-    }).take(10).toList();
+    }).toList()
+      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    final visibleSeries = series.take(10).toList();
 
-    if (series.isEmpty) return const SizedBox.shrink();
+    if (visibleSeries.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
