@@ -46,6 +46,78 @@ function journalDoc(journal, source) {
   return {id,title:clean(title,160),type:'Journal',description:clean(host?'Journal / periodical. Publisher: '+host:'Journal / periodical catalog entry.',3000),imageUrl:'',mediaUrl:clean(journal.url||journal.homepage_url||('https://api.crossref.org/journals/'+issn),2000),mediaKind:'catalog',creatorId:'auren-library',channelId:'auren-library',country:clean(journal.country||journal.country_code||'',80),language:'',year:'',genres:['Journal','Periodical'],seasons:0,episodes:0,trailerUrl:'',artistName:'',albumName:'',visibility:'public',source,sourceUrl:clean(journal.url||journal.homepage_url||'',2000),issn:clean(issn,80),licenseNote:'Metadata/catalog entry only; AUREN does not host copyrighted journal or magazine issues.',createdAt:admin.firestore.FieldValue.serverTimestamp(),updatedAt:admin.firestore.FieldValue.serverTimestamp()};
 }
 
+
+function seriesDoc(show) {
+  const id = 'series_tvmaze_' + String(show.id);
+  const image = show.image?.original || show.image?.medium || '';
+  const genres = Array.isArray(show.genres) ? show.genres.slice(0, 8).map((g) => clean(g, 80)) : [];
+  const premiered = show.premiered ? String(show.premiered).slice(0, 4) : '';
+  const country = show.network?.country?.name || show.webChannel?.country?.name || '';
+  const language = show.language || '';
+  return {
+    id,
+    title: clean(show.name, 160),
+    type: 'Global Series',
+    description: clean(show.summary || 'Series catalog entry.', 3000),
+    imageUrl: clean(image, 2000),
+    mediaUrl: clean(show.url || ('https://www.tvmaze.com/shows/' + show.id), 2000),
+    mediaKind: 'catalog',
+    creatorId: 'auren-global-series',
+    channelId: 'auren-global-series',
+    country: clean(country, 100),
+    language: clean(language, 40),
+    year: premiered,
+    genres,
+    seasons: Number(show._embedded?.episodes ? 1 : 0),
+    episodes: Number(show._embedded?.episodes?.length || 0),
+    trailerUrl: '',
+    artistName: '',
+    albumName: '',
+    visibility: 'public',
+    source: 'TVmaze',
+    sourceUrl: clean(show.url || '', 2000),
+    licenseNote: 'Catalog metadata only; AUREN does not host copyrighted series episodes.',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+}
+
+exports.seedAurenGlobalSeriesLibrary = onCall(
+  {region: 'us-central1', timeoutSeconds: 120, memory: '256MiB', enforceAppCheck: true},
+  async (request) => {
+    if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Authentication is required.');
+
+    const marker = db.collection('entertainment_library_meta').doc('global_series_v1');
+    const existing = await marker.get();
+    if (existing.exists && existing.data()?.status === 'ready') {
+      return {status: 'ready', seeded: false, message: 'AUREN Global Series Library is already populated.'};
+    }
+
+    const response = await getJson('https://api.tvmaze.com/shows?page=0');
+    const shows = Array.isArray(response) ? response.slice(0, 100) : [];
+    const docs = shows.map(seriesDoc);
+
+    for (let i = 0; i < docs.length; i += 400) {
+      const batch = db.batch();
+      docs.slice(i, i + 400).forEach((item) => {
+        const {id, ...data} = item;
+        batch.set(db.collection('entertainment_items').doc(id), data, {merge: true});
+      });
+      await batch.commit();
+    }
+
+    await marker.set({
+      status: 'ready',
+      count: docs.length,
+      seededBy: request.auth.uid,
+      seededAt: admin.firestore.FieldValue.serverTimestamp(),
+      source: 'TVmaze',
+    }, {merge: true});
+
+    return {status: 'ready', seeded: true, count: docs.length, source: 'TVmaze'};
+  },
+);
+
 exports.seedAurenEntertainmentLibrary = onCall({region:'us-central1',timeoutSeconds:120,memory:'256MiB',enforceAppCheck:true},async(request)=>{
   if(!request.auth?.uid)throw new HttpsError('unauthenticated','Authentication is required.');
   const marker=db.collection('entertainment_library_meta').doc('global_v2');
