@@ -11,7 +11,8 @@ class AurenEntertainmentItem {
   });
 
   bool get isVideo => mediaKind == 'video' || mediaUrl.toLowerCase().endsWith('.mp4') || mediaUrl.toLowerCase().contains('.m3u8');
-  bool get isAudio => mediaKind == 'audio';\n  bool get isCatalogOnly => mediaUrl.trim().isEmpty && source.isNotEmpty;
+  bool get isAudio => mediaKind == 'audio';
+  bool get isCatalogOnly => mediaUrl.trim().isEmpty && source.isNotEmpty;
   bool get hasExternalSource => sourceUrl.trim().isNotEmpty && (sourceUrl.startsWith('https://') || sourceUrl.startsWith('http://'));
   bool get hasPlayableMedia => mediaUrl.trim().isNotEmpty && isVideo || mediaUrl.trim().isNotEmpty && isAudio;
 
