@@ -14,11 +14,18 @@ class AurenOfflineAudioCache {
     return dir;
   }
 
+  static bool _fileMatchesEpisode(File file, String episodeId) {
+    final name = file.uri.pathSegments.last;
+    final dot = name.lastIndexOf('.');
+    final base = dot > 0 ? name.substring(0, dot) : name;
+    return base == _safe(episodeId);
+  }
+
   static Future<File?> _cachedFile(String episodeId) async {
     final dir = await _directory();
     if (!await dir.exists()) return null;
     for (final file in dir.listSync().whereType<File>()) {
-      if (file.uri.pathSegments.last.startsWith(_safe(episodeId)) &&
+      if (_fileMatchesEpisode(file, episodeId) &&
           await file.length() > 0) {
         return file;
       }
@@ -78,23 +85,13 @@ class AurenOfflineAudioCache {
     final dir = await _directory();
     if (!await dir.exists()) return;
     for (final file in dir.listSync().whereType<File>()) {
-      if (file.uri.pathSegments.last.startsWith(_safe(episodeId))) {
+      if (_fileMatchesEpisode(file, episodeId)) {
         await file.delete();
       }
     }
   }
 
   static Future<bool> exists(String episodeId) async => (await _cachedFile(episodeId)) != null;
-
-  static Future<int> totalBytes() async {
-    final dir = await _directory();
-    if (!await dir.exists()) return 0;
-    var total = 0;
-    for (final file in dir.listSync().whereType<File>()) {
-      total += await file.length();
-    }
-    return total;
-  }
 
   static Future<int> totalBytes() async {
     final dir = await _directory();
