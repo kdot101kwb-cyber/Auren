@@ -14,6 +14,28 @@ class AurenOfflineAudioCache {
     return dir;
   }
 
+  static Future<File?> _cachedFile(String episodeId) async {
+    final dir = await _directory();
+    if (!await dir.exists()) return null;
+    for (final file in dir.listSync().whereType<File>()) {
+      if (file.uri.pathSegments.last.startsWith(_safe(episodeId)) &&
+          await file.length() > 0) {
+        return file;
+      }
+    }
+    return null;
+  }
+
+  static Future<String?> cachedPath(String episodeId) async {
+    final file = await _cachedFile(episodeId);
+    return file?.path;
+  }
+
+  static Future<int> cachedBytes(String episodeId) async {
+    final file = await _cachedFile(episodeId);
+    return file == null ? 0 : file.length();
+  }
+
   static Future<String?> download(String episodeId, String url) async {
     if (url.isEmpty || !url.startsWith('http')) return null;
     final dir = await _directory();
@@ -21,12 +43,35 @@ class AurenOfflineAudioCache {
     final suffix = (ext != null && RegExp(r'^[a-z0-9]{2,5}$').hasMatch(ext)) ? ext : 'audio';
     final file = File('${dir.path}/${_safe(episodeId)}.$suffix');
     if (await file.exists() && await file.length() > 0) return file.path;
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode < 200 || response.statusCode >= 300 || response.bodyBytes.isEmpty) {
-      throw Exception('offline download failed');
+
+    final temp = File('${file.path}.part');
+    if (await temp.exists()) await temp.delete();
+    final client = http.Client();
+    try {
+      final response = await client.send(http.Request('GET', Uri.parse(url)));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('offline download failed');
+      }
+      final sink = temp.openWrite();
+      var bytes = 0;
+      try {
+        await for (final chunk in response.stream) {
+          bytes += chunk.length;
+          sink.add(chunk);
+        }
+        await sink.flush();
+      } finally {
+        await sink.close();
+      }
+      if (bytes == 0) {
+        if (await temp.exists()) await temp.delete();
+        throw Exception('offline download failed');
+      }
+      await temp.rename(file.path);
+      return file.path;
+    } finally {
+      client.close();
     }
-    await file.writeAsBytes(response.bodyBytes, flush: true);
-    return file.path;
   }
 
   static Future<void> delete(String episodeId) async {
@@ -39,11 +84,21 @@ class AurenOfflineAudioCache {
     }
   }
 
-  static Future<bool> exists(String episodeId) async {
+  static Future<bool> exists(String episodeId) async => (await _cachedFile(episodeId)) != null;
+
+  static Future<int> totalBytes() async {
     final dir = await _directory();
-    if (!await dir.exists()) return false;
-    return dir.listSync().whereType<File>().any(
-      (file) => file.uri.pathSegments.last.startsWith(_safe(episodeId)),
-    );
+    if (!await dir.exists()) return 0;
+    var total = 0;
+    for (final file in dir.listSync().whereType<File>()) {
+      total += await file.length();
+    }
+    return total;
+  }
+
+  static Future<void> clearAll() async {
+    final dir = await _directory();
+    if (!await dir.exists()) return;
+    await dir.delete(recursive: true);
   }
 }
