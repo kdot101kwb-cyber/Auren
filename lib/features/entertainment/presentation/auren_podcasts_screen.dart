@@ -831,6 +831,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                 ),
                 onChanged: (value) => setState(() => _query = value),
               ),
+              Text('نتائج البحث: ${_remoteResults.length}', style: const TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 10),
               FilledButton.icon(
                 onPressed: _discovering ? null : _discoverPodcasts,
