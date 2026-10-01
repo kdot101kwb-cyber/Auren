@@ -20,7 +20,7 @@ class _AurenEntertainmentDiscoverScreenState extends State<AurenEntertainmentDis
   @override Widget build(BuildContext context){
     final uid=FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
-      appBar:AppBar(title:const Text('اكتشف Entertainment')),
+      appBar:AppBar(title:const Text('اكتشف Entertainment'),actions:[if(_query.isNotEmpty)IconButton(tooltip:'مسح البحث',icon:const Icon(Icons.clear),onPressed:(){_search.clear();setState(()=>_query='');})]),
       body:ListView(
         padding:const EdgeInsets.all(16),
         children:[
