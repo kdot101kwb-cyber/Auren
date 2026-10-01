@@ -31,7 +31,7 @@ class _AurenAudioPlayerScreenState extends State<AurenAudioPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AUREN Music')),
+      appBar: AppBar(title: const Text('AUREN Music'), actions: [IconButton(tooltip: 'استعادة التشغيل', icon: const Icon(Icons.restore_rounded), onPressed: () async { await controller.restorePlayback(); if (mounted) setState(() => _restored = true); })]),
       body: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
