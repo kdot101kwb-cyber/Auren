@@ -159,7 +159,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   ],
                   if (uid != null && items.where((i) => i.type.toLowerCase() == 'global series').isEmpty && !_seriesSeeding)
                     _buildSeriesSeedPrompt(context),
-                  _buildDailySeries(context, items, uid),
+                  _buildDailySeries(context, items, uid, saved),
                   const SizedBox(height: 14),
                   _buildHero(context),
                   if (uid != null) ...[
@@ -328,7 +328,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     }
   }
 
-  Widget _buildDailySeries(BuildContext context, List<AurenEntertainmentItem> items, String? uid) {
+  Widget _buildDailySeries(BuildContext context, List<AurenEntertainmentItem> items, String? uid, Set<String> saved) {
     final series = items.where((item) {
       final t = item.type.toLowerCase();
       return t == 'global series' || t == 'series' || t == 'tv series';
@@ -413,9 +413,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                                     ),
                                     child: IconButton(
                                       visualDensity: VisualDensity.compact,
-                                      icon: const Icon(Icons.bookmark_border, color: Colors.white),
+                                      icon: Icon(saved.contains(item.id) ? Icons.bookmark : Icons.bookmark_border, color: Colors.white),
                                       tooltip: 'حفظ',
-                                      onPressed: () => repo.save(uid, item.id),
+                                      onPressed: () => saved.contains(item.id) ? repo.unsave(uid, item.id) : repo.save(uid, item.id),
                                     ),
                                   ),
                                 ),
