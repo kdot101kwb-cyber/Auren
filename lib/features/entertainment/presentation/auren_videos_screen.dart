@@ -41,6 +41,8 @@ class _AurenVideosScreenState extends State<AurenVideosScreen> {
             const SizedBox(height: 10),
             SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: categories.map((c) => Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: ChoiceChip(label: Text(c), selected: _category == c, onSelected: (_) => setState(() => _category = c)))).toList())),
             const SizedBox(height: 16),
+            Text('النتائج: ${items.length}', style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
             if (items.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(24), child: Center(child: Text('لا توجد فيديوهات مطابقة حالياً.'))))
             else ...items.map((item) => Card(clipBehavior: Clip.antiAlias, child: InkWell(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id))), child: Row(children: [
               SizedBox(width: 132, height: 86, child: item.imageUrl.isEmpty ? const ColoredBox(color: Colors.black12, child: Icon(Icons.play_circle_outline, size: 38)) : Image.network(item.imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black12, child: Icon(Icons.broken_image_outlined)))),
