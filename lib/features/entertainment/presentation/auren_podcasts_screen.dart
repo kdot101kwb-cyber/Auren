@@ -22,6 +22,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   List<Map<String, dynamic>> _remoteResults = const [];
   Map<String, List<Map<String, dynamic>>> _episodes = {};
   String? _loadingFeed;
+  String? _analyzingEpisode;
+  final Map<String, Map<String, dynamic>> _episodeAnalysis = {};
 
   List<String> get _categories => [
         'الكل',
@@ -69,6 +71,94 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     } finally {
       if (mounted) setState(() => _loadingFeed = null);
     }
+  }
+
+  Future<void> _analyzeEpisode(Map<String, dynamic> podcast, Map<String, dynamic> episode) async {
+    final episodeId = '\${podcast['id']}_\${episode['id']}';
+    final title = episode['title']?.toString() ?? 'Episode';
+    setState(() => _analyzingEpisode = episodeId);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('analyzeAurenPodcastEpisode');
+      final response = await callable.call({
+        'title': title,
+        'description': episode['description']?.toString() ?? '',
+        'podcastName': podcast['name']?.toString() ?? podcast['artist']?.toString() ?? '',
+        'publishedAt': episode['publishedAt']?.toString() ?? '',
+        'language': podcast['language']?.toString() ?? '',
+      });
+      final raw = response.data is Map ? response.data['analysis'] : null;
+      if (raw is Map && mounted) {
+        final analysis = Map<String, dynamic>.from(raw);
+        setState(() => _episodeAnalysis[episodeId] = analysis);
+        await _showEpisodeAnalysis(title, analysis);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تحليل الحلقة بالذكاء الاصطناعي: ' + e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _analyzingEpisode = null);
+    }
+  }
+
+  Future<void> _showEpisodeAnalysis(String title, Map<String, dynamic> analysis) async {
+    String listText(dynamic value) => value is List
+        ? value.map((e) => '• \${e.toString()}').join('\n')
+        : '';
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('AI Summary', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 16),
+              Text(analysis['summary']?.toString() ?? '', style: const TextStyle(fontSize: 16, height: 1.45)),
+              if ((analysis['category']?.toString() ?? '').isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text('التصنيف: \${analysis['category']}'),
+              ],
+              if (listText(analysis['topics']).isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text('المواضيع', style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Text(listText(analysis['topics'])),
+              ],
+              if (listText(analysis['keyPoints']).isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text('أهم النقاط', style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Text(listText(analysis['keyPoints'])),
+              ],
+              if (listText(analysis['learningPoints']).isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text('ماذا نتعلم؟', style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Text(listText(analysis['learningPoints'])),
+              ],
+              if (listText(analysis['actionPoints']).isNotEmpty) ...[
+                const SizedBox(height: 14),
+                const Text('خطوات قابلة للتطبيق', style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Text(listText(analysis['actionPoints'])),
+              ],
+              if ((analysis['contentNote']?.toString() ?? '').isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text(analysis['contentNote']!.toString(), style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   AurenEntertainmentItem _episodeItem(Map<String, dynamic> podcast, Map<String, dynamic> episode) {
@@ -185,6 +275,13 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     leading: const Icon(Icons.play_circle_outline),
                     title: Text(episode['title']?.toString() ?? 'Episode', maxLines: 2, overflow: TextOverflow.ellipsis),
                     subtitle: Text(episode['publishedAt']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                    trailing: _analyzingEpisode == '\${item['id']}_\${episode['id']}'
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+                        : IconButton(
+                            tooltip: 'AI Summary',
+                            icon: const Icon(Icons.auto_awesome_outlined),
+                            onPressed: () => _analyzeEpisode(item, episode),
+                          ),
                     onTap: episode['audioUrl']?.toString().isEmpty != false
                         ? null
                         : () => Navigator.push(context, MaterialPageRoute(builder: (_) => episode['isVideo'] == true
