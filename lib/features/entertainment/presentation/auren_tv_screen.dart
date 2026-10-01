@@ -169,6 +169,25 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                     selected: _showEpg,
                     onSelected: (value) => setState(() => _showEpg = value),
                   ),
+                  const SizedBox(width: 8),
+                  if (_query.isNotEmpty ||
+                      _region != 'الكل' ||
+                      _language != 'الكل' ||
+                      _audience != 'الكل' ||
+                      _liveOnly ||
+                      _showEpg)
+                    TextButton.icon(
+                      onPressed: () => setState(() {
+                        _query = '';
+                        _region = 'الكل';
+                        _language = 'الكل';
+                        _audience = 'الكل';
+                        _liveOnly = false;
+                        _showEpg = false;
+                      }),
+                      icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+                      label: const Text('مسح الفلاتر'),
+                    ),
                 ],
               ),
               const SizedBox(height: 18),
