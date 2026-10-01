@@ -96,6 +96,30 @@ class AurenOfflineAudioCache {
     return total;
   }
 
+  static Future<int> totalBytes() async {
+    final dir = await _directory();
+    if (!await dir.exists()) return 0;
+    var total = 0;
+    for (final file in dir.listSync().whereType<File>()) {
+      total += await file.length();
+    }
+    return total;
+  }
+
+  static Future<List<String>> cachedIds() async {
+    final dir = await _directory();
+    if (!await dir.exists()) return const [];
+    final ids = <String>{};
+    for (final file in dir.listSync().whereType<File>()) {
+      final name = file.uri.pathSegments.last;
+      if (name.endsWith('.part')) continue;
+      final dot = name.lastIndexOf('.');
+      final base = dot > 0 ? name.substring(0, dot) : name;
+      if (base.isNotEmpty) ids.add(base);
+    }
+    return ids.toList();
+  }
+
   static Future<void> clearAll() async {
     final dir = await _directory();
     if (!await dir.exists()) return;
