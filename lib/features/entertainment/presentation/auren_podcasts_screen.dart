@@ -368,7 +368,11 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
         if (mounted) setState(() => _offlineEpisodes.remove(id));
         await _loadOfflineStorage();
       } else {
-        await AurenOfflineAudioCache.download(id, url);
+        final localPath = await AurenOfflineAudioCache.download(id, url);
+        if (localPath == null || localPath.isEmpty || !await File(localPath).exists()) {
+          await EntertainmentRepository().setPodcastEpisodeOffline(uid, id, false);
+          throw Exception('offline download failed');
+        }
         await EntertainmentRepository().setPodcastEpisodeOffline(uid, id, true);
         if (mounted) setState(() => _offlineEpisodes.add(id));
         await _loadOfflineStorage();
