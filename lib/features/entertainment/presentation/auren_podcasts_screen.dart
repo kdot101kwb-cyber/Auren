@@ -21,10 +21,106 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   bool _discovering = false;
   List<Map<String, dynamic>> _remoteResults = const [];
   List<Map<String, dynamic>> _recommendations = const [];
+  List<Map<String, dynamic>> _personalized = const [];
+  List<Map<String, dynamic>> _becauseYouListened = const [];
+  bool _loadingPersonalized = false;
   Map<String, List<Map<String, dynamic>>> _episodes = {};
   String? _loadingFeed;
   String? _analyzingEpisode;
   final Map<String, Map<String, dynamic>> _episodeAnalysis = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersonalizedFeed();
+  }
+
+  Future<void> _recordPodcastEvent(String event, Map<String, dynamic> item) async {
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('recordAurenPodcastEvent');
+      await callable.call({'event': event, 'item': item});
+    } catch (_) {}
+  }
+
+  Future<void> _loadPersonalizedFeed() async {
+    if (FirebaseAuth.instance.currentUser == null) return;
+    setState(() => _loadingPersonalized = true);
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('getAurenPodcastPersonalizedFeed');
+      final response = await callable.call({'limit': 12});
+      final data = response.data is Map ? Map<String, dynamic>.from(response.data) : <String, dynamic>{};
+      List<Map<String, dynamic>> list(dynamic value) => value is List
+          ? value.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : <Map<String, dynamic>>[];
+      if (mounted) {
+        setState(() {
+          _personalized = list(data['forYou']);
+          _becauseYouListened = list(data['becauseYouListened']);
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() {
+        _personalized = const [];
+        _becauseYouListened = const [];
+      });
+    } finally {
+      if (mounted) setState(() => _loadingPersonalized = false);
+    }
+  }
+
+  Widget _buildPodcastRail(String title, List<Map<String, dynamic>> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 170,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.take(10).length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, index) {
+              final item = items[index];
+              return SizedBox(
+                width: 220,
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      _recordPodcastEvent('open', item);
+                      _loadEpisodes(item);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            item['artworkUrl']?.toString().isNotEmpty == true
+                                ? CircleAvatar(backgroundImage: NetworkImage(item['artworkUrl'].toString()))
+                                : const CircleAvatar(child: Icon(Icons.podcasts)),
+                            const SizedBox(width: 9),
+                            Expanded(child: Text(item['name']?.toString() ?? 'Podcast', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800))),
+                          ]),
+                          const Spacer(),
+                          Text(item['genre']?.toString() ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                          if (item['matchedInterests'] is List && (item['matchedInterests'] as List).isNotEmpty)
+                            Text((item['matchedInterests'] as List).take(2).join(' • '), maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
+    );
+  }
 
   List<String> get _categories => [
         'الكل',
@@ -232,6 +328,13 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
             children: [
               _buildHero(context),
               const SizedBox(height: 14),
+              if (_loadingPersonalized)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: LinearProgressIndicator(),
+                ),
+              _buildPodcastRail('For You — AUREN', _personalized),
+              _buildPodcastRail('لأنك استمعت إلى', _becauseYouListened),
               TextField(
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.search),
@@ -277,7 +380,10 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                         child: Card(
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
-                            onTap: () => _loadEpisodes(item),
+                            onTap: () {
+                              _recordPodcastEvent('open', item);
+                              _loadEpisodes(item);
+                            },
                             child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Column(
@@ -357,7 +463,9 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                           ),
                     onTap: episode['audioUrl']?.toString().isEmpty != false
                         ? null
-                        : () => Navigator.push(context, MaterialPageRoute(builder: (_) => episode['isVideo'] == true
+                        : () {
+                            _recordPodcastEvent('play', item);
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => episode['isVideo'] == true
                             ? AurenPodcastVideoPlayerScreen(
                                 title: episode['title']?.toString() ?? 'Video Podcast',
                                 videoUrl: episode['audioUrl']?.toString() ?? '',
