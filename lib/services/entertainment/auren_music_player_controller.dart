@@ -102,6 +102,14 @@ class AurenMusicPlayerController extends ChangeNotifier {
     }
   }
 
+  String _playerUrl(String mediaUrl) {
+    final value = mediaUrl.trim();
+    if (value.isEmpty) return value;
+    if (value.startsWith('file://')) return value;
+    if (value.startsWith('/')) return Uri.file(value).toString();
+    return value;
+  }
+
   Future<void> playItem(AurenEntertainmentItem item, {Duration startAt = Duration.zero}) async {
     if (item.mediaUrl.isEmpty) {
       _error = 'لا يوجد رابط صوت لهذا المحتوى.';
@@ -122,7 +130,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     _playTracked = false;
     notifyListeners();
     try {
-      await _player.setUrl(item.mediaUrl);
+      await _player.setUrl(_playerUrl(item.mediaUrl));
       _duration = _player.duration ?? Duration.zero;
       if (startAt > Duration.zero) await _player.seek(startAt);
       await _player.play();
@@ -161,7 +169,7 @@ class AurenMusicPlayerController extends ChangeNotifier {
     final item = _item;
     if (item == null || item.mediaUrl.isEmpty) return;
     try {
-      await _player.setUrl(item.mediaUrl);
+      await _player.setUrl(_playerUrl(item.mediaUrl));
       _duration = _player.duration ?? Duration.zero;
       if (_position > Duration.zero) await _player.seek(_position);
       notifyListeners();
