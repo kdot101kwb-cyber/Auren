@@ -290,6 +290,36 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     );
   }
 
+  Future<void> _cleanupOfflineStorage() async {
+    try {
+      await AurenOfflineAudioCache.cleanupInvalid();
+      await _loadOfflineStorage();
+    } catch (_) {}
+  }
+
+  Future<void> _clearOfflineStorage() async {
+    try {
+      await AurenOfflineAudioCache.clearAll();
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final saved = await EntertainmentRepository().getSavedPodcastEpisodes(uid);
+        for (final item in saved) {
+          final id = item['episodeId']?.toString() ?? item['id']?.toString() ?? '';
+          if (id.isNotEmpty && item['offline'] == true) {
+            await EntertainmentRepository().setPodcastEpisodeOffline(uid, id, false);
+          }
+        }
+      }
+      if (mounted) {
+        setState(() => _offlineEpisodes.clear());
+        await _loadOfflineStorage();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم حذف كل النسخ المحفوظة دون اتصال.')),
+        );
+      }
+    } catch (_) {}
+  }
+
   Future<void> _loadOfflineStorage() async {
     if (mounted) setState(() => _loadingOfflineStorage = true);
     try {
@@ -417,7 +447,23 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
       children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           const Text('حلقاتي المحفوظة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
-          Text('Offline: $storageLabel', style: Theme.of(context).textTheme.bodySmall),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Offline: $storageLabel', style: Theme.of(context).textTheme.bodySmall),
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                onSelected: (value) async {
+                  if (value == 'cleanup') await _cleanupOfflineStorage();
+                  if (value == 'clear') await _clearOfflineStorage();
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'cleanup', child: Text('تنظيف الملفات التالفة')),
+                  PopupMenuItem(value: 'clear', child: Text('حذف كل النسخ Offline')),
+                ],
+              ),
+            ],
+          ),
         ]),
         const SizedBox(height: 8),
         SizedBox(
