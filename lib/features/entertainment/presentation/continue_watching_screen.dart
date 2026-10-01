@@ -22,6 +22,7 @@ class AurenContinueWatchingScreen extends StatelessWidget {
           StreamBuilder<List<Map<String, dynamic>>>(
             stream: repo.watchContinueWatching(uid),
             builder: (context, snapshot) {
+              if (snapshot.hasError) return const Card(child: ListTile(leading: Icon(Icons.error_outline), title: Text('تعذر تحميل المتابعة.'), subtitle: Text('حاول مرة أخرى لاحقاً.')));
               if (snapshot.connectionState == ConnectionState.waiting) return const LinearProgressIndicator();
               final entries = snapshot.data ?? const <Map<String, dynamic>>[];
               if (entries.isEmpty) return const Card(child: ListTile(title: Text('لا توجد مشاهدة متوقفة للمحتوى العادي.')));
