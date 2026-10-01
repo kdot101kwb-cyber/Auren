@@ -1234,7 +1234,17 @@ service cloud.firestore {
       }
     }
 
-        match /entertainment_items/{itemId} {
+        match /users/{userId}/podcastLikes/{episodeId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.episodeId == episodeId
+        && request.resource.data.episodeId is string
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
+    match /entertainment_items/{itemId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
       allow create: if request.auth != null
         && request.resource.data.keys().hasOnly(['title','description','mediaUrl','mediaKind','imageUrl','type','creatorId','channelId','visibility','createdAt'])
