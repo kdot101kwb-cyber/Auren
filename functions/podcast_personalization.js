@@ -57,7 +57,7 @@ exports.getAurenPodcastPersonalizedFeed = onCall(
     const limit = Math.min(Math.max(Number(request.data?.limit || 12), 4), 24);
     const snap = await db.collection('users').doc(uid).collection('podcastInteractions').orderBy('score','desc').limit(30).get();
     const history = snap.docs.map((doc) => ({id:doc.id, ...doc.data()}));
-    if (!history.length) return {status:'cold_start', forYou:[], becauseYouListened:[], explore:[], interests:[]};
+    if (!history.length) return {status:'cold_start', forYou:[], becauseYouListened:[], explore:[], trending:[], newForYou:[], interests:[]};
 
     const genreScores = new Map();
     const interestScores = new Map();
@@ -76,6 +76,7 @@ exports.getAurenPodcastPersonalizedFeed = onCall(
     const source = history.map(normalizePodcast);
     const existing = new Set(history.map((x)=>x.id));
     let candidates = [];
+    let trending = [];
     try {
       const terms = [...topGenres,...topWords.slice(0,3)].filter(Boolean).slice(0,5);
       for (const term of terms) {
@@ -84,6 +85,22 @@ exports.getAurenPodcastPersonalizedFeed = onCall(
         const data = await response.json().catch(()=>({}));
         if (Array.isArray(data?.results)) candidates.push(...data.results.map(normalizePodcast));
       }
+    } catch (_) {}
+
+    // Lightweight global discovery: Apple Podcasts charts provide a public, non-personalized trending pool.
+    try {
+      const countries = ['us','gb','ae','eg','sa'];
+      const chartResponses = await Promise.all(countries.map(async (country) => {
+        const response = await fetch('https://itunes.apple.com/'+country+'/rss/toppodcasts/limit=50/podcast.json', {headers:{'user-agent':'AUREN-Podcast-Personalization/1.0'}});
+        if (!response.ok) return [];
+        const data = await response.json().catch(()=>({}));
+        return Array.isArray(data?.feed?.entry) ? data.feed.entry.map((entry)=>normalizePodcast({
+          id:entry?.id?.attributes?.['im:id'], name:entry?.['im:name']?.label, artist:entry?.['im:artist']?.label,
+          artworkUrl:Array.isArray(entry?.['im:image']) ? entry['im:image'].at(-1)?.label : '',
+          genre:entry?.category?.attributes?.label, url:entry?.link?.attributes?.href, country:country.toUpperCase()
+        })) : [];
+      }));
+      trending = chartResponses.flat();
     } catch (_) {}
 
     const seen = new Set();
@@ -96,11 +113,18 @@ exports.getAurenPodcastPersonalizedFeed = onCall(
       return {...item, personalizationScore:score, matchedInterests:[...new Set(matches)].slice(0,5)};
     }).sort((a,b)=>b.personalizationScore-a.personalizationScore||a.name.localeCompare(b.name));
 
+    const trendingSeen = new Set();
+    const trendingClean = trending
+      .filter((item)=>item.id&&!existing.has(item.id)&&!trendingSeen.has(item.id)&&trendingSeen.add(item.id))
+      .slice(0, Math.max(limit, 12));
+
     return {
       status:'ok',
       forYou:scored.slice(0,limit),
       becauseYouListened:source.slice(0,Math.min(8,limit)).map((item)=>({...item,reason:'بناءً على استماعك'})),
       explore:scored.slice(limit,limit*2),
+      trending:trendingClean,
+      newForYou:scored.slice(0,limit),
       interests:topGenres,
     };
   }
