@@ -31,7 +31,7 @@ test('worker runtime limits are bounded',()=>{
   assert.equal(base64.test('SGVsbG8='),true);
   assert.equal(base64.test('not base64!'),false);
   assert.equal(base64.test('SGVsbG8'),false);
-  assert.equal(4,4);
+  assert.equal(base64.test('SGVsbG8='),true);
 });
 
 
