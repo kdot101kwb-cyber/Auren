@@ -119,7 +119,7 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16,12,16,32),
         children: [
-          Row(children:[const Expanded(child:Text('Offline',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900))),Switch(value:_lowData,onChanged:_toggleLowData)]),
+          Row(children:[const Expanded(child:Text('Offline',style:TextStyle(fontSize:20,fontWeight:FontWeight.w900))),Tooltip(message:'وضع البيانات المنخفضة',child:Switch(value:_lowData,onChanged:_toggleLowData))]),
           const Text('Low Data: عند التفعيل لا يوجد تنزيل تلقائي؛ AUREN يحفظ فقط الوسائط التي تختار تنزيلها.',style:TextStyle(fontSize:12)),
           const SizedBox(height:8),
           FutureBuilder<List<AurenOfflineMedia>>(
