@@ -1591,7 +1591,7 @@ async function validateAurenProductionArtifact(output) {
     }
     return {ok:false, reason:'missing_artifact_reference'};
   }
-  if (!/^https?:\\/\\//i.test(url)) return {ok:false, reason:'invalid_output_url'};
+  if (!/^https?:\/\//i.test(url)) return {ok:false, reason:'invalid_output_url'};
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),10000);
   try {
