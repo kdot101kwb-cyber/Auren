@@ -16,6 +16,7 @@ class SeriesProductionPipelineScreen extends StatelessWidget {
         stream: SeriesProductionService().watchProject(uid, projectId),
         builder: (context, snapshot) {
           final data = snapshot.data;
+          if (snapshot.hasError) return Center(child: Text('تعذر تحميل خط الإنتاج: ${snapshot.error}'));
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
           if (data == null) return const Center(child: Text('المشروع غير موجود.'));
           final progress = ((data['progress'] as num?)?.toDouble() ?? 0) / 100;
