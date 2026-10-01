@@ -20,6 +20,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   String _query = '';
   bool _discovering = false;
   List<Map<String, dynamic>> _remoteResults = const [];
+  List<Map<String, dynamic>> _recommendations = const [];
   Map<String, List<Map<String, dynamic>>> _episodes = {};
   String? _loadingFeed;
   String? _analyzingEpisode;
@@ -35,17 +36,30 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     if (query.isEmpty) return;
     setState(() => _discovering = true);
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('searchAurenPodcasts');
-      final response = await callable.call({'query': query, 'country': 'US'});
-      final raw = response.data is Map ? response.data['results'] : null;
+      final callable = FirebaseFunctions.instance.httpsCallable('searchAurenPodcastsSmart');
+      final response = await callable.call({
+        'query': query,
+        'countries': ['US', 'GB', 'CA', 'AU', 'AE', 'EG', 'SA', 'TR'],
+      });
+      final data = response.data is Map ? Map<String, dynamic>.from(response.data) : <String, dynamic>{};
+      final raw = data['results'];
+      final recs = data['recommendations'];
       final results = raw is List
           ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
           : <Map<String, dynamic>>[];
-      if (mounted) setState(() => _remoteResults = results);
+      final recommendations = recs is List
+          ? recs.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : <Map<String, dynamic>>[];
+      if (mounted) {
+        setState(() {
+          _remoteResults = results;
+          _recommendations = recommendations;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر جلب البودكاست الآن: ' + e.toString())),
+          SnackBar(content: Text('تعذر تشغيل البحث الذكي: ' + e.toString())),
         );
       }
     } finally {
@@ -244,6 +258,65 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                 label: Text(_discovering ? 'جاري الاكتشاف...' : 'اكتشف بودكاست عالمي'),
               ),
               const SizedBox(height: 10),
+              if (_recommendations.isNotEmpty) ...[
+                const Text(
+                  'اقتراحات AUREN لك',
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 178,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _recommendations.take(10).length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (_, index) {
+                      final item = _recommendations[index];
+                      return SizedBox(
+                        width: 230,
+                        child: Card(
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () => _loadEpisodes(item),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      item['artworkUrl']?.toString().isNotEmpty == true
+                                          ? CircleAvatar(backgroundImage: NetworkImage(item['artworkUrl'].toString()))
+                                          : const CircleAvatar(child: Icon(Icons.podcasts)),
+                                      const SizedBox(width: 9),
+                                      Expanded(
+                                        child: Text(item['name']?.toString() ?? 'Podcast',
+                                            maxLines: 2, overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(fontWeight: FontWeight.w800)),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(item['genre']?.toString() ?? '',
+                                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  const Spacer(),
+                                  Text(
+                                    (item['matchedInterests'] is List && (item['matchedInterests'] as List).isNotEmpty)
+                                        ? 'متوافق مع اهتماماتك'
+                                        : 'مقترح من بحثك',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
               if (_remoteResults.isNotEmpty) ...[
                 const Text(
                   'نتائج حية من دليل البودكاست',
