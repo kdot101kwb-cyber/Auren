@@ -327,10 +327,17 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     var country = saved['country']?.toString() ?? '';
     var podcastName = saved['podcastName']?.toString() ?? '';
     if (saved['offline'] == true) {
-      try {
-        final local = await AurenOfflineAudioCache.download(savedId, audioUrl);
-        if (local != null && await File(local).exists()) audioUrl = local;
-      } catch (_) {}
+      final local = await AurenOfflineAudioCache.cachedPath(savedId);
+      if (local != null && await File(local).exists()) {
+        audioUrl = Uri.file(local).toString();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('النسخة المحلية غير متوفرة. اضغط تنزيل مرة أخرى لإتاحتها دون اتصال.')),
+          );
+        }
+        return;
+      }
     }
     if (audioUrl.isEmpty && (saved['feedUrl']?.toString() ?? '').isNotEmpty) {
       try {
