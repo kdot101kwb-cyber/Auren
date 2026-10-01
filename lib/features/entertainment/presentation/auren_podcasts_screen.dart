@@ -39,13 +39,14 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   final Set<String> _savedEpisodes = <String>{};
   List<Map<String, dynamic>> _savedEpisodeItems = const [];
   final Set<String> _offlineEpisodes = <String>{};
-  final Set<String> _offlineBusy = <String>{};
+  final Set<String> _offlineBusy = <String>{};\n  int _offlineStorageBytes = 0;
+  bool _loadingOfflineStorage = false;
 
   @override
   void initState() {
     super.initState();
     _loadPersonalizedFeed();
-    _loadLikedEpisodes();
+    _loadLikedEpisodes();\n    _loadOfflineStorage();
     _loadSavedEpisodes();
   }
 
@@ -153,7 +154,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                       const Text('تابع الاستماع', style: TextStyle(fontWeight: FontWeight.w800)),
                       const SizedBox(height: 4),
                       Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 8),
+                      Text('Offline: $storageLabel'),\n        ]),\n        const SizedBox(height: 8),
                       if (duration > Duration.zero) LinearProgressIndicator(value: progress),
                       if (duration > Duration.zero) const SizedBox(height: 4),
                       Text(
@@ -289,6 +290,21 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     );
   }
 
+  Future<void> _loadOfflineStorage() async {
+    if (mounted) setState(() => _loadingOfflineStorage = true);
+    try {
+      final bytes = await AurenOfflineAudioCache.totalBytes();
+      if (mounted) setState(() => _offlineStorageBytes = bytes);
+    } finally {
+      if (mounted) setState(() => _loadingOfflineStorage = false);
+    }
+  }
+
+  String _formatOfflineSize(int bytes) {
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
   Future<void> _toggleOfflineEpisode(Map<String, dynamic> episode) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final id = episode['episodeId']?.toString() ?? episode['id']?.toString() ?? '';
@@ -301,10 +317,12 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
         await AurenOfflineAudioCache.delete(id);
         await EntertainmentRepository().setPodcastEpisodeOffline(uid, id, false);
         if (mounted) setState(() => _offlineEpisodes.remove(id));
+        await _loadOfflineStorage();
       } else {
         await AurenOfflineAudioCache.download(id, url);
         await EntertainmentRepository().setPodcastEpisodeOffline(uid, id, true);
         if (mounted) setState(() => _offlineEpisodes.add(id));
+        await _loadOfflineStorage();
       }
     } catch (_) {
       if (mounted) {
@@ -391,6 +409,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   }
 
   Widget _buildSavedEpisodesRail() {
+    final storageLabel = _loadingOfflineStorage ? '...' : _formatOfflineSize(_offlineStorageBytes);
     final episodes = _savedEpisodeItems.take(20).toList();
     if (episodes.isEmpty) return const SizedBox.shrink();
     return Column(
