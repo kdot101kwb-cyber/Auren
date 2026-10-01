@@ -91,7 +91,7 @@ exports.aurenOpportunityCountryScan=onCall(async(request)=>{
     if(query&&!([d.name,d.iso2,d.iso3,d.capitalCity,d.region].some(v=>String(v||'').toLowerCase().includes(query))))continue;
     if(region&&!String(d.region||'').toLowerCase().includes(region))continue;
     const dataSnap=await db.collection('auren_global_data').doc(d.iso3||doc.id).get();
-    const indicators=dataSnap.exists?dataSnap.data()?.indicators||:{};
+    const indicators = dataSnap.exists ? (dataSnap.data()?.indicators || {}) : {};
     const signals={
       population:Number(indicators['SP.POP.TOTL']?.value||0),
       gdpPerCapita:Number(indicators['NY.GDP.PCAP.CD']?.value||0),
