@@ -69,7 +69,7 @@ class _OriginalMusicCreationScreenState extends State<_OriginalMusicCreationScre
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('AUREN Original Music AI')),
+    appBar: AppBar(title: const Text('AUREN Original Music AI'), actions: [IconButton(tooltip: 'مسح الفكرة', icon: const Icon(Icons.clear_all_rounded), onPressed: () => setState(() => idea.clear()))]),
     body: ListView(
       padding: const EdgeInsets.all(16),
       children: [
