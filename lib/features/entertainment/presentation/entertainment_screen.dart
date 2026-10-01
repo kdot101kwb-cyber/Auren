@@ -337,7 +337,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
       return saved.contains(item.id) &&
           (t == 'global series' || t == 'series' || t == 'tv series');
     }).toList()
-      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      ..sort((a, b) { final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase()); return byTitle != 0 ? byTitle : a.id.compareTo(b.id); });
     final visibleSeries = series.take(10).toList();
 
     if (visibleSeries.isEmpty) return const SizedBox.shrink();
