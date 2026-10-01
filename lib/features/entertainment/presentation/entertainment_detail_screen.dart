@@ -191,7 +191,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                           Text('معلومات الكتالوج', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                         ]),
                         const SizedBox(height: 8),
-                        if (item.mediaUrl.isEmpty)
+                        if (isCatalogOnly && !hasPlayableMedia)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             decoration: BoxDecoration(
