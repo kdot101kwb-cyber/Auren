@@ -14,8 +14,6 @@ const CLOUDFLARE_ACCOUNT_ID = defineSecret('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_TOKEN = defineSecret('CLOUDFLARE_API_TOKEN');
 const HF_TOKEN = defineSecret('HF_TOKEN');
 
-const aurenHttpsError = (code, message, details) => new HttpsError(code, message, details);
-
 async function recordAurenAiProviderHealth(provider, ok, message) {
   await db.collection('ai_provider_health').doc(provider).set({
     lastError: ok ? '' : String(message || '').slice(0, 500),
