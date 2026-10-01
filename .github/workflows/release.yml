@@ -57,6 +57,41 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Prepare Android platform
+        run: |
+          set -euo pipefail
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name auren .
+          fi
+
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      - name: Build Android release APK
+        run: flutter build apk --release
+
+      - name: Verify Firebase configuration state
+        run: |
+          set -euo pipefail
+          if grep -q "Run flutterfire configure" lib/firebase_options.dart; then
+            echo "::warning::Firebase platform options are still placeholders. APK is buildable, but Firebase runtime setup requires flutterfire configure."
+          else
+            echo "Firebase platform options are configured."
+          fi
+
+      - name: Upload Android release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-android-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
       - name: Build release manifest
         shell: bash
         run: |
