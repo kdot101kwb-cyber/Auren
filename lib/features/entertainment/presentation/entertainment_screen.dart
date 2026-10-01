@@ -133,7 +133,11 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                 final haystack =
                     '${i.title} ${i.description} ${i.type} ${i.country} ${i.language} ${i.year} ${i.genres.join(' ')} ${i.artistName} ${i.albumName} ${i.source}'.toLowerCase();
                 return terms.isEmpty || terms.every(haystack.contains);
-              }).toList();
+              }).toList()
+                ..sort((a, b) {
+                  final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+                  return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
+                });
 
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
