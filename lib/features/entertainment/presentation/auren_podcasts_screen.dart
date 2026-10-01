@@ -906,6 +906,9 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                                     country: episodeItem.country,
                                     isVideo: episode['isVideo'] == true,
                                   );
+                                  if (!next) {
+                                    await AurenOfflineAudioCache.delete(episodeItem.id);
+                                  }
                                   if (!mounted) return;
                                   setState(() {
                                     if (next) {
