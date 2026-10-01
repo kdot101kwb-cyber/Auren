@@ -7,11 +7,11 @@ class EntertainmentRepository {
   EntertainmentRepository({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
 
   Stream<List<AurenEntertainmentItem>> searchEntertainment(String query) {
-    final needle=query.trim().toLowerCase();
-    if(needle.isEmpty) return watchItems();
+    final terms=query.trim().toLowerCase().split(' ').where((v)=>v.isNotEmpty).toList();
+    if(terms.isEmpty) return watchItems();
     return watchItems().map((items)=>items.where((item){
       final hay='${item.title} ${item.description} ${item.type} ${item.country} ${item.language} ${item.year} ${item.genres.join(' ')} ${item.artistName} ${item.albumName} ${item.source}'.toLowerCase();
-      return hay.contains(needle);
+      return terms.every(hay.contains);
     }).toList());
   }
 
