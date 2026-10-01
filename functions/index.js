@@ -3767,6 +3767,7 @@ Object.assign(module.exports, require('./agri_production_linkage'));
 Object.assign(module.exports, require('./podcast_discovery'));
 
 Object.assign(module.exports, require('./podcast_feed'));
+Object.assign(module.exports, require('./radio_discovery'));
 
 Object.assign(module.exports, require('./global_library_index'));
 Object.assign(module.exports, require('./unesco_heritage_datahub'));
