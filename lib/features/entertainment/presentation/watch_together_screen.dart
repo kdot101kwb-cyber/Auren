@@ -208,6 +208,8 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
               icon: const Icon(Icons.person_add_alt_1_rounded),
               label: const Text('دعوة صديق'),
             ),
+          if (FirebaseAuth.instance.currentUser?.uid != data['hostUid'])
+            OutlinedButton.icon(onPressed: _busy ? null : () async { setState(() => _busy = true); try { await _service.leaveRoom(roomId); if (mounted) setState(() => _roomId = null); } catch (e) { _show(e.toString()); } finally { if (mounted) setState(() => _busy = false); } }, icon: const Icon(Icons.logout_rounded), label: const Text('مغادرة الغرفة')),
           if (widget.mediaUrl != null && widget.mediaUrl!.isNotEmpty) _buildSyncedPlayer(roomId, data),
           if (_lastRemoteSync != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('آخر مزامنة: ${_lastRemoteSync!.hour.toString().padLeft(2,'0')}:${_lastRemoteSync!.minute.toString().padLeft(2,'0')}:${_lastRemoteSync!.second.toString().padLeft(2,'0')}'));
           if (widget.mediaUrl == null || widget.mediaUrl!.isEmpty)
