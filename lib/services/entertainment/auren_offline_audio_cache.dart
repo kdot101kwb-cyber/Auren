@@ -120,6 +120,20 @@ class AurenOfflineAudioCache {
     return ids.toList();
   }
 
+  static Future<int> cleanupInvalid() async {
+    final dir = await _directory();
+    if (!await dir.exists()) return 0;
+    var removed = 0;
+    for (final file in dir.listSync().whereType<File>()) {
+      final name = file.uri.pathSegments.last;
+      if (name.endsWith('.part') || await file.length() == 0) {
+        await file.delete();
+        removed++;
+      }
+    }
+    return removed;
+  }
+
   static Future<void> clearAll() async {
     final dir = await _directory();
     if (!await dir.exists()) return;
