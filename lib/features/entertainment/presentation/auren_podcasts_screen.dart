@@ -47,6 +47,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
     super.initState();
     _loadPersonalizedFeed();
     _loadLikedEpisodes();\n    _loadOfflineStorage();
+    _syncOfflineFlags();
     _loadSavedEpisodes();
   }
 
@@ -333,6 +334,24 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   String _formatOfflineSize(int bytes) {
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  Future<void> _syncOfflineFlags() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final saved = await EntertainmentRepository().getSavedPodcastEpisodes(uid);
+      for (final item in saved) {
+        final id = item['episodeId']?.toString() ?? item['id']?.toString() ?? '';
+        if (id.isEmpty || item['offline'] != true) continue;
+        if (!await AurenOfflineAudioCache.exists(id)) {
+          await EntertainmentRepository().setPodcastEpisodeOffline(uid, id, false);
+          _offlineEpisodes.remove(id);
+        }
+      }
+      if (mounted) setState(() {});
+      await _loadOfflineStorage();
+    } catch (_) {}
   }
 
   Future<void> _toggleOfflineEpisode(Map<String, dynamic> episode) async {
