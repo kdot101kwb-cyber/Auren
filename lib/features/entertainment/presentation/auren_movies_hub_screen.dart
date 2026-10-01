@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import 'entertainment_detail_screen.dart';
@@ -16,10 +17,11 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
   String _language = 'الكل';
   String _search = '';
   bool _lowData = false;
+  bool _seeding = false;
   static const _genres = ['الكل','Action','Comedy','Drama','Romance','Thriller','Documentary','Animation'];
   String _norm(String v) => v.trim().toLowerCase();
 
-  @override Widget build(BuildContext context) => Scaffold(
+  Future<void> _seedPublicDomainMovies() async {\n    setState(() => _seeding = true);\n    try {\n      final result = await FirebaseFunctions.instanceFor(region: 'us-central1')\n          .httpsCallable('seedAurenPublicDomainMovies')\n          .call();\n      if (mounted) {\n        ScaffoldMessenger.of(context).showSnackBar(\n          SnackBar(content: Text('تم تجهيز ${result.data['count'] ?? 0} فيلم من كتالوج Public Domain.')),\n        );\n      }\n    } catch (e) {\n      if (mounted) {\n        ScaffoldMessenger.of(context).showSnackBar(\n          SnackBar(content: Text('تعذر تجهيز الأفلام: $e')),\n        );\n      }\n    } finally {\n      if (mounted) setState(() => _seeding = false);\n    }\n  }\n\n  @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('🎬 AUREN Movies'), actions: [
       IconButton(icon: const Icon(Icons.auto_awesome), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'أنت AUREN Movies AI. ساعدني في اختيار فيلم مناسب لوقتي ومزاجي ونوع المحتوى الذي أريده، مع احترام الحقوق وتوفر المحتوى.')))),
     ]),
@@ -43,6 +45,16 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
             const Text('Movie Universe', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text('${items.length} فيلم متاح • اكتشاف عالمي + توصيات ذكية'),
+            const SizedBox(height: 10),
+            if (items.isEmpty || !_seeding)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: OutlinedButton.icon(
+                  onPressed: _seeding ? null : _seedPublicDomainMovies,
+                  icon: _seeding ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cloud_download_outlined),
+                  label: Text(_seeding ? 'جاري تجهيز المكتبة...' : 'إضافة أفلام Public Domain'),
+                ),
+              ),
           ]))),
           const SizedBox(height: 14),
           TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فيلم، دولة، لغة أو Genre'), onChanged: (v) => setState(() => _search = v)),
