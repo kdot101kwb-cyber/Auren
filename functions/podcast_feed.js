@@ -59,7 +59,7 @@ exports.fetchAurenPodcastFeed = onCall(
       throw new HttpsError('resource-exhausted', 'Podcast feed is too large.');
     }
 
-    const blocks = xml.match(/<item\\b[\\s\\S]*?<\\/item>/gi) || [];
+    const blocks = xml.match(/<item\b[\s\S]*?<\/item>/gi) || [];
     const episodes = blocks.slice(0, 30).map((block, index) => ({
       id: tag(block, 'guid') || tag(block, 'link') || String(index),
       title: tag(block, 'title') || 'Episode',
