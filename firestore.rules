@@ -2878,10 +2878,13 @@ service cloud.firestore {
         && request.resource.data.courseId == resource.data.courseId
         && request.resource.data.completedLessons >= resource.data.completedLessons
         && request.resource.data.completedLessons >= 0
+        && request.resource.data.completedLessons <= get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount
         && request.resource.data.progress >= resource.data.progress
         && request.resource.data.progress >= 0
         && request.resource.data.progress <= 100
         && request.resource.data.status in ['active','completed']
+        && ((request.resource.data.status == 'completed' && request.resource.data.progress == 100)
+          || (request.resource.data.status == 'active' && request.resource.data.progress < 100))
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt is timestamp;
       allow delete: if isOwner(userId);
