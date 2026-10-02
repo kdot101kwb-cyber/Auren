@@ -444,11 +444,11 @@ test('series production tasks use deterministic idempotency keys and never fabri
   assert.ok(source.includes("idempotencyKey:ref.id + ':' + task.id"));
   assert.match(source, /status:'waiting_provider'/);
   assert.match(source, /a real provider writes an output URL\/id/);
-  assert.match(source, /data\\.output\\.url \|\| data\\.output\\.storagePath \|\| data\\.output\\.externalId/);
+  assert.ok(source.includes('data.output.url || data.output.storagePath || data.output.externalId'));
 });
 
 test('legacy series worker does not claim v2 jobs', () => {
-  assert.match(source, /if \(Number\\(data\\.productionWorkerVersion \|\| 0\\) === 2\) return false/);
+  assert.ok(source.includes('if (Number(data.productionWorkerVersion || 0) === 2) return false'));
 });
 
 
