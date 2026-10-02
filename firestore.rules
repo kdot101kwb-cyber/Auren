@@ -1250,13 +1250,18 @@ service cloud.firestore {
         && request.resource.data.progress is int
         && request.resource.data.progress >= 0
         && request.resource.data.progress <= 100
-        // Progress must be mathematically derived from completed lessons.
-        && request.resource.data.progress * get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount
-           == request.resource.data.completedLessons * 100
+        // The repository derives the displayed percentage from completedLessons.
+        // Avoid exact percentage arithmetic here because rounded values such as 1/3 = 33%
+        // are not exactly representable as integers in Firestore rules.
         && request.resource.data.status == (
           request.resource.data.completedLessons == get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount
             ? 'completed'
             : 'active'
+        )
+        && (
+          request.resource.data.completedLessons < get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount
+            ? request.resource.data.progress < 100
+            : request.resource.data.progress == 100
         )
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt is timestamp;
