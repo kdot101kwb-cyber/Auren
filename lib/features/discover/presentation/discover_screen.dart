@@ -8,6 +8,7 @@ import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
 import '../../education/presentation/education_screen.dart';
+import '../../kids/presentation/kids_screen.dart';
 import '../../business/presentation/business_growth_screen.dart';
 import '../../local/presentation/local_intelligence_screen.dart';
 import '../../payments/presentation/wallet_screen.dart';
@@ -55,6 +56,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('AI Production Studio', 'صناعة Shorts والأفلام والحلقات الطويلة', Icons.movie_creation_outlined),
     _DiscoverItem('Opportunities', 'عمل • مواهب • مشاريع • تعلم', Icons.work_outline),
     _DiscoverItem('Education', 'تعلّم المهارات واربطها بالفرص', Icons.school_outlined),
+    _DiscoverItem('Kids', 'تعلم آمن ومناسب للعمر للأطفال والعائلة', Icons.child_care_outlined),
     _DiscoverItem('Talent', 'مواهب ووكلاء AI للمسار المهني', Icons.psychology_outlined),
     _DiscoverItem('Communities', 'مجتمعات حول الاهتمامات والأهداف والمشاريع', Icons.groups_outlined),
   ];
@@ -127,6 +129,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     }
     if (item.title == 'Education') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENEducationScreen()));
+      return;
+    }
+    if (item.title == 'Kids') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenKidsScreen()));
       return;
     }
     if (item.title == 'Talent') {
