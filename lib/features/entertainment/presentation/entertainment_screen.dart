@@ -64,7 +64,21 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.animation_rounded, 'Anime World', 'Anime discovery & channels'),
   ];
 
-  void _setMood(String mood, String prompt) => setState(() { _mood = mood; query = prompt; });
+  void _setMood(String mood, String prompt) {
+    setState(() {
+      _mood = mood;
+      query = '';
+    });
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MessengerScreen(
+          initialPrompt:
+              'أنا الآن في مزاج $mood. $prompt اختر لي تجربة Entertainment مناسبة داخل AUREN، مع مراعاة الوقت وبيانات الإنترنت.',
+        ),
+      ),
+    );
+  }
 
   void _openAI() {
     Navigator.push(
