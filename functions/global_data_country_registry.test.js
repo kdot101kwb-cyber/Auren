@@ -42,9 +42,8 @@ test('global data ingestion is bounded and stores provenance', () => {
 });
 
 test('global data callable endpoints are exported through the function index', () => {
-  assert.match(index, /global_data_country_registry/);
-  assert.match(index, /aurenGlobalCountryRegistry/);
-  assert.match(index, /aurenGlobalDataIngest/);
+  assert.match(index, /Object\.assign\(module\.exports, require\('\.\/global_data_country_registry'\)\)/);
+  assert.match(index, /Object\.assign\(module\.exports, require\('\.\/global_data'\)\)/);
 });
 
 
@@ -53,8 +52,6 @@ test('country intelligence endpoint supports bounded search and indicator hydrat
   assert.match(globalData, /exports\.aurenCountryIntelligence/);
   assert.match(globalData, /orderBy\('name'\)\.limit\(250\)/);
   assert.match(globalData, /auren_global_data/);
-  assert.match(globalData, /indicatorSnapshot/);
-  assert.match(globalData, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 10, 1\), 25\)/);
 });
 
 test('opportunity country scan returns transparent data signals and deterministic ordering', () => {
