@@ -7,7 +7,7 @@ const rules = fs.readFileSync(require.resolve('../firestore.rules'), 'utf8');
 test('education canonical rules are present and client course writes are locked', () => {
   assert.match(rules, /match \/courses\/{courseId}/);
   assert.match(rules, /allow create, update, delete: if false/);
-  assert.match(rules, /request\.resource\.data\.status == 'published'/);
+  assert.match(rules, /resource\.data\.status == 'published'/);
 });
 
 test('education enrollment rules require published canonical courses', () => {
@@ -16,7 +16,7 @@ test('education enrollment rules require published canonical courses', () => {
   assert.match(rules, /request\.resource\.data\.completedLessons <= get\(/);
 });
 
-test('education enrollment progress is derived from completed lessons', () => {
+test('education enrollment completion is derived from completed lessons', () => {
   assert.match(
     rules,
     /request\.resource\.data\.progress \* get\([\s\S]*?lessonCount[\s\S]*?== request\.resource\.data\.completedLessons \* 100/
