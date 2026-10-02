@@ -80,6 +80,9 @@ class NotificationRepository {
   Future<void> markRead(String uid, String id) =>
       _items(uid).doc(_id(id)).update({'read': true});
 
+  Future<void> markUnread(String uid, String id) =>
+      _items(uid).doc(_id(id)).update({'read': false});
+
   Future<void> markAllRead(String uid) async {
     final snap = await _items(uid).where('read', isEqualTo: false).get();
     for (var i = 0; i < snap.docs.length; i += 450) {
