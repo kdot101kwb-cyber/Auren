@@ -3034,5 +3034,31 @@ match /users/{userId}/kids_activity_progress/{activityId} {
       allow update, delete: if false;
     }
 
+    // Canonical Health & Sports daily check-ins. Health guidance remains general;
+    // sensitive medical actions are not performed by client writes.
+    match /users/{userId}/healthCheckins/{checkinId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && checkinId.size() <= 40
+        && request.resource.data.keys().hasOnly([
+          'activityMinutes','waterGlasses','sleepHours','mood','updatedAt'
+        ])
+        && request.resource.data.activityMinutes is int
+        && request.resource.data.activityMinutes >= 0
+        && request.resource.data.activityMinutes <= 1440
+        && request.resource.data.waterGlasses is int
+        && request.resource.data.waterGlasses >= 0
+        && request.resource.data.waterGlasses <= 50
+        && request.resource.data.sleepHours is number
+        && request.resource.data.sleepHours >= 0
+        && request.resource.data.sleepHours <= 24
+        && request.resource.data.mood is int
+        && request.resource.data.mood >= 1
+        && request.resource.data.mood <= 5
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+
   }
 }
