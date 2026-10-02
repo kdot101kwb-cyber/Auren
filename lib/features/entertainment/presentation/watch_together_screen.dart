@@ -249,7 +249,19 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
           if (widget.mediaUrl != null && widget.mediaUrl!.isNotEmpty) _buildSyncedPlayer(roomId, data),
           if (_lastRemoteSync != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('آخر مزامنة: ${_lastRemoteSync!.hour.toString().padLeft(2,'0')}:${_lastRemoteSync!.minute.toString().padLeft(2,'0')}:${_lastRemoteSync!.second.toString().padLeft(2,'0')}'));
           if (widget.mediaUrl == null || widget.mediaUrl!.isEmpty)
-            FilledButton.icon(onPressed: () => _service.updatePlayback(roomId: roomId, positionSeconds: ((data['positionSeconds'] ?? 0) as num).toDouble(), isPlaying: !(data['isPlaying'] == true)), icon: Icon(data['isPlaying'] == true ? Icons.pause : Icons.play_arrow), label: Text(data['isPlaying'] == true ? 'إيقاف' : 'تشغيل')),
+            FilledButton.icon(
+              onPressed: data['hostUid'] == FirebaseAuth.instance.currentUser?.uid
+                  ? () => _service.updatePlayback(
+                      roomId: roomId,
+                      positionSeconds: ((data['positionSeconds'] ?? 0) as num).toDouble(),
+                      isPlaying: !(data['isPlaying'] == true),
+                    )
+                  : null,
+              icon: Icon(data['isPlaying'] == true ? Icons.pause : Icons.play_arrow),
+              label: Text(data['hostUid'] == FirebaseAuth.instance.currentUser?.uid
+                  ? (data['isPlaying'] == true ? 'إيقاف' : 'تشغيل')
+                  : 'المضيف يتحكم'),
+            ),
           const SizedBox(height: 18),
           const Text('دردشة الغرفة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
@@ -284,6 +296,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
     ]));
   }
   Widget _buildSyncedPlayer(String roomId, Map<String, dynamic> data) {
+    final isHost = data['hostUid'] == FirebaseAuth.instance.currentUser?.uid;
     final remotePosition = ((data['positionSeconds'] ?? 0) as num).toDouble();
     final remotePlaying = data['isPlaying'] == true;
     if (_controller == null) {
@@ -312,7 +325,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
       VideoProgressIndicator(controller, allowScrubbing: true),
       const SizedBox(height: 8),
       FilledButton.icon(
-        onPressed: _syncingRemote ? null : () async {
+        onPressed: !isHost || _syncingRemote ? null : () async {
           final next = !controller.value.isPlaying;
           final position = controller.value.position.inMilliseconds / 1000.0;
           try {
@@ -326,7 +339,9 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
           if (mounted) setState(() {});
         },
         icon: Icon(controller.value.isPlaying ? Icons.pause : Icons.play_arrow),
-        label: Text(controller.value.isPlaying ? 'إيقاف للجميع' : 'تشغيل للجميع'),
+        label: Text(isHost
+            ? (controller.value.isPlaying ? 'إيقاف للجميع' : 'تشغيل للجميع')
+            : 'المضيف يتحكم'),
       ),
     ]);
   }
