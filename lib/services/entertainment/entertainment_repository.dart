@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/models/entertainment.dart';
 
 class EntertainmentRepository {
@@ -71,12 +72,20 @@ class EntertainmentRepository {
     String roomId, {
     required int positionSeconds,
     required bool isPlaying,
-  }) =>
-      db.collection('watchTogetherRooms').doc(roomId).update({
-        'positionSeconds': positionSeconds.clamp(0, 86400),
-        'isPlaying': isPlaying,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+  }) async {
+    final ref = db.collection('watchTogetherRooms').doc(roomId);
+    final snap = await ref.get();
+    if (!snap.exists) throw StateError('الغرفة غير متاحة.');
+    final data = snap.data() ?? <String, dynamic>{};
+    if (data['hostUid'] != FirebaseAuth.instance.currentUser?.uid) {
+      throw StateError('المضيف فقط يستطيع التحكم في التشغيل.');
+    }
+    await ref.update({
+      'positionSeconds': positionSeconds.clamp(0, 86400),
+      'isPlaying': isPlaying,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 
   Stream<List<AurenEntertainmentItem>> watchItems({String? type}) {
     Query<Map<String, dynamic>> q = db.collection('entertainment_items')
