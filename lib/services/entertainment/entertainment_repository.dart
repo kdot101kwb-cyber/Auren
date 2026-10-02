@@ -25,8 +25,25 @@ class EntertainmentRepository {
       final items=snap.docs.map((d)=>AurenEntertainmentItem.fromMap(d.id,d.data())).where((i)=>i.mediaUrl.isNotEmpty).toList();
       final signals=await db.collection('users').doc(uid).collection('entertainmentSignals').get();
       final scores=<String,double>{};
-      for(final d in signals.docs){final data=d.data();scores[d.id]=((data['watchSeconds'] as num?)?.toDouble()??0)*.02+((data['likes'] as num?)?.toDouble()??0)*5+((data['saves'] as num?)?.toDouble()??0)*4+((data['completions'] as num?)?.toDouble()??0)*3-((data['skips'] as num?)?.toDouble()??0)*2;}
-      items.sort((a,b)=>(scores[b.id]??0).compareTo(scores[a.id]??0)); return items;
+      for(final d in signals.docs){
+        final data=d.data();
+        final watchSeconds=(data['watchSeconds'] as num?)?.toDouble()??0;
+        final views=(data['views'] as num?)?.toDouble()??0;
+        final likes=(data['likes'] as num?)?.toDouble()??0;
+        final saves=(data['saves'] as num?)?.toDouble()??0;
+        final completions=(data['completions'] as num?)?.toDouble()??0;
+        final skips=(data['skips'] as num?)?.toDouble()??0;
+        var score=watchSeconds*.02+views*.35+likes*5+saves*4+completions*3-skips*2;
+        if(views==0 && likes==0 && saves==0) score+=6;
+        scores[d.id]=score;
+      }
+      items.sort((a,b){
+        final scoreCompare=(scores[b.id]??6).compareTo(scores[a.id]??6);
+        if(scoreCompare!=0) return scoreCompare;
+        final titleCompare=a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        return titleCompare!=0 ? titleCompare : a.id.compareTo(b.id);
+      });
+      return items;
     });
   }
 
