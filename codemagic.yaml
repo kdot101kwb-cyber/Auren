@@ -29,8 +29,6 @@ workflows:
           cd backend/plugin-worker
           npm install --no-audit --no-fund
           npm test
-      - name: Plugin Worker image
-        script: docker build -t auren-plugin-worker:ci backend/plugin-worker
     artifacts:
       - build/**/outputs/**/*.apk
       - build/**/outputs/**/*.aab
