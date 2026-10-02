@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
+import 'package:share_plus/share_plus.dart';
 
 class AurenWatchTogetherService {
   final FirebaseFirestore _db;
@@ -142,6 +143,25 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
     catch (e) { _show(e.toString()); } finally { if (mounted) setState(() => _busy = false); }
   }
   void _show(String value) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value.replaceFirst('Bad state: ', ''))));
+
+  Future<void> _shareInvite(String code) async {
+    final normalized = code.trim().toUpperCase();
+    if (normalized.isEmpty || _sharing) return;
+    setState(() => _sharing = true);
+    try {
+      final title = widget.title?.trim().isNotEmpty == true ? widget.title!.trim() : 'Watch Together';
+      await SharePlus.instance.share(
+        ShareParams(
+          text: 'انضم لمشاهدة «$title» معي في AUREN. رمز الغرفة: $normalized',
+          subject: 'دعوة Watch Together في AUREN',
+        ),
+      );
+    } catch (e) {
+      if (mounted) _show(e.toString());
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
   Future<void> _syncFromRoom(Map<String, dynamic> data) async { if (_controller == null || !_controller!.value.isInitialized || _syncingRemote) return; final remotePosition = ((data['positionSeconds'] ?? 0) as num).toDouble(); final remotePlaying = data['isPlaying'] == true; final local = _controller!.value.position.inMilliseconds / 1000.0; if ((local - remotePosition).abs() > 1.5) { _syncingRemote = true; try { await _controller!.seekTo(Duration(milliseconds: (remotePosition * 1000).round())); } finally { _syncingRemote = false; } } if (remotePlaying && !_controller!.value.isPlaying) await _controller!.play(); if (!remotePlaying && _controller!.value.isPlaying) await _controller!.pause(); if (mounted) setState(() => _lastRemoteSync = DateTime.now()); }
   Future<void> _retrySync() async {
     if (_roomId == null || _controller == null || !_controller!.value.isInitialized) return;
