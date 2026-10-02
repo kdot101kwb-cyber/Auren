@@ -137,13 +137,54 @@ class EducationRepository {
         'status': progress >= 100 ? 'completed' : 'active',
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      if (completed >= lessonCount) {
+        final profileRef = db.collection('users').doc(uid).collection('profile_modes').doc('professional');
+        final profileSnap = await tx.get(profileRef);
+        final data = profileSnap.data() ?? <String, dynamic>{};
+        final current = data['skills'] is List
+            ? List<String>.from((data['skills'] as List).whereType<String>())
+            : <String>[];
+        final skills = (courseSnap.data()?['skills'] is List
+                ? List<String>.from((courseSnap.data()!['skills'] as List).whereType<String>())
+                : <String>[])
+            .map((e) => e.trim().toLowerCase())
+            .where((e) => e.isNotEmpty);
+        final merged = <String>{...current, ...skills};
+        tx.set(
+          profileRef,
+          {
+            'mode': 'professional',
+            'skills': merged.take(20).toList(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+      }
     });
   }
 
-  Stream<List<AurenLearningProgress>> watchMyLearning(String uid) => db.collection('users').doc(uid).collection('enrollments').snapshots().map((s) => s.docs.map((d) => AurenLearningProgress(courseId: d.id, completedLessons: (d.data()['completedLessons'] as num?)?.toInt() ?? 0, enrolled: true)).toList());
+  Stream<List<AurenLearningProgress>> watchMyLearning(String uid) =>
+      db.collection('users').doc(uid).collection('enrollments').snapshots().map(
+        (s) => s.docs.map((d) {
+          final raw = (d.data()['completedLessons'] as num?)?.toInt() ?? 0;
+          return AurenLearningProgress(
+            courseId: d.id,
+            completedLessons: raw < 0 ? 0 : raw,
+            enrolled: true,
+          );
+        }).toList(),
+      );
   Future<void> toggleSaved(String uid, String courseId, bool saved) async {
     if (uid.trim().isEmpty || courseId.trim().isEmpty) {
       throw ArgumentError('بيانات الحفظ غير صالحة');
+    }
+
+    if (saved) {
+      final courseSnap = await db.collection('courses').doc(courseId).get();
+      if (!courseSnap.exists || courseSnap.data()?['status'] != 'published') {
+        throw StateError('الدورة غير متاحة');
+      }
     }
 
     final ref = db.collection('users').doc(uid).collection('savedCourses').doc(courseId);
