@@ -77,7 +77,20 @@ class AurenWatchTogetherService {
   }
 
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchRoom(String roomId) => _rooms.doc(roomId).snapshots();
-  Future<void> updatePlayback({required String roomId, required double positionSeconds, required bool isPlaying}) => _rooms.doc(roomId).update({'positionSeconds': positionSeconds.clamp(0, 86400), 'isPlaying': isPlaying, 'updatedAt': FieldValue.serverTimestamp()});
+  Future<void> updatePlayback({required String roomId, required double positionSeconds, required bool isPlaying}) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) throw StateError('سجّل الدخول أولاً.');
+    final ref = _rooms.doc(roomId);
+    final room = await ref.get();
+    if (!room.exists) throw StateError('الغرفة غير متاحة.');
+    final hostUid = room.data()?['hostUid']?.toString();
+    if (hostUid != uid) throw StateError('فقط المضيف يستطيع التحكم في التشغيل.');
+    await ref.update({
+      'positionSeconds': positionSeconds.clamp(0, 86400),
+      'isPlaying': isPlaying,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
   Future<void> leaveRoom(String roomId) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('سجّل الدخول أولاً.');
