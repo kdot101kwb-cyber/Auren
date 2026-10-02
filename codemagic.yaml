@@ -1,0 +1,36 @@
+workflows:
+  auren_ci:
+    name: AUREN CI
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+      node: 22
+    scripts:
+      - name: Flutter dependencies
+        script: flutter pub get
+      - name: Dart format check
+        script: dart format --output=none --set-exit-if-changed lib test
+      - name: Flutter analyze
+        script: flutter analyze
+      - name: Flutter tests
+        script: flutter test
+      - name: Backend Functions tests
+        script: |
+          cd functions
+          npm install --no-audit --no-fund
+          npm test
+      - name: Action Executor tests
+        script: |
+          cd backend/action-executor
+          npm install --no-audit --no-fund
+          npm test
+      - name: Plugin Worker tests
+        script: |
+          cd backend/plugin-worker
+          npm install --no-audit --no-fund
+          npm test
+      - name: Plugin Worker image
+        script: docker build -t auren-plugin-worker:ci backend/plugin-worker
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
