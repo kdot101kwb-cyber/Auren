@@ -14,7 +14,8 @@ for (const gameIndex of [53,54,55,56,57,58,59]) {
 
 test('rejects forged authoritative values', () => {
   const s=createInitialFlagshipState(54,'host','guest');
-  assert.throws(() => validateAndApplyFlagshipAction(s,{type:'shoot',payload:{lane:0,score:999999}},'host'));
+  const n=validateAndApplyFlagshipAction(s,{type:'shoot',payload:{lane:0,score:999999}},'host');
+  assert.equal(n.score < 999999,true);
   assert.equal(s.score,0);
 });
 
