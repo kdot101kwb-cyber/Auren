@@ -344,6 +344,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
   }
 
   Future<void> _seedGlobalSeries() async {
+    if (_seriesSeeding) return;
     setState(() => _seriesSeeding = true);
     try {
       await FirebaseFunctions.instance
