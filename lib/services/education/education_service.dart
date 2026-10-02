@@ -11,7 +11,7 @@ class AurenCourse {
     skills:List<String>.from(d['skills']??const []),lessons:List<String>.from(d['lessons']??const []),
     minutes:(d['minutes'] as num?)?.toInt()??0);
 }
-class AurenEducationService {
+/// Legacy education service retained only for migration compatibility.\n/// New UI code should use EducationRepository and the canonical `courses` schema.\n@Deprecated('Use EducationRepository for the canonical courses/enrollments schema.')\nclass AurenEducationService {
   final FirebaseFirestore db;
   AurenEducationService({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
 
