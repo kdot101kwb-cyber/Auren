@@ -2,9 +2,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 
-class SeriesProductionPipelineScreen extends StatelessWidget {
+class SeriesProductionPipelineScreen extends StatefulWidget {
   final String projectId;
   const SeriesProductionPipelineScreen({super.key, required this.projectId});
+
+  @override
+  State<SeriesProductionPipelineScreen> createState() => _SeriesProductionPipelineScreenState();
+}
+
+class _SeriesProductionPipelineScreenState extends State<SeriesProductionPipelineScreen> {
 
   static const _stages = <String>[
     'series_blueprint_ready',
@@ -47,7 +53,7 @@ class SeriesProductionPipelineScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Series Production Pipeline')),
       body: StreamBuilder<Map<String, dynamic>?>(
-        stream: EntertainmentRepository().watchEntertainmentCreationJob(uid, projectId),
+        stream: EntertainmentRepository().watchEntertainmentCreationJob(uid, widget.projectId),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('تعذر تحميل خط الإنتاج: ${snapshot.error}'));
@@ -88,6 +94,34 @@ class SeriesProductionPipelineScreen extends StatelessWidget {
                   color: failed ? Theme.of(context).colorScheme.error : null,
                 ),
               ),
+              if (failed) ...[
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  onPressed: () async {
+                    try {
+                      final repo = EntertainmentRepository();
+                      if (data['mode']?.toString() == 'مسلسل') {
+                        await repo.generateSeriesBlueprint(widget.projectId);
+                      } else {
+                        await repo.retryEntertainmentJob(uid, widget.projectId);
+                      }
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('تمت إعادة تشغيل مهمة الإنتاج.')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('تعذر إعادة التشغيل: $e')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('إعادة تشغيل الإنتاج'),
+                ),
+              ],
               if (data['productionError']?.toString().isNotEmpty == true) ...[
                 const SizedBox(height: 10),
                 Card(
