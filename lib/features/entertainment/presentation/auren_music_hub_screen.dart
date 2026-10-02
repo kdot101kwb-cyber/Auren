@@ -10,7 +10,8 @@ import 'auren_podcasts_screen.dart';
 import 'auren_radio_screen.dart';
 import 'auren_music_queue_screen.dart';
 import 'auren_smart_music_screen.dart';
-import 'auren_saved_music_screen.dart';import 'auren_music_collection_screen.dart';
+import 'auren_saved_music_screen.dart';
+import 'auren_music_collection_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 
 class AurenMusicHubScreen extends StatefulWidget {
