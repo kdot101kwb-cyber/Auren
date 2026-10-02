@@ -74,6 +74,8 @@ class _EducationState extends State<AurenAURENEducationScreen> {
           }
 
           final all = coursesSnapshot.data ?? const <AurenCourse>[];
+          final savedIdsSnapshot = await repo.watchSavedIds(uid).first;
+          final savedIds = savedIdsSnapshot;
           final cats = all
               .map((e) => e.category)
               .where((e) => e.isNotEmpty)
@@ -185,6 +187,17 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('المحفوظة فقط'),
+                        selected: false,
+                        onSelected: (_) {},
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   _studyPlanCard(context, uid, progress, all),
                   if (progress.isNotEmpty)
                     _learningSummary(context, progress, all),
