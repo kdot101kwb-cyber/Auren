@@ -10,7 +10,7 @@ import 'auren_podcasts_screen.dart';
 import 'auren_radio_screen.dart';
 import 'auren_music_queue_screen.dart';
 import 'auren_smart_music_screen.dart';
-import 'auren_saved_music_screen.dart';\nimport 'auren_music_collection_screen.dart';
+import 'auren_saved_music_screen.dart';import 'auren_music_collection_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 
 class AurenMusicHubScreen extends StatefulWidget {
@@ -222,7 +222,17 @@ class _AurenMusicHubState extends State<AurenMusicHubScreen> {
                         dense: true,
                         leading: history[index].imageUrl.isEmpty
                             ? const CircleAvatar(child: Icon(Icons.music_note))
-                            : CircleAvatar(backgroundImage: NetworkImage(history[index].imageUrl)),
+                            : CircleAvatar(
+                                child: ClipOval(
+                                  child: Image.network(
+                                    history[index].imageUrl,
+                                    width: 40,
+                                    height: 40,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.music_note),
+                                  ),
+                                ),
+                              ),
                         title: Text(history[index].title, maxLines: 2, overflow: TextOverflow.ellipsis),
                         onTap: () => AurenMusicPlayerController.instance.playItem(history[index]),
                       ),
@@ -305,7 +315,17 @@ class _AurenMusicHubState extends State<AurenMusicHubScreen> {
         child: ListTile(
           leading: item.imageUrl.isEmpty
               ? const CircleAvatar(child: Icon(Icons.music_note))
-              : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
+              : CircleAvatar(
+                  child: ClipOval(
+                    child: Image.network(
+                      item.imageUrl,
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.music_note),
+                    ),
+                  ),
+                ),
           title: Text(item.title),
           subtitle: Text(item.description.isEmpty ? item.type : item.description, maxLines: 2, overflow: TextOverflow.ellipsis),
           onTap: item.mediaUrl.isEmpty
