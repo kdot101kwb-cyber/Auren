@@ -316,11 +316,6 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAI,
-        icon: const Icon(Icons.auto_awesome),
-        label: const Text('AUREN AI'),
-      ),
     );
   }
 
