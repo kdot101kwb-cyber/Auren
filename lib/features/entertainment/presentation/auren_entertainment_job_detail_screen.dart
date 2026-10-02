@@ -218,6 +218,10 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
             children: [
               _summaryCard(context, job, status, progress),
+              if (job['mode']?.toString() == 'مسلسل') ...[
+                const SizedBox(height: 12),
+                _seriesProductionStatusCard(context, job),
+              ],
               if (queueLabel.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Card(
@@ -518,6 +522,21 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _seriesProductionStatusCard(BuildContext context, Map<String, dynamic> job) {
+    final stage = job['productionStage']?.toString() ?? 'series_blueprint_ready';
+    const stages = <String>['series_blueprint_ready','episode_bibles_ready','scenes_ready','asset_manifest_ready','ready_for_render','render_queue_ready','generation','output','qc','ready'];
+    const labels = <String, String>{'series_blueprint_ready':'مخطط المسلسل','episode_bibles_ready':'ملفات الحلقات','scenes_ready':'المشاهد','asset_manifest_ready':'الأصول المطلوبة','ready_for_render':'جاهز للرندر','render_queue_ready':'طابور الرندر','generation':'التوليد','output':'المخرجات','qc':'مراجعة الجودة','ready':'جاهز'};
+    final index = stages.indexOf(stage);
+    final progress = ((job['progress'] as num?)?.toInt() ?? 0).clamp(0, 100);
+    final failed = stage.endsWith('_failed') || stage == 'production_failed' || stage == 'qc_failed';
+    return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('خط إنتاج المسلسل', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 10), LinearProgressIndicator(value: progress / 100), const SizedBox(height: 8),
+      Text(failed ? 'الحالة: فشل — يمكن استخدام إعادة المحاولة' : '${labels[stage] ?? stage} • $progress%', style: const TextStyle(fontWeight: FontWeight.w700)),
+      const SizedBox(height: 12),
+      ...stages.asMap().entries.map((entry) { final i = entry.key; final key = entry.value; final done = index >= 0 && i < index; final active = key == stage; return ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: Icon(done ? Icons.check_circle_rounded : active ? (failed ? Icons.error_rounded : Icons.play_circle_fill_rounded) : Icons.radio_button_unchecked_rounded), title: Text(labels[key] ?? key), subtitle: Text(done ? 'مكتملة' : active ? 'الحالة الحالية' : 'في الانتظار')); }),
+    ])));
+  }
   Widget _seriesBlueprintCard(BuildContext context, Map<String, dynamic> blueprint) {
     final characters = blueprint['characters'] is List ? blueprint['characters'] as List : const [];
     final episodes = blueprint['episodes'] is List ? blueprint['episodes'] as List : const [];
