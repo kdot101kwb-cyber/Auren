@@ -2822,7 +2822,7 @@ service cloud.firestore {
         && request.resource.data.completedLessons >= resource.data.completedLessons
         && request.resource.data.completedLessons >= 0
         && request.resource.data.completedLessons <= get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount
-        && request.resource.data.progress == ((request.resource.data.completedLessons * 100) / get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount).round()
+        && request.resource.data.progress * get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount >= request.resource.data.completedLessons * 100 - (get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount / 2) && request.resource.data.progress * get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount < request.resource.data.completedLessons * 100 + (get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount / 2) + 1
         && request.resource.data.progress >= resource.data.progress
         && request.resource.data.progress >= 0
         && request.resource.data.progress <= 100
