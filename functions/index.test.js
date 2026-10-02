@@ -563,8 +563,8 @@ test('Watch Together push triggers are server-owned and actor-excluded', () => {
 });
 
 test('Watch Together push delivery cleans invalid FCM tokens', () => {
-  assert.match(source, /messaging\\/registration-token-not-registered/);
-  assert.match(source, /messaging\\/invalid-registration-token/);
+  assert.match(source, /messaging\/registration-token-not-registered/);
+  assert.match(source, /messaging\/invalid-registration-token/);
   assert.match(source, /watchTogetherTokens.*doc\(token\)\.delete/);
 });
 
