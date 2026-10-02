@@ -12,7 +12,7 @@ const hasOutput=o=>Boolean(o&&(o.url||o.storagePath||o.externalId));
 async function validateAudioArtifact(o){
  if(!hasOutput(o))return {ok:false,reason:'missing_artifact'};
  if(o.storagePath||o.externalId)return {ok:true,referenceOnly:true};
- const url=String(o.url||''); if(!/^https?:\\/\\//i.test(url))return {ok:false,reason:'invalid_url'};
+ const url=String(o.url||''); if(!url.startsWith('http://')&&!url.startsWith('https://'))return {ok:false,reason:'invalid_url'};
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),10000);
  try{const r=await fetch(url,{method:'HEAD',signal:controller.signal});if(!r.ok)return {ok:false,reason:'http_'+r.status};
   const type=String(r.headers.get('content-type')||'').toLowerCase();if(type && !(type.startsWith('audio/')||type==='application/octet-stream'))return {ok:false,reason:'not_audio',contentType:type};
