@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'offline_safety_screen.dart';
 import 'blocked_users_screen.dart';
+import 'emergency_contacts_screen.dart';
 
 class AurenSafetyCenterScreen extends StatelessWidget {
   const AurenSafetyCenterScreen({super.key});
@@ -48,6 +49,18 @@ class AurenSafetyCenterScreen extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AurenOfflineSafetyScreen()),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.contact_emergency_outlined),
+              title: const Text('Emergency Contacts'),
+              subtitle: const Text('جهات موثوقة محفوظة للوصول السريع عند الحاجة.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenEmergencyContactsScreen()),
               ),
             ),
           ),
