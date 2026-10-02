@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_offline_media_service.dart';
 import 'auren_entertainment_job_detail_screen.dart';
