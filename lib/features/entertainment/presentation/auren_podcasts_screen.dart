@@ -1256,8 +1256,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
         ),
         title: Text(item.name),
         subtitle: Text(
-          '${item.host} • ${item.category}
-${item.description}',
+          '${item.host} • ${item.category}\n${item.description}',
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
