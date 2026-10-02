@@ -119,4 +119,5 @@ class _AurenEntertainmentDiscoverScreenState extends State<AurenEntertainmentDis
         ),
       ),
     );
-  }}
+  }
+}
