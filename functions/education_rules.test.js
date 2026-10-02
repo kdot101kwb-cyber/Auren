@@ -17,11 +17,11 @@ test('education enrollment rules require published canonical courses', () => {
 });
 
 test('education enrollment completion is derived from completed lessons', () => {
-  assert.match(rules, /request\.resource\.data\.completedLessons == get\([\s\S]*?lessonCount[\s\S]*?\? 'completed'/);
-  assert.match(rules, /request\.resource\.data\.completedLessons < get\([\s\S]*?lessonCount[\s\S]*?\? request\.resource\.data\.progress < 100/);
   assert.match(rules, /request\.resource\.data\.completedLessons == get\([\s\S]*?lessonCount/);
-  assert.match(rules, /request\.resource\.data\.progress == 100/);
+  assert.match(rules, /request\.resource\.data\.status == 'completed'/);
+  assert.match(rules, /request\.resource\.data\.status == 'active'/);
   assert.match(rules, /request\.resource\.data\.progress < 100/);
+  assert.match(rules, /request\.resource\.data\.progress == 100/);
 });
 
 test('saved courses require published canonical courses', () => {
