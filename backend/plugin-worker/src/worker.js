@@ -29,7 +29,7 @@ function runIsolated(manifest,payload,expectedSha256,artifactBase64){
     const source=typeof manifest?.entrypoint==='string'?manifest.entrypoint:'';
     if(!source.startsWith('file:'))return reject(Object.assign(new Error('Worker accepts only trusted file entrypoints.'),{code:400}));
     const entry=source.slice(5);
-    if(!/^([a-z0-9._-]{3,64})\/([^/]+\\.js)$/.test(entry))return reject(Object.assign(new Error('Entrypoint is invalid.'),{code:403}));
+    if(!/^([a-z0-9._-]{3,64})\/([^/]+\.js)$/.test(entry))return reject(Object.assign(new Error('Entrypoint is invalid.'),{code:403}));
     if(!/^[a-f0-9]{64}$/.test(expectedSha256||''))return reject(Object.assign(new Error('Trusted artifact hash is required.'),{code:400}));
     if(typeof artifactBase64!=='string'||artifactBase64.length>7*1024*1024)return reject(Object.assign(new Error('Plugin artifact payload is invalid.'),{code:413}));
     let bytes;
