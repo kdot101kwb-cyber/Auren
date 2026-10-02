@@ -1,9 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../../services/health/auren_health_repository.dart';
 import '../../entertainment/presentation/auren_sports_entertainment_screen.dart';
 
 class AurenHealthSportsScreen extends StatelessWidget {
+  static final AurenHealthRepository _health = AurenHealthRepository();
+
+  String _todayId() {
+    final now = DateTime.now();
+    return now.year.toString() + '-' + now.month.toString().padLeft(2, '0') + '-' + now.day.toString().padLeft(2, '0');
+  }
+
+  Future<void> _saveDailyCheckin(BuildContext context) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      _ask(context, 'أريد متابعة صحتي اليومية. ساعدني أولاً في تسجيل الدخول ثم إعداد متابعة بسيطة.');
+      return;
+    }
+    try {
+      await _health.saveCheckin(
+        uid: uid,
+        dateId: _todayId(),
+        activityMinutes: 30,
+        waterGlasses: 6,
+        sleepHours: 8,
+        mood: 4,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ المتابعة اليومية.')));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر حفظ المتابعة الآن.')));
+      }
+    }
+  }
   const AurenHealthSportsScreen({super.key});
 
   void _ask(BuildContext context, String prompt) {
@@ -49,6 +82,16 @@ class AurenHealthSportsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.monitor_heart_outlined),
+              title: const Text('Daily Check-in'),
+              subtitle: const Text('احفظ متابعة اليوم للحركة والماء والنوم والمزاج.'),
+              trailing: const Icon(Icons.add_task),
+              onTap: () => _saveDailyCheckin(context),
+            ),
+          ),
+          const SizedBox(height: 12),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
