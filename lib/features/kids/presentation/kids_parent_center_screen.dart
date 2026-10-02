@@ -28,7 +28,7 @@ class _AurenKidsParentCenterScreenState extends State<AurenKidsParentCenterScree
           if (snapshot.hasError) {
             return Center(child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('تعذر تحميل إعدادات الأسرة: ${snapshot.error}'),
+              child: const Text('تعذر تحميل إعدادات الأسرة حالياً. حاول مرة أخرى.'),
             ));
           }
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
@@ -55,7 +55,7 @@ class _AurenKidsParentCenterScreenState extends State<AurenKidsParentCenterScree
               });
             } catch (e) {
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر حفظ الإعداد: $e')));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر حفظ الإعداد حالياً. حاول مرة أخرى.')));
             }
           }
 
