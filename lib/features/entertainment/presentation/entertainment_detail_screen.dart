@@ -312,10 +312,23 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                     final sourceGenres = item.genres.map((g) => g.toLowerCase()).toSet();
                     final recommendations = (recSnapshot.data ?? const <AurenEntertainmentItem>[])
                         .where((x) => x.id != item.id)
-                        .map((x) => MapEntry(x, x.genres.map((g) => g.toLowerCase()).toSet().intersection(sourceGenres).length))
+                        .map((x) => MapEntry(
+                              x,
+                              x.genres
+                                  .map((g) => g.toLowerCase())
+                                  .toSet()
+                                  .intersection(sourceGenres)
+                                  .length,
+                            ))
                         .where((x) => sourceGenres.isEmpty || x.value > 0)
                         .toList()
-                      ..sort((a, b) => b.value.compareTo(a.value));
+                      ..sort((a, b) {
+                        final score = b.value.compareTo(a.value);
+                        if (score != 0) return score;
+                        final title = a.key.title.toLowerCase().compareTo(b.key.title.toLowerCase());
+                        if (title != 0) return title;
+                        return a.key.id.compareTo(b.key.id);
+                      });
                     return Column(children: recommendations.take(6).map((entry) {
                       final x = entry.key;
                       return Card(child: ListTile(
