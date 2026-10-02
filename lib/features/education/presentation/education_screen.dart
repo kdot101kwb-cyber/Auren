@@ -178,7 +178,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
   ) {
     final enrolled = progress.length;
     final completed = progress.entries.where((entry) {
-      final course = courses.where((c) => c.id == entry.key).firstOrNull;
+      final course = _findCourse(courses, entry.key);
       return course != null &&
           course.lessonCount > 0 &&
           entry.value.completedLessons >= course.lessonCount;
@@ -365,7 +365,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
     );
   }
 
-  void _showLearningSheet(
+  AurenCourse? _findCourse(List<AurenCourse> courses, String id) {\n    for (final course in courses) {\n      if (course.id == id) return course;\n    }\n    return null;\n  }\n\n  void _showLearningSheet(
     BuildContext context,
     Map<String, AurenLearningProgress> progress,
     List<AurenCourse> courses,
@@ -375,7 +375,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
       builder: (_) => ListView(
         padding: const EdgeInsets.all(16),
         children: progress.values.map((item) {
-          final course = courses.where((c) => c.id == item.courseId).firstOrNull;
+          final course = _findCourse(courses, item.courseId);
           return ListTile(
             title: Text(course?.title ?? item.courseId),
             subtitle: Text('أكملت ${item.completedLessons} درس'),
