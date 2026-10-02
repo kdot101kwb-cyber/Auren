@@ -68,7 +68,7 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
                 const SizedBox(height: 16),
                 Text('الفئة العمرية', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
-                Wrap(spacing: 8, children: [6, 9, 13].map((age) => ChoiceChip(label: Text(age == 13 ? '13–17' : '$age–${age + 2}'), selected: ageBand == age, onSelected: (_) => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenKidsParentCenterScreen())))).toList()),
+                Row(children: [const Icon(Icons.verified_user_outlined, size: 20), const SizedBox(width: 8), Text(ageBand == 13 ? '13–17' : '$ageBand–${ageBand + 2}'), const Spacer(), TextButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenKidsParentCenterScreen())), icon: const Icon(Icons.settings_outlined), label: const Text('ولي الأمر'))]),
               ]),
             ),
           ),
