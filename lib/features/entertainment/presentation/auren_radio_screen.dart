@@ -228,7 +228,7 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
                   child: ListTile(
                     leading: const Icon(Icons.error_outline),
                     title: const Text('تعذر تحميل محطات AUREN'),
-                    subtitle: Text(snapshot.error.toString()),
+                    subtitle: const Text('حاول مرة أخرى بعد قليل.'),
                   ),
                 );
               }
@@ -250,7 +250,7 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
                     child: ListTile(
                       leading: item.imageUrl.isEmpty
                           ? const CircleAvatar(child: Icon(Icons.radio))
-                          : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
+                          : CircleAvatar(child: ClipOval(child: Image.network(item.imageUrl,width:40,height:40,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.radio)))),
                       title: Text(item.title),
                       subtitle: Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis),
                       trailing: uid == null
@@ -287,7 +287,7 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
     final url = station['favicon']?.toString() ?? '';
     return url.isEmpty
         ? const CircleAvatar(child: Icon(Icons.radio))
-        : CircleAvatar(backgroundImage: NetworkImage(url));
+        : CircleAvatar(child: ClipOval(child: Image.network(url,width:40,height:40,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.radio))));
   }
 
   Widget _buildHero(BuildContext context) {
