@@ -255,9 +255,18 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
                       subtitle: Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis),
                       trailing: uid == null
                           ? null
-                          : IconButton(
-                              icon: const Icon(Icons.bookmark_border),
-                              onPressed: () => repo.save(uid, item.id),
+                          : StreamBuilder<Set<String>>(
+                              stream: repo.watchSavedIds(uid),
+                              builder: (context, savedSnapshot) {
+                                final saved = savedSnapshot.data?.contains(item.id) ?? false;
+                                return IconButton(
+                                  tooltip: saved ? 'إزالة من المحفوظات' : 'حفظ',
+                                  icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
+                                  onPressed: () => saved
+                                      ? repo.unsave(uid, item.id)
+                                      : repo.save(uid, item.id),
+                                );
+                              },
                             ),
                       onTap: item.mediaUrl.isEmpty ? null : () => Navigator.push(
                         context,
