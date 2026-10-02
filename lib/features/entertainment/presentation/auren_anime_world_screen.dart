@@ -123,7 +123,7 @@ class _AurenAnimeWorldScreenState extends State<AurenAnimeWorldScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         leading: item.imageUrl.isEmpty
             ? const CircleAvatar(child: Icon(Icons.animation_rounded))
-            : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
+            : CircleAvatar(child: ClipOval(child: Image.network(item.imageUrl,width:40,height:40,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)))),
         title: Text(
           item.title,
           style: const TextStyle(fontWeight: FontWeight.w800),
@@ -149,7 +149,7 @@ class _AurenAnimeWorldScreenState extends State<AurenAnimeWorldScreen> {
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Text(
-          'تعذر تحميل Anime الآن. حاول مرة أخرى لاحقًا.\n$error',
+          'تعذر تحميل Anime الآن. حاول مرة أخرى لاحقًا.',
           textAlign: TextAlign.center,
         ),
       ),
