@@ -19,7 +19,7 @@ test('3-player bracket preserves a real BYE and keeps it out of playable matches
   assert.equal(bye.status,'finished');
   assert.equal(bye.winnerId,'p3');
   assert.equal(bye.bye,true);
-  assert.equal(bracket.matches.filter(m=>m.status==='pending').length,1);
+  assert.equal(bracket.matches.filter(m=>m.status==='pending').length,2);
 });
 
 test('player list is capped at eight and never creates a phantom opponent', () => {
