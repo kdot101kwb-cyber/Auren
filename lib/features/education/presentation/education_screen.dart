@@ -148,6 +148,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                   if (progress.isNotEmpty)
                     _learningSummary(context, progress, all),
                   _completedCoursesCard(context, uid, progress, all),
+                  _learnedSkillsCard(context, progress, all),
                   StreamBuilder<List<AurenCourse>>(
                     stream: repo.watchSavedCourses(uid),
                     builder: (context, savedSnapshot) {
@@ -256,6 +257,72 @@ class _EducationState extends State<AurenAURENEducationScreen> {
       }),
     ])));
   }
+  Widget _learnedSkillsCard(
+    BuildContext context,
+    Map<String, AurenLearningProgress> progress,
+    List<AurenCourse> courses,
+  ) {
+    final skills = <String>{};
+    for (final entry in progress.entries) {
+      final course = _findCourse(courses, entry.key);
+      if (course == null || course.lessonCount < 1) continue;
+      if (entry.value.completedLessons >= course.lessonCount) {
+        skills.addAll(
+          course.skills.map((skill) => skill.trim()).where((skill) => skill.isNotEmpty),
+        );
+      }
+    }
+    final visible = skills.take(12).toList()..sort();
+    if (visible.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.workspace_premium_outlined),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'المهارات المكتسبة',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'AI Skill Coach',
+                  icon: const Icon(Icons.auto_awesome),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MessengerScreen(
+                        initialPrompt:
+                            'راجع مهاراتي المكتسبة من دورات AUREN الحالية: '
+                            '${visible.join(', ')}. اقترح لي المهارة التالية التي أتعلمها، '
+                            'ولماذا، وخطة عملية قصيرة لتطبيقها. لا تفترض مهارات غير موجودة.',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: visible.map((skill) => Chip(
+                avatar: const Icon(Icons.check, size: 16),
+                label: Text(skill),
+              )).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _learningSummary(
     BuildContext context,
     Map<String, AurenLearningProgress> progress,
