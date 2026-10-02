@@ -210,7 +210,7 @@ app.post('/api/agents/plugins/artifacts/upload', requireUser, async (req,res)=>{
     const entrypoint=typeof req.body?.entrypoint==='string'?req.body.entrypoint.trim():'';
     const encoded=typeof req.body?.contentBase64==='string'?req.body.contentBase64:'';
     if(!pluginId||!version||!entrypoint||!encoded)return error(res,400,'pluginId, version, entrypoint and contentBase64 are required.');
-    if(!/^file:[a-z0-9._-]{3,64}\/[^/]+\\.js$/.test(entrypoint))return error(res,400,'Only file entrypoints are supported for uploaded plugins.');
+    if(!/^file:[a-z0-9._-]{3,64}\/[^/]+\.js$/.test(entrypoint))return error(res,400,'Only file entrypoints are supported for uploaded plugins.');
     const bytes=Buffer.from(encoded,'base64');
     if(!bytes.length||bytes.length>5*1024*1024)return error(res,413,'Plugin artifact exceeds the 5 MB limit.');
     const signingSecret=process.env.AUREN_PLUGIN_SIGNING_SECRET||'';
