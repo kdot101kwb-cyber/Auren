@@ -177,7 +177,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
               Text(item.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Text(item.description, style: Theme.of(context).textTheme.bodyLarge),
-              if (item.type == 'Global Series' && (item.source.isNotEmpty || item.isCatalogOnly ? 'بيانات كتالوج فقط • لا توجد حلقة مستضافة داخل AUREN' : item.licenseNote.isNotEmpty || item.sourceUrl.isNotEmpty)) ...[
+              if (item.type == 'Global Series' && (item.source.isNotEmpty || item.isCatalogOnly || item.licenseNote.isNotEmpty || item.sourceUrl.isNotEmpty)) ...[
                 const SizedBox(height: 16),
                 Card(
                   child: Padding(
