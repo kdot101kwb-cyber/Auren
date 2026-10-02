@@ -47,74 +47,28 @@ class EntertainmentRepository {
     });
   }
 
-  Future<String> createWatchTogetherRoom(String uid, {required String itemId, required String title}) async {
-    final currentUid = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUid == null) throw StateError('سجّل الدخول أولاً.');
-    if (uid != currentUid) throw StateError('لا يمكن إنشاء غرفة باسم مستخدم آخر.');
-    final safeItemId = itemId.trim();
-    if (safeItemId.isEmpty) throw StateError('المحتوى المطلوب للمشاهدة غير صالح.');
-    final ref = db.collection('watchTogetherRooms').doc();
-    final safeTitle = title.trim().isEmpty ? 'Watch Together' : title.trim();
-    await db.runTransaction((tx) async {
-      tx.set(ref, {
-        'hostUid': currentUid,
-        'memberUids': [currentUid],
-        'itemId': safeItemId,
-        'title': safeTitle.length > 200 ? safeTitle.substring(0, 200) : safeTitle,
-        'status': 'waiting',
-        'positionSeconds': 0,
-        'isPlaying': false,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    });
-    return ref.id;
-  }
+  /// Legacy Watch Together API retained only for source compatibility.
+  /// The canonical implementation is AurenWatchTogetherService in
+  /// lib/features/entertainment/presentation/watch_together_screen.dart.
+  @Deprecated('Use AurenWatchTogetherService and watch_together_rooms instead.')
+  Future<String> createWatchTogetherRoom(String uid, {required String itemId, required String title}) =>
+      throw StateError('استخدم نظام Watch Together الجديد.');
 
-  Future<void> joinWatchTogetherRoom(String roomId, String uid) async {
-    final currentUid = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUid == null) throw StateError('سجّل الدخول أولاً.');
-    if (uid != currentUid) throw StateError('لا يمكن الانضمام باسم مستخدم آخر.');
-    final ref = db.collection('watchTogetherRooms').doc(roomId);
-    await db.runTransaction((tx) async {
-      final snap = await tx.get(ref);
-      if (!snap.exists) throw StateError('الغرفة غير متاحة.');
-      final data = snap.data() ?? <String, dynamic>{};
-      final members = List<String>.from(data['memberUids'] ?? const <String>[]);
-      if (members.contains(uid)) return;
-      if (members.length >= 8) throw StateError('الغرفة ممتلئة.');
-      members.add(uid);
-      tx.update(ref, {
-        'memberUids': members,
-        'status': 'ready',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    });
-  }
+  @Deprecated('Use AurenWatchTogetherService and watch_together_rooms instead.')
+  Future<void> joinWatchTogetherRoom(String roomId, String uid) =>
+      throw StateError('استخدم نظام Watch Together الجديد.');
 
+  @Deprecated('Use AurenWatchTogetherService and watch_together_rooms instead.')
   Stream<Map<String, dynamic>?> watchTogetherRoom(String roomId) =>
-      db.collection('watchTogetherRooms').doc(roomId).snapshots().map(
-        (d) => d.exists ? {'id': d.id, ...?d.data()} : null,
-      );
+      const Stream<Map<String, dynamic>?>.empty();
 
+  @Deprecated('Use AurenWatchTogetherService and watch_together_rooms instead.')
   Future<void> updateWatchTogetherPlayback(
     String roomId, {
     required int positionSeconds,
     required bool isPlaying,
-  }) async {
-    final ref = db.collection('watchTogetherRooms').doc(roomId);
-    final snap = await ref.get();
-    if (!snap.exists) throw StateError('الغرفة غير متاحة.');
-    final data = snap.data() ?? <String, dynamic>{};
-    if (data['hostUid'] != FirebaseAuth.instance.currentUser?.uid) {
-      throw StateError('المضيف فقط يستطيع التحكم في التشغيل.');
-    }
-    await ref.update({
-      'positionSeconds': positionSeconds.clamp(0, 86400),
-      'isPlaying': isPlaying,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-  }
+  }) =>
+      throw StateError('استخدم نظام Watch Together الجديد.');
 
   Stream<List<AurenEntertainmentItem>> watchItems({String? type}) {
     Query<Map<String, dynamic>> q = db.collection('entertainment_items')
