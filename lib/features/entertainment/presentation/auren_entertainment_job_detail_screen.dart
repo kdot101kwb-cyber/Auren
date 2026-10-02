@@ -100,6 +100,28 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
   }
 
   Future<void> _startProvider(BuildContext context, String uid) async {
+    final repo = EntertainmentRepository();
+    final job = await repo.getEntertainmentCreationJob(uid, jobId);
+    final mode = job?['mode']?.toString() ?? '';
+    final blueprint = job?['seriesBlueprint'];
+    if (mode == 'مسلسل' && blueprint is! Map) {
+      try {
+        await repo.generateSeriesBlueprint(jobId);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('بدأ توليد مخطط المسلسل.')),
+          );
+        }
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تعذر بدء مخطط المسلسل: $error')),
+          );
+        }
+      }
+      return;
+    }
+
     final orchestration = await AurenEntertainmentJobOrchestrator().start(uid, jobId);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
