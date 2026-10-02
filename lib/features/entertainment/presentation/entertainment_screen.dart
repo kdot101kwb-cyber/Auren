@@ -669,78 +669,161 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
+    final top = _quickActions.take(4).toList();
     return SizedBox(
       height: 112,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _quickActions.length,
+        itemCount: top.length + 1,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, index) {
-          final action = _quickActions[index];
-          return SizedBox(
-            width: 118,
-            child: Card(
+          if (index == top.length) {
+            return SizedBox(
+              width: 118,
+              child: Card(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _showMoreEntertainment(context),
+                  child: const Padding(
+                    padding: EdgeInsets.all(11),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.grid_view_rounded, size: 27),
+                        Spacer(),
+                        Text('More', style: TextStyle(fontWeight: FontWeight.w700)),
+                        Text('كل Entertainment', maxLines: 1, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+          final action = top[index];
+          return _entertainmentActionCard(context, action);
+        },
+      ),
+    );
+  }
+
+  Widget _entertainmentActionCard(BuildContext context, _EntertainmentAction action) {
+    return SizedBox(
+      width: 118,
+      child: Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _openEntertainmentAction(context, action),
+          child: Padding(
+            padding: const EdgeInsets.all(11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(action.icon, size: 27),
+                const Spacer(),
+                Text(action.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(action.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEntertainmentAction(BuildContext context, _EntertainmentAction action) {
+    switch (action.title) {
+      case 'Movies':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMoviesHubScreen()));
+        break;
+      case 'Watch Together':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchTogetherScreen()));
+        break;
+      case 'Music':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()));
+        break;
+      case 'Live':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenLiveEntertainmentScreen()));
+        break;
+      case 'TV':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTvScreen()));
+        break;
+      case 'Videos':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenVideosScreen()));
+        break;
+      case 'Gaming':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGamingScreen()));
+        break;
+      case 'Sports':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSportsEntertainmentScreen()));
+        break;
+      case 'Events':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEventsEntertainmentScreen()));
+        break;
+      case 'Create':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentCreateScreen()));
+        break;
+      case 'AI Series':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAiSeriesStudioScreen()));
+        break;
+      case 'Podcasts':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenPodcastsScreen()));
+        break;
+      case 'Library':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBooksMangaScreen()));
+        break;
+      case 'Anime World':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAnimeWorldScreen()));
+        break;
+      case 'Watch AI':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchConciergeScreen()));
+        break;
+      default:
+        _openAI();
+    }
+  }
+
+  void _showMoreEntertainment(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: GridView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          shrinkWrap: true,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.55,
+          ),
+          itemCount: _quickActions.length - 4,
+          itemBuilder: (_, index) {
+            final action = _quickActions[index + 4];
+            return Card(
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
-                  if (action.title == 'Gaming') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGamingScreen()));
-                  } else if (action.title == 'Watch Together') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchTogetherScreen()));
-                  } else if (action.title == 'Movies') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMoviesHubScreen()));
-                  } else if (action.title == 'Watch AI') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchConciergeScreen()));
-                  } else if (action.title == 'Music') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMusicHubScreen()));
-                  } else if (action.title == 'Live') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenLiveEntertainmentScreen()));
-                  } else if (action.title == 'TV') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTvScreen()));
-                  } else if (action.title == 'Videos') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenVideosScreen()));
-                  } else if (action.title == 'Anime World') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAnimeWorldScreen()));
-                  } else if (action.title == 'Library') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBooksMangaScreen()));
-                  } else if (action.title == 'Sports') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSportsEntertainmentScreen()));
-                  } else if (action.title == 'Events') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEventsEntertainmentScreen()));
-                  } else if (action.title == 'Create') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEntertainmentCreateScreen()));
-                  } else if (action.title == 'Podcasts') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenPodcastsScreen()));
-                  } else if (action.title == 'AI Series') {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAiSeriesStudioScreen()));
-                  } else {
-                    _openAI();
-                  }
+                  Navigator.pop(sheetContext);
+                  _openEntertainmentAction(context, action);
                 },
                 child: Padding(
-                  padding: const EdgeInsets.all(11),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(action.icon, size: 27),
+                      Icon(action.icon, size: 25),
                       const Spacer(),
-                      Text(
-                        action.title,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        action.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                      Text(action.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Text(action.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
