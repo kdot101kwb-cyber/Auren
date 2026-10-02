@@ -28,7 +28,7 @@ exports.fetchAurenPodcastFeed = onCall(
   {region: 'us-central1', timeoutSeconds: 20, memory: '256MiB', enforceAppCheck: true},
   async (request) => {
     if (!request.auth?.uid) {\n      throw new HttpsError('unauthenticated', 'Authentication is required.');\n    }\n\n    const feedUrl = String(request.data?.feedUrl || '').trim();
-    if (!/^https?:\\/\\//i.test(feedUrl) || feedUrl.length > 2000) {
+    if (!feedUrl.startsWith('http://')&&!feedUrl.startsWith('https://') || feedUrl.length > 2000) {
       throw new HttpsError('invalid-argument', 'A valid HTTP(S) feedUrl is required.');
     }
 
