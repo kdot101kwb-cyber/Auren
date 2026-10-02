@@ -273,25 +273,25 @@ test('agent collaboration output is bounded before persistence', () => {
 });
 
 test('notification delivery is idempotent and server-owned', () => {
-  assert.match(source, /const notificationId = typeof data\\.notificationId === 'string'/);
-  assert.match(source, /if \\(existing\\.exists\\) return/);
+  assert.ok(source.includes("const notificationId = typeof data?.notificationId === 'string'"));
+  assert.ok(source.includes('if (existing.exists) return'));
   assert.match(rules, /match \/users\/\\{userId\\}\/notifications\/\\{notificationId\\}/);
   assert.match(rules, /allow create, delete: if false;/);
 });
 
 test('follow, post and entertainment social events create notifications', () => {
-  assert.match(source, /exports\\.onFollowCreated/);
-  assert.match(source, /exports\\.onPostLikeCreated/);
-  assert.match(source, /exports\\.onPostCommentCreated/);
-  assert.match(source, /exports\\.onEntertainmentLikeCreated/);
-  assert.match(source, /exports\\.onEntertainmentCommentCreated/);
+  assert.ok(source.includes('exports.onFollowCreated'));
+  assert.ok(source.includes('exports.onPostLikeCreated'));
+  assert.ok(source.includes('exports.onPostCommentCreated'));
+  assert.ok(source.includes('exports.onEntertainmentLikeCreated'));
+  assert.ok(source.includes('exports.onEntertainmentCommentCreated'));
 });
 
 test('entertainment notifications resolve creator and never notify the actor', () => {
-  assert.match(source, /const creatorUid = data\\?\\.creatorId \\|\\| data\\?\\.ownerId \\|\\| data\\?\\.authorId \\|\\| data\\?\\.uid/);
-  assert.match(source, /if \\(!creatorUid \\|\\| creatorUid === actorUid\\) return/);
+  assert.ok(source.includes('const creatorUid = data?.creatorId || data?.ownerId || data?.authorId || data?.uid'));
+  assert.ok(source.includes('if (!creatorUid || creatorUid === actorUid) return'));
   assert.match(source, /notificationId: `like_\\$\\{itemId\\}_\\$\\{actorUid\\}`/);
-  assert.match(source, /notificationId: `comment_\\$\\{event\\.params\\.commentId\\}`/);
+  assert.ok(source.includes('notificationId: `comment_${event.params.commentId}`'));
 });
 test('social safety foundation has server-private reports and owner-only blocks', () => {
   assert.match(rules, /match \/users\/\\{userId\\}\/blocked\/\\{blockedUid\\}/);
@@ -423,7 +423,7 @@ test('Gemini operation tracker uses a scheduled server worker and never fabricat
 
 
 test('series production worker v2 has the durable Planning -> Queue -> Generation -> Output -> QC lifecycle', () => {
-  assert.match(source, /exports\\.runAurenSeriesProductionWorker/);
+  assert.ok(source.includes('exports.runAurenSeriesProductionWorker'));
   assert.match(source, /productionWorkerVersion:2/);
   assert.match(source, /productionStage:'queued'/);
   assert.match(source, /productionStage:'generation'/);
@@ -433,7 +433,7 @@ test('series production worker v2 has the durable Planning -> Queue -> Generatio
 });
 
 test('series production worker claims are transactional and bounded against concurrent retries', () => {
-  assert.match(source, /const claimed = await db\\.runTransaction/);
+  assert.ok(source.includes('const claimed = await db.runTransaction'));
   assert.match(source, /productionWorkerLockUntilMs/);
   assert.match(source, /productionWorkerAttempts/);
   assert.match(source, /AUREN_PRODUCTION_V2_MAX_ATTEMPTS/);
@@ -441,7 +441,7 @@ test('series production worker claims are transactional and bounded against conc
 });
 
 test('series production tasks use deterministic idempotency keys and never fabricate output', () => {
-  assert.match(source, /idempotencyKey:ref\\.id \+ ':' \+ task\\.id/);
+  assert.ok(source.includes("idempotencyKey:ref.id + ':' + task.id"));
   assert.match(source, /status:'waiting_provider'/);
   assert.match(source, /a real provider writes an output URL\/id/);
   assert.match(source, /data\\.output\\.url \|\| data\\.output\\.storagePath \|\| data\\.output\\.externalId/);
