@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../services/safety/emergency_contacts_repository.dart';
 
 class AurenEmergencyContactsScreen extends StatelessWidget {
@@ -29,18 +30,28 @@ class AurenEmergencyContactsScreen extends StatelessWidget {
                 leading: CircleAvatar(child: Icon(contact.primary ? Icons.star : Icons.person_outline)),
                 title: Text(contact.name),
                 subtitle: Text([contact.phone, contact.relation].where((x) => x.isNotEmpty).join(' • ')),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) async {
-                    try {
-                      if (value == 'primary') await repo.setPrimary(uid, contact.id);
-                      if (value == 'delete') await repo.delete(uid, contact.id);
-                    } catch (e) {
-                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تنفيذ العملية: $e')));
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    if (!contact.primary) const PopupMenuItem(value: 'primary', child: Text('تعيين كجهة أساسية')),
-                    const PopupMenuItem(value: 'delete', child: Text('حذف')),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'اتصال',
+                      onPressed: () => _call(context, contact.phone),
+                      icon: const Icon(Icons.call_outlined),
+                    ),
+                    PopupMenuButton<String>(
+                      onSelected: (value) async {
+                        try {
+                          if (value == 'primary') await repo.setPrimary(uid, contact.id);
+                          if (value == 'delete') await repo.delete(uid, contact.id);
+                        } catch (e) {
+                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر تنفيذ العملية: $e')));
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        if (!contact.primary) const PopupMenuItem(value: 'primary', child: Text('تعيين كجهة أساسية')),
+                        const PopupMenuItem(value: 'delete', child: Text('حذف')),
+                      ],
+                    ),
                   ],
                 ),
               ));
@@ -63,6 +74,26 @@ class AurenEmergencyContactsScreen extends StatelessWidget {
       ]),
     ),
   );
+
+  static Future<void> _call(BuildContext context, String phone) async {
+    final normalized = phone.trim();
+    if (normalized.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رقم الهاتف غير متوفر.')));
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: normalized);
+    try {
+      if (!await launchUrl(uri)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح تطبيق الاتصال.')));
+        }
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح تطبيق الاتصال.')));
+      }
+    }
+  }
 
   static Future<void> _add(BuildContext context, String uid, AurenEmergencyContactsRepository repo) async {
     final name = TextEditingController(), phone = TextEditingController(), relation = TextEditingController();
