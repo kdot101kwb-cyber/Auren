@@ -5,12 +5,9 @@ function buildTournamentBracket(players) {
     if(p1 && !p2)return {id,round,p1,p2:null,status:'finished',winnerId:p1,bye:true};
     return {id,round,p1:p1||null,p2:p2||null,status:'pending',winnerId:null};
   };
-  return {round:'quarterfinals',matches:[
-    makeMatch('qf1','quarterfinals',p[0],p[1]),
-    makeMatch('qf2','quarterfinals',p[2],p[3]),
-    makeMatch('qf3','quarterfinals',p[4],p[5]),
-    makeMatch('qf4','quarterfinals',p[6],p[7]),
-  ]};
+  const matches=[];
+  for(let i=0;i<p.length;i+=2) matches.push(makeMatch('qf'+(i/2+1),'quarterfinals',p[i],p[i+1]||null));
+  return {round:'quarterfinals',matches};
 }
 
 function createTournamentNextRound(round, winners) {
