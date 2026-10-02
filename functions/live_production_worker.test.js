@@ -33,7 +33,7 @@ test('worker binds provider credentials as server secrets',()=>{
 
 test('worker never treats text-only Hugging Face output as a video artifact',()=>{
   assert.match(source,/No Replicate model version configured for this video task/);
-  assert.match(source,/provider:'replicate'/);
+  assert.match(source,/const provider = candidates.includes\('replicate'\) \? 'replicate' : ''/);
 });
 
 
@@ -127,4 +127,4 @@ test('transient provider submission failures use bounded backoff',()=>{
   assert.match(source,/nextPollAtMs:nextSubmitAtMs/);
 });
 
-test('provider submission uses async creation to reduce lost-response duplicates',()=>{assert.match(source,/externalJobId:result\.result\.externalJobId/);assert.doesNotMatch(source,/prefer:'wait'/);});
+test('provider submission uses async creation to reduce lost-response duplicates',()=>{assert.match(source,/externalJobId:realOutput \? '' : \(result\.result\.externalJobId \|\| ''\)/);assert.doesNotMatch(source,/prefer:'wait'/);});
