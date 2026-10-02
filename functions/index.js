@@ -1250,7 +1250,6 @@ async function claimNextAurenSeriesJob() {
       const fresh = await tx.get(ref);
       if (!fresh.exists) return false;
       const data = fresh.data() || {};
-      if (Number(data.productionWorkerVersion || 0) === 2) return false;
       const stage = String(data.productionStage || '');
       const plan = aurenSeriesStagePlan(stage);
       if (plan.index < 0 || !plan.next || data.status === 'cancelled') return false;
