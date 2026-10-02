@@ -166,19 +166,20 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
             stream: repo.watchEntertainmentCreationJobs(uid),
             builder: (context,snapshot) {
               final jobs=snapshot.data ?? const <Map<String,dynamic>>[];
-              if(jobs.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(
-                      'المشاريع: ${jobs.length}',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
+              if(jobs.isEmpty) return const Card(child:Padding(padding:EdgeInsets.all(20),child:Text('لا توجد مشاريع إنتاج بعد. ابدأ من Create Studio.')));
+              final projectCount = Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    'المشاريع: ${jobs.length}',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-              if(jobs.isEmpty) return const Card(child:Padding(padding:EdgeInsets.all(20),child:Text('لا توجد مشاريع إنتاج بعد. ابدأ من Create Studio.')));
-              return Column(children: jobs.map((job) {
+              );
+              return Column(children: [
+                projectCount,
+                ...jobs.map((job) {
                 final id=job['id']?.toString() ?? '';
                 final mode=job['mode']?.toString() ?? 'مشروع';
                 final status=job['status']?.toString() ?? 'planning';
@@ -205,7 +206,8 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
                     onTap: id.isEmpty ? null : () => Navigator.of(context).push(MaterialPageRoute(builder:(_)=>AurenEntertainmentJobDetailScreen(jobId:id))),
                   ),
                 );
-              }).toList());
+              }).toList(),
+              ]);
             },
           ),
           const SizedBox(height:18),
