@@ -57,6 +57,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.auto_awesome_rounded, 'Create', 'Create music, stories & shows'),
     _EntertainmentAction(Icons.tv_rounded, 'AI Series', 'Build an original season with AI'),
     _EntertainmentAction(Icons.podcasts_rounded, 'Podcasts', 'Shows, episodes & audio discovery'),
+    _EntertainmentAction(Icons.radio_rounded, 'Radio', 'Live radio and audio stations'),
     _EntertainmentAction(Icons.public_rounded, 'AUREN World', 'Explore interactive worlds'),
     _EntertainmentAction(Icons.auto_awesome_rounded, 'Watch AI', 'Let AUREN choose what to watch'),
     _EntertainmentAction(Icons.menu_book_rounded, 'Library', 'Books, Manga & Anime'),
@@ -768,6 +769,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
         break;
       case 'Podcasts':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenPodcastsScreen()));
+        break;
+      case 'Radio':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()));
         break;
       case 'Library':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBooksMangaScreen()));
