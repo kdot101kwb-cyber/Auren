@@ -11,6 +11,7 @@ import '../../education/presentation/education_screen.dart';
 import '../../kids/presentation/kids_screen.dart';
 import '../../women/presentation/women_screen.dart';
 import '../../health/presentation/health_sports_screen.dart';
+import '../../access/presentation/access_screen.dart';
 import '../../business/presentation/business_growth_screen.dart';
 import '../../local/presentation/local_intelligence_screen.dart';
 import '../../payments/presentation/wallet_screen.dart';
@@ -61,6 +62,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Kids', 'تعلم آمن ومناسب للعمر للأطفال والعائلة', Icons.child_care_outlined),
     _DiscoverItem('Women', 'تعلم، عمل، أعمال ومجتمع للنساء', Icons.woman_outlined),
     _DiscoverItem('Health & Sports', 'عافية، لياقة، رياضة وAI Coach', Icons.favorite_outline),
+    _DiscoverItem('Access AI', 'إتاحة، دعم ذوي الإعاقة وخريطة الوصول', Icons.accessibility_new),
     _DiscoverItem('Talent', 'مواهب ووكلاء AI للمسار المهني', Icons.psychology_outlined),
     _DiscoverItem('Communities', 'مجتمعات حول الاهتمامات والأهداف والمشاريع', Icons.groups_outlined),
   ];
@@ -145,6 +147,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     }
     if (item.title == 'Health & Sports') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenHealthSportsScreen()));
+      return;
+    }
+    if (item.title == 'Access AI') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAccessScreen()));
       return;
     }
     if (item.title == 'Talent') {
