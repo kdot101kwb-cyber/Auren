@@ -119,6 +119,8 @@ class EducationRepository {
     }
     final courseRef = db.collection('courses').doc(courseId);
     final enrollmentRef = db.collection('users').doc(uid).collection('enrollments').doc(courseId);
+    final profileRef = db.collection('users').doc(uid).collection('profile_modes').doc('professional');
+
     await db.runTransaction((tx) async {
       final courseSnap = await tx.get(courseRef);
       final enrollmentSnap = await tx.get(enrollmentRef);
@@ -126,10 +128,12 @@ class EducationRepository {
         throw StateError('الدورة غير متاحة');
       }
       if (!enrollmentSnap.exists) throw StateError('سجّل في الدورة أولاً');
+
       final lessonCount = (courseSnap.data()?['lessonCount'] as num?)?.toInt() ?? 0;
       if (lessonCount < 1 || completed > lessonCount) {
         throw ArgumentError('عدد الدروس غير صالح');
       }
+
       final progress = progressFor(completed, lessonCount);
       tx.update(enrollmentRef, {
         'completedLessons': completed,
@@ -139,27 +143,23 @@ class EducationRepository {
       });
 
       if (completed >= lessonCount) {
-        final profileRef = db.collection('users').doc(uid).collection('profile_modes').doc('professional');
         final profileSnap = await tx.get(profileRef);
         final data = profileSnap.data() ?? <String, dynamic>{};
         final current = data['skills'] is List
             ? List<String>.from((data['skills'] as List).whereType<String>())
             : <String>[];
-        final skills = (courseSnap.data()?['skills'] is List
-                ? List<String>.from((courseSnap.data()!['skills'] as List).whereType<String>())
-                : <String>[])
-            .map((e) => e.trim().toLowerCase())
-            .where((e) => e.isNotEmpty);
-        final merged = <String>{...current, ...skills};
-        tx.set(
-          profileRef,
-          {
-            'mode': 'professional',
-            'skills': merged.take(20).toList(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+        final rawSkills = courseSnap.data()?['skills'];
+        final courseSkills = rawSkills is List
+            ? rawSkills.whereType<String>()
+                .map((e) => e.trim().toLowerCase())
+                .where((e) => e.isNotEmpty)
+            : const <String>[];
+        final merged = <String>{...current, ...courseSkills};
+        tx.set(profileRef, {
+          'mode': 'professional',
+          'skills': merged.take(20).toList(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       }
     });
   }
