@@ -21,7 +21,7 @@ test('video output requires a real provider artifact',()=>{
 test('provider jobs persist external ids and poll instead of duplicate submission',()=>{
   assert.match(source,/if \(task\.externalJobId && task\.providerId\)/);
   assert.match(source,/pollAurenProviderJob/);
-  assert.match(source,/externalJobId:result\.result\.externalJobId/);
+  assert.match(source,/externalJobId:realOutput \? '' : \(result\.result\.externalJobId \|\| ''\)/);
   assert.match(source,/idempotencyKey/);
 });
 
@@ -32,7 +32,7 @@ test('worker binds provider credentials as server secrets',()=>{
 });
 
 test('worker never treats text-only Hugging Face output as a video artifact',()=>{
-  assert.match(source,/A video task must supply a Replicate model version/);
+  assert.match(source,/No Replicate model version configured for this video task/);
   assert.match(source,/provider:'replicate'/);
 });
 
