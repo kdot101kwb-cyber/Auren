@@ -341,10 +341,6 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                   label: const Text('شاهد مع الأصدقاء'),
                 ),
               ],
-              if (uid != null) ...[
-                const SizedBox(height: 10),
-                OutlinedButton.icon(onPressed: () => repo.save(uid, item.id), icon: const Icon(Icons.bookmark_add_outlined), label: const Text('حفظ للمشاهدة لاحقاً')),
-              ],
             ],
           );
         },
