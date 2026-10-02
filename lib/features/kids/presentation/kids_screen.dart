@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'kids_parent_center_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenKidsScreen extends StatefulWidget {
@@ -50,7 +51,7 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
           const SizedBox(height: 12),
           Card(
             child: Column(children: [
-              const ListTile(leading: Icon(Icons.family_restroom_outlined), title: Text('Parent Center'), subtitle: Text('إعدادات الأسرة، الخصوصية ومتابعة التعلم تكون بيد ولي الأمر.')),
+              ListTile(leading: const Icon(Icons.family_restroom_outlined), title: const Text('Parent Center'), subtitle: const Text('إعدادات الأسرة، الخصوصية ومتابعة التعلم تكون بيد ولي الأمر.'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenKidsParentCenterScreen()))),
               const Divider(height: 1),
               ListTile(leading: const Icon(Icons.lock_outline), title: const Text('Safety first'), subtitle: const Text('لا توجد مراسلة عامة للأطفال ضمن مساحة Kids.'), trailing: const Icon(Icons.verified_outlined)),
             ]),
