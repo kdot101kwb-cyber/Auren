@@ -2604,6 +2604,99 @@ exports.getAurenFinalEpisodePackage = require('firebase-functions/v2/https').onC
 );
 
 
+
+/**
+ * Publishes a completed owner-created entertainment output into the public
+ * Entertainment catalog. Publishing is idempotent and never trusts a client
+ * supplied owner/creator id.
+ */
+exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+
+    const jobId = String(request.data?.jobId || '').trim();
+    if (!jobId || jobId.length > 128) {
+      throw aurenHttpsError('invalid-argument', 'Invalid jobId.');
+    }
+
+    const jobRef = db.collection('users').doc(uid)
+      .collection('entertainmentCreationJobs').doc(jobId);
+    const jobSnap = await jobRef.get();
+    if (!jobSnap.exists) {
+      throw aurenHttpsError('not-found', 'Entertainment job not found.');
+    }
+
+    const job = jobSnap.data() || {};
+    if (String(job.status || '') !== 'ready') {
+      throw aurenHttpsError('failed-precondition', 'The production job is not ready for publishing.');
+    }
+
+    const existingId = String(job.publishedItemId || '').trim();
+    if (existingId) {
+      const existing = await db.collection('entertainment_items').doc(existingId).get();
+      if (existing.exists) {
+        return {published:true, alreadyPublished:true, itemId:existingId};
+      }
+    }
+
+    const providerResult = job.providerResult && typeof job.providerResult === 'object'
+      ? job.providerResult : null;
+    if (!providerResult) {
+      throw aurenHttpsError('failed-precondition', 'No publishable provider output is attached to this job.');
+    }
+
+    const mediaUrl = String(
+      providerResult.url || providerResult.mediaUrl || providerResult.videoUrl ||
+      providerResult.audioUrl || ''
+    ).trim();
+    if (!mediaUrl || !/^https?:\\/\\//i.test(mediaUrl)) {
+      throw aurenHttpsError('failed-precondition', 'The provider output does not contain a valid media URL.');
+    }
+
+    const providerType = String(providerResult.type || '').toLowerCase();
+    const mimeType = String(providerResult.mimeType || '').toLowerCase();
+    const isAudio = providerType === 'audio' || mimeType.startsWith('audio/');
+    const type = isAudio ? 'Music' : 'Video';
+    const mediaKind = isAudio ? 'audio' : 'video';
+    const title = String(job.title || job.name || job.idea || 'AUREN Original').trim().slice(0, 300);
+    const description = String(job.description || job.idea || '').trim().slice(0, 5000);
+    const itemRef = db.collection('entertainment_items').doc();
+
+    await itemRef.set({
+      title,
+      description,
+      type,
+      mediaKind,
+      mediaUrl,
+      imageUrl: String(providerResult.thumbnailUrl || providerResult.imageUrl || '').trim(),
+      trailerUrl: String(providerResult.trailerUrl || '').trim(),
+      creatorId: uid,
+      ownerId: uid,
+      source: 'AUREN AI Production',
+      sourceUrl: '',
+      visibility: 'public',
+      isVideo: !isAudio,
+      language: String(job.language || '').trim(),
+      country: String(job.country || '').trim(),
+      genres: Array.isArray(job.genres) ? job.genres.map((v) => String(v)).filter(Boolean).slice(0, 10) : [],
+      createdAt: FieldValue.serverTimestamp(),
+      publishedAt: FieldValue.serverTimestamp(),
+      publishedFromJobId: jobId,
+      provider: String(job.provider || providerResult.provider || 'auren_ai'),
+    });
+
+    await jobRef.update({
+      publishedItemId: itemRef.id,
+      publishedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return {published:true, alreadyPublished:false, itemId:itemRef.id};
+  }
+);
+
 // Legacy gateway for non-Ludo games. Ludo is action-authoritative.
 function validateAurenGameState(gameIndex, state) {
   if (!state || typeof state !== 'object' || Array.isArray(state)) throw aurenHttpsError('invalid-argument', 'Invalid game state.');
