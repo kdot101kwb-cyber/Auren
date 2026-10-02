@@ -586,6 +586,45 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                 Text('التقدم: $completed من $total درس'),
                 const SizedBox(height: 12),
               ],
+              StreamBuilder<List<AurenLesson>>(
+                stream: repo.watchLessons(course.id),
+                builder: (context, lessonSnapshot) {
+                  final lessons = lessonSnapshot.data ?? const <AurenLesson>[];
+                  if (lessons.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'الدروس',
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 6),
+                        ...lessons.take(20).map(
+                          (lesson) => ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              radius: 17,
+                              child: Text('${lesson.order + 1}'),
+                            ),
+                            title: Text(
+                              lesson.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              lesson.durationMinutes > 0
+                                  ? '${lesson.durationMinutes} دقيقة'
+                                  : 'درس',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
               StreamBuilder<Set<String>>(
                 stream: repo.watchSavedIds(uid),
                 builder: (context, savedSnapshot) {
