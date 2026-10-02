@@ -25,14 +25,59 @@ class EntertainmentRepository {
     });
   }
 
-  Future<String> createWatchTogetherRoom(String uid,{required String itemId,required String title}) async {
-    final ref=db.collection('watchTogetherRooms').doc();
-    await ref.set({'hostUid':uid,'itemId':itemId,'title':title,'status':'waiting','positionSeconds':0,'isPlaying':false,'createdAt':FieldValue.serverTimestamp(),'updatedAt':FieldValue.serverTimestamp()});
-    await ref.collection('members').doc(uid).set({'uid':uid,'role':'host','joinedAt':FieldValue.serverTimestamp()}); return ref.id;
+  Future<String> createWatchTogetherRoom(String uid, {required String itemId, required String title}) async {
+    final ref = db.collection('watchTogetherRooms').doc();
+    final safeTitle = title.trim().isEmpty ? 'Watch Together' : title.trim();
+    await db.runTransaction((tx) async {
+      tx.set(ref, {
+        'hostUid': uid,
+        'memberUids': [uid],
+        'itemId': itemId,
+        'title': safeTitle.length > 200 ? safeTitle.substring(0, 200) : safeTitle,
+        'status': 'waiting',
+        'positionSeconds': 0,
+        'isPlaying': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    return ref.id;
   }
-  Future<void> joinWatchTogetherRoom(String roomId,String uid) async => db.collection('watchTogetherRooms').doc(roomId).collection('members').doc(uid).set({'uid':uid,'role':'viewer','joinedAt':FieldValue.serverTimestamp()});
-  Stream<Map<String,dynamic>?> watchTogetherRoom(String roomId) => db.collection('watchTogetherRooms').doc(roomId).snapshots().map((d)=>d.exists?{'id':d.id,...?d.data()}:null);
-  Future<void> updateWatchTogetherPlayback(String roomId,{required int positionSeconds,required bool isPlaying}) => db.collection('watchTogetherRooms').doc(roomId).update({'positionSeconds':positionSeconds,'isPlaying':isPlaying,'updatedAt':FieldValue.serverTimestamp()});
+
+  Future<void> joinWatchTogetherRoom(String roomId, String uid) async {
+    final ref = db.collection('watchTogetherRooms').doc(roomId);
+    await db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) throw StateError('الغرفة غير متاحة.');
+      final data = snap.data() ?? <String, dynamic>{};
+      final members = List<String>.from(data['memberUids'] ?? const <String>[]);
+      if (members.contains(uid)) return;
+      if (members.length >= 8) throw StateError('الغرفة ممتلئة.');
+      members.add(uid);
+      tx.update(ref, {
+        'memberUids': members,
+        'status': 'ready',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  Stream<Map<String, dynamic>?> watchTogetherRoom(String roomId) =>
+      db.collection('watchTogetherRooms').doc(roomId).snapshots().map(
+        (d) => d.exists ? {'id': d.id, ...?d.data()} : null,
+      );
+
+  Future<void> updateWatchTogetherPlayback(
+    String roomId, {
+    required int positionSeconds,
+    required bool isPlaying,
+  }) =>
+      db.collection('watchTogetherRooms').doc(roomId).update({
+        'positionSeconds': positionSeconds.clamp(0, 86400),
+        'isPlaying': isPlaying,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
   Stream<List<AurenEntertainmentItem>> watchItems({String? type}) {
     Query<Map<String, dynamic>> q = db.collection('entertainment_items')
         .where('visibility', isEqualTo: 'public');
