@@ -157,7 +157,11 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                       const Text('تابع الاستماع', style: TextStyle(fontWeight: FontWeight.w800)),
                       const SizedBox(height: 4),
                       Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      Text('Offline: $storageLabel'),\n        ]),\n        const SizedBox(height: 8),
+                      Text('Offline: $storageLabel'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
                       if (duration > Duration.zero) LinearProgressIndicator(value: progress),
                       if (duration > Duration.zero) const SizedBox(height: 4),
                       Text(
