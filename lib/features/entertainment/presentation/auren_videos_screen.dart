@@ -52,7 +52,7 @@ class _AurenVideosScreenState extends State<AurenVideosScreen> {
         stream: repo.watchItems(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return Center(child: Text('تعذر تحميل الفيديوهات: ' + snapshot.error.toString()));
+          if (snapshot.hasError) return const Center(child: Text('تعذر تحميل الفيديوهات حالياً. حاول مرة أخرى.'));
           final items = (snapshot.data ?? const <AurenEntertainmentItem>[]).where((i) => i.isVideo && i.mediaUrl.isNotEmpty).where(_matches).toList();
           return StreamBuilder<Set<String>>(
             stream: _savedStream ?? Stream.value(const <String>{}),
