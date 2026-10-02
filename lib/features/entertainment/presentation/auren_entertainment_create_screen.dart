@@ -26,6 +26,7 @@ class _AurenEntertainmentCreateScreenState
     'قصة': Icons.auto_stories_rounded,
     'فيديو': Icons.movie_creation_rounded,
     'فيلم': Icons.local_movies_rounded,
+    'مسلسل': Icons.live_tv_rounded,
     'بودكاست': Icons.podcasts_rounded,
     'عالم': Icons.public_rounded,
   };
@@ -47,6 +48,8 @@ class _AurenEntertainmentCreateScreenState
         return 'قصة قصيرة عن شخص يكتشف مدينة غامضة.';
       case 'فيلم':
         return 'فيلم أصلي عن شاب من السودان يحاول بناء حياة جديدة بين مدينتين.';
+      case 'مسلسل':
+        return 'مسلسل أصلي من موسم واحد عن أربعة أصدقاء يطلقون مشروعاً صغيراً ويتعاملون مع تحديات المدينة.';
       case 'فيديو':
         return 'فيديو قصير يحكي فكرة ملهمة بصرياً.';
       case 'بودكاست':
