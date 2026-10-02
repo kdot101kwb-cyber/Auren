@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../services/kids/kids_parent_settings_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'kids_parent_center_screen.dart';
+import 'kids_activities_screen.dart';
 
 class AurenKidsScreen extends StatefulWidget {
   const AurenKidsScreen({super.key});
@@ -79,6 +80,7 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
         final settings = snapshot.data!;
         final ageBand = settings.ageBand;
         final tutorEnabled = settings.aiTutor;
+        final activitiesRoute = MaterialPageRoute(builder: (_) => AurenKidsActivitiesScreen(ageBand: ageBand));
 
         return Scaffold(
           appBar: AppBar(
@@ -158,21 +160,7 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
                     'خطة تعلم يومية للفئة $' '{ageBand}+ مع أنشطة مناسبة للعمر.',
                   ),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: tutorEnabled
-                      ? () => _openTutor(
-                            context,
-                            'أنشئ خطة تعلم آمنة ومناسبة لعمر طفل في الفئة '
-                            '$' '{ageBand}+، مع أهداف يومية وأنشطة قصيرة وتعليم '
-                            'بالتجربة. الحد اليومي المسموح: '
-                            '$' '{settings.dailyMinutes} دقيقة.',
-                          )
-                      : () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const AurenKidsParentCenterScreen(),
-                            ),
-                          ),
+                  onTap: tutorEnabled ? () => _openTutor(context, 'استخدم مركز أنشطة Kids للفئة العمرية ${ageBand}+ والحد اليومي ${settings.dailyMinutes} دقيقة.') : () => Navigator.push(context, activitiesRoute),
                 ),
               ),
               const SizedBox(height: 12),
