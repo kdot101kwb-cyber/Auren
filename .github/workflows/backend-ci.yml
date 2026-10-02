@@ -16,8 +16,8 @@ jobs:
           - backend/action-executor
           - backend/plugin-worker
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
       - name: Install service dependencies
@@ -34,8 +34,8 @@ jobs:
   functions-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Install Functions dependencies
@@ -48,6 +48,6 @@ jobs:
   plugin-worker-image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build plugin worker image
         run: docker build -t auren-plugin-worker:ci backend/plugin-worker
