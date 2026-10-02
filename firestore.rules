@@ -2950,6 +2950,34 @@ service cloud.firestore {
     }
 
 
+    match /kids_activities/{activityId} {
+      allow read: if request.auth != null
+        && resource.data.published == true
+        && resource.data.title is string
+        && resource.data.title.size() > 0
+        && resource.data.title.size() <= 160
+        && resource.data.description is string
+        && resource.data.description.size() <= 1000
+        && resource.data.category is string
+        && resource.data.category.size() <= 40
+        && resource.data.minAge in [6, 9, 13]
+        && resource.data.maxAge in [8, 11, 17]
+        && resource.data.minutes is int
+        && resource.data.minutes >= 5
+        && resource.data.minutes <= 60;
+      allow write: if false;
+    }
+
+    match /users/{userId}/kids_activity_progress/{activityId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['activityId','completed','updatedAt'])
+        && request.resource.data.activityId == activityId
+        && request.resource.data.completed is bool
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
     match /users/{userId}/kids/{settingId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId)
