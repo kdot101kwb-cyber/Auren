@@ -80,6 +80,9 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
     if (!isWebMedia || _starting) return;
     setState(() => _starting = true);
     try {
+      // Persist the current item before replacing its player, so switching
+      // between trailer/content never loses the latest playback position.
+      await _saveProgress();
       await _controller?.dispose();
       final controller = VideoPlayerController.networkUrl(uri);
       await controller.initialize();
