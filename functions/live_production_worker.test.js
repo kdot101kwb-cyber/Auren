@@ -4,7 +4,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const source=fs.readFileSync(new URL('./live_production_worker.js',import.meta.url),'utf8');
+const source=fs.readFileSync(require.resolve('./live_production_worker.js'),'utf8');
 
 test('live production worker is fail-closed for unconfigured video providers',()=>{
   assert.match(source,/No Replicate model version configured for this video task/);
