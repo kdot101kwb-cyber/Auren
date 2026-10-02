@@ -2,6 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/education.dart';
 
 class EducationRepository {
+  /// Converts completed lessons to the canonical 0..100 progress value.
+  /// Kept deterministic so UI, repository and tests use the same rule.
+  static int progressFor(int completedLessons, int lessonCount) {
+    if (lessonCount < 1 || completedLessons < 0 || completedLessons > lessonCount) {
+      throw ArgumentError('عدد الدروس غير صالح');
+    }
+    return ((completedLessons / lessonCount) * 100).round();
+  }
+
   final FirebaseFirestore db;
   EducationRepository({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
 
@@ -32,7 +41,7 @@ class EducationRepository {
       final enrollmentSnap = await tx.get(enrollmentRef);
       if (!enrollmentSnap.exists) throw StateError('سجّل في الدورة أولاً');
 
-      final progress = ((completed / canonical.lessonCount) * 100).round();
+      final progress = progressFor(completed, canonical.lessonCount);
       tx.update(enrollmentRef, {
         'completedLessons': completed,
         'progress': progress,
@@ -90,7 +99,7 @@ class EducationRepository {
       if (lessonCount < 1 || completed > lessonCount) {
         throw ArgumentError('عدد الدروس غير صالح');
       }
-      final progress = ((completed / lessonCount) * 100).round();
+      final progress = progressFor(completed, lessonCount);
       tx.update(enrollmentRef, {
         'completedLessons': completed,
         'progress': progress,
