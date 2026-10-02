@@ -111,13 +111,22 @@ class EntertainmentRepository {
     String? mood, {
     int maxItems = 50,
   }) {
-    final items = docs
-        .map((d) => AurenEntertainmentItem.fromMap(d.id, d.data()))
-        .where((i) => i.isVideo && i.mediaUrl.isNotEmpty)
-        .where((i) => mood == null || mood.isEmpty || mood == 'تسلية' ||
-            _itemMatchesMood(docs.firstWhere((d) => d.id == i.id).data(), mood))
-        .take(maxItems)
-        .toList();
+    if (maxItems <= 0) return const [];
+
+    final items = <AurenEntertainmentItem>[];
+    for (final doc in docs) {
+      final data = doc.data();
+      final item = AurenEntertainmentItem.fromMap(doc.id, data);
+      if (!item.isVideo || item.mediaUrl.isEmpty) continue;
+      if (mood != null &&
+          mood.isNotEmpty &&
+          mood != 'تسلية' &&
+          !_itemMatchesMood(data, mood)) {
+        continue;
+      }
+      items.add(item);
+      if (items.length >= maxItems) break;
+    }
     return items;
   }
 
