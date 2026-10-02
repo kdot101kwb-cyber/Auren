@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/agriculture_dashboard_service.dart';
+import '../../../services/agriculture/agriculture_dashboard_service.dart';
 import '../../../services/agriculture/agriculture_production_intelligence_service.dart';
 import '../../../services/agriculture/agriculture_market_prices_service.dart';
 
