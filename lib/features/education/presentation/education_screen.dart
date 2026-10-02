@@ -487,31 +487,39 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                         label: Text(saved ? 'إزالة الحفظ' : 'حفظ الدورة'),
                       ),
                       if (learning == null)
-                    FilledButton.icon(
-                      onPressed: () async {
-                        await repo.enroll(uid, course.id);
-                        if (sheetContext.mounted) Navigator.pop(sheetContext);
-                      },
-                      icon: const Icon(Icons.add_task),
-                      label: const Text('سجّل في الدورة'),
-                    ),
-                  if (learning != null && completed < total)
-                    FilledButton.icon(
-                      onPressed: () async {
-                        await repo.completeLesson(
-                          uid,
-                          course,
-                          completed + 1,
-                        );
-                        if (sheetContext.mounted) Navigator.pop(sheetContext);
-                      },
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: Text(
-                        completed == 0
-                            ? 'إكمال الدرس الأول'
-                            : 'إكمال الدرس التالي',
-                      ),
-                    ),
+                        FilledButton.icon(
+                          onPressed: () async {
+                            try {
+                              await repo.enroll(uid, course.id);
+                              if (sheetContext.mounted) Navigator.pop(sheetContext);
+                            } catch (e) {
+                              if (sheetContext.mounted) {
+                                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                  SnackBar(content: Text('تعذر التسجيل: $e')),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.add_task),
+                          label: const Text('سجّل في الدورة'),
+                        ),
+                      if (learning != null && completed < total)
+                        FilledButton.icon(
+                          onPressed: () async {
+                            try {
+                              await repo.completeLesson(uid, course, completed + 1);
+                              if (sheetContext.mounted) Navigator.pop(sheetContext);
+                            } catch (e) {
+                              if (sheetContext.mounted) {
+                                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                  SnackBar(content: Text('تعذر تحديث التقدم: $e')),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: Text(completed == 0 ? 'إكمال الدرس الأول' : 'إكمال الدرس التالي'),
+                        ),
                       FilledButton.icon(
                         onPressed: () => Navigator.push(
                           context,
