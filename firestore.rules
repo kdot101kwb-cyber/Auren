@@ -1161,16 +1161,56 @@ service cloud.firestore {
       }
     }
 
+    // Canonical Education schema. Course publishing is server/admin-owned;
+    // learners may only read published courses and manage their own progress.
     match /courses/{courseId} {
       allow read: if request.auth != null && resource.data.status == 'published';
-      allow create, update, delete: if request.auth != null && request.resource.data.teacherId == request.auth.uid;
+      allow create, update, delete: if false;
     }
+
     match /users/{userId}/enrollments/{courseId} {
-      allow read, create, update, delete: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'courseId','completedLessons','progress','status','createdAt','updatedAt'
+        ])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.completedLessons == 0
+        && request.resource.data.progress == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'courseId','completedLessons','progress','status','createdAt','updatedAt'
+        ])
+        && request.resource.data.courseId == resource.data.courseId
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.completedLessons is int
+        && request.resource.data.completedLessons >= 0
+        && request.resource.data.completedLessons <= get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount
+        && request.resource.data.progress is int
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.status in ['active','completed']
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+
+      allow delete: if isOwner(userId);
     }
+
     match /users/{userId}/savedCourses/{courseId} {
-      allow read, create, delete: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','createdAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.createdAt is timestamp;
       allow update: if false;
+      allow delete: if isOwner(userId);
     }
     match /trips/{tripId} {
       allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
