@@ -16,6 +16,9 @@ class EducationLearningEngine {
     List<String> focusAreas = const [],
   }) async {
     final plan = _plans(uid).doc(planId);
+    if (uid.trim().isEmpty || planId.trim().isEmpty || subject.trim().isEmpty || level.trim().isEmpty) {
+      throw ArgumentError('بيانات خطة التعلم غير صالحة');
+    }
     final existing = await plan.collection('tasks').limit(1).get();
     if (existing.docs.isNotEmpty) return;
 
@@ -52,7 +55,12 @@ class EducationLearningEngine {
     required String taskId,
     required String subject,
   }) async {
+    if (uid.trim().isEmpty || planId.trim().isEmpty || taskId.trim().isEmpty || subject.trim().isEmpty) {
+      throw ArgumentError('بيانات المهمة غير صالحة');
+    }
     final ref=_plans(uid).doc(planId).collection('tasks').doc(taskId);
+    final snap = await ref.get();
+    if (!snap.exists || snap.data()?['completed'] == true) return;
     await ref.update({'completed':true,'completedAt':FieldValue.serverTimestamp()});
     await _plans(uid).doc(planId).set({
       'lastCompletedTask':taskId,
