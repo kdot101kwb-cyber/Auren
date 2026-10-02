@@ -216,7 +216,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
             const Text('Global Library Index', style: TextStyle(fontSize:18,fontWeight:FontWeight.w800)),
             const SizedBox(height:8),
             ..._globalResults.take(20).map((item)=>Card(child:ListTile(
-              leading: item['imageUrl']?.toString().isNotEmpty == true ? CircleAvatar(backgroundImage:NetworkImage(item['imageUrl'].toString())) : const CircleAvatar(child:Icon(Icons.library_books_rounded)),
+              leading: item['imageUrl']?.toString().isNotEmpty == true ? CircleAvatar(child:ClipOval(child:Image.network(item['imageUrl'].toString(),width:40,height:40,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.library_books_rounded)))) : const CircleAvatar(child:Icon(Icons.library_books_rounded)),
               title:Text(item['title']?.toString() ?? 'بدون عنوان',maxLines:2,overflow:TextOverflow.ellipsis),
               subtitle:Text([item['kind'],item['author'],item['publisher'],item['year'],item['source']].where((v)=>v!=null&&v.toString().trim().isNotEmpty).map((v)=>v.toString()).join(' • '),maxLines:3,overflow:TextOverflow.ellipsis),
               trailing:const Icon(Icons.open_in_new_rounded),
@@ -347,9 +347,9 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
           SingleChildScrollView(scrollDirection:Axis.horizontal, child:Row(children:_types.entries.map((e)=>Padding(padding:const EdgeInsetsDirectional.only(end:8), child:ChoiceChip(label:Text(e.value), selected:_type==e.key, onSelected:(_)=>setState(()=>_type=e.key)))).toList())),
           const SizedBox(height:16),
           if(snapshot.connectionState==ConnectionState.waiting) const Center(child:Padding(padding:EdgeInsets.all(24),child:CircularProgressIndicator()))
-          else if(snapshot.hasError) Text('تعذر تحميل المكتبة: ' + snapshot.error.toString())
+          else if(snapshot.hasError) const Text('تعذر تحميل المكتبة حالياً. حاول مرة أخرى.')
           else if(filtered.isEmpty) const Card(child:Padding(padding:EdgeInsets.all(20),child:Text('لا توجد عناصر منشورة في هذا القسم بعد. ستظهر هنا عندما تتم إضافة محتوى مرخّص إلى AUREN.',textAlign:TextAlign.center)))
-          else ...filtered.map((item)=>Card(clipBehavior:Clip.antiAlias, child:ListTile(contentPadding:const EdgeInsets.all(10), leading:item.imageUrl.isEmpty?CircleAvatar(child:Icon(_iconFor(_type))):CircleAvatar(backgroundImage:NetworkImage(item.imageUrl)), title:Text(item.title,style:const TextStyle(fontWeight:FontWeight.w800)), subtitle:Text(item.description,maxLines:2,overflow:TextOverflow.ellipsis), trailing:const Icon(Icons.chevron_right_rounded), onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenEntertainmentDetailScreen(itemId:item.id))))))
+          else ...filtered.map((item)=>Card(clipBehavior:Clip.antiAlias, child:ListTile(contentPadding:const EdgeInsets.all(10), leading:item.imageUrl.isEmpty?CircleAvatar(child:Icon(_iconFor(_type))):CircleAvatar(child:ClipOval(child:Image.network(item.imageUrl,width:40,height:40,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.library_books_rounded)))), title:Text(item.title,style:const TextStyle(fontWeight:FontWeight.w800)), subtitle:Text(item.description,maxLines:2,overflow:TextOverflow.ellipsis), trailing:const Icon(Icons.chevron_right_rounded), onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenEntertainmentDetailScreen(itemId:item.id))))))
         ]);
       },
     ),
