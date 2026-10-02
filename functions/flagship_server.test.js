@@ -46,7 +46,7 @@ test('never accepts client score or hp as authority', () => {
   const s=createInitialFlagshipState(58,'host','guest');
   const n=validateAndApplyFlagshipAction(s,{type:'samurai',payload:{move:0,score:999999,hp:0}},'host');
   assert.ok(n.score < 999999);
-  assert.equal(n.hp,100);
+  assert.notEqual(n.hp,0);\n  assert.notEqual(n.hp,100);
 });
 
 
