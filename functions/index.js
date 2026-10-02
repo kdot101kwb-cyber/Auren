@@ -2651,7 +2651,7 @@ exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCa
       providerResult.url || providerResult.mediaUrl || providerResult.videoUrl ||
       providerResult.audioUrl || ''
     ).trim();
-    if (!mediaUrl || !/^https?:\\/\\//i.test(mediaUrl)) {
+    if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl)) {
       throw aurenHttpsError('failed-precondition', 'The provider output does not contain a valid media URL.');
     }
 
