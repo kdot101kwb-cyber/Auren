@@ -27,7 +27,11 @@ function enclosure(block) {
 exports.fetchAurenPodcastFeed = onCall(
   {region: 'us-central1', timeoutSeconds: 20, memory: '256MiB', enforceAppCheck: true},
   async (request) => {
-    if (!request.auth?.uid) {\n      throw new HttpsError('unauthenticated', 'Authentication is required.');\n    }\n\n    const feedUrl = String(request.data?.feedUrl || '').trim();
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'Authentication is required.');
+    }
+
+    const feedUrl = String(request.data?.feedUrl || '').trim();
     if (!feedUrl.startsWith('http://')&&!feedUrl.startsWith('https://') || feedUrl.length > 2000) {
       throw new HttpsError('invalid-argument', 'A valid HTTP(S) feedUrl is required.');
     }
@@ -46,7 +50,11 @@ exports.fetchAurenPodcastFeed = onCall(
     if (!response.ok) {
       throw new HttpsError('unavailable', 'Podcast feed is temporarily unavailable.');
     }
-    const contentType = response.headers.get('content-type') || '';\n    if (contentType && !/(xml|rss|atom|text\\/plain|application\\/octet-stream)/i.test(contentType)) {\n      throw new HttpsError('invalid-argument', 'The URL does not appear to be an RSS or Atom feed.');\n    }\n    const xml = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType && !/(xml|rss|atom|text\\/plain|application\\/octet-stream)/i.test(contentType)) {
+      throw new HttpsError('invalid-argument', 'The URL does not appear to be an RSS or Atom feed.');
+    }
+    const xml = await response.text();
     if (xml.length > 2_000_000) {
       throw new HttpsError('resource-exhausted', 'Podcast feed is too large.');
     }
