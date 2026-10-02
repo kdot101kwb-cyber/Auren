@@ -365,7 +365,14 @@ class _EducationState extends State<AurenAURENEducationScreen> {
     );
   }
 
-  AurenCourse? _findCourse(List<AurenCourse> courses, String id) {\n    for (final course in courses) {\n      if (course.id == id) return course;\n    }\n    return null;\n  }\n\n  void _showLearningSheet(
+  AurenCourse? _findCourse(List<AurenCourse> courses, String id) {
+    for (final course in courses) {
+      if (course.id == id) return course;
+    }
+    return null;
+  }
+
+  void _showLearningSheet(
     BuildContext context,
     Map<String, AurenLearningProgress> progress,
     List<AurenCourse> courses,
