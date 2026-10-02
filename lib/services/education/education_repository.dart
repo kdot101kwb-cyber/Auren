@@ -15,6 +15,18 @@ class EducationRepository {
   EducationRepository({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
 
   Stream<List<AurenCourse>> watchCourses() => db.collection('courses').where('status', isEqualTo: 'published').limit(100).snapshots().map((s) => s.docs.map((d) => AurenCourse.fromMap(d.id, d.data())).toList());
+  Stream<List<AurenLesson>> watchLessons(String courseId) {
+    if (courseId.trim().isEmpty) return const Stream<List<AurenLesson>>.empty();
+    return db.collection('courses').doc(courseId).collection('lessons')
+        .orderBy('order')
+        .limit(500)
+        .snapshots()
+        .map((s) => s.docs
+            .map((d) => AurenLesson.fromMap(d.id, d.data()))
+            .where((lesson) => lesson.title.trim().isNotEmpty && lesson.order >= 0)
+            .toList());
+  }
+
   Stream<Set<String>> watchSavedIds(String uid) => db.collection('users').doc(uid).collection('savedCourses').snapshots().map((s) => s.docs.map((d) => d.id).toSet());
   Future<void> enroll(String uid, String courseId) async {
     if (uid.trim().isEmpty || courseId.trim().isEmpty) {
