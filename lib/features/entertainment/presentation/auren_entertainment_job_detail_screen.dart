@@ -111,7 +111,22 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
   }
 
   Future<void> _retry(BuildContext context, String uid) async {
-    await EntertainmentRepository().retryEntertainmentJob(uid, jobId);
+    final repo = EntertainmentRepository();
+    final job = await repo.getEntertainmentCreationJob(uid, jobId);
+    final mode = job?['mode']?.toString() ?? '';
+    final productionStage = job?['productionStage']?.toString() ?? '';
+
+    if (mode == 'مسلسل' && productionStage == 'series_blueprint_failed') {
+      await repo.generateSeriesBlueprint(jobId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('أُعيد توليد مخطط المسلسل.')),
+        );
+      }
+      return;
+    }
+
+    await repo.retryEntertainmentJob(uid, jobId);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('أُعيدت المهمة إلى مرحلة التخطيط.')),
