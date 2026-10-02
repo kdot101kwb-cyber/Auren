@@ -27,13 +27,18 @@ class EntertainmentRepository {
   }
 
   Future<String> createWatchTogetherRoom(String uid, {required String itemId, required String title}) async {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUid == null) throw StateError('سجّل الدخول أولاً.');
+    if (uid != currentUid) throw StateError('لا يمكن إنشاء غرفة باسم مستخدم آخر.');
+    final safeItemId = itemId.trim();
+    if (safeItemId.isEmpty) throw StateError('المحتوى المطلوب للمشاهدة غير صالح.');
     final ref = db.collection('watchTogetherRooms').doc();
     final safeTitle = title.trim().isEmpty ? 'Watch Together' : title.trim();
     await db.runTransaction((tx) async {
       tx.set(ref, {
-        'hostUid': uid,
-        'memberUids': [uid],
-        'itemId': itemId,
+        'hostUid': currentUid,
+        'memberUids': [currentUid],
+        'itemId': safeItemId,
         'title': safeTitle.length > 200 ? safeTitle.substring(0, 200) : safeTitle,
         'status': 'waiting',
         'positionSeconds': 0,
@@ -46,6 +51,9 @@ class EntertainmentRepository {
   }
 
   Future<void> joinWatchTogetherRoom(String roomId, String uid) async {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUid == null) throw StateError('سجّل الدخول أولاً.');
+    if (uid != currentUid) throw StateError('لا يمكن الانضمام باسم مستخدم آخر.');
     final ref = db.collection('watchTogetherRooms').doc(roomId);
     await db.runTransaction((tx) async {
       final snap = await tx.get(ref);
