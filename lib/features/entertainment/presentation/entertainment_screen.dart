@@ -265,7 +265,17 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                                   child: Icon(Icons.play_arrow_rounded),
                                 )
                               : CircleAvatar(
-                                  backgroundImage: NetworkImage(item.imageUrl),
+                                  child: ClipOval(
+                                    child: Image.network(
+                                      item.imageUrl,
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.play_arrow_rounded,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                           title: Text(
                             item.title,
