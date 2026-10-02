@@ -59,7 +59,7 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           final countryOk = _country == 'الكل' || _norm(x.country) == _norm(_country);
           final languageOk = _language == 'الكل' || _norm(x.language) == _norm(_language);
           final searchTerms = _norm(_search).split(' ').where((v) => v.isNotEmpty).toList();
-          final searchOk = searchTerms.isEmpty || searchTerms.every((term) => _norm('${x.title} ${x.description} ${x.genres.join(' ')} ${x.country} ${x.language}').contains(term));
+          final searchOk = searchTerms.isEmpty || searchTerms.every((term) => _norm('${x.title} ${x.description} ${x.genres.join(' ')} ${x.country} ${x.language} ${x.year} ${x.source}').contains(term));
           return genreOk && countryOk && languageOk && searchOk;
         })
           .toList()
@@ -84,7 +84,7 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
               ),
           ]))),
           const SizedBox(height: 14),
-          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فيلم، دولة، لغة أو Genre'), onChanged: (v) => setState(() => _search = v)),
+          TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن فيلم، دولة، لغة، سنة أو مصدر'), onChanged: (v) => setState(() => _search = v)),
           const SizedBox(height: 12),
           SizedBox(height: 42, child: ListView.separated(scrollDirection: Axis.horizontal, itemCount: countries.length, separatorBuilder: (_, __) => const SizedBox(width: 8), itemBuilder: (_, i) => ChoiceChip(label: Text(countries[i]), selected: _country == countries[i], onSelected: (_) => setState(() => _country = countries[i])))),
           const SizedBox(height: 8),
