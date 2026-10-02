@@ -77,35 +77,37 @@ class EducationRepository {
         'status': progress >= 100 ? 'completed' : 'active',
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Keep the learned-skill update in the same transaction so concurrent
+      // profile changes cannot be overwritten by a stale read/write cycle.
+      if (completed >= canonical.lessonCount && canonical.skills.isNotEmpty) {
+        final profileSnap = await tx.get(profileRef);
+        final data = profileSnap.data() ?? <String, dynamic>{};
+        final current = data['skills'] is List
+            ? List<String>.from((data['skills'] as List).whereType<String>())
+            : <String>[];
+        final merged = <String>{
+          ...current,
+          ...canonical.skills.map((e) => e.trim().toLowerCase()).where((e) => e.isNotEmpty),
+        };
+
+        tx.set(profileRef, {
+          'mode': 'professional',
+          'headline': data['headline']?.toString() ?? '',
+          'bio': data['bio']?.toString() ?? '',
+          'skills': merged.take(20).toList(),
+          'interests': data['interests'] is List ? List<String>.from((data['interests'] as List).whereType<String>()) : <String>[],
+          'links': data['links'] is List ? List<String>.from((data['links'] as List).whereType<String>()) : <String>[],
+          'goals': data['goals'] is List ? List<String>.from((data['goals'] as List).whereType<String>()) : <String>[],
+          'languages': data['languages'] is List ? List<String>.from((data['languages'] as List).whereType<String>()) : <String>[],
+          'services': data['services'] is List ? List<String>.from((data['services'] as List).whereType<String>()) : <String>[],
+          'achievements': data['achievements'] is List ? List<String>.from((data['achievements'] as List).whereType<String>()) : <String>[],
+          'discoverable': data['discoverable'] != false,
+          'showContact': data['showContact'] == true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
     });
-
-    if (completed >= canonical.lessonCount && canonical.skills.isNotEmpty) {
-      final p = await profileRef.get();
-      final data = p.data() ?? {};
-      final current = data['skills'] is List
-          ? List<String>.from((data['skills'] as List).whereType<String>())
-          : <String>[];
-      final merged = <String>{
-        ...current,
-        ...canonical.skills.map((e) => e.trim().toLowerCase()).where((e) => e.isNotEmpty),
-      };
-
-      await profileRef.set({
-        'mode': 'professional',
-        'headline': data['headline']?.toString() ?? '',
-        'bio': data['bio']?.toString() ?? '',
-        'skills': merged.take(20).toList(),
-        'interests': data['interests'] is List ? List<String>.from((data['interests'] as List).whereType<String>()) : <String>[],
-        'links': data['links'] is List ? List<String>.from((data['links'] as List).whereType<String>()) : <String>[],
-        'goals': data['goals'] is List ? List<String>.from((data['goals'] as List).whereType<String>()) : <String>[],
-        'languages': data['languages'] is List ? List<String>.from((data['languages'] as List).whereType<String>()) : <String>[],
-        'services': data['services'] is List ? List<String>.from((data['services'] as List).whereType<String>()) : <String>[],
-        'achievements': data['achievements'] is List ? List<String>.from((data['achievements'] as List).whereType<String>()) : <String>[],
-        'discoverable': data['discoverable'] != false,
-        'showContact': data['showContact'] == true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
   }
 
   /// Updates enrollment progress only after validating the course and enrollment.
