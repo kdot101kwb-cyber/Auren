@@ -57,7 +57,7 @@ class AurenOfflineAudioCache {
     try {
       final request = http.Request('GET', Uri.parse(url));
       request.headers['Accept'] = 'audio/*,video/*;q=0.8,*/*;q=0.1';
-      final response = await client.send(request);
+      final response = await client.send(request).timeout(const Duration(minutes: 5));
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw Exception('offline download failed');
       }
@@ -78,6 +78,13 @@ class AurenOfflineAudioCache {
       }
       await temp.rename(file.path);
       return file.path;
+    } catch (_) {
+      if (await temp.exists()) {
+        try {
+          await temp.delete();
+        } catch (_) {}
+      }
+      rethrow;
     } finally {
       client.close();
     }
