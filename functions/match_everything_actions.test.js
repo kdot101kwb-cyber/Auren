@@ -14,7 +14,7 @@ test('opportunity intelligence core exposes reusable runner', () => {
 
 test('supplier workflow keeps external dispatch disabled by default', () => {
   const source = fs.readFileSync(require('node:path').join(__dirname, 'supplier_actions.js'), 'utf8');
-  assert.match(source, /externalDispatch: false/);
+  assert.match(source, /externalDispatch:false/);
   assert.match(source, /supplier_contact_requests/);
   assert.match(source, /supplier_rfqs/);
 });
