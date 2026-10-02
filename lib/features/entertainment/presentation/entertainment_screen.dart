@@ -80,6 +80,18 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     );
   }
 
+  void _openWorldAI() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MessengerScreen(
+          initialPrompt:
+              'أنت AUREN World AI. ساعدني في استكشاف العوالم والتجارب التفاعلية داخل AUREN. اقترح عالماً مناسباً لاهتماماتي أو ساعدني في إنشاء تجربة تفاعلية، ولا تدّعي وجود عالم أو ميزة غير متاحة.',
+        ),
+      ),
+    );
+  }
+
   void _openAI() {
     Navigator.push(
       context,
@@ -795,6 +807,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
         break;
       case 'Watch AI':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWatchConciergeScreen()));
+        break;
+      case 'AUREN World':
+        _openWorldAI();
         break;
       default:
         _openAI();
