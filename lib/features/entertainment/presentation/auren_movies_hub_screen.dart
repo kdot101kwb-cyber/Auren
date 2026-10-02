@@ -21,7 +21,29 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
   static const _genres = ['الكل','Action','Comedy','Drama','Romance','Thriller','Documentary','Animation'];
   String _norm(String v) => v.trim().toLowerCase();
 
-  Future<void> _seedPublicDomainMovies() async {\n    setState(() => _seeding = true);\n    try {\n      final result = await FirebaseFunctions.instanceFor(region: 'us-central1')\n          .httpsCallable('seedAurenPublicDomainMovies')\n          .call();\n      if (mounted) {\n        ScaffoldMessenger.of(context).showSnackBar(\n          SnackBar(content: Text('تم تجهيز ${result.data['count'] ?? 0} فيلم من كتالوج Public Domain.')),\n        );\n      }\n    } catch (e) {\n      if (mounted) {\n        ScaffoldMessenger.of(context).showSnackBar(\n          SnackBar(content: Text('تعذر تجهيز الأفلام: $e')),\n        );\n      }\n    } finally {\n      if (mounted) setState(() => _seeding = false);\n    }\n  }\n\n  @override Widget build(BuildContext context) => Scaffold(
+  Future<void> _seedPublicDomainMovies() async {
+    setState(() => _seeding = true);
+    try {
+      final result = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('seedAurenPublicDomainMovies')
+          .call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تم تجهيز ${result.data['count'] ?? 0} فيلم من كتالوج Public Domain.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تجهيز الأفلام: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _seeding = false);
+    }
+  }
+
+  @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('🎬 AUREN Movies'), actions: [
       IconButton(icon: const Icon(Icons.auto_awesome), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'أنت AUREN Movies AI. ساعدني في اختيار فيلم مناسب لوقتي ومزاجي ونوع المحتوى الذي أريده، مع احترام الحقوق وتوفر المحتوى.')))),
     ]),
@@ -39,7 +61,12 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           final searchTerms = _norm(_search).split(' ').where((v) => v.isNotEmpty).toList();
           final searchOk = searchTerms.isEmpty || searchTerms.every((term) => _norm('${x.title} ${x.description} ${x.genres.join(' ')} ${x.country} ${x.language}').contains(term));
           return genreOk && countryOk && languageOk && searchOk;
-        })\n          .toList()\n          ..sort((a, b) {\n            final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());\n            return byTitle != 0 ? byTitle : a.id.compareTo(b.id);\n          });
+        })
+          .toList()
+          ..sort((a, b) {
+            final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+            return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
+          });
         return ListView(padding: const EdgeInsets.all(16), children: [
           Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Movie Universe', style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold)),
