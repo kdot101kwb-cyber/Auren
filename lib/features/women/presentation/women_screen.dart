@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../safety/presentation/safety_center_screen.dart';
+import '../../safety/presentation/emergency_contacts_screen.dart';
 
 class AurenWomenScreen extends StatefulWidget {
   const AurenWomenScreen({super.key});
