@@ -4,6 +4,7 @@ import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_offline_media_service.dart';
 import 'auren_entertainment_job_detail_screen.dart';
 import 'auren_entertainment_discover_screen.dart';
+import 'entertainment_detail_screen.dart';
 
 class AurenEntertainmentLibraryScreen extends StatefulWidget {
   const AurenEntertainmentLibraryScreen({super.key});
@@ -194,6 +195,30 @@ class _AurenEntertainmentLibraryScreenState extends State<AurenEntertainmentLibr
                   ),
                 );
               }).toList());
+            },
+          ),
+          const SizedBox(height:18),
+          const Text('محفوظ للمشاهدة لاحقاً', style: TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
+          const SizedBox(height:8),
+          StreamBuilder<List<AurenEntertainmentItem>>(
+            stream: repo.watchSavedItems(uid),
+            builder:(context,snapshot){
+              if(snapshot.hasError) {
+                return Card(child:ListTile(
+                  leading:const Icon(Icons.bookmark_outline_rounded),
+                  title:const Text('تعذر تحميل المحفوظات'),
+                  subtitle:Text(snapshot.error.toString()),
+                ));
+              }
+              final items=snapshot.data ?? const <AurenEntertainmentItem>[];
+              if(items.isEmpty) return const Card(child:Padding(padding:EdgeInsets.all(18),child:Text('لا توجد عناصر محفوظة بعد. احفظ أي فيلم أو مسلسل أو فيديو لتجده هنا.')));
+              return Card(child:Column(children:items.map((item)=>ListTile(
+                leading:CircleAvatar(child:Icon(_icon(item.type))),
+                title:Text(item.title,maxLines:1,overflow:TextOverflow.ellipsis),
+                subtitle:Text(item.type,maxLines:1,overflow:TextOverflow.ellipsis),
+                trailing:const Icon(Icons.chevron_right_rounded),
+                onTap:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>AurenEntertainmentDetailScreen(itemId:item.id))),
+              )).toList()));
             },
           ),
           const SizedBox(height:18),
