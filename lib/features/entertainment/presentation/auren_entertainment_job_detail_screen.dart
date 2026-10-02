@@ -275,6 +275,12 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              if (job['mode']?.toString() == 'مسلسل' && job['seriesBlueprint'] is Map) ...[
+                const SizedBox(height: 18),
+                _sectionTitle('Series Blueprint'),
+                const SizedBox(height: 8),
+                _seriesBlueprintCard(context, Map<String, dynamic>.from(job['seriesBlueprint'] as Map)),
+              ],
               if (status == 'ready') ...[
                 const SizedBox(height: 18),
                 _sectionTitle('الحزمة النهائية'),
@@ -460,6 +466,64 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
           watchEpisodeNumber: number,
           watchTitle: seriesTitle,
         ),
+      ),
+    );
+  }
+
+  Widget _seriesBlueprintCard(BuildContext context, Map<String, dynamic> blueprint) {
+    final characters = blueprint['characters'] is List ? blueprint['characters'] as List : const [];
+    final episodes = blueprint['episodes'] is List ? blueprint['episodes'] as List : const [];
+    final arc = blueprint['seasonArc'] is Map ? Map<String, dynamic>.from(blueprint['seasonArc'] as Map) : <String, dynamic>{};
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(blueprint['title']?.toString().trim().isNotEmpty == true ? blueprint['title'].toString() : 'Series Blueprint',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+          if (blueprint['logline']?.toString().trim().isNotEmpty == true) ...[
+            const SizedBox(height: 8), Text(blueprint['logline'].toString()),
+          ],
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            if (blueprint['genre']?.toString().trim().isNotEmpty == true) Chip(label: Text(blueprint['genre'].toString())),
+            if (blueprint['format']?.toString().trim().isNotEmpty == true) Chip(label: Text(blueprint['format'].toString())),
+            Chip(label: Text('${episodes.length} حلقات')),
+            Chip(label: Text('${characters.length} شخصيات')),
+          ]),
+          if (arc.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text('Season Arc', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            Text(arc['summary']?.toString().trim().isNotEmpty == true ? arc['summary'].toString() : 'تم إنشاء قوس الموسم.'),
+          ],
+          if (characters.isNotEmpty) ...[
+            const SizedBox(height: 14), const Text('الشخصيات', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            ...characters.take(8).map((raw) {
+              final character = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+              final name = character['name']?.toString() ?? 'شخصية';
+              final role = character['role']?.toString() ?? '';
+              return ListTile(contentPadding: EdgeInsets.zero, dense: true, leading: const Icon(Icons.person_outline_rounded),
+                  title: Text(name), subtitle: role.isEmpty ? null : Text(role));
+            }),
+          ],
+          if (episodes.isNotEmpty) ...[
+            const SizedBox(height: 14), const Text('الحلقات', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            ...episodes.take(20).map((raw) {
+              final episode = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+              final number = episode['number']?.toString() ?? '?';
+              final title = episode['title']?.toString().trim() ?? '';
+              final logline = episode['logline']?.toString().trim() ?? '';
+              return ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text('الحلقة $number${title.isEmpty ? '' : ' • $title'}', style: const TextStyle(fontWeight: FontWeight.w800)),
+                children: [if (logline.isNotEmpty) Align(alignment: AlignmentDirectional.centerStart,
+                  child: Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(logline)))],
+              );
+            }),
+          ],
+        ]),
       ),
     );
   }
