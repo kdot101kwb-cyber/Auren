@@ -334,7 +334,20 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                     return Column(children: recommendations.take(6).map((entry) {
                       final x = entry.key;
                       return Card(child: ListTile(
-                        leading: x.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie)) : CircleAvatar(backgroundImage: NetworkImage(x.imageUrl)),
+                        leading: x.imageUrl.isEmpty
+                            ? const CircleAvatar(child: Icon(Icons.movie))
+                            : CircleAvatar(
+                                child: ClipOval(
+                                  child: Image.network(
+                                    x.imageUrl,
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        const Icon(Icons.movie),
+                                  ),
+                                ),
+                              ),
                         title: Text(x.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                         subtitle: Text([x.year, x.country].where((v) => v.isNotEmpty).join(' • ')),
                         trailing: const Icon(Icons.chevron_right),
