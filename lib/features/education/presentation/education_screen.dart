@@ -584,6 +584,23 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                         icon: const Icon(Icons.auto_awesome),
                         label: const Text('AI Tutor'),
                       ),
+                      if (learning != null && total > 0 && completed >= total)
+                        OutlinedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MessengerScreen(
+                                initialPrompt:
+                                    'أنشئ لي اختبار مراجعة قصير لدورة "${course.title}". '
+                                    'استخدم مهارات الدورة: ${course.skills.take(8).join(', ')}. '
+                                    'اسأل سؤالاً واحداً في كل مرة، صحح إجابتي، وفي النهاية أعطني '
+                                    'نقاط المراجعة والمهارات التي تحتاج تقوية.',
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.quiz_outlined),
+                          label: const Text('اختبار مراجعة AI'),
+                        ),
                     ],
                   );
                 },
