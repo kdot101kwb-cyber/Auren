@@ -2344,6 +2344,7 @@ service cloud.firestore {
         && request.resource.data.positionSeconds <= 86400
         && request.resource.data.isPlaying is bool
         && request.resource.data.status == 'waiting'
+        && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
 
       // Playback/channel state is host-authoritative.
