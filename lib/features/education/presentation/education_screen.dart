@@ -48,7 +48,25 @@ class _EducationState extends State<AurenAURENEducationScreen> {
         builder: (context, coursesSnapshot) {
           if (coursesSnapshot.hasError) {
             return Center(
-              child: Text('تعذر تحميل التعليم: ${coursesSnapshot.error}'),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off_outlined, size: 42),
+                    const SizedBox(height: 10),
+                    const Text('تعذر تحميل الدورات التعليمية.'),
+                    const SizedBox(height: 8),
+                    Text('${coursesSnapshot.error}', textAlign: TextAlign.center),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      onPressed: () => setState(() {}),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              ),
             );
           }
           if (coursesSnapshot.connectionState == ConnectionState.waiting) {
@@ -176,6 +194,20 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                   StreamBuilder<List<AurenCourse>>(
                     stream: repo.watchSavedCourses(uid),
                     builder: (context, savedSnapshot) {
+                      if (savedSnapshot.hasError) {
+                        return Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.bookmark_border),
+                            title: const Text('تعذر تحميل دوراتي المحفوظة'),
+                            subtitle: Text('${savedSnapshot.error}'),
+                            trailing: IconButton(
+                              tooltip: 'إعادة المحاولة',
+                              icon: const Icon(Icons.refresh),
+                              onPressed: () => setState(() {}),
+                            ),
+                          ),
+                        );
+                      }
                       final saved = savedSnapshot.data ?? const <AurenCourse>[];
                       if (saved.isEmpty) return const SizedBox.shrink();
                       return Card(
