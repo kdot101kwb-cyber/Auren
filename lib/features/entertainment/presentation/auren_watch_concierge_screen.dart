@@ -451,7 +451,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
       body: StreamBuilder<List<AurenEntertainmentItem>>(
         stream: EntertainmentRepository().watchItems(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return Center(child: Text('تعذر تحميل المحتوى: ${snapshot.error}'));
+          if (snapshot.hasError) return const Center(child: Text('تعذر تحميل المحتوى حالياً. حاول مرة أخرى.'));
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
           final source = snapshot.data ?? const <AurenEntertainmentItem>[];
           return ListView(
@@ -593,7 +593,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                       child: ListTile(
                         leading: item.imageUrl.isEmpty
                             ? const CircleAvatar(child: Icon(Icons.movie_outlined))
-                            : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl)),
+                            : CircleAvatar(child: ClipOval(child: Image.network(item.imageUrl,width:40,height:40,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const Icon(Icons.movie)))),
                         title: Text(item.title),
                         subtitle: Text(
                           item.type + ' • ' + _smartLabel(item) + ' • ' + _planReason(item),
