@@ -90,7 +90,7 @@ exports.searchAurenPodcastsSmart = onCall(
     const query = clean(request.data?.query, 160);
     const category = clean(request.data?.category, 100);
     const requestedCountries = Array.isArray(request.data?.countries)
-      ? request.data.countries.map((x) => String(x || '').trim().toUpperCase()).filter((x) => /^[A-Z]{2}$/.test(x)).slice(0, 8))
+      ? request.data.countries.map((x) => String(x || '').trim().toUpperCase()).filter((x) => /^[A-Z]{2}$/.test(x)).slice(0, 8)
       : [];
     const countries = requestedCountries.length ? requestedCountries : ['US', 'GB', 'CA', 'AU', 'AE', 'EG', 'SA', 'TR'];
 
