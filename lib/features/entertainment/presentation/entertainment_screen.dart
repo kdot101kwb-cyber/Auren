@@ -140,7 +140,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
         stream: repo.watchItems(type: type),
         builder: (context, s) {
           if (s.hasError) {
-            return Center(child: Text('تعذر تحميل المحتوى: ${s.error}'));
+            return const Center(child: Text('تعذر تحميل المحتوى حالياً. حاول مرة أخرى.'));
           }
           if (s.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -352,7 +352,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تجهيز Global Series: $e')),
+          const SnackBar(content: Text('تعذر تجهيز Global Series حالياً. حاول مرة أخرى.')),
         );
       }
     } finally {
