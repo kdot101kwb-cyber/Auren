@@ -39,14 +39,16 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
   final Set<String> _savedEpisodes = <String>{};
   List<Map<String, dynamic>> _savedEpisodeItems = const [];
   final Set<String> _offlineEpisodes = <String>{};
-  final Set<String> _offlineBusy = <String>{};\n  int _offlineStorageBytes = 0;
+  final Set<String> _offlineBusy = <String>{};
+  int _offlineStorageBytes = 0;
   bool _loadingOfflineStorage = false;
 
   @override
   void initState() {
     super.initState();
     _loadPersonalizedFeed();
-    _loadLikedEpisodes();\n    _loadOfflineStorage();
+    _loadLikedEpisodes();
+    _loadOfflineStorage();
     _syncOfflineFlags();
     _loadSavedEpisodes();
   }
