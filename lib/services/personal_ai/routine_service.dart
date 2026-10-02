@@ -1,3 +1,71 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-class AurenRoutine{final String id,name,time;final List<String> days;final bool active;const AurenRoutine({required this.id,required this.name,required this.time,required this.days,required this.active});Map<String,dynamic> toMap()=>{'name':name,'time':time,'days':days,'active':active,'updatedAt':FieldValue.serverTimestamp()};static AurenRoutine fromMap(String id,Map<String,dynamic> m)=>AurenRoutine(id:id,name:m['name'] as String? ?? '',time:m['time'] as String? ?? '08:00',days:List<String>.from(m['days'] as List? ?? const[]),active:m['active'] as bool? ?? true);}
-class RoutineService{final FirebaseFirestore db;RoutineService({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;CollectionReference<Map<String,dynamic>> _c(String u)=>db.collection('users').doc(u).collection('routines');Stream<List<AurenRoutine>> watch(String u)=>_c(u).orderBy('updatedAt',descending:true).snapshots().map((s)=>s.docs.map((d)=>AurenRoutine.fromMap(d.id,d.data())).toList());Future<void> create(String u,String n,String t)async{final r=_c(u).doc();await r.set(AurenRoutine(id:r.id,name:n.trim(),time:t,days:const ['everyday'],active:true).toMap());}Future<void> toggle(String u,AurenRoutine r)=>_c(u).doc(r.id).update({'active':!r.active,'updatedAt':FieldValue.serverTimestamp()});Future<void> delete(String u,String id)=>_c(u).doc(id).delete();}}
+
+class AurenRoutine {
+  final String id;
+  final String name;
+  final String time;
+  final List<String> days;
+  final bool active;
+
+  const AurenRoutine({
+    required this.id,
+    required this.name,
+    required this.time,
+    required this.days,
+    required this.active,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'name': name,
+        'time': time,
+        'days': days,
+        'active': active,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+  static AurenRoutine fromMap(String id, Map<String, dynamic> m) =>
+      AurenRoutine(
+        id: id,
+        name: m['name'] as String? ?? '',
+        time: m['time'] as String? ?? '08:00',
+        days: List<String>.from(m['days'] as List? ?? const []),
+        active: m['active'] as bool? ?? true,
+      );
+}
+
+class RoutineService {
+  final FirebaseFirestore db;
+
+  RoutineService({FirebaseFirestore? firestore})
+      : db = firestore ?? FirebaseFirestore.instance;
+
+  CollectionReference<Map<String, dynamic>> _c(String u) =>
+      db.collection('users').doc(u).collection('routines');
+
+  Stream<List<AurenRoutine>> watch(String u) => _c(u)
+      .orderBy('updatedAt', descending: true)
+      .snapshots()
+      .map((s) => s.docs
+          .map((d) => AurenRoutine.fromMap(d.id, d.data()))
+          .toList());
+
+  Future<void> create(String u, String n, String t) async {
+    final r = _c(u).doc();
+    await r.set(
+      AurenRoutine(
+        id: r.id,
+        name: n.trim(),
+        time: t,
+        days: const ['everyday'],
+        active: true,
+      ).toMap(),
+    );
+  }
+
+  Future<void> toggle(String u, AurenRoutine r) => _c(u).doc(r.id).update({
+        'active': !r.active,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+  Future<void> delete(String u, String id) => _c(u).doc(id).delete();
+}
