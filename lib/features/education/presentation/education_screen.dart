@@ -147,6 +147,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                   _studyPlanCard(context, uid, progress, all),
                   if (progress.isNotEmpty)
                     _learningSummary(context, progress, all),
+                  _completedCoursesCard(context, uid, progress, all),
                   StreamBuilder<List<AurenCourse>>(
                     stream: repo.watchSavedCourses(uid),
                     builder: (context, savedSnapshot) {
@@ -240,6 +241,21 @@ class _EducationState extends State<AurenAURENEducationScreen> {
     ])));
   }
 
+  Widget _completedCoursesCard(BuildContext context, String uid, Map<String, AurenLearningProgress> progress, List<AurenCourse> courses) {
+    final completed = progress.entries.where((entry) {
+      final course = _findCourse(courses, entry.key);
+      return course != null && course.lessonCount > 0 && entry.value.completedLessons >= course.lessonCount;
+    }).toList();
+    if (completed.isEmpty) return const SizedBox.shrink();
+    return Card(child: Padding(padding: const EdgeInsets.fromLTRB(14, 12, 14, 8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Row(children: [Icon(Icons.verified_outlined), SizedBox(width: 8), Text('دورات مكتملة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))]),
+      const SizedBox(height: 6),
+      ...completed.take(5).map((entry) {
+        final course = _findCourse(courses, entry.key)!;
+        return ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.check)), title: Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis), subtitle: Text('\${course.lessonCount}/\${course.lessonCount} lessons • 100%'), trailing: const Icon(Icons.chevron_right), onTap: () => _showCourseSheet(context, course, uid, entry.value));
+      }),
+    ])));
+  }
   Widget _learningSummary(
     BuildContext context,
     Map<String, AurenLearningProgress> progress,
