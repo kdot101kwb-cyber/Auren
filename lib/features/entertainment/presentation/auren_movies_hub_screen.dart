@@ -94,7 +94,13 @@ class _AurenMoviesHubScreenState extends State<AurenMoviesHubScreen> {
           const SizedBox(height: 12),
           SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Low Data'), subtitle: const Text('عرض الصور بشكل أخف عند ضعف الإنترنت'), value: _lowData, onChanged: (v) => setState(() => _lowData = v)),
           const SizedBox(height: 8),
-          if (snapshot.hasError) Text('تعذر تحميل الأفلام: ${snapshot.error}'),
+          if (snapshot.hasError)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('تعذر تحميل الأفلام حالياً. حاول مرة أخرى.'),
+              ),
+            ),
           if (filtered.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(24), child: Center(child: Text('لا توجد أفلام مضافة بعد. يمكن لـ AUREN استقبال المحتوى المرخص أو الذي يملكه المنشئ.')))),
           for (final item in filtered) Card(margin: const EdgeInsets.only(bottom: 10), child: ListTile(leading: _lowData || item.imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.movie)) : CircleAvatar(backgroundImage: NetworkImage(item.imageUrl), onBackgroundImageError: (_, __) {}), title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(item.description, maxLines: 2, overflow: TextOverflow.ellipsis), trailing: const Icon(Icons.play_arrow), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: item.id))))),
         ]);
