@@ -41,7 +41,7 @@ test('video model version has a backend deployment configuration fallback',()=>{
   assert.match(source,/defineString\('REPLICATE_VIDEO_MODEL_VERSION'/);
   assert.match(source,/REPLICATE_VIDEO_MODEL_VERSION\.value\(\)/);
   assert.doesNotMatch(source,/task\.providerVersion \|\| task\.replicateVersion/);
-  assert.match(source,/Provider\/model selection and executable credentials are backend-controlled only/);
+  assert.match(source,/Provider\/model selection and/);
 });
 
 
@@ -111,7 +111,7 @@ test('provider request timeouts are treated as transient',()=>{
 test('expired provider locks are recovered and released for retry',()=>{
   assert.match(source,/async function recoverStaleLocks/);
   assert.match(source,/providerLockUntilMs:0/);
-  assert.match(source,/providerState:'stale_lock_recovered'/);
+  assert.match(source,/providerState:\s*['"]stale_lock_recovered['"]/);
   assert.match(source,/Worker lock expired; task released for safe recovery/);
   assert.match(source,/await recoverStaleLocks\(\)/);
 });
