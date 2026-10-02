@@ -74,6 +74,29 @@ class _EducationState extends State<AurenAURENEducationScreen> {
           return StreamBuilder<List<AurenLearningProgress>>(
             stream: repo.watchMyLearning(uid),
             builder: (context, progressSnapshot) {
+              if (progressSnapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.cloud_off_outlined, size: 42),
+                        const SizedBox(height: 10),
+                        const Text('تعذر تحميل تقدمك الدراسي.'),
+                        const SizedBox(height: 8),
+                        Text('${progressSnapshot.error}', textAlign: TextAlign.center),
+                        const SizedBox(height: 14),
+                        OutlinedButton.icon(
+                          onPressed: () => setState(() {}),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
               final progress = <String, AurenLearningProgress>{
                 for (final item
                     in (progressSnapshot.data ?? const <AurenLearningProgress>[]))
