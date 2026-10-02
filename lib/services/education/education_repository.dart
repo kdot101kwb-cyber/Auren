@@ -16,7 +16,36 @@ class EducationRepository {
 
   Stream<List<AurenCourse>> watchCourses() => db.collection('courses').where('status', isEqualTo: 'published').limit(100).snapshots().map((s) => s.docs.map((d) => AurenCourse.fromMap(d.id, d.data())).toList());
   Stream<Set<String>> watchSavedIds(String uid) => db.collection('users').doc(uid).collection('savedCourses').snapshots().map((s) => s.docs.map((d) => d.id).toSet());
-  Future<void> enroll(String uid, String courseId) => db.collection('users').doc(uid).collection('enrollments').doc(courseId).set({'courseId': courseId, 'completedLessons': 0, 'progress': 0, 'status':'active', 'createdAt': FieldValue.serverTimestamp(), 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge:true));
+  Future<void> enroll(String uid, String courseId) async {
+    if (uid.trim().isEmpty || courseId.trim().isEmpty) {
+      throw ArgumentError('بيانات التسجيل غير صالحة');
+    }
+
+    final courseRef = db.collection('courses').doc(courseId);
+    final enrollmentRef = db.collection('users').doc(uid).collection('enrollments').doc(courseId);
+
+    await db.runTransaction((tx) async {
+      final courseSnap = await tx.get(courseRef);
+      if (!courseSnap.exists || courseSnap.data()?['status'] != 'published') {
+        throw StateError('الدورة غير متاحة');
+      }
+
+      final existing = await tx.get(enrollmentRef);
+      if (existing.exists) {
+        // Idempotent enrollment: never reset an existing learner's progress.
+        return;
+      }
+
+      tx.set(enrollmentRef, {
+        'courseId': courseId,
+        'completedLessons': 0,
+        'progress': 0,
+        'status': 'active',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
 
   Future<void> completeLesson(String uid, AurenCourse course, int completed) async {
     if (uid.trim().isEmpty || course.id.trim().isEmpty || completed < 0) {
