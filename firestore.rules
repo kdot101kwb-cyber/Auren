@@ -1347,7 +1347,11 @@ service cloud.firestore {
         && request.resource.data.episodeId == episodeId
         && request.resource.data.episodeId is string
         && request.resource.data.createdAt is timestamp;
-      allow update: if false;
+      allow update: if isOwner(userId)
+        && request.resource.data.episodeId == resource.data.episodeId
+        && request.resource.data.episodeId == episodeId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['offline'])
+        && request.resource.data.offline is bool;
       allow delete: if isOwner(userId);
     }
 
