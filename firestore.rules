@@ -2383,6 +2383,50 @@ service cloud.firestore {
       }
     }
 
+    // Canonical Education schema: courses + per-user enrollments/savedCourses.
+    // Keep the legacy education_* rules below during migration; do not expose unpublished courses.
+    match /courses/{courseId} {
+      allow read: if request.auth != null && resource.data.status == 'published';
+      allow create, delete: if false;
+      allow update: if false;
+    }
+
+    match /users/{userId}/enrollments/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.completedLessons == 0
+        && request.resource.data.progress == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == resource.data.courseId
+        && request.resource.data.completedLessons is int
+        && request.resource.data.completedLessons >= 0
+        && request.resource.data.progress is int
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.status in ['active','completed']
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/savedCourses/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','createdAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
     match /education_courses/{courseId} {
       allow read: if request.auth != null && resource.data.published == true;
       allow write: if false;
