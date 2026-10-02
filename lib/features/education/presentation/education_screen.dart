@@ -148,6 +148,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                   if (progress.isNotEmpty)
                     _learningSummary(context, progress, all),
                   _completedCoursesCard(context, uid, progress, all),
+                  _learningProgressCard(context, progress, all),
                   _learnedSkillsCard(context, progress, all),
                   StreamBuilder<List<AurenCourse>>(
                     stream: repo.watchSavedCourses(uid),
@@ -256,6 +257,54 @@ class _EducationState extends State<AurenAURENEducationScreen> {
         return ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.check)), title: Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis), subtitle: Text('\${course.lessonCount}/\${course.lessonCount} lessons • 100%'), trailing: const Icon(Icons.chevron_right), onTap: () => _showCourseSheet(context, course, uid, entry.value));
       }),
     ])));
+  }
+  Widget _learningProgressCard(
+    BuildContext context,
+    Map<String, AurenLearningProgress> progress,
+    List<AurenCourse> courses,
+  ) {
+    var total = 0;
+    var done = 0;
+    for (final entry in progress.entries) {
+      final course = _findCourse(courses, entry.key);
+      if (course == null || course.lessonCount < 1) continue;
+      total += course.lessonCount;
+      done += entry.value.completedLessons.clamp(0, course.lessonCount);
+    }
+    if (total == 0) return const SizedBox.shrink();
+    final value = (done / total).clamp(0.0, 1.0);
+    AurenCourse? next;
+    for (final entry in progress.entries) {
+      final course = _findCourse(courses, entry.key);
+      if (course != null && entry.value.completedLessons < course.lessonCount) {
+        next = course;
+        break;
+      }
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.insights_outlined),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('ملخص تقدمك', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
+              Text('${(value * 100).round()}%'),
+            ]),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: value),
+            const SizedBox(height: 8),
+            Text('$done من $total درس مكتمل.'),
+            if (next != null) ...[
+              const SizedBox(height: 6),
+              Text('التالي: ' + next.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ],
+          ],
+        ),
+      ),
+    );
   }
   Widget _learnedSkillsCard(
     BuildContext context,
