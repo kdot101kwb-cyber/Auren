@@ -51,7 +51,7 @@ exports.fetchAurenPodcastFeed = onCall(
       throw new HttpsError('unavailable', 'Podcast feed is temporarily unavailable.');
     }
     const contentType = response.headers.get('content-type') || '';
-    if (contentType && !/(xml|rss|atom|text\\/plain|application\\/octet-stream)/i.test(contentType)) {
+    if (contentType && !/(xml|rss|atom|text\/plain|application\/octet-stream)/i.test(contentType)) {
       throw new HttpsError('invalid-argument', 'The URL does not appear to be an RSS or Atom feed.');
     }
     const xml = await response.text();
