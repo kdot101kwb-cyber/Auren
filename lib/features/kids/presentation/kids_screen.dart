@@ -1,5 +1,7 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'kids_parent_center_screen.dart';
+import '../../../services/kids/kids_parent_settings_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenKidsScreen extends StatefulWidget {
@@ -8,7 +10,7 @@ class AurenKidsScreen extends StatefulWidget {
 }
 
 class _AurenKidsScreenState extends State<AurenKidsScreen> {
-  int ageBand = 6;
+  final settingsRepo = KidsParentSettingsRepository();
   final activities = const <Map<String, Object>>[
     {'title':'Learn & Explore','subtitle':'تعلم ممتع ومناسب للعمر','icon':Icons.school_outlined},
     {'title':'Creative Studio','subtitle':'رسم، قصص ومشاريع إبداعية','icon':Icons.palette_outlined},
@@ -23,9 +25,37 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('AUREN Kids')),
-      body: ListView(
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return const Scaffold(body: Center(child: Text('سجّل الدخول لاستخدام AUREN Kids.')));
+    }
+    return StreamBuilder<KidsParentSettings>(
+      stream: settingsRepo.watch(uid),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('AUREN Kids')),
+            body: const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('تعذر تحميل إعدادات Kids حالياً. حاول مرة أخرى.'))),
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        final settings = snapshot.data!;
+        final ageBand = settings.ageBand;
+        final tutorEnabled = settings.aiTutor;
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('AUREN Kids'),
+            actions: [
+              IconButton(
+                tooltip: 'Parent Center',
+                icon: const Icon(Icons.family_restroom_outlined),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenKidsParentCenterScreen())),
+              ),
+            ],
+          ),
+          body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: [
           Card(
@@ -38,16 +68,16 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
                 const SizedBox(height: 16),
                 Text('الفئة العمرية', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
-                Wrap(spacing: 8, children: [6, 9, 13].map((age) => ChoiceChip(label: Text(age == 13 ? '13–17' : '$age–${age + 2}'), selected: ageBand == age, onSelected: (_) => setState(() => ageBand = age))).toList()),
+                Wrap(spacing: 8, children: [6, 9, 13].map((age) => ChoiceChip(label: Text(age == 13 ? '13–17' : '$age–${age + 2}'), selected: ageBand == age, onSelected: (_) => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenKidsParentCenterScreen())))).toList()),
               ]),
             ),
           ),
           const SizedBox(height: 12),
-          Card(child: ListTile(leading: const Icon(Icons.auto_awesome), title: const Text('AI Learning Coach'), subtitle: Text('خطة تعلم يومية للفئة $ageBand+ مع أنشطة مناسبة للعمر.'), trailing: const Icon(Icons.chevron_right), onTap: () => _openTutor(context, 'أنشئ خطة تعلم آمنة ومناسبة لعمر طفل في الفئة $ageBand+، مع أهداف يومية وأنشطة قصيرة وتعليم بالتجربة.'))),
+          Card(child: ListTile(leading: const Icon(Icons.auto_awesome), title: const Text('AI Learning Coach'), subtitle: Text('خطة تعلم يومية للفئة $ageBand+ مع أنشطة مناسبة للعمر.'), trailing: const Icon(Icons.chevron_right), onTap: tutorEnabled ? () => _openTutor(context, 'أنشئ خطة تعلم آمنة ومناسبة لعمر طفل في الفئة $ageBand+، مع أهداف يومية وأنشطة قصيرة وتعليم بالتجربة. الحد اليومي المسموح: ${settings.dailyMinutes} دقيقة.') : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenKidsParentCenterScreen())))),
           const SizedBox(height: 12),
           Text('استكشف', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          ...activities.map((item) => Card(child: ListTile(leading: Icon(item['icon'] as IconData), title: Text(item['title'] as String), subtitle: Text(item['subtitle'] as String), trailing: const Icon(Icons.chevron_right), onTap: () => _openTutor(context, 'اقترح أنشطة آمنة ومناسبة للأطفال في ${item['title']} للفئة العمرية $ageBand+. اجعلها تعليمية، قصيرة، وإبداعية.')))),
+          ...activities.map((item) => Card(child: ListTile(leading: Icon(item['icon'] as IconData), title: Text(item['title'] as String), subtitle: Text(item['subtitle'] as String), trailing: const Icon(Icons.chevron_right), onTap: tutorEnabled ? () => _openTutor(context, 'اقترح أنشطة آمنة ومناسبة للأطفال في ${item['title']} للفئة العمرية $ageBand+. اجعلها تعليمية، قصيرة، وإبداعية. الحد اليومي: ${settings.dailyMinutes} دقيقة.') : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenKidsParentCenterScreen()))))),
           const SizedBox(height: 12),
           Card(
             child: Column(children: [
@@ -57,7 +87,9 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
             ]),
           ),
         ],
-      ),
+          ),
+        );
+      },
     );
   }
 }
