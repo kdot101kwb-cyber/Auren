@@ -15,6 +15,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
   final repo = EducationRepository();
   String query = '';
   String? category;
+  bool savedOnly = false;
 
   @override
   Widget build(BuildContext context) {
@@ -74,8 +75,6 @@ class _EducationState extends State<AurenAURENEducationScreen> {
           }
 
           final all = coursesSnapshot.data ?? const <AurenCourse>[];
-          final savedIdsSnapshot = await repo.watchSavedIds(uid).first;
-          final savedIds = savedIdsSnapshot;
           final cats = all
               .map((e) => e.category)
               .where((e) => e.isNotEmpty)
@@ -123,6 +122,13 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                   item.courseId: item,
               };
 
+              return StreamBuilder<Set<String>>(
+            stream: repo.watchSavedIds(uid),
+            builder: (context, savedSnapshot) {
+              final savedIds = savedSnapshot.data ?? const <String>{};
+              final visibleCourses = savedOnly
+                  ? courses.where((c) => savedIds.contains(c.id)).toList()
+                  : courses;
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
                 children: [
@@ -192,8 +198,8 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                     children: [
                       FilterChip(
                         label: const Text('المحفوظة فقط'),
-                        selected: false,
-                        onSelected: (_) {},
+                        selected: savedOnly,
+                        onSelected: (value) => setState(() => savedOnly = value),
                       ),
                     ],
                   ),
@@ -266,7 +272,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                       ),
                     )
                   else
-                    ...courses.map(
+                    ...visibleCourses.map(
                       (course) => _courseCard(
                         context,
                         course,
