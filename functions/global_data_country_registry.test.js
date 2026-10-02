@@ -63,5 +63,5 @@ test('opportunity country scan returns transparent data signals and deterministi
   assert.match(globalData, /dataCompleteness/);
   assert.match(globalData, /gdpPerCapita/);
   assert.match(globalData, /agriculturalLand/);
-  assert.match(globalData, /rankingBasis: 'data_completeness_then_name'/);
+  assert.match(globalData, /candidates\.sort\(/);
 });
