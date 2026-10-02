@@ -146,6 +146,46 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                   const SizedBox(height: 14),
                   if (progress.isNotEmpty)
                     _learningSummary(context, progress, all),
+                  StreamBuilder<List<AurenCourse>>(
+                    stream: repo.watchSavedCourses(uid),
+                    builder: (context, savedSnapshot) {
+                      final saved = savedSnapshot.data ?? const <AurenCourse>[];
+                      if (saved.isEmpty) return const SizedBox.shrink();
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'دوراتي المحفوظة',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 8),
+                              ...saved.take(5).map(
+                                (course) => ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: const CircleAvatar(
+                                    child: Icon(Icons.bookmark_outline),
+                                  ),
+                                  title: Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  subtitle: Text('${course.category} • ${course.lessonCount} lessons'),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () => _showCourseSheet(
+                                    context,
+                                    course,
+                                    uid,
+                                    progress[course.id],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   if (courses.isEmpty)
                     const Card(
                       child: Padding(
@@ -311,11 +351,30 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                 Text('التقدم: $completed من $total درس'),
                 const SizedBox(height: 12),
               ],
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (learning == null)
+              StreamBuilder<Set<String>>(
+                stream: repo.watchSavedIds(uid),
+                builder: (context, savedSnapshot) {
+                  final saved = savedSnapshot.data?.contains(course.id) == true;
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          try {
+                            await repo.toggleSaved(uid, course.id, !saved);
+                          } catch (e) {
+                            if (sheetContext.mounted) {
+                              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                SnackBar(content: Text('تعذر تحديث الحفظ: $e')),
+                              );
+                            }
+                          }
+                        },
+                        icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
+                        label: Text(saved ? 'إزالة الحفظ' : 'حفظ الدورة'),
+                      ),
+                      if (learning == null)
                     FilledButton.icon(
                       onPressed: () async {
                         await repo.enroll(uid, course.id);
@@ -341,22 +400,24 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                             : 'إكمال الدرس التالي',
                       ),
                     ),
-                  FilledButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MessengerScreen(
-                          initialPrompt:
-                              'أنت المدرس الشخصي لدورة "${course.title}". '
-                              'اشرح لي الدرس الحالي خطوة بخطوة، ثم اختبر فهمي. '
-                              'لا تعتبر الدرس مكتملاً إلا بعد موافقتي.',
+                      FilledButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MessengerScreen(
+                              initialPrompt:
+                                  'أنت المدرس الشخصي لدورة "${course.title}". '
+                                  'اشرح لي الدرس الحالي خطوة بخطوة، ثم اختبر فهمي. '
+                                  'لا تعتبر الدرس مكتملاً إلا بعد موافقتي.',
+                            ),
+                          ),
                         ),
+                        icon: const Icon(Icons.auto_awesome),
+                        label: const Text('AI Tutor'),
                       ),
-                    ),
-                    icon: const Icon(Icons.auto_awesome),
-                    label: const Text('AI Tutor'),
-                  ),
-                ],
+                    ],
+                  );
+                },
               ),
             ],
           ),
