@@ -164,6 +164,16 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.menu_book_outlined),
+                  title: const Text('أنشطة التعلم'),
+                  subtitle: Text('أنشطة منشورة حسب الفئة العمرية $ageBand+ مع متابعة التقدم.'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(context, activitiesRoute),
+                ),
+              ),
+              const SizedBox(height: 12),
               Text(
                 'استكشف',
                 style: Theme.of(context)
