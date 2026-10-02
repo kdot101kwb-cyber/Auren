@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'auren_entertainment_output_screen.dart';
 import 'auren_entertainment_media_player_screen.dart';
 import 'entertainment_detail_screen.dart';
+import 'series_production_pipeline_screen.dart';
 
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
@@ -295,6 +296,16 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                 _sectionTitle('Series Blueprint'),
                 const SizedBox(height: 8),
                 _seriesBlueprintCard(context, Map<String, dynamic>.from(job['seriesBlueprint'] as Map)),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => SeriesProductionPipelineScreen(projectId: jobId),
+                    ),
+                  ),
+                  icon: const Icon(Icons.account_tree_rounded),
+                  label: const Text('فتح خط إنتاج المسلسل'),
+                ),
               ],
               if (status == 'ready') ...[
                 const SizedBox(height: 18),
