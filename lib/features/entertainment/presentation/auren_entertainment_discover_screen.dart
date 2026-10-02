@@ -4,6 +4,7 @@ import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import 'auren_audio_player_screen.dart';
 import 'entertainment_detail_screen.dart';
+import 'watch_together_screen.dart';
 
 class AurenEntertainmentDiscoverScreen extends StatefulWidget {
   const AurenEntertainmentDiscoverScreen({super.key});
@@ -106,26 +107,16 @@ class _AurenEntertainmentDiscoverScreenState extends State<AurenEntertainmentDis
   }
 
   Future<void> _createRoom(AurenEntertainmentItem item) async {
-    final uid=FirebaseAuth.instance.currentUser?.uid;
-    if(uid==null)return;
-    final id=await _repo.createWatchTogetherRoom(
-      uid,
-      itemId:item.id,
-      title:item.title,
-    );
-    if(!mounted)return;
-    showDialog(
-      context:context,
-      builder:(_)=>AlertDialog(
-        title:const Text('غرفة Watch Together جاهزة'),
-        content:SelectableText('Room ID: $id'),
-        actions:[
-          TextButton(
-            onPressed:()=>Navigator.pop(context),
-            child:const Text('تم'),
-          ),
-        ],
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || !mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AurenWatchTogetherScreen(
+          title: item.title,
+          mediaUrl: item.mediaUrl.isNotEmpty ? item.mediaUrl : null,
+          mediaId: item.id,
+        ),
       ),
     );
-  }
-}
+  }}
