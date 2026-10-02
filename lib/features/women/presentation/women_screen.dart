@@ -36,7 +36,9 @@ class _AurenWomenScreenState extends State<AurenWomenScreen> {
       Card(child: Column(children: [
         const ListTile(leading: Icon(Icons.shield_outlined), title: Text('Privacy & Safety'), subtitle: Text('الخصوصية والتحكم في المشاركة جزء أساسي من التجربة.')),
         const Divider(height: 1),
-        ListTile(leading: const Icon(Icons.report_outlined), title: const Text('Safety Help'), subtitle: const Text('افتح مساعد AUREN لخطوات السلامة أو جهات الدعم المحلية.'), onTap: () => _open(context, 'أحتاج معلومات عامة عن السلامة والدعم المحلي للنساء. اعرض خيارات موثوقة وخطوات واضحة بدون مشاركة بيانات شخصية.')),
+        ListTile(leading: const Icon(Icons.security_outlined), title: const Text('Safety Center'), subtitle: const Text('أدوات الحماية والخصوصية وإدارة الأمان.'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SafetyCenterScreen()))),
+ListTile(leading: const Icon(Icons.contact_phone_outlined), title: const Text('Emergency Contacts'), subtitle: const Text('إدارة جهات الطوارئ الموثوقة.'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmergencyContactsScreen()))),
+ListTile(leading: const Icon(Icons.report_outlined), title: const Text('Safety Help'), subtitle: const Text('معلومات عامة عن السلامة والدعم بدون مشاركة بيانات شخصية.'), onTap: () => _open(context, 'أحتاج معلومات عامة عن السلامة والدعم المحلي للنساء. اعرض خيارات موثوقة وخطوات واضحة بدون طلب بيانات شخصية.')),
       ])),
     ]),
   );
