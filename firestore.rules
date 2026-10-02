@@ -2378,6 +2378,7 @@ service cloud.firestore {
           (
             request.resource.data.hostUid == resource.data.hostUid
             && request.resource.data.status in ['waiting','ready']
+            && !(request.auth.uid in resource.data.memberIds)
             && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
             && request.resource.data.memberIds.hasAll(resource.data.memberIds)
             && request.auth.uid in request.resource.data.memberIds
@@ -2466,18 +2467,6 @@ service cloud.firestore {
           && request.resource.data.emoji.size() <= 8
           && request.resource.data.createdAt is timestamp;
         allow update, delete: if false;
-      }
-
-      match /typing/{uid} {
-        allow read: if request.auth != null
-          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
-        allow create, update: if request.auth != null
-          && request.auth.uid == uid
-          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.isTyping is bool
-          && request.resource.data.updatedAt is timestamp;
-        allow delete: if request.auth != null && request.auth.uid == uid;
       }
 
       match /messages/{messageId} {
