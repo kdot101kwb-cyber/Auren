@@ -2641,6 +2641,98 @@ exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCa
       }
     }
 
+    const mode = String(job.mode || '').trim();
+
+    if (mode === 'مسلسل') {
+      const assemblyId = 'assembly_' + jobId;
+      const assemblyRef = jobRef.collection('episodeAssemblies').doc(assemblyId);
+      const assemblySnap = await assemblyRef.get();
+      if (!assemblySnap.exists) {
+        throw aurenHttpsError('failed-precondition', 'Final episode package is not available.');
+      }
+      const assembly = assemblySnap.data() || {};
+      if (assembly.finalPackageStatus !== 'ready' || assembly.postAssemblyStatus !== 'ready' ||
+          !assembly.finalPackage || typeof assembly.finalPackage !== 'object') {
+        throw aurenHttpsError('failed-precondition', 'Final episode package is not ready.');
+      }
+
+      const packageEpisodes = Array.isArray(assembly.finalPackage.episodes)
+        ? assembly.finalPackage.episodes : [];
+      const playableEpisodes = packageEpisodes.filter((episode) => {
+        const media = episode?.media && typeof episode.media === 'object' ? episode.media : {};
+        const video = media.video;
+        const url = video && typeof video === 'object'
+          ? String(video.url || video.mediaUrl || '').trim()
+          : String(video || '').trim();
+        return /^https?:\\/\\//i.test(url);
+      });
+      if (!playableEpisodes.length) {
+        throw aurenHttpsError('failed-precondition', 'The final series package has no playable episodes.');
+      }
+
+      const seriesTitle = String(
+        assembly.finalPackage.title || job.title || job.name || job.idea || 'AUREN Original Series'
+      ).trim().slice(0, 300);
+      const batch = db.batch();
+      const publishedIds = [];
+      for (const episode of playableEpisodes.slice(0, 100)) {
+        const number = Math.max(1, Number(episode.episodeNumber || 1));
+        const media = episode.media && typeof episode.media === 'object' ? episode.media : {};
+        const video = media.video;
+        const videoUrl = video && typeof video === 'object'
+          ? String(video.url || video.mediaUrl || '').trim()
+          : String(video || '').trim();
+        const thumbnail = media.thumbnail;
+        const thumbnailUrl = thumbnail && typeof thumbnail === 'object'
+          ? String(thumbnail.url || thumbnail.imageUrl || '').trim()
+          : String(thumbnail || '').trim();
+        const audio = media.audio;
+        const audioUrl = audio && typeof audio === 'object'
+          ? String(audio.url || audio.mediaUrl || '').trim()
+          : String(audio || '').trim();
+        const itemRef = db.collection('entertainment_items').doc();
+        publishedIds.push(itemRef.id);
+        batch.set(itemRef, {
+          title: number === 1 ? seriesTitle : seriesTitle + ' • الحلقة ' + number,
+          description: String(job.description || job.idea || '').trim().slice(0, 5000),
+          type: 'Global Series',
+          mediaKind: 'video',
+          mediaUrl: videoUrl,
+          imageUrl: thumbnailUrl,
+          creatorId: uid,
+          ownerId: uid,
+          source: 'AUREN AI Production',
+          sourceUrl: '',
+          visibility: 'public',
+          isVideo: true,
+          language: String(job.language || '').trim(),
+          country: String(job.country || '').trim(),
+          genres: Array.isArray(job.genres) ? job.genres.map((v) => String(v)).filter(Boolean).slice(0, 10) : [],
+          seasons: 1,
+          episodes: playableEpisodes.length,
+          seriesJobId: jobId,
+          seriesEpisodeNumber: number,
+          seriesTitle,
+          episodeMedia: {
+            audioUrl,
+            subtitles: media.subtitles || null,
+          },
+          publishedFromJobId: jobId,
+          provider: String(job.provider || 'auren_ai'),
+          createdAt: FieldValue.serverTimestamp(),
+          publishedAt: FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+      await jobRef.update({
+        publishedItemId: publishedIds[0],
+        publishedItemIds: publishedIds,
+        publishedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return {published:true, alreadyPublished:false, itemId:publishedIds[0], itemIds:publishedIds};
+    }
+
     const providerResult = job.providerResult && typeof job.providerResult === 'object'
       ? job.providerResult : null;
     if (!providerResult) {
@@ -2651,7 +2743,7 @@ exports.publishEntertainmentOutput = require('firebase-functions/v2/https').onCa
       providerResult.url || providerResult.mediaUrl || providerResult.videoUrl ||
       providerResult.audioUrl || ''
     ).trim();
-    if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl)) {
+    if (!mediaUrl || !/^https?:\\/\\//i.test(mediaUrl)) {
       throw aurenHttpsError('failed-precondition', 'The provider output does not contain a valid media URL.');
     }
 
