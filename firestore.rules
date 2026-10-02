@@ -2855,5 +2855,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+
+    match /users/{userId}/kids/{settingId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && settingId == 'parent_settings'
+        && request.resource.data.keys().hasOnly(['ageBand','aiTutor','externalLinks','dailyMinutes','updatedAt'])
+        && request.resource.data.ageBand in [6, 9, 13]
+        && request.resource.data.aiTutor is bool
+        && request.resource.data.externalLinks is bool
+        && request.resource.data.dailyMinutes in [15, 30, 60, 90, 120, 180, 240]
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
   }
 }
