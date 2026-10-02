@@ -144,6 +144,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
+                  _studyPlanCard(context, uid, progress, all),
                   if (progress.isNotEmpty)
                     _learningSummary(context, progress, all),
                   StreamBuilder<List<AurenCourse>>(
@@ -209,6 +210,34 @@ class _EducationState extends State<AurenAURENEducationScreen> {
         },
       ),
     );
+  }
+
+  Widget _studyPlanCard(BuildContext context, String uid, Map<String, AurenLearningProgress> progress, List<AurenCourse> courses) {
+    final active = progress.entries.where((entry) {
+      final course = _findCourse(courses, entry.key);
+      return course != null && course.lessonCount > 0 && entry.value.completedLessons < course.lessonCount;
+    }).toList();
+    final suggested = courses.where((course) => progress[course.id] == null).where((course) => category == null || course.category == category).take(3).toList();
+    return Card(child: Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [const CircleAvatar(child: Icon(Icons.auto_awesome)), const SizedBox(width: 12), const Expanded(child: Text('خطة تعلمك مع AUREN', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800))), IconButton(
+        tooltip: 'AI Study Plan',
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ابنِ لي خطة تعلم شخصية في AUREN باستخدام دوراتي وتقدمي ومهاراتي إن كانت متاحة، مع ترتيب يومي ومراجعة واختبارات قصيرة. لا تفترض معلومات غير معروفة.'))),
+        icon: const Icon(Icons.calendar_month_outlined),
+      )]),
+      const SizedBox(height: 8),
+      Text(active.isNotEmpty ? 'لديك ${active.length} دورة نشطة — أكمل التالية أولاً.' : suggested.isNotEmpty ? 'ابدأ بدورة مناسبة من القائمة المقترحة أدناه.' : 'استخدم AI Tutor لبناء خطة جديدة حسب هدفك.'),
+      if (active.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        ...active.take(2).map((entry) {
+          final course = _findCourse(courses, entry.key)!;
+          final value = course.lessonCount > 0 ? (entry.value.completedLessons / course.lessonCount).clamp(0.0, 1.0) : 0.0;
+          return ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.play_circle_outline), title: Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis), subtitle: Text('${entry.value.completedLessons}/${course.lessonCount} • ${(value * 100).round()}%'), onTap: () => _showCourseSheet(context, course, uid, entry.value));
+        }),
+      ] else if (suggested.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        ...suggested.map((course) => ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.recommend_outlined), title: Text(course.title, maxLines: 1, overflow: TextOverflow.ellipsis), subtitle: Text('${course.category} • ${course.lessonCount} lessons'), onTap: () => _showCourseSheet(context, course, uid, null))),
+      ],
+    ])));
   }
 
   Widget _learningSummary(
