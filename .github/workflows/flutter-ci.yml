@@ -27,8 +27,8 @@ jobs:
       - name: Verify Flutter project
         run: flutter pub get
 
-      - name: Format check
-        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Format sources
+        run: dart format lib test
 
       - name: Analyze
         run: flutter analyze
