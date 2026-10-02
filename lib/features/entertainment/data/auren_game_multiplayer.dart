@@ -1,5 +1,4 @@
 import 'dart:async';
-  Future<Map<String, dynamic>?> getLiveMatch({required String lobbyId}) async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenLiveMatch').call({'lobbyId':lobbyId}); if(r.data is Map)return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException {} return null; }
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -22,6 +21,16 @@ class AurenGameMultiplayer {
   Future<void> _ensureSignedIn() async {
     if (_auth.currentUser != null) return;
     await _auth.signInAnonymously();
+  }
+
+
+  Future<Map<String, dynamic>?> getLiveMatch({required String lobbyId}) async {
+    await _ensureSignedIn();
+    try {
+      final r = await _functions.httpsCallable('getAurenLiveMatch').call({'lobbyId': lobbyId});
+      if (r.data is Map) return Map<String, dynamic>.from(r.data);
+    } on FirebaseFunctionsException {}
+    return null;
   }
 
   Future<String> createLobby({required int gameIndex}) async {
@@ -518,416 +527,52 @@ class AurenGameMultiplayer {
     }
   }
 
-  void clearLobby() {
-    _lobbyId = null;
-  }
-}
-({required int gameIndex, int limit = 20}) async {
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('getAurenFlagshipLeaderboard').call({
-        'gameIndex': gameIndex, 'limit': limit,
-      });
-      final entries = result.data is Map ? result.data['entries'] : null;
-      if (entries is List) return entries.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-    } on FirebaseFunctionsException {}
-    return const [];
-  }
 
-  Future<Map<String, dynamic>?> getFlagshipRanking({required int gameIndex}) async {
+  Future<Map<String, dynamic>?> getGamingRivals() async {
     await _ensureSignedIn();
     try {
-      final result = await _functions.httpsCallable('getAurenFlagshipRanking').call({
-        'gameIndex': gameIndex,
-      });
-      if (result.data is Map) return Map<String, dynamic>.from(result.data);
-    } on FirebaseFunctionsException {
-      return null;
-    }
+      final r = await _functions.httpsCallable('getAurenGamingRivals').call();
+      if (r.data is Map) return Map<String, dynamic>.from(r.data);
+    } on FirebaseFunctionsException {}
     return null;
   }
 
-  Future<bool> initializeFlagshipMatch() async {
-    final id = _lobbyId;
-    if (id == null) return false;
+  Future<Map<String, dynamic>?> getLiveSpectatorMatches() async {
     await _ensureSignedIn();
     try {
-      final result = await _functions.httpsCallable('initializeAurenFlagshipMatch').call({
-        'lobbyId': id,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
+      final r = await _functions.httpsCallable('getAurenLiveSpectators').call();
+      if (r.data is Map) return Map<String, dynamic>.from(r.data);
+    } on FirebaseFunctionsException {}
+    return null;
   }
 
-  Future<bool> submitFlagshipAction({
-    required Map<String, dynamic> action,
-    required int expectedVersion,
-    required String moveId,
-  }) async {
-    final id = _lobbyId;
-    if (id == null) return false;
+  Future<List<Map<String, dynamic>>> getGamingMatchHistory() async {
     await _ensureSignedIn();
     try {
-      final result = await _functions.httpsCallable('submitAurenFlagshipAction').call({
-        'lobbyId': id,
-        'action': action,
-        'expectedVersion': expectedVersion,
-        'moveId': moveId,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
+      final r = await _functions.httpsCallable('getAurenGamingMatchHistory').call();
+      final items = r.data is Map ? (r.data['matches'] as List? ?? const []) : const [];
+      return items.whereType<Map>().map((x) => Map<String, dynamic>.from(x)).toList();
+    } on FirebaseFunctionsException { return []; }
   }
 
-  Future<bool> submitState({
-    required Map<String, dynamic> state,
-    required int expectedVersion,
-    required String moveId,
-  }) async {
-    final id = _lobbyId;
-    if (id == null) return false;
+  Future<List<Map<String, dynamic>>> getGamingNotifications() async {
     await _ensureSignedIn();
     try {
-      final result = await _functions.httpsCallable('submitAurenGameMove').call({
-        'lobbyId': id,
-        'gameIndex': state['gameIndex'] ?? 50,
-        'state': state,
-        'expectedVersion': expectedVersion,
-        'moveId': moveId,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
+      final r = await _functions.httpsCallable('getAurenGamingNotifications').call();
+      final items = r.data is Map ? (r.data['notifications'] as List? ?? const []) : const [];
+      return items.whereType<Map>().map((x) => Map<String, dynamic>.from(x)).toList();
+    } on FirebaseFunctionsException { return []; }
   }
 
-  Future<void> seedState(Map<String, dynamic> state) async {
-    final id = _lobbyId;
-    if (id == null) return;
-    final ref = _db.collection('auren_game_lobbies').doc(id);
-    await _db.runTransaction((tx) async {
-      final snapshot = await tx.get(ref);
-      if (!snapshot.exists) return;
-      final data = snapshot.data() ?? <String, dynamic>{};
-      final version = (data['stateVersion'] as num?)?.toInt() ?? 0;
-      if (data['hostId']?.toString() != playerId || version != 0) return;
-      final existing = data['state'];
-      if (existing is Map && existing.isNotEmpty) return;
-      tx.update(ref, {
-        'state': state,
-        'stateVersion': 0,
-        'turnPlayerId': data['turnPlayerId']?.toString() ?? playerId,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    });
-  }
-
-  Future<void> finishLobby() async {
-    final id = _lobbyId;
-    if (id == null) return;
+  Future<bool> markGamingNotificationsRead() async {
     await _ensureSignedIn();
     try {
-      await _functions.httpsCallable('finishAurenGameLobby').call({'lobbyId': id});
-    } on FirebaseFunctionsException {
-      // Server remains authoritative; UI can continue without throwing.
-    }
-  }
-
-  Future<void> leaveLobby() async {
-    final id = _lobbyId;
-    if (id == null) return;
-    await _ensureSignedIn();
-    try {
-      await _functions.httpsCallable('leaveAurenGameLobby').call({'lobbyId': id});
-    } on FirebaseFunctionsException {
-      // Best-effort lifecycle cleanup.
-    } finally {
-      _lobbyId = null;
-    }
-  }
-
-  void clearLobby() {
-    _lobbyId = null;
-  }
-}
-
-    await _ensureSignedIn();
-    try {
-      final r = await _functions.httpsCallable('cancelAurenGameMatchmaking').call();
-      return r.data is Map && r.data['cancelled'] == true;
+      await _functions.httpsCallable('markAurenGamingNotificationsRead').call();
+      return true;
     } on FirebaseFunctionsException { return false; }
   }
 
-  Future<List<Map<String, dynamic>>> getFlagshipLeaderboard({required int gameIndex, int limit = 20}) async {
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('getAurenFlagshipLeaderboard').call({
-        'gameIndex': gameIndex, 'limit': limit,
-      });
-      final entries = result.data is Map ? result.data['entries'] : null;
-      if (entries is List) return entries.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-    } on FirebaseFunctionsException {}
-    return const [];
-  }
-
-  Future<Map<String, dynamic>?> getFlagshipRanking({required int gameIndex}) async {
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('getAurenFlagshipRanking').call({
-        'gameIndex': gameIndex,
-      });
-      if (result.data is Map) return Map<String, dynamic>.from(result.data);
-    } on FirebaseFunctionsException {
-      return null;
-    }
-    return null;
-  }
-
-  Future<bool> initializeFlagshipMatch() async {
-    final id = _lobbyId;
-    if (id == null) return false;
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('initializeAurenFlagshipMatch').call({
-        'lobbyId': id,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
-  }
-
-  Future<bool> submitFlagshipAction({
-    required Map<String, dynamic> action,
-    required int expectedVersion,
-    required String moveId,
-  }) async {
-    final id = _lobbyId;
-    if (id == null) return false;
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('submitAurenFlagshipAction').call({
-        'lobbyId': id,
-        'action': action,
-        'expectedVersion': expectedVersion,
-        'moveId': moveId,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
-  }
-
-  Future<bool> submitState({
-    required Map<String, dynamic> state,
-    required int expectedVersion,
-    required String moveId,
-  }) async {
-    final id = _lobbyId;
-    if (id == null) return false;
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('submitAurenGameMove').call({
-        'lobbyId': id,
-        'gameIndex': state['gameIndex'] ?? 50,
-        'state': state,
-        'expectedVersion': expectedVersion,
-        'moveId': moveId,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
-  }
-
-  Future<void> seedState(Map<String, dynamic> state) async {
-    final id = _lobbyId;
-    if (id == null) return;
-    final ref = _db.collection('auren_game_lobbies').doc(id);
-    await _db.runTransaction((tx) async {
-      final snapshot = await tx.get(ref);
-      if (!snapshot.exists) return;
-      final data = snapshot.data() ?? <String, dynamic>{};
-      final version = (data['stateVersion'] as num?)?.toInt() ?? 0;
-      if (data['hostId']?.toString() != playerId || version != 0) return;
-      final existing = data['state'];
-      if (existing is Map && existing.isNotEmpty) return;
-      tx.update(ref, {
-        'state': state,
-        'stateVersion': 0,
-        'turnPlayerId': data['turnPlayerId']?.toString() ?? playerId,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    });
-  }
-
-  Future<void> finishLobby() async {
-    final id = _lobbyId;
-    if (id == null) return;
-    await _ensureSignedIn();
-    try {
-      await _functions.httpsCallable('finishAurenGameLobby').call({'lobbyId': id});
-    } on FirebaseFunctionsException {
-      // Server remains authoritative; UI can continue without throwing.
-    }
-  }
-
-  Future<void> leaveLobby() async {
-    final id = _lobbyId;
-    if (id == null) return;
-    await _ensureSignedIn();
-    try {
-      await _functions.httpsCallable('leaveAurenGameLobby').call({'lobbyId': id});
-    } on FirebaseFunctionsException {
-      // Best-effort lifecycle cleanup.
-    } finally {
-      _lobbyId = null;
-    }
-  }
-
   void clearLobby() {
     _lobbyId = null;
   }
 }
-({required int gameIndex, int limit = 20}) async {
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('getAurenFlagshipLeaderboard').call({
-        'gameIndex': gameIndex, 'limit': limit,
-      });
-      final entries = result.data is Map ? result.data['entries'] : null;
-      if (entries is List) return entries.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-    } on FirebaseFunctionsException {}
-    return const [];
-  }
-
-  Future<Map<String, dynamic>?> getFlagshipRanking({required int gameIndex}) async {
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('getAurenFlagshipRanking').call({
-        'gameIndex': gameIndex,
-      });
-      if (result.data is Map) return Map<String, dynamic>.from(result.data);
-    } on FirebaseFunctionsException {
-      return null;
-    }
-    return null;
-  }
-
-  Future<bool> initializeFlagshipMatch() async {
-    final id = _lobbyId;
-    if (id == null) return false;
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('initializeAurenFlagshipMatch').call({
-        'lobbyId': id,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
-  }
-
-  Future<bool> submitFlagshipAction({
-    required Map<String, dynamic> action,
-    required int expectedVersion,
-    required String moveId,
-  }) async {
-    final id = _lobbyId;
-    if (id == null) return false;
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('submitAurenFlagshipAction').call({
-        'lobbyId': id,
-        'action': action,
-        'expectedVersion': expectedVersion,
-        'moveId': moveId,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
-  }
-
-  Future<bool> submitState({
-    required Map<String, dynamic> state,
-    required int expectedVersion,
-    required String moveId,
-  }) async {
-    final id = _lobbyId;
-    if (id == null) return false;
-    await _ensureSignedIn();
-    try {
-      final result = await _functions.httpsCallable('submitAurenGameMove').call({
-        'lobbyId': id,
-        'gameIndex': state['gameIndex'] ?? 50,
-        'state': state,
-        'expectedVersion': expectedVersion,
-        'moveId': moveId,
-      });
-      return result.data is Map && result.data['accepted'] == true;
-    } on FirebaseFunctionsException {
-      return false;
-    }
-  }
-
-  Future<void> seedState(Map<String, dynamic> state) async {
-    final id = _lobbyId;
-    if (id == null) return;
-    final ref = _db.collection('auren_game_lobbies').doc(id);
-    await _db.runTransaction((tx) async {
-      final snapshot = await tx.get(ref);
-      if (!snapshot.exists) return;
-      final data = snapshot.data() ?? <String, dynamic>{};
-      final version = (data['stateVersion'] as num?)?.toInt() ?? 0;
-      if (data['hostId']?.toString() != playerId || version != 0) return;
-      final existing = data['state'];
-      if (existing is Map && existing.isNotEmpty) return;
-      tx.update(ref, {
-        'state': state,
-        'stateVersion': 0,
-        'turnPlayerId': data['turnPlayerId']?.toString() ?? playerId,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    });
-  }
-
-  Future<void> finishLobby() async {
-    final id = _lobbyId;
-    if (id == null) return;
-    await _ensureSignedIn();
-    try {
-      await _functions.httpsCallable('finishAurenGameLobby').call({'lobbyId': id});
-    } on FirebaseFunctionsException {
-      // Server remains authoritative; UI can continue without throwing.
-    }
-  }
-
-  Future<void> leaveLobby() async {
-    final id = _lobbyId;
-    if (id == null) return;
-    await _ensureSignedIn();
-    try {
-      await _functions.httpsCallable('leaveAurenGameLobby').call({'lobbyId': id});
-    } on FirebaseFunctionsException {
-      // Best-effort lifecycle cleanup.
-    } finally {
-      _lobbyId = null;
-    }
-  }
-
-  void clearLobby() {
-    _lobbyId = null;
-  }
-}
-
-  Future<Map<String,dynamic>?> getGamingRivals() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenGamingRivals').call(); return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException { return null; } }
-  Future<Map<String,dynamic>?> getLiveSpectatorMatches() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenLiveSpectators').call(); return Map<String,dynamic>.from(r.data); } on FirebaseFunctionsException { return null; } }
-
-  Future<List<Map<String,dynamic>>> getGamingMatchHistory() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenGamingMatchHistory').call(); return List<Map<String,dynamic>>.from((r.data['matches'] as List? ?? const []).map((x)=>Map<String,dynamic>.from(x))); } on FirebaseFunctionsException { return []; } }
-  Future<List<Map<String,dynamic>>> getGamingNotifications() async { await _ensureSignedIn(); try { final r=await _functions.httpsCallable('getAurenGamingNotifications').call(); return List<Map<String,dynamic>>.from((r.data['notifications'] as List? ?? const []).map((x)=>Map<String,dynamic>.from(x))); } on FirebaseFunctionsException { return []; } }
-
-  Future<bool> markGamingNotificationsRead() async { await _ensureSignedIn(); try { await _functions.httpsCallable('markAurenGamingNotificationsRead').call(); return true; } on FirebaseFunctionsException { return false; } }
