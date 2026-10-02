@@ -1,5 +1,5 @@
 'use strict';
-const test=require('node:test'); const assert=require('node:assert/strict'); const fs=require('node:fs'); const source=fs.readFileSync(new URL('./production_lifecycle.js',import.meta.url),'utf8');
+const test=require('node:test'); const assert=require('node:assert/strict'); const fs=require('node:fs'); const path=require('node:path'); const source=fs.readFileSync(path.join(__dirname,'production_lifecycle.js'),'utf8');
 test('owner scoping',()=>assert.match(source,/parts\[0\]!==\'users\'\|\|parts\[1\]!==uid/));
 test('cancel only active tasks',()=>assert.match(source,/ACTIVE\.has\(status\)/));
 test('retry budget',()=>assert.match(source,/retryCount>5/));
