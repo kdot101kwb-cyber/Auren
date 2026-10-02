@@ -8,3 +8,9 @@
 
 ## Verification
 The repository change was committed through GitHub. Flutter/Firebase Emulator execution remains pending; no runtime pass is claimed.
+
+
+## Batch 8 follow-up
+- Added Education Firestore regression tests under functions/education_rules.test.js.
+- Wired the regression test into the standard functions `npm test` suite so CI will execute it when dependencies are installed.
+- Runtime execution is still not claimed from this environment.
