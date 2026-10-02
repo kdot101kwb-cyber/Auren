@@ -20,6 +20,7 @@ import '../../../services/social/match_everything_service.dart';
 import 'auren_intent_match_card.dart';
 import '../../action_center/presentation/action_center_screen.dart';
 import '../../suppliers/presentation/auren_supplier_requests_screen.dart';
+import '../../safety/presentation/safety_center_screen.dart';
 
 class AurenAdaptiveHomeFocus extends StatelessWidget {
   final String uid;
@@ -412,6 +413,7 @@ class AurenHomeV2 extends StatelessWidget {
         _card(context, Icons.track_changes, 'Action Center', 'تابع كل إجراء بدأته من Match Everything.', const AurenActionCenterScreen()),
         if (uid != null)
           _card(context, Icons.local_shipping_outlined, 'Supplier Requests', 'تابع طلبات التواصل وRFQ وحالاتها وإعادة المحاولة.', const AurenSupplierRequestsScreen()),
+        _card(context, Icons.shield_outlined, 'Safety Center', 'الأمان، الحظر، والسلامة عند ضعف الاتصال.', const AurenSafetyCenterScreen()),
         const SizedBox(height: 12),
         Card(child: ListTile(
           leading: const Icon(Icons.layers_outlined),
