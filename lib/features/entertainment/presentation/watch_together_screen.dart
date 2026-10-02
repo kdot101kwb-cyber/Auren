@@ -28,7 +28,21 @@ class AurenWatchTogetherService {
         await _db.runTransaction((tx) async {
           final existing = await tx.get(inviteRef);
           if (existing.exists) throw StateError('INVITE_CODE_COLLISION');
-          tx.set(ref, {'hostUid': uid, 'memberIds': [uid], 'inviteCode': code, 'title': title.trim().isEmpty ? 'Watch Together' : title.trim(), 'mediaId': mediaId, 'status': 'waiting', 'positionSeconds': 0, 'isPlaying': false, 'createdAt': FieldValue.serverTimestamp(), 'updatedAt': FieldValue.serverTimestamp()});
+          final roomTitle = title.trim().isEmpty ? 'Watch Together' : title.trim();
+          tx.set(ref, {
+            'hostUid': uid,
+            'memberIds': [uid],
+            'inviteCode': code,
+            'title': roomTitle.length > 160 ? roomTitle.substring(0, 160) : roomTitle,
+            'mediaId': mediaId,
+            'channelId': mediaId?.trim().isNotEmpty == true ? mediaId!.trim() : 'media',
+            'channelName': roomTitle.length > 160 ? roomTitle.substring(0, 160) : roomTitle,
+            'status': 'waiting',
+            'positionSeconds': 0,
+            'isPlaying': false,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
           tx.set(inviteRef, {'roomId': ref.id, 'hostUid': uid, 'inviteCode': code, 'createdAt': FieldValue.serverTimestamp()});
         });
         return ref.id;
@@ -54,7 +68,9 @@ class AurenWatchTogetherService {
       if (!current.exists) throw StateError('الغرفة غير متاحة.');
       final data = current.data() ?? <String, dynamic>{};
       final members = List<String>.from(data['memberIds'] ?? const <String>[]);
-      if (!members.contains(uid)) members.add(uid);
+      if (members.contains(uid)) return;
+      if (members.length >= 8) throw StateError('الغرفة ممتلئة.');
+      members.add(uid);
       tx.update(ref, {'memberIds': members, 'status': 'ready', 'updatedAt': FieldValue.serverTimestamp()});
     });
     return roomId;
