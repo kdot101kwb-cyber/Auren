@@ -116,6 +116,31 @@ func damage(amount: int) -> void:
 		combo_timer = 0.0
 	update_hud()
 
+func try_interact() -> void:
+	var nearest: Node3D = null
+	var best := 3.0
+	for node in get_children():
+		if node is MeshInstance3D and String(node.name).begins_with("RewardChest"):
+			if bool(node.get_meta("opened", false)):
+				continue
+			var d := player.global_position.distance_to(node.global_position)
+			if d < best:
+				best = d
+				nearest = node
+	if nearest != null:
+		var idx := String(nearest.name).trim_prefix("RewardChest")
+		var value := int(nearest.get_meta("loot_value", 25))
+		nearest.set_meta("opened", true)
+		opened_chests[idx] = true
+		loot += value
+		nearest.scale.y = 0.35
+		vfx_audio.play_loot_fx(nearest.global_position)
+		save_checkpoint()
+		update_hud()
+		return
+	if player.global_position.z < -65:
+		complete_objective()
+
 func complete_objective() -> void:
 	if objective_complete:
 		return
