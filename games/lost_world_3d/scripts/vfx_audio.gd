@@ -27,6 +27,25 @@ func play_loot_fx(origin: Vector3) -> void:
 	_spawn_burst(origin, 32, 0.65, 1.0, 3.5, Color(1.0,0.78,0.18), 0.055)
 	_spawn_ring(origin, Color(1.0,0.82,0.2), 0.45, 1.8)
 
+func play_player_death_fx(origin: Vector3) -> void:
+	_spawn_burst(origin, 46, 0.7, 1.5, 5.0, Color(0.65,0.08,0.55), 0.07)
+	_spawn_ring(origin, Color(0.85,0.12,0.65), 0.35, 2.0)
+	_spawn_death_flash(origin)
+
+func _spawn_death_flash(origin: Vector3) -> void:
+	if active_fx >= max_active_fx:
+		return
+	active_fx += 1
+	var flash := OmniLight3D.new()
+	flash.position = origin + Vector3.UP * 0.9
+	flash.light_energy = 4.0
+	flash.omni_range = 5.0
+	flash.light_color = Color(0.8, 0.12, 0.65)
+	add_child(flash)
+	var tween := create_tween()
+	tween.tween_property(flash, "light_energy", 0.0, 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(_finish_fx.bind(flash))
+
 func play_enemy_defeat_fx(origin: Vector3) -> void:
 	_spawn_burst(origin, 38, 0.55, 1.5, 5.5, Color(0.9,0.12,0.08), 0.065)
 	_spawn_ring(origin, Color(1.0,0.18,0.08), 0.5, 1.7)
