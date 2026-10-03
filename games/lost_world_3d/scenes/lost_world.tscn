@@ -12,7 +12,10 @@
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 1
-background_color = Color(0.02,0.06,0.08,1)
+background_color = Color(0.015,0.035,0.055,1)
+fog_enabled = true
+fog_light_color = Color(0.16,0.24,0.28,1)
+fog_density = 0.012
 ambient_light_source = 3
 ambient_light_color = Color(0.55,0.62,0.7,1)
 ambient_light_energy = 0.7
@@ -24,6 +27,18 @@ height = 1.8
 [sub_resource type="CapsuleMesh" id="PlayerMesh"]
 radius = 0.45
 height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="PlayerMaterial"]
+albedo_color = Color(0.16,0.32,0.52,1)
+metallic = 0.12
+roughness = 0.62
+
+[sub_resource type="PlaneMesh" id="GroundMesh"]
+size = Vector2(80,180)
+
+[sub_resource type="StandardMaterial3D" id="GroundMaterial"]
+albedo_color = Color(0.055,0.13,0.075,1)
+roughness = 0.96
 
 [sub_resource type="CapsuleShape3D" id="EnemyShape"]
 radius = 0.5
@@ -41,6 +56,11 @@ light_energy = 1.2
 shadow_enabled = true
 script = ExtResource("7")
 
+[node name="GroundVisual" type="MeshInstance3D" parent="."]
+position = Vector3(0,-0.48,-80)
+mesh = SubResource("GroundMesh")
+material_override = SubResource("GroundMaterial")
+
 [node name="Player" type="CharacterBody3D" parent="."]
 script = ExtResource("2")
 
@@ -49,6 +69,7 @@ shape = SubResource("PlayerShape")
 
 [node name="Mesh" type="MeshInstance3D" parent="Player"]
 mesh = SubResource("PlayerMesh")
+material_override = SubResource("PlayerMaterial")
 
 [node name="AnimationController" type="Node3D" parent="Player"]
 script = ExtResource("9")
