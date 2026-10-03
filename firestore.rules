@@ -1525,10 +1525,18 @@ service cloud.firestore {
     allow read: if request.auth != null
       && (resource.data.talentUid == request.auth.uid || resource.data.ownerId == request.auth.uid);
     allow create: if request.auth != null
+      && request.resource.data.keys().hasOnly(['ownerId','talentUid','opportunityId','opportunityTitle','status','createdAt'])
       && request.resource.data.ownerId == request.auth.uid
+      && request.resource.data.ownerId is string
+      && request.resource.data.ownerId.size() > 0
+      && request.resource.data.ownerId.size() <= 128
       && request.resource.data.talentUid is string
+      && request.resource.data.talentUid.size() > 0
+      && request.resource.data.talentUid.size() <= 128
       && request.resource.data.talentUid != request.auth.uid
       && request.resource.data.opportunityId is string
+      && request.resource.data.opportunityId.size() > 0
+      && request.resource.data.opportunityId.size() <= 128
       && request.resource.data.opportunityTitle is string
       && request.resource.data.opportunityTitle.size() > 0
       && request.resource.data.opportunityTitle.size() <= 200
