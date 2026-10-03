@@ -10,14 +10,16 @@ Implemented runtime systems:
 - objective/checkpoint progression
 - local save/resume
 - mobile-compatible renderer target
+- procedural combat VFX: attack, hit and checkpoint particle bursts
+- spatial audio runtime node ready for authored sound streams
 
 AAA production gates still required:
 - original final art assets
 - authored character/environment animations
-- production VFX and spatial audio
+- final authored VFX and spatial audio assets
 - authored level/environment art
 - Android packaging
 - device profiling and performance budgets
 - backend integration for authoritative competitive results
 
-This directory is the gameplay/runtime foundation and vertical-slice source. Placeholder geometry is intentionally not presented as final AAA art.
+The procedural VFX is functional runtime feedback; it is not being presented as final AAA art/audio.
