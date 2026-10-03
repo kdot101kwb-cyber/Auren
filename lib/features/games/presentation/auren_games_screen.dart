@@ -2,100 +2,33 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../services/gaming/auren_games_catalog.dart';
 
-class AurenGamesScreen extends StatefulWidget {
-  const AurenGamesScreen({super.key});
-  @override State<AurenGamesScreen> createState() => _AurenGamesScreenState();
+class AurenGamesScreen extends StatefulWidget { const AurenGamesScreen({super.key}); @override State<AurenGamesScreen> createState()=>_AurenGamesScreenState(); }
+class _AurenGamesScreenState extends State<AurenGamesScreen>{
+ String query='';
+ List<AurenGameDefinition> get games=>AurenGamesCatalog.all.where((g){final q=query.trim().toLowerCase();return q.isEmpty|| (g.title+' '+g.subtitle).toLowerCase().contains(q);}).toList();
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('AUREN Games')),body:ListView(padding:const EdgeInsets.all(16),children:[
+  const Card(child:Padding(padding:EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('AUREN Gaming',style:TextStyle(fontSize:28,fontWeight:FontWeight.bold)),SizedBox(height:6),Text('50 لعبة قابلة للعب الآن'),SizedBox(height:10),Text('كل لعبة لها نمط لعب تفاعلي وإعادة تشغيل. AUREN: Lost World لها نمط مغامرة خاص.')]))),
+  const SizedBox(height:12),TextField(onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن لعبة',border:OutlineInputBorder())),const SizedBox(height:12),
+  GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:12,mainAxisSpacing:12,childAspectRatio:1.05),itemBuilder:(c,i){final g=games[i];return Card(child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>AurenGameRoom(game:g))),child:Padding(padding:const EdgeInsets.all(14),child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(g.icon,size:34),const SizedBox(height:8),Text(g.title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:5),Text(g.subtitle,maxLines:2,overflow:TextOverflow.ellipsis),const SizedBox(height:8),const Text('PLAY ›')]))));})
+ ]));
 }
 
-class _AurenGamesScreenState extends State<AurenGamesScreen> {
-  String query = '';
-  List<AurenGameDefinition> get games => AurenGamesCatalog.all.where((g) {
-    final q=query.trim().toLowerCase();
-    return q.isEmpty || ('${g.title} ${g.subtitle}').toLowerCase().contains(q);
-  }).toList();
-
-  @override Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('AUREN Games'), actions: [
-      IconButton(onPressed: () => showSearch(context: context, delegate: _GameSearchDelegate()), icon: const Icon(Icons.search)),
-    ]),
-    body: ListView(padding: const EdgeInsets.all(16), children: [
-      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('AUREN Gaming', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        Text('${AurenGamesCatalog.all.length} لعبة • Multiplayer-ready • Achievements • Wins • Ranking',
-          style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: 12),
-        const Text('العالم الرئيسي: AUREN: Lost World — مغامرة أصلية مستوحاة من فكرة ألعاب المغامرة داخل عالم غامض، وليست نسخة من أي عمل آخر.'),
-      ]))),
-      const SizedBox(height: 12),
-      TextField(onChanged:(v)=>setState(()=>query=v), decoration: const InputDecoration(prefixIcon:Icon(Icons.search), hintText:'ابحث عن لعبة', border:OutlineInputBorder())),
-      const SizedBox(height: 14),
-      GridView.builder(
-        shrinkWrap:true, physics:const NeverScrollableScrollPhysics(), itemCount:games.length,
-        gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:12,mainAxisSpacing:12,childAspectRatio:1.05),
-        itemBuilder:(context,i){final g=games[i];return Card(child:InkWell(borderRadius:BorderRadius.circular(12),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenGameRoom(game:g))),child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.center,children:[Icon(g.icon,size:34),const SizedBox(height:10),Text(g.title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:5),Text(g.subtitle,maxLines:2,overflow:TextOverflow.ellipsis),const SizedBox(height:8),const Text('PLAY ›')]))));},
-      )
-    ]),
-  );
-}
-
-class AurenGameRoom extends StatefulWidget {
-  final AurenGameDefinition game;
-  const AurenGameRoom({super.key,required this.game});
-  @override State<AurenGameRoom> createState()=>_AurenGameRoomState();
-}
-class _AurenGameRoomState extends State<AurenGameRoom> {
-  final rng=Random();
-  int score=0, turns=0, position=0, energy=3;
-  final List<String> log=[];
-  void action(){
-    final roll=rng.nextInt(6)+1;
-    setState(() {
-      turns++;
-      if(widget.game.id=='lost_world'){
-        position=min(100,position+roll);
-        score += roll*10;
-        energy=max(0,energy-(roll==1?1:0));
-        log.insert(0,'🎲 $roll — وصلت إلى $position% من الرحلة');
-        if(position>=100) log.insert(0,'🏆 انتهت الرحلة! الكنز لك.');
-      } else {
-        score += roll*10;
-        log.insert(0,'🎲 $roll — +${roll*10} نقطة');
-      }
-      if(log.length>6) log.removeLast();
-    });
-  }
-  @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:Text(widget.game.title)),
-    body:ListView(padding:const EdgeInsets.all(20),children:[
-      Icon(widget.game.icon,size:70),
-      const SizedBox(height:12),
-      Text(widget.game.title,style:const TextStyle(fontSize:28,fontWeight:FontWeight.bold),textAlign:TextAlign.center),
-      const SizedBox(height:8),
-      Text(widget.game.subtitle,textAlign:TextAlign.center),
-      const SizedBox(height:24),
-      if(widget.game.id=='lost_world') ...[
-        LinearProgressIndicator(value:position/100,minHeight:12),
-        const SizedBox(height:10),
-        Text('التقدم: $position% • الطاقة: $energy',textAlign:TextAlign.center),
-        const SizedBox(height:20),
-        const Text('كل رمية تغيّر الطريق. واجه أحداثًا عشوائية، اجمع الموارد، وأنهِ الرحلة قبل نفاد الطاقة.',textAlign:TextAlign.center),
-      ] else
-        const Text('نسخة لعب أولية تعمل محليًا الآن. نظام المباريات والنتائج والترتيب يمكن ربطه بالخادم دون تغيير واجهة اللعبة.',textAlign:TextAlign.center),
-      const SizedBox(height:24),
-      FilledButton.icon(onPressed:action,icon:const Icon(Icons.casino),label:Text(widget.game.id=='lost_world'?'ارمِ النرد وواصل المغامرة':'ابدأ الجولة')),
-      const SizedBox(height:18),
-      Text('Score: $score • Turns: $turns',textAlign:TextAlign.center,style:const TextStyle(fontWeight:FontWeight.bold)),
-      const SizedBox(height:12),
-      ...log.map((e)=>ListTile(leading:const Icon(Icons.bolt),title:Text(e))),
-    ]),
-  );
-}
-
-class _GameSearchDelegate extends SearchDelegate<AurenGameDefinition?> {
-  @override List<Widget>? buildActions(BuildContext context)=>[IconButton(onPressed:()=>query='',icon:const Icon(Icons.clear))];
-  @override Widget? buildLeading(BuildContext context)=>IconButton(onPressed:()=>close(context,null),icon:const Icon(Icons.arrow_back));
-  @override Widget buildResults(BuildContext context)=>_results();
-  @override Widget buildSuggestions(BuildContext context)=>_results();
-  Widget _results()=>ListView(children:AurenGamesCatalog.all.where((g)=>('${g.title} ${g.subtitle}').toLowerCase().contains(query.toLowerCase())).map((g)=>ListTile(leading:Icon(g.icon),title:Text(g.title),subtitle:Text(g.subtitle),onTap:()=>close(context,g))).toList());
+enum _Mode{adventure,board,memory,quiz,reaction,merge,dice}
+class AurenGameRoom extends StatefulWidget{final AurenGameDefinition game;const AurenGameRoom({super.key,required this.game});@override State<AurenGameRoom> createState()=>_AurenGameRoomState();}
+class _AurenGameRoomState extends State<AurenGameRoom>{
+ final rng=Random();late _Mode mode;int score=0,turn=0,pos=0,energy=3;bool over=false;String message='ابدأ اللعب';List<int> board=List.filled(9,0);List<int> pairs=[];List<bool> shown=[];int? first;
+ @override void initState(){super.initState();reset();}
+ _Mode pick(String id){if(['lost_world','jungle','island','treasure','escape','desert','ocean','pirates'].contains(id))return _Mode.adventure;if(['ludo','dominoes','chess','checkers','backgammon','connect4','tic_tac_toe','four_in_row','cards','dice'].contains(id))return _Mode.board;if(['memory','mines','fishing'].contains(id))return _Mode.memory;if(['quiz','crime_files','word_arena','business'].contains(id))return _Mode.quiz;if(['2048','tower','city','farm'].contains(id))return _Mode.merge;if(['snake','ninja','racing','drift','bike','football','basketball','boxing','tennis','volleyball','archery','golf','samurai','wars','space','space_wars','monster','heroes','zombies'].contains(id))return _Mode.reaction;return _Mode.dice;}
+ void reset(){mode=pick(widget.game.id);score=0;turn=0;pos=0;energy=3;over=false;message='ابدأ اللعب';board=List.filled(9,0);pairs=List.generate(8,(i)=>i~/2)..shuffle(rng);shown=List.filled(8,false);first=null;setStateIfMounted();}
+ void setStateIfMounted(){if(mounted)setState((){});}
+ void adventure(){if(over)return;final r=rng.nextInt(6)+1;setState((){turn++;pos=min(100,pos+r*5);score+=r*10;if(r==1)energy--;message='🎲 '+r.toString()+' — التقدم '+pos.toString()+'%';if(pos>=100||energy<=0){over=true;message=pos>=100?'🏆 فزت بالمغامرة!':'انتهت الطاقة';}});}
+ int winner(){const l=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(final x in l){if(board[x[0]]!=0&&board[x[0]]==board[x[1]]&&board[x[1]]==board[x[2]])return board[x[0]];}return 0;}
+ void move(int i){if(over||board[i]!=0)return;setState((){turn++;board[i]=1;score+=10;});if(winner()==1){setState((){over=true;message='🏆 فزت!';});return;}final free=[for(int j=0;j<9;j++)if(board[j]==0)j];if(free.isEmpty){setState((){over=true;message='تعادل';});return;}final a=free[rng.nextInt(free.length)];setState((){board[a]=2;score=max(0,score-2);if(winner()==2){over=true;message='🤖 الخصم فاز';}});}
+ void mem(int i){if(over||shown[i])return;setState((){shown[i]=true;turn++;});if(first==null){first=i;return;}final a=first!;first=null;if(pairs[a]==pairs[i]){setState((){score+=30;if(shown.every((x)=>x)){over=true;message='🏆 أكملت الذاكرة!';}});}else{Future.delayed(const Duration(milliseconds:500),(){if(mounted)setState((){shown[a]=false;shown[i]=false;});});}}
+ void quiz(){if(over)return;setState((){turn++;if(rng.nextBool()){score+=50;message='✅ صحيح +50';}else{message='❌ خطأ';}if(turn>=10){over=true;message='🏆 انتهى الاختبار — '+score.toString()+' نقطة';}});}
+ void tap(){if(over)return;setState((){turn++;if(rng.nextInt(100)>35){score+=20;message='⚡ حركة ناجحة';}else{energy--;message='💥 أخطأت';if(energy<=0)over=true;}});}
+ void merge(){if(over)return;setState((){turn++;score+=10+rng.nextInt(30);message='✨ حركة ناجحة';if(turn>=15){over=true;message='🏁 انتهت المرحلة — '+score.toString()+' نقطة';}});}
+ void dice(){if(over)return;final r=rng.nextInt(6)+1;setState((){turn++;score+=r*10;message='🎲 رمية '+r.toString()+' — +'+(r*10).toString();if(turn>=12){over=true;message='🏁 انتهت الجولة';}});}
+ Widget play(){switch(mode){case _Mode.adventure:return Column(children:[LinearProgressIndicator(value:pos/100,minHeight:12),const SizedBox(height:10),Text('التقدم '+pos.toString()+'% • الطاقة '+energy.toString()),const SizedBox(height:15),FilledButton.icon(onPressed:adventure,icon:const Icon(Icons.casino),label:const Text('ارمِ النرد وواصل المغامرة'))]);case _Mode.board:return GridView.builder(shrinkWrap:true,itemCount:9,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:3),itemBuilder:(c,i)=>InkWell(onTap:()=>move(i),child:Card(child:Center(child:Text(board[i]==1?'X':board[i]==2?'O':'',style:const TextStyle(fontSize:34,fontWeight:FontWeight.bold))))));case _Mode.memory:return GridView.builder(shrinkWrap:true,itemCount:8,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:4),itemBuilder:(c,i)=>InkWell(onTap:()=>mem(i),child:Card(child:Center(child:Text(shown[i]?('${pairs[i]+1}'): '?',style:const TextStyle(fontSize:28))))));case _Mode.quiz:return Column(children:[const Text('اختَر إجابة',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:12),Wrap(spacing:8,children:['A','B','C','D'].map((x)=>FilledButton(onPressed:quiz,child:Text(x))).toList())]);case _Mode.reaction:return FilledButton.icon(onPressed:tap,icon:const Icon(Icons.flash_on),label:const Text('تحرك / اضرب'));case _Mode.merge:return GridView.count(shrinkWrap:true,crossAxisCount:4,children:List.generate(16,(i)=>Card(child:InkWell(onTap:merge,child:Center(child:Text(i==0?'★':'·',style:const TextStyle(fontSize:28)))))));case _Mode.dice:return FilledButton.icon(onPressed:dice,icon:const Icon(Icons.casino),label:const Text('ارمِ النرد'));}}
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(widget.game.title),actions:[IconButton(onPressed:reset,icon:const Icon(Icons.refresh))]),body:ListView(padding:const EdgeInsets.all(20),children:[Icon(widget.game.icon,size:68),const SizedBox(height:10),Text(widget.game.title,style:const TextStyle(fontSize:27,fontWeight:FontWeight.bold),textAlign:TextAlign.center),const SizedBox(height:8),Text(widget.game.subtitle,textAlign:TextAlign.center),const SizedBox(height:22),play(),const SizedBox(height:18),Text(message,textAlign:TextAlign.center,style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text('Score: '+score.toString()+' • Rounds: '+turn.toString(),textAlign:TextAlign.center),if(over)Padding(padding:const EdgeInsets.only(top:16),child:FilledButton.icon(onPressed:reset,icon:const Icon(Icons.replay),label:const Text('العب مرة أخرى')))]));
 }
