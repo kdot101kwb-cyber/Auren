@@ -14,22 +14,27 @@ func _ready() -> void:
 	add_child(audio_player)
 
 func play_attack_fx(origin: Vector3) -> void:
+	_play_fx_sound(520.0, 0.07, 0.16, origin)
 	_spawn_burst(origin, 22, 0.22, 2.0, 6.0, Color(0.55,0.35,1.0), 0.06)
 	_spawn_ring(origin, Color(0.72,0.45,1.0), 0.35, 1.25)
 
 func play_hit_fx(origin: Vector3) -> void:
+	_play_fx_sound(180.0, 0.10, 0.20, origin)
 	_spawn_burst(origin, 30, 0.30, 2.0, 8.0, Color(1.0,0.35,0.12), 0.075)
 	_spawn_ring(origin, Color(1.0,0.4,0.12), 0.25, 0.9)
 
 func play_checkpoint_fx(origin: Vector3) -> void:
+	_play_fx_sound(760.0, 0.16, 0.18, origin)
 	_spawn_burst(origin, 55, 1.0, 1.0, 4.0, Color(0.2,0.8,1.0), 0.11)
 	_spawn_ring(origin, Color(0.2,0.9,1.0), 0.6, 2.6)
 
 func play_loot_fx(origin: Vector3) -> void:
+	_play_fx_sound(980.0, 0.12, 0.16, origin)
 	_spawn_burst(origin, 32, 0.65, 1.0, 3.5, Color(1.0,0.78,0.18), 0.055)
 	_spawn_ring(origin, Color(1.0,0.82,0.2), 0.45, 1.8)
 
 func play_player_death_fx(origin: Vector3) -> void:
+	_play_fx_sound(120.0, 0.24, 0.22, origin)
 	_spawn_burst(origin, 46, 0.7, 1.5, 5.0, Color(0.65,0.08,0.55), 0.07)
 	_spawn_ring(origin, Color(0.85,0.12,0.65), 0.35, 2.0)
 	_spawn_death_flash(origin)
@@ -49,8 +54,37 @@ func _spawn_death_flash(origin: Vector3) -> void:
 	tween.tween_callback(_finish_fx.bind(flash))
 
 func play_enemy_defeat_fx(origin: Vector3) -> void:
+	_play_fx_sound(240.0, 0.14, 0.20, origin)
 	_spawn_burst(origin, 38, 0.55, 1.5, 5.5, Color(0.9,0.12,0.08), 0.065)
 	_spawn_ring(origin, Color(1.0,0.18,0.08), 0.5, 1.7)
+
+func _play_fx_sound(frequency: float, duration: float, volume: float, origin: Vector3) -> void:
+	if not is_inside_tree():
+		return
+	var player := AudioStreamPlayer3D.new()
+	player.position = origin
+	player.max_distance = audio_player.max_distance
+	player.unit_size = audio_player.unit_size
+	var stream := AudioStreamGenerator.new()
+	stream.mix_rate = 22050.0
+	stream.buffer_length = max(0.08, duration + 0.03)
+	player.stream = stream
+	add_child(player)
+	player.play()
+	var playback := player.get_stream_playback() as AudioStreamGeneratorPlayback
+	if playback == null:
+		player.queue_free()
+		return
+	var frames := int(22050.0 * duration)
+	var data := PackedVector2Array()
+	data.resize(frames)
+	for i in range(frames):
+		var t := float(i) / 22050.0
+		var envelope := 1.0 - (float(i) / max(1.0, float(frames - 1)))
+		var sample := sin(TAU * frequency * t) * volume * envelope
+		data[i] = Vector2(sample, sample)
+	playback.push_buffer(data)
+	get_tree().create_timer(duration + 0.08).timeout.connect(player.queue_free)
 
 func _spawn_ring(origin: Vector3, tint: Color, start_radius: float, end_radius: float) -> void:
 	if active_fx >= max_active_fx:
