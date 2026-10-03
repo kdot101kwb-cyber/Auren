@@ -9,7 +9,7 @@ on:
 
 jobs:
   node-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         service:
@@ -45,7 +45,7 @@ jobs:
           if-no-files-found: ignore
 
   functions-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v5
@@ -72,7 +72,7 @@ jobs:
           if-no-files-found: ignore
 
   plugin-worker-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
       - name: Build plugin worker image
