@@ -41,8 +41,8 @@ func _physics_process(delta: float) -> void:
 
 func interact() -> void:
 	var world = get_parent()
-	if world.has_method("complete_objective") and global_position.z < -65:
-		world.complete_objective()
+	if world.has_method("try_interact"):
+		world.try_interact()
 
 func attack() -> void:
 	var world = get_parent()
