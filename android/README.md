@@ -1,0 +1,1 @@
+AUREN Android platform scaffold placeholder. Run `flutter create . --platforms=android --org com.auren` locally to generate the complete Flutter Android host, then run FlutterFire configuration for Firebase project auren-90ccc.
