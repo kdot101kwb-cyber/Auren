@@ -43,6 +43,20 @@ func build_world() -> void:
 	gate.mesh = gate_mesh
 	gate.position = Vector3(0, 2, -75)
 	add_child(gate)
+	# Reward chests create a second reason to explore instead of only rushing the gate.
+	for i in range(4):
+		var chest := MeshInstance3D.new()
+		chest.name = "RewardChest%d" % i
+		var chest_mesh := BoxMesh.new()
+		chest_mesh.size = Vector3(1.5, 0.9, 1.0)
+		chest.mesh = chest_mesh
+		chest.position = Vector3(-6 + i * 4.0, 0.45, -14 - i * 14.0)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.18,0.08,0.03)
+		mat.metallic = 0.35
+		mat.roughness = 0.45
+		chest.material_override = mat
+		add_child(chest)
 
 func spawn_encounters() -> void:
 	for i in range(4):
@@ -53,6 +67,7 @@ func spawn_encounters() -> void:
 			e.name = "Enemy%d" % i
 			e.position = Vector3((i - 1.5) * 4.0, 0, -18.0 - i * 10.0)
 			e.set_script(body)
+			e.enemy_tint = Color(0.35 + i * 0.10, 0.10, 0.08 + i * 0.06)
 			var shape := CollisionShape3D.new()
 			var capsule := CapsuleShape3D.new()
 			capsule.radius = 0.5
@@ -65,6 +80,8 @@ func register_enemy_defeat() -> void:
 	enemies_defeated += 1
 	combo += 1
 	loot += 10 + combo * 5
+	if combo % 3 == 0:
+		health = min(100, health + 10)
 	update_hud()
 
 func player_attack() -> void:
