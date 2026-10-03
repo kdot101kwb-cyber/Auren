@@ -12,6 +12,9 @@ func _ready() -> void:
 func take_damage(amount: int) -> void:
 	health = max(0, health - amount)
 	if health == 0:
+		var world = get_parent()
+		if world.has_method("register_enemy_defeat"):
+			world.register_enemy_defeat()
 		queue_free()
 
 func _physics_process(delta: float) -> void:
