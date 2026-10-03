@@ -30,13 +30,14 @@ func play_enemy_defeat_fx(origin: Vector3) -> void:
 	_spawn_ring(origin, Color(1.0,0.18,0.08), 0.5, 1.7)
 
 func _spawn_ring(origin: Vector3, tint: Color, start_radius: float, end_radius: float) -> void:
+	origin.y += 0.04
 	var ring := MeshInstance3D.new()
 	var mesh := TorusMesh.new()
 	mesh.inner_radius = 0.72
 	mesh.outer_radius = 0.86
 	ring.mesh = mesh
 	ring.position = origin
-	ring.scale = Vector3(start_radius, 0.08, start_radius)
+	ring.scale = Vector3(start_radius, 0.04, start_radius)
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = tint
 	mat.emission_enabled = true
@@ -48,7 +49,7 @@ func _spawn_ring(origin: Vector3, tint: Color, start_radius: float, end_radius: 
 	add_child(ring)
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(ring, "scale", Vector3(end_radius, 0.08, end_radius), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(ring, "scale", Vector3(end_radius, 0.04, end_radius), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(mat, "albedo_color:a", 0.0, 0.28)
 	tween.chain().tween_callback(ring.queue_free)
 
