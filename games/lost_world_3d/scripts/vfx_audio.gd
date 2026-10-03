@@ -1,6 +1,8 @@
 extends Node3D
 
 var audio_player: AudioStreamPlayer3D
+var active_fx := 0
+var max_active_fx := 120
 
 func _ready() -> void:
 	audio_player = AudioStreamPlayer3D.new()
@@ -30,6 +32,9 @@ func play_enemy_defeat_fx(origin: Vector3) -> void:
 	_spawn_ring(origin, Color(1.0,0.18,0.08), 0.5, 1.7)
 
 func _spawn_ring(origin: Vector3, tint: Color, start_radius: float, end_radius: float) -> void:
+	if active_fx >= max_active_fx:
+		return
+	active_fx += 1
 	origin.y += 0.04
 	var ring := MeshInstance3D.new()
 	var mesh := TorusMesh.new()
@@ -51,9 +56,12 @@ func _spawn_ring(origin: Vector3, tint: Color, start_radius: float, end_radius: 
 	tween.set_parallel(true)
 	tween.tween_property(ring, "scale", Vector3(end_radius, 0.04, end_radius), 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(mat, "albedo_color:a", 0.0, 0.28)
-	tween.chain().tween_callback(ring.queue_free)
+	tween.chain().tween_callback(_finish_fx.bind(ring))
 
 func _spawn_burst(origin: Vector3, count: int, life: float, min_speed: float, max_speed: float, tint: Color, size: float) -> void:
+	if active_fx >= max_active_fx:
+		return
+	active_fx += 1
 	var burst := GPUParticles3D.new()
 	burst.amount = count
 	burst.lifetime = life
@@ -74,4 +82,9 @@ func _spawn_burst(origin: Vector3, count: int, life: float, min_speed: float, ma
 	burst.emitting = true
 	await get_tree().create_timer(life + 0.15).timeout
 	if is_instance_valid(burst):
-		burst.queue_free()
+		_finish_fx(burst)
+
+func _finish_fx(node: Node) -> void:
+	if is_instance_valid(node):
+		node.queue_free()
+	active_fx = max(0, active_fx - 1)
