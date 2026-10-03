@@ -4,6 +4,7 @@ import '../../services/goals/goal_repository.dart';
 import '../../core/models/goal.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
+import '../../personal_ai/presentation/daily_plan_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import 'more_screen.dart';
@@ -408,6 +409,7 @@ class AurenHomeV2 extends StatelessWidget {
         _card(context, Icons.explore_outlined, 'Discover', 'ناس، أماكن، محتوى وفرص حولك.', const AurenDiscoverScreen()),
         _card(context, Icons.chat_bubble_outline, 'Messenger', 'تواصل مع الناس وAUREN AI.', const MessengerScreen()),
         _card(context, Icons.flag_outlined, 'Goal → Reality', 'حوّل الهدف إلى خطوات.', const PersonalAiScreen()),
+        _card(context, Icons.today_outlined, 'Daily Plan', 'خطة اليوم المرتبطة بهدفك مع متابعة التنفيذ.', const AurenDailyPlanScreen()),
         _card(context, Icons.bookmark_outline, 'Saved', 'كل المحتوى الذي حفظته في AUREN.', const AurenSavedCenterScreen()),
         _card(context, Icons.work_outline, 'AUREN Work Center', 'الأعمال والمسودات التي أنشأها الوكلاء بعد موافقتك.', const AurenWorkArtifactsScreen()),
         _card(context, Icons.track_changes, 'Action Center', 'تابع كل إجراء بدأته من Match Everything.', const AurenActionCenterScreen()),
