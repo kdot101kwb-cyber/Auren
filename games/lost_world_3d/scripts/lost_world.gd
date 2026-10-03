@@ -7,6 +7,7 @@ var objective_complete := false
 var save_path := "user://lost_world_checkpoint.save"
 @onready var player: CharacterBody3D = $Player
 @onready var combat: Node = $Player/Combat
+@onready var vfx_audio: Node3D = $VFXAudio
 
 func _ready() -> void:
 	load_checkpoint()
@@ -40,7 +41,10 @@ func build_world() -> void:
 
 func player_attack() -> void:
 	if combat != null and combat.has_method("try_attack"):
-		combat.try_attack(player)
+		var hit = combat.try_attack(player)
+		vfx_audio.play_attack_fx(player.global_position)
+		if hit:
+			vfx_audio.play_hit_fx(player.global_position)
 
 func damage(amount: int) -> void:
 	health = max(0, health - amount)
@@ -55,6 +59,7 @@ func complete_objective() -> void:
 	objective_complete = true
 	checkpoint += 1
 	save_checkpoint()
+	vfx_audio.play_checkpoint_fx(player.global_position)
 	update_hud()
 
 func save_checkpoint() -> void:
