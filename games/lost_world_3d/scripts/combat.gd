@@ -8,6 +8,7 @@ var timer := 0.0
 var combo_hits := 0
 var combo_timer := 0.0
 var last_hit_position := Vector3.ZERO
+var last_attack_fired := false
 
 func _process(delta: float) -> void:
 	timer = max(0.0, timer - delta)
@@ -17,10 +18,12 @@ func _process(delta: float) -> void:
 
 func try_attack(owner: Node3D) -> bool:
 	last_hit_position = Vector3.ZERO
+	last_attack_fired = false
 	if timer > 0.0:
 		return false
 
 	timer = cooldown
+	last_attack_fired = true
 	combo_timer = combo_window
 	combo_hits += 1
 
