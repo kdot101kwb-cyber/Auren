@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   runner:
-    runs-on: ubuntu-24.04
+    runs-on: windows-latest
     timeout-minutes: 10
     steps:
       - name: Runner smoke test
