@@ -34,8 +34,8 @@ func _build_action_buttons() -> void:
 		var b := Button.new()
 		b.name = spec.name
 		b.text = spec.text
-		b.position = Vector2(get_viewport().size.x * spec.pos.x, get_viewport().size.y * spec.pos.y)
 		b.size = Vector2(76,76)
+		b.position = _button_position(spec.pos)
 		b.modulate.a = 0.78
 		b.mouse_filter = Control.MOUSE_FILTER_STOP
 		action_root.add_child(b)
@@ -52,6 +52,13 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED and action_root != null:
 		_layout_buttons()
 
+func _button_position(anchor: Vector2) -> Vector2:
+	var size := get_viewport().get_visible_rect().size
+	return Vector2(
+		clamp(size.x * anchor.x, 8.0, max(8.0, size.x - 84.0)),
+		clamp(size.y * anchor.y, 8.0, max(8.0, size.y - 84.0))
+	)
+
 func _layout_buttons() -> void:
 	for b in action_root.get_children():
 		var pos := Vector2.ZERO
@@ -61,7 +68,7 @@ func _layout_buttons() -> void:
 			"Interact": pos = Vector2(0.84,0.58)
 			"Sprint": pos = Vector2(0.56,0.86)
 			"Dodge": pos = Vector2(0.69,0.63)
-		b.position = Vector2(get_viewport().size.x * pos.x, get_viewport().size.y * pos.y)
+		b.position = _button_position(pos)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
