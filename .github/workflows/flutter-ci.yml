@@ -12,11 +12,11 @@ permissions:
 
 jobs:
   flutter:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -46,7 +46,7 @@ jobs:
 
       - name: Upload Analyze diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: flutter-analyze-diagnostics
           path: flutter-analyze.log
@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload Test diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: flutter-test-diagnostics
           path: flutter-test.log
@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload Android debug APK
         if: ${{ hashFiles('android/**') != '' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: auren-android-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
