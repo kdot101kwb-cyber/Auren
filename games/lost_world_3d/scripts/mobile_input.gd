@@ -13,16 +13,17 @@ var move_touch := -1
 var look_touch := -1
 var move_start := Vector2.ZERO
 var look_start := Vector2.ZERO
+var action_root: Control
 
 func _ready() -> void:
 	_build_action_buttons()
 
 func _build_action_buttons() -> void:
-	var root := Control.new()
-	root.name = "ActionButtons"
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(root)
+	action_root = Control.new()
+	action_root.name = "ActionButtons"
+	action_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	action_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(action_root)
 	for spec in [
 		{"name":"Attack","text":"⚔","pos":Vector2(0.80,0.72),"signal":"attack"},
 		{"name":"Jump","text":"↑","pos":Vector2(0.68,0.78),"signal":"jump"},
@@ -37,7 +38,7 @@ func _build_action_buttons() -> void:
 		b.size = Vector2(76,76)
 		b.modulate.a = 0.78
 		b.mouse_filter = Control.MOUSE_FILTER_STOP
-		root.add_child(b)
+		action_root.add_child(b)
 		match spec.signal:
 			"attack": b.pressed.connect(func(): attack_pressed.emit())
 			"jump": b.pressed.connect(func(): jump_pressed.emit())
@@ -46,6 +47,21 @@ func _build_action_buttons() -> void:
 				b.button_down.connect(func(): sprint_active = true; sprint_pressed.emit(true))
 				b.button_up.connect(func(): sprint_active = false; sprint_pressed.emit(false))
 			"dodge": b.pressed.connect(func(): dodge_pressed.emit())
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and action_root != null:
+		_layout_buttons()
+
+func _layout_buttons() -> void:
+	for b in action_root.get_children():
+		var pos := Vector2.ZERO
+		match b.name:
+			"Attack": pos = Vector2(0.80,0.72)
+			"Jump": pos = Vector2(0.68,0.78)
+			"Interact": pos = Vector2(0.84,0.58)
+			"Sprint": pos = Vector2(0.56,0.86)
+			"Dodge": pos = Vector2(0.69,0.63)
+		b.position = Vector2(get_viewport().size.x * pos.x, get_viewport().size.y * pos.y)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
