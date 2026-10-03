@@ -5,6 +5,8 @@ var active_fx := 0
 var max_active_fx := 120
 
 func _ready() -> void:
+	if OS.has_feature("mobile"):
+		max_active_fx = 72
 	audio_player = AudioStreamPlayer3D.new()
 	audio_player.name = "SpatialAudio"
 	audio_player.max_distance = 45.0
