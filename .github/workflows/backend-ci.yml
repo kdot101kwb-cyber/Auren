@@ -9,15 +9,15 @@ on:
 
 jobs:
   node-tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         service:
           - backend/action-executor
           - backend/plugin-worker
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Install service dependencies
@@ -38,17 +38,17 @@ jobs:
 
       - name: Upload Node test diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: node-test-diagnostics-${{ matrix.service == 'backend/action-executor' && 'action-executor' || 'plugin-worker' }}
           path: ${{ matrix.service }}/ci-test.log
           if-no-files-found: ignore
 
   functions-tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Install Functions dependencies
@@ -65,15 +65,15 @@ jobs:
 
       - name: Upload Functions test diagnostics
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: functions-test-diagnostics
           path: functions/ci-test.log
           if-no-files-found: ignore
 
   plugin-worker-image:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: Build plugin worker image
         run: docker build -t auren-plugin-worker:ci backend/plugin-worker
