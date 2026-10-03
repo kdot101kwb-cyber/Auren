@@ -36,6 +36,9 @@ class LivestockPlanningService {
     required double bodyWeightKg,
     String stage = 'maintenance',
   }) {
+    if (!{'cattle','sheep','goats','camels','poultry'}.contains(species)) throw ArgumentError('نوع الحيوان غير مدعوم.');
+    if (!{'growth','fattening','pregnancy','lactation','maintenance'}.contains(stage)) throw ArgumentError('مرحلة الإنتاج غير مدعومة.');
+    if (!bodyWeightKg.isFinite || bodyWeightKg <= 0 || bodyWeightKg > 20000) throw ArgumentError('الوزن يجب أن يكون أكبر من صفر وضمن نطاق منطقي.');
     final base = <String, double>{
       'cattle': 2.5,
       'sheep': 3.0,
@@ -70,6 +73,8 @@ class LivestockPlanningService {
     required String animalId,
     required LivestockFeedPlan plan,
   }) async {
+    _validateOwnerAndAnimal(uid, animalId);
+    if (!plan.bodyWeightKg.isFinite || plan.bodyWeightKg <= 0 || !plan.dailyFeedKg.isFinite || plan.dailyFeedKg < 0 || !plan.dailyWaterLiters.isFinite || plan.dailyWaterLiters < 0) throw ArgumentError('خطة التغذية غير صالحة.');
     final ref = _plans(uid).doc();
     await ref.set({
       'animalId': animalId,
@@ -93,12 +98,16 @@ class LivestockPlanningService {
     required DateTime dueAt,
     String note = '',
   }) async {
+    _validateOwnerAndAnimal(uid, animalId);
+    final cleanTitle = title.trim(), cleanType = type.trim(), cleanNote = note.trim();
+    if (cleanTitle.isEmpty || cleanTitle.length > 160 || cleanType.isEmpty || cleanType.length > 40 || cleanNote.length > 1000) throw ArgumentError('بيانات الجدول غير مكتملة أو طويلة.');
+    if (dueAt.isBefore(DateTime.now().subtract(const Duration(days: 365)))) throw ArgumentError('تاريخ الجدولة قديم جداً.');
     final ref = _schedules(uid).doc();
     await ref.set({
       'animalId': animalId,
-      'type': type,
-      'title': title.trim(),
-      'note': note.trim(),
+      'type': cleanType,
+      'title': cleanTitle,
+      'note': cleanNote,
       'dueAt': Timestamp.fromDate(dueAt),
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
@@ -117,9 +126,18 @@ class LivestockPlanningService {
           .limit(limit)
           .snapshots();
 
-  Future<void> completeSchedule(String uid, String scheduleId) =>
-      _schedules(uid).doc(scheduleId).update({
-        'status': 'completed',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+  Future<void> completeSchedule(String uid, String scheduleId) async {
+    _validateOwnerAndAnimal(uid, 'schedule');
+    if (scheduleId.trim().isEmpty || scheduleId.length > 128) throw ArgumentError('معرّف الجدول غير صالح.');
+    final ref = _schedules(uid).doc(scheduleId);
+    final snap = await ref.get();
+    if (!snap.exists) throw StateError('الموعد غير موجود.');
+    if (snap.data()?['status'] != 'pending') throw StateError('هذا الموعد ليس قيد الانتظار.');
+    await ref.update({'status': 'completed', 'updatedAt': FieldValue.serverTimestamp()});
+  }
+
+  void _validateOwnerAndAnimal(String uid, String animalId) {
+    if (uid.trim().isEmpty || uid.length > 128) throw ArgumentError('معرّف المستخدم غير صالح.');
+    if (animalId.trim().isEmpty || animalId.length > 128) throw ArgumentError('معرّف الحيوان مطلوب.');
+  }
 }
