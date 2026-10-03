@@ -144,6 +144,10 @@ class EducationRepository {
         throw StateError('الدورة غير متاحة');
       }
       if (!enrollmentSnap.exists) throw StateError('سجّل في الدورة أولاً');
+      final previousCompleted = (enrollmentSnap.data()?['completedLessons'] as num?)?.toInt() ?? 0;
+      if (completed < previousCompleted) {
+        throw StateError('لا يمكن تقليل تقدمك في الدورة');
+      }
 
       final lessonCount = (courseSnap.data()?['lessonCount'] as num?)?.toInt() ?? 0;
       if (lessonCount < 1 || completed > lessonCount) {
