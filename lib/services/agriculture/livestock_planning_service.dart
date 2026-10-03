@@ -127,7 +127,7 @@ class LivestockPlanningService {
           .snapshots();
 
   Future<void> completeSchedule(String uid, String scheduleId) async {
-    _validateOwnerAndAnimal(uid, 'schedule');
+    if (uid.trim().isEmpty || uid.length > 128) throw ArgumentError('معرّف المستخدم غير صالح.');
     if (scheduleId.trim().isEmpty || scheduleId.length > 128) throw ArgumentError('معرّف الجدول غير صالح.');
     final ref = _schedules(uid).doc(scheduleId);
     final snap = await ref.get();
