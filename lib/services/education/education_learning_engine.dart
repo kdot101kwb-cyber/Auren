@@ -15,7 +15,6 @@ class EducationLearningEngine {
     required int minutesPerDay,
     List<String> focusAreas = const [],
   }) async {
-    final plan = _plans(cleanUid).doc(cleanPlanId);
     final cleanUid=uid.trim(), cleanPlanId=planId.trim(), cleanSubject=subject.trim(), cleanLevel=level.trim();
     final cleanFocus=focusAreas.map((e)=>e.trim()).where((e)=>e.isNotEmpty).take(10).toList();
     if (cleanUid.isEmpty || cleanUid.length>128 || cleanPlanId.isEmpty || cleanPlanId.length>128 ||
@@ -23,6 +22,7 @@ class EducationLearningEngine {
         focusAreas.any((e)=>e.trim().length>80)) {
       throw ArgumentError('بيانات خطة التعلم غير صالحة');
     }
+    final plan = _plans(cleanUid).doc(cleanPlanId);
     final existing = await plan.collection('tasks').limit(1).get();
     if (existing.docs.isNotEmpty) return;
 
@@ -69,14 +69,14 @@ class EducationLearningEngine {
     if (!snap.exists || snap.data()?['completed'] == true) return;
     await ref.update({'completed':true,'completedAt':FieldValue.serverTimestamp()});
     await _plans(cleanUid).doc(cleanPlanId).set({
-      'lastCompletedTask':taskId,
+      'lastCompletedTask':cleanTaskId,
       'nextAction':'continue',
       'lastActivityAt':FieldValue.serverTimestamp(),
       'updatedAt':FieldValue.serverTimestamp(),
     },SetOptions(merge:true));
 
     await db.collection('users').doc(cleanUid).collection('educationSkills').doc(cleanSubject.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_-]'),'_').substring(0, 120)).set({
-      'name':cleanSubject,'level':levelFromTask(subject),'lastActivityAt':FieldValue.serverTimestamp(),
+      'name':cleanSubject,'level':levelFromTask(cleanSubject),'lastActivityAt':FieldValue.serverTimestamp(),
       'source':'learning_plan',
     },SetOptions(merge:true));
   }
