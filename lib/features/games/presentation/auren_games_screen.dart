@@ -1,15 +1,16 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../services/gaming/auren_games_catalog.dart';
+import '../../../services/gaming/aaa_game_spec.dart';
 
 class AurenGamesScreen extends StatefulWidget { const AurenGamesScreen({super.key}); @override State<AurenGamesScreen> createState()=>_AurenGamesScreenState(); }
 class _AurenGamesScreenState extends State<AurenGamesScreen>{
  String query='';
  List<AurenGameDefinition> get games=>AurenGamesCatalog.all.where((g){final q=query.trim().toLowerCase();return q.isEmpty|| (g.title+' '+g.subtitle).toLowerCase().contains(q);}).toList();
  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('AUREN Games')),body:ListView(padding:const EdgeInsets.all(16),children:[
-  const Card(child:Padding(padding:EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('AUREN Gaming',style:TextStyle(fontSize:28,fontWeight:FontWeight.bold)),SizedBox(height:6),Text('50 لعبة قابلة للعب الآن'),SizedBox(height:10),Text('كل لعبة لها نمط لعب تفاعلي وإعادة تشغيل. AUREN: Lost World لها نمط مغامرة خاص.')]))),
+  const Card(child:Padding(padding:EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('AUREN Gaming',style:TextStyle(fontSize:28,fontWeight:FontWeight.bold)),SizedBox(height:6),Text('50 لعبة — مسار 3D AAA'),SizedBox(height:10),Text('3D AAA هو معيار الإنتاج الدائم: العالم، الشخصيات، الحركة، الصوت، الأداء، الحفظ والـMultiplayer عند الحاجة.')]))),
   const SizedBox(height:12),TextField(onChanged:(v)=>setState(()=>query=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن لعبة',border:OutlineInputBorder())),const SizedBox(height:12),
-  GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:12,mainAxisSpacing:12,childAspectRatio:1.05),itemBuilder:(c,i){final g=games[i];return Card(child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>AurenGameRoom(game:g))),child:Padding(padding:const EdgeInsets.all(14),child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(g.icon,size:34),const SizedBox(height:8),Text(g.title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:5),Text(g.subtitle,maxLines:2,overflow:TextOverflow.ellipsis),const SizedBox(height:8),const Text('PLAY ›')]))));})
+  GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),itemCount:games.length,gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:12,mainAxisSpacing:12,childAspectRatio:1.05),itemBuilder:(c,i){final g=games[i];final aaa=AurenAaaGameManifest.forGame(g.id);return Card(child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>AurenGameRoom(game:g))),child:Padding(padding:const EdgeInsets.all(14),child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(g.icon,size:34),const SizedBox(height:8),Text(g.title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)),const SizedBox(height:5),Text(g.subtitle,maxLines:2,overflow:TextOverflow.ellipsis),const SizedBox(height:8),Text('3D AAA • ${aaa.runtime}')]))));})
  ]));
 }
 
