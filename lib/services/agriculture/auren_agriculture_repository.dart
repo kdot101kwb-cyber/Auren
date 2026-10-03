@@ -75,6 +75,10 @@ class AurenAgricultureRepository {
     String material = '',
     String invention = '',
   }) async {
+    if (!{'crop','livestock','soil','pest','irrigation','general'}.contains(type)) throw ArgumentError('نوع الاستشارة غير صالح.');
+    final cleanObservations = observations.trim();
+    if (cleanObservations.isEmpty || cleanObservations.length > 5000) throw ArgumentError('الملاحظات مطلوبة وبحد أقصى 5000 حرف.');
+    for (final value in [location,crop,animal,material,invention]) { if (value.trim().length > 160) throw ArgumentError('أحد الحقول أطول من المسموح.'); }
     final result = await FirebaseFunctions.instance
         .httpsCallable('aurenAgricultureAdvisor')
         .call({
@@ -84,7 +88,7 @@ class AurenAgricultureRepository {
       'animal': animal.trim(),
       'material': material.trim(),
       'invention': invention.trim(),
-      'observations': observations.trim(),
+      'observations': cleanObservations,
     });
     return (result.data is Map ? (result.data['advice'] ?? '') : '').toString();
   }
@@ -95,11 +99,15 @@ class AurenAgricultureRepository {
     required String note,
     required String type,
   }) async {
-    final ref = db.collection('users').doc(uid).collection('agricultureNotes').doc();
+    final cleanUid=uid.trim(), cleanTitle=title.trim(), cleanNote=note.trim(), cleanType=type.trim();
+    if(cleanUid.isEmpty||cleanUid.length>128) throw ArgumentError('معرّف المستخدم غير صالح.');
+    if(cleanTitle.isEmpty||cleanTitle.length>160||cleanNote.isEmpty||cleanNote.length>3000) throw ArgumentError('عنوان الملاحظة ونصها مطلوبان وبطول مناسب.');
+    if(!{'crop','livestock','soil','pest','irrigation','general'}.contains(cleanType)) throw ArgumentError('نوع الملاحظة غير صالح.');
+    final ref = db.collection('users').doc(cleanUid).collection('agricultureNotes').doc();
     await ref.set({
-      'title': title.trim(),
-      'note': note.trim(),
-      'type': type,
+      'title': cleanTitle,
+      'note': cleanNote,
+      'type': cleanType,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
