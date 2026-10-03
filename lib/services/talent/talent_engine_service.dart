@@ -42,25 +42,30 @@ class AurenTalentEngineService {
       scout(query:[title,description,...skills].join(' '),excludeUid:excludeUid,limit:limit);
 
   Future<void> inviteToOpportunity({required String ownerId,required String talentUid,required String opportunityId,required String opportunityTitle}) async {
-    if(ownerId.trim().isEmpty || talentUid.trim().isEmpty || opportunityId.trim().isEmpty) throw ArgumentError('بيانات الدعوة غير مكتملة.');
-    if(ownerId == talentUid) throw ArgumentError('لا يمكن دعوة نفسك.');
-    final ref=_db.collection('opportunity_invitations').doc('${opportunityId}_$talentUid');
+    final cleanOwnerId=ownerId.trim(), cleanTalentUid=talentUid.trim(), cleanOpportunityId=opportunityId.trim(), cleanTitle=opportunityTitle.trim();
+    if(cleanOwnerId.isEmpty || cleanTalentUid.isEmpty || cleanOpportunityId.isEmpty) throw ArgumentError('بيانات الدعوة غير مكتملة.');
+    if(cleanOwnerId.length > 128 || cleanTalentUid.length > 128 || cleanOpportunityId.length > 128) throw ArgumentError('معرّف الدعوة طويل جدًا.');
+    if(cleanOwnerId == cleanTalentUid) throw ArgumentError('لا يمكن دعوة نفسك.');
+    if(cleanTitle.isEmpty || cleanTitle.length > 200) throw ArgumentError('عنوان الفرصة غير صالح.');
+    final ref=_db.collection('opportunity_invitations').doc('${cleanOpportunityId}_$cleanTalentUid');
     await ref.set({
-      'ownerId': ownerId,
-      'talentUid': talentUid,
-      'opportunityId': opportunityId,
-      'opportunityTitle': opportunityTitle.trim().length > 200 ? opportunityTitle.trim().substring(0,200) : opportunityTitle.trim(),
+      'ownerId': cleanOwnerId,
+      'talentUid': cleanTalentUid,
+      'opportunityId': cleanOpportunityId,
+      'opportunityTitle': cleanTitle,
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
   Future<void> respondToInvitation({required String invitationId,required String talentUid,required String status}) async {
+    final cleanInvitationId=invitationId.trim(), cleanTalentUid=talentUid.trim();
+    if(cleanInvitationId.isEmpty || cleanInvitationId.length > 256 || cleanTalentUid.isEmpty || cleanTalentUid.length > 128) throw ArgumentError('بيانات الرد غير صالحة.');
     if(!['accepted','declined'].contains(status)) throw ArgumentError('حالة الدعوة غير صالحة.');
-    final ref=_db.collection('opportunity_invitations').doc(invitationId);
+    final ref=_db.collection('opportunity_invitations').doc(cleanInvitationId);
     final snap=await ref.get();
     final data=snap.data();
-    if(data==null || data['talentUid'] != talentUid) throw StateError('الدعوة غير موجودة.');
+    if(data==null || data['talentUid'] != cleanTalentUid) throw StateError('الدعوة غير موجودة.');
     if(data['status'] != 'pending') throw StateError('تمت معالجة هذه الدعوة بالفعل.');
     await ref.update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
   }
