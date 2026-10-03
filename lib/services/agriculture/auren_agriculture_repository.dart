@@ -101,8 +101,8 @@ class AurenAgricultureRepository {
   }) async {
     final cleanUid=uid.trim(), cleanTitle=title.trim(), cleanNote=note.trim(), cleanType=type.trim();
     if(cleanUid.isEmpty||cleanUid.length>128) throw ArgumentError('معرّف المستخدم غير صالح.');
-    if(cleanTitle.isEmpty||cleanTitle.length>160||cleanNote.isEmpty||cleanNote.length>3000) throw ArgumentError('عنوان الملاحظة ونصها مطلوبان وبطول مناسب.');
-    if(!{'crop','livestock','soil','pest','irrigation','general'}.contains(cleanType)) throw ArgumentError('نوع الملاحظة غير صالح.');
+    if(cleanTitle.isEmpty||cleanTitle.length>160||cleanNote.isEmpty||cleanNote.length>5000) throw ArgumentError('عنوان الملاحظة ونصها مطلوبان وبطول مناسب.');
+    if(!{'crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility'}.contains(cleanType)) throw ArgumentError('نوع الملاحظة غير صالح.');
     final ref = db.collection('users').doc(cleanUid).collection('agricultureNotes').doc();
     await ref.set({
       'title': cleanTitle,
