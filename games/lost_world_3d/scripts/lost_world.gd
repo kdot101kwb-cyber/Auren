@@ -11,6 +11,7 @@ var world_time := 0.0
 var combo_timer := 0.0
 var opened_chests := {}
 var respawn_position := Vector3.ZERO
+var run_ended := false
 var save_path := "user://lost_world_checkpoint.save"
 @onready var player: CharacterBody3D = $Player
 @onready var combat: Node = $Player/Combat
@@ -146,9 +147,12 @@ func try_interact() -> void:
 		complete_objective()
 
 func complete_objective() -> void:
+	if run_ended:
+		return
 	if objective_complete:
 		return
 	objective_complete = true
+	run_ended = true
 	checkpoint += 1
 	save_checkpoint()
 	vfx_audio.play_checkpoint_fx(player.global_position)
@@ -157,7 +161,7 @@ func complete_objective() -> void:
 func save_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
-		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests})
+		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended})
 
 func load_checkpoint() -> void:
 	if not FileAccess.file_exists(save_path):
@@ -171,6 +175,7 @@ func load_checkpoint() -> void:
 		enemies_defeated = int(data.get("enemies_defeated", 0))
 		loot = int(data.get("loot", 0))
 		opened_chests = data.get("opened_chests", {})
+		run_ended = bool(data.get("run_ended", objective_complete))
 
 func update_hud() -> void:
 	var status := get_node_or_null("HUD/Status")
@@ -178,4 +183,4 @@ func update_hud() -> void:
 		status.text = "LOST WORLD  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d  •  COMBO %d" % [checkpoint, health, enemies_defeated, loot, combo]
 	var objective := get_node_or_null("HUD/Objective")
 	if objective:
-		objective.text = "Gate reached • Reward secured" if objective_complete else "Objective: Reach the ancient gate • Defeat enemies to earn loot"
+		objective.text = "RUN COMPLETE • Reward secured" if objective_complete else "Objective: Reach the ancient gate • Defeat enemies to earn loot"
