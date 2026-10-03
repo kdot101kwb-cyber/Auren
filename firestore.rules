@@ -566,7 +566,7 @@ service cloud.firestore {
           && request.resource.data.key.size() <= 120
           && request.resource.data.value is string
           && request.resource.data.value.size() > 0
-          && request.resource.data.value.size() <= 2000
+          && request.resource.data.value.size() <= 4000
           && request.resource.data.enabled is bool
           && request.resource.data.updatedAt is string
           && request.resource.data.keys().hasOnly([
@@ -579,7 +579,7 @@ service cloud.firestore {
           && request.resource.data.key.size() <= 120
           && request.resource.data.value is string
           && request.resource.data.value.size() > 0
-          && request.resource.data.value.size() <= 2000
+          && request.resource.data.value.size() <= 4000
           && request.resource.data.enabled is bool
           && request.resource.data.updatedAt is string
           && request.resource.data.keys().hasOnly([
