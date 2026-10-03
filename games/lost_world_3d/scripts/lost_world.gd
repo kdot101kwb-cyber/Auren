@@ -4,6 +4,10 @@ var checkpoint := 0
 var health := 100
 var stamina := 100.0
 var objective_complete := false
+var enemies_defeated := 0
+var loot := 0
+var combo := 0
+var world_time := 0.0
 var save_path := "user://lost_world_checkpoint.save"
 @onready var player: CharacterBody3D = $Player
 @onready var combat: Node = $Player/Combat
@@ -12,6 +16,7 @@ var save_path := "user://lost_world_checkpoint.save"
 func _ready() -> void:
 	load_checkpoint()
 	build_world()
+	spawn_encounters()
 	update_hud()
 
 func build_world() -> void:
@@ -38,6 +43,29 @@ func build_world() -> void:
 	gate.mesh = gate_mesh
 	gate.position = Vector3(0, 2, -75)
 	add_child(gate)
+
+func spawn_encounters() -> void:
+	for i in range(4):
+		var enemy = get_node_or_null("Enemy" if i == 0 else "Enemy%d" % i)
+		if enemy == null:
+			var body := preload("res://scripts/enemy.gd")
+			var e := CharacterBody3D.new()
+			e.name = "Enemy%d" % i
+			e.position = Vector3((i - 1.5) * 4.0, 0, -18.0 - i * 10.0)
+			e.set_script(body)
+			var shape := CollisionShape3D.new()
+			var capsule := CapsuleShape3D.new()
+			capsule.radius = 0.5
+			capsule.height = 1.9
+			shape.shape = capsule
+			e.add_child(shape)
+			add_child(e)
+
+func register_enemy_defeat() -> void:
+	enemies_defeated += 1
+	combo += 1
+	loot += 10 + combo * 5
+	update_hud()
 
 func player_attack() -> void:
 	if combat != null and combat.has_method("try_attack"):
@@ -80,7 +108,7 @@ func load_checkpoint() -> void:
 func update_hud() -> void:
 	var status := get_node_or_null("HUD/Status")
 	if status:
-		status.text = "LOST WORLD  •  CHECKPOINT %d  •  HP %d" % [checkpoint, health]
+		status.text = "LOST WORLD  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d" % [checkpoint, health, enemies_defeated, loot]
 	var objective := get_node_or_null("HUD/Objective")
 	if objective:
-		objective.text = "Objective: Gate reached" if objective_complete else "Objective: Reach the ancient gate"
+		objective.text = "Gate reached • Reward secured" if objective_complete else "Objective: Reach the ancient gate • Defeat enemies to earn loot"
