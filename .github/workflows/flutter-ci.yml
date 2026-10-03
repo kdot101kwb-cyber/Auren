@@ -68,18 +68,20 @@ jobs:
           path: flutter-test.log
           if-no-files-found: ignore
 
+      - name: Ensure Android platform
+        run: |
+          if [ ! -f android/app/src/main/AndroidManifest.xml ]; then
+            flutter create . --platforms=android --org com.auren
+          fi
+          test -f android/app/src/main/AndroidManifest.xml
+
       - name: Build Android debug APK
-        if: ${{ hashFiles('android/**') != '' }}
         run: flutter build apk --debug
 
       - name: Upload Android debug APK
-        if: ${{ hashFiles('android/**') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: auren-android-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
 
-      - name: Android platform status
-        if: ${{ hashFiles('android/**') == '' }}
-        run: echo "Android platform files are not committed yet; Flutter analysis and tests passed, so APK build is skipped."
