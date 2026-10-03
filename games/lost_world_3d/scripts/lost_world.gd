@@ -12,6 +12,7 @@ var combo_timer := 0.0
 var opened_chests := {}
 var respawn_position := Vector3.ZERO
 var run_ended := false
+var elapsed_run_time := 0.0
 var save_path := "user://lost_world_checkpoint.save"
 @onready var player: CharacterBody3D = $Player
 @onready var combat: Node = $Player/Combat
@@ -85,6 +86,8 @@ func spawn_encounters() -> void:
 
 func _process(delta: float) -> void:
 	world_time += delta
+	if not run_ended:
+		elapsed_run_time += delta
 	if combo > 0:
 		combo_timer -= delta
 		if combo_timer <= 0.0:
@@ -161,7 +164,7 @@ func complete_objective() -> void:
 func save_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
-		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended})
+		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time})
 
 func load_checkpoint() -> void:
 	if not FileAccess.file_exists(save_path):
@@ -176,11 +179,16 @@ func load_checkpoint() -> void:
 		loot = int(data.get("loot", 0))
 		opened_chests = data.get("opened_chests", {})
 		run_ended = bool(data.get("run_ended", objective_complete))
+		elapsed_run_time = float(data.get("elapsed_run_time", 0.0))
+
+func _format_time(seconds: float) -> String:
+	var total := int(seconds)
+	return "%02d:%02d" % [total / 60, total % 60]
 
 func update_hud() -> void:
 	var status := get_node_or_null("HUD/Status")
 	if status:
-		status.text = "LOST WORLD  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d  •  COMBO %d" % [checkpoint, health, enemies_defeated, loot, combo]
+		status.text = "LOST WORLD  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d  •  COMBO %d  •  TIME %s" % [checkpoint, health, enemies_defeated, loot, combo, _format_time(elapsed_run_time)]
 	var objective := get_node_or_null("HUD/Objective")
 	if objective:
 		objective.text = "RUN COMPLETE • Reward secured" if objective_complete else "Objective: Reach the ancient gate • Defeat enemies to earn loot"
