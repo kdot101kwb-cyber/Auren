@@ -8,8 +8,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - flutter-{{ checksum "pubspec.lock" }}
-            - flutter-
+            - flutter-deps-v1-
+            - flutter-deps-v1
       - run:
           name: Flutter version
           command: flutter --version && dart --version
@@ -17,7 +17,7 @@ jobs:
           name: Get dependencies
           command: flutter pub get
       - save_cache:
-          key: flutter-{{ checksum "pubspec.lock" }}
+          key: flutter-deps-v1-{{ .Branch }}
           paths:
             - ~/.pub-cache
       - run:
@@ -49,13 +49,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - functions-node-{{ checksum "functions/package-lock.json" }}
-            - functions-node-
+            - functions-node-v1-
+            - functions-node-v1
       - run:
           name: Install Functions dependencies
           command: cd functions && npm install --no-audit --no-fund
       - save_cache:
-          key: functions-node-{{ checksum "functions/package-lock.json" }}
+          key: functions-node-v1-{{ .Branch }}
           paths:
             - functions/node_modules
       - run:
@@ -69,13 +69,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - action-executor-node-{{ checksum "backend/action-executor/package-lock.json" }}
-            - action-executor-node-
+            - action-executor-node-v1-
+            - action-executor-node-v1
       - run:
           name: Install Action Executor dependencies
           command: cd backend/action-executor && npm install --no-audit --no-fund
       - save_cache:
-          key: action-executor-node-{{ checksum "backend/action-executor/package-lock.json" }}
+          key: action-executor-node-v1-{{ .Branch }}
           paths:
             - backend/action-executor/node_modules
       - run:
@@ -92,13 +92,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - plugin-worker-node-{{ checksum "backend/plugin-worker/package-lock.json" }}
-            - plugin-worker-node-
+            - plugin-worker-node-v1-
+            - plugin-worker-node-v1
       - run:
           name: Install Plugin Worker dependencies
           command: cd backend/plugin-worker && npm install --no-audit --no-fund
       - save_cache:
-          key: plugin-worker-node-{{ checksum "backend/plugin-worker/package-lock.json" }}
+          key: plugin-worker-node-v1-{{ .Branch }}
           paths:
             - backend/plugin-worker/node_modules
       - run:
