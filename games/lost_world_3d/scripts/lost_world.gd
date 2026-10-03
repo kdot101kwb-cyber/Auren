@@ -9,42 +9,64 @@ var save_path := "user://lost_world_checkpoint.save"
 func _ready() -> void:
 	load_checkpoint()
 	build_world()
+	update_hud()
 
 func build_world() -> void:
+	var floor_body := StaticBody3D.new()
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(80, 1, 180)
+	collision.shape = shape
+	floor_body.add_child(collision)
+	floor_body.position = Vector3(0, -1, -80)
+	add_child(floor_body)
+
 	for i in range(14):
 		var rock := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
 		mesh.size = Vector3(2.0 + (i % 3), 1.2 + (i % 2), 2.0)
 		rock.mesh = mesh
-		rock.position = Vector3((i % 7) * 4.0 - 12.0, -0.6, -i * 5.0)
+		rock.position = Vector3((i % 7) * 4.0 - 12.0, -0.4, -i * 5.0)
 		add_child(rock)
+
 	var gate := MeshInstance3D.new()
 	var gate_mesh := BoxMesh.new()
-	gate_mesh.size = Vector3(7,6,1)
+	gate_mesh.size = Vector3(7, 6, 1)
 	gate.mesh = gate_mesh
-	gate.position = Vector3(0,3,-75)
+	gate.position = Vector3(0, 2, -75)
 	add_child(gate)
 
 func damage(amount: int) -> void:
 	health = max(0, health - amount)
 	if health == 0:
 		load_checkpoint()
-	queue_redraw()
+	update_hud()
 
 func complete_objective() -> void:
 	objective_complete = true
 	checkpoint += 1
 	save_checkpoint()
+	update_hud()
 
 func save_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
-	f.store_var({"checkpoint":checkpoint,"health":health,"objective_complete":objective_complete})
+	if f:
+		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete})
 
 func load_checkpoint() -> void:
 	if not FileAccess.file_exists(save_path):
 		return
 	var f := FileAccess.open(save_path, FileAccess.READ)
-	var data = f.get_var()
-	checkpoint = int(data.get("checkpoint",0))
-	health = int(data.get("health",100))
-	objective_complete = bool(data.get("objective_complete",false))
+	if f:
+		var data = f.get_var()
+		checkpoint = int(data.get("checkpoint", 0))
+		health = int(data.get("health", 100))
+		objective_complete = bool(data.get("objective_complete", false))
+
+func update_hud() -> void:
+	var status := get_node_or_null("HUD/Status")
+	if status:
+		status.text = "LOST WORLD  •  CHECKPOINT %d  •  HP %d" % [checkpoint, health]
+	var objective := get_node_or_null("HUD/Objective")
+	if objective:
+		objective.text = "Objective: Gate reached" if objective_complete else "Objective: Reach the ancient gate"
