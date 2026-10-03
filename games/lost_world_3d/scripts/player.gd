@@ -6,6 +6,7 @@ extends CharacterBody3D
 var gravity := 18.0
 var mobile_move := Vector2.ZERO
 var mobile_look := Vector2.ZERO
+var mobile_sprint := false
 
 func _ready() -> void:
 	var input = get_node_or_null("../MobileInput")
@@ -15,13 +16,14 @@ func _ready() -> void:
 		input.jump_pressed.connect(_on_mobile_jump)
 		input.attack_pressed.connect(_on_mobile_attack)
 		input.interact_pressed.connect(_on_mobile_interact)
+		input.sprint_pressed.connect(_on_mobile_sprint)
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	var input_vec := mobile_move if mobile_move.length() > 0.01 else Input.get_vector("move_left","move_right","move_forward","move_back")
 	var direction := Vector3(input_vec.x,0,input_vec.y).normalized()
-	var sprint := Input.is_key_pressed(KEY_SHIFT) and get_parent().stamina > 0.0
+	var sprint := (Input.is_key_pressed(KEY_SHIFT) or mobile_sprint) and get_parent().stamina > 0.0
 	var current_speed := sprint_speed if sprint else speed
 	velocity.x = direction.x * current_speed
 	velocity.z = direction.z * current_speed
@@ -66,3 +68,6 @@ func _on_mobile_attack() -> void:
 
 func _on_mobile_interact() -> void:
 	interact()
+
+func _on_mobile_sprint(active: bool) -> void:
+	mobile_sprint = active
