@@ -2684,7 +2684,7 @@ service cloud.firestore {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
       allow update: if isOwner(userId)
@@ -2695,7 +2695,7 @@ service cloud.firestore {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling']
+        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.updatedAt is timestamp;
       allow delete: if isOwner(userId);
     }
@@ -3844,7 +3844,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
       allow update: if isOwner(userId)
@@ -3855,7 +3855,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling']
+        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.updatedAt is timestamp;
       allow delete: if isOwner(userId);
     }
@@ -4970,7 +4970,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
       allow update: if isOwner(userId)
@@ -4981,7 +4981,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling']
+        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.updatedAt is timestamp;
       allow delete: if isOwner(userId);
     }
