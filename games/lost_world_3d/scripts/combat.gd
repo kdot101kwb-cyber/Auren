@@ -7,6 +7,7 @@ extends Node
 var timer := 0.0
 var combo_hits := 0
 var combo_timer := 0.0
+var last_hit_position := Vector3.ZERO
 
 func _process(delta: float) -> void:
 	timer = max(0.0, timer - delta)
@@ -15,6 +16,7 @@ func _process(delta: float) -> void:
 		combo_hits = 0
 
 func try_attack(owner: Node3D) -> bool:
+	last_hit_position = Vector3.ZERO
 	if timer > 0.0:
 		return false
 
@@ -37,6 +39,7 @@ func try_attack(owner: Node3D) -> bool:
 	if not hit.is_empty():
 		var target = hit.get("collider")
 		if target != null and target.has_method("take_damage"):
+			last_hit_position = target.global_position
 			target.take_damage(attack_damage)
 			return true
 
