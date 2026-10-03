@@ -1,0 +1,76 @@
+stages:
+  - flutter
+  - backend
+  - docker
+
+variables:
+  GIT_DEPTH: "1"
+  PUB_CACHE: "$CI_PROJECT_DIR/.pub-cache"
+  NODE_ENV: "test"
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .pub-cache/
+    - functions/node_modules/
+    - backend/action-executor/node_modules/
+    - backend/plugin-worker/node_modules/
+
+flutter_ci:
+  stage: flutter
+  image: ghcr.io/cirruslabs/flutter:3.47.2
+  script:
+    - flutter --version
+    - dart --version
+    - flutter pub get
+    - dart format --output=none --set-exit-if-changed lib test
+    - flutter analyze
+    - flutter test
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - flutter_test.log
+      - flutter_analyze.log
+  after_script:
+    - flutter analyze > flutter_analyze.log 2>&1 || true
+    - flutter test > flutter_test.log 2>&1 || true
+
+functions_tests:
+  stage: backend
+  image: node:22-bookworm
+  script:
+    - cd functions
+    - npm install --no-audit --no-fund
+    - npm test
+
+action_executor_tests:
+  stage: backend
+  image: node:20-bookworm
+  script:
+    - cd backend/action-executor
+    - npm install --no-audit --no-fund
+    - node --check src/server.js
+    - npm test
+
+plugin_worker_tests:
+  stage: backend
+  image: node:20-bookworm
+  script:
+    - cd backend/plugin-worker
+    - npm install --no-audit --no-fund
+    - node --check src/worker.js
+    - npm test
+
+plugin_worker_image:
+  stage: docker
+  image: docker:27-cli
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker info
+    - docker build -t auren-plugin-worker:ci backend/plugin-worker
