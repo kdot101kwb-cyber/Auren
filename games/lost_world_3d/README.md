@@ -1,25 +1,40 @@
 # AUREN: Lost World — 3D Runtime
 
-Implemented runtime systems:
-- 3D world, lighting and third-person camera
-- player movement, sprint and jump
-- Android touch input bridge
-- combat/raycast attack
-- enemy pursuit, health and damage
-- player health/stamina
-- objective/checkpoint progression
-- local save/resume
+## Current playable vertical slice
+
+The first AUREN 3D game slice now has a complete gameplay loop for the current procedural build:
+
+- third-person 3D world, lighting, fog and camera
+- Android touch movement/look
+- touch + keyboard jump, sprint, attack and interact
+- stamina drain/recovery
+- enemy pursuit and melee damage
+- enemy health, hit feedback and defeat feedback
+- combat cooldown and hit detection
+- combo chain with timed reset
+- combo reward/healing loop
+- four persistent reward chests with proximity interaction
+- loot rewards and loot VFX
+- gate objective and checkpoint completion
+- death/respawn at checkpoint
+- persistent checkpoint, health, enemy count, loot and opened-chest state
+- day/night lighting cycle
+- procedural combat/reward particles
+- spatial audio runtime node
+- performance telemetry
 - mobile-compatible renderer target
-- procedural combat VFX: attack, hit and checkpoint particle bursts
-- spatial audio runtime node ready for authored sound streams
 
-AAA production gates still required:
-- original final art assets
-- authored character/environment animations
-- final authored VFX and spatial audio assets
-- authored level/environment art
-- Android packaging
-- device profiling and performance budgets
-- backend integration for authoritative competitive results
+## Honest production status
 
-The procedural VFX is functional runtime feedback; it is not being presented as final AAA art/audio.
+This repository build is **playable and feature-complete as a procedural vertical slice**, but it is **not being labeled final AAA art**.
+
+The remaining production gates are external content/runtime work:
+- original authored character and environment art
+- authored character animation set
+- final VFX and spatial audio assets
+- authored level art and environmental storytelling
+- Android packaging/signing and device QA
+- measured performance budgets across target Android devices
+- backend/server-authoritative competitive results for online modes
+
+Those gates require real production assets, engine packaging and device/runtime testing; they are not claimed as complete merely because the gameplay code exists.
