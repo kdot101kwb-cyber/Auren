@@ -21,8 +21,14 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: 3.47.2
           channel: stable
           cache: true
+
+      - name: Toolchain diagnostics
+        run: |
+          flutter --version
+          dart --version
 
       - name: Verify Flutter project
         run: flutter pub get
@@ -31,10 +37,36 @@ jobs:
         run: dart format lib test
 
       - name: Analyze
-        run: flutter analyze
+        run: |
+          set +e
+          flutter analyze 2>&1 | tee flutter-analyze.log
+          status=${PIPESTATUS[0]}
+          echo "flutter_analyze_exit_code=${status}" >> flutter-analyze.log
+          exit ${status}
+
+      - name: Upload Analyze diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-analyze-diagnostics
+          path: flutter-analyze.log
+          if-no-files-found: ignore
 
       - name: Test
-        run: flutter test
+        run: |
+          set +e
+          flutter test 2>&1 | tee flutter-test.log
+          status=${PIPESTATUS[0]}
+          echo "flutter_test_exit_code=${status}" >> flutter-test.log
+          exit ${status}
+
+      - name: Upload Test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-test-diagnostics
+          path: flutter-test.log
+          if-no-files-found: ignore
 
       - name: Build Android debug APK
         if: ${{ hashFiles('android/**') != '' }}
