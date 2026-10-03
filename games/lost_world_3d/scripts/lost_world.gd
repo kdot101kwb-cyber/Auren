@@ -146,7 +146,8 @@ func player_attack(chain: int = 1) -> void:
 	if hit:
 		if chain > 1:
 			loot += chain * 2
-		vfx_audio.play_hit_fx(player.global_position)
+		var hit_origin := combat.get("last_hit_position") if combat.get("last_hit_position") != Vector3.ZERO else player.global_position
+		vfx_audio.play_hit_fx(hit_origin)
 		update_hud()
 
 func damage(amount: int) -> void:
