@@ -8,6 +8,9 @@ var enemies_defeated := 0
 var loot := 0
 var combo := 0
 var world_time := 0.0
+var combo_timer := 0.0
+var opened_chests := {}
+var respawn_position := Vector3.ZERO
 var save_path := "user://lost_world_checkpoint.save"
 @onready var player: CharacterBody3D = $Player
 @onready var combat: Node = $Player/Combat
@@ -15,6 +18,7 @@ var save_path := "user://lost_world_checkpoint.save"
 
 func _ready() -> void:
 	load_checkpoint()
+	respawn_position = player.global_position
 	build_world()
 	spawn_encounters()
 	update_hud()
@@ -56,6 +60,8 @@ func build_world() -> void:
 		mat.metallic = 0.35
 		mat.roughness = 0.45
 		chest.material_override = mat
+		chest.set_meta("loot_value", 25 + i * 10)
+		chest.set_meta("opened", opened_chests.get(str(i), false))
 		add_child(chest)
 
 func spawn_encounters() -> void:
@@ -76,10 +82,20 @@ func spawn_encounters() -> void:
 			e.add_child(shape)
 			add_child(e)
 
+func _process(delta: float) -> void:
+	world_time += delta
+	if combo > 0:
+		combo_timer -= delta
+		if combo_timer <= 0.0:
+			combo = 0
+	update_hud()
+
 func register_enemy_defeat() -> void:
 	enemies_defeated += 1
 	combo += 1
 	loot += 10 + combo * 5
+	combo_timer = 4.0
+	vfx_audio.play_enemy_defeat_fx(player.global_position)
 	if combo % 3 == 0:
 		health = min(100, health + 10)
 	update_hud()
@@ -95,7 +111,9 @@ func damage(amount: int) -> void:
 	health = max(0, health - amount)
 	if health == 0:
 		load_checkpoint()
-		player.global_position = Vector3.ZERO
+		player.global_position = respawn_position
+		combo = 0
+		combo_timer = 0.0
 	update_hud()
 
 func complete_objective() -> void:
@@ -110,7 +128,7 @@ func complete_objective() -> void:
 func save_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
-		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete})
+		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests})
 
 func load_checkpoint() -> void:
 	if not FileAccess.file_exists(save_path):
@@ -121,11 +139,14 @@ func load_checkpoint() -> void:
 		checkpoint = int(data.get("checkpoint", 0))
 		health = int(data.get("health", 100))
 		objective_complete = bool(data.get("objective_complete", false))
+		enemies_defeated = int(data.get("enemies_defeated", 0))
+		loot = int(data.get("loot", 0))
+		opened_chests = data.get("opened_chests", {})
 
 func update_hud() -> void:
 	var status := get_node_or_null("HUD/Status")
 	if status:
-		status.text = "LOST WORLD  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d" % [checkpoint, health, enemies_defeated, loot]
+		status.text = "LOST WORLD  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d  •  COMBO %d" % [checkpoint, health, enemies_defeated, loot, combo]
 	var objective := get_node_or_null("HUD/Objective")
 	if objective:
 		objective.text = "Gate reached • Reward secured" if objective_complete else "Objective: Reach the ancient gate • Defeat enemies to earn loot"
