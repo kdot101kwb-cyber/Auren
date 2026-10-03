@@ -155,6 +155,7 @@ func damage(amount: int) -> void:
 	if health > 0:
 		score = max(0, score - amount * 2)
 	if health == 0:
+		vfx_audio.play_player_death_fx(player.global_position)
 		health = max_health
 		score = max(0, score - 150)
 		combo = 0
