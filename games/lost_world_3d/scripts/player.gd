@@ -7,6 +7,9 @@ var gravity := 18.0
 var mobile_move := Vector2.ZERO
 var mobile_look := Vector2.ZERO
 var mobile_sprint := false
+var dodge_timer := 0.0
+var attack_chain := 0
+var attack_chain_timer := 0.0
 
 func _ready() -> void:
 	var input = get_node_or_null("../MobileInput")
@@ -19,6 +22,10 @@ func _ready() -> void:
 		input.sprint_pressed.connect(_on_mobile_sprint)
 
 func _physics_process(delta: float) -> void:
+	dodge_timer = max(0.0, dodge_timer - delta)
+	attack_chain_timer = max(0.0, attack_chain_timer - delta)
+	if attack_chain_timer <= 0.0:
+		attack_chain = 0
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	var input_vec := mobile_move if mobile_move.length() > 0.01 else Input.get_vector("move_left","move_right","move_forward","move_back")
@@ -44,10 +51,23 @@ func interact() -> void:
 	if world.has_method("try_interact"):
 		world.try_interact()
 
+func dodge() -> void:
+	if dodge_timer > 0.0 or not is_on_floor():
+		return
+	var input_vec := mobile_move if mobile_move.length() > 0.01 else Input.get_vector("move_left","move_right","move_forward","move_back")
+	var direction := Vector3(input_vec.x, 0, input_vec.y).normalized()
+	if direction.length() < 0.1:
+		direction = -global_transform.basis.z
+	velocity.x = direction.x * 12.0
+	velocity.z = direction.z * 12.0
+	dodge_timer = 0.8
+
 func attack() -> void:
 	var world = get_parent()
 	if world.has_method("player_attack"):
-		world.player_attack()
+		attack_chain = (attack_chain + 1) if attack_chain_timer > 0.0 else 1
+		attack_chain_timer = 1.2
+		world.player_attack(attack_chain)
 
 func _on_mobile_move(value: Vector2) -> void:
 	mobile_move = value
