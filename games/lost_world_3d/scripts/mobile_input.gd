@@ -24,21 +24,37 @@ func _build_action_buttons() -> void:
 	action_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	action_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(action_root)
+
 	for spec in [
-		{"name":"Attack","text":"⚔","pos":Vector2(0.80,0.72),"signal":"attack"},
-		{"name":"Jump","text":"↑","pos":Vector2(0.68,0.78),"signal":"jump"},
-		{"name":"Interact","text":"E","pos":Vector2(0.84,0.58),"signal":"interact"},
-		{"name":"Sprint","text":"RUN","pos":Vector2(0.56,0.86),"signal":"sprint"},
-		{"name":"Dodge","text":"DASH","pos":Vector2(0.69,0.63),"signal":"dodge"}
+		{"name":"Attack","text":"⚔","pos":Vector2(0.80,0.72),"signal":"attack","accent":Color(0.85,0.25,0.20)},
+		{"name":"Jump","text":"↑","pos":Vector2(0.68,0.78),"signal":"jump","accent":Color(0.25,0.65,1.0)},
+		{"name":"Interact","text":"E","pos":Vector2(0.84,0.58),"signal":"interact","accent":Color(0.95,0.75,0.20)},
+		{"name":"Sprint","text":"RUN","pos":Vector2(0.56,0.86),"signal":"sprint","accent":Color(0.35,0.85,0.55)},
+		{"name":"Dodge","text":"DASH","pos":Vector2(0.69,0.63),"signal":"dodge","accent":Color(0.70,0.35,1.0)}
 	]:
 		var b := Button.new()
 		b.name = spec.name
 		b.text = spec.text
 		b.size = Vector2(76,76)
 		b.position = _button_position(spec.pos)
-		b.modulate.a = 0.78
+		b.modulate.a = 0.92
 		b.mouse_filter = Control.MOUSE_FILTER_STOP
+		b.add_theme_font_size_override("font_size", 18 if spec.name in ["Sprint","Dodge"] else 26)
+		var normal := StyleBoxFlat.new()
+		normal.bg_color = Color(0.025,0.035,0.055,0.82)
+		normal.border_color = spec.accent
+		normal.set_border_width_all(2)
+		normal.set_corner_radius_all(38)
+		var hover := normal.duplicate()
+		hover.bg_color = Color(0.08,0.10,0.16,0.94)
+		var pressed := normal.duplicate()
+		pressed.bg_color = spec.accent
+		pressed.bg_color.a = 0.72
+		b.add_theme_stylebox_override("normal", normal)
+		b.add_theme_stylebox_override("hover", hover)
+		b.add_theme_stylebox_override("pressed", pressed)
 		action_root.add_child(b)
+
 		match spec.signal:
 			"attack": b.pressed.connect(func(): attack_pressed.emit())
 			"jump": b.pressed.connect(func(): jump_pressed.emit())
