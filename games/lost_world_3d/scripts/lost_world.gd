@@ -84,7 +84,7 @@ func spawn_encounters() -> void:
 			continue
 		var enemy = get_node_or_null(enemy_id)
 		if enemy == null:
-			var body := preload("res://scripts/enemy.gd")
+			var body := preload("res://games/lost_world_3d/scripts/enemy.gd")
 			var e := CharacterBody3D.new()
 			e.name = enemy_id
 			e.position = Vector3((i - 1.5) * 4.0, 0, -18.0 - i * 10.0)
