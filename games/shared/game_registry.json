@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "platform": "auren_games",
+  "games": [
+    {"id":"lost_world_3d","title":"Lost World 3D","status":"playable","engine":"godot"},
+    {"id":"ludo","title":"Ludo","status":"planned"},
+    {"id":"dominoes","title":"Dominoes","status":"planned"},
+    {"id":"uno","title":"UNO","status":"planned"},
+    {"id":"football","title":"Football","status":"planned"},
+    {"id":"basketball","title":"Basketball","status":"planned"},
+    {"id":"boxing","title":"Boxing","status":"planned"},
+    {"id":"fighting","title":"Fighting","status":"planned"},
+    {"id":"racing","title":"Racing","status":"planned"},
+    {"id":"crime_files","title":"Crime Files","status":"planned"},
+    {"id":"mystery","title":"Mystery","status":"planned"},
+    {"id":"wars","title":"Wars","status":"planned"},
+    {"id":"samurai","title":"Samurai","status":"planned"},
+    {"id":"arcade_pack","title":"Arcade Pack","status":"planned"}
+  ]
+}
