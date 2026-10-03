@@ -19,12 +19,15 @@ func play_hit_fx(origin: Vector3) -> void:
 
 func play_checkpoint_fx(origin: Vector3) -> void:
 	_spawn_burst(origin, 55, 1.0, 1.0, 4.0, Color(0.2,0.8,1.0), 0.11)
+	_spawn_ring(origin, Color(0.2,0.9,1.0), 0.6, 2.6)
 
 func play_loot_fx(origin: Vector3) -> void:
 	_spawn_burst(origin, 32, 0.65, 1.0, 3.5, Color(1.0,0.78,0.18), 0.055)
+	_spawn_ring(origin, Color(1.0,0.82,0.2), 0.45, 1.8)
 
 func play_enemy_defeat_fx(origin: Vector3) -> void:
 	_spawn_burst(origin, 38, 0.55, 1.5, 5.5, Color(0.9,0.12,0.08), 0.065)
+	_spawn_ring(origin, Color(1.0,0.18,0.08), 0.5, 1.7)
 
 func _spawn_ring(origin: Vector3, tint: Color, start_radius: float, end_radius: float) -> void:
 	var ring := MeshInstance3D.new()
