@@ -48,7 +48,7 @@ func take_damage(amount: int) -> void:
 	if health == 0:
 		var world = get_parent()
 		if world.has_method("register_enemy_defeat"):
-			world.register_enemy_defeat()
+			world.register_enemy_defeat(name)
 		queue_free()
 
 func _process(delta: float) -> void:
