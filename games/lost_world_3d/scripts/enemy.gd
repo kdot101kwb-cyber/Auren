@@ -1,0 +1,26 @@
+extends CharacterBody3D
+
+@export var speed := 2.8
+@export var detection_range := 18.0
+var attack_timer := 0.0
+
+func _physics_process(delta: float) -> void:
+	var player := get_parent().get_node_or_null("Player")
+	if player == null:
+		return
+	var distance := global_position.distance_to(player.global_position)
+	if distance <= detection_range:
+		var direction := (player.global_position - global_position)
+		direction.y = 0
+		if direction.length() > 2.4:
+			velocity = direction.normalized() * speed
+		else:
+			velocity = Vector3.ZERO
+			attack_timer -= delta
+			if attack_timer <= 0:
+				if player.get_parent().has_method("damage"):
+					player.get_parent().damage(8)
+				attack_timer = 1.2
+	else:
+		velocity = Vector3.ZERO
+	move_and_slide()
