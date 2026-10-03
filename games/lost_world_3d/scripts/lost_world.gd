@@ -15,6 +15,7 @@ var run_ended := false
 var elapsed_run_time := 0.0
 var best_run_time := 0.0
 var score := 0
+var max_health := 100
 var save_path := "user://lost_world_checkpoint.save"
 @onready var player: CharacterBody3D = $Player
 @onready var combat: Node = $Player/Combat
@@ -104,7 +105,7 @@ func register_enemy_defeat() -> void:
 	combo_timer = 4.0
 	vfx_audio.play_enemy_defeat_fx(player.global_position)
 	if combo % 3 == 0:
-		health = min(100, health + 10)
+		health = min(max_health, health + 10)
 	update_hud()
 
 func player_attack(chain: int = 1) -> void:
@@ -120,6 +121,8 @@ func player_attack(chain: int = 1) -> void:
 
 func damage(amount: int) -> void:
 	health = max(0, health - amount)
+	if health > 0:
+		score = max(0, score - amount * 2)
 	if health == 0:
 		load_checkpoint()
 		player.global_position = respawn_position
@@ -179,7 +182,7 @@ func load_checkpoint() -> void:
 	if f:
 		var data = f.get_var()
 		checkpoint = int(data.get("checkpoint", 0))
-		health = int(data.get("health", 100))
+		health = int(data.get("health", max_health))
 		objective_complete = bool(data.get("objective_complete", false))
 		enemies_defeated = int(data.get("enemies_defeated", 0))
 		loot = int(data.get("loot", 0))
