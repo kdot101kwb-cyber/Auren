@@ -1,0 +1,128 @@
+version: 2.1
+
+jobs:
+  flutter_ci:
+    docker:
+      - image: ghcr.io/cirruslabs/flutter:3.47.2
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - flutter-{{ checksum "pubspec.lock" }}
+            - flutter-
+      - run:
+          name: Flutter version
+          command: flutter --version && dart --version
+      - run:
+          name: Get dependencies
+          command: flutter pub get
+      - save_cache:
+          key: flutter-{{ checksum "pubspec.lock" }}
+          paths:
+            - ~/.pub-cache
+      - run:
+          name: Format check
+          command: dart format --output=none --set-exit-if-changed lib test
+      - run:
+          name: Analyze
+          command: |
+            set +e
+            flutter analyze 2>&1 | tee flutter_analyze.log
+            status=${PIPESTATUS[0]}
+            exit $status
+      - run:
+          name: Test
+          command: |
+            set +e
+            flutter test 2>&1 | tee flutter_test.log
+            status=${PIPESTATUS[0]}
+            exit $status
+      - store_artifacts:
+          path: flutter_analyze.log
+      - store_artifacts:
+          path: flutter_test.log
+
+  functions_tests:
+    docker:
+      - image: cimg/node:22.15
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - functions-node-{{ checksum "functions/package-lock.json" }}
+            - functions-node-
+      - run:
+          name: Install Functions dependencies
+          command: cd functions && npm install --no-audit --no-fund
+      - save_cache:
+          key: functions-node-{{ checksum "functions/package-lock.json" }}
+          paths:
+            - functions/node_modules
+      - run:
+          name: Run Functions tests
+          command: cd functions && npm test
+
+  action_executor_tests:
+    docker:
+      - image: cimg/node:20.19
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - action-executor-node-{{ checksum "backend/action-executor/package-lock.json" }}
+            - action-executor-node-
+      - run:
+          name: Install Action Executor dependencies
+          command: cd backend/action-executor && npm install --no-audit --no-fund
+      - save_cache:
+          key: action-executor-node-{{ checksum "backend/action-executor/package-lock.json" }}
+          paths:
+            - backend/action-executor/node_modules
+      - run:
+          name: Syntax check
+          command: cd backend/action-executor && node --check src/server.js
+      - run:
+          name: Run tests
+          command: cd backend/action-executor && npm test
+
+  plugin_worker_tests:
+    docker:
+      - image: cimg/node:20.19
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - plugin-worker-node-{{ checksum "backend/plugin-worker/package-lock.json" }}
+            - plugin-worker-node-
+      - run:
+          name: Install Plugin Worker dependencies
+          command: cd backend/plugin-worker && npm install --no-audit --no-fund
+      - save_cache:
+          key: plugin-worker-node-{{ checksum "backend/plugin-worker/package-lock.json" }}
+          paths:
+            - backend/plugin-worker/node_modules
+      - run:
+          name: Syntax check
+          command: cd backend/plugin-worker && node --check src/worker.js
+      - run:
+          name: Run tests
+          command: cd backend/plugin-worker && npm test
+
+  plugin_worker_image:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build Plugin Worker image
+          command: docker build -t auren-plugin-worker:ci backend/plugin-worker
+
+workflows:
+  auren_ci:
+    jobs:
+      - flutter_ci
+      - functions_tests
+      - action_executor_tests
+      - plugin_worker_tests
+      - plugin_worker_image
