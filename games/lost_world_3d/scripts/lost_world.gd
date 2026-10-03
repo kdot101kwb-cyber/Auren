@@ -13,6 +13,7 @@ var opened_chests := {}
 var respawn_position := Vector3.ZERO
 var run_ended := false
 var elapsed_run_time := 0.0
+var best_run_time := 0.0
 var save_path := "user://lost_world_checkpoint.save"
 @onready var player: CharacterBody3D = $Player
 @onready var combat: Node = $Player/Combat
@@ -156,6 +157,8 @@ func complete_objective() -> void:
 		return
 	objective_complete = true
 	run_ended = true
+	if best_run_time <= 0.0 or elapsed_run_time < best_run_time:
+		best_run_time = elapsed_run_time
 	checkpoint += 1
 	save_checkpoint()
 	vfx_audio.play_checkpoint_fx(player.global_position)
@@ -164,7 +167,7 @@ func complete_objective() -> void:
 func save_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
-		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time})
+		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time, "best_run_time": best_run_time})
 
 func load_checkpoint() -> void:
 	if not FileAccess.file_exists(save_path):
@@ -180,6 +183,7 @@ func load_checkpoint() -> void:
 		opened_chests = data.get("opened_chests", {})
 		run_ended = bool(data.get("run_ended", objective_complete))
 		elapsed_run_time = float(data.get("elapsed_run_time", 0.0))
+		best_run_time = float(data.get("best_run_time", 0.0))
 
 func _format_time(seconds: float) -> String:
 	var total := int(seconds)
