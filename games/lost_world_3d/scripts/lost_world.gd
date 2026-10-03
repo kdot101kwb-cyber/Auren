@@ -14,6 +14,7 @@ var respawn_position := Vector3.ZERO
 var run_ended := false
 var elapsed_run_time := 0.0
 var best_run_time := 0.0
+var score := 0
 var save_path := "user://lost_world_checkpoint.save"
 @onready var player: CharacterBody3D = $Player
 @onready var combat: Node = $Player/Combat
@@ -99,6 +100,7 @@ func register_enemy_defeat() -> void:
 	enemies_defeated += 1
 	combo += 1
 	loot += 10 + combo * 5
+	score += 100 + combo * 25
 	combo_timer = 4.0
 	vfx_audio.play_enemy_defeat_fx(player.global_position)
 	if combo % 3 == 0:
@@ -142,6 +144,7 @@ func try_interact() -> void:
 		nearest.set_meta("opened", true)
 		opened_chests[idx] = true
 		loot += value
+		score += value * 10
 		nearest.scale.y = 0.35
 		vfx_audio.play_loot_fx(nearest.global_position)
 		save_checkpoint()
@@ -167,7 +170,7 @@ func complete_objective() -> void:
 func save_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
-		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time, "best_run_time": best_run_time})
+		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time, "best_run_time": best_run_time, "score": score})
 
 func load_checkpoint() -> void:
 	if not FileAccess.file_exists(save_path):
@@ -184,6 +187,7 @@ func load_checkpoint() -> void:
 		run_ended = bool(data.get("run_ended", objective_complete))
 		elapsed_run_time = float(data.get("elapsed_run_time", 0.0))
 		best_run_time = float(data.get("best_run_time", 0.0))
+		score = int(data.get("score", 0))
 
 func _format_time(seconds: float) -> String:
 	var total := int(seconds)
