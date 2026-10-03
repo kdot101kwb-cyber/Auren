@@ -8,6 +8,7 @@ var mobile_move := Vector2.ZERO
 var mobile_look := Vector2.ZERO
 var mobile_sprint := false
 var dodge_timer := 0.0
+var dodge_velocity := Vector3.ZERO
 var attack_chain := 0
 var attack_chain_timer := 0.0
 
@@ -23,7 +24,12 @@ func _ready() -> void:
 		input.dodge_pressed.connect(_on_mobile_dodge)
 
 func _physics_process(delta: float) -> void:
-	dodge_timer = max(0.0, dodge_timer - delta)
+	if dodge_timer > 0.0:
+		dodge_timer = max(0.0, dodge_timer - delta)
+		velocity.x = dodge_velocity.x
+		velocity.z = dodge_velocity.z
+	else:
+		dodge_velocity = Vector3.ZERO
 	attack_chain_timer = max(0.0, attack_chain_timer - delta)
 	if attack_chain_timer <= 0.0:
 		attack_chain = 0
@@ -33,8 +39,9 @@ func _physics_process(delta: float) -> void:
 	var direction := Vector3(input_vec.x,0,input_vec.y).normalized()
 	var sprint := (Input.is_key_pressed(KEY_SHIFT) or mobile_sprint) and get_parent().stamina > 0.0
 	var current_speed := sprint_speed if sprint else speed
-	velocity.x = direction.x * current_speed
-	velocity.z = direction.z * current_speed
+	if dodge_timer <= 0.0:
+		velocity.x = direction.x * current_speed
+		velocity.z = direction.z * current_speed
 	if sprint:
 		get_parent().stamina = max(0.0, get_parent().stamina - 28.0 * delta)
 	else:
@@ -61,9 +68,10 @@ func dodge() -> void:
 	var direction := Vector3(input_vec.x, 0, input_vec.y).normalized()
 	if direction.length() < 0.1:
 		direction = -global_transform.basis.z
-	velocity.x = direction.x * 12.0
-	velocity.z = direction.z * 12.0
-	dodge_timer = 0.8
+	dodge_velocity = direction * 12.0
+	velocity.x = dodge_velocity.x
+	velocity.z = dodge_velocity.z
+	dodge_timer = 0.22
 
 func attack() -> void:
 	var world = get_parent()
