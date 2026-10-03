@@ -27,6 +27,7 @@ func _build_visual() -> void:
 	mat.roughness = 0.82
 	mesh_node.material_override = mat
 	add_child(mesh_node)
+
 	var eye := MeshInstance3D.new()
 	eye.name = "EyeGlow"
 	var eye_mesh := SphereMesh.new()
@@ -39,12 +40,12 @@ func _build_visual() -> void:
 	eye_mat.emission = Color(1.0,0.22,0.05)
 	eye_mat.emission_energy_multiplier = 3.0
 	eye.material_override = eye_mat
-	eye.position = Vector3(0,0.48, -0.46)
+	eye.position = Vector3(0,0.48,-0.46)
 	add_child(eye)
 
 func take_damage(amount: int) -> void:
 	health = max(0, health - amount)
-	hit_flash = 0.12
+	hit_flash = 0.14
 	if health == 0:
 		var world = get_parent()
 		if world.has_method("register_enemy_defeat"):
@@ -52,13 +53,22 @@ func take_damage(amount: int) -> void:
 		queue_free()
 
 func _process(delta: float) -> void:
+	var mesh = get_node_or_null("Mesh")
+	if mesh == null:
+		return
 	if hit_flash > 0.0:
 		hit_flash -= delta
-		var mesh = get_node_or_null("Mesh")
-		if mesh:
-			mesh.scale = Vector3.ONE * 1.08
-	elif get_node_or_null("Mesh"):
-		get_node("Mesh").scale = Vector3.ONE
+		mesh.scale = Vector3.ONE * 1.10
+		var material := mesh.material_override as StandardMaterial3D
+		if material != null:
+			material.emission_enabled = true
+			material.emission = Color(1.0,0.22,0.10)
+			material.emission_energy_multiplier = 2.5
+	else:
+		mesh.scale = Vector3.ONE
+		var material := mesh.material_override as StandardMaterial3D
+		if material != null:
+			material.emission_enabled = false
 
 func _physics_process(delta: float) -> void:
 	var player := get_parent().get_node_or_null("Player")
