@@ -436,7 +436,7 @@ service cloud.firestore {
           && request.resource.data.key.size() > 0
           && request.resource.data.key.size() <= 120
           && request.resource.data.value is string
-          && request.resource.data.value.size() <= 2000
+          && request.resource.data.value.size() <= 4000
           && request.resource.data.action in ['created','updated','deleted']
           && request.resource.data.createdAt is timestamp;
         allow update, delete: if false;
