@@ -1919,6 +1919,7 @@ service cloud.firestore {
         && resource.data.visibility == 'public'
         && resource.data.status == 'active';
       allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['ownerId','title','description','city','country','type','listingType','currency','priceMinor','bedrooms','bathrooms','areaSqm','imageUrl','verified','status','visibility','createdAt'])
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
@@ -1926,24 +1927,2301 @@ service cloud.firestore {
         && request.resource.data.description is string
         && request.resource.data.description.size() <= 3000
         && request.resource.data.city is string
+        && request.resource.data.city.size() > 0
+        && request.resource.data.city.size() <= 100
         && request.resource.data.country is string
+        && request.resource.data.country.size() > 0
+        && request.resource.data.country.size() <= 100
         && request.resource.data.listingType in ['sale','rent']
         && request.resource.data.type in ['Apartment','House','Villa','Office','Shop','Land','Warehouse']
         && request.resource.data.currency is string
+        && request.resource.data.currency.matches('^[A-Z]{3}
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /users/{userId}/savedProperties/{propertyId} {
+      allow read, create, delete: if isOwner(userId);
+      allow update: if false;
+    }
+
+    match /community_polls/{pollId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.communityId is string
+        && request.auth.uid in get(/databases/$(database)/documents/communities/$(request.resource.data.communityId)).data.memberIds
+        && request.resource.data.question is string
+        && request.resource.data.question.size() > 0
+        && request.resource.data.question.size() <= 240
+        && request.resource.data.options is list
+        && request.resource.data.options.size() >= 2
+        && request.resource.data.options.size() <= 6
+        && request.resource.data.votes is map
+        && request.resource.data.voters is map
+        && request.resource.data.voters.size() == 0
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.communityId is string
+        && request.auth.uid in get(/databases/$(database)/documents/communities/$(resource.data.communityId)).data.memberIds
+        && !(request.auth.uid in resource.data.voters)
+        && request.auth.uid in request.resource.data.voters
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes','voters'])
+        && request.resource.data.votes is map
+        && request.resource.data.voters is map
+        && request.resource.data.voters.size() == resource.data.voters.size() + 1;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /communities/{communityId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+        && request.resource.data.description is string && request.resource.data.description.size() <= 500
+        && request.resource.data.topic is string && request.resource.data.topic.size() <= 80
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == 1
+        && request.resource.data.memberIds[0] == request.auth.uid
+        && request.resource.data.memberCount == 1
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && request.resource.data.keys().hasOnly(['ownerId','name','description','topic','visibility','memberIds','memberCount','createdAt'])
+        && resource.data.ownerId == request.resource.data.ownerId
+        && resource.data.name == request.resource.data.name
+        && resource.data.description == request.resource.data.description
+        && resource.data.topic == request.resource.data.topic
+        && resource.data.visibility == request.resource.data.visibility
+        && resource.data.createdAt == request.resource.data.createdAt
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() >= 1
+        && request.resource.data.memberIds.size() <= 10000
+        && request.resource.data.memberCount == request.resource.data.memberIds.size()
+        && (
+          (!(request.auth.uid in resource.data.memberIds)
+            && request.auth.uid in request.resource.data.memberIds
+            && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1)
+          || (request.auth.uid in resource.data.memberIds
+            && request.auth.uid != resource.data.ownerId
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && request.resource.data.memberIds.size() + 1 == resource.data.memberIds.size())
+          || (request.auth.uid == resource.data.ownerId
+            && request.auth.uid in request.resource.data.memberIds
+            && request.auth.uid in resource.data.memberIds
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && request.resource.data.memberIds.size() + 1 == resource.data.memberIds.size())
+        );
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+
+
+  match /random_calls/{callId} {
+    allow read: if request.auth != null
+      && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid);
+    allow create: if request.auth != null
+      && request.resource.data.callerUid == request.auth.uid
+      && request.resource.data.calleeUid is string
+      && request.resource.data.calleeUid != request.auth.uid
+      && request.resource.data.kind in ['audio','video']
+      && request.resource.data.status == 'ringing'
+      && request.resource.data.keys().hasOnly(['callerUid','calleeUid','kind','status','createdAt']);
+    allow update: if request.auth != null
+      && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid)
+      && (
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['offer'])
+          && resource.data.callerUid == request.auth.uid
+          && request.resource.data.offer is map
+          && request.resource.data.offer.sdp is string
+          && request.resource.data.offer.type is string)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer','status'])
+          && resource.data.calleeUid == request.auth.uid
+          && resource.data.status == 'ringing'
+          && request.resource.data.status == 'connected'
+          && request.resource.data.answer is map
+          && request.resource.data.answer.sdp is string
+          && request.resource.data.answer.type is string)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','endedBy','endedAt'])
+          && request.resource.data.status == 'ended'
+          && request.resource.data.endedBy == request.auth.uid
+          && request.resource.data.endedAt is timestamp)
+      );
+    allow delete: if false;
+    match /candidates/{candidateId} {
+      allow read: if request.auth != null
+        && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid
+          || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.senderUid == request.auth.uid
+        && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid
+          || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid)
+        && request.resource.data.candidate is string
+        && (request.resource.data.sdpMid == null || request.resource.data.sdpMid is string)
+        && (request.resource.data.sdpMLineIndex == null || request.resource.data.sdpMLineIndex is int)
+        && request.resource.data.keys().hasOnly(['senderUid','candidate','sdpMid','sdpMLineIndex','createdAt']);
+      allow update, delete: if false;
+    }
+  }
+
+    match /gaming_friend_challenges/{challengeId} {
+      allow read: if request.auth != null
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      // Creation and lifecycle are server-authoritative.
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /gaming_friend_challenge_keys/{keyId} {
+      allow read, write: if false;
+    }
+
+    match /gaming_invites/{inviteCode} {
+      allow read: if request.auth != null && inviteCode == resource.data.inviteCode;
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.roomId is string
+        && request.resource.data.roomId.size() > 0
+        && request.resource.data.inviteCode == inviteCode
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+    }
+
+    match /auren_game_matchmaking/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    match /auren_game_lobbies/{lobbyId}/private_players/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid
+        && exists(/databases/$(database)/documents/auren_game_lobbies/$(lobbyId))
+        && request.auth.uid in get(/databases/$(database)/documents/auren_game_lobbies/$(lobbyId)).data.players;
+      allow create, update, delete: if false;
+    }
+
+    match /auren_game_lobbies/{lobbyId}/server/{docId} {
+      allow read, write: if false;
+    }
+
+    match /auren_game_lobbies/{lobbyId} {
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.players;
+      allow create: if request.auth != null
+        && request.resource.data.hostId == request.auth.uid
+        && request.resource.data.guestId == null
+        && request.resource.data.players is list
+        && request.resource.data.players.size() == 1
+        && request.resource.data.players[0] == request.auth.uid
+        && request.resource.data.gameIndex is int
+        && request.resource.data.gameIndex >= 0
+        && request.resource.data.gameIndex <= 59
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.turnPlayerId == request.auth.uid
+        && request.resource.data.stateVersion == 0
+        && request.resource.data.state is map
+        && request.resource.data.state.size() == 0;
+      // Only the second player may transition a waiting lobby to playing.
+      // Match state itself remains immutable from clients; game moves go through
+      // the trusted Cloud Function.
+      allow update: if request.auth != null
+        && resource.data.status == 'waiting'
+        && resource.data.players is list
+        && resource.data.players.size() == 1
+        && request.resource.data.players is list
+        && request.resource.data.players.size() == 2
+        && request.resource.data.players[0] == resource.data.players[0]
+        && request.resource.data.players[1] == request.auth.uid
+        && request.resource.data.guestId == request.auth.uid
+        && request.resource.data.hostId == resource.data.hostId
+        && request.resource.data.gameIndex == resource.data.gameIndex
+        && request.resource.data.status == 'playing'
+        && request.resource.data.turnPlayerId == resource.data.turnPlayerId
+        && request.resource.data.stateVersion == resource.data.stateVersion
+        && request.resource.data.state == resource.data.state;
+      allow delete: if request.auth != null
+        && resource.data.hostId == request.auth.uid
+        && resource.data.status != 'playing';
+    }
+
+    match /gaming_rooms/{roomId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.playerUids;
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.playerUids is list
+        && request.resource.data.playerUids.size() == 1
+        && request.resource.data.playerUids[0] == request.auth.uid
+        && request.resource.data.gameId in ['tic_tac_toe','rock_paper_scissors','connect_four']
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() == 6
+        && request.resource.data.board is list
+        && request.resource.data.board.size() in [9,3,42]
+        && request.resource.data.turnUid == request.auth.uid
+        && request.resource.data.status == 'waiting';
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.playerUids
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.gameId == resource.data.gameId
+        && request.resource.data.inviteCode == resource.data.inviteCode
+        && request.resource.data.playerUids is list
+        && request.resource.data.playerUids.size() >= resource.data.playerUids.size()
+        && request.resource.data.playerUids.size() <= 2
+        && request.resource.data.playerUids.hasAll(resource.data.playerUids)
+        && request.resource.data.board == resource.data.board
+        && request.resource.data.winner == resource.data.winner
+        && request.resource.data.draw == resource.data.draw
+        && request.resource.data.turnUid == resource.data.turnUid
+        && request.resource.data.status in ['waiting','ready']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerUids','marks','status','updatedAt'])
+        && request.resource.data.updatedAt is timestamp
+        && (
+          request.resource.data.playerUids.size() == resource.data.playerUids.size()
+          || (
+            resource.data.status == 'waiting'
+            && resource.data.playerUids.size() == 1
+            && request.resource.data.playerUids.size() == 2
+            && request.auth.uid in request.resource.data.playerUids
+          )
+        );
+      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/gaming_rooms/$(roomId)).data.playerUids;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/gaming_rooms/$(roomId)).data.playerUids
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+    }
+
+    match /users/{userId}/gaming_challenges/{challengeId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.challengeId == 'daily_tic_tac_toe'
+        && request.resource.data.xp == 25
+        && request.resource.data.completedAt is timestamp;
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/gaming_profile/{docId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/gaming_results/{resultId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update, delete: if false;
+    }
+
+    match /watch_together_invites/{inviteCode} {
+      allow read: if request.auth != null && inviteCode == resource.data.inviteCode;
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.roomId is string
+        && request.resource.data.roomId.size() > 0
+        && request.resource.data.inviteCode == inviteCode
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+    }
+
+    match /watch_together_rooms/{roomId} {
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.memberIds;
+
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == 1
+        && request.resource.data.memberIds[0] == request.auth.uid
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() == 6
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.channelId is string
+        && request.resource.data.channelId.size() > 0
+        && request.resource.data.channelName is string
+        && request.resource.data.channelName.size() > 0
+        && request.resource.data.positionSeconds is number
+        && request.resource.data.positionSeconds >= 0
+        && request.resource.data.positionSeconds <= 86400
+        && request.resource.data.isPlaying is bool
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+
+      // Playback/channel state is host-authoritative.
+      // Membership changes are separately constrained below.
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.memberIds
+        && request.resource.data.inviteCode == resource.data.inviteCode
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() <= 8
+        && request.resource.data.updatedAt is timestamp
+        && (
+          // Host can update playback/channel state, but cannot alter membership.
+          (
+            request.auth.uid == resource.data.hostUid
+            && request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.memberIds == resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'channelId','channelName','positionSeconds','isPlaying','updatedAt'
+            ])
+            && request.resource.data.channelId is string
+            && request.resource.data.channelId.size() > 0
+            && request.resource.data.channelName is string
+            && request.resource.data.channelName.size() > 0
+            && request.resource.data.positionSeconds is number
+            && request.resource.data.positionSeconds >= 0
+            && request.resource.data.positionSeconds <= 86400
+            && request.resource.data.isPlaying is bool
+            && request.resource.data.status == resource.data.status
+          )
+          ||
+          // A member can join; only the host can change hostUid.
+          (
+            request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.status in ['waiting','ready']
+            && !(request.auth.uid in resource.data.memberIds)
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+            && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+            && request.auth.uid in request.resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'memberIds','status','updatedAt'
+            ])
+          )
+          ||
+          // A member can leave themselves.
+          (
+            request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.status in ['waiting','ready']
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'memberIds','status','updatedAt'
+            ])
+          )
+          ||
+          // The current host can leave and transfer host ownership to a remaining member.
+          (
+            request.auth.uid == resource.data.hostUid
+            && request.resource.data.hostUid is string
+            && request.resource.data.hostUid != resource.data.hostUid
+            && request.resource.data.hostUid in request.resource.data.memberIds
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && request.resource.data.status in ['waiting','ready']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'hostUid','memberIds','status','updatedAt'
+            ])
+          )
+        );
+
+      // Only the host can delete a room.
+      allow delete: if request.auth != null
+        && resource.data.hostUid == request.auth.uid;
+
+      match /presence/{uid} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.online is bool
+          && request.resource.data.lastSeen is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /activity/{activityId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.actorUid == request.auth.uid
+          && request.resource.data.type is string
+          && request.resource.data.type.size() > 0
+          && request.resource.data.type.size() <= 40
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+
+      match /typing/{uid} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.typing is bool
+          && request.resource.data.updatedAt is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /reactions/{reactionId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.emoji is string
+          && request.resource.data.emoji.size() > 0
+          && request.resource.data.emoji.size() <= 8
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+    }
+
+    // Canonical Education schema: courses + per-user enrollments/savedCourses.
+    // Keep the legacy education_* rules below during migration; do not expose unpublished courses.
+    match /courses/{courseId} {
+      allow read: if request.auth != null && resource.data.status == 'published';
+      allow create, delete: if false;
+      allow update: if false;
+    }
+
+    match /users/{userId}/enrollments/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.completedLessons == 0
+        && request.resource.data.progress == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == resource.data.courseId
+        && request.resource.data.completedLessons is int
+        && request.resource.data.completedLessons >= 0
+        && request.resource.data.progress is int
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.status in ['active','completed']
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/savedCourses/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','createdAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
+    match /education_courses/{courseId} {
+      allow read: if request.auth != null && resource.data.published == true;
+      allow write: if false;
+    }
+
+    match /users/{userId}/education_enrollments/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','title','progress','completedLessons','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.progress == 0
+        && request.resource.data.completedLessons is list
+        && request.resource.data.completedLessons.size() == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','title','progress','completedLessons','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == resource.data.courseId
+        && request.resource.data.progress is int
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.completedLessons is list
+        && request.resource.data.completedLessons.size() <= 100
+        && request.resource.data.status in ['active','completed']
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+    match /users/{userId}/arena_history/{historyId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update, delete: if false;
+    }
+
+    match /arena_rooms/{roomId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.playerUids;
+      allow write: if false;
+    }
+
+    match /arena_invites/{inviteCode} {
+      allow read, write: if false;
+    }
+
+
+    match /stays/{stayId} {
+      allow read: if request.auth != null && resource.data.status == 'active';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.city is string && request.resource.data.city.size() > 0 && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() > 0 && request.resource.data.country.size() <= 100
+        && request.resource.data.type in ['hotel','apartment','villa','hostel','resort','guesthouse']
+        && request.resource.data.description is string && request.resource.data.description.size() <= 3000
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0
+        && request.resource.data.guests is int && request.resource.data.guests >= 1 && request.resource.data.guests <= 50
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /stay_bookings/{bookingId} {
+      allow read: if request.auth != null
+        && (resource.data.guestUid == request.auth.uid || resource.data.ownerId == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.guestUid == request.auth.uid
+        && request.resource.data.ownerId is string
+        && request.resource.data.stayId is string
+        && request.resource.data.name is string
+        && request.resource.data.city is string
+        && request.resource.data.checkIn is timestamp
+        && request.resource.data.checkOut is timestamp
+        && request.resource.data.checkOut > request.resource.data.checkIn
+        && request.resource.data.guests is int && request.resource.data.guests >= 1 && request.resource.data.guests <= 50
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinorPerNight is int && request.resource.data.priceMinorPerNight >= 0
+        && request.resource.data.status == 'requested'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['accepted','rejected','cancelled'];
+      allow delete: if request.auth != null && resource.data.guestUid == request.auth.uid;
+    }
+
+    match /ride_requests/{rideId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.riderUid;
+      allow create: if request.auth != null && request.resource.data.riderUid == request.auth.uid
+        && request.resource.data.pickup is string && request.resource.data.pickup.size() > 0 && request.resource.data.pickup.size() <= 500
+        && request.resource.data.destination is string && request.resource.data.destination.size() > 0 && request.resource.data.destination.size() <= 500
+        && request.resource.data.rideType in ['standard','premium','van','bike']
+        && request.resource.data.passengers is int && request.resource.data.passengers >= 1 && request.resource.data.passengers <= 8
+        && request.resource.data.status == 'requested' && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.riderUid == request.auth.uid
+        && request.resource.data.riderUid == resource.data.riderUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'cancelled';
+      allow delete: if request.auth != null && resource.data.riderUid == request.auth.uid;
+    }
+    match /food_items/{itemId} {
+      allow read: if request.auth != null && resource.data.status == 'active';
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.category is string && request.resource.data.category.size() > 0 && request.resource.data.category.size() <= 100
+        && request.resource.data.city is string && request.resource.data.city.size() > 0 && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() > 0 && request.resource.data.country.size() <= 100
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0
+        && request.resource.data.halal is bool && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+    match /safety_places/{placeId} { allow read: if request.auth != null && resource.data.active == true; allow write: if false; }
+    match /users/{userId}/offline_routes/{routeId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.points is list && request.resource.data.points.size() >= 2 && request.resource.data.points.size() <= 500
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    match /emergency_contacts/{contactId} { allow read: if request.auth != null && resource.data.active == true; allow write: if false; }
+
+    match /entertainment_items/{itemId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow create: if request.auth != null
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.channelId is string
+        && request.resource.data.channelId.size() > 0
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 3000
+        && request.resource.data.mediaUrl is string
+        && request.resource.data.mediaUrl.size() > 0
+        && request.resource.data.mediaUrl.size() <= 2000
+        && request.resource.data.mediaKind == 'video'
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.createdAt is timestamp
+        && get(/databases/$(database)/documents/content_channels/$(request.resource.data.channelId)).data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.creatorId == request.auth.uid
+        && request.resource.data.creatorId == resource.data.creatorId
+        && request.resource.data.channelId == resource.data.channelId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+    }
+
+    match /content_channels/{channelId} {
+      allow read: if request.auth != null && resource.data.public == true;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.description is string && request.resource.data.description.size() <= 1000
+        && request.resource.data.subscribers == 0 && request.resource.data.public == true && request.resource.data.createdAt is timestamp;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      match /subscribers/{uid} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.auth.uid == uid && request.resource.data.uid == uid && request.resource.data.createdAt is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+        allow update: if false;
+      }
+    }
+
+    match /users/{userId}/watchTogetherTokens/{tokenId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['token','platform','updatedAt'])
+        && request.resource.data.token == tokenId
+        && request.resource.data.token is string
+        && request.resource.data.token.size() > 0
+        && request.resource.data.token.size() <= 4096
+        && request.resource.data.platform in ['android','ios','web']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/actions/{actionId} {
+      allow read: if isOwner(userId);
+      // Action requests are created and mutated by trusted server code.
+      // Clients may read their own requests and use callable functions for
+      // approve/reject/cancel/execute decisions.
+      allow create, update, delete: if false;
+    }
+    match /users/{userId}/notes/{noteId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/memory/{memoryId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/goals/{goalId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/action_audit/{eventId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /agriculture_records/{recordId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.type in ['crop','livestock','farm','soil','water','equipment','manufacturing','invention','research','energy','recycling','design']
+        && request.resource.data.location is string
+        && request.resource.data.location.size() <= 200
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /agriculture_opportunities/{opportunityId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow write: if false;
+    }
+
+    match /users/{userId}/agricultureNotes/{noteId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['title','note','type','createdAt','updatedAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.note is string
+        && request.resource.data.note.size() > 0
+        && request.resource.data.note.size() <= 5000
+        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','note','type','updatedAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.note is string
+        && request.resource.data.note.size() > 0
+        && request.resource.data.note.size() <= 5000
+        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/agricultureAdvisories/{advisoryId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /users/{userId}/productionHistory/{entryId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/outputLibrary/{outputId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /users/{userId}/production_jobs/{jobId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.type in ['short','film','seriesEpisode']
+        && request.resource.data.status == 'queued'
+        && request.resource.data.engine in ['moneyPrinterTurbo','skyReelsV3','skyReelsV2','ltx2','wan','hunyuan']
+        && request.resource.data.targetMinutes is int
+        && request.resource.data.targetMinutes >= 1
+        && request.resource.data.targetMinutes <= 240
+        && request.resource.data.progress == 0
+        && request.resource.data.retryCount == 0
+        && request.resource.data.cancelRequested == false
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','progress','error','cancelRequested','retryCount','updatedAt'])
+        && request.resource.data.updatedAt is timestamp
+        && (
+          (request.resource.data.status == 'cancelled'
+            && resource.data.status in ['queued','planning','generating','assembling','review']
+            && request.resource.data.cancelRequested == true
+            && request.resource.data.progress == resource.data.progress)
+          ||
+          (request.resource.data.status == 'queued'
+            && resource.data.status in ['failed','cancelled']
+            && request.resource.data.progress == 0
+            && request.resource.data.cancelRequested == false
+            && request.resource.data.retryCount == resource.data.retryCount + 1)
+        );
+      allow delete: if isOwner(userId);
+    }
+
+
+    match /auren_global_countries/{iso3} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /auren_global_data/{iso3} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Canonical Education schema. Course documents are server-published only.
+    match /courses/{courseId} {
+      allow read: if request.auth != null
+        && resource.data.status == 'published'
+        && resource.data.title is string
+        && resource.data.title.size() > 0
+        && resource.data.title.size() <= 160
+        && resource.data.description is string
+        && resource.data.description.size() <= 4000
+        && resource.data.category is string
+        && resource.data.category.size() <= 100
+        && resource.data.teacherId is string
+        && resource.data.lessonCount is int
+        && resource.data.lessonCount >= 1
+        && resource.data.lessonCount <= 500
+        && resource.data.skills is list
+        && resource.data.skills.size() <= 20;
+      allow create, update, delete: if false;
+
+      match /lessons/{lessonId} {
+        allow read: if request.auth != null
+          && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+          && resource.data.title is string
+          && resource.data.title.size() > 0
+          && resource.data.title.size() <= 200
+          && resource.data.order is int
+          && resource.data.order >= 0
+          && resource.data.order < get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount;
+        allow write: if false;
+      }
+    }
+
+    match /users/{userId}/enrollments/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount is int
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount >= 1
+        && request.resource.data.completedLessons == 0
+        && request.resource.data.progress == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == resource.data.courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount is int
+        && request.resource.data.completedLessons >= resource.data.completedLessons
+        && request.resource.data.completedLessons >= 0
+        && request.resource.data.completedLessons <= get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount
+        && request.resource.data.progress * get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount >= request.resource.data.completedLessons * 100 - (get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount / 2) && request.resource.data.progress * get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount < request.resource.data.completedLessons * 100 + (get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount / 2) + 1
+        && request.resource.data.progress >= resource.data.progress
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.status in ['active','completed']
+        && ((request.resource.data.status == 'completed' && request.resource.data.progress == 100)
+          || (request.resource.data.status == 'active' && request.resource.data.progress < 100))
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/savedCourses/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','createdAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
+    // Personal learning plans generated by the Education Learning Engine.
+    match /users/{userId}/learningPlans/{planId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'engineVersion','nextAction','lastCompletedTask','lastActivityAt','updatedAt'
+        ])
+        && (!request.resource.data.keys().hasAny(['engineVersion']) || request.resource.data.engineVersion is int)
+        && (!request.resource.data.keys().hasAny(['nextAction']) || request.resource.data.nextAction is string)
+        && (!request.resource.data.keys().hasAny(['lastCompletedTask']) || request.resource.data.lastCompletedTask is string)
+        && (!request.resource.data.keys().hasAny(['lastActivityAt']) || request.resource.data.lastActivityAt is timestamp)
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasOnly([
+            'title','type','minutes','level','focusAreas','completed','order','dueAt','createdAt'
+          ])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 200
+          && request.resource.data.type in ['review','lesson','practice','assessment']
+          && request.resource.data.minutes is int
+          && request.resource.data.minutes >= 5
+          && request.resource.data.minutes <= 180
+          && request.resource.data.level is string
+          && request.resource.data.level.size() <= 40
+          && request.resource.data.focusAreas is list
+          && request.resource.data.focusAreas.size() <= 10
+          && request.resource.data.completed == false
+          && request.resource.data.order is int
+          && request.resource.data.order >= 0
+          && request.resource.data.dueAt is timestamp
+          && request.resource.data.createdAt is timestamp;
+        allow update: if isOwner(userId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'completed','completedAt'
+          ])
+          && request.resource.data.completed == true
+          && request.resource.data.completedAt is timestamp;
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /users/{userId}/educationSkills/{skillId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['name','level','lastActivityAt','source'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 160
+        && request.resource.data.level is string
+        && request.resource.data.level.size() <= 40
+        && request.resource.data.lastActivityAt is timestamp
+        && request.resource.data.source == 'learning_plan';
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/emergency_contacts/{contactId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['ownerId','name','phone','relation','primary','createdAt','updatedAt'])
+        && request.resource.data.ownerId == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.relation is string
+        && request.resource.data.relation.size() <= 80
+        && request.resource.data.primary is bool
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['ownerId','name','phone','relation','primary','createdAt','updatedAt'])
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.ownerId == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.relation is string
+        && request.resource.data.relation.size() <= 80
+        && request.resource.data.primary is bool
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /supplier_contact_requests/{requestId} {
+      allow read: if request.auth != null && resource.data.requesterUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /supplier_rfqs/{rfqId} {
+      allow read: if request.auth != null && resource.data.requesterUid == request.auth.uid;
+      allow write: if false;
+    }
+
+
+    match /kids_activities/{activityId} {
+      allow read: if request.auth != null
+        && resource.data.published == true
+        && resource.data.title is string
+        && resource.data.title.size() > 0
+        && resource.data.title.size() <= 160
+        && resource.data.description is string
+        && resource.data.description.size() <= 1000
+        && resource.data.category is string
+        && resource.data.category.size() <= 40
+        && resource.data.minAge in [6, 9, 13]
+        && resource.data.maxAge in [8, 11, 17]
+        && resource.data.minutes is int
+        && resource.data.minutes >= 5
+        && resource.data.minutes <= 60;
+      allow write: if false;
+    }
+
+match /users/{userId}/kids_activity_progress/{activityId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['activityId','completed','updatedAt'])
+        && request.resource.data.activityId == activityId
+        && request.resource.data.completed is bool
+        && request.resource.data.updatedAt is timestamp
+        && get(/databases/$(database)/documents/kids_activities/$(activityId)).data.published == true;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/kids/{settingId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && settingId == 'parent_settings'
+        && request.resource.data.keys().hasOnly(['ageBand','aiTutor','externalLinks','dailyMinutes','updatedAt'])
+        && request.resource.data.ageBand in [6, 9, 13]
+        && request.resource.data.aiTutor is bool
+        && request.resource.data.externalLinks is bool
+        && request.resource.data.dailyMinutes in [15, 30, 60, 90, 120, 180, 240]
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+    
+    
+    // Canonical Family Hub / Family Pot. Financial entries are user-owned;
+    // no cross-user reads or writes are allowed from the client.
+    match /users/{userId}/familyMembers/{memberId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['name','relation','createdAt','updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.relation is string
+        && request.resource.data.relation.size() <= 80
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['name','relation','createdAt','updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.relation is string
+        && request.resource.data.relation.size() <= 80
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/familyPot/{entryId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['title','amountMinor','currency','createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.amountMinor is int
+        && request.resource.data.amountMinor >= 0
+        && request.resource.data.amountMinor <= 1000000000000
+        && request.resource.data.currency is string
+        && request.resource.data.currency.size() == 3
+        && request.resource.data.createdAt is timestamp;
+      allow update, delete: if false;
+    }
+
+    // Canonical Health & Sports daily check-ins. Health guidance remains general;
+    // sensitive medical actions are not performed by client writes.
+    match /users/{userId}/healthCheckins/{checkinId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && checkinId.size() <= 40
+        && request.resource.data.keys().hasOnly([
+          'activityMinutes','waterGlasses','sleepHours','mood','updatedAt'
+        ])
+        && request.resource.data.activityMinutes is int
+        && request.resource.data.activityMinutes >= 0
+        && request.resource.data.activityMinutes <= 1440
+        && request.resource.data.waterGlasses is int
+        && request.resource.data.waterGlasses >= 0
+        && request.resource.data.waterGlasses <= 50
+        && request.resource.data.sleepHours is number
+        && request.resource.data.sleepHours >= 0
+        && request.resource.data.sleepHours <= 24
+        && request.resource.data.mood is int
+        && request.resource.data.mood >= 1
+        && request.resource.data.mood <= 5
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+
+  }
+}
+)
         && request.resource.data.priceMinor is int
         && request.resource.data.priceMinor >= 0
         && request.resource.data.bedrooms is int
+        && request.resource.data.bedrooms >= 0
+        && request.resource.data.bedrooms <= 100
         && request.resource.data.bathrooms is int
+        && request.resource.data.bathrooms >= 0
+        && request.resource.data.bathrooms <= 100
         && request.resource.data.areaSqm is int
+        && request.resource.data.areaSqm >= 0
+        && request.resource.data.areaSqm <= 1000000
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.size() <= 2048
+        && (request.resource.data.imageUrl.size() == 0 || request.resource.data.imageUrl.matches('^https://.*'))
         && request.resource.data.verified == false
         && request.resource.data.status == 'active'
         && request.resource.data.visibility == 'public'
         && request.resource.data.createdAt is timestamp;
       allow update: if request.auth != null
         && resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','description','city','country','type','listingType','currency','priceMinor','bedrooms','bathrooms','areaSqm','imageUrl'])
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.verified == resource.data.verified
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.visibility == resource.data.visibility
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 3000
+        && request.resource.data.city is string
+        && request.resource.data.city.size() > 0
+        && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string
+        && request.resource.data.country.size() > 0
+        && request.resource.data.country.size() <= 100
+        && request.resource.data.listingType in ['sale','rent']
+        && request.resource.data.type in ['Apartment','House','Villa','Office','Shop','Land','Warehouse']
+        && request.resource.data.currency is string
+        && request.resource.data.currency.matches('^[A-Z]{3}
+      allow delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /users/{userId}/savedProperties/{propertyId} {
+      allow read, create, delete: if isOwner(userId);
+      allow update: if false;
+    }
+
+    match /community_polls/{pollId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.communityId is string
+        && request.auth.uid in get(/databases/$(database)/documents/communities/$(request.resource.data.communityId)).data.memberIds
+        && request.resource.data.question is string
+        && request.resource.data.question.size() > 0
+        && request.resource.data.question.size() <= 240
+        && request.resource.data.options is list
+        && request.resource.data.options.size() >= 2
+        && request.resource.data.options.size() <= 6
+        && request.resource.data.votes is map
+        && request.resource.data.voters is map
+        && request.resource.data.voters.size() == 0
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.communityId is string
+        && request.auth.uid in get(/databases/$(database)/documents/communities/$(resource.data.communityId)).data.memberIds
+        && !(request.auth.uid in resource.data.voters)
+        && request.auth.uid in request.resource.data.voters
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes','voters'])
+        && request.resource.data.votes is map
+        && request.resource.data.voters is map
+        && request.resource.data.voters.size() == resource.data.voters.size() + 1;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /communities/{communityId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+        && request.resource.data.description is string && request.resource.data.description.size() <= 500
+        && request.resource.data.topic is string && request.resource.data.topic.size() <= 80
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == 1
+        && request.resource.data.memberIds[0] == request.auth.uid
+        && request.resource.data.memberCount == 1
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && request.resource.data.keys().hasOnly(['ownerId','name','description','topic','visibility','memberIds','memberCount','createdAt'])
+        && resource.data.ownerId == request.resource.data.ownerId
+        && resource.data.name == request.resource.data.name
+        && resource.data.description == request.resource.data.description
+        && resource.data.topic == request.resource.data.topic
+        && resource.data.visibility == request.resource.data.visibility
+        && resource.data.createdAt == request.resource.data.createdAt
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() >= 1
+        && request.resource.data.memberIds.size() <= 10000
+        && request.resource.data.memberCount == request.resource.data.memberIds.size()
+        && (
+          (!(request.auth.uid in resource.data.memberIds)
+            && request.auth.uid in request.resource.data.memberIds
+            && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1)
+          || (request.auth.uid in resource.data.memberIds
+            && request.auth.uid != resource.data.ownerId
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && request.resource.data.memberIds.size() + 1 == resource.data.memberIds.size())
+          || (request.auth.uid == resource.data.ownerId
+            && request.auth.uid in request.resource.data.memberIds
+            && request.auth.uid in resource.data.memberIds
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && request.resource.data.memberIds.size() + 1 == resource.data.memberIds.size())
+        );
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+
+
+  match /random_calls/{callId} {
+    allow read: if request.auth != null
+      && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid);
+    allow create: if request.auth != null
+      && request.resource.data.callerUid == request.auth.uid
+      && request.resource.data.calleeUid is string
+      && request.resource.data.calleeUid != request.auth.uid
+      && request.resource.data.kind in ['audio','video']
+      && request.resource.data.status == 'ringing'
+      && request.resource.data.keys().hasOnly(['callerUid','calleeUid','kind','status','createdAt']);
+    allow update: if request.auth != null
+      && (resource.data.callerUid == request.auth.uid || resource.data.calleeUid == request.auth.uid)
+      && (
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['offer'])
+          && resource.data.callerUid == request.auth.uid
+          && request.resource.data.offer is map
+          && request.resource.data.offer.sdp is string
+          && request.resource.data.offer.type is string)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer','status'])
+          && resource.data.calleeUid == request.auth.uid
+          && resource.data.status == 'ringing'
+          && request.resource.data.status == 'connected'
+          && request.resource.data.answer is map
+          && request.resource.data.answer.sdp is string
+          && request.resource.data.answer.type is string)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','endedBy','endedAt'])
+          && request.resource.data.status == 'ended'
+          && request.resource.data.endedBy == request.auth.uid
+          && request.resource.data.endedAt is timestamp)
+      );
+    allow delete: if false;
+    match /candidates/{candidateId} {
+      allow read: if request.auth != null
+        && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid
+          || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.senderUid == request.auth.uid
+        && (get(/databases/$(database)/documents/random_calls/$(callId)).data.callerUid == request.auth.uid
+          || get(/databases/$(database)/documents/random_calls/$(callId)).data.calleeUid == request.auth.uid)
+        && request.resource.data.candidate is string
+        && (request.resource.data.sdpMid == null || request.resource.data.sdpMid is string)
+        && (request.resource.data.sdpMLineIndex == null || request.resource.data.sdpMLineIndex is int)
+        && request.resource.data.keys().hasOnly(['senderUid','candidate','sdpMid','sdpMLineIndex','createdAt']);
+      allow update, delete: if false;
+    }
+  }
+
+    match /gaming_friend_challenges/{challengeId} {
+      allow read: if request.auth != null
+        && (resource.data.fromUid == request.auth.uid || resource.data.toUid == request.auth.uid);
+      // Creation and lifecycle are server-authoritative.
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /gaming_friend_challenge_keys/{keyId} {
+      allow read, write: if false;
+    }
+
+    match /gaming_invites/{inviteCode} {
+      allow read: if request.auth != null && inviteCode == resource.data.inviteCode;
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.roomId is string
+        && request.resource.data.roomId.size() > 0
+        && request.resource.data.inviteCode == inviteCode
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+    }
+
+    match /auren_game_matchmaking/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    match /auren_game_lobbies/{lobbyId}/private_players/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid
+        && exists(/databases/$(database)/documents/auren_game_lobbies/$(lobbyId))
+        && request.auth.uid in get(/databases/$(database)/documents/auren_game_lobbies/$(lobbyId)).data.players;
+      allow create, update, delete: if false;
+    }
+
+    match /auren_game_lobbies/{lobbyId}/server/{docId} {
+      allow read, write: if false;
+    }
+
+    match /auren_game_lobbies/{lobbyId} {
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.players;
+      allow create: if request.auth != null
+        && request.resource.data.hostId == request.auth.uid
+        && request.resource.data.guestId == null
+        && request.resource.data.players is list
+        && request.resource.data.players.size() == 1
+        && request.resource.data.players[0] == request.auth.uid
+        && request.resource.data.gameIndex is int
+        && request.resource.data.gameIndex >= 0
+        && request.resource.data.gameIndex <= 59
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.turnPlayerId == request.auth.uid
+        && request.resource.data.stateVersion == 0
+        && request.resource.data.state is map
+        && request.resource.data.state.size() == 0;
+      // Only the second player may transition a waiting lobby to playing.
+      // Match state itself remains immutable from clients; game moves go through
+      // the trusted Cloud Function.
+      allow update: if request.auth != null
+        && resource.data.status == 'waiting'
+        && resource.data.players is list
+        && resource.data.players.size() == 1
+        && request.resource.data.players is list
+        && request.resource.data.players.size() == 2
+        && request.resource.data.players[0] == resource.data.players[0]
+        && request.resource.data.players[1] == request.auth.uid
+        && request.resource.data.guestId == request.auth.uid
+        && request.resource.data.hostId == resource.data.hostId
+        && request.resource.data.gameIndex == resource.data.gameIndex
+        && request.resource.data.status == 'playing'
+        && request.resource.data.turnPlayerId == resource.data.turnPlayerId
+        && request.resource.data.stateVersion == resource.data.stateVersion
+        && request.resource.data.state == resource.data.state;
+      allow delete: if request.auth != null
+        && resource.data.hostId == request.auth.uid
+        && resource.data.status != 'playing';
+    }
+
+    match /gaming_rooms/{roomId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.playerUids;
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.playerUids is list
+        && request.resource.data.playerUids.size() == 1
+        && request.resource.data.playerUids[0] == request.auth.uid
+        && request.resource.data.gameId in ['tic_tac_toe','rock_paper_scissors','connect_four']
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() == 6
+        && request.resource.data.board is list
+        && request.resource.data.board.size() in [9,3,42]
+        && request.resource.data.turnUid == request.auth.uid
+        && request.resource.data.status == 'waiting';
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.playerUids
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.gameId == resource.data.gameId
+        && request.resource.data.inviteCode == resource.data.inviteCode
+        && request.resource.data.playerUids is list
+        && request.resource.data.playerUids.size() >= resource.data.playerUids.size()
+        && request.resource.data.playerUids.size() <= 2
+        && request.resource.data.playerUids.hasAll(resource.data.playerUids)
+        && request.resource.data.board == resource.data.board
+        && request.resource.data.winner == resource.data.winner
+        && request.resource.data.draw == resource.data.draw
+        && request.resource.data.turnUid == resource.data.turnUid
+        && request.resource.data.status in ['waiting','ready']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playerUids','marks','status','updatedAt'])
+        && request.resource.data.updatedAt is timestamp
+        && (
+          request.resource.data.playerUids.size() == resource.data.playerUids.size()
+          || (
+            resource.data.status == 'waiting'
+            && resource.data.playerUids.size() == 1
+            && request.resource.data.playerUids.size() == 2
+            && request.auth.uid in request.resource.data.playerUids
+          )
+        );
+      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/gaming_rooms/$(roomId)).data.playerUids;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/gaming_rooms/$(roomId)).data.playerUids
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+    }
+
+    match /users/{userId}/gaming_challenges/{challengeId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.challengeId == 'daily_tic_tac_toe'
+        && request.resource.data.xp == 25
+        && request.resource.data.completedAt is timestamp;
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/gaming_profile/{docId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/gaming_results/{resultId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update, delete: if false;
+    }
+
+    match /watch_together_invites/{inviteCode} {
+      allow read: if request.auth != null && inviteCode == resource.data.inviteCode;
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.roomId is string
+        && request.resource.data.roomId.size() > 0
+        && request.resource.data.inviteCode == inviteCode
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.hostUid == request.auth.uid;
+    }
+
+    match /watch_together_rooms/{roomId} {
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.memberIds;
+
+      allow create: if request.auth != null
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == 1
+        && request.resource.data.memberIds[0] == request.auth.uid
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() == 6
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.channelId is string
+        && request.resource.data.channelId.size() > 0
+        && request.resource.data.channelName is string
+        && request.resource.data.channelName.size() > 0
+        && request.resource.data.positionSeconds is number
+        && request.resource.data.positionSeconds >= 0
+        && request.resource.data.positionSeconds <= 86400
+        && request.resource.data.isPlaying is bool
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+
+      // Playback/channel state is host-authoritative.
+      // Membership changes are separately constrained below.
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.memberIds
+        && request.resource.data.inviteCode == resource.data.inviteCode
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() <= 8
+        && request.resource.data.updatedAt is timestamp
+        && (
+          // Host can update playback/channel state, but cannot alter membership.
+          (
+            request.auth.uid == resource.data.hostUid
+            && request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.memberIds == resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'channelId','channelName','positionSeconds','isPlaying','updatedAt'
+            ])
+            && request.resource.data.channelId is string
+            && request.resource.data.channelId.size() > 0
+            && request.resource.data.channelName is string
+            && request.resource.data.channelName.size() > 0
+            && request.resource.data.positionSeconds is number
+            && request.resource.data.positionSeconds >= 0
+            && request.resource.data.positionSeconds <= 86400
+            && request.resource.data.isPlaying is bool
+            && request.resource.data.status == resource.data.status
+          )
+          ||
+          // A member can join; only the host can change hostUid.
+          (
+            request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.status in ['waiting','ready']
+            && !(request.auth.uid in resource.data.memberIds)
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+            && request.resource.data.memberIds.hasAll(resource.data.memberIds)
+            && request.auth.uid in request.resource.data.memberIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'memberIds','status','updatedAt'
+            ])
+          )
+          ||
+          // A member can leave themselves.
+          (
+            request.resource.data.hostUid == resource.data.hostUid
+            && request.resource.data.status in ['waiting','ready']
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'memberIds','status','updatedAt'
+            ])
+          )
+          ||
+          // The current host can leave and transfer host ownership to a remaining member.
+          (
+            request.auth.uid == resource.data.hostUid
+            && request.resource.data.hostUid is string
+            && request.resource.data.hostUid != resource.data.hostUid
+            && request.resource.data.hostUid in request.resource.data.memberIds
+            && request.resource.data.memberIds.size() == resource.data.memberIds.size() - 1
+            && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && request.resource.data.status in ['waiting','ready']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'hostUid','memberIds','status','updatedAt'
+            ])
+          )
+        );
+
+      // Only the host can delete a room.
+      allow delete: if request.auth != null
+        && resource.data.hostUid == request.auth.uid;
+
+      match /presence/{uid} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.online is bool
+          && request.resource.data.lastSeen is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /activity/{activityId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.actorUid == request.auth.uid
+          && request.resource.data.type is string
+          && request.resource.data.type.size() > 0
+          && request.resource.data.type.size() <= 40
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+
+      match /typing/{uid} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create, update: if request.auth != null
+          && request.auth.uid == uid
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.typing is bool
+          && request.resource.data.updatedAt is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+      }
+
+      match /reactions/{reactionId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.emoji is string
+          && request.resource.data.emoji.size() > 0
+          && request.resource.data.emoji.size() <= 8
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds;
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/watch_together_rooms/$(roomId)).data.memberIds
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500
+          && request.resource.data.createdAt is timestamp;
+        allow update, delete: if false;
+      }
+    }
+
+    // Canonical Education schema: courses + per-user enrollments/savedCourses.
+    // Keep the legacy education_* rules below during migration; do not expose unpublished courses.
+    match /courses/{courseId} {
+      allow read: if request.auth != null && resource.data.status == 'published';
+      allow create, delete: if false;
+      allow update: if false;
+    }
+
+    match /users/{userId}/enrollments/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.completedLessons == 0
+        && request.resource.data.progress == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == resource.data.courseId
+        && request.resource.data.completedLessons is int
+        && request.resource.data.completedLessons >= 0
+        && request.resource.data.progress is int
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.status in ['active','completed']
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/savedCourses/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','createdAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
+    match /education_courses/{courseId} {
+      allow read: if request.auth != null && resource.data.published == true;
+      allow write: if false;
+    }
+
+    match /users/{userId}/education_enrollments/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','title','progress','completedLessons','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.progress == 0
+        && request.resource.data.completedLessons is list
+        && request.resource.data.completedLessons.size() == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','title','progress','completedLessons','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == resource.data.courseId
+        && request.resource.data.progress is int
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.completedLessons is list
+        && request.resource.data.completedLessons.size() <= 100
+        && request.resource.data.status in ['active','completed']
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+    match /users/{userId}/arena_history/{historyId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create, update, delete: if false;
+    }
+
+    match /arena_rooms/{roomId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.playerUids;
+      allow write: if false;
+    }
+
+    match /arena_invites/{inviteCode} {
+      allow read, write: if false;
+    }
+
+
+    match /stays/{stayId} {
+      allow read: if request.auth != null && resource.data.status == 'active';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.city is string && request.resource.data.city.size() > 0 && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() > 0 && request.resource.data.country.size() <= 100
+        && request.resource.data.type in ['hotel','apartment','villa','hostel','resort','guesthouse']
+        && request.resource.data.description is string && request.resource.data.description.size() <= 3000
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0
+        && request.resource.data.guests is int && request.resource.data.guests >= 1 && request.resource.data.guests <= 50
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /stay_bookings/{bookingId} {
+      allow read: if request.auth != null
+        && (resource.data.guestUid == request.auth.uid || resource.data.ownerId == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.guestUid == request.auth.uid
+        && request.resource.data.ownerId is string
+        && request.resource.data.stayId is string
+        && request.resource.data.name is string
+        && request.resource.data.city is string
+        && request.resource.data.checkIn is timestamp
+        && request.resource.data.checkOut is timestamp
+        && request.resource.data.checkOut > request.resource.data.checkIn
+        && request.resource.data.guests is int && request.resource.data.guests >= 1 && request.resource.data.guests <= 50
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinorPerNight is int && request.resource.data.priceMinorPerNight >= 0
+        && request.resource.data.status == 'requested'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['accepted','rejected','cancelled'];
+      allow delete: if request.auth != null && resource.data.guestUid == request.auth.uid;
+    }
+
+    match /ride_requests/{rideId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.riderUid;
+      allow create: if request.auth != null && request.resource.data.riderUid == request.auth.uid
+        && request.resource.data.pickup is string && request.resource.data.pickup.size() > 0 && request.resource.data.pickup.size() <= 500
+        && request.resource.data.destination is string && request.resource.data.destination.size() > 0 && request.resource.data.destination.size() <= 500
+        && request.resource.data.rideType in ['standard','premium','van','bike']
+        && request.resource.data.passengers is int && request.resource.data.passengers >= 1 && request.resource.data.passengers <= 8
+        && request.resource.data.status == 'requested' && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.riderUid == request.auth.uid
+        && request.resource.data.riderUid == resource.data.riderUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'cancelled';
+      allow delete: if request.auth != null && resource.data.riderUid == request.auth.uid;
+    }
+    match /food_items/{itemId} {
+      allow read: if request.auth != null && resource.data.status == 'active';
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.category is string && request.resource.data.category.size() > 0 && request.resource.data.category.size() <= 100
+        && request.resource.data.city is string && request.resource.data.city.size() > 0 && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() > 0 && request.resource.data.country.size() <= 100
+        && request.resource.data.currency is string && request.resource.data.currency.size() == 3
+        && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0
+        && request.resource.data.halal is bool && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+    match /safety_places/{placeId} { allow read: if request.auth != null && resource.data.active == true; allow write: if false; }
+    match /users/{userId}/offline_routes/{routeId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == userId
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 160
+        && request.resource.data.points is list && request.resource.data.points.size() >= 2 && request.resource.data.points.size() <= 500
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null && request.auth.uid == userId && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    match /emergency_contacts/{contactId} { allow read: if request.auth != null && resource.data.active == true; allow write: if false; }
+
+    match /entertainment_items/{itemId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow create: if request.auth != null
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.channelId is string
+        && request.resource.data.channelId.size() > 0
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 3000
+        && request.resource.data.mediaUrl is string
+        && request.resource.data.mediaUrl.size() > 0
+        && request.resource.data.mediaUrl.size() <= 2000
+        && request.resource.data.mediaKind == 'video'
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.createdAt is timestamp
+        && get(/databases/$(database)/documents/content_channels/$(request.resource.data.channelId)).data.ownerId == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.creatorId == request.auth.uid
+        && request.resource.data.creatorId == resource.data.creatorId
+        && request.resource.data.channelId == resource.data.channelId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+    }
+
+    match /content_channels/{channelId} {
+      allow read: if request.auth != null && resource.data.public == true;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100
+        && request.resource.data.description is string && request.resource.data.description.size() <= 1000
+        && request.resource.data.subscribers == 0 && request.resource.data.public == true && request.resource.data.createdAt is timestamp;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      match /subscribers/{uid} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.auth.uid == uid && request.resource.data.uid == uid && request.resource.data.createdAt is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+        allow update: if false;
+      }
+    }
+
+    match /users/{userId}/watchTogetherTokens/{tokenId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['token','platform','updatedAt'])
+        && request.resource.data.token == tokenId
+        && request.resource.data.token is string
+        && request.resource.data.token.size() > 0
+        && request.resource.data.token.size() <= 4096
+        && request.resource.data.platform in ['android','ios','web']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/actions/{actionId} {
+      allow read: if isOwner(userId);
+      // Action requests are created and mutated by trusted server code.
+      // Clients may read their own requests and use callable functions for
+      // approve/reject/cancel/execute decisions.
+      allow create, update, delete: if false;
+    }
+    match /users/{userId}/notes/{noteId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/memory/{memoryId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/goals/{goalId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/action_audit/{eventId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /agriculture_records/{recordId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.type in ['crop','livestock','farm','soil','water','equipment','manufacturing','invention','research','energy','recycling','design']
+        && request.resource.data.location is string
+        && request.resource.data.location.size() <= 200
+        && request.resource.data.visibility == 'public'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /agriculture_opportunities/{opportunityId} {
+      allow read: if request.auth != null && resource.data.visibility == 'public';
+      allow write: if false;
+    }
+
+    match /users/{userId}/agricultureNotes/{noteId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['title','note','type','createdAt','updatedAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.note is string
+        && request.resource.data.note.size() > 0
+        && request.resource.data.note.size() <= 5000
+        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title','note','type','updatedAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.note is string
+        && request.resource.data.note.size() > 0
+        && request.resource.data.note.size() <= 5000
+        && request.resource.data.type in ['field','livestock','farm','manufacturing','invention','research','energy','recycling']
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/agricultureAdvisories/{advisoryId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /users/{userId}/productionHistory/{entryId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+    match /users/{userId}/outputLibrary/{outputId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /users/{userId}/production_jobs/{jobId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.type in ['short','film','seriesEpisode']
+        && request.resource.data.status == 'queued'
+        && request.resource.data.engine in ['moneyPrinterTurbo','skyReelsV3','skyReelsV2','ltx2','wan','hunyuan']
+        && request.resource.data.targetMinutes is int
+        && request.resource.data.targetMinutes >= 1
+        && request.resource.data.targetMinutes <= 240
+        && request.resource.data.progress == 0
+        && request.resource.data.retryCount == 0
+        && request.resource.data.cancelRequested == false
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','progress','error','cancelRequested','retryCount','updatedAt'])
+        && request.resource.data.updatedAt is timestamp
+        && (
+          (request.resource.data.status == 'cancelled'
+            && resource.data.status in ['queued','planning','generating','assembling','review']
+            && request.resource.data.cancelRequested == true
+            && request.resource.data.progress == resource.data.progress)
+          ||
+          (request.resource.data.status == 'queued'
+            && resource.data.status in ['failed','cancelled']
+            && request.resource.data.progress == 0
+            && request.resource.data.cancelRequested == false
+            && request.resource.data.retryCount == resource.data.retryCount + 1)
+        );
+      allow delete: if isOwner(userId);
+    }
+
+
+    match /auren_global_countries/{iso3} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /auren_global_data/{iso3} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Canonical Education schema. Course documents are server-published only.
+    match /courses/{courseId} {
+      allow read: if request.auth != null
+        && resource.data.status == 'published'
+        && resource.data.title is string
+        && resource.data.title.size() > 0
+        && resource.data.title.size() <= 160
+        && resource.data.description is string
+        && resource.data.description.size() <= 4000
+        && resource.data.category is string
+        && resource.data.category.size() <= 100
+        && resource.data.teacherId is string
+        && resource.data.lessonCount is int
+        && resource.data.lessonCount >= 1
+        && resource.data.lessonCount <= 500
+        && resource.data.skills is list
+        && resource.data.skills.size() <= 20;
+      allow create, update, delete: if false;
+
+      match /lessons/{lessonId} {
+        allow read: if request.auth != null
+          && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+          && resource.data.title is string
+          && resource.data.title.size() > 0
+          && resource.data.title.size() <= 200
+          && resource.data.order is int
+          && resource.data.order >= 0
+          && resource.data.order < get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount;
+        allow write: if false;
+      }
+    }
+
+    match /users/{userId}/enrollments/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount is int
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount >= 1
+        && request.resource.data.completedLessons == 0
+        && request.resource.data.progress == 0
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','completedLessons','progress','status','createdAt','updatedAt'])
+        && request.resource.data.courseId == resource.data.courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount is int
+        && request.resource.data.completedLessons >= resource.data.completedLessons
+        && request.resource.data.completedLessons >= 0
+        && request.resource.data.completedLessons <= get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount
+        && request.resource.data.progress * get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount >= request.resource.data.completedLessons * 100 - (get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount / 2) && request.resource.data.progress * get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount < request.resource.data.completedLessons * 100 + (get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount / 2) + 1
+        && request.resource.data.progress >= resource.data.progress
+        && request.resource.data.progress >= 0
+        && request.resource.data.progress <= 100
+        && request.resource.data.status in ['active','completed']
+        && ((request.resource.data.status == 'completed' && request.resource.data.progress == 100)
+          || (request.resource.data.status == 'active' && request.resource.data.progress < 100))
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/savedCourses/{courseId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['courseId','createdAt'])
+        && request.resource.data.courseId == courseId
+        && get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'published'
+        && request.resource.data.createdAt is timestamp;
+      allow update: if false;
+      allow delete: if isOwner(userId);
+    }
+
+    // Personal learning plans generated by the Education Learning Engine.
+    match /users/{userId}/learningPlans/{planId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'engineVersion','nextAction','lastCompletedTask','lastActivityAt','updatedAt'
+        ])
+        && (!request.resource.data.keys().hasAny(['engineVersion']) || request.resource.data.engineVersion is int)
+        && (!request.resource.data.keys().hasAny(['nextAction']) || request.resource.data.nextAction is string)
+        && (!request.resource.data.keys().hasAny(['lastCompletedTask']) || request.resource.data.lastCompletedTask is string)
+        && (!request.resource.data.keys().hasAny(['lastActivityAt']) || request.resource.data.lastActivityAt is timestamp)
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && request.resource.data.keys().hasOnly([
+            'title','type','minutes','level','focusAreas','completed','order','dueAt','createdAt'
+          ])
+          && request.resource.data.title is string
+          && request.resource.data.title.size() > 0
+          && request.resource.data.title.size() <= 200
+          && request.resource.data.type in ['review','lesson','practice','assessment']
+          && request.resource.data.minutes is int
+          && request.resource.data.minutes >= 5
+          && request.resource.data.minutes <= 180
+          && request.resource.data.level is string
+          && request.resource.data.level.size() <= 40
+          && request.resource.data.focusAreas is list
+          && request.resource.data.focusAreas.size() <= 10
+          && request.resource.data.completed == false
+          && request.resource.data.order is int
+          && request.resource.data.order >= 0
+          && request.resource.data.dueAt is timestamp
+          && request.resource.data.createdAt is timestamp;
+        allow update: if isOwner(userId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'completed','completedAt'
+          ])
+          && request.resource.data.completed == true
+          && request.resource.data.completedAt is timestamp;
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /users/{userId}/educationSkills/{skillId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['name','level','lastActivityAt','source'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 160
+        && request.resource.data.level is string
+        && request.resource.data.level.size() <= 40
+        && request.resource.data.lastActivityAt is timestamp
+        && request.resource.data.source == 'learning_plan';
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/emergency_contacts/{contactId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['ownerId','name','phone','relation','primary','createdAt','updatedAt'])
+        && request.resource.data.ownerId == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.relation is string
+        && request.resource.data.relation.size() <= 80
+        && request.resource.data.primary is bool
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['ownerId','name','phone','relation','primary','createdAt','updatedAt'])
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.ownerId == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() > 0
+        && request.resource.data.phone.size() <= 40
+        && request.resource.data.relation is string
+        && request.resource.data.relation.size() <= 80
+        && request.resource.data.primary is bool
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /supplier_contact_requests/{requestId} {
+      allow read: if request.auth != null && resource.data.requesterUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /supplier_rfqs/{rfqId} {
+      allow read: if request.auth != null && resource.data.requesterUid == request.auth.uid;
+      allow write: if false;
+    }
+
+
+    match /kids_activities/{activityId} {
+      allow read: if request.auth != null
+        && resource.data.published == true
+        && resource.data.title is string
+        && resource.data.title.size() > 0
+        && resource.data.title.size() <= 160
+        && resource.data.description is string
+        && resource.data.description.size() <= 1000
+        && resource.data.category is string
+        && resource.data.category.size() <= 40
+        && resource.data.minAge in [6, 9, 13]
+        && resource.data.maxAge in [8, 11, 17]
+        && resource.data.minutes is int
+        && resource.data.minutes >= 5
+        && resource.data.minutes <= 60;
+      allow write: if false;
+    }
+
+match /users/{userId}/kids_activity_progress/{activityId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['activityId','completed','updatedAt'])
+        && request.resource.data.activityId == activityId
+        && request.resource.data.completed is bool
+        && request.resource.data.updatedAt is timestamp
+        && get(/databases/$(database)/documents/kids_activities/$(activityId)).data.published == true;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/kids/{settingId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && settingId == 'parent_settings'
+        && request.resource.data.keys().hasOnly(['ageBand','aiTutor','externalLinks','dailyMinutes','updatedAt'])
+        && request.resource.data.ageBand in [6, 9, 13]
+        && request.resource.data.aiTutor is bool
+        && request.resource.data.externalLinks is bool
+        && request.resource.data.dailyMinutes in [15, 30, 60, 90, 120, 180, 240]
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+    
+    
+    // Canonical Family Hub / Family Pot. Financial entries are user-owned;
+    // no cross-user reads or writes are allowed from the client.
+    match /users/{userId}/familyMembers/{memberId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['name','relation','createdAt','updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.relation is string
+        && request.resource.data.relation.size() <= 80
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['name','relation','createdAt','updatedAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.relation is string
+        && request.resource.data.relation.size() <= 80
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/familyPot/{entryId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasOnly(['title','amountMinor','currency','createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 160
+        && request.resource.data.amountMinor is int
+        && request.resource.data.amountMinor >= 0
+        && request.resource.data.amountMinor <= 1000000000000
+        && request.resource.data.currency is string
+        && request.resource.data.currency.size() == 3
+        && request.resource.data.createdAt is timestamp;
+      allow update, delete: if false;
+    }
+
+    // Canonical Health & Sports daily check-ins. Health guidance remains general;
+    // sensitive medical actions are not performed by client writes.
+    match /users/{userId}/healthCheckins/{checkinId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && checkinId.size() <= 40
+        && request.resource.data.keys().hasOnly([
+          'activityMinutes','waterGlasses','sleepHours','mood','updatedAt'
+        ])
+        && request.resource.data.activityMinutes is int
+        && request.resource.data.activityMinutes >= 0
+        && request.resource.data.activityMinutes <= 1440
+        && request.resource.data.waterGlasses is int
+        && request.resource.data.waterGlasses >= 0
+        && request.resource.data.waterGlasses <= 50
+        && request.resource.data.sleepHours is number
+        && request.resource.data.sleepHours >= 0
+        && request.resource.data.sleepHours <= 24
+        && request.resource.data.mood is int
+        && request.resource.data.mood >= 1
+        && request.resource.data.mood <= 5
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
+
+  }
+}
+)
+        && request.resource.data.priceMinor is int && request.resource.data.priceMinor >= 0
+        && request.resource.data.bedrooms is int && request.resource.data.bedrooms >= 0 && request.resource.data.bedrooms <= 100
+        && request.resource.data.bathrooms is int && request.resource.data.bathrooms >= 0 && request.resource.data.bathrooms <= 100
+        && request.resource.data.areaSqm is int && request.resource.data.areaSqm >= 0 && request.resource.data.areaSqm <= 1000000
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.size() <= 2048
+        && (request.resource.data.imageUrl.size() == 0 || request.resource.data.imageUrl.matches('^https://.*'));
       allow delete: if request.auth != null
         && resource.data.ownerId == request.auth.uid;
     }
