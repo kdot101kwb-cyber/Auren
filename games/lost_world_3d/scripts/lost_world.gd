@@ -106,6 +106,7 @@ func register_enemy_defeat() -> void:
 	vfx_audio.play_enemy_defeat_fx(player.global_position)
 	if combo % 3 == 0:
 		health = min(max_health, health + 10)
+	save_checkpoint()
 	update_hud()
 
 func player_attack(chain: int = 1) -> void:
@@ -128,6 +129,8 @@ func damage(amount: int) -> void:
 		player.global_position = respawn_position
 		combo = 0
 		combo_timer = 0.0
+	else:
+		save_checkpoint()
 	update_hud()
 
 func try_interact() -> void:
@@ -199,7 +202,7 @@ func _format_time(seconds: float) -> String:
 func update_hud() -> void:
 	var status := get_node_or_null("HUD/Status")
 	if status:
-		status.text = "LOST WORLD  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d  •  COMBO %d  •  TIME %s" % [checkpoint, health, enemies_defeated, loot, combo, _format_time(elapsed_run_time)]
+		status.text = "LOST WORLD  •  SCORE %d  •  BEST %s  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d  •  COMBO %d  •  TIME %s" % [score, _format_time(best_run_time), checkpoint, health, enemies_defeated, loot, combo, _format_time(elapsed_run_time)]
 	var objective := get_node_or_null("HUD/Objective")
 	if objective:
 		objective.text = "RUN COMPLETE • Reward secured" if objective_complete else "Objective: Reach the ancient gate • Defeat enemies to earn loot"
