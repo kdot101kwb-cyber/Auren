@@ -1,27 +1,28 @@
-name: AUREN CI Diagnostic
+name: AUREN CI Runner Smoke
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/ci-diagnostic.yml"
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  runner-smoke-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  runner:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - name: Runner started
+      - name: Runner smoke test
         run: |
-          echo "runner-started"
+          echo "AUREN_ACTIONS_RUNNER_STARTED"
           uname -a
-          pwd
+          node --version
+          git --version
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Final smoke test
-        run: echo "AUREN_ACTIONS_RUNNER_OK"
+      - name: Repository smoke test
+        run: |
+          test -f pubspec.yaml
+          test -f functions/package.json
+          echo "AUREN_ACTIONS_RUNNER_OK"
