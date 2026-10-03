@@ -36,7 +36,6 @@ func _spawn_burst(origin: Vector3, count: int, life: float, min_speed: float, ma
 	process.initial_velocity_max = max_speed
 	process.gravity = Vector3(0, -3, 0)
 	process.color = tint
-	process.color = tint
 	burst.process_material = process
 	var mesh := SphereMesh.new()
 	mesh.radius = size
