@@ -101,13 +101,15 @@ func register_enemy_defeat() -> void:
 	update_hud()
 
 func player_attack(chain: int = 1) -> void:
-	if combat != null and combat.has_method("try_attack"):
-		var hit = combat.try_attack(player)
-	if hit and chain > 1:
-		loot += chain * 2
-		vfx_audio.play_attack_fx(player.global_position)
-		if hit:
-			vfx_audio.play_hit_fx(player.global_position)
+	if combat == null or not combat.has_method("try_attack"):
+		return
+	var hit: bool = combat.try_attack(player)
+	vfx_audio.play_attack_fx(player.global_position)
+	if hit:
+		if chain > 1:
+			loot += chain * 2
+		vfx_audio.play_hit_fx(player.global_position)
+		update_hud()
 
 func damage(amount: int) -> void:
 	health = max(0, health - amount)
