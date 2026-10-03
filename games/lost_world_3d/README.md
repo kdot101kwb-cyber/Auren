@@ -2,7 +2,7 @@
 
 ## Current playable vertical slice
 
-The first AUREN 3D game slice now has a complete gameplay loop for the current procedural build:
+The current procedural 3D game slice includes:
 
 - third-person 3D world, lighting, fog and camera
 - Android touch movement/look
@@ -14,27 +14,21 @@ The first AUREN 3D game slice now has a complete gameplay loop for the current p
 - combo chain with timed reset
 - combo reward/healing loop
 - four persistent reward chests with proximity interaction
-- loot rewards and loot VFX
+- persistent score progression
+- score rewards from enemy defeats and chests
+- score reduction from received damage
+- persistent best time
+- persistent defeated-enemy state
 - gate objective and checkpoint completion
-- death/respawn at checkpoint
-- persistent checkpoint, health, enemy count, loot and opened-chest state
+- death/respawn handling
+- persistent checkpoint, health, enemy count, loot, score and opened-chest state
 - day/night lighting cycle
 - procedural combat/reward particles
 - spatial audio runtime node
 - performance telemetry
 - mobile-compatible renderer target
 
-## Honest production status
+## Production status
 
-This repository build is **playable and feature-complete as a procedural vertical slice**, but it is **not being labeled final AAA art**.
+This repository build is a playable procedural vertical slice. Final authored art, animation assets, final VFX/audio assets, Android packaging/signing, device QA, measured performance budgets, and backend/server-authoritative online results remain separate production gates.
 
-The remaining production gates are external content/runtime work:
-- original authored character and environment art
-- authored character animation set
-- final VFX and spatial audio assets
-- authored level art and environmental storytelling
-- Android packaging/signing and device QA
-- measured performance budgets across target Android devices
-- backend/server-authoritative competitive results for online modes
-
-Those gates require real production assets, engine packaging and device/runtime testing; they are not claimed as complete merely because the gameplay code exists.
