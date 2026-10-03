@@ -232,14 +232,42 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create, update: if isOwner(userId)
           && planId == 'current'
-          && request.resource.data.keys().hasOnly(['goalId','goalTitle','focus','steps','generatedAt'])
+          && request.resource.data.keys().hasOnly([
+            'goalId','goalTitle','focus','steps','generatedAt',
+            'planDate','status','completedTasks','taskCount','updatedAt'
+          ])
           && request.resource.data.goalId is string
           && request.resource.data.goalTitle is string
+          && request.resource.data.goalTitle.size() <= 200
           && request.resource.data.focus is string
+          && request.resource.data.focus.size() <= 500
           && request.resource.data.steps is list
           && request.resource.data.steps.size() <= 10
-          && request.resource.data.generatedAt is timestamp;
+          && request.resource.data.generatedAt is timestamp
+          && (!request.resource.data.keys().hasAny(['planDate']) || request.resource.data.planDate is string)
+          && (!request.resource.data.keys().hasAny(['status']) || request.resource.data.status in ['empty','active','completed'])
+          && (!request.resource.data.keys().hasAny(['completedTasks']) || request.resource.data.completedTasks is int)
+          && (!request.resource.data.keys().hasAny(['taskCount']) || request.resource.data.taskCount is int)
+          && (!request.resource.data.keys().hasAny(['updatedAt']) || request.resource.data.updatedAt is timestamp);
         allow delete: if isOwner(userId);
+
+        match /tasks/{taskId} {
+          allow read: if isOwner(userId);
+          allow create: if isOwner(userId)
+            && request.resource.data.keys().hasOnly(['title','order','completed','completedAt','createdAt'])
+            && request.resource.data.title is string
+            && request.resource.data.title.size() > 0
+            && request.resource.data.title.size() <= 300
+            && request.resource.data.order is int
+            && request.resource.data.order >= 0
+            && request.resource.data.order < 10
+            && request.resource.data.completed is bool
+            && request.resource.data.createdAt is timestamp;
+          allow update: if isOwner(userId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completed','completedAt'])
+            && request.resource.data.completed is bool;
+          allow delete: if isOwner(userId);
+        }
       }
 
       match /business_growth_plans/{planId} {
