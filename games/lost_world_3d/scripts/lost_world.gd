@@ -12,6 +12,10 @@ var world_time := 0.0
 var combo_timer := 0.0
 var opened_chests := {}
 var respawn_position := Vector3.ZERO
+var checkpoint_position := Vector3.ZERO
+var checkpoint_milestones := [-35.0, -55.0]
+var next_checkpoint_index := 0
+var save_version := 2
 var run_ended := false
 var elapsed_run_time := 0.0
 var best_run_time := 0.0
@@ -24,7 +28,11 @@ var save_path := "user://lost_world_checkpoint.save"
 
 func _ready() -> void:
 	load_checkpoint()
-	respawn_position = player.global_position
+	if checkpoint_position != Vector3.ZERO:
+		player.global_position = checkpoint_position
+	else:
+		checkpoint_position = player.global_position
+	respawn_position = checkpoint_position
 	build_world()
 	spawn_encounters()
 	update_hud()
@@ -98,7 +106,21 @@ func _process(delta: float) -> void:
 		combo_timer -= delta
 		if combo_timer <= 0.0:
 			combo = 0
+	_update_progress_checkpoint()
 	update_hud()
+
+func _update_progress_checkpoint() -> void:
+	if run_ended:
+		return
+	if next_checkpoint_index >= checkpoint_milestones.size():
+		return
+	if player.global_position.z <= checkpoint_milestones[next_checkpoint_index]:
+		checkpoint += 1
+		checkpoint_position = player.global_position
+		respawn_position = checkpoint_position
+		next_checkpoint_index += 1
+		save_checkpoint()
+		vfx_audio.play_checkpoint_fx(checkpoint_position)
 
 func register_enemy_defeat(enemy_id: String = "") -> void:
 	if enemy_id != "" and bool(defeated_enemy_ids.get(enemy_id, false)):
@@ -132,10 +154,13 @@ func damage(amount: int) -> void:
 	if health > 0:
 		score = max(0, score - amount * 2)
 	if health == 0:
-		load_checkpoint()
-		player.global_position = respawn_position
+		health = max_health
+		score = max(0, score - 150)
 		combo = 0
 		combo_timer = 0.0
+		player.global_position = respawn_position
+		player.velocity = Vector3.ZERO
+		save_checkpoint()
 	else:
 		save_checkpoint()
 	update_hud()
@@ -183,7 +208,7 @@ func complete_objective() -> void:
 func save_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
-		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "defeated_enemy_ids": defeated_enemy_ids, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time, "best_run_time": best_run_time, "score": score})
+		f.store_var({"save_version": save_version, "checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "defeated_enemy_ids": defeated_enemy_ids, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time, "best_run_time": best_run_time, "score": score, "checkpoint_position": checkpoint_position, "next_checkpoint_index": next_checkpoint_index})
 
 func load_checkpoint() -> void:
 	if not FileAccess.file_exists(save_path):
@@ -191,6 +216,8 @@ func load_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.READ)
 	if f:
 		var data = f.get_var()
+		if typeof(data) != TYPE_DICTIONARY:
+			return
 		checkpoint = int(data.get("checkpoint", 0))
 		health = int(data.get("health", max_health))
 		objective_complete = bool(data.get("objective_complete", false))
@@ -202,6 +229,11 @@ func load_checkpoint() -> void:
 		elapsed_run_time = float(data.get("elapsed_run_time", 0.0))
 		best_run_time = float(data.get("best_run_time", 0.0))
 		score = int(data.get("score", 0))
+		checkpoint_position = data.get("checkpoint_position", Vector3.ZERO)
+		next_checkpoint_index = int(data.get("next_checkpoint_index", min(checkpoint, checkpoint_milestones.size())))
+		if typeof(checkpoint_position) != TYPE_VECTOR3:
+			checkpoint_position = Vector3.ZERO
+		respawn_position = checkpoint_position
 
 func _format_time(seconds: float) -> String:
 	var total := int(seconds)
@@ -213,4 +245,4 @@ func update_hud() -> void:
 		status.text = "LOST WORLD  •  SCORE %d  •  BEST %s  •  CP %d  •  HP %d  •  ENEMIES %d  •  LOOT %d  •  COMBO %d  •  TIME %s" % [score, _format_time(best_run_time), checkpoint, health, enemies_defeated, loot, combo, _format_time(elapsed_run_time)]
 	var objective := get_node_or_null("HUD/Objective")
 	if objective:
-		objective.text = "RUN COMPLETE • Reward secured" if objective_complete else "Objective: Reach the ancient gate • Defeat enemies to earn loot"
+		objective.text = "RUN COMPLETE • Reward secured" if objective_complete else "Objective: Reach the ancient gate • Checkpoints save your progress"
