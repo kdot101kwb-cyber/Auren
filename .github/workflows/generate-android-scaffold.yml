@@ -1,0 +1,42 @@
+name: generate-android-scaffold
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "android/**"
+      - ".github/workflows/generate-android-scaffold.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Generate Android host
+        run: flutter create . --platforms=android --org com.auren
+
+      - name: Verify Android host
+        run: test -f android/app/src/main/AndroidManifest.xml
+
+      - name: Commit generated Android host
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android
+          if git diff --cached --quiet; then
+            echo "Android host already present."
+          else
+            git commit -m "build(android): generate Flutter Android host"
+            git push
+          fi
