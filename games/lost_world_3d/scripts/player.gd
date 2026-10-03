@@ -45,7 +45,7 @@ func _physics_process(delta: float) -> void:
 		interact()
 	if Input.is_action_just_pressed("attack"):
 		attack()
-	if Input.is_key_pressed(KEY_Q):
+	if Input.is_action_just_pressed("dodge"):
 		dodge()
 	move_and_slide()
 
