@@ -5,6 +5,7 @@ var health := 100
 var stamina := 100.0
 var objective_complete := false
 var enemies_defeated := 0
+var defeated_enemy_ids := {}
 var loot := 0
 var combo := 0
 var world_time := 0.0
@@ -52,7 +53,6 @@ func build_world() -> void:
 	gate.mesh = gate_mesh
 	gate.position = Vector3(0, 2, -75)
 	add_child(gate)
-	# Reward chests create a second reason to explore instead of only rushing the gate.
 	for i in range(4):
 		var chest := MeshInstance3D.new()
 		chest.name = "RewardChest%d" % i
@@ -71,11 +71,14 @@ func build_world() -> void:
 
 func spawn_encounters() -> void:
 	for i in range(4):
-		var enemy = get_node_or_null("Enemy" if i == 0 else "Enemy%d" % i)
+		var enemy_id := "Enemy%d" % i
+		if bool(defeated_enemy_ids.get(enemy_id, false)):
+			continue
+		var enemy = get_node_or_null(enemy_id)
 		if enemy == null:
 			var body := preload("res://scripts/enemy.gd")
 			var e := CharacterBody3D.new()
-			e.name = "Enemy%d" % i
+			e.name = enemy_id
 			e.position = Vector3((i - 1.5) * 4.0, 0, -18.0 - i * 10.0)
 			e.set_script(body)
 			e.enemy_tint = Color(0.35 + i * 0.10, 0.10, 0.08 + i * 0.06)
@@ -97,7 +100,11 @@ func _process(delta: float) -> void:
 			combo = 0
 	update_hud()
 
-func register_enemy_defeat() -> void:
+func register_enemy_defeat(enemy_id: String = "") -> void:
+	if enemy_id != "" and bool(defeated_enemy_ids.get(enemy_id, false)):
+		return
+	if enemy_id != "":
+		defeated_enemy_ids[enemy_id] = true
 	enemies_defeated += 1
 	combo += 1
 	loot += 10 + combo * 5
@@ -176,7 +183,7 @@ func complete_objective() -> void:
 func save_checkpoint() -> void:
 	var f := FileAccess.open(save_path, FileAccess.WRITE)
 	if f:
-		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time, "best_run_time": best_run_time, "score": score})
+		f.store_var({"checkpoint": checkpoint, "health": health, "objective_complete": objective_complete, "enemies_defeated": enemies_defeated, "defeated_enemy_ids": defeated_enemy_ids, "loot": loot, "opened_chests": opened_chests, "run_ended": run_ended, "elapsed_run_time": elapsed_run_time, "best_run_time": best_run_time, "score": score})
 
 func load_checkpoint() -> void:
 	if not FileAccess.file_exists(save_path):
@@ -188,6 +195,7 @@ func load_checkpoint() -> void:
 		health = int(data.get("health", max_health))
 		objective_complete = bool(data.get("objective_complete", false))
 		enemies_defeated = int(data.get("enemies_defeated", 0))
+		defeated_enemy_ids = data.get("defeated_enemy_ids", {})
 		loot = int(data.get("loot", 0))
 		opened_chests = data.get("opened_chests", {})
 		run_ended = bool(data.get("run_ended", objective_complete))
