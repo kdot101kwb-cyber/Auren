@@ -122,7 +122,7 @@ func _update_progress_checkpoint() -> void:
 		save_checkpoint()
 		vfx_audio.play_checkpoint_fx(checkpoint_position)
 
-func register_enemy_defeat(enemy_id: String = "") -> void:
+func register_enemy_defeat(enemy_id: String = "", defeat_position: Vector3 = Vector3.ZERO) -> void:
 	if enemy_id != "" and bool(defeated_enemy_ids.get(enemy_id, false)):
 		return
 	if enemy_id != "":
@@ -132,7 +132,7 @@ func register_enemy_defeat(enemy_id: String = "") -> void:
 	loot += 10 + combo * 5
 	score += 100 + combo * 25
 	combo_timer = 4.0
-	vfx_audio.play_enemy_defeat_fx(player.global_position)
+	vfx_audio.play_enemy_defeat_fx(defeat_position if defeat_position != Vector3.ZERO else player.global_position)
 	if combo % 3 == 0:
 		health = min(max_health, health + 10)
 	save_checkpoint()
