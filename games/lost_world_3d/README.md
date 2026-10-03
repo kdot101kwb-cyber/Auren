@@ -1,15 +1,23 @@
 # AUREN: Lost World — 3D Runtime
 
-This is the first real 3D runtime source for AUREN Gaming.
-
-Implemented vertical-slice systems:
-- 3D world and lighting
-- third-person camera
+Implemented runtime systems:
+- 3D world, lighting and third-person camera
 - player movement, sprint and jump
-- enemy pursuit and attack
-- health/stamina
+- Android touch input bridge
+- combat/raycast attack
+- enemy pursuit, health and damage
+- player health/stamina
 - objective/checkpoint progression
 - local save/resume
 - mobile-compatible renderer target
 
-This is gameplay/runtime code, not a claim that final AAA art assets are complete. Production AAA status still requires original high-quality art, animation, VFX, audio, authored levels, device profiling and final Android packaging.
+AAA production gates still required:
+- original final art assets
+- authored character/environment animations
+- production VFX and spatial audio
+- authored level/environment art
+- Android packaging
+- device profiling and performance budgets
+- backend integration for authoritative competitive results
+
+This directory is the gameplay/runtime foundation and vertical-slice source. Placeholder geometry is intentionally not presented as final AAA art.
