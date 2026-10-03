@@ -60,7 +60,7 @@ class EducationRepository {
   }
 
   Future<void> completeLesson(String uid, AurenCourse course, int completed) async {
-    if (uid.trim().isEmpty || course.id.trim().isEmpty || completed < 0) {
+    if (uid.trim().isEmpty || uid.trim().length > 128 || course.id.trim().isEmpty || course.id.trim().length > 128 || completed < 0) {
       throw ArgumentError('بيانات التقدم غير صالحة');
     }
 
@@ -81,6 +81,10 @@ class EducationRepository {
     await db.runTransaction((tx) async {
       final enrollmentSnap = await tx.get(enrollmentRef);
       if (!enrollmentSnap.exists) throw StateError('سجّل في الدورة أولاً');
+      final previousCompleted = (enrollmentSnap.data()?['completedLessons'] as num?)?.toInt() ?? 0;
+      if (completed < previousCompleted) {
+        throw StateError('لا يمكن تقليل تقدمك في الدورة');
+      }
 
       final progress = progressFor(completed, canonical.lessonCount);
       tx.update(enrollmentRef, {
