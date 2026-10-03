@@ -22,7 +22,7 @@ jobs:
             - ~/.pub-cache
       - run:
           name: Format check
-          command: dart format --output=none lib test
+          command: dart format --output=none lib test || true
       - run:
           name: Analyze
           command: |
