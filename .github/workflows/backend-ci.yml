@@ -27,9 +27,22 @@ jobs:
         working-directory: ${{ matrix.service }}
         run: |
           if [ -f src/server.js ]; then node --check src/server.js; else node --check src/worker.js; fi
-      - name: Run tests
+      - name: Run tests with diagnostic capture
         working-directory: ${{ matrix.service }}
-        run: npm test
+        run: |
+          set +e
+          npm test 2>&1 | tee ci-test.log
+          status=${PIPESTATUS[0]}
+          echo "npm_test_exit_code=${status}" >> ci-test.log
+          exit ${status}
+
+      - name: Upload Node test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: node-test-diagnostics-${{ matrix.service == 'backend/action-executor' && 'action-executor' || 'plugin-worker' }}
+          path: ${{ matrix.service }}/ci-test.log
+          if-no-files-found: ignore
 
   functions-tests:
     runs-on: ubuntu-latest
@@ -41,9 +54,22 @@ jobs:
       - name: Install Functions dependencies
         working-directory: functions
         run: npm install --no-audit --no-fund
-      - name: Run Functions tests
+      - name: Run Functions tests with diagnostic capture
         working-directory: functions
-        run: npm test
+        run: |
+          set +e
+          npm test 2>&1 | tee ci-test.log
+          status=${PIPESTATUS[0]}
+          echo "npm_test_exit_code=${status}" >> ci-test.log
+          exit ${status}
+
+      - name: Upload Functions test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: functions-test-diagnostics
+          path: functions/ci-test.log
+          if-no-files-found: ignore
 
   plugin-worker-image:
     runs-on: ubuntu-latest
