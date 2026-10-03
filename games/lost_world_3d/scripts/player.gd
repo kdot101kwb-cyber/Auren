@@ -20,6 +20,7 @@ func _ready() -> void:
 		input.attack_pressed.connect(_on_mobile_attack)
 		input.interact_pressed.connect(_on_mobile_interact)
 		input.sprint_pressed.connect(_on_mobile_sprint)
+		input.dodge_pressed.connect(_on_mobile_dodge)
 
 func _physics_process(delta: float) -> void:
 	dodge_timer = max(0.0, dodge_timer - delta)
@@ -44,6 +45,8 @@ func _physics_process(delta: float) -> void:
 		interact()
 	if Input.is_action_just_pressed("attack"):
 		attack()
+	if Input.is_key_pressed(KEY_Q):
+		dodge()
 	move_and_slide()
 
 func interact() -> void:
@@ -88,6 +91,9 @@ func _on_mobile_attack() -> void:
 
 func _on_mobile_interact() -> void:
 	interact()
+
+func _on_mobile_dodge() -> void:
+	dodge()
 
 func _on_mobile_sprint(active: bool) -> void:
 	mobile_sprint = active
