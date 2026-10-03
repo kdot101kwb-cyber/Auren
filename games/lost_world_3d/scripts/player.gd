@@ -4,29 +4,65 @@ extends CharacterBody3D
 @export var sprint_speed := 8.0
 @export var jump_velocity := 6.5
 var gravity := 18.0
-var stamina := 100.0
+var mobile_move := Vector2.ZERO
+var mobile_look := Vector2.ZERO
+
+func _ready() -> void:
+	var input = get_node_or_null("../MobileInput")
+	if input:
+		input.move_input.connect(_on_mobile_move)
+		input.camera_input.connect(_on_mobile_look)
+		input.jump_pressed.connect(_on_mobile_jump)
+		input.attack_pressed.connect(_on_mobile_attack)
+		input.interact_pressed.connect(_on_mobile_interact)
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
-	var input_vec := Input.get_vector("move_left","move_right","move_forward","move_back")
+	var input_vec := mobile_move if mobile_move.length() > 0.01 else Input.get_vector("move_left","move_right","move_forward","move_back")
 	var direction := Vector3(input_vec.x,0,input_vec.y).normalized()
-	var sprint := Input.is_key_pressed(KEY_SHIFT) and stamina > 0.0
+	var sprint := Input.is_key_pressed(KEY_SHIFT) and get_parent().stamina > 0.0
 	var current_speed := sprint_speed if sprint else speed
 	velocity.x = direction.x * current_speed
 	velocity.z = direction.z * current_speed
 	if sprint:
-		stamina = max(0.0, stamina - 28.0 * delta)
+		get_parent().stamina = max(0.0, get_parent().stamina - 28.0 * delta)
 	else:
-		stamina = min(100.0, stamina + 18.0 * delta)
+		get_parent().stamina = min(100.0, get_parent().stamina + 18.0 * delta)
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
 	if Input.is_action_just_pressed("interact"):
-		var world = get_parent()
-		if world.has_method("complete_objective") and global_position.z < -65:
-			world.complete_objective()
+		interact()
 	if Input.is_action_just_pressed("attack"):
-		var world = get_parent()
-		if world.has_method("player_attack"):
-			world.player_attack()
+		attack()
 	move_and_slide()
+
+func interact() -> void:
+	var world = get_parent()
+	if world.has_method("complete_objective") and global_position.z < -65:
+		world.complete_objective()
+
+func attack() -> void:
+	var world = get_parent()
+	if world.has_method("player_attack"):
+		world.player_attack()
+
+func _on_mobile_move(value: Vector2) -> void:
+	mobile_move = value
+
+func _on_mobile_look(value: Vector2) -> void:
+	mobile_look = value
+	var rig = get_node_or_null("CameraRig")
+	if rig:
+		rig.rotation.y -= value.x * 0.015
+		rig.rotation.x = clamp(rig.rotation.x - value.y * 0.01, -1.0, 0.35)
+
+func _on_mobile_jump() -> void:
+	if is_on_floor():
+		velocity.y = jump_velocity
+
+func _on_mobile_attack() -> void:
+	attack()
+
+func _on_mobile_interact() -> void:
+	interact()
