@@ -100,9 +100,11 @@ func register_enemy_defeat() -> void:
 		health = min(100, health + 10)
 	update_hud()
 
-func player_attack() -> void:
+func player_attack(chain: int = 1) -> void:
 	if combat != null and combat.has_method("try_attack"):
 		var hit = combat.try_attack(player)
+	if hit and chain > 1:
+		loot += chain * 2
 		vfx_audio.play_attack_fx(player.global_position)
 		if hit:
 			vfx_audio.play_hit_fx(player.global_position)
