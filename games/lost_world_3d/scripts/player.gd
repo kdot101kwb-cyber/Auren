@@ -5,7 +5,6 @@ extends CharacterBody3D
 @export var jump_velocity := 6.5
 var gravity := 18.0
 var stamina := 100.0
-var attack_cooldown := 0.0
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -26,4 +25,8 @@ func _physics_process(delta: float) -> void:
 		var world = get_parent()
 		if world.has_method("complete_objective") and global_position.z < -65:
 			world.complete_objective()
+	if Input.is_action_just_pressed("attack"):
+		var world = get_parent()
+		if world.has_method("player_attack"):
+			world.player_attack()
 	move_and_slide()
