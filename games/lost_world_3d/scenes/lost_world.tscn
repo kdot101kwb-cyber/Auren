@@ -85,11 +85,11 @@ position = Vector3(0,2.8,5.5)
 rotation_degrees = Vector3(-12,180,0)
 current = true
 
-[node name="Enemy" type="CharacterBody3D" parent="."]
-position = Vector3(0,0,-8)
+[node name="Enemy0" type="CharacterBody3D" parent="."]
+position = Vector3(-6,0,-18)
 script = ExtResource("3")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemy"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Enemy0"]
 shape = SubResource("EnemyShape")
 
 [node name="VFXAudio" type="Node3D" parent="."]
@@ -101,12 +101,12 @@ script = ExtResource("8")
 [node name="HUD" type="CanvasLayer" parent="."]
 [node name="Status" type="Label" parent="HUD"]
 position = Vector2(24,24)
-text = "LOST WORLD  •  CHECKPOINT 0  •  HP 100"
+text = "LOST WORLD  •  SCORE 0  •  BEST 00:00  •  CP 0  •  HP 100"
 theme_override_font_sizes/font_size = 22
 
 [node name="Objective" type="Label" parent="HUD"]
 position = Vector2(24,60)
-text = "Objective: Reach the ancient gate"
+text = "Objective: Reach the ancient gate • Defeat enemies to earn loot"
 theme_override_font_sizes/font_size = 18
 
 [node name="MobileInput" type="CanvasLayer" parent="."]
