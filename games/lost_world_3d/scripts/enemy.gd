@@ -6,6 +6,7 @@ extends CharacterBody3D
 @export var enemy_tint := Color(0.55,0.12,0.08)
 var health := 100
 var attack_timer := 0.0
+var hit_flash := 0.0
 
 func _ready() -> void:
 	health = max_health
@@ -43,11 +44,21 @@ func _build_visual() -> void:
 
 func take_damage(amount: int) -> void:
 	health = max(0, health - amount)
+	hit_flash = 0.12
 	if health == 0:
 		var world = get_parent()
 		if world.has_method("register_enemy_defeat"):
 			world.register_enemy_defeat()
 		queue_free()
+
+func _process(delta: float) -> void:
+	if hit_flash > 0.0:
+		hit_flash -= delta
+		var mesh = get_node_or_null("Mesh")
+		if mesh:
+			mesh.scale = Vector3.ONE * 1.08
+	elif get_node_or_null("Mesh"):
+		get_node("Mesh").scale = Vector3.ONE
 
 func _physics_process(delta: float) -> void:
 	var player := get_parent().get_node_or_null("Player")
