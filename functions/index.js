@@ -4150,3 +4150,7 @@ Object.assign(module.exports, require('./auren_library_graph'));
 Object.assign(module.exports, require('./auren_unified_library_search'));
 Object.assign(module.exports, require('./auren_library_sources'));
 Object.assign(module.exports, require('./podcast_personalization'));
+
+
+// Personal AI / Life Engine — goals, daily plans, and user memory.
+Object.assign(module.exports, require('./personal_ai_life_engine'));
