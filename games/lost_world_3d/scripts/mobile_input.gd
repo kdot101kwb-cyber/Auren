@@ -6,6 +6,7 @@ signal jump_pressed
 signal attack_pressed
 signal interact_pressed
 signal sprint_pressed(active: bool)
+signal dodge_pressed
 var sprint_active := false
 
 var move_touch := -1
@@ -26,7 +27,8 @@ func _build_action_buttons() -> void:
 		{"name":"Attack","text":"⚔","pos":Vector2(0.80,0.72),"signal":"attack"},
 		{"name":"Jump","text":"↑","pos":Vector2(0.68,0.78),"signal":"jump"},
 		{"name":"Interact","text":"E","pos":Vector2(0.84,0.58),"signal":"interact"},
-		{"name":"Sprint","text":"RUN","pos":Vector2(0.56,0.86),"signal":"sprint"}
+		{"name":"Sprint","text":"RUN","pos":Vector2(0.56,0.86),"signal":"sprint"},
+		{"name":"Dodge","text":"DASH","pos":Vector2(0.69,0.63),"signal":"dodge"}
 	]:
 		var b := Button.new()
 		b.name = spec.name
@@ -43,6 +45,7 @@ func _build_action_buttons() -> void:
 			"sprint":
 				b.button_down.connect(func(): sprint_active = true; sprint_pressed.emit(true))
 				b.button_up.connect(func(): sprint_active = false; sprint_pressed.emit(false))
+			"dodge": b.pressed.connect(func(): dodge_pressed.emit())
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
