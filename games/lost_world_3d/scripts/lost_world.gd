@@ -142,7 +142,8 @@ func player_attack(chain: int = 1) -> void:
 	if combat == null or not combat.has_method("try_attack"):
 		return
 	var hit: bool = combat.try_attack(player)
-	vfx_audio.play_attack_fx(player.global_position)
+	if bool(combat.get("last_attack_fired")):
+		vfx_audio.play_attack_fx(player.global_position)
 	if hit:
 		if chain > 1:
 			loot += chain * 2
