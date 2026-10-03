@@ -5,11 +5,44 @@ signal camera_input(value: Vector2)
 signal jump_pressed
 signal attack_pressed
 signal interact_pressed
+signal sprint_pressed(active: bool)
+var sprint_active := false
 
 var move_touch := -1
 var look_touch := -1
 var move_start := Vector2.ZERO
 var look_start := Vector2.ZERO
+
+func _ready() -> void:
+	_build_action_buttons()
+
+func _build_action_buttons() -> void:
+	var root := Control.new()
+	root.name = "ActionButtons"
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(root)
+	for spec in [
+		{"name":"Attack","text":"⚔","pos":Vector2(0.80,0.72),"signal":"attack"},
+		{"name":"Jump","text":"↑","pos":Vector2(0.68,0.78),"signal":"jump"},
+		{"name":"Interact","text":"E","pos":Vector2(0.84,0.58),"signal":"interact"},
+		{"name":"Sprint","text":"RUN","pos":Vector2(0.56,0.86),"signal":"sprint"}
+	]:
+		var b := Button.new()
+		b.name = spec.name
+		b.text = spec.text
+		b.position = Vector2(get_viewport().size.x * spec.pos.x, get_viewport().size.y * spec.pos.y)
+		b.size = Vector2(76,76)
+		b.modulate.a = 0.78
+		b.mouse_filter = Control.MOUSE_FILTER_STOP
+		root.add_child(b)
+		match spec.signal:
+			"attack": b.pressed.connect(func(): attack_pressed.emit())
+			"jump": b.pressed.connect(func(): jump_pressed.emit())
+			"interact": b.pressed.connect(func(): interact_pressed.emit())
+			"sprint":
+				b.button_down.connect(func(): sprint_active = true; sprint_pressed.emit(true))
+				b.button_up.connect(func(): sprint_active = false; sprint_pressed.emit(false))
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
