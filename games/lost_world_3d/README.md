@@ -20,13 +20,16 @@ The current procedural 3D game slice includes:
 - persistent best time
 - persistent defeated-enemy state
 - gate objective and checkpoint completion
-- death/respawn handling
-- persistent checkpoint, health, enemy count, loot, score and opened-chest state
+- two progress checkpoints with persistent respawn positions
+- death/respawn penalty and state recovery
+- persistent checkpoint position, health, enemy count, loot, score and opened-chest state
+- save schema version and invalid-save guard
 - day/night lighting cycle
 - procedural combat/reward particles
 - spatial audio runtime node
 - performance telemetry
 - mobile-compatible renderer target
+- mobile action buttons clamped to the visible screen
 
 ## Production status
 
