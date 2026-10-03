@@ -37,7 +37,7 @@ class AurenGamesCatalog {
     AurenGameDefinition('jungle','Jungle Quest','مغامرة الأدغال',Icons.forest),
     AurenGameDefinition('desert','Desert Run','عبور الصحراء',Icons.wb_sunny),
     AurenGameDefinition('ocean','Ocean Explorer','استكشاف المحيط',Icons.water),
-    AurenGameDefinition('treasure','Treasure Hunt','البحث عن الكنز',Icons.treasure_chest),
+    AurenGameDefinition('treasure','Treasure Hunt','البحث عن الكنز',Icons.card_giftcard),
     AurenGameDefinition('escape','Escape Room','اهرب من الغرفة',Icons.lock_open),
     AurenGameDefinition('zombies','Night Survival','نجاة ليلية',Icons.nights_stay),
     AurenGameDefinition('monster','Monster Arena','مواجهة الوحوش',Icons.pets),
