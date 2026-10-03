@@ -23,3 +23,6 @@ The repository now contains the foundations for agent identity, credentials, AUR
 
 ## Entertainment production
 The app now includes an AUREN Production Studio foundation for Shorts, films and series episodes. It provides a Firestore-backed production queue, Production History, cancel/retry controls, engine selection and a provider-neutral worker contract. Long-form jobs are designed to be split into scenes/shots and processed by server-side GPU workers using engines such as SkyReels and LTX-2; MoneyPrinterTurbo remains the short-form automation worker.
+
+## Android test
+Android host generation is automated in GitHub Actions.
