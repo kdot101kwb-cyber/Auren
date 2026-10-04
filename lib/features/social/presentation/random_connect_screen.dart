@@ -60,9 +60,82 @@ class _AurenRandomConnectScreenState extends State<AurenRandomConnectScreen> {
     }catch(_){msg('تعذر بدء المكالمة.');}finally{if(mounted)setState(()=>busy=false);}
   }
 
-  Future<void> history()async{final uid=auth.currentUserId;if(uid==null)return;await showModalBottomSheet<void>(context:context,isScrollControlled:true,builder:(c)=>SafeArea(child:SizedBox(height:MediaQuery.of(c).size.height*.72,child:StreamBuilder<List<Map<String,dynamic>>>(stream:service.watchHistory(uid),builder:(c,s){final rows=s.data??const <Map<String,dynamic>>[];return Column(children:[const Padding(padding:EdgeInsets.all(16),child:Text('سجل Random Connect',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold))),Expanded(child:rows.isEmpty?const Center(child:Text('لسه ما عندك جلسات.')):ListView.separated(itemCount:rows.length,separatorBuilder:(_,__)=>const Divider(),itemBuilder:(_,i){final x=rows[i];return ListTile(title:Text((x['otherName'] as String?)??'AUREN User'),subtitle:Text((x['action']??'connect').toString()+' • '+(x['kind']??'text').toString()));}))]);}))));}
+  Future<void> history() async {
+    final uid = auth.currentUserId;
+    if (uid == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (c) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(c).size.height * .72,
+          child: StreamBuilder<List<Map<String, dynamic>>>(
+            stream: service.watchHistory(uid),
+            builder: (c, s) {
+              final rows = s.data ?? const <Map<String, dynamic>>[];
+              return Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('سجل Random Connect', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(
+                    child: rows.isEmpty
+                        ? const Center(child: Text('لسه ما عندك جلسات.'))
+                        : ListView.separated(
+                            itemCount: rows.length,
+                            separatorBuilder: (_, __) => const Divider(),
+                            itemBuilder: (_, i) {
+                              final x = rows[i];
+                              return ListTile(
+                                title: Text((x['otherName'] as String?) ?? 'AUREN User'),
+                                subtitle: Text((x['action'] ?? 'connect').toString() + ' • ' + (x['kind'] ?? 'text').toString()),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 
-  Future<void> notifications()async{final uid=auth.currentUserId;if(uid==null)return;await showModalBottomSheet<void>(context:context,builder:(c)=>SafeArea(child:StreamBuilder<List<Map<String,dynamic>>>(stream:service.watchNotifications(uid),builder:(c,s){final rows=s.data??const <Map<String,dynamic>>[];return SizedBox(height:420,child:rows.isEmpty?const Center(child:Text('ما في إشعارات Random.')):ListView.builder(itemCount:rows.length,itemBuilder:(_,i){final x=rows[i],id=(x['id']??'').toString();return ListTile(title:Text((x['title']??'Random').toString()),subtitle:Text((x['body']??'').toString()),trailing:x['read']==true?null:const Icon(Icons.circle,size:10),onTap:()=>service.markNotificationRead(uid,id));}));}))));}
+  Future<void> notifications() async {
+    final uid = auth.currentUserId;
+    if (uid == null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (c) => SafeArea(
+        child: StreamBuilder<List<Map<String, dynamic>>>(
+          stream: service.watchNotifications(uid),
+          builder: (c, s) {
+            final rows = s.data ?? const <Map<String, dynamic>>[];
+            return SizedBox(
+              height: 420,
+              child: rows.isEmpty
+                  ? const Center(child: Text('ما في إشعارات Random.'))
+                  : ListView.builder(
+                      itemCount: rows.length,
+                      itemBuilder: (_, i) {
+                        final x = rows[i];
+                        final id = (x['id'] ?? '').toString();
+                        return ListTile(
+                          title: Text((x['title'] ?? 'Random').toString()),
+                          subtitle: Text((x['body'] ?? '').toString()),
+                          trailing: x['read'] == true ? null : const Icon(Icons.circle, size: 10),
+                          onTap: () => service.markNotificationRead(uid, id),
+                        );
+                      },
+                    ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 
   void showAi(){final items=AurenRandomAiService.startersFor(interest:interest.text,goal:goal.text,topic:topic.text);showModalBottomSheet<void>(context:context,builder:(c)=>SafeArea(child:Padding(padding:const EdgeInsets.all(16),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('AUREN AI — بداية المحادثة',style:TextStyle(fontSize:19,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text(AurenRandomAiService.safetyPrompt()),const SizedBox(height:8),...items.take(6).map((x)=>ListTile(leading:const Icon(Icons.auto_awesome),title:Text(x),onTap:(){Navigator.pop(c);msg(x);})),]))));}
 
