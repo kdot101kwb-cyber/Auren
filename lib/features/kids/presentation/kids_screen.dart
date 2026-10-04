@@ -131,7 +131,7 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
                           Text(
                             ageBand == 13
                                 ? '13–17'
-                                : '$' '{ageBand}–$' '{ageBand + 2}',
+                                : '${ageBand}}–${ageBand} + 2}',
                           ),
                           const Spacer(),
                           TextButton.icon(
@@ -157,7 +157,7 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
                   leading: const Icon(Icons.auto_awesome),
                   title: const Text('AI Learning Coach'),
                   subtitle: Text(
-                    'خطة تعلم يومية للفئة $' '{ageBand}+ مع أنشطة مناسبة للعمر.',
+                    'خطة تعلم يومية للفئة ${ageBand}}+ مع أنشطة مناسبة للعمر.',
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: tutorEnabled ? () => _openTutor(context, 'استخدم مركز أنشطة Kids للفئة العمرية ${ageBand}+ والحد اليومي ${settings.dailyMinutes} دقيقة.') : () => Navigator.push(context, activitiesRoute),
@@ -193,9 +193,9 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
                         ? () => _openTutor(
                               context,
                               'اقترح أنشطة آمنة ومناسبة للأطفال في '
-                              '$' '{item['title']} للفئة العمرية $' '{ageBand}+. '
+                              '${item['title']} للفئة العمرية ${ageBand}}+. '
                               'اجعلها تعليمية، قصيرة، وإبداعية. الحد اليومي: '
-                              '$' '{settings.dailyMinutes} دقيقة.',
+                              '${settings.dailyMinutes} دقيقة.',
                             )
                         : () => Navigator.push(
                               context,
