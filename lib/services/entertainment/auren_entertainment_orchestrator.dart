@@ -25,7 +25,7 @@ class AurenEntertainmentJobOrchestrator {
   })  : repository = repository ?? EntertainmentRepository(),
         registry = registry ??
             AurenEntertainmentProviderRegistry(
-              providers: const [AurenPlanningProvider()],
+              providers: [AurenPlanningProvider()],
             );
 
   Future<AurenEntertainmentOrchestratorResult> start(
