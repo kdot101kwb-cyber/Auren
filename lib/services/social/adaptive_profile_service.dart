@@ -160,7 +160,7 @@ class AurenAdaptiveProfileService {
       AurenProfileMode.professional: const ['job', 'career', 'skill', 'work', 'وظيفة', 'مهنة', 'مهارة', 'فرصة'],
     };
     final count = signals[mode]?.where(text.contains).length ?? 0;
-    return (68 + count * 8).clamp(68, 92);
+    return (68 + count * 8).clamp(68, 92).toInt();
   }
 
   List<AurenProfileMode> _alternatives(AurenProfileMode selected) =>
