@@ -31,11 +31,11 @@ class AurenTalentEngineService {
       if(terms.any((t)=>services.any((s)=>_normalize(s).contains(t)))) reasons.add('خدمات مناسبة');
       if(terms.any((t)=>goals.any((g)=>_normalize(g).contains(t)))) reasons.add('أهداف متقاربة');
       if(terms.any((t)=>interests.any((i)=>_normalize(i).contains(t)))) reasons.add('اهتمامات مشتركة');
-      final score=(45 + hits*12 + (d['mode']=='professional'?5:0)).clamp(0,100);
+      final score=(45 + hits*12 + (d['mode']=='professional'?5:0)).clamp(0,100).toInt();
       candidates.add(AurenTalentCandidate(uid:owner,mode:d['mode']?.toString()??'personal',headline:d['headline']?.toString()??'',bio:d['bio']?.toString()??'',skills:skills,interests:interests,goals:goals,languages:languages,services:services,showContact:d['showContact']==true,score:score,reasons:reasons.isEmpty?const ['مطابقة نصية']:reasons));
     }
     candidates.sort((a,b)=>b.score.compareTo(a.score));
-    return candidates.take(limit.clamp(1,50)).toList();
+    return candidates.take(limit.clamp(1,50).toInt()).toList();
   }
 
   Future<List<AurenTalentCandidate>> matchOpportunity({required String title,required String description,required List<String> skills,String? excludeUid,int limit=20}) async =>
