@@ -134,7 +134,7 @@ class MarketplaceCommerceRepository {
     if(quantity>100) throw ArgumentError('الكمية القصوى 100');
     await db.collection('users').doc(uid).collection('cart').doc(productId).update({'quantity':quantity});
   }
-  Future<void> addToCartWithSnapshot({required String uid,required String productId,required int quantity}) async { final p=await products.doc(productId).get(); if(!p.exists||p.data()==null) throw StateError('المنتج غير موجود'); final d=p.data()!; await db.collection('users').doc(uid).collection('cart').doc(productId).set({'productId':productId,'name':d['name'],'sellerId':d['ownerId'],'unitPriceMinor':d['priceMinor'],'currency':d['currency'],'quantity':quantity.clamp(1,100),'addedAt':FieldValue.serverTimestamp()}); }
+  Future<void> addToCartWithSnapshot({required String uid,required String productId,required int quantity}) async { final p=await products.doc(productId).get(); if(!p.exists||p.data()==null) throw StateError('المنتج غير موجود'); final d=p.data()!; await db.collection('users').doc(uid).collection('cart').doc(productId).set({'productId':productId,'name':d['name'],'sellerId':d['ownerId'],'unitPriceMinor':d['priceMinor'],'currency':d['currency'],'quantity':quantity.clamp(1,100).toInt(),'addedAt':FieldValue.serverTimestamp()}); }
   Future<String> checkoutCart({required String uid,required String paymentMethod,required String deliveryAddress,required String deliveryPhone,String deliveryProviderId='manual',int deliveryFeeMinor=0}) async {
     if(!{'cash_on_delivery','pending_gateway'}.contains(paymentMethod)) throw ArgumentError('طريقة دفع غير صالحة');
     if(deliveryAddress.trim().isEmpty||deliveryAddress.trim().length>500) throw ArgumentError('عنوان توصيل غير صالح');
