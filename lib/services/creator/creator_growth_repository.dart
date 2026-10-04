@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+
 class AurenCreatorTopContent{final String id,title;final int likes,comments;const AurenCreatorTopContent({required this.id,required this.title,required this.likes,required this.comments});int get engagement=>likes+comments;}
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
