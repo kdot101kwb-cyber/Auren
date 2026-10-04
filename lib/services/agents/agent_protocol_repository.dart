@@ -6,32 +6,62 @@ import '../../core/models/agent_message.dart';
 class AurenAgentProtocolRepository {
   final FirebaseAuth _auth;
   final String endpoint;
-  AurenAgentProtocolRepository({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance, endpoint = const String.fromEnvironment('AUREN_ACTION_EXECUTOR_URL');
+
+  AurenAgentProtocolRepository({FirebaseAuth? auth})
+      : _auth = auth ?? FirebaseAuth.instance,
+        endpoint = const String.fromEnvironment('AUREN_ACTION_EXECUTOR_URL');
 
   Future<void> enqueue(AurenAgentMessage message) async {
-    if (endpoint.isEmpty) throw StateError('AUREN_ACTION_EXECUTOR_URL is not configured.');
+    if (endpoint.isEmpty) {
+      throw StateError('AUREN_ACTION_EXECUTOR_URL is not configured.');
+    }
     final user = _auth.currentUser;
     if (user == null) throw StateError('User is not authenticated.');
+
     final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw StateError('Unable to obtain Firebase ID token.');
+    }
 
     final capabilityResponse = await http.post(
       Uri.parse(endpoint + '/api/agents/capabilities/issue'),
-      headers: {'content-type':'application/json','authorization':'Bearer '+token!},
-      body: jsonEncode({'capability':'messages.send'}),
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'capability': 'messages.send'}),
     );
-    if (capabilityResponse.statusCode < 200 || capabilityResponse.statusCode >= 300) {
+    if (capabilityResponse.statusCode < 200 ||
+        capabilityResponse.statusCode >= 300) {
       throw StateError('Unable to obtain AUREN messages capability.');
     }
-    final capability = jsonDecode(capabilityResponse.body) as Map<String,dynamic>;
+    final capability =
+        jsonDecode(capabilityResponse.body) as Map<String, dynamic>;
 
-    final envelope = {'protocol':'AUREN-A2A','version':'1.0','messageId':message.messageId,'senderAgentId':message.senderAgentId,'recipientAgentId':message.recipientAgentId,'type':message.type,'payload':message.payload};
+    final envelope = {
+      'protocol': 'AUREN-A2A',
+      'version': '1.0',
+      'messageId': message.messageId,
+      'senderAgentId': message.senderAgentId,
+      'recipientAgentId': message.recipientAgentId,
+      'type': message.type,
+      'payload': message.payload,
+    };
     final response = await http.post(
       Uri.parse(endpoint + '/api/a2a/send'),
-      headers:{'content-type':'application/json','authorization':'Bearer '+token},
-      body:jsonEncode({'envelope':envelope,'capabilityToken':capability}),
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'envelope': envelope,
+        'capabilityToken': capability,
+      }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('AUREN A2A gateway returned '+response.statusCode.toString()+'.');
+      throw StateError(
+        'AUREN A2A gateway returned ${response.statusCode}.',
+      );
     }
   }
 }
