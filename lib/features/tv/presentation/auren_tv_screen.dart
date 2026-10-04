@@ -589,13 +589,20 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                                 color: mine ? Theme.of(ctx).colorScheme.primaryContainer : Theme.of(ctx).colorScheme.surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              child: Column(\n                                crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,\n                                children: [\n                                  Text(d['text'] as String? ?? ''),\n                                  const SizedBox(height: 2),\n                                  Row(mainAxisSize: MainAxisSize.min, children: [
+                              child: Column(
+                                crossAxisAlignment: mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                children: [
+                                  Text(d['text'] as String? ?? ''),
+                                  const SizedBox(height: 2),
+                                  Row(mainAxisSize: MainAxisSize.min, children: [
                                     Text(_watchChatTime(d['createdAt']), style: TextStyle(fontSize: 10, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
                                     if (mine) ...[
                                       const SizedBox(width: 5),
                                       Text(hasSeen(d['createdAt'] is Timestamp ? d['createdAt'] as Timestamp : null) ? '✓✓' : '✓', style: TextStyle(fontSize: 10, color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
                                     ],
-                                  ]),\n                                ],\n                              ),
+                                  ]),
+                                ],
+                              ),
                             ),
                           );
                         },
