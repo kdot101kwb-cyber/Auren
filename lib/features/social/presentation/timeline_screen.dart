@@ -212,19 +212,20 @@ class _MomentsStrip extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           onTap: () => _openMoment(context, items[i].$1),
           child: Container(
-          width: 92,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Theme.of(context).dividerColor),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(items[i].$2, size: 24),
-              const SizedBox(height: 6),
-              Text(items[i].$1, style: const TextStyle(fontSize: 12)),
-            ],
+            width: 92,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Theme.of(context).dividerColor),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(items[i].$2, size: 24),
+                const SizedBox(height: 6),
+                Text(items[i].$1, style: const TextStyle(fontSize: 12)),
+              ],
+            ),
           ),
         ),
       ),
