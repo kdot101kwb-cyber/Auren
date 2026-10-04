@@ -343,7 +343,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
       final course = _findCourse(courses, entry.key);
       if (course == null || course.lessonCount < 1) continue;
       total += course.lessonCount;
-      done += entry.value.completedLessons.clamp(0, course.lessonCount);
+      done += entry.value.completedLessons.clamp(0, course.lessonCount).toInt();
     }
     if (total == 0) return const SizedBox.shrink();
     final value = (done / total).clamp(0.0, 1.0);
