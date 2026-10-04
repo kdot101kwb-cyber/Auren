@@ -81,3 +81,16 @@ class _AurenCommunitiesScreenState extends State<AurenCommunitiesScreen>{
      ),
    );
  }
+
+  Future<void> _members(AurenCommunity community) async {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('أعضاء ' + community.name),
+        content: Text('عدد الأعضاء: ' + community.memberCount.toString()),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق'))],
+      ),
+    );
+  }
+}
