@@ -381,7 +381,8 @@ class AurenTvService {
     try {
       // Some IPTV servers reject HEAD even though the stream is playable.
       // Probe HEAD first, then fall back to a tiny GET with Range.
-      final head = await http.head(uri, followRedirects: true).timeout(timeout);
+      final request = http.Request('HEAD', uri)..followRedirects = true;
+      final head = await http.Client().send(request).timeout(timeout);
       final ms = DateTime.now().difference(started).inMilliseconds;
       if (_healthHttpOk(head.statusCode)) {
         final health = AurenTvHealth(status: 'online', latencyMs: ms, checkedAt: DateTime.now());
