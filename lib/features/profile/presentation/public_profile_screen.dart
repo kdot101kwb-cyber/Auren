@@ -151,7 +151,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                   const SnackBar(content: Text('Profile link copied.')),
                 );
               }
-            ),
+            },
           ),
         ],
       ),
