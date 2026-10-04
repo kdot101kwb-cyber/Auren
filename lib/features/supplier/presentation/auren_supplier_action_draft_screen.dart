@@ -66,7 +66,7 @@ class _AurenSupplierActionDraftScreenState extends State<AurenSupplierActionDraf
     return Scaffold(appBar:AppBar(title:Text(_isRfq?'مسودة طلب عرض سعر':'مسودة تواصل')),body:ListView(padding:const EdgeInsets.all(16),children:[
       Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.auto_awesome)),title:Text(_isRfq?'راجع RFQ قبل الموافقة':'راجع رسالة التواصل قبل الموافقة',style:const TextStyle(fontWeight:FontWeight.w800)),subtitle:const Text('AUREN لا تنفذ الإجراء الحساس إلا بعد موافقة صريحة منك.'))),
       const SizedBox(height:12),
-      if(_isRfq)...[_field('المنتج',_product),_field('الكمية',_quantity,keyboard:const TextInputType.numberWithOptions(decimal:true)),_field('الوحدة',_unit),_field('العملة',_currency),_field('ملاحظات',_notes,min:3,max:6)] else [_field('رسالة التواصل',_message,min:5,max:9)],
+      if(_isRfq)...[_field('المنتج',_product),_field('الكمية',_quantity,keyboard:const TextInputType.numberWithOptions(decimal:true)),_field('الوحدة',_unit),_field('العملة',_currency),_field('ملاحظات',_notes,min:3,max:6)] else ...[_field('رسالة التواصل',_message,min:5,max:9)],
       DropdownButtonFormField<String>(value:_channel,decoration:const InputDecoration(labelText:'القناة',border:OutlineInputBorder()),items:const[DropdownMenuItem(value:'draft',child:Text('مسودة داخل AUREN'))],onChanged:_busy?null:(v){if(v!=null)setState(()=>_channel=v);}),
       const SizedBox(height:16),
       if(_actionId==null) FilledButton.icon(onPressed:_busy?null:_saveDraft,icon:_busy?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.save_outlined),label:const Text('حفظ المسودة'))
