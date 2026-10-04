@@ -712,11 +712,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 },
               ),
 
-                  dense: true,
-                  leading: Icon(id == room.hostUid ? Icons.workspace_premium : Icons.person_outline),
-                  title: Text(id == uid ? 'أنت' : 'عضو'),
-                  subtitle: Text(id == room.hostUid ? 'Host' : 'Member'),
-                ),
+
               Row(children: [
                 Expanded(child: OutlinedButton.icon(
                   onPressed: () async { await service.leave(room.id); if (mounted) { _watchTogetherSubscription?.cancel(); _watchTogetherMessageSubscription?.cancel(); _watchTogetherSyncTimer?.cancel(); _watchTogetherPresenceTimer?.cancel(); setState(() { _watchTogetherRoom = null; _watchTogether = false; }); Navigator.pop(ctx); } },
