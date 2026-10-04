@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/models/message.dart';
+import '../../../core/models/action_request.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/ai/ai_gateway.dart';
 import '../../../services/actions/action_repository.dart';
