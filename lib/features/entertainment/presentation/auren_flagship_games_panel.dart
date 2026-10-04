@@ -888,16 +888,6 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     LinearProgressIndicator(value: _ludo.fold<int>(0, (a, b) => a + max(0, b)) / 224),
   ])));
 
-  Widget _dominoBoard() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('يدك: ' + _dominoHand.length.toString() + ' • الخصم: ' + _dominoCpu.length.toString() + ' • السحب: ' + _dominoPool.length.toString()),
-    const SizedBox(height: 8),
-    SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: _dominoBoard.map((p) => Padding(padding: const EdgeInsets.only(right: 5), child: Chip(label: Text('🁫 ' + p))).toList())),
-    const SizedBox(height: 8), Text('الأطراف: ' + _dominoLeft.toString() + ' | ' + _dominoRight.toString()),
-    const SizedBox(height: 8),
-    Wrap(spacing: 6, runSpacing: 6, children: List.generate(_dominoHand.length, (i) => FilledButton.tonal(onPressed: _isMyTurn && _dominoPlayerTurn ? () => _dominoPlay(i) : null, child: Text(_dominoHand[i])))),
-    const SizedBox(height: 8), const Text('طابق أحد طرفي السلسلة. إذا لم توجد قطعة قانونية استخدم زر السحب.'),
-  ])));
-
   Widget _unoBoard() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text('اللون الحالي: ' + _unoColor + ' • يدك: ' + _unoHand.length.toString() + ' • الخصم: ' + _unoCpu.length.toString()),
     const SizedBox(height: 8), Text('آخر بطاقة: ' + _unoDiscard.last),
