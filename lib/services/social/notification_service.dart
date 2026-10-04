@@ -14,7 +14,7 @@ class AurenNotificationService {
   AurenNotificationService({dynamic db}) : _repo = canonical.NotificationRepository();
 
   Stream<List<AurenNotification>> watch(String uid, {int limit = 100}) =>
-      _repo.watch(uid).map((items) => items.take(limit.clamp(1, 100)).toList());
+      _repo.watch(uid).map((items) => items.take(limit.clamp(1, 100).toInt()).toList());
 
   Stream<int> watchUnreadCount(String uid) => _repo.watchUnreadCount(uid);
   Future<void> markRead(String uid, String id) => _repo.markRead(uid, id);
