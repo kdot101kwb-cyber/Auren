@@ -499,7 +499,7 @@ class AurenHomeV2 extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 dense: true,
                 title: Text(goal.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text(goal.progress.clamp(0, 100).toString() + '%'),
+                subtitle: Text(goal.progress.clamp(0, 100).toInt().toString() + '%'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PersonalAiScreen())),
               )),
