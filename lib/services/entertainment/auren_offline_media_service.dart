@@ -29,7 +29,7 @@ class AurenOfflineMediaService {
     if(!await dir.exists()) await dir.create(recursive:true);
     return dir;
   }
-  String _safe(String v){final s=v.trim().replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'),'_'); return s.isEmpty?'media':s.substring(0,s.length.clamp(1,80));}
+  String _safe(String v){final s=v.trim().replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'),'_'); return s.isEmpty?'media':s.substring(0,s.length.clamp(1,80).toInt());}
   Future<void> _saveQueue(List<Map<String,dynamic>> items) async {
     final p=await SharedPreferences.getInstance();
     await p.setStringList(_queueKey,items.map(jsonEncode).toList());
