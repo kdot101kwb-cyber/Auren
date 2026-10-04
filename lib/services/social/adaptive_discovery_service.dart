@@ -103,7 +103,7 @@ class AurenAdaptiveDiscoveryService {
     final snapshot = await _db
         .collectionGroup('profile_modes')
         .where('discoverable', isEqualTo: true)
-        .limit(limit.clamp(1, 50))
+        .limit(limit.clamp(1, 50).toInt())
         .get();
 
     return snapshot.docs
@@ -181,7 +181,7 @@ class AurenAdaptiveDiscoveryService {
       title: name,
       subtitle: _string(d['bio'], candidateMode.label),
       kind: AurenDiscoveryKind.people,
-      score: score.clamp(0, 100),
+      score: score.clamp(0, 100).toInt(),
       mode: candidateMode,
       data: d,
     );
@@ -204,7 +204,7 @@ class AurenAdaptiveDiscoveryService {
         (text.contains('job') || text.contains('career') || text.contains('وظيفة'))) {
       score += 10;
     }
-    return score.clamp(0, 100);
+    return score.clamp(0, 100).toInt();
   }
 
   int _overlapScore(String a, String b) {
@@ -212,7 +212,7 @@ class AurenAdaptiveDiscoveryService {
     final tokensB = _tokens(b);
     if (tokensA.isEmpty || tokensB.isEmpty) return 20;
     final common = tokensA.intersection(tokensB).length;
-    return (20 + common * 12).clamp(20, 80);
+    return (20 + common * 12).clamp(20, 80).toInt();
   }
 
   int _safeLimit(int value) => value < 1 ? 1 : (value > 50 ? 50 : value);
