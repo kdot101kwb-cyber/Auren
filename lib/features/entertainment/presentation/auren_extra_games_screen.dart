@@ -660,33 +660,7 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
   }
 
   void _newGameAction(){
-    switch(_newIndex){
-      case 10: _message='♟️ خطة تكتيكية: سيطر على الوسط ثم نفّذ نقلة هجومية'; _score+=20; _challenge++; break;
-      case 11: _message='⚫ دورك: حرّك قطعة واقفز فوق خصمك عند الإمكان'; _score+=15; _resource++; break;
-      case 12: final pocket=_rng.nextDouble()<.55; _message='🎱 ${pocket?'دخلت الكرة الجيب!':'حاول ضبط زاوية التصويب'}'; _score+=pocket?28:6; break;
-      case 13: final spike=_rng.nextDouble()<.58; _message='🏐 ${spike?'ضربة ساحقة!':'استقبل الكرة وواصل الهجمة'}'; _score+=spike?25:10; break;
-      case 14: final birdie=_rng.nextDouble()<.5; _message='⛳ ${birdie?'ضربة دقيقة قرب الحفرة!':'أعد حساب المسافة والاتجاه'}'; _score+=birdie?30:8; break;
-      case 15: final stealth=_rng.nextDouble()<.7; _message='🥷 ${stealth?'تجاوزت الحارس دون إنذار':'تم اكتشافك — غيّر المسار'}'; _score+=stealth?24:4; if(!stealth)_health=max(0,_health-10); break;
-      case 16: _message='💰 مهمة تخطيط: وزّع الأدوار، راقب الوقت، واختر طريق الهروب'; _score+=18; _resource++; _challenge++; break;
-      case 17: final safe=_rng.nextDouble()<.6; _message='🧟 ${safe?'وجدت منطقة آمنة وموارد':'ظهر خطر جديد — تحرك بحذر'}'; _score+=safe?22:6; if(!safe)_health=max(0,_health-12); break;
-      case 18: _message='🏹 حصار الساموراي: احمِ البوابة وأنجز أهداف المرحلة'; _score+=22; _resource++; break;
-      case 19: _message='🚀 مهمة مستقبلية: سيطر على نقطة الاتصال وأنقذ الفريق'; _score+=24; _resource++; _challenge++; break;
-    }
-  }
 
-    switch(_newIndex){
-      case 0: final roll=1+_rng.nextInt(6); _message='🎲 رميت $roll • حرّك قطعتك $roll خطوة'; _score+=roll*2; _resource=(_resource+roll)%4; break;
-      case 1: final points=1+_rng.nextInt(6); _message='🁫 قطعة بقيمة $points • طابق الرقم التالي'; _score+=points*3; _enemy=max(0,_enemy-points*4); break;
-      case 2: final cards=['أحمر 5','أزرق +2','أخضر عكس','أصفر 7','Wild']; final card=cards[_rng.nextInt(cards.length)]; _message='🃏 لعبت $card • طابق اللون أو الرقم'; _score+=12; _resource++; break;
-      case 3: final clues=['بصمة قرب النافذة','كاميرا انقطعت 3 دقائق','إيصال يحمل توقيتاً','شاهد غيّر أقواله']; _message='🕵️ دليل: ${clues[_rng.nextInt(clues.length)]}. اربط الأدلة وحدد المشتبه به.'; _score+=15; _challenge++; break;
-      case 4: final goal=_rng.nextDouble()<.38; _message='⚽ ${goal?'هدف!':'استحواذ وتمريرات — حاول مجدداً'}'; _score+=goal?30:10; if(goal)_laps++; break;
-      case 5: final made=_rng.nextDouble()<.58; _message='🏀 ${made?'سلة!':'الكرة ارتدت من الحلقة'}'; _score+=made?28:5; if(made)_laps++; break;
-      case 6: final hit=_rng.nextDouble()<.62; _message='🥊 ${hit?'لكمة دقيقة':'تفاديت الضربة'}'; _score+=hit?18:8; if(hit)_enemy=max(0,_enemy-15); break;
-      case 7: final missions=['احمِ القافلة في العصور القديمة','أمّن نقطة إمداد حديثة','أنقذ المدنيين من منطقة الخطر','عطّل الإمداد دون استهداف المدنيين']; _message='⚔️ مهمة: ${missions[_challenge%missions.length]}'; _score+=16; _resource++; _challenge++; break;
-      case 8: final moves=['سحب السيف','صدّ الضربة','خطوة جانبية','ضربة تدريبية']; _message='🥷 ${moves[_rng.nextInt(moves.length)]} • أكمل التحدي'; _score+=20; if(_rng.nextDouble()<.25)_health=max(0,_health-8); break;
-      case 9: _laps++; final drift=_rng.nextDouble()<.55; _message='🏎️ القطاع $_laps • ${drift?'انجراف مضبوط!':'حافظ على خط السباق'}'; _score+=drift?25:12; _energy=min(10,_energy+1); break;
-    }
-  }
   void _adventureAction(){
     final i=widget.gameIndex-21;
     if(i==6){_resource++;_score+=25;_message='💎 كنز مكتشف!';}
