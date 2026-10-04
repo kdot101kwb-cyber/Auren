@@ -43,9 +43,25 @@ class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
   }
 
   Future<void> _orchestrate(String command) async {
-    if(loading)return;
+    if (loading) return;
     try {
-      final result=await repo.orchestrate(workflowId,command:command);\n      if(!mounted)return;\n      final step=(result['currentStep'] is num?(result['currentStep'] as num).toInt():currentStep).clamp(0,plan.steps.length-1);\n      setState(()=>currentStep=step);\n      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Workflow: '+(result['state']?.toString()??'active')+' • المرحلة '+(step+1).toString()+'/'+plan.steps.length.toString())));\n    } catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إدارة الـWorkflow: $e')));}
+      final result = await repo.orchestrate(workflowId, command: command);
+      if (!mounted) return;
+      final step = (result['currentStep'] is num
+              ? (result['currentStep'] as num).toInt()
+              : currentStep)
+          .clamp(0, plan.steps.length - 1);
+      setState(() => currentStep = step);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Workflow: ' + (result['state']?.toString() ?? 'active') + ' • المرحلة ' + (step + 1).toString() + '/' + plan.steps.length.toString())),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر إدارة الـWorkflow: $e')),
+        );
+      }
+    }
   }
   Future<void> _runStep(int i) async {
     if(loading||i<0||i>=plan.steps.length)return; setState(()=>loading=true);
