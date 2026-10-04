@@ -18,7 +18,7 @@ class DecisionRoomService {
   final goals=await _db.collection('users').doc(id).collection('goals').get();
   final active=goals.docs.where((d)=>(d.data()['status']?.toString()??'active')=='active').toList();
   final goal=active.isEmpty?'لا يوجد هدف نشط':(active.first.data()['title']?.toString()??'هدف حالي');
-  final scored=opts.asMap().entries.map((e){final fit=(78-e.key*6).clamp(45,90);return AurenDecisionOption(title:e.value,detail:'قارن هذا الخيار مع سؤالك وهدفك الحالي: '+goal+'.',pros:const ['يمكن مقارنته مباشرة','يمكن تحويله إلى خطوات'],cons:const ['قد تحتاج معلومات إضافية'],fit:fit);}).toList();
+  final scored=opts.asMap().entries.map((e){final fit=(78-e.key*6).clamp(45,90).toInt();return AurenDecisionOption(title:e.value,detail:'قارن هذا الخيار مع سؤالك وهدفك الحالي: '+goal+'.',pros:const ['يمكن مقارنته مباشرة','يمكن تحويله إلى خطوات'],cons:const ['قد تحتاج معلومات إضافية'],fit:fit);}).toList();
   final best=scored.reduce((a,b)=>a.fit>=b.fit?a:b);
   final room=AurenDecisionRoom(question:q,options:scored,recommendation:best.title,reasoning:'مقارنة أولية فقط. القرار النهائي ليك؛ راجع القيود والمعلومات الناقصة قبل التنفيذ.',createdAt:DateTime.now().toUtc());
   await _db.collection('users').doc(id).collection('decision_rooms').doc('current').set(room.toMap());return room;
