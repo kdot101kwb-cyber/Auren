@@ -158,6 +158,7 @@ class AurenSmartFollowUpService {
                 (shipping != null ? 15 : 0) +
                 (quantity != null ? 15 : 0))
             .clamp(0, 100)
+            .toInt()
         : (missing.isEmpty ? 100 : 50);
     final summary = detailParts.isEmpty
         ? 'تم استلام الرد. لم يتم استخراج تفاصيل منظمة كافية بعد.'
