@@ -81,10 +81,10 @@ class AurenMatchEverythingService {
     // Run them concurrently to keep Match Everything latency bounded.
     final groups = await Future.wait<List<AurenMatchItem>>([
       _people(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
-      _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan),
-      _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan),
-      _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan),
-      _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan),
+      _collectionMatches('opportunities', AurenMatchKind.opportunity, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
+      _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
+      _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
+      _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
     ]);
     final results = <AurenMatchItem>[
       for (final group in groups) ...group,
@@ -144,6 +144,7 @@ class AurenMatchEverythingService {
     Set<String> intentTerms,
     String normalizedIntent,
     AurenIntentActionPlan plan,
+    AurenIntentSignals signals,
   ) async {
     try {
       Query<Map<String, dynamic>> query = _db.collection(collection);
