@@ -114,7 +114,7 @@ class AurenBusinessDashboardScreen extends StatelessWidget {
                       if (insight.themes.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: Text('أبرز المواضيع: \${insight.themes.join(' • ')}'),
+                          child: Text('أبرز المواضيع: \${insight.themes.join(" • ")}'),
                         ),
                     ],
                   ),
