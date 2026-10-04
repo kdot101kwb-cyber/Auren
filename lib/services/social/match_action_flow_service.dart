@@ -96,7 +96,7 @@ class AurenMatchActionFlowRepository {
     if (totalSteps < 1) {
       throw ArgumentError('totalSteps must be at least 1');
     }
-    final safeStep = step.clamp(0, totalSteps - 1);
+    final safeStep = step.clamp(0, totalSteps - 1).toInt();
     final cleanIntent = intent.trim();
     final ref = _ref(uid, item);
 
