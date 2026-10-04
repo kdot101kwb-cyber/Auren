@@ -70,6 +70,7 @@ class AurenTvService {
 
   static const _sourcesKey = 'auren_tv_sources';
   static const _defaultSourceKey = 'auren_tv_default_source';
+  SharedPreferences? _prefs;
   final FlutterSecureStorage _secure = const FlutterSecureStorage();
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   bool _notificationsReady = false;
