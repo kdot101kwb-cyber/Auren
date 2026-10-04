@@ -26,12 +26,12 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   int _arenaAction = -1;
   Future<void> _createConnectFourRoom() async {
     final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null)return; setState(()=>_busy=true);
-    try{final room=await _service.createConnectFourRoom(uid);if(!mounted)return;setState(()=>{_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='connect_four';});}
+    try{final room=await _service.createConnectFourRoom(uid);if(!mounted)return;setState(() {_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='connect_four';});}
     catch(_){if(mounted)_snack('تعذر إنشاء غرفة Connect Four.');}finally{if(mounted)setState(()=>_busy=false);}
   }
   Future<void> _joinConnectFourRoom() async {
     final uid=FirebaseAuth.instance.currentUser?.uid; final code=_codeController.text.trim().toUpperCase(); if(uid==null||code.length!=6)return; setState(()=>_busy=true);
-    try{final room=await _service.joinConnectFourRoom(uid,code);if(!mounted)return;setState(()=>{_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='connect_four';});}
+    try{final room=await _service.joinConnectFourRoom(uid,code);if(!mounted)return;setState(() {_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='connect_four';});}
     catch(_){if(mounted)_snack('تعذر الانضمام إلى Connect Four.');}finally{if(mounted)setState(()=>_busy=false);}
   }
   Future<void> _playConnectFour(int column) async { if(_roomId==null)return; try{await _service.playConnectFourMove(roomId:_roomId!,column:column);}catch(_){if(mounted)_snack('تعذر تسجيل الحركة.');} }
@@ -217,14 +217,14 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   Future<void> _createRpsRoom() async {
     final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null) return;
     setState(()=>_busy=true);
-    try { final room=await _service.createRpsRoom(uid); if(!mounted)return; setState(()=>{_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='rock_paper_scissors';}); }
+    try { final room=await _service.createRpsRoom(uid); if(!mounted)return; setState(() {_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='rock_paper_scissors';}); }
     catch(_){if(mounted)_snack('تعذر إنشاء غرفة RPS.');} finally{if(mounted)setState(()=>_busy=false);}
   }
 
   Future<void> _joinRpsRoom() async {
     final uid=FirebaseAuth.instance.currentUser?.uid; final code=_codeController.text.trim().toUpperCase();
     if(uid==null||code.length!=6)return; setState(()=>_busy=true);
-    try{final room=await _service.joinRpsRoom(uid,code);if(!mounted)return;setState(()=>{_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='rock_paper_scissors';});}
+    try{final room=await _service.joinRpsRoom(uid,code);if(!mounted)return;setState(() {_roomId=room.id;_inviteCode=room.inviteCode;_roomGameId='rock_paper_scissors';});}
     catch(_){if(mounted)_snack('تعذر الانضمام إلى غرفة RPS.');} finally{if(mounted)setState(()=>_busy=false);}
   }
 
