@@ -172,6 +172,21 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       return Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.notifications_active_outlined)), title: Text(r.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(label), trailing: Wrap(children: [IconButton(tooltip: 'تعديل التذكير', onPressed: () async { final before = await showModalBottomSheet<Duration>(context: ctx, builder: (s) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [const ListTile(title: Text('تعديل وقت التذكير')), for (final m in const [5, 10, 15, 30, 60]) ListTile(title: Text('قبل $m دقيقة'), onTap: () => Navigator.pop(s, Duration(minutes: m)))]))); if (before == null || !ctx.mounted) return; final ok = await AurenTvService.instance.updateEpgReminder(item, before: before); if (ctx.mounted) { Navigator.pop(ctx); if (ok) await _showEpgReminderCenter(); } }, icon: const Icon(Icons.edit_notifications_outlined)), IconButton(tooltip: 'إلغاء التذكير', onPressed: () async { await AurenTvService.instance.removeEpgReminder(item); if (ctx.mounted) { Navigator.pop(ctx); await _showEpgReminderCenter(); } }, icon: const Icon(Icons.notifications_off_outlined))]));
     }))));
   }
+  void _showFloatingReaction(String emoji) {
+    if (!mounted || emoji.trim().isEmpty) return;
+    setState(() {
+      _watchReactionOverlay.add(emoji);
+      if (_watchReactionOverlay.length > 8) {
+        _watchReactionOverlay.removeAt(0);
+      }
+    });
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      final index = _watchReactionOverlay.indexOf(emoji);
+      if (index >= 0) setState(() => _watchReactionOverlay.removeAt(index));
+    });
+  }
+
   void _togglePip() {
     if (player == null || playing == null) return;
     setState(() => _pipMode = !_pipMode);
