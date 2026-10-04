@@ -124,7 +124,7 @@ class _FlowCardState extends State<_FlowCard> {
     final step = (widget.data['step'] as num?)?.toInt() ?? 0;
     final total = (widget.data['totalSteps'] as num?)?.toInt() ?? 1;
     final intent = (widget.data['intent'] ?? '').toString();
-    final progress = ((step + 1) / total).clamp(0.0, 1.0);
+    final progress = ((step + 1) / total).clamp(0.0, 1.0).toDouble();
     final next = _nextStep(action, status, kind);
 
     final statusLabel = switch (status) {
