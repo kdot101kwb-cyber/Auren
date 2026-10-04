@@ -92,12 +92,12 @@ class AurenPaymentStateMachine {
 class AurenPaymentGateway {
   final List<AurenPaymentProvider> providers;
 
-  const AurenPaymentGateway({
-    this.providers = const [
-      AurenCashOnDeliveryProvider(),
-      AurenPendingOnlinePaymentProvider(),
-    ],
-  });
+  AurenPaymentGateway({
+    List<AurenPaymentProvider>? providers,
+  }) : providers = providers ?? [
+    AurenCashOnDeliveryProvider(),
+    AurenPendingOnlinePaymentProvider(),
+  ];
 
   AurenPaymentProvider? providerFor(String method) {
     for (final provider in providers) {
