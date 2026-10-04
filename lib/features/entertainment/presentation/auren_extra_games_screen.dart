@@ -660,6 +660,13 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
   }
 
   void _newGameAction(){
+    final i=_newIndex;
+    const labels=['🎲 حركة Ludo','🁫 حركة Dominoes','🃏 حركة UNO','🕵️ دليل جديد','⚽ تسديدة!','🏀 رمية ناجحة!','🥊 لكمة!','⚔️ هجوم!','🥷 ضربة Samurai!','🏎️ لفة Racing!','♟️ نقلة Chess!','⚫ نقلة Checkers!','🎱 ضربة Pool!','🏐 إرسال Volleyball!','⛳ ضربة Golf!','🥷 تسلل!','💰 خطة جديدة!','🧟 نجاة!','🏹 حصار!','🚀 هجوم مستقبلي!'];
+    _score += 10 + _rng.nextInt(21);
+    _combo=min(10,_combo+1);
+    _message=labels[i.clamp(0, labels.length-1)];
+    if(i==4||i==5||i==6||i==7||i==8||i==9) _resource++;
+  }
 
   void _adventureAction(){
     final i=widget.gameIndex-21;
