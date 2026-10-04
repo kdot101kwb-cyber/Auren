@@ -337,7 +337,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
   Widget _buildFlowCard(BuildContext context) {
     final steps = _flowSteps;
     if (steps.length < 2) return const SizedBox.shrink();
-    final active = _flowStep.clamp(0, steps.length - 1);
+    final active = _flowStep.clamp(0, steps.length - 1).toInt();
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
