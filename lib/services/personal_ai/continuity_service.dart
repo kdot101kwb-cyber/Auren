@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../services/goals/goal_repository.dart';
-import '../../../services/memory/memory_repository.dart';
+import '../goals/goal_repository.dart';
+import '../memory/memory_repository.dart';
 class AurenContinuitySnapshot { final String status,summary; final int activeGoals,enabledMemories; final String? focus; final DateTime updatedAt; const AurenContinuitySnapshot({required this.status,required this.summary,required this.activeGoals,required this.enabledMemories,required this.focus,required this.updatedAt}); Map<String,dynamic> toMap()=>{'status':status,'summary':summary,'activeGoals':activeGoals,'enabledMemories':enabledMemories,'focus':focus,'updatedAt':Timestamp.fromDate(updatedAt.toUtc())}; }
 class ContinuityService {
  final FirebaseFirestore _db; final GoalRepository _goals; final MemoryRepository _memory;
