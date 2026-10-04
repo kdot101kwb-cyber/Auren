@@ -6,7 +6,44 @@ class AurenSupplierScreen extends StatefulWidget{const AurenSupplierScreen({supe
 class _AurenSupplierScreenState extends State<AurenSupplierScreen>{
  final s=AurenSupplierService(); final q=TextEditingController();
  @override void dispose(){q.dispose();super.dispose();}
- @override Widget build(BuildContext context){final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول أولاً')));
- return Scaffold(appBar:AppBar(title:const Text('Supplier Finder')),floatingActionButton:FloatingActionButton.extended(onPressed:()=>_create(uid),icon:const Icon(Icons.add_business),label:const Text('طلب توريد')),body:StreamBuilder<List<AurenSupplyRequest>>(stream:s.watchOpen(),builder:(c,x){if(x.hasError)return Center(child:Text('تعذر التحميل: ${x.error}'));final items=x.data??const [];if(items.isEmpty)return const Center(child:Text('لا توجد طلبات توريد مفتوحة.'));return ListView.builder(padding:const EdgeInsets.all(16),itemCount:items.length,itemBuilder:(c,i){final r=items[i];return Card(child:ListTile(title:Text(r.title),subtitle:Text('${r.category} • ${r.country} • ${r.status}'),onTap:()=>showDialog(context:c,builder:(_)=>AlertDialog(title:Text(r.title),content:Text(r.description),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إغلاق'))])));});}) );}
+ @override Widget build(BuildContext context){
+   final uid=FirebaseAuth.instance.currentUser?.uid;
+   if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول أولاً')));
+   return Scaffold(
+     appBar:AppBar(title:const Text('Supplier Finder')),
+     floatingActionButton:FloatingActionButton.extended(onPressed:()=>_create(uid),icon:const Icon(Icons.add_business),label:const Text('طلب توريد')),
+     body:StreamBuilder<List<AurenSupplyRequest>>(
+       stream:s.watchOpen(),
+       builder:(c,x){
+         if(x.hasError)return Center(child:Text('تعذر التحميل: ${x.error}'));
+         final items=x.data??const [];
+         if(items.isEmpty)return const Center(child:Text('لا توجد طلبات توريد مفتوحة.'));
+         return ListView.builder(
+           padding:const EdgeInsets.all(16),
+           itemCount:items.length,
+           itemBuilder:(c,i){
+             final r=items[i];
+             return Card(
+               child:ListTile(
+                 title:Text(r.title),
+                 subtitle:Text('${r.category} • ${r.country} • ${r.status}'),
+                 onTap:()=>showDialog(
+                   context:c,
+                   builder:(_)=>AlertDialog(
+                     title:Text(r.title),
+                     content:Text(r.description),
+                     actions:[
+                       TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إغلاق')),
+                     ],
+                   ),
+                 ),
+               ),
+             );
+           },
+         );
+       },
+     ),
+   );
+ }
  Future<void> _create(String uid)async{final title=TextEditingController(),desc=TextEditingController(),cat=TextEditingController(),country=TextEditingController();final ok=await showDialog<bool>(context:context,builder:(c)=>AlertDialog(title:const Text('طلب توريد'),content:SingleChildScrollView(child:Column(children:[TextField(controller:title,decoration:const InputDecoration(labelText:'ماذا تحتاج؟')),TextField(controller:desc,maxLines:3,decoration:const InputDecoration(labelText:'المواصفات')),TextField(controller:cat,decoration:const InputDecoration(labelText:'الفئة')),TextField(controller:country,decoration:const InputDecoration(labelText:'الدول المستهدفة'))])),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('نشر'))]));if(ok==true)try{await s.createRequest(ownerId:uid,title:title.text,description:desc.text,category:cat.text,city:'',country:country.text,targetCountries:country.text.split(',').map((e)=>e.trim()).where((e)=>e.isNotEmpty).toList());}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}title.dispose();desc.dispose();cat.dispose();country.dispose();}
 }
