@@ -14,6 +14,7 @@ class HttpsAurenAiGateway implements AurenAiGateway {
   Future<AurenAiResponse> send({
     required String conversationId,
     required String message,
+    String? requestId,
   }) async {
     if (endpoint.isEmpty) throw StateError('AUREN_AI_GATEWAY_URL is not configured.');
     final user = FirebaseAuth.instance.currentUser;
@@ -24,7 +25,11 @@ class HttpsAurenAiGateway implements AurenAiGateway {
     final response = await http.post(
       Uri.parse(endpoint),
       headers: {'content-type': 'application/json', 'authorization': 'Bearer $token'},
-      body: jsonEncode({'conversationId': conversationId, 'message': message}),
+      body: jsonEncode({
+        'conversationId': conversationId,
+        'message': message,
+        if (requestId != null && requestId.trim().isNotEmpty) 'requestId': requestId.trim(),
+      }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw StateError('AUREN AI gateway returned ${response.statusCode}.');
