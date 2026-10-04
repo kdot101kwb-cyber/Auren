@@ -217,11 +217,11 @@ class AurenMatchEverythingService {
     var score = _overlapScore(text, profileText);
     if (modeMatch) score += 15;
     final normalizedText = _normalize(text);
-    score += (intentTerms.intersection(_tokens(text)).length * 10).clamp(0, 25);
+    score += (intentTerms.intersection(_tokens(text)).length * 10).clamp(0, 25).toInt();
     if (normalizedIntent.length >= 6 && normalizedText.contains(normalizedIntent)) score += 15;
     score += _intentSemanticBoost(normalizedText, normalizedIntent);
     score += signals.matchScore(normalizedText);
-    return score.clamp(0, 100);
+    return score.clamp(0, 100).toInt();
   }
 
   List<String> _reasons(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms, String normalizedIntent) {
@@ -254,13 +254,13 @@ class AurenMatchEverythingService {
     if (pair(['مصنع', 'مصانع', 'manufacturer', 'factory'])) boost += 10;
     if (pair(['مورد', 'توريد', 'supplier', 'wholesale'])) boost += 10;
     if (pair(['ملابس', 'clothing', 'fashion'])) boost += 6;
-    return boost.clamp(0, 30);
+    return boost.clamp(0, 30).toInt();
   }
 
   int _overlapScore(String a, String b) {
     final aa = _tokens(a), bb = _tokens(b);
     if (aa.isEmpty || bb.isEmpty) return 20;
-    return (20 + aa.intersection(bb).length * 12).clamp(20, 80);
+    return (20 + aa.intersection(bb).length * 12).clamp(20, 80).toInt();
   }
 
   Set<String> _tokens(String value) => _normalize(value)
@@ -288,7 +288,7 @@ class AurenMatchEverythingService {
     return valueText.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
-  int _candidateLimit(int limit) => (limit * 5).clamp(10, 50);
+  int _candidateLimit(int limit) => (limit * 5).clamp(10, 50).toInt();
 
   int _safeLimit(int value) => value < 1 ? 1 : (value > 20 ? 20 : value);
 
@@ -353,7 +353,7 @@ class AurenIntentSignals {
     if (wantsManufacturer && ['مصنع','manufacturer','factory'].any((w) => n.contains(_normalizeIntent(w)))) score += 8;
     if (wantsWholesale && ['جملة','wholesale','bulk'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
     if (wantsBulk && ['كميات','bulk','moq','minimum order'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
-    return score.clamp(0, 35);
+    return score.clamp(0, 35).toInt();
   }
 
   static String _normalizeIntent(String? value) {
@@ -467,7 +467,7 @@ extension AurenMatchIntelligence on AurenMatchEverythingService {
     final result = await callable.call({
       'query': clean,
       if (country != null && country.trim().isNotEmpty) 'country': country.trim(),
-      'limit': limit.clamp(1, 25),
+      'limit': limit.clamp(1, 25).toInt(),
     });
 
     final data = Map<String, dynamic>.from(result.data as Map);
@@ -490,7 +490,7 @@ extension AurenMatchIntelligence on AurenMatchEverythingService {
         title: name,
         subtitle: description,
         kind: isSupplier ? AurenMatchKind.business : AurenMatchKind.opportunity,
-        score: score.clamp(0, 100),
+        score: score.clamp(0, 100).toInt(),
         reasons: isSupplier
             ? const ['مورد مطابق لطلبك عبر Match Everything']
             : const ['نتيجة من ذكاء الفرص العالمي'],
