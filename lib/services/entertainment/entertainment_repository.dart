@@ -17,7 +17,7 @@ class EntertainmentRepository {
       ..sort((a, b) {
         final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
         return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
-      });
+      }));
   }
 
   Stream<List<AurenEntertainmentItem>> watchAiRecommendations(String uid) {
