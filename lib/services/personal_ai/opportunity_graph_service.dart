@@ -46,7 +46,7 @@ class AurenOpportunityGraphService {
     final candidates = businesses.where((b) => b.ownerId != uid && b.visibility == 'public').map((b) {
       final text = '${b.name} ${b.description} ${b.category} ${b.businessType} ${b.city} ${b.country}'.toLowerCase();
       final hits = terms.where((t) => t.length > 2 && text.contains(t)).length;
-      final score = hits == 0 ? 0.0 : (hits / (terms.length.clamp(1, 100))).clamp(0.0, 1.0);
+      final score = hits == 0 ? 0.0 : (hits / terms.length.clamp(1, 100)).clamp(0.0, 1.0).toDouble();
       return AurenOpportunityGraphNode(id:'opportunity_${b.id}', type:'opportunity', title:b.name, detail:'${b.category} • ${b.city}', score:score);
     }).where((n) => n.score > 0).toList();
     candidates.sort((a,b) => b.score.compareTo(a.score));
