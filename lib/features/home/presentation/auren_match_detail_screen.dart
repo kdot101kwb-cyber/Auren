@@ -319,7 +319,7 @@ class _AurenMatchDetailScreenState extends State<AurenMatchDetailScreen> {
       }
       if (didExecute) {
         if (widget.item.action != AurenMatchAction.requestQuote) {
-          final next = (_flowStep + 1).clamp(0, _flowSteps.length - 1);
+          final next = (_flowStep + 1).clamp(0, _flowSteps.length - 1).toInt();
           if (mounted) setState(() => _flowStep = next);
           await _flowRepo.startOrAdvance(uid: uid, item: widget.item, intent: widget.intent, step: next, totalSteps: _flowSteps.length);
         }
