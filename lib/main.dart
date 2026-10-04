@@ -58,7 +58,7 @@ Future<void> main() async {
     if (data['type'] == 'goal' || data['type'] == 'kickoff' || data['type'] == 'red_card' || data['type'] == 'full_time') {
       final navigator = aurenNavigatorKey.currentState;
       if (navigator == null) return;
-      final fixtureId = String(data['fixtureId'] ?? '').trim();
+      final fixtureId = (data['fixtureId'] ?? '').toString().trim();
       if (fixtureId.isNotEmpty) {
         navigator.push(MaterialPageRoute(builder: (_) => AurenSportsDetailScreen(
           sport: 'football', resource: 'game_details',
