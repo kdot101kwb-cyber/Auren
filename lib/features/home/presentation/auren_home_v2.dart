@@ -493,7 +493,7 @@ class AurenHomeV2 extends StatelessWidget {
             children: [
               Row(children: [const Icon(Icons.track_changes), const SizedBox(width: 8), const Expanded(child: Text('Goal progress', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))), Text('$average%')]),
               const SizedBox(height: 8),
-              LinearProgressIndicator(value: average.clamp(0, 100) / 100),
+              LinearProgressIndicator(value: average.clamp(0, 100).toDouble() / 100),
               const SizedBox(height: 6),
               ...goals.map((goal) => ListTile(
                 contentPadding: EdgeInsets.zero,
