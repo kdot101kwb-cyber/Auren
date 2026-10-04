@@ -103,7 +103,7 @@ class _AurenRealEstateScreenState extends State<AurenRealEstateScreen>{
                           child: ListTile(
                             leading: CircleAvatar(child: Icon(p.listingType == 'rent' ? Icons.key_outlined : Icons.home_outlined)),
                             title: Text(p.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-                            subtitle: Text('\${(p.priceMinor / 100).toStringAsFixed(0)} \${p.currency} • \${p.areaSqm} m² • \${p.city}'),
+                            subtitle: Text('${(p.priceMinor / 100).toStringAsFixed(0)} ${p.currency} • ${p.areaSqm} m² • ${p.city}'),
                             trailing: IconButton(
                               icon: Icon(ids.contains(p.id) ? Icons.bookmark : Icons.bookmark_border),
                               onPressed: uid == null ? null : () => repo.toggleSaved(uid, p.id),
