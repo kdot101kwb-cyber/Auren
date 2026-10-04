@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 class AurenCreatorTopContent{final String id,title;final int likes,comments;const AurenCreatorTopContent({required this.id,required this.title,required this.likes,required this.comments});int get engagement=>likes+comments;}
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 class AurenCreatorPlanItem{final String id,title,format,status;final DateTime? scheduledAt;final String aiDraft;const AurenCreatorPlanItem({required this.id,required this.title,required this.format,required this.status,this.scheduledAt,this.aiDraft=''});}
 class AurenCreatorGrowthSummary{final int posts,likes,comments,mediaPosts,scheduled; final double engagementRate;const AurenCreatorGrowthSummary({required this.posts,required this.likes,required this.comments,required this.mediaPosts,required this.scheduled,required this.engagementRate});double get avgLikes=>posts==0?0:likes/posts;}
 class AurenCreatorGrowthRepository{
