@@ -33,7 +33,7 @@ class AurenWorkflowDashboardScreen extends StatelessWidget {
             itemBuilder: (_, i) {
               final w = workflows[i];
               final total = w.totalSteps > 0 ? w.totalSteps : 1;
-              final progress = (w.completedSteps / total).clamp(0.0, 1.0);
+              final progress = (w.completedSteps / total).clamp(0.0, 1.0).toDouble();
               return Card(
                 child: ListTile(
                   onTap: () => Navigator.push(context, MaterialPageRoute(
