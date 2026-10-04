@@ -67,7 +67,7 @@ class NextMoveService {
 
     final goal = active.first.data();
     final goalTitle = goal['title']?.toString().trim() ?? 'هدفك الحالي';
-    final progress = ((goal['progress'] as num?)?.toInt() ?? 0).clamp(0, 100);
+    final progress = (((goal['progress'] as num?)?.toInt() ?? 0).clamp(0, 100)).toInt();
 
     if (!core.hasBusiness) {
       return AurenNextMove(
