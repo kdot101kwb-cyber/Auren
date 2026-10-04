@@ -8,13 +8,13 @@ class AurenRandomGroupConnectService {
   CollectionReference<Map<String, dynamic>> get _c => _db.collection('random_group_connect');
 
   Future<String> join({required String uid, required String country, required String language, required String interest, required String goal, int groupSize = 4}) async {
-    final size = groupSize.clamp(3, 8);
+    final size = groupSize.clamp(3, 8).toInt();
     final ref = _c.doc();
     await ref.set({'uid': uid, 'country': country.trim(), 'language': language.trim(), 'interest': interest.trim(), 'goal': goal.trim(), 'groupSize': size, 'status': 'waiting', 'createdAt': FieldValue.serverTimestamp()});
     return ref.id;
   }
 
-  Stream<List<Map<String, dynamic>>> watch({required String uid, required String language, int groupSize = 4}) => _c.where('status', isEqualTo: 'waiting').where('groupSize', isEqualTo: groupSize.clamp(3, 8)).limit(40).snapshots().map((s) => s.docs.where((d) => d.data()['uid'] != uid).map((d) => {'id': d.id, ...d.data()}).toList());
+  Stream<List<Map<String, dynamic>>> watch({required String uid, required String language, int groupSize = 4}) => _c.where('status', isEqualTo: 'waiting').where('groupSize', isEqualTo: groupSize.clamp(3, 8).toInt()).limit(40).snapshots().map((s) => s.docs.where((d) => d.data()['uid'] != uid).map((d) => {'id': d.id, ...d.data()}).toList());
 
   Future<String> formGroup({required String requestId, required String uid, required List<String> memberUids}) async {
     final members = {...memberUids, uid}.toList();
