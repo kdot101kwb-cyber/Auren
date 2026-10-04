@@ -24,7 +24,7 @@ class TalentDiscoveryService {
       if(oppSkills.isEmpty) continue;
       final common=userSkills.intersection(oppSkills).toList()..sort();
       final missing=oppSkills.difference(userSkills).toList()..sort();
-      final score=((common.length/oppSkills.length)*100).round().clamp(0,100);
+      final score=((common.length/oppSkills.length)*100).round().clamp(0,100).toInt();
       if(score>0) matches.add(AurenTalentMatch(opportunity:o,score:score,matchedSkills:common,missingSkills:missing));
     }
     matches.sort((a,b)=>b.score.compareTo(a.score));
