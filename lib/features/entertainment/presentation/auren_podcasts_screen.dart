@@ -717,8 +717,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
 
   Future<void> _showEpisodeAnalysis(String title, Map<String, dynamic> analysis) async {
     String listText(dynamic value) => value is List
-        ? value.map((e) => '• ${e.toString()}').join('
-')
+        ? value.map((e) => '• ${e.toString()}').join('\\n')
         : '';
     await showModalBottomSheet<void>(
       context: context,
