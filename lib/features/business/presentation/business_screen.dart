@@ -49,6 +49,7 @@ class _AurenBusinessScreenState extends State<AurenBusinessScreen>{
      floatingActionButton: FloatingActionButton.extended(onPressed: _create, icon: const Icon(Icons.add), label: const Text('أضف Business')),
    );
  }
+}
 class _Card extends StatelessWidget{final AurenBusiness b;const _Card({required this.b});@override Widget build(BuildContext c)=>Card(child:ListTile(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>AurenBusinessDetailScreen(business:b))),leading:CircleAvatar(backgroundImage:b.imageUrl.isEmpty?null:NetworkImage(b.imageUrl),child:b.imageUrl.isEmpty?const Icon(Icons.storefront_outlined):null),title:Row(children:[Expanded(child:Text(b.name,maxLines:1,overflow:TextOverflow.ellipsis)),if(b.verified)const Icon(Icons.verified,size:17)]),subtitle:Text([b.category,b.city,b.country,b.description].where((x)=>x.isNotEmpty).join(' • ')),trailing:const Icon(Icons.chevron_right)));}
 class AurenBusinessCreateScreen extends StatefulWidget{const AurenBusinessCreateScreen({super.key});@override State<AurenBusinessCreateScreen> createState()=>_AurenBusinessCreateScreenState();}
 class _AurenBusinessCreateScreenState extends State<AurenBusinessCreateScreen>{
