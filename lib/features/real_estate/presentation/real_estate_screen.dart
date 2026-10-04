@@ -123,5 +123,7 @@ class _AurenRealEstateScreenState extends State<AurenRealEstateScreen>{
     );
   }
 
+}
+
 class _PropertyDetail extends StatelessWidget{final AurenProperty p;const _PropertyDetail({required this.p});
  @override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('العقار')),body:ListView(padding:const EdgeInsets.all(16),children:[Text(p.title,style:Theme.of(c).textTheme.headlineSmall),const SizedBox(height:8),Text('${(p.priceMinor/100).toStringAsFixed(0)} ${p.currency}',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),Wrap(spacing:8,children:[Chip(label:Text(p.listingType=='rent'?'إيجار':'بيع')),Chip(label:Text(p.type)),Chip(label:Text('${p.areaSqm} m²')),if(p.verified)const Chip(label:Text('Verified'))]),const SizedBox(height:12),Text(p.description),const SizedBox(height:20),FilledButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد التواصل بخصوص العقار: ${p.title}'))),icon:const Icon(Icons.chat_outlined),label:const Text('تواصل عبر Messenger'))]));}
