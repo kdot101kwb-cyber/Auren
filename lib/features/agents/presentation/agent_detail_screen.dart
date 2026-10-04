@@ -4,8 +4,8 @@ import '../../../core/models/agent_listing.dart';
 import 'agent_reviews_sheet.dart';
 import '../../../services/agents/agent_protocol_repository.dart';
 import '../../../services/agents/agent_plugin_repository.dart';
+import '../../../services/agents/agent_installation_repository.dart';
 import '../../../core/models/agent_message.dart';
-import '../../../services/agents/agent_plugin_repository.dart';
 
 class AgentDetailScreen extends StatefulWidget {
   final AurenAgentListing agent;
