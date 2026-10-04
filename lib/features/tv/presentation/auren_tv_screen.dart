@@ -433,8 +433,15 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     return 'عضو ${uid.substring(0, uid.length > 6 ? 6 : uid.length)}';
   }
 
-  String _watchChatTime(dynamic value) {\n    if (value is! Timestamp) return '';\n    final d = value.toDate().toLocal();\n    final h = d.hour.toString().padLeft(2, '0');\n    final m = d.minute.toString().padLeft(2, '0');\n    return '\${h}:\${m}';\n  }\n\n  void _startWatchTogetherActivityTracking(String roomId) {
-    _watchTogetherActivitySubscription?.cancel();
+  String _watchChatTime(dynamic value) {
+    if (value is! Timestamp) return '';
+    final d = value.toDate().toLocal();
+    final h = d.hour.toString().padLeft(2, '0');
+    final m = d.minute.toString().padLeft(2, '0');
+    return '${h}:${m}';
+  }
+
+  void _startWatchTogetherActivityTracking(String roomId) {
     _watchTogetherActivityInitialized = false;
     _seenWatchActivityIds.clear();
     final service = AurenTvWatchTogetherService.instance;
