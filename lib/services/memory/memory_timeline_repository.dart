@@ -20,7 +20,7 @@ class MemoryTimelineRepository {
   CollectionReference<Map<String, dynamic>> _events(String uid) => _db.collection('users').doc(uid).collection('memory_timeline');
 
   Stream<List<AurenMemoryTimelineEvent>> watch(String uid, {int limit = 100}) => _events(uid)
-      .orderBy('createdAt', descending: true).limit(limit.clamp(1, 200))
+      .orderBy('createdAt', descending: true).limit(limit.clamp(1, 200).toInt())
       .snapshots().map((s) => s.docs.map((d) => AurenMemoryTimelineEvent.fromMap(d.id, d.data())).toList());
 
   Future<void> record({required String uid, required String memoryId, required String key, required String value, required String action}) async {
