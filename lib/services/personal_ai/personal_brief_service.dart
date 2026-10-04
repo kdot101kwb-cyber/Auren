@@ -48,7 +48,7 @@ class PersonalBriefService {
     final memories = results[1] as QuerySnapshot<Map<String, dynamic>>;
 
     final active = goals.docs.where((d) => (d.data()['status']?.toString() ?? 'active') == 'active').toList();
-    final progressValues = active.map((d) => (d.data()['progress'] as num?)?.toInt().clamp(0, 100) ?? 0).toList();
+    final progressValues = active.map((d) => ((d.data()['progress'] as num?)?.toInt() ?? 0).clamp(0, 100)).toList();
     final average = progressValues.isEmpty ? 0 : progressValues.reduce((a, b) => a + b) ~/ progressValues.length;
 
     final priorities = active
