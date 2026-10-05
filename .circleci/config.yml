@@ -8,8 +8,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - flutter-deps-v1-
-            - flutter-deps-v1
+            - flutter-deps-v2-
+            - flutter-deps-v2
       - run:
           name: Flutter version
           command: flutter --version && dart --version
@@ -17,7 +17,7 @@ jobs:
           name: Get dependencies
           command: flutter pub get
       - save_cache:
-          key: flutter-deps-v1-{{ .Branch }}
+          key: flutter-deps-v2-{{ .Branch }}
           paths:
             - ~/.pub-cache
       - run:
@@ -37,10 +37,19 @@ jobs:
             flutter test 2>&1 | tee flutter_test.log
             status=${PIPESTATUS[0]}
             exit $status
+      - run:
+          name: Android build
+          command: |
+            set +e
+            flutter build apk --debug 2>&1 | tee flutter_android_build.log
+            status=${PIPESTATUS[0]}
+            exit $status
       - store_artifacts:
           path: flutter_analyze.log
       - store_artifacts:
           path: flutter_test.log
+      - store_artifacts:
+          path: flutter_android_build.log
 
   functions_tests:
     docker:
@@ -101,6 +110,7 @@ jobs:
           key: plugin-worker-node-v1-{{ .Branch }}
           paths:
             - backend/plugin-worker/node_modules
+
       - run:
           name: Syntax check
           command: cd backend/plugin-worker && node --check src/worker.js
