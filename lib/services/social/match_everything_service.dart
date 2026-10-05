@@ -325,7 +325,7 @@ class AurenIntentSignals {
   });
 
   factory AurenIntentSignals.fromIntent(String? intent) {
-    final n = _normalizeIntent(intent);
+    final n = AurenMatchEverythingService._normalizeIntent(intent);
     Set<String> found(List<String> words) => words
         .map(_normalizeIntent)
         .where(n.contains)
