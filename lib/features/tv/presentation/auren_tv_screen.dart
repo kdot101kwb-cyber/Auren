@@ -831,7 +831,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
               return Card(child: ListTile(
                 leading: g.channel.logo.isEmpty ? const CircleAvatar(child: Icon(Icons.tv)) : CircleAvatar(backgroundImage: NetworkImage(g.channel.logo)),
                 title: Text(g.channel.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text(g.channel.country + ' • ' + ((now ?? '').isEmpty ? 'لا يوجد برنامج الآن' : 'الآن: ' + now) + ((next ?? '').isEmpty ? '' : ' • القادم: ' + next), maxLines: 3, overflow: TextOverflow.ellipsis),
+                subtitle: Text(g.channel.country + ' • ' + ((now?.toString() ?? '').isEmpty ? 'لا يوجد برنامج الآن' : 'الآن: ' + (now?.toString() ?? '')) + ((next?.toString() ?? '').isEmpty ? '' : ' • القادم: ' + (next?.toString() ?? '')), maxLines: 3, overflow: TextOverflow.ellipsis),
                 trailing: const Icon(Icons.play_circle_outline),
                 onTap: () { Navigator.pop(ctx); play(g.channel); },
               ));
@@ -994,7 +994,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
               leading: CircleAvatar(child: Icon(x.state == 'now' ? Icons.play_arrow : Icons.schedule)),
               title: Text(x.title),
               subtitle: Text(time),
-              trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [IconButton(tooltip: 'حفظ البرنامج', onPressed: () async { await AurenTvService.instance.addEpgWatchlist(x); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ البرنامج في EPG.'))); }, icon: const Icon(Icons.bookmark_add_outlined)), FutureBuilder<bool>(future: _hasEpgReminder(x), builder: (context, snap) => IconButton(tooltip: snap.data == true ? 'التذكير مضبوط بالفعل' : 'ضبط تذكير', onPressed: snap.data == true ? null : () async {
+              trailing: Wrap( children: [IconButton(tooltip: 'حفظ البرنامج', onPressed: () async { await AurenTvService.instance.addEpgWatchlist(x); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ البرنامج في EPG.'))); }, icon: const Icon(Icons.bookmark_add_outlined)), FutureBuilder<bool>(future: _hasEpgReminder(x), builder: (context, snap) => IconButton(tooltip: snap.data == true ? 'التذكير مضبوط بالفعل' : 'ضبط تذكير', onPressed: snap.data == true ? null : () async {
                   final before = await showModalBottomSheet<Duration>(context: context, builder: (sheetCtx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
                     const ListTile(title: Text('متى تريد التذكير؟', style: TextStyle(fontWeight: FontWeight.bold))),
                     for (final m in const [5, 10, 15, 30, 60])
@@ -1500,7 +1500,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             leading: Icon(source.type == 'xtream' ? Icons.cloud : Icons.link),
             title: Text(source.name),
             subtitle: Text('${source.type == 'xtream' ? 'Xtream' : 'M3U'} • ${source.enabled ? 'مفعّل' : 'متوقف'}${activeSource?.id == source.id ? ' • نشط' : ''}'),
-            trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [
+            trailing: Wrap( children: [
               IconButton(tooltip: 'اختبار الاتصال', icon: const Icon(Icons.network_check), onPressed: source.enabled ? () => _testSource(source) : null),
               IconButton(tooltip: source.enabled ? 'تعطيل المصدر' : 'تفعيل المصدر', icon: Icon(source.enabled ? Icons.toggle_on : Icons.toggle_off), onPressed: () => _toggleSource(source)),
               IconButton(tooltip: 'جعله افتراضي', icon: const Icon(Icons.star_border), onPressed: source.enabled ? () => _makeDefault(source) : null),
@@ -1846,7 +1846,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 leading: c.logo.isEmpty ? const CircleAvatar(child: Icon(Icons.tv)) : CircleAvatar(backgroundImage: NetworkImage(c.logo)),
                 title: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text('${c.country} • ${c.language} • ${c.category}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [
+                trailing: Wrap( children: [
                   IconButton(tooltip: 'جدول البرامج', onPressed: () => _showSchedule(c), icon: const Icon(Icons.calendar_month_outlined)),
                   IconButton(tooltip: (favorites.contains(c.id) || favorites.contains(_favoriteKey(c))) ? 'إزالة من المفضلة' : 'أضف للمفضلة', onPressed: () => toggleFavorite(c), icon: Icon((favorites.contains(c.id) || favorites.contains(_favoriteKey(c))) ? Icons.star : Icons.star_border)),
                 ]),
