@@ -292,7 +292,473 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
                   children: [
                     const Icon(Icons.auto_awesome),
                     const SizedBox(width: 10),
-                    Expanded(
+                    Expanded(child: Text(action.title, style: Theme.of(context).textTheme.titleLarge)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(action.description),
+                const SizedBox(height: 12),
+                Text('نوع العملية: ' + action.actionType),
+                Text('مستوى الخطورة: ' + action.riskLevel),
+                Text('الموافقة مطلوبة: ' + (action.requiresApproval ? 'نعم' : 'لا')),
+                if (payloadText.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text('ما سيُرسل للتنفيذ:', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 6),
+                  SelectableText(payloadText),
+                ],
+                const SizedBox(height: 18),
+                Text(
+                  pending
+                      ? 'لم يتم تنفيذ أي شيء. راجع التفاصيل ثم اختر موافقة أو رفض.'
+                      : 'تمت الموافقة. التنفيذ لا يبدأ إلا بعد تأكيدك.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                if (pending)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _rejectAction(action);
+                          },
+                          icon: const Icon(Icons.close),
+                          label: const Text('رفض'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _approveAction(action);
+                          },
+                          icon: const Icon(Icons.check),
+                          label: const Text('موافقة'),
+                        ),
+                      ),
+                    ],
+                  )
+                else if (action.status == 'approved')
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _executeAction(action);
+                          },
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('تأكيد التنفيذ'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _cancelAction(action);
+                          },
+                          icon: const Icon(Icons.stop_circle_outlined),
+                          label: const Text('إلغاء الطلب'),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _pendingActionsPanel() {
+    if (!_isAi || _uid == null || _conversationId == null) return const SizedBox.shrink();
+    return StreamBuilder<List<AurenActionRequest>>(
+      stream: _actionRepository.watchOutstandingForConversation(_uid!, _conversationId!),
+      builder: (context, snapshot) {
+        final actions = snapshot.data ?? const <AurenActionRequest>[];
+        return Column(
+          children: [
+            if (actions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Column(
+                  children: actions.take(3).map((action) {
+                    final pending = action.status == 'pending';
+                    return Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => _showActionDetails(action),
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(pending ? Icons.lock_outline : Icons.verified_outlined),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(action.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                  ),
+                                  const Icon(Icons.auto_awesome, size: 20),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(action.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 8),
+                              Text(
+                                pending
+                                    ? 'مقترح من AUREN • لم يُنفذ بعد'
+                                    : 'تمت الموافقة • راجع ثم أكد التنفيذ',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  if (pending) ...[
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () => _rejectAction(action),
+                                        icon: const Icon(Icons.close),
+                                        label: const Text('رفض'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Expanded(
+                                    child: FilledButton.icon(
+                                      onPressed: () => _showActionDetails(action),
+                                      icon: Icon(pending ? Icons.visibility_outlined : Icons.play_arrow),
+                                      label: Text(pending ? 'مراجعة' : 'تنفيذ'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    tooltip: 'إلغاء الطلب',
+                                    onPressed: () => _cancelAction(action),
+                                    icon: const Icon(Icons.stop_circle_outlined),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            _actionHistoryPanel(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _actionHistoryPanel() {
+    if (!_isAi || _uid == null || _conversationId == null) return const SizedBox.shrink();
+    return StreamBuilder<List<AurenActionRequest>>(
+      stream: _actionRepository.watchHistory(_uid!, limit: 20),
+      builder: (context, snapshot) {
+        final history = (snapshot.data ?? const <AurenActionRequest>[])
+            .where((action) => action.conversationId == _conversationId)
+            .take(5)
+            .toList();
+        if (history.isEmpty) return const SizedBox.shrink();
+
+        String statusLabel(String status) {
+          switch (status) {
+            case 'completed': return 'تم التنفيذ بنجاح';
+            case 'failed': return 'تعذر تنفيذ العملية';
+            case 'rejected': return 'تم رفض العملية';
+            case 'expired': return 'انتهت صلاحية الطلب';
+            case 'cancelled': return 'تم إلغاء العملية';
+            case 'executing': return 'جارٍ التنفيذ';
+            default: return status;
+          }
+        }
+
+        IconData statusIcon(String status) {
+          switch (status) {
+            case 'completed': return Icons.check_circle_outline;
+            case 'failed': return Icons.error_outline;
+            case 'rejected': return Icons.cancel_outlined;
+            default: return Icons.history;
+          }
+        }
+
+        String friendlyResult(AurenActionRequest action) {
+          final result = action.result;
+          if (result is Map) {
+            final type = result['type']?.toString();
+            if (type == 'note_created') return 'تم إنشاء الملاحظة بنجاح.';
+            if (type == 'memory_saved') return 'تم حفظ المعلومة في ذاكرة AUREN.';
+            if (type == 'goal_created') return 'تم إنشاء الهدف بنجاح.';
+            if (type == 'message_sent') return 'تم إرسال الرسالة بنجاح.';
+            if (type == 'content_job_created') return 'تم إنشاء مهمة المحتوى وبدأت في AUREN Entertainment.';
+            if (type == 'echo') return 'تم تنفيذ الطلب بنجاح.';
+          }
+          if (result == null || result.toString().trim().isEmpty) return statusLabel(action.status);
+          return result.toString();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Card(
+            child: ExpansionTile(
+              leading: const Icon(Icons.history),
+              title: const Text('سجل AUREN Actions'),
+              subtitle: Text(history.length.toString() + ' عمليات سابقة'),
+              children: history.map((action) {
+                return ListTile(
+                  dense: true,
+                  leading: Icon(statusIcon(action.status)),
+                  title: Text(action.title),
+                  subtitle: Text(
+                    friendlyResult(action),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _messageMenu(AurenMessage message) async {
+    if (_uid == null) return;
+    final canModerate = !message.isAi && message.senderId != _uid;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: const Text('Copy message'),
+              onTap: () => Navigator.pop(context, 'copy'),
+            ),
+            if (canModerate)
+              ListTile(
+                leading: const Icon(Icons.flag_outlined),
+                title: const Text('Report message'),
+                onTap: () => Navigator.pop(context, 'report'),
+              ),
+            if (canModerate)
+              ListTile(
+                leading: const Icon(Icons.block_outlined),
+                title: const Text('Block user'),
+                onTap: () => Navigator.pop(context, 'block'),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || choice == null) return;
+    if (choice == 'copy') {
+      await Clipboard.setData(ClipboardData(text: message.text));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message copied.')),
+        );
+      }
+    } else if (choice == 'report') {
+      await _safetyRepository.report(
+        reporterUid: _uid!,
+        conversationId: _conversationId!,
+        messageId: message.id,
+        reason: 'User reported message',
+      );
+    } else if (choice == 'block') {
+      await _safetyRepository.block(_uid!, message.senderId);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    final uid = _uid;
+    if (uid != null) {
+      _presence.stop(uid);
+      if (_conversationId != null) _typing.setTyping(_conversationId!, uid, false);
+    }
+    _typing.dispose();
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Widget _presenceHeader() {
+    if (_isAi || _otherUid == null) return const SizedBox.shrink();
+    return StreamBuilder<Map<String, dynamic>?>(
+      stream: _presenceService.watch(_otherUid!),
+      builder: (_, snapshot) {
+        final data = snapshot.data;
+        final online = data?['online'] == true;
+        final lastSeen = data?['lastSeen'];
+        String label = online ? 'Online' : 'Offline';
+        if (!online && lastSeen is Timestamp) {
+          final d = DateTime.now().difference(lastSeen.toDate());
+          if (d.inMinutes < 1) label = 'Last seen just now';
+          else if (d.inMinutes < 60) label = 'Last seen ${d.inMinutes}m ago';
+          else if (d.inHours < 24) label = 'Last seen ${d.inHours}h ago';
+        }
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.circle, size: 8, color: online ? Colors.green : Colors.grey),
+            const SizedBox(width: 6),
+            Text(label, style: Theme.of(context).textTheme.labelSmall),
+          ]),
+        );
+      },
+    );
+  }
+
+  Widget _messageStatus(AurenMessage message, DateTime? readAt) {
+    if (_isAi || _uid == null || message.senderId != _uid) return const SizedBox.shrink();
+    final read = readAt != null && !readAt.isBefore(message.createdAt);
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Icon(Icons.done_all, size: 14, color: read ? Theme.of(context).colorScheme.primary : null),
+    );
+  }
+
+  Widget build(BuildContext context) {
+    if (!_initialPromptSent && !_loading && widget.initialPrompt != null) {
+      _initialPromptSent = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _send());
+    }
+
+    if (_loading || _conversationId == null) {
+      if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: AppBar(title: const Text('AUREN Messenger')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.cloud_off, size: 48),
+              const SizedBox(height: 12),
+              Text(_error ?? 'تعذر تجهيز المحادثة.'),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _loading = true;
+                    _error = null;
+                  });
+                  _bootstrap();
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('حاول مرة ثانية'),
+              ),
+            ]),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_conversationTitle),
+        actions: [
+          if (!_isAi)
+            IconButton(
+              tooltip: 'Message safety',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenMessageSafetyScreen()),
+              ),
+              icon: const Icon(Icons.shield_outlined),
+            ),
+          if (!_isAi)
+            IconButton(
+              tooltip: 'Conversation details',
+              onPressed: () async {
+                final conversation = await _conversationRepository.findById(_conversationId!);
+                if (!mounted || conversation == null) return;
+                if (conversation.type == 'group') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AurenGroupDetailsScreen(conversation: conversation),
+                    ),
+                  );
+                } else {
+                  setState(() => _showDetails = !_showDetails);
+                }
+              },
+              icon: const Icon(Icons.info_outline),
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _presenceHeader(),
+          if (_uid != null)
+            AurenAdaptiveProfileSurface(
+              uid: _uid!,
+              context: _isAi
+                  ? AurenProfileContext.unknown
+                  : AurenProfileContext.social,
+              compact: true,
+              intent: _isAi
+                  ? (widget.initialPrompt ?? _conversationTitle)
+                  : 'محادثة وتواصل مع شخص',
+            ),
+          _pendingActionsPanel(),
+          if (_isAi && !_sending && _controller.text.isEmpty && _uid != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 2, 12, 4),
+              child: AurenAdaptiveActionRail(
+                uid: _uid!,
+                context: AurenProfileContext.unknown,
+                intent: widget.initialPrompt ?? _conversationTitle,
+                onPrompt: (prompt) {
+                  _controller.text = prompt;
+                  _controller.selection =
+                      TextSelection.collapsed(offset: prompt.length);
+                  setState(() {});
+                },
+              ),
+            ),
+          if (!_isAi && _otherUid != null)
+            StreamBuilder<bool>(
+              stream: _typing.watchTyping(_conversationId!, _otherUid!),
+              builder: (_, snapshot) => snapshot.data == true
+                  ? const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('يكتب الآن…'),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          if (_showDetails)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Text(
+                'Conversation: ' + _conversationId! +
+                    '\nAI actions require your approval before execution.',
+              ),
+            ),
+          Expanded(
             child: StreamBuilder<DateTime?>(
               stream: _isAi || _otherUid == null
                   ? null
@@ -300,81 +766,80 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
               builder: (context, readSnapshot) {
                 final readAt = readSnapshot.data;
                 return StreamBuilder<List<AurenMessage>>(
-                  stream: _messagesRepository.watchConversation(_conversationId!),
-                  builder: (context, snapshot) {
-                    if (readSnapshot.hasError) {
-                      return Center(child: Text('Could not load read status: ${readSnapshot.error}'));
-                    }
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Could not load messages: ${snapshot.error}'));
-                    }
-                    if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    final messages = snapshot.data!;
-                    if (!_isAi && _uid != null) {
-                      final now = DateTime.now();
-                      final last = _lastReadMarkAt;
-                      if (last == null || now.difference(last) >= const Duration(seconds: 5)) {
-                        _lastReadMarkAt = now;
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            _conversationRepository.markRead(_conversationId!, _uid!);
-                          }
-                        });
-                      }
-                    }
-                    if (messages.isEmpty) {
-                      return Center(
-                        child: Text(_isAi ? 'ابدأ محادثتك مع AUREN AI' : 'ابدأ المحادثة'),
-                      );
-                    }
+              stream: _messagesRepository.watchConversation(_conversationId!),
+              builder: (context, snapshot) {
+                if (readSnapshot.hasError) {
+                  return Center(child: Text('Could not load read status: ' + readSnapshot.error.toString()));
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Could not load messages: ' + snapshot.error.toString()));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final messages = snapshot.data!;
+                // Avoid a Firestore write on every message-stream rebuild.
+                if (!_isAi && _uid != null) {
+                  final now = DateTime.now();
+                  final last = _lastReadMarkAt;
+                  if (last == null || now.difference(last) >= const Duration(seconds: 5)) {
+                    _lastReadMarkAt = now;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_scrollController.hasClients) {
-                        _scrollController.animateTo(
-                          _scrollController.position.maxScrollExtent,
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOut,
-                        );
+                      if (mounted) {
+                        _conversationRepository.markRead(_conversationId!, _uid!);
                       }
                     });
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index];
-                        final mine = !message.isAi && message.senderId == _uid;
-                        return Align(
-                          alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-                              color: mine
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-                            ),
-                            child: GestureDetector(
-                              onLongPress: () => _messageMenu(message),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Flexible(child: Text(message.text)),
-                                  _messageStatus(message, readAt),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                  }
+                }
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Text(_isAi ? 'ابدأ محادثتك مع AUREN AI' : 'ابدأ المحادثة'),
+                  );
+                }
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.animateTo(
+                      _scrollController.position.maxScrollExtent,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                });
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final mine = !message.isAi && message.senderId == _uid;
+                    return Align(
+                      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          color: mine
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.surfaceContainerHighest,
+                        ),
+                        child: GestureDetector(
+                          onLongPress: () => _messageMenu(message),
+                          child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+                            Flexible(child: Text(message.text)),
+                            _messageStatus(message, readAt),
+                          ]),
+                        ),
+                      ),
                     );
                   },
                 );
-              },
-            ),
+                },
+              );
+            },
           ),
           if (_sending) const LinearProgressIndicator(minHeight: 2),
           SafeArea(
