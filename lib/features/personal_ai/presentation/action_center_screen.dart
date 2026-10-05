@@ -100,7 +100,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
               const SizedBox(height: 12),
               Text('الأمر: ' + action.actionType),
               if (action.spendingLimitMinor != null)
-                Text('حد العملية: ' + action.spendingLimitMinor.toString() + ' ' + action.currency),
+                Text('حد العملية: ' + action.spendingLimitMinor.toString() + ' ' + (action.currency ?? 'USD')),
               const SizedBox(height: 12),
               const Text('سيتم التنفيذ الآن بعد موافقتك السابقة.'),
             ],
@@ -199,7 +199,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
                 ),
               const SizedBox(height: 6),
               TextFormField(
-                key: ValueKey('daily-limit-\${dailyLimit ?? 'none'}'),
+                key: ValueKey('daily-limit-${dailyLimit ?? 'none'}'),
                 initialValue: dailyLimit is num ? dailyLimit.toInt().toString() : '',
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
