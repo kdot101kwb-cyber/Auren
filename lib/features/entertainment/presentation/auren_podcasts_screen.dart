@@ -944,7 +944,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                   style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 8),
-                ..._remoteResults.take(12).map((item) => Card(
+                ..._remoteResults.take(12).expand<Widget>((item) => <Widget>[Card(
                   child: ListTile(
                     leading: item['artworkUrl']?.toString().isNotEmpty == true
                         ? CircleAvatar(
@@ -1105,7 +1105,8 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     onTap: episode['audioUrl']?.toString().isEmpty != false
                         ? null
                         : () {
-                            _recordPodcastEvent('play', {'id': _episodeItem(item, episode).id, 'name': _episodeItem(item, episode).title});
+                            final episodeItem = _episodeItem(item, episode);
+                            _recordPodcastEvent('play', {'id': episodeItem.id, 'name': episodeItem.title});
                             Navigator.push(context, MaterialPageRoute(builder: (_) => episode['isVideo'] == true
                             ? AurenPodcastVideoPlayerScreen(
                                 title: episode['title']?.toString() ?? 'Video Podcast',
@@ -1118,6 +1119,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                           },
                   ),
                 )),
+                ]),
                 const SizedBox(height: 14),
               ],
               SizedBox(
