@@ -1,3 +1,25 @@
-import 'package:firebase_auth/firebase_auth.dart';import 'package:flutter/material.dart';import '../../../services/personal_ai/institution_connect_service.dart';import '../../messenger/presentation/messenger_screen.dart';
-class AurenInstitutionConnectScreen extends StatefulWidget{const AurenInstitutionConnectScreen({super.key});@override State<AurenInstitutionConnectScreen> createState()=>_AurenInstitutionConnectScreenState();}
-class _AurenInstitutionConnectScreenState extends State<AurenInstitutionConnectScreen>{final q=TextEditingController();List<AurenInstitutionMatch> items=[];bool loading=false;Future<void> run()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;setState(()=>loading=true);try{final x=await InstitutionConnectService().find(uid,query:q.text);if(mounted)setState(()=>items=x);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر البحث: '+e.toString())));}finally{if(mounted)setState(()=>loading=false);}}@override void dispose(){q.dispose();super.dispose();}@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('Institution Connect')),body:ListView(padding:const EdgeInsets.all(16),children:[const Text('Institution Connect',style:TextStyle(fontSize:26,fontWeight:FontWeight.bold)),const SizedBox(height:6),const Text('اعثر على جهات ومؤسسات عامة مرتبطة بمجالك أو هدفك، ثم ناقش طريقة التواصل مع AUREN.'),const SizedBox(height:16),TextField(controller:q,decoration:const InputDecoration(labelText:'المجال أو الهدف',prefixIcon:Icon(Icons.search)),onSubmitted:(_)=>run()),const SizedBox(height:10),FilledButton.icon(onPressed:loading?null:run,icon:const Icon(Icons.account_balance_outlined),label:Text(loading?'جاري البحث…':'ابحث عن جهة')),const SizedBox(height:12),...items.map((x)=>Card(child:ListTile(title:Text(x.name),subtitle:Text(x.category+' • '+x.city+' • '+x.country+'\n'+x.reason),isThreeLine:true,trailing:const Icon(Icons.chat_outlined),onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'حلّل لي أفضل طريقة للتواصل مع '+x.name+' بخصوص هدفي في '+x.category+'. لا ترسل أو تتواصل مع الجهة بدون موافقتي.'))))) ]));}
+import 'package:flutter/material.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+
+class AurenInstitutionConnectScreen extends StatelessWidget {
+  const AurenInstitutionConnectScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Institution Connect')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Institution Connect', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('هذه الواجهة تعمل الآن ويمكن تطوير منطقها وربطها بالبيانات والخدمات تدريجياً.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
