@@ -22,7 +22,12 @@ jobs:
             - ~/.pub-cache
       - run:
           name: Format check
-          command: dart format --output=none lib test || true
+          command: |
+            dart format --output=none lib test > flutter_format.log 2>&1
+            status=$?
+            echo "flutter_format_exit_code=$status" >> flutter_format.log
+            cat flutter_format.log
+            exit $status
       - run:
           name: Analyze
           command: |
@@ -53,6 +58,8 @@ jobs:
             echo "$status" > /tmp/flutter_android_build_status
             cat flutter_android_build.log
             exit 0
+      - store_artifacts:
+          path: flutter_format.log
       - store_artifacts:
           path: flutter_analyze.log
       - store_artifacts:
