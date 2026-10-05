@@ -73,5 +73,5 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
         isThreeLine:true,
         trailing:(widget.opportunityId!=null)?IconButton(icon:const Icon(Icons.mail_outline),tooltip:'دعوة للفرصة',onPressed:()=>_invite(candidate)):candidate.showContact?IconButton(icon:const Icon(Icons.chat_outlined),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد التواصل مع صاحب هذا الملف بخصوص: ${_query.text.trim()}')))):null,
       ))),
-    ]);
+    ]));
 }
