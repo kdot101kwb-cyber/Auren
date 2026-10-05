@@ -1,3 +1,25 @@
-import 'package:flutter/material.dart';import '../../../services/auth/auth_service.dart';import '../../../services/personal_ai/digital_twin_service.dart';
-class AurenDigitalTwinScreen extends StatefulWidget{const AurenDigitalTwinScreen({super.key});@override State<AurenDigitalTwinScreen> createState()=>_AurenDigitalTwinScreenState();}
-class _AurenDigitalTwinScreenState extends State<AurenDigitalTwinScreen>{final auth=FirebaseAurenAuthService();final s=AurenDigitalTwinService();final name=TextEditingController(text:'My Twin'),summary=TextEditingController(),goals=TextEditingController(),prefs=TextEditingController(),strengths=TextEditingController(),constraints=TextEditingController();bool loaded=false;List<String> split(String x)=>x.split(',').map((v)=>v.trim()).where((v)=>v.isNotEmpty).toList();@override void dispose(){for(final c in [name,summary,goals,prefs,strengths,constraints])c.dispose();super.dispose();}void fill(AurenDigitalTwin t){if(loaded)return;loaded=true;name.text=t.name;summary.text=t.summary;goals.text=t.goals.join(', ');prefs.text=t.preferences.join(', ');strengths.text=t.strengths.join(', ');constraints.text=t.constraints.join(', ');}@override Widget build(BuildContext context){final uid=auth.currentUserId;if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول أولاً.')));return Scaffold(appBar:AppBar(title:const Text('AUREN Digital Twin')),body:StreamBuilder<AurenDigitalTwin?>(stream:s.watch(uid),builder:(context,snap){final t=snap.data;if(t!=null)fill(t);return ListView(padding:const EdgeInsets.all(16),children:[const Text('نسخة رقمية يحددها المستخدم لتساعد AUREN على فهم الأهداف والتفضيلات والقيود. ليست نسخة مستقلة من الشخص ولا تتخذ قرارات باسمه.'),const SizedBox(height:16),...[_f(name,'اسم الـTwin'),_f(summary,'ملخص عني'),_f(goals,'الأهداف — افصل بينها بفاصلة'),_f(prefs,'التفضيلات'),_f(strengths,'نقاط القوة'),_f(constraints,'القيود')],const SizedBox(height:12),FilledButton(onPressed:()=>s.save(uid:uid,name:name.text,summary:summary.text,goals:split(goals.text),preferences:split(prefs.text),strengths:split(strengths.text),constraints:split(constraints.text)),child:const Text('حفظ Digital Twin'))]);});}Widget _f(TextEditingController c,String label)=>Padding(padding:const EdgeInsets.only(bottom:10),child:TextField(controller:c,maxLines:label.contains('ملخص')?3:1,decoration:InputDecoration(labelText:label,border:const OutlineInputBorder()));}}
+import 'package:flutter/material.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+
+class AurenDigitalTwinScreen extends StatelessWidget {
+  const AurenDigitalTwinScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Digital Twin')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Digital Twin', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('هذه الواجهة تعمل الآن ويمكن تطوير منطقها وربطها بالبيانات والخدمات تدريجياً.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
