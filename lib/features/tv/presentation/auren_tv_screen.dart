@@ -1874,12 +1874,12 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                   Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Text(playing?.name ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)))),
                   IconButton(tooltip: 'إغلاق Mini Player', icon: const Icon(Icons.close, size: 18), onPressed: () => setState(() => _pipMode = false)),
                   IconButton(icon: Icon(player!.value.isPlaying ? Icons.pause : Icons.play_arrow, size: 20), onPressed: () async { if (player!.value.isPlaying) { await player!.pause(); } else if (!lowData) { await player!.play(); } if (_watchTogetherRoom != null) await AurenTvWatchTogetherService.instance.sync(_watchTogetherRoom!, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying); if (mounted) setState(() {}); }),
-                ]),
+      ]),
+    ]),
               ]),
             ),
           ),
         ),
-        ]
     ]),
   );
 }
