@@ -14,6 +14,47 @@ class _AurenTalentScreenState extends State<AurenTalentScreen>{final repo=Talent
 AurenAdaptiveActionRail(uid:uid,context:AurenProfileContext.work,intent:'المواهب والمهارات والفرص المهنية',onPrompt:(prompt)=>Navigator.push(c,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:prompt)))),
 const SizedBox(height:8),
 Expanded(child:StreamBuilder<List<AurenTalent>>(stream:repo.watchPublic(query:search.text,skill:skill),builder:(c,s){if(s.hasError)return Center(child:Text('تعذر تحميل المواهب: '+s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());final list=s.data!;if(list.isEmpty)return const Center(child:Text('لا توجد مواهب مطابقة.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:list.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i)=>_card(c,list[i]));}))]));}
-Widget _card(BuildContext c,AurenTalent t)=>Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.person_search)),title:Text(t.displayName),subtitle:Text([t.category,t.city,t.country].where((x)=>x.isNotEmpty).join(' • ')),onTap:()=>showModalBottomSheet(context:c,builder:(_)=>Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[Text(t.displayName,style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text(t.bio),if(t.skills.isNotEmpty)Padding(padding:const EdgeInsets.only(top:12),child:Wrap(spacing:6,children:t.skills.map((x)=>Chip(label:Text(x))).toList())),const SizedBox(height:12),FilledButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'ساعدني أتواصل مع هذه الموهبة: '+t.displayName+'\nالمهارات: '+t.skills.join(', ')))),icon:const Icon(Icons.auto_awesome),label:const Text('AI Connect'))]))));
+Widget _card(BuildContext c, AurenTalent t) {
+  return Card(
+    child: ListTile(
+      leading: const CircleAvatar(child: Icon(Icons.person_search)),
+      title: Text(t.displayName),
+      subtitle: Text([t.category, t.city, t.country].where((x) => x.isNotEmpty).join(' • ')),
+      onTap: () => showModalBottomSheet(
+        context: c,
+        builder: (_) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(t.displayName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(t.bio),
+              if (t.skills.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Wrap(spacing: 6, children: t.skills.map((x) => Chip(label: Text(x))).toList()),
+                ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () => Navigator.push(
+                  c,
+                  MaterialPageRoute(
+                    builder: (_) => MessengerScreen(
+                      initialPrompt: 'ساعدني أتواصل مع هذه الموهبة: ${t.displayName}\nالمهارات: ${t.skills.join(', ')}',
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('AI Connect'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
 Future<void> _create(BuildContext c,String uid)async{final n=TextEditingController(),b=TextEditingController(),s=TextEditingController(),city=TextEditingController(),country=TextEditingController();final ok=await showDialog<bool>(context:c,builder:(ctx)=>AlertDialog(title:const Text('ملف موهبة'),content:SingleChildScrollView(child:Column(children:[TextField(controller:n,decoration:const InputDecoration(labelText:'الاسم')),TextField(controller:b,maxLines:4,decoration:const InputDecoration(labelText:'نبذة')),TextField(controller:s,decoration:const InputDecoration(labelText:'Skills, comma separated')),TextField(controller:city,decoration:const InputDecoration(labelText:'المدينة')),TextField(controller:country,decoration:const InputDecoration(labelText:'الدولة'))])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))]));if(ok==true&&n.text.trim().isNotEmpty)await repo.save(ownerId:uid,displayName:n.text,bio:b.text,category:'General',city:city.text,country:country.text,skills:s.text.split(','));for(final x in[n,b,s,city,country])x.dispose();}
 }
