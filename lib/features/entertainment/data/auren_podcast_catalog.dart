@@ -105,7 +105,7 @@ const aurenPodcastCatalog = <AurenPodcastCatalogItem>[
     description: 'Conversations around entrepreneurship, leadership, ambition and building businesses.',
   ),
   AurenPodcastCatalogItem(
-    name: 'Founder's Story',
+    name: "Founder's Story",
     host: 'Daniel Robbins',
     category: 'Founders & Creators',
     language: 'English',
