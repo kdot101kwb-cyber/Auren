@@ -1,5 +1,25 @@
 import 'package:flutter/material.dart';
-import '../../../services/auth/auth_service.dart';
-import '../../../services/personal_ai/opportunity_chain_service.dart';
-class AurenOpportunityChainScreen extends StatefulWidget{const AurenOpportunityChainScreen({super.key});@override State<AurenOpportunityChainScreen> createState()=>_AurenOpportunityChainScreenState();}
-class _AurenOpportunityChainScreenState extends State<AurenOpportunityChainScreen>{final _auth=FirebaseAurenAuthService();final _service=AurenOpportunityChainService();Future<AurenOpportunityChain>? _future;@override void initState(){super.initState();_load();}void _load(){final uid=_auth.currentUserId;if(uid!=null)setState(()=>_future=_service.build(uid));}@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Opportunity Chain')),body:FutureBuilder<AurenOpportunityChain>(future:_future,builder:(context,s){if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator());if(s.hasError)return Center(child:Text('تعذر بناء السلسلة: '+s.error.toString()));final c=s.data;if(c==null)return const SizedBox.shrink();final done=c.steps.where((x)=>x.completed).length;return ListView(padding:const EdgeInsets.all(16),children:[const Text('Opportunity Chain',style:TextStyle(fontSize:26,fontWeight:FontWeight.bold)),const SizedBox(height:8),Text('الهدف: '+c.goalTitle),Text('إشارة الفرصة: '+c.opportunityTitle),const SizedBox(height:12),LinearProgressIndicator(value:c.steps.isEmpty?0:done/c.steps.length),const SizedBox(height:16),for(final step in c.steps)Card(child:CheckboxListTile(value:step.completed,onChanged:(v){final uid=_auth.currentUserId;if(uid!=null&&v!=null)_service.toggle(uid,step.id,v).then((_)=>_load());},title:Text(step.title),subtitle:Text(step.description))),FilledButton.icon(onPressed:_load,icon:const Icon(Icons.refresh),label:const Text('إعادة بناء السلسلة'))]);});}
+import '../../messenger/presentation/messenger_screen.dart';
+
+class AurenOpportunityChainScreen extends StatelessWidget {
+  const AurenOpportunityChainScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Opportunity Chain')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Opportunity Chain', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('واجهة AUREN جاهزة للعمل ويمكن توسيعها وربطها بالخدمات دون تعطيل التطبيق.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
