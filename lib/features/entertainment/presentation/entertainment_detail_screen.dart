@@ -136,7 +136,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                 )
               else if (item.imageUrl.isNotEmpty)
                 ClipRRect(borderRadius: BorderRadius.circular(20), child: AspectRatio(aspectRatio: 16 / 9, child: Image.network(item.imageUrl, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black12, child: Center(child: Icon(Icons.broken_image_outlined, size: 48)))))
+                  errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black12, child: Center(child: Icon(Icons.broken_image_outlined, size: 48))))))
               else
                 Container(height: 210, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: const LinearGradient(colors: [Color(0xff4527a0), Color(0xff1565c0), Color(0xffad1457)])), child: const Center(child: Icon(Icons.play_circle_outline, size: 72))),
               if (hasPlayableMedia && (_controller == null || !_controller!.value.isInitialized)) ...[
