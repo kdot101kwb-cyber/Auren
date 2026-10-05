@@ -16,3 +16,4 @@ class AurenWomenScreen extends StatelessWidget {
     ]),
   );
 }
+}
