@@ -36,7 +36,7 @@ class _AurenPersonalBriefScreenState extends State<AurenPersonalBriefScreen> {
           Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Row(children: [Icon(Icons.auto_awesome), SizedBox(width: 8), Text('AUREN Personal Brief', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))]),
             const SizedBox(height: 12), Text(_brief!.summary),
-          ])),
+          ]))),
           const SizedBox(height: 12),
           Row(children: [Expanded(child: _stat('Active Goals', _brief!.activeGoals.toString())), const SizedBox(width: 8), Expanded(child: _stat('Progress', '${_brief!.averageProgress}%')), const SizedBox(width: 8), Expanded(child: _stat('Memory', _brief!.enabledMemories.toString()))]),
           const SizedBox(height: 12),
