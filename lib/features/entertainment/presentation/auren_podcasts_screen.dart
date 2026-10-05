@@ -1107,14 +1107,21 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                         : () {
                             final episodeItem = _episodeItem(item, episode);
                             _recordPodcastEvent('play', {'id': episodeItem.id, 'name': episodeItem.title});
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => episode['isVideo'] == true
-                            ? AurenPodcastVideoPlayerScreen(
-                                title: episode['title']?.toString() ?? 'Video Podcast',
-                                videoUrl: episode['audioUrl']?.toString() ?? '',
-                                description: episode['description']?.toString() ?? '',
-                                imageUrl: episode['imageUrl']?.toString() ?? _episodeItem(item, episode).imageUrl,
-                              )
-                            : AurenAudioPlayerScreen(item: _episodeItem(item, episode)))),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => episode['isVideo'] == true
+                                    ? AurenPodcastVideoPlayerScreen(
+                                        title: episode['title']?.toString() ?? 'Video Podcast',
+                                        videoUrl: episode['audioUrl']?.toString() ?? '',
+                                        description: episode['description']?.toString() ?? '',
+                                        imageUrl: episode['imageUrl']?.toString() ??
+                                            _episodeItem(item, episode).imageUrl,
+                                      )
+                                    : AurenAudioPlayerScreen(
+                                        item: _episodeItem(item, episode),
+                                      ),
+                              ),
                             );
                           },
                   ),
