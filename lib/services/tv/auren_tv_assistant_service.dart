@@ -18,8 +18,8 @@ class AurenTvAssistantService {
     if (_hasAny(q, ['تذكير','ذكرني','remind','reminder'])) return const AurenTvAssistantResult(intent: 'reminder', message: 'ابحث عن البرنامج في EPG ثم استخدم زر التذكير لتحديد 5 أو 10 أو 15 أو 30 أو 60 دقيقة قبل البداية.');
     final epg = await AurenTvService.instance.searchEpg(q, source: source, hours: 48);
     final channels = await _channelsFor(q, source);
-    if (epg.isNotEmpty) return AurenTvAssistantResult(intent: 'epg', message: 'لقيت \${epg.length} نتيجة في دليل البرامج خلال 48 ساعة.', programs: epg, channels: channels);
-    if (channels.isNotEmpty) return AurenTvAssistantResult(intent: 'channel', message: 'لقيت \${channels.length} قناة مطابقة لطلبك.', channels: channels);
+    if (epg.isNotEmpty) return AurenTvAssistantResult(intent: 'epg', message: 'لقيت ${epg.length} نتيجة في دليل البرامج خلال 48 ساعة.', programs: epg, channels: channels);
+    if (channels.isNotEmpty) return AurenTvAssistantResult(intent: 'channel', message: 'لقيت ${channels.length} قناة مطابقة لطلبك.', channels: channels);
     return AurenTvAssistantResult(intent: 'search', message: _intentHint(q));
   }
 
@@ -37,7 +37,7 @@ class AurenTvAssistantService {
     final tokens = _tokens(q);
     final scored = <MapEntry<AurenTvChannel, int>>[];
     for (final c in base) {
-      final text = _normalize('\${c.name} \${c.country} \${c.language} \${c.category}');
+      final text = _normalize('${c.name} ${c.country} ${c.language} ${c.category}');
       final score = tokens.fold<int>(0, (sum, token) => text.contains(token) ? sum + (text == token ? 8 : 2) : sum);
       if (score > 0) scored.add(MapEntry(c, score));
     }
