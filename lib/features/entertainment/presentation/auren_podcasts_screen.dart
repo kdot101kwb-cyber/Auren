@@ -1105,15 +1105,15 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     onTap: episode['audioUrl']?.toString().isEmpty != false
                         ? null
                         : () {
-                            _recordPodcastEvent('play', item);
+                            _recordPodcastEvent('play', {'id': episodeItem.id, 'name': episodeItem.title});
                             Navigator.push(context, MaterialPageRoute(builder: (_) => episode['isVideo'] == true
                             ? AurenPodcastVideoPlayerScreen(
                                 title: episode['title']?.toString() ?? 'Video Podcast',
                                 videoUrl: episode['audioUrl']?.toString() ?? '',
                                 description: episode['description']?.toString() ?? '',
-                                imageUrl: episode['imageUrl']?.toString() ?? item['artworkUrl']?.toString() ?? '',
+                                imageUrl: episode['imageUrl']?.toString() ?? episodeItem.imageUrl,
                               )
-                            : AurenAudioPlayerScreen(item: _episodeItem(item, episode)))),
+                            : AurenAudioPlayerScreen(item: episodeItem))),
                             );
                           },
                   ),
