@@ -3,24 +3,35 @@ import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenDigitalTwinScreen extends StatelessWidget {
   const AurenDigitalTwinScreen({super.key});
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Digital Twin')),
-    body: ListView(padding: const EdgeInsets.all(20), children: [
-      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Icon(Icons.auto_awesome, size: 38),
-        const SizedBox(height: 12),
-        Text('Digital Twin', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        const Text('هذه الواجهة تعمل الآن ويمكن تطوير منطقها وربطها بالبيانات والخدمات تدريجياً.'),
-        const SizedBox(height: 16),
-        FilledButton.icon(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
-          icon: const Icon(Icons.auto_awesome),
-          label: const Text('اسأل AUREN'),
+        appBar: AppBar(title: const Text('Digital Twin')),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.auto_awesome, size: 38),
+                    const SizedBox(height: 12),
+                    const Text('Digital Twin', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 8),
+                    const Text('هذه الواجهة تعمل الآن ويمكن تطوير منطقها وربطها بالبيانات والخدمات تدريجياً.'),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+                      icon: const Icon(Icons.auto_awesome),
+                      label: const Text('اسأل AUREN'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-      ])),
-    ]),
-  );
-}
+      );
 }
