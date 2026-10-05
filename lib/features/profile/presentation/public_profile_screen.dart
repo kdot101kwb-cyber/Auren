@@ -323,45 +323,64 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
               stream: safety.watchBlocked(me, widget.profile.uid),
               builder: (context, blockedSnapshot) {
                 if (blockedSnapshot.data == true) {
-                  return const Card(child: ListTile(leading: Icon(Icons.block), title: Text('Profile blocked'), subtitle: Text('Unblock from the top menu to interact again.')));
+                  return const Card(
+                    child: ListTile(
+                      leading: Icon(Icons.block),
+                      title: Text('Profile blocked'),
+                      subtitle: Text('Unblock from the top menu to interact again.'),
+                    ),
+                  );
                 }
-                return Column(children: [
-          FilledButton.tonalIcon(
-              onPressed: messaging ? null : () => _message(me),
-              icon: const Icon(Icons.chat_bubble_outline),
-              label: Text(messaging ? 'Opening…' : 'Message'),
-            ),
-          if (!own && me != null)
-            FilledButton.tonalIcon(
-              onPressed: _askAuren,
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Ask AUREN'),
-            ),          if (!own && me != null)
-            StreamBuilder<AurenProfileMode>(
-              stream: profileModes.watchActiveMode(widget.profile.uid),
-              builder: (context, modeSnapshot) {
-                if (modeSnapshot.data != AurenProfileMode.creator) return const SizedBox.shrink();
-                return FilledButton.icon(onPressed: () => _supportCreator(me), icon: const Icon(Icons.favorite_outline), label: const Text('دعم Creator'));
-              },
-            ),
-          if (!own && me != null)
-            StreamBuilder<bool>(
-              stream: repo.watchFollowing(me, widget.profile.uid),
-              builder: (context, s) {
-                final following = s.data ?? false;
-                return FilledButton.icon(
-                  onPressed: busy ? null : () => _toggle(me, following),
-                  icon: Icon(following ? Icons.person_remove : Icons.person_add),
-                  label: Text(
-                    busy ? 'Updating…' : following ? 'Following' : 'Follow',
-                  ),
+                return Column(
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: messaging ? null : () => _message(me),
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: Text(messaging ? 'Opening…' : 'Message'),
+                    ),
+                    FilledButton.tonalIcon(
+                      onPressed: _askAuren,
+                      icon: const Icon(Icons.auto_awesome),
+                      label: const Text('Ask AUREN'),
+                    ),
+                    StreamBuilder<AurenProfileMode>(
+                      stream: profileModes.watchActiveMode(widget.profile.uid),
+                      builder: (context, modeSnapshot) {
+                        if (modeSnapshot.data != AurenProfileMode.creator) {
+                          return const SizedBox.shrink();
+                        }
+                        return FilledButton.icon(
+                          onPressed: () => _supportCreator(me),
+                          icon: const Icon(Icons.favorite_outline),
+                          label: const Text('دعم Creator'),
+                        );
+                      },
+                    ),
+                    StreamBuilder<bool>(
+                      stream: repo.watchFollowing(me, widget.profile.uid),
+                      builder: (context, snapshot) {
+                        final following = snapshot.data ?? false;
+                        return FilledButton.icon(
+                          onPressed: busy ? null : () => _toggle(me, following),
+                          icon: Icon(
+                            following
+                                ? Icons.person_remove
+                                : Icons.person_add,
+                          ),
+                          label: Text(
+                            busy
+                                ? 'Updating…'
+                                : following
+                                    ? 'Following'
+                                    : 'Follow',
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 );
               },
             ),
-        ],
-      ),
-    );
-  }
 
   Widget _stat(String value, String label) => Column(
         children: [
