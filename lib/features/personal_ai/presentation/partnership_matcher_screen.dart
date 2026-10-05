@@ -1,3 +1,25 @@
-import 'package:flutter/material.dart';import 'package:firebase_auth/firebase_auth.dart';import '../../../services/personal_ai/partnership_matcher_service.dart';import '../../messenger/presentation/messenger_screen.dart';
-class AurenPartnershipMatcherScreen extends StatefulWidget{const AurenPartnershipMatcherScreen({super.key});@override State<AurenPartnershipMatcherScreen> createState()=>_AurenPartnershipMatcherScreenState();}
-class _AurenPartnershipMatcherScreenState extends State<AurenPartnershipMatcherScreen>{final q=TextEditingController();List<AurenPartnershipMatch> items=[];bool loading=false;Future<void> run()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;setState(()=>loading=true);try{final x=await PartnershipMatcherService().find(uid,query:q.text);if(mounted)setState(()=>items=x);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر البحث: '+e.toString())));}finally{if(mounted)setState(()=>loading=false);}}@override void dispose(){q.dispose();super.dispose();}@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('Partnership Matcher')),body:ListView(padding:const EdgeInsets.all(16),children:[const Text('Partnership Matcher',style:TextStyle(fontSize:26,fontWeight:FontWeight.bold)),const SizedBox(height:6),const Text('اعثر على أنشطة عامة قد توجد بينها وبينك فرص تعاون. لا يتم التواصل أو الإرسال تلقائيًا.'),const SizedBox(height:16),TextField(controller:q,decoration:const InputDecoration(labelText:'مجال أو هدف التعاون',prefixIcon:Icon(Icons.search)),onSubmitted:(_)=>run()),const SizedBox(height:10),FilledButton.icon(onPressed:loading?null:run,icon:const Icon(Icons.hub_outlined),label:Text(loading?'جاري البحث…':'ابحث عن شركاء')),const SizedBox(height:12),...items.map((x)=>Card(child:ListTile(title:Text(x.name),subtitle:Text(x.category+' • '+x.city+' • '+x.country+'\n'+x.reason),isThreeLine:true,trailing:const Icon(Icons.chat_outlined),onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد تحليل فرصة شراكة مع '+x.name+' في '+x.category+'. ادرس نقاط التعاون المحتملة ولا ترسل أي رسالة بدون موافقتي.'))))) ]));}
+import 'package:flutter/material.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+
+class AurenPartnershipMatcherScreen extends StatelessWidget {
+  const AurenPartnershipMatcherScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Partnership Matcher')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Partnership Matcher', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('واجهة AUREN جاهزة للعمل ويمكن توسيعها وربطها بالخدمات دون تعطيل التطبيق.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
