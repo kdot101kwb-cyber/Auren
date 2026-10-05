@@ -1,0 +1,102 @@
+name: AUREN CI Deep Diagnostics
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-diagnostics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Capture Flutter environment
+        if: always()
+        run: |
+          flutter --version || true
+          dart --version || true
+          flutter doctor -v || true
+      - name: Pub get
+        run: flutter pub get
+      - name: Format
+        if: always()
+        run: dart format lib test
+      - name: Analyze
+        if: always()
+        run: |
+          flutter analyze 2>&1 | tee flutter-analyze.log
+          exit ${PIPESTATUS[0]}
+      - name: Test
+        if: always()
+        run: |
+          flutter test 2>&1 | tee flutter-test.log
+          exit ${PIPESTATUS[0]}
+      - name: Build APK
+        if: always()
+        run: |
+          flutter build apk --debug 2>&1 | tee flutter-build.log
+          exit ${PIPESTATUS[0]}
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-flutter-deep-diagnostics
+          path: |
+            flutter-analyze.log
+            flutter-test.log
+            flutter-build.log
+          if-no-files-found: warn
+
+  backend-diagnostics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Functions install
+        run: npm install --no-audit --no-fund
+        working-directory: functions
+      - name: Functions tests
+        if: always()
+        run: |
+          npm test 2>&1 | tee functions-test.log
+          exit ${PIPESTATUS[0]}
+        working-directory: functions
+      - name: Action executor tests
+        if: always()
+        run: |
+          npm install --no-audit --no-fund
+          npm test 2>&1 | tee action-executor-test.log
+          exit ${PIPESTATUS[0]}
+        working-directory: backend/action-executor
+      - name: Plugin worker tests
+        if: always()
+        run: |
+          npm install --no-audit --no-fund
+          npm test 2>&1 | tee plugin-worker-test.log
+          exit ${PIPESTATUS[0]}
+        working-directory: backend/plugin-worker
+      - name: Plugin worker image
+        if: always()
+        run: docker build -t auren-plugin-worker:diagnostic backend/plugin-worker 2>&1 | tee plugin-worker-image.log
+      - name: Upload backend diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-backend-deep-diagnostics
+          path: |
+            functions/functions-test.log
+            backend/action-executor/action-executor-test.log
+            backend/plugin-worker/plugin-worker-test.log
+            plugin-worker-image.log
+          if-no-files-found: warn
