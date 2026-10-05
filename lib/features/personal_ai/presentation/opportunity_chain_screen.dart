@@ -23,3 +23,4 @@ class AurenOpportunityChainScreen extends StatelessWidget {
     ]),
   );
 }
+}
