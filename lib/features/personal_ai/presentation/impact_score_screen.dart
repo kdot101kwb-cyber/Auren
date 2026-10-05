@@ -1,8 +1,25 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../../services/personal_ai/impact_score_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
-class AurenImpactScoreScreen extends StatefulWidget{const AurenImpactScoreScreen({super.key});@override State<AurenImpactScoreScreen> createState()=>_AurenImpactScoreScreenState();}
-class _AurenImpactScoreScreenState extends State<AurenImpactScoreScreen>{AurenImpactScore? result;bool loading=false;Future<void> run()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;setState(()=>loading=true);try{final x=await ImpactScoreService().calculate(uid);if(mounted)setState(()=>result=x);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر حساب المؤشر: '+e.toString())));}finally{if(mounted)setState(()=>loading=false);}}
-@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('Impact Score')),body:ListView(padding:const EdgeInsets.all(16),children:[const Text('Impact Score',style:TextStyle(fontSize:26,fontWeight:FontWeight.bold)),const SizedBox(height:8),const Text('مؤشر شخصي مبني على التقدم والإنجازات والذاكرة المفعلة. ليس تقييماً لقيمة الشخص.'),const SizedBox(height:16),FilledButton.icon(onPressed:loading?null:run,icon:const Icon(Icons.insights),label:Text(loading?'جاري الحساب…':'احسب المؤشر')),if(result!=null)...[const SizedBox(height:20),Center(child:Text('${result!.score}/100',style:const TextStyle(fontSize:48,fontWeight:FontWeight.bold))),Center(child:Text(result!.headline,style:const TextStyle(fontSize:18))),const SizedBox(height:16),const Text('نقاط القوة',style:TextStyle(fontWeight:FontWeight.bold)),...result!.strengths.map((x)=>ListTile(leading:const Icon(Icons.check_circle_outline),title:Text(x))),const Text('الخطوات التالية',style:TextStyle(fontWeight:FontWeight.bold)),...result!.actions.map((x)=>ListTile(leading:const Icon(Icons.arrow_forward),title:Text(x))),FilledButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'حلّل لي كيف أرفع تقدمي وتأثيري بناءً على بياناتي الحالية. لا تنفذ أي إجراء بدون موافقتي.'))),icon:const Icon(Icons.chat),label:const Text('حلّل النتيجة مع AUREN AI'))]]));}
-@override void dispose(){super.dispose();}}
+
+class AurenImpactScoreScreen extends StatelessWidget {
+  const AurenImpactScoreScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Impact Score')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Impact Score', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('هذه الواجهة تعمل الآن ويمكن تطوير منطقها وربطها بالبيانات والخدمات تدريجياً.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
