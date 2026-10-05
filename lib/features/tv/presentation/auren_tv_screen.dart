@@ -1879,6 +1879,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             ),
           ),
         ),
+        ]
     ]),
   );
 }
