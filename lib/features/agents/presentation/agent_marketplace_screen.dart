@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../core/models/agent_listing.dart';
 import '../../../services/agents/agent_marketplace_repository.dart';
 import 'agent_detail_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../../services/agents/agent_installation_repository.dart';
 
 class AgentMarketplaceScreen extends StatelessWidget {
   const AgentMarketplaceScreen({super.key});
 
   String _price(AurenAgentListing a) {
     if (a.pricingModel == 'free' || a.amountMinor == 0) return 'مجاني';
-    return '${(a.amountMinor / 100).toStringAsFixed(2)} ${a.currency}';
+    return '\${(a.amountMinor / 100).toStringAsFixed(2)} \${a.currency}';
   }
 
   @override
@@ -34,12 +32,15 @@ class AgentMarketplaceScreen extends StatelessWidget {
                 child: ListTile(
                   leading: const CircleAvatar(child: Icon(Icons.smart_toy_outlined)),
                   title: Text(agent.name),
-                  subtitle: Text('${agent.description}\n${agent.capabilities.join(' • ')}'),
+                  subtitle: Text('\${agent.description}\n\${agent.capabilities.join(' • ')}'),
                   isThreeLine: true,
-                  trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    if (agent.reviewCount > 0) Text('★ ${agent.reputationScore.toStringAsFixed(1)}'),
-                    Text(_price(agent)),
-                  ]),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (agent.reviewCount > 0) Text('★ \${agent.reputationScore.toStringAsFixed(1)}'),
+                      Text(_price(agent)),
+                    ],
+                  ),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AgentDetailScreen(agent: agent))),
                 ),
               );
