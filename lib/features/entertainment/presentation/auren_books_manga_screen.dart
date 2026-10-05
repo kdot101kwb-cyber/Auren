@@ -46,8 +46,30 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
   bool _comicLoading=false; List<Map<String,dynamic>> _comicResults=const [];
   bool _researchLoading=false; List<Map<String,dynamic>> _researchResults=const [];
   Map<String,dynamic>? _graph;
+  bool _unifiedLoading = false;
+  List<Map<String,dynamic>> _unifiedResults = const [];
   Future<void> _searchComics() async { final q=_query.trim(); if(q.length<2)return; setState(()=>_comicLoading=true); try { final r=await FirebaseFunctions.instanceFor(region:'us-central1').httpsCallable('searchAurenComics').call({'query':q,'limit':30}); final d=Map<String,dynamic>.from(r.data as Map); if(mounted)setState(()=>_comicResults=(d['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()); } catch(_){if(mounted)setState(()=>_comicResults=const []);} finally{if(mounted)setState(()=>_comicLoading=false);} }
   Future<void> _searchResearch() async { final q=_query.trim(); if(q.length<2)return; setState(()=>_researchLoading=true); try { final r=await FirebaseFunctions.instanceFor(region:'us-central1').httpsCallable('searchAurenResearch').call({'query':q,'limit':30}); final d=Map<String,dynamic>.from(r.data as Map); if(mounted)setState(()=>_researchResults=(d['results'] as List? ?? const []).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()); } catch(_){if(mounted)setState(()=>_researchResults=const []);} finally{if(mounted)setState(()=>_researchLoading=false);} }
+  Future<void> _searchUnified() async {
+    final q = _query.trim();
+    if (q.length < 2 || _unifiedLoading) return;
+    setState(() => _unifiedLoading = true);
+    try {
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('searchAurenGlobalLibrary').call({'query': q, 'page': 1});
+      final data = Map<String,dynamic>.from(response.data as Map);
+      final rows = (data['results'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String,dynamic>.from(e))
+          .toList();
+      if (mounted) setState(() => _unifiedResults = rows);
+    } catch (_) {
+      if (mounted) setState(() => _unifiedResults = const []);
+    } finally {
+      if (mounted) setState(() => _unifiedLoading = false);
+    }
+  }
+
   Future<void> _loadGraph(Map<String,dynamic> item) async { try { final r=await FirebaseFunctions.instanceFor(region:'us-central1').httpsCallable('getAurenLibraryGraph').call(item); final d=Map<String,dynamic>.from(r.data as Map); if(mounted)setState(()=>_graph=d); } catch(_){} }
 
   Future<void> _loadWorldHeritage() async {
