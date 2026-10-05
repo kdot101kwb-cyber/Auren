@@ -1,3 +1,25 @@
-import 'package:flutter/material.dart';import 'package:firebase_auth/firebase_auth.dart';import '../../../services/personal_ai/calendar_service.dart';
-class AurenCalendarScreen extends StatefulWidget{const AurenCalendarScreen({super.key});@override State<AurenCalendarScreen> createState()=>_S();}
-class _S extends State<AurenCalendarScreen>{final t=TextEditingController(),d=TextEditingController();final s=CalendarService();@override void dispose(){t.dispose();d.dispose();super.dispose();}@override Widget build(BuildContext c){final u=FirebaseAuth.instance.currentUser?.uid;if(u==null)return const Scaffold(body:Center(child:Text('يجب تسجيل الدخول')));return Scaffold(appBar:AppBar(title:const Text('Calendar')),body:StreamBuilder<List<AurenCalendarEvent>>(stream:s.watch(u),builder:(c,x)=>ListView(padding:const EdgeInsets.all(16),children:[TextField(controller:t,decoration:const InputDecoration(labelText:'عنوان الحدث')),TextField(controller:d,decoration:const InputDecoration(labelText:'التاريخ YYYY-MM-DD')),const SizedBox(height:8),FilledButton.icon(onPressed:()async{if(t.text.trim().isNotEmpty&&d.text.trim().isNotEmpty){await s.create(u,t.text,d.text,'08:00');t.clear();d.clear();}},icon:const Icon(Icons.event),label:const Text('إضافة حدث')),const SizedBox(height:12),...((x.data??const[]).map((e)=>Card(child:ListTile(title:Text(e.title),subtitle:Text('${e.date} • ${e.time}'),trailing:IconButton(icon:const Icon(Icons.delete_outline),onPressed:()=>s.delete(u,e.id)))))]));}}
+import 'package:flutter/material.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+
+class AurenCalendarScreen extends StatelessWidget {
+  const AurenCalendarScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Calendar')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Calendar', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('هذه الواجهة تعمل الآن ويمكن تطوير منطقها وربطها بالبيانات والخدمات تدريجياً.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
