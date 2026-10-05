@@ -1,7 +1,18 @@
-import 'package:firebase_auth/firebase_auth.dart'; import 'package:flutter/material.dart';
-import '../../../services/transport/transport_service.dart'; import '../../messenger/presentation/messenger_screen.dart';
-class AurenTransportScreen extends StatefulWidget{const AurenTransportScreen({super.key});@override State<AurenTransportScreen> createState()=>_AurenTransportScreenState();}
-class _AurenTransportScreenState extends State<AurenTransportScreen>{
-Future<void> _request(String uid)async{final p=TextEditingController(),d=TextEditingController();int n=1;String t='standard';await showDialog(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,set)=>AlertDialog(title:const Text('طلب مشوار'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:p,decoration:const InputDecoration(labelText:'من')),TextField(controller:d,decoration:const InputDecoration(labelText:'إلى')),DropdownButtonFormField<String>(value:t,items:const [DropdownMenuItem(value:'standard',child:Text('Standard')),DropdownMenuItem(value:'premium',child:Text('Premium')),DropdownMenuItem(value:'van',child:Text('Van')),DropdownMenuItem(value:'bike',child:Text('Bike'))],onChanged:(v)=>set(()=>t=v??'standard')),TextField(keyboardType:TextInputType.number,onChanged:(v)=>n=int.tryParse(v)??1,decoration:const InputDecoration(labelText:'عدد الركاب'))])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إلغاء')),FilledButton(onPressed:()async{try{await AurenTransportService.instance.requestRide(uid:uid,pickup:p.text,destination:d.text,rideType:t,passengers:n);if(ctx.mounted){Navigator.pop(ctx);ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إرسال طلب المشوار.')));}}catch(e){if(ctx.mounted)ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content:Text(e.toString())));}},child:const Text('اطلب'))]));}
-@override Widget build(BuildContext context){final uid=FirebaseAuth.instance.currentUser?.uid;return Scaffold(appBar:AppBar(title:const Text('AUREN Transport'),actions:[IconButton(icon:const Icon(Icons.auto_awesome),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ساعدني أخطط تنقلي من نقطة الانطلاق إلى الوجهة، مع خيارات النقل المناسبة.'))))]),floatingActionButton:uid==null?null:FloatingActionButton.extended(onPressed:()=>_request(uid),icon:const Icon(Icons.local_taxi),label:const Text('مشوار')),body:uid==null?const Center(child:Text('سجّل الدخول لاستخدام النقل.')):StreamBuilder<List<AurenRideRequest>>(stream:AurenTransportService.instance.watchMyRides(uid),builder:(c,s){if(s.hasError)return const Center(child:Text('تعذر تحميل الرحلات.'));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('لا توجد رحلات بعد.'));return ListView.separated(padding:const EdgeInsets.all(12),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(c,i){final x=s.data![i];return Card(child:ListTile(title:Text(x.destination),subtitle:Text(x.pickup+' • '+x.rideType+' • '+x.passengers.toString()+' راكب\n'+x.status),isThreeLine:true,trailing:x.status=='requested'||x.status=='matched'?IconButton(icon:const Icon(Icons.close),onPressed:()=>AurenTransportService.instance.cancel(uid,x.id)):null));});}));}
+import 'package:flutter/material.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+
+class AurenTransportScreen extends StatelessWidget {
+  const AurenTransportScreen({super.key});
+  @override Widget build(BuildContext context)=>Scaffold(
+    appBar:AppBar(title:const Text('Transport'),actions:[IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ساعدني في Transport داخل AUREN واقترح أفضل الخيارات والخطوات.'))),icon:const Icon(Icons.auto_awesome))]),
+    body:ListView(padding:const EdgeInsets.all(16),children:[
+      Card(child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text('Transport',style:const TextStyle(fontSize:26,fontWeight:FontWeight.w900)),
+        const SizedBox(height:8),
+        const Text('واجهة AUREN الأساسية تعمل الآن. يمكنك استخدام AUREN AI للتخطيط والمقارنة وتحويل احتياجك إلى خطوات عملية.'),
+        const SizedBox(height:16),
+        FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'حلّل احتياجي الآن وقدّم لي الخيارات المناسبة وخطة تنفيذ واضحة.'))),icon:const Icon(Icons.auto_awesome),label:const Text('اسأل AUREN')),
+      ])),
+    ]),
+  );
 }
