@@ -325,7 +325,7 @@ class AurenIntentSignals {
   });
 
   factory AurenIntentSignals.fromIntent(String? intent) {
-    final n = AurenMatchEverythingService._normalizeIntent(intent);
+    final n = AurenIntentSignals._normalizeIntent(intent);
     Set<String> found(List<String> words) => words
         .map(_normalizeIntent)
         .where(n.contains)
@@ -391,7 +391,7 @@ class AurenIntentActionPlan {
 
   factory AurenIntentActionPlan.fromIntent(String? intent) {
     final n = AurenIntentActionPlan._normalizeIntent(intent);
-    bool has(List<String> words) => words.any((word) => n.contains(AurenMatchEverythingService._normalizeIntent(word)));
+    bool has(List<String> words) => words.any((word) => n.contains(AurenIntentSignals._normalizeIntent(word)));
     return AurenIntentActionPlan(
       normalized: n,
       commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر']),
