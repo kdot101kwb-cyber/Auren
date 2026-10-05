@@ -1084,7 +1084,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                           onPressed: () async {
                             final title = episode['title']?.toString() ?? 'Podcast episode';
                             final url = episode['link']?.toString() ?? '';
-                            await Share.share(url.isEmpty ? title : title + '\n' + url)
+                            await Share.share(url.isEmpty ? title : title + '\n' + url);
                             await _recordPodcastEvent('share', {
                               ...item,
                               'id': _episodeItem(item, episode).id,
@@ -1105,15 +1105,15 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                     onTap: episode['audioUrl']?.toString().isEmpty != false
                         ? null
                         : () {
-                            _recordPodcastEvent('play', {'id': episodeItem.id, 'name': episodeItem.title});
+                            _recordPodcastEvent('play', {'id': _episodeItem(item, episode).id, 'name': _episodeItem(item, episode).title});
                             Navigator.push(context, MaterialPageRoute(builder: (_) => episode['isVideo'] == true
                             ? AurenPodcastVideoPlayerScreen(
                                 title: episode['title']?.toString() ?? 'Video Podcast',
                                 videoUrl: episode['audioUrl']?.toString() ?? '',
                                 description: episode['description']?.toString() ?? '',
-                                imageUrl: episode['imageUrl']?.toString() ?? episodeItem.imageUrl,
+                                imageUrl: episode['imageUrl']?.toString() ?? _episodeItem(item, episode).imageUrl,
                               )
-                            : AurenAudioPlayerScreen(item: episodeItem))),
+                            : AurenAudioPlayerScreen(item: _episodeItem(item, episode)))),
                             );
                           },
                   ),
