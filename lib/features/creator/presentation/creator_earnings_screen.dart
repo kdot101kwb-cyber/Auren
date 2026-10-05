@@ -69,7 +69,7 @@ class _AurenCreatorEarningsScreenState extends State<AurenCreatorEarningsScreen>
                 TextField(controller:_destination, maxLength:300, decoration: const InputDecoration(border: OutlineInputBorder(), labelText:'بيانات الاستلام')),
                 const SizedBox(height: 8),
                 SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_sending?null:_withdraw,icon:const Icon(Icons.send_rounded),label:Text(_sending?'جاري الإرسال...':'إرسال طلب السحب'))),
-              ])),
+              ]))),
               const SizedBox(height: 20),
               StreamBuilder<List<Map<String, dynamic>>>(
                 stream: repo.watchCreatorSupportRequests(uid),
