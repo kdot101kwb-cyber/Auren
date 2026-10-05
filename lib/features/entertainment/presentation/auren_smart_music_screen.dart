@@ -191,9 +191,10 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
 
     final now = DateTime.now();
     final hour = now.hour;
-    final effectiveContext = context == 'تلقائي'
+    final effectiveContext = _context == 'تلقائي'
         ? (hour >= 6 && hour < 12 ? 'صباح' : hour >= 21 || hour < 6 ? 'ليل' : 'عمل')
-        : context;
+        
+        : _context;
     final historyIds = AurenMusicPlayerController.instance.history
         .map((item) => item.id)
         .toSet();
@@ -383,8 +384,8 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (_, index) => ChoiceChip(
                     label: Text(contexts[index]),
-                    selected: selectedContext == contexts[index],
-                    onSelected: (_) => setState(() => selectedContext = contexts[index]),
+                    selected: _context == contexts[index],
+                    onSelected: (_) => setState(() => _context = contexts[index]),
                   ),
                 ),
               ),
