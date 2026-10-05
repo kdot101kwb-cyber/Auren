@@ -253,7 +253,7 @@ class _AurenRandomCallScreenState extends State<AurenRandomCallScreen> {
         receivedCandidateIds.add(change.doc.id);
 
         final data = change.doc.data();
-        if (data['senderUid'] == uid || data['candidate'] == null) continue;
+        if (data == null || data['senderUid'] == uid || data['candidate'] == null) continue;
 
         try {
           await pc!.addCandidate(
