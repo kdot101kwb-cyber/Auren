@@ -16,7 +16,7 @@ class _AurenLiveSpectatorScreenState extends State<AurenLiveSpectatorScreen> {
   String? _error;
   String _name(int id) => const {53:'🕵️ Crime Files',54:'⚽ Football Pro',55:'🏀 Basketball Pro',56:'🥊 Boxing Champion',57:'⚔️ Ancient & Modern Wars',58:'🥷 Samurai Legacy',59:'🏎️ AUREN Street Racing'}[id] ?? 'AUREN Game';
   @override void initState() { super.initState(); _sub = _api.watchLobby(widget.lobbyId).listen((v) { if (!mounted) return; setState(() { _lobby = v; _error = null; }); }, onError: (_) { if (mounted) setState(() => _error = 'تعذر تحديث المباراة مباشرة'); }); }
-  @override void dispose() { _poller?.cancel(); super.dispose(); }
+  @override void dispose() { _sub?.cancel(); _poller?.cancel(); super.dispose(); }
   @override Widget build(BuildContext context) {
     final l = _lobby;
     final state = l?['state'] is Map ? Map<String,dynamic>.from(l!['state']) : <String,dynamic>{};
