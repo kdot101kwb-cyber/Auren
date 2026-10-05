@@ -965,7 +965,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                       _loadEpisodes(item);
                     },
                   ),
-                )),
+                ),
                 ...(_episodes[item['id']?.toString()] ?? const <Map<String, dynamic>>[]).map((episode) => Card(
                   margin: const EdgeInsetsDirectional.only(start: 22, top: 4),
                   child: ListTile(
