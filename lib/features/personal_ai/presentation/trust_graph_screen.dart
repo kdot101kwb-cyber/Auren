@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
-import '../../../services/auth/auth_service.dart';
-import '../../../services/personal_ai/trust_graph_service.dart';
-class AurenTrustGraphScreen extends StatefulWidget{const AurenTrustGraphScreen({super.key});@override State<AurenTrustGraphScreen> createState()=>_AurenTrustGraphScreenState();}
-class _AurenTrustGraphScreenState extends State<AurenTrustGraphScreen>{final s=AurenTrustGraphService();final label=TextEditingController();String type='successful_connection';final auth=FirebaseAurenAuthService();
- @override void dispose(){label.dispose();super.dispose();}
- Future<void> _add()async{final uid=auth.currentUserId;if(uid==null||label.text.trim().isEmpty)return;await s.addSignal(uid:uid,type:type,label:label.text);label.clear();if(mounted)setState((){});}
- @override Widget build(BuildContext context){final uid=auth.currentUserId;if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول أولاً.')));return Scaffold(appBar:AppBar(title:const Text('AUREN Trust Graph')),body:StreamBuilder<List<AurenTrustSignal>>(stream:s.watchMySignals(uid),builder:(context,snap){final items=snap.data??const <AurenTrustSignal>[];return ListView(padding:const EdgeInsets.all(16),children:[const Text('خريطة ثقة مبنية على إشارات واضحة وقابلة للمراجعة — بدون Trust Score مخفي.'),const SizedBox(height:16),DropdownButtonFormField<String>(value:type,items:const [DropdownMenuItem(value:'successful_connection',child:Text('Successful connection')),DropdownMenuItem(value:'identity_verified',child:Text('Identity verified')),DropdownMenuItem(value:'positive_review',child:Text('Positive review')),DropdownMenuItem(value:'completed_collaboration',child:Text('Completed collaboration'))],onChanged:(v){if(v!=null)setState(()=>type=v);}),TextField(controller:label,decoration:const InputDecoration(labelText:'وصف الإشارة')),const SizedBox(height:8),FilledButton(onPressed:_add,child:const Text('إضافة إشارة')),const Divider(),...items.map((x)=>ListTile(leading:const Icon(Icons.verified_user_outlined),title:Text(x.label),subtitle:Text(x.type),trailing:IconButton(icon:const Icon(Icons.delete_outline),onPressed:()=>s.removeSignal(uid,x.id))))]);});}}
+import '../../messenger/presentation/messenger_screen.dart';
+
+class AurenTrustGraphScreen extends StatelessWidget {
+  const AurenTrustGraphScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Trust Graph')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Trust Graph', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('واجهة AUREN جاهزة للعمل ويمكن توسيعها وربطها بالخدمات دون تعطيل التطبيق.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
