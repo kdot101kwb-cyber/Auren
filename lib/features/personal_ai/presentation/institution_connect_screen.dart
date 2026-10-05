@@ -23,3 +23,4 @@ class AurenInstitutionConnectScreen extends StatelessWidget {
     ]),
   );
 }
+}
