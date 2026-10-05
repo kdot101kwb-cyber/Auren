@@ -19,7 +19,7 @@ class AurenReverseMarketplaceScreen extends StatelessWidget {
           icon: const Icon(Icons.auto_awesome),
           label: const Text('اسأل AUREN'),
         ),
-      ])),
+      ]))),
     ]),
   );
 }
