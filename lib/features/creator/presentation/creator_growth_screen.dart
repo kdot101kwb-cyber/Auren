@@ -2,11 +2,50 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/creator/creator_growth_repository.dart';
-class AurenCreatorGrowthScreen extends StatefulWidget{const AurenCreatorGrowthScreen({super.key});@override State<AurenCreatorGrowthScreen>createState()=>_AurenCreatorGrowthScreenState();}
-class _AurenCreatorGrowthScreenState extends State<AurenCreatorGrowthScreen>{final r=AurenCreatorGrowthRepository();final t=TextEditingController();String f='post';DateTime? when;String?get uid=>FirebaseAuth.instance.currentUser?.uid;
-@override void dispose(){t.dispose();super.dispose();}
-Future<void> add()async{final u=uid;if(u==null)return;try{await r.addPlan(uid:u,title:t.text,format:f,scheduledAt:when);t.clear();setState(()=>when=null);if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تمت إضافة المحتوى للخطة.')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر الحفظ: '+e.toString())));}}
-void _openAiAssistant([AurenCreatorPlanItem? plan]) { final details = plan == null ? 'لا توجد خطة محددة.' : 'العنوان: '+plan.title+'\nالصيغة: '+plan.format; final prompt = 'أنا Creator داخل AUREN. ساعدني في تطوير الفكرة، Hook، Script، Caption وCTA. '+details; Navigator.of(context).push(MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt, onAiResponse: plan == null ? null : (response) async { try { await r.saveAiDraft(uid: uid!, planId: plan.id, draft: response); if (mounted) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ مسودة AI داخل الخطة.'))); } } catch (_) {} }))); }
-@override Widget build(BuildContext c){final u=uid;if(u==null)return const Scaffold(body:Center(child:Text('Sign in required')));return Scaffold(appBar:AppBar(title:const Text('Creator Growth Engine')),body:ListView(padding:const EdgeInsets.all(16),children:[FutureBuilder<AurenCreatorGrowthSummary>(future:r.summary(u),builder:(c,s){final x=s.data;return Wrap(spacing:8,runSpacing:8,children:[stat('المحتوى',x?.posts??0),stat('الإعجابات',x?.likes??0),stat('التعليقات',x?.comments??0),stat('مجدول',x?.scheduled??0),stat('متوسط',x?.avgLikes.toStringAsFixed(1)??'0.0'),stat('Engagement',x?.engagementRate.toStringAsFixed(1)??'0.0')]);}),const SizedBox(height:12),FutureBuilder<List<AurenCreatorTopContent>>(future:r.topContent(u),builder:(c,s){final a=s.data??const <AurenCreatorTopContent>[];if(a.isEmpty)return const SizedBox.shrink();return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Top Content',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800)),const SizedBox(height:8),...a.map((x)=>ListTile(contentPadding:EdgeInsets.zero,title:Text(x.title,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text('❤️ ${x.likes}  •  💬 ${x.comments}  •  Engagement ${x.engagement}')))])));}),const SizedBox(height:12),Card(child:ListTile(leading:const Icon(Icons.auto_awesome),title:const Text('AI Creator Assistant'),subtitle:const Text('حوّل فكرتك إلى محتوى مع AUREN AI.'),trailing:const Icon(Icons.chevron_right),onTap:()=>_openAiAssistant())),const SizedBox(height:16),Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(children:[const Text('Content Planner',style:TextStyle(fontSize:20,fontWeight:FontWeight.w800)),TextField(controller:t,maxLength:200,decoration:const InputDecoration(border:OutlineInputBorder(),hintText:'شنو المحتوى الجاي؟')),DropdownButtonFormField<String>(value:f,items:const[DropdownMenuItem(value:'post',child:Text('Post')),DropdownMenuItem(value:'short',child:Text('Short')),DropdownMenuItem(value:'video',child:Text('Video')),DropdownMenuItem(value:'live',child:Text('Live')),DropdownMenuItem(value:'audio',child:Text('Audio'))],onChanged:(v)=>setState(()=>f=v??'post')),OutlinedButton(onPressed:()async{final n=DateTime.now();final p=await showDatePicker(context:c,firstDate:n,lastDate:n.add(const Duration(days:365)),initialDate:n);if(p!=null)setState(()=>when=DateTime(p.year,p.month,p.day,12));},child:Text(when==null?'اختيار موعد':'تم اختيار موعد')),FilledButton(onPressed:add,child:const Text('إضافة للخطة'))]))),const SizedBox(height:16),StreamBuilder<List<AurenCreatorPlanItem>>(stream:r.watchPlan(u),builder:(c,s){final a=s.data??const <AurenCreatorPlanItem>[];return Column(children:a.map((x)=>Card(child:ListTile(title:Text(x.title),subtitle:Text(x.format+' • '+x.status+(x.aiDraft.isEmpty?'':' • AI Draft')),trailing:PopupMenuButton<String>(onSelected:(v){if(v=='ai'){_openAiAssistant(x);}else if(v=='publishShort'&&x.aiDraft.isNotEmpty){showDialog(context:c,builder:(_)=>AlertDialog(title:const Text('نشر كـShort؟'),content:const Text('سيتم نشر مسودة AI كـShort داخل AUREN.'),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إلغاء')),FilledButton(onPressed:()async{Navigator.pop(c);try{await r.publishAiDraftAsShort(uid:u,planId:x.id);if(mounted)ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم نشر الـShort.')));}catch(e){if(mounted)ScaffoldMessenger.of(c).showSnackBar(SnackBar(content:Text('تعذر النشر: '+e.toString())));}},child:const Text('نشر'))]));}else if(v=='draft'&&x.aiDraft.isNotEmpty){showDialog(context:c,builder:(_)=>AlertDialog(title:const Text('AI Draft'),content:SingleChildScrollView(child:Text(x.aiDraft)),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('إغلاق')),FilledButton(onPressed:()async{Navigator.pop(c);final ok=await showDialog<bool>(context:c,builder:(_)=>AlertDialog(title:const Text('نشر المحتوى؟'),content:const Text('سيتم إنشاء Post من مسودة AI ونشره في AUREN.'),actions:[TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('نشر'))]));if(ok==true){try{await r.publishAiDraft(uid:u,planId:x.id);if(mounted)ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content:Text('تم نشر الـPost.')));}catch(e){if(mounted)ScaffoldMessenger.of(c).showSnackBar(SnackBar(content:Text('تعذر النشر: '+e.toString())));}}},child:const Text('نشر'))]));}else{r.deletePlan(u,x.id);}},itemBuilder:(_)=>const[PopupMenuItem(value:'ai',child:Text('إنشاء/تحديث بالـAI')),PopupMenuItem(value:'draft',child:Text('عرض AI Draft')),PopupMenuItem(value:'publishShort',child:Text('نشر كـShort')),PopupMenuItem(value:'delete',child:Text('حذف'))])))).toList());})]);}
-Widget stat(String l,dynamic v)=>SizedBox(width:120,child:Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(children:[Text(v.toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),Text(l)]))));
+
+class AurenCreatorGrowthScreen extends StatefulWidget {
+  const AurenCreatorGrowthScreen({super.key});
+  @override State<AurenCreatorGrowthScreen> createState() => _AurenCreatorGrowthScreenState();
+}
+class _AurenCreatorGrowthScreenState extends State<AurenCreatorGrowthScreen> {
+  final _repo = AurenCreatorGrowthRepository();
+  final _title = TextEditingController();
+  String _format = 'post';
+  DateTime? _scheduledAt;
+  String? get _uid => FirebaseAuth.instance.currentUser?.uid;
+  @override void dispose(){_title.dispose();super.dispose();}
+  Future<void> _addPlan() async {
+    final uid=_uid;
+    if(uid==null||_title.text.trim().isEmpty)return;
+    try{await _repo.addPlan(uid:uid,title:_title.text.trim(),format:_format,scheduledAt:_scheduledAt);_title.clear();if(mounted)setState(()=>_scheduledAt=null);}
+    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر الحفظ: $e')));}
+  }
+  void _openAi([AurenCreatorPlanItem? plan]){
+    final prompt=plan==null?'أنا Creator داخل AUREN. ساعدني في تطوير فكرة محتوى وخطة نشر.':'طوّر لي هذه الخطة كـ Creator داخل AUREN: ${plan.title}. الصيغة: ${plan.format}.';
+    Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:prompt)));
+  }
+  @override Widget build(BuildContext context){
+    final uid=_uid;
+    if(uid==null)return const Scaffold(body:Center(child:Text('Sign in required')));
+    return Scaffold(appBar:AppBar(title:const Text('Creator Growth Engine')),body:ListView(padding:const EdgeInsets.all(16),children:[
+      Card(child:ListTile(leading:const Icon(Icons.auto_awesome),title:const Text('Creator AI Assistant'),subtitle:const Text('طوّر أفكارك وخططك مع AUREN AI.'),onTap:_openAi)),
+      const SizedBox(height:12),
+      FutureBuilder<AurenCreatorGrowthSummary>(future:_repo.summary(uid),builder:(context,snap){final x=snap.data;return Wrap(spacing:8,runSpacing:8,children:[_stat('المحتوى',x?.posts??0),_stat('الإعجابات',x?.likes??0),_stat('التعليقات',x?.comments??0),_stat('مجدول',x?.scheduled??0),_stat('Engagement',x?.engagementRate.toStringAsFixed(1)??'0.0')]);}),
+      const SizedBox(height:12),
+      Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(children:[
+        const Align(alignment:AlignmentDirectional.centerStart,child:Text('Content Planner',style:TextStyle(fontSize:20,fontWeight:FontWeight.w800))),
+        const SizedBox(height:10),
+        TextField(controller:_title,decoration:const InputDecoration(border:OutlineInputBorder(),hintText:'شنو المحتوى الجاي؟')),
+        const SizedBox(height:8),
+        DropdownButtonFormField<String>(value:_format,items:const[DropdownMenuItem(value:'post',child:Text('Post')),DropdownMenuItem(value:'short',child:Text('Short')),DropdownMenuItem(value:'video',child:Text('Video')),DropdownMenuItem(value:'live',child:Text('Live')),DropdownMenuItem(value:'audio',child:Text('Audio'))],onChanged:(v)=>setState(()=>_format=v??'post'),decoration:const InputDecoration(border:OutlineInputBorder(),labelText:'Format')),
+        const SizedBox(height:8),
+        OutlinedButton(onPressed:()async{final now=DateTime.now();final picked=await showDatePicker(context:context,firstDate:now,lastDate:now.add(const Duration(days:365)),initialDate:now);if(picked!=null)setState(()=>_scheduledAt=picked);},child:Text(_scheduledAt==null?'اختيار موعد':'تم اختيار موعد')),
+        const SizedBox(height:8),
+        FilledButton(onPressed:_addPlan,child:const Text('إضافة للخطة')),
+      ]))),
+      const SizedBox(height:16),
+      StreamBuilder<List<AurenCreatorPlanItem>>(stream:_repo.watchPlan(uid),builder:(context,snap){final plans=snap.data??const <AurenCreatorPlanItem>[];if(plans.isEmpty)return const Card(child:Padding(padding:EdgeInsets.all(16),child:Text('لا توجد خطط محتوى بعد.')));return Column(children:plans.map((p)=>Card(child:ListTile(title:Text(p.title),subtitle:Text('${p.format} • ${p.status}'),trailing:PopupMenuButton<String>(onSelected:(v)async{if(v=='ai')_openAi(p);if(v=='delete')await _repo.deletePlan(uid,p.id);},itemBuilder:(_)=>const[PopupMenuItem(value:'ai',child:Text('مساعدة AI')),PopupMenuItem(value:'delete',child:Text('حذف'))])))).toList());}),
+    ]));
+  }
+  Widget _stat(String label,dynamic value)=>SizedBox(width:120,child:Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(children:[Text(value.toString(),style:const TextStyle(fontSize:20,fontWeight:FontWeight.w800)),Text(label)]))));
 }
