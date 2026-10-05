@@ -138,7 +138,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     'matchFinished': _lobbyId != null && (_hp <= 0 || _ludoWinner() != null),
   };
 
-  void _applyGameState(Map<String, dynamic> state) {
+  Future<void> _applyGameState(Map<String, dynamic> state) async {
     if (!mounted || state.isEmpty) return;
     setState(() {
       _score = (state['score'] as num?)?.toInt() ?? _score;
