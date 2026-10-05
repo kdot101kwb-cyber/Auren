@@ -16,7 +16,7 @@ class AurenTvAssistantService {
     final q = _normalize(prompt);
     if (q.isEmpty) return const AurenTvAssistantResult(intent: 'help', message: 'اكتب مثلاً: قنوات السودان، أخبار، رياضة، أو ابحث عن برنامج معين.');
     if (_hasAny(q, ['تذكير','ذكرني','remind','reminder'])) return const AurenTvAssistantResult(intent: 'reminder', message: 'ابحث عن البرنامج في EPG ثم استخدم زر التذكير لتحديد 5 أو 10 أو 15 أو 30 أو 60 دقيقة قبل البداية.');
-    final epg = await AurenTvService.instance.searchEpg(q, source: source, hours: 48, limit: 20);
+    final epg = await AurenTvService.instance.searchEpg(q, source: source, hours: 48);
     final channels = await _channelsFor(q, source);
     if (epg.isNotEmpty) return AurenTvAssistantResult(intent: 'epg', message: 'لقيت \${epg.length} نتيجة في دليل البرامج خلال 48 ساعة.', programs: epg, channels: channels);
     if (channels.isNotEmpty) return AurenTvAssistantResult(intent: 'channel', message: 'لقيت \${channels.length} قناة مطابقة لطلبك.', channels: channels);
