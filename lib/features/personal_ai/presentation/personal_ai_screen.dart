@@ -3,6 +3,7 @@ import 'action_center_screen.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/goals/goal_repository.dart';
 import '../../../services/memory/memory_repository.dart';
+import '../../../core/models/goal.dart';
 import 'memory_screen.dart';
 import 'memory_timeline_screen.dart';
 import 'personal_brief_screen.dart';
@@ -73,7 +74,6 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
           StreamBuilder(stream: _goals.watch(uid), builder: (_, s) => _summaryTile(context, Icons.flag_outlined, 'Goals', s.hasData ? '${s.data!.length} أهداف محفوظة' : 'جاري التحميل…', const AurenGoalsScreen())),
           StreamBuilder(stream: _memory.watch(uid), builder: (_, s) => _summaryTile(context, Icons.psychology_outlined, 'Memory', s.hasData ? '${s.data!.where((m) => m.enabled).length} ذكريات مفعّلة' : 'جاري التحميل…', const AurenMemoryScreen())),
           const SizedBox(height: 8),
-          _personalContextCard(context, uid),
           const SizedBox(height: 12),
         ],
         if (uid != null) ...[
@@ -131,10 +131,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.auto_awesome, 'One Prompt', 'قل لـ AUREN ما تريد وسنحوّله إلى خطوات.', const MessengerScreen(initialPrompt: 'حوّل هذا الهدف إلى خطوات عملية ونفّذ ما يحتاج موافقتي.')),
         _tile(context, Icons.radar, 'Opportunity Radar', 'اكتشف فرصًا مرتبطة بأهدافك ومهاراتك.', const AurenOpportunityAiScreen()),
         _tile(context, Icons.gavel_outlined, 'Legal AI', 'افهم المستندات والعقود وأسئلة المراجعة القانونية.', const AurenLegalAiScreen()),
-        _tile(context, Icons.data_saver_on_outlined, 'Data & Offline', 'تحكم في Low Data واعرف كيف يعمل Offline Sync.', const AurenDataSettingsScreen()),
-        _tile(context, Icons.analytics_outlined, 'Business Analytics', 'تابع المشاهدات والحفظ والتقييمات والتواصل لنشاطك.', const AurenBusinessAnalyticsScreen()),
-        _tile(context, Icons.video_library_outlined, 'Creator Studio', 'حوّل الفكرة إلى مسودة محتوى وخطة إنتاج ومراجعة قبل النشر.', const AurenCreatorStudioScreen()),
-        _tile(context, Icons.perm_media_outlined, 'Media Studio', 'اختيار ومعاينة ورفع الصور والفيديو بأمان.', const AurenMediaStudioScreen()),
+
         _tile(context, Icons.hub_outlined, 'Core 5 Context', 'خلّي AUREN يربط أهدافك وPulse وBusiness وMarketplace وCreator.', null, onTap: () => _openCoreFive(context, uid)),
         if (uid != null) _coreFiveBuildCard(context, uid),
         _tile(context, Icons.alt_route_outlined, 'Goal → Content → Opportunity', 'حوّل هدفك إلى محتوى أو منتج أو فرصة Business عبر الوحدات الخمس.', null, onTap: () => _openCoreFive(context, uid)),
@@ -144,26 +141,6 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
   );
   }
 
-
-  Widget _personalContextCard(BuildContext context, String uid) => StreamBuilder<AurenPersonalContext>(
-    stream: PersonalContextRepository().watch(uid),
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return Card(child: ListTile(leading: const Icon(Icons.error_outline), title: const Text('Personal AI Context'), subtitle: const Text('تعذر تحديث السياق الآن. حاول مرة أخرى.'), trailing: IconButton(icon: const Icon(Icons.refresh), onPressed: () => setState(() {}))));
-      }
-      if (!snapshot.hasData) {
-        return const Card(child: Padding(padding: EdgeInsets.all(16), child: Row(children: [SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)), SizedBox(width: 12), Text('جاري تحديث سياق Personal AI…')]));
-      }
-      final data = snapshot.data!;
-      return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [const Icon(Icons.auto_awesome), const SizedBox(width: 8), const Expanded(child: Text('Personal AI Context', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))), Text('\${data.goals.length} أهداف • \${data.memories.length} ذاكرة')]),
-        const SizedBox(height: 8),
-        Text(data.goals.isEmpty ? 'ابدأ بهدف، وAUREN سيستخدمه مع الذاكرة لبناء السياق.' : 'متوسط تقدم أهدافك: \${data.averageProgress}%'),
-        const SizedBox(height: 10),
-        FilledButton.tonalIcon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: data.toPrompt()))), icon: const Icon(Icons.chat_outlined), label: const Text('اسأل AUREN باستخدام سياقي')),
-      ])));
-    },
-  );
 
   Widget _coreFiveNextCard(BuildContext context, String uid) => FutureBuilder<AurenCoreFiveSnapshot>(
     future: AurenCoreFiveRepository().load(uid),
