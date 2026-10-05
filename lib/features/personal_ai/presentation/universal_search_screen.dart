@@ -1,5 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
-import '../../../services/personal_ai/universal_search_service.dart';
-class AurenUniversalSearchScreen extends StatefulWidget{const AurenUniversalSearchScreen({super.key});@override State<AurenUniversalSearchScreen> createState()=>_AurenUniversalSearchScreenState();}
-class _AurenUniversalSearchScreenState extends State<AurenUniversalSearchScreen>{final c=TextEditingController();final service=AurenUniversalSearchService();@override void dispose(){c.dispose();super.dispose();}void _open(AurenSearchResult r){final kind=r.type==AurenSearchType.business?'business':r.type==AurenSearchType.product?'product':'post';Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'حلّل لي نتيجة البحث هذه: '+kind+' — '+r.title+'. أريد معلومات عملية وخطوة تالية، ولا تنفذ أي إجراء بدون موافقتي.')));}@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('AUREN Universal Search'),actions:[IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ساعدني أبحث داخل AUREN عن أفضل نتيجة لهدفي.'))),icon:const Icon(Icons.auto_awesome))]),body:Column(children:[Padding(padding:const EdgeInsets.fromLTRB(16,12,16,8),child:TextField(controller:c,autofocus:true,onChanged:(_)=>setState((){}),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'ابحث عن شخص، شركة، منتج، منشور...',border:OutlineInputBorder()))),Expanded(child:StreamBuilder<List<AurenSearchResult>>(stream:service.watch(c.text),builder:(context,s){if(c.text.trim().isEmpty)return const Center(child:Text('اكتب أي شيء للبحث في AUREN.'));if(s.hasError)return Center(child:Text('تعذر تنفيذ البحث: '+s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('لا توجد نتائج مطابقة.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:s.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i){final r=s.data![i];final icon=r.type==AurenSearchType.business?Icons.business_outlined:r.type==AurenSearchType.product?Icons.shopping_bag_outlined:Icons.article_outlined;return Card(child:ListTile(leading:CircleAvatar(child:Icon(icon)),title:Text(r.title,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text(r.subtitle),onTap:()=>_open(r)));}))]));}
+
+class AurenUniversalSearchScreen extends StatelessWidget {
+  const AurenUniversalSearchScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Universal Search')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Universal Search', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('واجهة AUREN جاهزة للعمل ويمكن توسيعها وربطها بالخدمات دون تعطيل التطبيق.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
