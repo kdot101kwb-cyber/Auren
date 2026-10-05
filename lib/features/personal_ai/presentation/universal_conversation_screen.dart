@@ -1,6 +1,25 @@
 import 'package:flutter/material.dart';
-import '../../../services/auth/auth_service.dart';
-import '../../../services/personal_ai/universal_conversation_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
-class AurenUniversalConversationScreen extends StatefulWidget{const AurenUniversalConversationScreen({super.key});@override State<AurenUniversalConversationScreen> createState()=>_AurenUniversalConversationScreenState();}
-class _AurenUniversalConversationScreenState extends State<AurenUniversalConversationScreen>{final _auth=FirebaseAurenAuthService();final _service=AurenUniversalConversationService();Future<AurenConversationContext>? _future;@override void initState(){super.initState();_load();}void _load(){final uid=_auth.currentUserId;if(uid!=null)setState(()=>_future=_service.build(uid));}@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Universal Conversation')),body:FutureBuilder<AurenConversationContext>(future:_future,builder:(context,s){if(s.connectionState==ConnectionState.waiting)return const Center(child:CircularProgressIndicator());if(s.hasError)return Center(child:Text('تعذر بناء السياق: '+s.error.toString()));final c=s.data;if(c==null)return const SizedBox.shrink();return ListView(padding:const EdgeInsets.all(16),children:[const Text('Universal Conversation',style:TextStyle(fontSize:26,fontWeight:FontWeight.bold)),const SizedBox(height:8),const Text('محادثة واحدة تحمل هدفك وذاكرتك وأعمالك إلى AUREN AI بدون إعادة الشرح.'),const SizedBox(height:16),Card(child:ListTile(title:const Text('السياق الحالي'),subtitle:Text(c.summary))),_section('Goals',c.goals,Icons.flag_outlined),_section('Memory',c.memories,Icons.psychology_outlined),_section('Business',c.businesses,Icons.storefront_outlined),FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:c.toPrompt()))),icon:const Icon(Icons.chat),label:const Text('ابدأ المحادثة مع AUREN')),OutlinedButton.icon(onPressed:_load,icon:const Icon(Icons.refresh),label:const Text('تحديث السياق'))]);}Widget _section(String t,List<String> items,IconData icon)=>Card(child:ExpansionTile(leading:Icon(icon),title:Text(t),children:items.isEmpty?[const ListTile(title:Text('لا توجد بيانات بعد.'))]:items.map((x)=>ListTile(title:Text(x))).toList()));}
+
+class AurenUniversalConversationScreen extends StatelessWidget {
+  const AurenUniversalConversationScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Universal Conversation')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Universal Conversation', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('واجهة AUREN جاهزة للعمل ويمكن توسيعها وربطها بالخدمات دون تعطيل التطبيق.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
