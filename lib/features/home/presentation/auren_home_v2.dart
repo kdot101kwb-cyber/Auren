@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/goals/goal_repository.dart';
-import '../../core/models/goal.dart';
+import '../../../services/goals/goal_repository.dart';
+import '../../../core/models/goal.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../personal_ai/presentation/daily_plan_screen.dart';
@@ -9,7 +9,7 @@ import '../../discover/presentation/discover_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import 'more_screen.dart';
 import 'core_five_screen.dart';
-import '../../services/core/auren_core_five_repository.dart';
+import '../../../services/core/auren_core_five_repository.dart';
 import '../../saved/presentation/saved_center_screen.dart';
 import '../../agents/presentation/auren_work_artifacts_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
