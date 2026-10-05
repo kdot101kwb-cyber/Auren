@@ -169,7 +169,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
       final r = reminders[i - 1]; final start = DateTime.tryParse(r.startIso)?.toLocal(); final diff = start?.difference(DateTime.now());
       final label = start == null ? r.startIso : ((diff!.isNegative ? 'بدأ البرنامج' : diff.inHours > 0 ? 'بعد ${diff.inHours}س ${diff.inMinutes.remainder(60)}د' : 'بعد ${diff.inMinutes} دقيقة') + ' • ${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}');
       final item = AurenTvEpgSearchResult(channelId: r.channelId, title: r.title, startIso: r.startIso, stopIso: r.startIso, state: 'next');
-      return Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.notifications_active_outlined)), title: Text(r.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(label), trailing: Wrap(children: [IconButton(tooltip: 'تعديل التذكير', onPressed: () async { final before = await showModalBottomSheet<Duration>(context: ctx, builder: (s) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [const ListTile(title: Text('تعديل وقت التذكير')), for (final m in const [5, 10, 15, 30, 60]) ListTile(title: Text('قبل $m دقيقة'), onTap: () => Navigator.pop(s, Duration(minutes: m)))]))); if (before == null || !ctx.mounted) return; final ok = await AurenTvService.instance.updateEpgReminder(item, before: before); if (ctx.mounted) { Navigator.pop(ctx); if (ok) await _showEpgReminderCenter(); } }, icon: const Icon(Icons.edit_notifications_outlined)), IconButton(tooltip: 'إلغاء التذكير', onPressed: () async { await AurenTvService.instance.removeEpgReminder(item); if (ctx.mounted) { Navigator.pop(ctx); await _showEpgReminderCenter(); } }, icon: const Icon(Icons.notifications_off_outlined))]));
+      return Card(child: ListTile(leading: const CircleAvatar(child: Icon(Icons.notifications_active_outlined)), title: Text(r.title, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text(label), trailing: Wrap(children: [IconButton(tooltip: 'تعديل التذكير', onPressed: () async { final before = await showModalBottomSheet<Duration>(context: ctx, builder: (s) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [const ListTile(title: Text('تعديل وقت التذكير')), for (final m in const [5, 10, 15, 30, 60]) ListTile(title: Text('قبل $m دقيقة'), onTap: () => Navigator.pop(s, Duration(minutes: m)))]))); if (before == null || !ctx.mounted) return; final ok = await AurenTvService.instance.updateEpgReminder(item, before: before); if (ctx.mounted) { Navigator.pop(ctx); if (ok) await _showEpgReminderCenter(); } }, icon: const Icon(Icons.edit_notifications_outlined)), IconButton(tooltip: 'إلغاء التذكير', onPressed: () async { await AurenTvService.instance.removeEpgReminder(item); if (ctx.mounted) { Navigator.pop(ctx); await _showEpgReminderCenter(); } }, icon: const Icon(Icons.notifications_off_outlined))])));
     }))));
   }
   void _showFloatingReaction(String emoji) {
@@ -346,7 +346,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     _watchTogetherReactionSubscription = service.reactions(roomId).listen((snap) {
       if (!mounted) return;
       for (final doc in snap.docChanges.where((change) => change.type == DocumentChangeType.added)) {
-        final emoji = doc.doc.data()['emoji'] as String?;
+        final emoji = doc.doc.data()?['emoji']?.toString();
         if (emoji != null && emoji.isNotEmpty) _showFloatingReaction(emoji);
       }
     });
@@ -473,8 +473,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         if (!_seenWatchActivityIds.add(doc.id)) continue;
         final data = doc.data();
         final uid = FirebaseAuth.instance.currentUser?.uid;
-        final actor = data['actorUid'] as String?;
-        final type = data['type'] as String? ?? '';
+        final actor = data?['actorUid']?.toString();
+        final type = data?['type']?.toString() ?? '';
         if (actor == null || actor == uid || !{'joined', 'left', 'reconnected'}.contains(type)) continue;
         final label = _watchActivityLabel(type);
         unawaited(service.notifyRoomActivity(
@@ -626,6 +626,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                     );
                   },
                 ),
+              ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(12, 8, 12, MediaQuery.of(ctx).viewInsets.bottom + 8),
                   child: Row(children: [
@@ -1856,7 +1857,6 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           );
         },
       )),
-      ),
       if (_pipMode && player?.value.isInitialized == true)
         Positioned(
           right: 12,
