@@ -374,21 +374,15 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                                     ? 'Following'
                                     : 'Follow',
                           ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              },
-            ),
+        ],
+      ),
+    );
+  
 
   Widget _stat(String value, String label) => Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          Text(label),
-        ],
-      );
+    children: [
+      Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+      Text(label),
+    ],
+  );
 }
