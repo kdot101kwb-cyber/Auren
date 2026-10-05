@@ -60,7 +60,7 @@ class _AurenSupplierActionDraftScreenState extends State<AurenSupplierActionDraf
   }
 
   void _show(String s){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(s)));}
-  Widget _field(String label,TextEditingController c,{int min=1,int max=3,TextInputType? keyboard})=>Padding(padding:const EdgeInsets.only(bottom:12),child:TextField(controller:c,minLines:min,maxLines:max,keyboardType:keyboard,decoration:InputDecoration(labelText:label,border:const OutlineInputBorder()));
+  Widget _field(String label,TextEditingController c,{int min=1,int max=3,TextInputType? keyboard})=>Padding(padding:const EdgeInsets.only(bottom:12),child:TextField(controller:c,minLines:min,maxLines:max,keyboardType:keyboard,decoration:InputDecoration(labelText:label,border:const OutlineInputBorder())));
 
   @override Widget build(BuildContext context){
     return Scaffold(appBar:AppBar(title:Text(_isRfq?'مسودة طلب عرض سعر':'مسودة تواصل')),body:ListView(padding:const EdgeInsets.all(16),children:[
