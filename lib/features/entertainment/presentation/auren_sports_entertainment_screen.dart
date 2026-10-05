@@ -99,10 +99,12 @@ class _LiveButton extends StatelessWidget{
   }
 }
 class _Explorer extends StatelessWidget{
+  static const sports = ['الكل','Football','Basketball','Tennis','Cricket','Baseball','Hockey','Handball','Volleyball','Rugby','MMA','Formula 1','NFL'];
+  static const resources = {'games':'المباريات','leagues':'البطولات','teams':'الفرق','standings':'الترتيب','players':'اللاعبون','team_stats':'إحصائيات الفريق','game_details':'تفاصيل المباراة'};
   final TextEditingController query,country,league,season;final String sport,resource;final bool loading;final ValueChanged<String> onSport,onResource;final Future<void> Function() onSearch;
   const _Explorer({required this.query,required this.country,required this.league,required this.season,required this.sport,required this.resource,required this.loading,required this.onSport,required this.onResource,required this.onSearch});
   @override Widget build(BuildContext context)=>_Section(title:'استكشف',icon:Icons.explore_rounded,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-    TextField(controller:query,decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'فريق، لاعب، مباراة أو بطولة',suffixIcon:query.text.isEmpty?null:IconButton(icon:const Icon(Icons.clear),onPressed:(){query.clear();setState((){});}),border:OutlineInputBorder())),
+    TextField(controller:query,decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'فريق، لاعب، مباراة أو بطولة',suffixIcon:query.text.isEmpty?null:IconButton(icon:const Icon(Icons.clear),onPressed:query.clear),border:OutlineInputBorder())),
     const SizedBox(height:12),const Text('الرياضة',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:8),
     _chips(sports,sport,onSport),const SizedBox(height:14),const Text('المحتوى',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:8),
     _chips(resources.keys.toList(),resource,onResource,resources),const SizedBox(height:12),
