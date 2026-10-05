@@ -33,7 +33,7 @@ class AurenTvAssistantService {
     else if (_hasAny(q, ['أطفال','اطفال','kids','children'])) base = await AurenTvService.instance.loadKids(limit: 100);
     else if (_hasAny(q, ['أنمي','انمي','animation','anime','cartoon'])) base = await AurenTvService.instance.loadAnimation(limit: 100);
     else if (source != null) base = await AurenTvService.instance.loadSource(source, limit: 150);
-    else base = await AurenTvService.instance.load(limit: 250);
+    else base = (await AurenTvService.instance.load()).take(250).toList();
     final tokens = _tokens(q);
     final scored = <MapEntry<AurenTvChannel, int>>[];
     for (final c in base) {
