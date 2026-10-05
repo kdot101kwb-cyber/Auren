@@ -888,6 +888,19 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     LinearProgressIndicator(value: _ludo.fold<int>(0, (a, b) => a + max(0, b)) / 224),
   ])));
 
+  Widget _dominoBoard() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text('Domino • يدك: ${_dominoHand.length} • الطاولة: ${_dominoBoard.length}', style: const TextStyle(fontWeight: FontWeight.w800)),
+    const SizedBox(height: 8),
+    if (_dominoBoard.isNotEmpty) Text(_dominoBoard.join(' • ')),
+    const SizedBox(height: 8),
+    Wrap(spacing: 6, runSpacing: 6, children: [
+      for (var i = 0; i < _dominoHand.length; i++)
+        FilledButton.tonal(onPressed: _isMyTurn ? () => _dominoPlay(i) : null, child: Text(_dominoHand[i])),
+    ]),
+    const SizedBox(height: 8),
+    OutlinedButton(onPressed: _isMyTurn ? _dominoDrawOrPlay : null, child: const Text('اسحب / العب')),
+  ])));
+
   Widget _unoBoard() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text('اللون الحالي: ' + _unoColor + ' • يدك: ' + _unoHand.length.toString() + ' • الخصم: ' + _unoCpu.length.toString()),
     const SizedBox(height: 8), Text('آخر بطاقة: ' + _unoDiscard.last),
