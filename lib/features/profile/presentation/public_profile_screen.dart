@@ -362,27 +362,26 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                         final following = snapshot.data ?? false;
                         return FilledButton.icon(
                           onPressed: busy ? null : () => _toggle(me, following),
-                          icon: Icon(
-                            following
-                                ? Icons.person_remove
-                                : Icons.person_add,
-                          ),
+                          icon: Icon(following ? Icons.person_remove : Icons.person_add),
                           label: Text(
-                            busy
-                                ? 'Updating…'
-                                : following
-                                    ? 'Following'
-                                    : 'Follow',
+                            busy ? 'Updating…' : (following ? 'Following' : 'Follow'),
                           ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
         ],
       ),
     );
-  
+  }
 
   Widget _stat(String value, String label) => Column(
-    children: [
-      Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-      Text(label),
-    ],
-  );
+        children: [
+          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(label),
+        ],
+      );
 }
