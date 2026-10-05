@@ -432,7 +432,7 @@ class _TwentyFortyEightGameState extends State<_TwentyFortyEightGame> {
   @override void initState() { super.initState(); _reset(); }
   void _reset() { _board = List.filled(16, 0); _score = 0; _spawn(); _spawn(); }
   void _spawn() {
-    final empty = [for (var i = 0; i < 16; i++) if (_board[i] == 0)];
+    final empty = [for (var i = 0; i < 16; i++) if (_board[i] == 0) i];
     if (empty.isEmpty) return;
     _board[empty[_rng.nextInt(empty.length)]] = _rng.nextInt(10) == 0 ? 4 : 2;
   }
@@ -582,7 +582,7 @@ class _Auren3DQuickPanel extends StatefulWidget {
 }
 class _Auren3DQuickPanelState extends State<_Auren3DQuickPanel>{
   double _x=0,_y=0; int _score=0;
-  void _move(double x,double y)=>setState(()=>{_x=(_x+x).clamp(-8,8),_y=(_y+y).clamp(-8,8),_score++});
+  void _move(double x, double y) => setState(() { _x = (_x + x).clamp(-8.0, 8.0); _y = (_y + y).clamp(-8.0, 8.0); _score++; });
   @override Widget build(BuildContext context)=>Column(children:[
     SizedBox(height:330,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:CustomPaint(painter:_Auren3DGamePainter(preset:widget.preset,x:_x,y:_y),child:const SizedBox.expand()))),
     const SizedBox(height:10),Text(widget.title+' • نقاط: '+_score.toString(),style:const TextStyle(fontWeight:FontWeight.w800)),
