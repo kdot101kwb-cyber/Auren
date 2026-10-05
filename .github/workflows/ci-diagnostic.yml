@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   runner:
-    runs-on: windows-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Runner smoke test
@@ -19,8 +19,10 @@ jobs:
           uname -a
           node --version
           git --version
+
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Repository smoke test
         run: |
           test -f pubspec.yaml
