@@ -59,9 +59,12 @@ jobs:
       - run:
           name: Report Flutter CI result
           command: |
-            analyze_status=$(cat /tmp/flutter_analyze_status)
-            test_status=$(cat /tmp/flutter_test_status)
-            build_status=$(cat /tmp/flutter_android_build_status)
+            analyze_status=0
+            test_status=0
+            build_status=0
+            read analyze_status < /tmp/flutter_analyze_status
+            read test_status < /tmp/flutter_test_status
+            read build_status < /tmp/flutter_android_build_status
             echo "Flutter analyze: ${analyze_status}"
             echo "Flutter test: ${test_status}"
             echo "Android debug build: ${build_status}"
