@@ -841,6 +841,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
               );
             },
           ),
+        ),
           if (_sending) const LinearProgressIndicator(minHeight: 2),
           SafeArea(
             child: Padding(
