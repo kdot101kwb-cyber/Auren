@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/agent_listing.dart';
+import '../../../core/models/agent_review.dart';
 import '../../../services/agents/agent_review_repository.dart';
 
 class AgentReviewsSheet extends StatefulWidget {
