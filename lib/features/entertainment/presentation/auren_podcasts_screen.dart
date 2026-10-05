@@ -1084,8 +1084,7 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
                           onPressed: () async {
                             final title = episode['title']?.toString() ?? 'Podcast episode';
                             final url = episode['link']?.toString() ?? '';
-                            await Share.share(url.isEmpty ? title : title + '\
-' + url);
+                            await Share.share(url.isEmpty ? title : title + '\n' + url)
                             await _recordPodcastEvent('share', {
                               ...item,
                               'id': _episodeItem(item, episode).id,
