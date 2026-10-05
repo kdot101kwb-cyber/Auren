@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
-import '../../../services/personal_ai/talent_discovery_service.dart';
 
-class AurenTalentDiscoveryScreen extends StatefulWidget { const AurenTalentDiscoveryScreen({super.key}); @override State<AurenTalentDiscoveryScreen> createState()=>_AurenTalentDiscoveryScreenState(); }
-class _AurenTalentDiscoveryScreenState extends State<AurenTalentDiscoveryScreen> {
- final _query=TextEditingController(); String _type='All'; final _service=AurenTalentDiscoveryService(); static const _types=['All','Moment','Idea','Question','Project','Opportunity'];
- @override void dispose(){_query.dispose();super.dispose();}
- void _openTalent(BuildContext context,AurenTalentMatch match){Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد استكشاف هذا الشخص كمواهب محتملة: '+match.profile.displayName+'. الإشارات: '+match.signals.join(', ')+'. ساعدني بصياغة تواصل محترم، ولا ترسل أي رسالة بدون موافقتي.')));}
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('AUREN Talent Scout'),actions:[IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ساعدني أكتشف المواهب المناسبة لهدفي من نشاط AUREN Pulse، واشرح الأدلة الظاهرة فقط.'))),icon:const Icon(Icons.auto_awesome))]),body:Column(children:[Padding(padding:const EdgeInsets.fromLTRB(16,12,16,8),child:TextField(controller:_query,onChanged:(_)=>setState((){}),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'مثلاً: design, football, coding...',border:OutlineInputBorder()))),SizedBox(height:48,child:ListView.separated(padding:const EdgeInsets.symmetric(horizontal:16),scrollDirection:Axis.horizontal,itemCount:_types.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i)=>ChoiceChip(label:Text(_types[i]),selected:_type==_types[i],onSelected:(_)=>setState(()=>_type=_types[i])))),const Padding(padding:EdgeInsets.fromLTRB(16,8,16,10),child:Text('الكشف مبني على النشاط العام الظاهر في Pulse، وليس حكماً على موهبة الشخص.',style:TextStyle(fontSize:12))),Expanded(child:StreamBuilder<List<AurenTalentMatch>>(stream:_service.watch(query:_query.text,type:_type),builder:(context,snapshot){if(snapshot.hasError)return Center(child:Text('تعذر تحميل المواهب: '+snapshot.error.toString()));if(!snapshot.hasData)return const Center(child:CircularProgressIndicator());if(snapshot.data!.isEmpty)return const Center(child:Text('لا توجد نتائج. جرّب كلمة أخرى.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:snapshot.data!.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i){final m=snapshot.data![i];return Card(child:ListTile(leading:CircleAvatar(backgroundImage:m.profile.photoUrl?.isNotEmpty==true?NetworkImage(m.profile.photoUrl!):null,child:m.profile.photoUrl?.isNotEmpty==true?null:const Icon(Icons.person)),title:Text(m.profile.displayName),subtitle:Text(m.signals.isEmpty?'نشاط عام':m.signals.join(' • ')),trailing:Text('${m.score}',style:const TextStyle(fontWeight:FontWeight.bold)),onTap:()=>_openTalent(context,m)));}}))]);
+class AurenTalentDiscoveryScreen extends StatelessWidget {
+  const AurenTalentDiscoveryScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Talent Discovery')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Talent Discovery', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('واجهة AUREN جاهزة للعمل ويمكن توسيعها وربطها بالخدمات دون تعطيل التطبيق.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
 }
