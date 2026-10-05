@@ -30,7 +30,7 @@ class _AurenCoreFiveScreenState extends State<AurenCoreFiveScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     _snapshot = uid == null ? Future.value(const AurenCoreFiveSnapshot(
       activeGoals:0,businesses:0,products:0,creatorDrafts:0,posts:0,
-      goalTitles:[],businessNames:[],productNames:[],draftTitles:[],firstBusinessId:null,firstProductId:null,averageGoalProgress:0,hasGoal:false,hasBusiness:false,hasProduct:false,hasCreatorDraft:false,hasPulse:false,
+      goalTitles:[],businessNames:[],productNames:[],draftTitles:[],firstBusinessId:null,firstProductId:null,averageGoalProgress:0,totalSignals:0,hasGoal:false,hasBusiness:false,hasProduct:false,hasCreatorDraft:false,hasPulse:false,
     )) : AurenCoreFiveRepository().load(uid);
   }
 
