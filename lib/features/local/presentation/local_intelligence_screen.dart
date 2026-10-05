@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../services/local/local_intelligence_service.dart';
-import '../../../core/models/business.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenLocalIntelligenceScreen extends StatefulWidget{
