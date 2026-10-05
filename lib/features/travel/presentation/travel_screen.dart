@@ -16,3 +16,4 @@ class AurenAURENTravelScreen extends StatelessWidget {
     ]),
   );
 }
+}
