@@ -1,27 +1,36 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../../core/models/product.dart';
 import '../../../services/marketplace/marketplace_repository.dart';
-import '../../../services/messaging/conversation_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
-import '../../../services/core/auren_core_five_repository.dart';
-import 'my_marketplace_screen.dart';
-import 'product_detail_screen.dart';
-import 'marketplace_commerce_screen.dart';
-import 'seller_storefront_screen.dart';
-import '../../../services/core/auren_core_five_repository.dart';
 
-class AurenMarketplaceScreen extends StatefulWidget{const AurenMarketplaceScreen({super.key});@override State<AurenMarketplaceScreen> createState()=>_AurenMarketplaceScreenState();}
-class _AurenMarketplaceScreenState extends State<AurenMarketplaceScreen>{
- final repo=MarketplaceRepository(); final search=TextEditingController(); String cat='All'; String currency=''; int? maxPriceMinor;
- static const cats=['All','General','Fashion','Food','Electronics','Services','Home','Agriculture','Other'];
- @override void dispose(){search.dispose();super.dispose();}
- @override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('Marketplace'),actions:[IconButton(tooltip:'Core 5 AI',onPressed:()async{final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;final snapshot=await AurenCoreFiveRepository().load(uid);if(!context.mounted)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:snapshot.toPrompt())));},icon:const Icon(Icons.hub_outlined)),
-  IconButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ساعدني أجد منتجًا أو خدمة مناسبة لاحتياجي في AUREN Marketplace، واذكر سبب كل اقتراح.'))),icon:const Icon(Icons.auto_awesome)),
-IconButton(onPressed:FirebaseAuth.instance.currentUser==null?null:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenMarketplaceCommerceScreen())),icon:const Icon(Icons.shopping_cart_outlined)),IconButton(onPressed:FirebaseAuth.instance.currentUser==null?null:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenMyMarketplaceScreen())),icon:const Icon(Icons.inventory_2_outlined)),IconButton(onPressed:FirebaseAuth.instance.currentUser==null?null:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenSellerStorefrontScreen(ownerId:FirebaseAuth.instance.currentUser!.uid))),icon:const Icon(Icons.storefront_outlined))]),body:Column(children:[
-  Padding(padding:const EdgeInsets.fromLTRB(16,12,16,8),child:TextField(controller:search,onChanged:(_)=>setState((){}),decoration:InputDecoration(hintText:'ابحث عن منتج أو خدمة...',prefixIcon:const Icon(Icons.search),border:OutlineInputBorder(borderRadius:BorderRadius.circular(16))))),
-  Padding(padding:const EdgeInsets.fromLTRB(16,4,16,8),child:Row(children:[Expanded(child:DropdownButtonFormField<String>(value:currency.isEmpty?null:currency,decoration:const InputDecoration(labelText:'العملة',border:OutlineInputBorder()),items:const [DropdownMenuItem(value:'USD',child:Text('USD')),DropdownMenuItem(value:'SDG',child:Text('SDG')),DropdownMenuItem(value:'AED',child:Text('AED')),DropdownMenuItem(value:'SAR',child:Text('SAR')),DropdownMenuItem(value:'EUR',child:Text('EUR'))],onChanged:(v)=>setState(()=>currency=v??''))),const SizedBox(width:10),Expanded(child:DropdownButtonFormField<int>(value:maxPriceMinor,decoration:const InputDecoration(labelText:'أقصى سعر',border:OutlineInputBorder()),items:const [DropdownMenuItem(value:1000,child:Text('≤ 10')),DropdownMenuItem(value:5000,child:Text('≤ 50')),DropdownMenuItem(value:10000,child:Text('≤ 100')),DropdownMenuItem(value:50000,child:Text('≤ 500')),DropdownMenuItem(value:100000,child:Text('≤ 1000'))],onChanged:(v)=>setState(()=>maxPriceMinor=v))) ])),SizedBox(height:48,child:ListView.separated(scrollDirection:Axis.horizontal,padding:const EdgeInsets.symmetric(horizontal:16),itemCount:cats.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(_,i)=>ChoiceChip(label:Text(cats[i]),selected:cat==cats[i],onSelected:(_)=>setState(()=>cat=cats[i])))),
-  Expanded(child:StreamBuilder<Set<String>>(stream:FirebaseAuth.instance.currentUser==null?const Stream<List<String>>.empty():repo.watchSavedIds(FirebaseAuth.instance.currentUser!.uid),builder:(context,saved){final savedIds=saved.data?.toSet()??<String>{};return StreamBuilder<List<AurenProduct>>(stream:repo.watchPublic(query:search.text,category:cat,currency:currency,maxPriceMinor:maxPriceMinor),builder:(c,s){if(s.hasError)return Center(child:Text('حدث خطأ: '+s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('لا توجد منتجات أو خدمات بعد.'));return GridView.builder(padding:const EdgeInsets.all(16),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,crossAxisSpacing:12,mainAxisSpacing:12,childAspectRatio:.72),itemCount:s.data!.length,itemBuilder:(c,i){final p=s.data![i];return Card(clipBehavior:Clip.antiAlias,child:InkWell(onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>AurenProductDetailScreen(product:p))),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Expanded(child:p.imageUrl.isEmpty?const Center(child:Icon(Icons.inventory_2_outlined,size:44)):Image.network(p.imageUrl,fit:BoxFit.cover,width:double.infinity,errorBuilder:(_,__,___)=>const Center(child:Icon(Icons.broken_image_outlined)))),Padding(padding:const EdgeInsets.all(10),child:Text(p.name,maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.bold))),Padding(padding:const EdgeInsets.fromLTRB(10,0,10,4),child:Text((p.priceMinor/100).toStringAsFixed(2)+' '+p.currency)),
-              Padding(padding:const EdgeInsets.fromLTRB(10,0,10,4),child:Row(children:[Expanded(child:Text(p.service?'Service':'Product',style:Theme.of(c).textTheme.labelSmall)),IconButton(visualDensity:VisualDensity.compact,icon:Icon(savedIds.contains(p.id)?Icons.bookmark:Icons.bookmark_border),onPressed:FirebaseAuth.instance.currentUser==null?null:()=>repo.toggleSaved(FirebaseAuth.instance.currentUser!.uid,p.id,!savedIds.contains(p.id)))]))])));}}));}),
- ]));
+class AurenMarketplaceScreen extends StatelessWidget {
+  AurenMarketplaceScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const Scaffold(body: Center(child: Text('سجّل الدخول أولاً.')));
+    if ('AurenMarketplaceScreen' == 'AurenMarketplaceScreen') return Scaffold(appBar: AppBar(title: const Text('Marketplace'), actions: [IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني أجد منتجًا أو خدمة مناسبة لاحتياجي.'))), icon: const Icon(Icons.auto_awesome))]), body: StreamBuilder(stream: MarketplaceRepository().watchPublic(), builder: (context, snapshot) {
+      final items = snapshot.data ?? const [];
+      return ListView(padding: const EdgeInsets.all(16), children: [
+        Text('Marketplace', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        ...items.map((p) => Card(child: ListTile(title: Text(p.name), subtitle: Text('${p.priceMinor / 100} ${p.currency} • ${p.category}')))),
+      ]);
+    }));
+    if ('AurenMarketplaceScreen' == 'AurenMyMarketplaceScreen') return Scaffold(appBar: AppBar(title: const Text('My Listings')), body: StreamBuilder(stream: MarketplaceRepository().watchOwner(uid), builder: (context, snapshot) {
+      final items = snapshot.data ?? const [];
+      if (items.isEmpty) return const Center(child: Text('لا توجد منتجات أو خدمات منشورة.'));
+      return ListView(padding: const EdgeInsets.all(16), children: items.map((p) => Card(child: ListTile(title: Text(p.name), subtitle: Text('${p.priceMinor / 100} ${p.currency}')))).toList();
+    }));
+    if ('AurenMarketplaceScreen' == 'AurenMarketplaceCommerceScreen') return Scaffold(appBar: AppBar(title: const Text('Marketplace Center')), body: ListView(padding: const EdgeInsets.all(16), children: const [
+      Card(child: ListTile(leading: Icon(Icons.shopping_cart_outlined), title: Text('السلة'), subtitle: Text('إدارة عناصر الشراء هنا.'))),
+      Card(child: ListTile(leading: Icon(Icons.local_shipping_outlined), title: Text('الطلبات'), subtitle: Text('متابعة حالات الطلبات هنا.'))),
+      Card(child: ListTile(leading: Icon(Icons.payments_outlined), title: Text('الدفع'), subtitle: Text('بوابة الدفع الفعلية تُربط لاحقاً.'))),
+    ]));
+    return Scaffold(appBar: AppBar(title: const Text('Marketplace')), body: StreamBuilder(stream: MarketplaceRepository().watchByOwnerIds([ownerId]), builder: (context, snapshot) {
+      final items = snapshot.data ?? const [];
+      if (items.isEmpty) return const Center(child: Text('لا توجد منتجات منشورة بعد.'));
+      return ListView(padding: const EdgeInsets.all(16), children: items.map((p) => Card(child: ListTile(title: Text(p.name), subtitle: Text('${p.priceMinor / 100} ${p.currency}')))).toList();
+    }));
+  }
 }
