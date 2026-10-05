@@ -383,8 +383,8 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (_, index) => ChoiceChip(
                     label: Text(contexts[index]),
-                    selected: context == contexts[index],
-                    onSelected: (_) => setState(() => context = contexts[index]),
+                    selected: selectedContext == contexts[index],
+                    onSelected: (_) => setState(() => selectedContext = contexts[index]),
                   ),
                 ),
               ),
