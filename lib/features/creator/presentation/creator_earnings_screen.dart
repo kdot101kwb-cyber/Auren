@@ -138,7 +138,7 @@ class _AurenCreatorEarningsScreenState extends State<AurenCreatorEarningsScreen>
               const SizedBox(height: 20),
               if (items.isEmpty)
                 const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد أرباح مسجلة حتى الآن.'))),
-              else
+              if (items.isNotEmpty)
                 ...items.map((e) => Card(
                   child: ListTile(
                     leading: const Icon(Icons.monetization_on_outlined),
