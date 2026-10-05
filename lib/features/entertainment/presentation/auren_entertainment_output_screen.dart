@@ -150,7 +150,7 @@ class _AurenEntertainmentOutputScreenState
                 : (nestedSubtitleUrls is Map ? nestedSubtitleUrls : null)));
     if (raw is! Map) return const {};
     return raw
-        .map((key, value) => MapEntry(key.toString().toLowerCase(), value.toString()))
+        .entries.map((entry) => MapEntry(entry.key.toString().toLowerCase(), entry.value.toString()))
         .where((entry) => entry.value.trim().isNotEmpty)
         .fold<Map<String, String>>({}, (result, entry) {
           result[entry.key] = entry.value;
