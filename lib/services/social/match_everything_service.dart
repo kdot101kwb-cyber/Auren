@@ -391,7 +391,7 @@ class AurenIntentActionPlan {
 
   factory AurenIntentActionPlan.fromIntent(String? intent) {
     final n = _normalizeIntent(intent);
-    bool has(List<String> words) => words.any((word) => n.contains(_normalizeIntent(word)));
+    bool has(List<String> words) => words.any((word) => n.contains(AurenMatchEverythingService._normalizeIntent(word)));
     return AurenIntentActionPlan(
       normalized: n,
       commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر']),
