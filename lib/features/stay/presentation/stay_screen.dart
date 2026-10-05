@@ -16,3 +16,4 @@ class AurenStayScreen extends StatelessWidget {
     ]),
   );
 }
+}
