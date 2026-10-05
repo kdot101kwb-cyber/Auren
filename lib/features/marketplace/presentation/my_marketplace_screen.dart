@@ -4,7 +4,7 @@ import '../../../services/marketplace/marketplace_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenMyMarketplaceScreen extends StatelessWidget {
-  AurenMyMarketplaceScreen({super.key});
+  const AurenMyMarketplaceScreen({super.key});
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
