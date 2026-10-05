@@ -43,7 +43,8 @@ class AurenNotification {
 }
 
 class NotificationRepository {
-  final FirebaseFirestore _db;
+  final FirebaseFirestore? _firestore;
+  FirebaseFirestore get _db => _firestore ?? FirebaseFirestore.instance;
 
   String _uid(String uid) {
     final value = uid.trim();
@@ -60,11 +61,12 @@ class NotificationRepository {
     }
     return value;
   }
-  NotificationRepository({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+  NotificationRepository({FirebaseFirestore? firestore}) : _firestore = firestore;
 
-  CollectionReference<Map<String, dynamic>> _items(String uid) =>
-      _db.collection('users').doc(_uid(uid)).collection('notifications');
+  CollectionReference<Map<String, dynamic>> _items(String uid) {
+    final validUid = _uid(uid);
+    return _db.collection('users').doc(validUid).collection('notifications');
+  }
 
   Stream<List<AurenNotification>> watch(String uid) => _items(uid)
       .orderBy('createdAt', descending: true)
@@ -77,11 +79,17 @@ class NotificationRepository {
       .snapshots()
       .map((s) => s.size);
 
-  Future<void> markRead(String uid, String id) =>
-      _items(uid).doc(_id(id)).update({'read': true});
+  Future<void> markRead(String uid, String id) {
+    final validUid = _uid(uid);
+    final validId = _id(id);
+    return _items(validUid).doc(validId).update({'read': true});
+  }
 
-  Future<void> markUnread(String uid, String id) =>
-      _items(uid).doc(_id(id)).update({'read': false});
+  Future<void> markUnread(String uid, String id) {
+    final validUid = _uid(uid);
+    final validId = _id(id);
+    return _items(validUid).doc(validId).update({'read': false});
+  }
 
   Future<void> markAllRead(String uid) async {
     final snap = await _items(uid).where('read', isEqualTo: false).get();
