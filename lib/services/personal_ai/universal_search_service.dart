@@ -8,12 +8,15 @@ import '../social/post_repository.dart';
 enum AurenSearchType { business, product, post }
 class AurenSearchResult { final String id,title,subtitle; final AurenSearchType type; const AurenSearchResult({required this.id,required this.title,required this.subtitle,required this.type}); }
 class AurenUniversalSearchService {
- final BusinessRepository businesses; final MarketplaceRepository products; final PostRepository posts;
- AurenUniversalSearchService({BusinessRepository? businesses,MarketplaceRepository? products,PostRepository? posts}):businesses=businesses??BusinessRepository(),products=products??MarketplaceRepository(),posts=posts??PostRepository();
+ final BusinessRepository? _businesses; final MarketplaceRepository? _products; final PostRepository? _posts;
+ AurenUniversalSearchService({BusinessRepository? businesses,MarketplaceRepository? products,PostRepository? posts}):_businesses=businesses,_products=products,_posts=posts;
  Stream<List<AurenSearchResult>> watch(String query) {
    final q = query.trim().toLowerCase();
    if (q.isEmpty) return Stream.value(const <AurenSearchResult>[]);
    final safeQuery = q.length > 80 ? q.substring(0, 80) : q;
+   final businesses = _businesses ?? BusinessRepository();
+   final products = _products ?? MarketplaceRepository();
+   final posts = _posts ?? PostRepository();
    return businesses.watchPublic(query: safeQuery).asyncMap((bs) async {
      final results = await Future.wait([
        products.watchPublic(query: safeQuery).first,
