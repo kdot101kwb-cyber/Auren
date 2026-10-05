@@ -359,7 +359,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                           Text('${episodes.length} حلقة • الحزمة v${data['packageVersion'] ?? 1}'),
                           if (assets.isNotEmpty) ...[
                             const SizedBox(height: 12),
-                            Wrap(spacing: 8, runSpacing: 8, children: assets.map((asset) => Chip(avatar: const Icon(Icons.check_rounded, size: 16), label: Text(_assetLabel(asset))).toList()),
+                            Wrap(spacing: 8, runSpacing: 8, children: assets.map((asset) => Chip(avatar: const Icon(Icons.check_rounded, size: 16), label: Text(_assetLabel(asset)))).toList(),
                           ],
                           const SizedBox(height: 10),
                           ...episodes.take(20).map((episode) {
