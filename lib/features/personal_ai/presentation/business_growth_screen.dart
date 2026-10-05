@@ -1,6 +1,25 @@
 import 'package:flutter/material.dart';
-import '../../../services/auth/auth_service.dart';
-import '../../../services/personal_ai/business_growth_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
-class AurenBusinessGrowthScreen extends StatefulWidget{const AurenBusinessGrowthScreen({super.key});@override State<AurenBusinessGrowthScreen> createState()=>_AurenBusinessGrowthScreenState();}
-class _AurenBusinessGrowthScreenState extends State<AurenBusinessGrowthScreen>{final _auth=FirebaseAurenAuthService();final _service=BusinessGrowthService();AurenGrowthPlan? _plan;bool _loading=false;Future<void> _build()async{final uid=_auth.currentUserId;if(uid==null)return;setState(()=>_loading=true);try{final p=await _service.build(uid);if(mounted)setState(()=>_plan=p);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر بناء خطة النمو: $e')));}finally{if(mounted)setState(()=>_loading=false);}}@override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Business Growth AI')),body:ListView(padding:const EdgeInsets.all(18),children:[const Text('Business Growth AI',style:TextStyle(fontSize:26,fontWeight:FontWeight.bold)),const SizedBox(height:6),const Text('خطة نمو عملية للنشاط التجاري. AUREN يجهز الخطوات والقياس، ولا يرسل رسائل أو ينفذ إجراءً حساسًا بدون موافقة.'),const SizedBox(height:16),FilledButton.icon(onPressed:_loading?null:_build,icon:const Icon(Icons.trending_up),label:Text(_loading?'جاري التحليل…':'ابنِ خطة النمو')),if(_plan!=null)...[const SizedBox(height:18),Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(_plan!.businessName,style:const TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:6),Text(_plan!.objective),const SizedBox(height:14),const Text('خطوات النمو',style:TextStyle(fontWeight:FontWeight.bold)),..._plan!.actions.asMap().entries.map((e)=>ListTile(contentPadding:EdgeInsets.zero,leading:CircleAvatar(radius:14,child:Text('${e.key+1}')),title:Text(e.value))),const SizedBox(height:8),const Text('المقاييس',style:TextStyle(fontWeight:FontWeight.bold)),..._plan!.metrics.map((m)=>ListTile(contentPadding:EdgeInsets.zero,dense:true,leading:const Icon(Icons.analytics_outlined),title:Text(m)))]))),const SizedBox(height:10),FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'حلّل خطة نمو نشاطي التجاري. اقترح فرص عملاء وشراكات وقنوات وصول، ولا تنفذ أي مراسلة أو إجراء بدون موافقتي.')),icon:const Icon(Icons.auto_awesome),label:const Text('حلّلها مع AUREN'))]));}
+
+class AurenBusinessGrowthScreen extends StatelessWidget {
+  const AurenBusinessGrowthScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Business Growth AI')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.auto_awesome, size: 38),
+        const SizedBox(height: 12),
+        Text('Business Growth AI', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        const Text('هذه الواجهة تعمل الآن ويمكن تطوير منطقها وربطها بالبيانات والخدمات تدريجياً.'),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في استخدام هذه الميزة داخل AUREN وحوّل هدفي إلى خطوات عملية.'))),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('اسأل AUREN'),
+        ),
+      ])),
+    ]),
+  );
+}
