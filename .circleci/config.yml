@@ -22,7 +22,7 @@ jobs:
             - ~/.pub-cache
       - run:
           name: Format check
-          command: dart format --output=none lib test || true
+          command: dart format --output=none lib test --set-exit-if-changed
       - run:
           name: Analyze
           command: |
@@ -69,7 +69,15 @@ jobs:
             - functions/node_modules
       - run:
           name: Run Functions tests
-          command: cd functions && npm test
+          command: |
+            cd functions
+            set +e
+            npm test 2>&1 | tee functions_test.log
+            status=${PIPESTATUS[0]}
+            echo "npm_test_exit_code=${status}" >> functions_test.log
+            exit $status
+      - store_artifacts:
+          path: functions/functions_test.log
 
   action_executor_tests:
     docker:
@@ -92,7 +100,15 @@ jobs:
           command: cd backend/action-executor && node --check src/server.js
       - run:
           name: Run tests
-          command: cd backend/action-executor && npm test
+          command: |
+            cd backend/action-executor
+            set +e
+            npm test 2>&1 | tee action_executor_test.log
+            status=${PIPESTATUS[0]}
+            echo "npm_test_exit_code=${status}" >> action_executor_test.log
+            exit $status
+      - store_artifacts:
+          path: backend/action-executor/action_executor_test.log
 
   plugin_worker_tests:
     docker:
@@ -116,7 +132,15 @@ jobs:
           command: cd backend/plugin-worker && node --check src/worker.js
       - run:
           name: Run tests
-          command: cd backend/plugin-worker && npm test
+          command: |
+            cd backend/plugin-worker
+            set +e
+            npm test 2>&1 | tee plugin_worker_test.log
+            status=${PIPESTATUS[0]}
+            echo "npm_test_exit_code=${status}" >> plugin_worker_test.log
+            exit $status
+      - store_artifacts:
+          path: backend/plugin-worker/plugin_worker_test.log
 
   plugin_worker_image:
     docker:
