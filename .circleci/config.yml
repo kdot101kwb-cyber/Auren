@@ -27,28 +27,31 @@ jobs:
           name: Analyze
           command: |
             set +e
-            flutter analyze 2>&1 | tee flutter_analyze.log
-            status=${PIPESTATUS[0]}
-            echo "flutter_analyze_exit_code=${status}" >> flutter_analyze.log
-            echo "${status}" > /tmp/flutter_analyze_status
+            flutter analyze > flutter_analyze.log 2>&1
+            status=$?
+            echo "flutter_analyze_exit_code=$status" >> flutter_analyze.log
+            echo "$status" > /tmp/flutter_analyze_status
+            cat flutter_analyze.log
             exit 0
       - run:
           name: Test
           command: |
             set +e
-            flutter test 2>&1 | tee flutter_test.log
-            status=${PIPESTATUS[0]}
-            echo "flutter_test_exit_code=${status}" >> flutter_test.log
-            echo "${status}" > /tmp/flutter_test_status
+            flutter test > flutter_test.log 2>&1
+            status=$?
+            echo "flutter_test_exit_code=$status" >> flutter_test.log
+            echo "$status" > /tmp/flutter_test_status
+            cat flutter_test.log
             exit 0
       - run:
           name: Android build
           command: |
             set +e
-            flutter build apk --debug 2>&1 | tee flutter_android_build.log
-            status=${PIPESTATUS[0]}
-            echo "flutter_android_build_exit_code=${status}" >> flutter_android_build.log
-            echo "${status}" > /tmp/flutter_android_build_status
+            flutter build apk --debug > flutter_android_build.log 2>&1
+            status=$?
+            echo "flutter_android_build_exit_code=$status" >> flutter_android_build.log
+            echo "$status" > /tmp/flutter_android_build_status
+            cat flutter_android_build.log
             exit 0
       - store_artifacts:
           path: flutter_analyze.log
