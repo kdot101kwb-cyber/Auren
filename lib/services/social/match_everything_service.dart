@@ -390,7 +390,7 @@ class AurenIntentActionPlan {
   });
 
   factory AurenIntentActionPlan.fromIntent(String? intent) {
-    final n = _normalizeIntent(intent);
+    final n = AurenIntentActionPlan._normalizeIntent(intent);
     bool has(List<String> words) => words.any((word) => n.contains(AurenMatchEverythingService._normalizeIntent(word)));
     return AurenIntentActionPlan(
       normalized: n,
@@ -401,6 +401,12 @@ class AurenIntentActionPlan {
       media: has(['فيلم','مسلسل','فيديو','شورت','اغنية','موسيقى','محتوى','شاهد','watch','video','movie','series','music']),
       wantsAction: has(['عايز','اريد','أريد','ابحث','أبحث','جيب','find','need','want','buy','get','open','contact','apply','learn']),
     );
+  }
+
+  static String _normalizeIntent(String? value) {
+    var text = (value ?? '').toLowerCase();
+    text = text.replaceAll(RegExp(r'[\\u064B-\\u065F\\u0670]'), '').replaceAll('أ', 'ا').replaceAll('إ', 'ا').replaceAll('آ', 'ا').replaceAll('ى', 'ي').replaceAll('ة', 'ه').replaceAll('ـ', '');
+    return text.replaceAll(RegExp(r'\\s+'), ' ').trim();
   }
 
   AurenMatchAction actionFor(AurenMatchKind kind) {
