@@ -93,7 +93,7 @@ class _AurenMusicHubState extends State<AurenMusicHubScreen> {
             ],
           );
         },
-          ),
+          )),
           const AurenMiniPlayer(),
         ],
       ),
