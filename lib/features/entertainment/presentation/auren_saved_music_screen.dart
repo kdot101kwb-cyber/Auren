@@ -5,9 +5,14 @@ import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import 'auren_audio_player_screen.dart';
 
-class AurenSavedMusicScreen extends StatelessWidget {
+class AurenSavedMusicScreen extends StatefulWidget {
   const AurenSavedMusicScreen({super.key});
 
+  @override
+  State<AurenSavedMusicScreen> createState() => _AurenSavedMusicScreenState();
+}
+
+class _AurenSavedMusicScreenState extends State<AurenSavedMusicScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
