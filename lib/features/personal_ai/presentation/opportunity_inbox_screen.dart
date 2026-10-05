@@ -23,3 +23,4 @@ class AurenOpportunityInboxScreen extends StatelessWidget {
     ]),
   );
 }
+}
