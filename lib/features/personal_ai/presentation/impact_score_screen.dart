@@ -23,3 +23,4 @@ class AurenImpactScoreScreen extends StatelessWidget {
     ]),
   );
 }
+}
