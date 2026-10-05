@@ -56,7 +56,7 @@ class _AurenGlobalGamingLeaderboardScreenState extends State<AurenGlobalGamingLe
                       final winRate = e['winRate'] ?? 0;
                       return Card(
                         child: ListTile(
-                          leading: CircleAvatar(child: Text('$#rank')),
+                          leading: CircleAvatar(child: Text('#$rank')),
                           title: Text('Player ${e['playerId'] ?? '—'}', maxLines: 1, overflow: TextOverflow.ellipsis),
                           subtitle: Text('⭐ $rating  •  🏆 $wins  •  🎮 $matches  •  🌐 $games'),
                           trailing: Text('$winRate%'),
