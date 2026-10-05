@@ -23,3 +23,4 @@ class AurenLearnByDoingScreen extends StatelessWidget {
     ]),
   );
 }
+}
