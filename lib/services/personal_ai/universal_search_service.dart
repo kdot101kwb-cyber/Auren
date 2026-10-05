@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import '../../core/models/business.dart';
 import '../../core/models/post.dart';
 import '../../core/models/product.dart';
@@ -14,6 +15,7 @@ class AurenUniversalSearchService {
    final q = query.trim().toLowerCase();
    if (q.isEmpty) return Stream.value(const <AurenSearchResult>[]);
    final safeQuery = q.length > 80 ? q.substring(0, 80) : q;
+   if (Firebase.apps.isEmpty) return Stream.value(const <AurenSearchResult>[]);
    final businesses = _businesses ?? BusinessRepository();
    final products = _products ?? MarketplaceRepository();
    final posts = _posts ?? PostRepository();
