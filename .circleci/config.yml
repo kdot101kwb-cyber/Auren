@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   flutter_ci:
     docker:
-      - image: ghcr.io/cirruslabs/flutter:stable
+      - image: ghcr.io/cirruslabs/flutter:3.47.2
     steps:
       - checkout
       - restore_cache:
