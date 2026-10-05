@@ -180,16 +180,16 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
         case 4: return const _HigherLowerGame();
         case 5: return const _WordScrambleGame();
         case 6: return const _TwentyFortyEightGame();
-        case 7: return const _SimonGame();
-        case 8: return const _MathSprintGame();
-        case 9: return const _NumberGuessGame();
-        case 10: return const _CoinFlipGame();
-        case 11: return const _TargetTapGame();
-        case 12: return const _HangmanGame();
-        case 13: return const _WordChainGame();
-        case 14: return const _ColorMatchGame();
-        case 15: return const _OddOneOutGame();
-        case 16: return const _QuickCountGame();
+        case 7: return const _ComingSoonGame(title: 'Simon');
+        case 8: return const _ComingSoonGame(title: 'Math Sprint');
+        case 9: return const _ComingSoonGame(title: 'Number Guess');
+        case 10: return const _ComingSoonGame(title: 'Coin Flip');
+        case 11: return const _ComingSoonGame(title: 'Target Tap');
+        case 12: return const _ComingSoonGame(title: 'Hangman');
+        case 13: return const _ComingSoonGame(title: 'Word Chain');
+        case 14: return const _ComingSoonGame(title: 'Color Match');
+        case 15: return const _ComingSoonGame(title: 'Odd One Out');
+        case 16: return const _ComingSoonGame(title: 'Quick Count');
         default: return const _MemoryGame();
       }
     }
@@ -360,7 +360,7 @@ class _HigherLowerGame extends StatefulWidget {
   const _HigherLowerGame();
   @override State<_HigherLowerGame> createState() => _HigherLowerGameState();
 }
-class _HigherLowerGameState extends State<_HigherLowerGameState> {
+class _HigherLowerGameState extends State<_HigherLowerGame> {
   final _rng = Random();
   int _current = 50, _next = 0, _score = 0, _best = 0;
   void _guess(bool higher) {
@@ -506,9 +506,9 @@ class _CategoryGamesPanel extends StatefulWidget {
   @override State<_CategoryGamesPanel> createState()=>_CategoryGamesPanelState();
 }
 class _CategoryGamesPanelState extends State<_CategoryGamesPanel>{
-  final _rng=Random(); late int _game; int _score=0,_streak=0,_a=0,_b=0,_target=0; List<int> _memory=[]; String _message='ابدأ!';
+  final _rng=Random(); late int _game; int _score=0,_streak=0,_a=0,_b=0,_target=0; List<int> _memorySequence=[]; String _message='ابدأ!';
   @override void initState(){super.initState();_game=widget.initialIndex;_newRound();}
-  void _newRound(){_a=1+_rng.nextInt(9);_b=1+_rng.nextInt(9);_target=1+_rng.nextInt(9);_memory=List.generate(6,(_)=>_rng.nextInt(4));_message='اختبر نفسك';}
+  void _newRound(){_a=1+_rng.nextInt(9);_b=1+_rng.nextInt(9);_target=1+_rng.nextInt(9);_memorySequence=List.generate(6,(_)=>_rng.nextInt(4));_message='اختبر نفسك';}
   void _hit(bool ok){setState((){if(ok){_score++;_streak++;_message='ممتاز! 🔥';}else{_streak=0;_message='حاول مرة أخرى';}_newRound();});}
   @override Widget build(BuildContext context){
     final names=['Arena Duel','Punch Rush','Shield Block','Archer Aim','Battle Reflex','Penalty King','Hoops','Sprint','Tennis Rally','Cycling','Logic Grid','Number Matrix','Strategy','Pattern Logic','Code Breaker','Memory Match+','Sequence Recall','Color Memory','Pair Recall','Flash Memory','AUREN Arena'];
@@ -522,7 +522,7 @@ class _CategoryGamesPanelState extends State<_CategoryGamesPanel>{
   Widget _sport(){final s=_game-5;final l=s==0?['يسار','وسط','يمين']:s==1?['رمي بعيد','رمي متوسط','رمي قريب']:s==2?['انطلق','قفزة','اندفاع']:s==3?['يسار','وسط','يمين']:['دواسة سريعة','دواسة ثابتة','تغيير مسار'];return Column(children:[Text(['⚽','🏀','🏃','🎾','🚴'][s],style:const TextStyle(fontSize:60)),Text(_message),Wrap(spacing:8,children:[for(var i=0;i<3;i++)FilledButton.tonal(onPressed:()=>_hit(i==(_a%3)),child:Text(l[i]))])]);}
   Widget _thinking(){final t=_game-10;if(t==0)return _choice('أكمل النمط: ${_a} → ${(_a+2)%10} → ${(_a+4)%10} → ?',['${(_a+6)%10}','${(_a+5)%10}','${(_a+3)%10}'],0);if(t==1)return _choice('اختر الرقم الأكبر',[_a,_b,_a+_b],2);if(t==2)return _choice('أي خطة تكسب؟',['هجوم','دفاع','تفادي'],_a%3);if(t==3)return _choice('أين المختلف؟',['●●●','●○●','●●●'],1);return _choice('فك الشفرة: ${_a} + ${_b} = ?',[_a+_b,_a+_b+1,_a+_b-1],0);}
   Widget _choice(String title,List<dynamic> v,int c)=>Column(children:[Text(title,textAlign:TextAlign.center,style:const TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:10),Wrap(spacing:8,children:[for(var i=0;i<v.length;i++)FilledButton.tonal(onPressed:()=>_hit(i==c),child:Text('${v[i]}'))])]);
-  Widget _memory(){final k=_game-15;if(k==0)return Column(children:[const Text('احفظ التسلسل ثم اختر آخر رقم'),Text(_memory.map((e)=>e+1).join(' • '),style:const TextStyle(fontSize:27,fontWeight:FontWeight.w900)),Wrap(spacing:8,children:[for(var n=1;n<=4;n++)FilledButton.tonal(onPressed:()=>_hit(n==_memory.last+1),child:Text('${n}'))])]);if(k==1)return _choice('ما الرقم الأول؟',[1,2,3,4],_memory.first);if(k==2)return _choice('تذكر اللون الأول',['🔴','🟢','🔵','🟡'],_memory.first);if(k==3)return _choice('تذكر الموضع',['1','2','3'],_memory[2]%3);return Column(children:[const Text('FLASH MEMORY',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),Text('احفظ الرقم: $_target',style:const TextStyle(fontSize:30)),FilledButton(onPressed:()=>_hit(true),child:const Text('أتذكره!'))]);}
+  Widget _memory(){final k=_game-15;if(k==0)return Column(children:[const Text('احفظ التسلسل ثم اختر آخر رقم'),Text(_memorySequence.map((e)=>e+1).join(' • '),style:const TextStyle(fontSize:27,fontWeight:FontWeight.w900)),Wrap(spacing:8,children:[for(var n=1;n<=4;n++)FilledButton.tonal(onPressed:()=>_hit(n==_memorySequence.last+1),child:Text('${n}'))])]);if(k==1)return _choice('ما الرقم الأول؟',[1,2,3,4],_memorySequence.first);if(k==2)return _choice('تذكر اللون الأول',['🔴','🟢','🔵','🟡'],_memory.first);if(k==3)return _choice('تذكر الموضع',['1','2','3'],_memorySequence[2]%3);return Column(children:[const Text('FLASH MEMORY',style:TextStyle(fontSize:24,fontWeight:FontWeight.w900)),Text('احفظ الرقم: $_target',style:const TextStyle(fontSize:30)),FilledButton(onPressed:()=>_hit(true),child:const Text('أتذكره!'))]);}
   Widget _arena(){final a=['⚔️ هجوم','🛡️ دفاع','⚡ تفادي','🎯 ضربة دقيقة'];return Column(children:[const Text('🔥 AUREN ARENA',style:TextStyle(fontSize:30,fontWeight:FontWeight.w900)),const Text('جولة سريعة ضد AUREN — اصنع أطول سلسلة.'),const SizedBox(height:12),Text('هجمة الخصم: ${a[_a%4]}'),Wrap(spacing:8,children:[for(var i=0;i<4;i++)FilledButton.tonal(onPressed:()=>_hit(i==((_a+1)%4)),child:Text(a[i]))]),Text(_message)]);}
 }
 
@@ -543,7 +543,7 @@ class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
   void _math(int n){if(n==_mathAnswer){_score++;_newMath();setState((){});}}
   void _guess(int n){if(n==_target){_score++;_target=1+_rng.nextInt(100);_msg='🎉 صحيح!';}else{_msg=n<_target?'أعلى ↑':'أقل ↓';}setState((){});}
   void _flip(){final h=_rng.nextBool();if(h)_heads++;else _tails++;_msg=h?'🟡 صورة':'⚪ كتابة';setState((){});}
-  void _target(){_targetScore++;setState((){});}
+  void _tapTarget(){_targetScore++;setState((){});}
   void _hang(String l){if(_word.contains(l)){_msg='حرف صحيح';}else{_hangWrong++;_msg='حرف غير صحيح';}setState((){});}
   void _chain(){final w=_input.text.trim().toUpperCase();if(w.length>1&&w[0]==_last[_last.length-1]&&w!=_last){_last=w;_score++;_input.clear();_msg='صحيح!';}else{_msg='ابدأ بحرف '+_last[_last.length-1];}setState((){});}
   void _pickColor(int i){if(i==_color)_score++;_newRound();setState((){});}
@@ -558,7 +558,7 @@ class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
       case 1: body=Column(children:[Text(_mathA.toString()+' + '+_mathB.toString()+' = ?',style:const TextStyle(fontSize:32,fontWeight:FontWeight.w900)),Wrap(spacing:8,children:[for(var n in [_mathAnswer-2,_mathAnswer-1,_mathAnswer,_mathAnswer+1])FilledButton.tonal(onPressed:()=>_math(n),child:Text(n.toString()))])]);break;
       case 2: body=Column(children:[Text(_msg),TextField(keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'خمن 1-100',border:OutlineInputBorder()),onSubmitted:(v){final n=int.tryParse(v);if(n!=null)_guess(n);})]);break;
       case 3: body=Column(children:[Text(_msg,style:const TextStyle(fontSize:50)),Text('صورة: '+_heads.toString()+' • كتابة: '+_tails.toString())]);break;
-      case 4: body=Column(children:[Text('🎯',style:const TextStyle(fontSize:70)),Text('النقاط: '+_targetScore.toString()),FilledButton(onPressed:_target,child:const Text('اضغط الهدف'))]);break;
+      case 4: body=Column(children:[Text('🎯',style:const TextStyle(fontSize:70)),Text('النقاط: '+_targetScore.toString()),FilledButton(onPressed:_tapTarget,child:const Text('اضغط الهدف'))]);break;
       case 5: body=Column(children:[Text(_word.split('').map((x)=>x==' '? ' ': ' _ ').join()),Text('أخطاء: '+_hangWrong.toString()+'/6'),Wrap(spacing:4,children:[for(final l in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''))OutlinedButton(onPressed:()=>_hang(l),child:Text(l))])]);break;
       case 6: body=Column(children:[Text('آخر كلمة: '+_last),TextField(controller:_input,textCapitalization:TextCapitalization.characters,onSubmitted:(_){_chain();},decoration:const InputDecoration(labelText:'كلمة تبدأ بآخر حرف',border:OutlineInputBorder()))]);break;
       case 7: body=Column(children:[Text(['أحمر','أخضر','أزرق','أصفر'][_color],style:const TextStyle(fontSize:30,fontWeight:FontWeight.w900)),Wrap(spacing:8,children:[for(var i=0;i<4;i++)FilledButton.tonal(onPressed:()=>_pickColor(i),child:Text(['أحمر','أخضر','أزرق','أصفر'][i]))])]);break;
@@ -567,6 +567,12 @@ class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
     }
     return ListView(padding:const EdgeInsets.all(16),children:[Text('21 لعبة جديدة',style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),const SizedBox(height:8),Wrap(spacing:6,runSpacing:6,children:[for(var i=0;i<names.length;i++)ChoiceChip(label:Text(names[i]),selected:_game==i,onSelected:(_){setState(()=>_game=i);})]),const SizedBox(height:16),Card(child:Padding(padding:const EdgeInsets.all(16),child:body)),const SizedBox(height:12),FilledButton.icon(onPressed:_reset,icon:const Icon(Icons.refresh),label:const Text('إعادة'))]);
   }
+}
+
+class _ComingSoonGame extends StatelessWidget {
+  final String title;
+  const _ComingSoonGame({required this.title});
+  @override Widget build(BuildContext context) => _GamePage(title: title, subtitle: 'لعبة ضمن حزمة AUREN Gaming.', child: const Center(child: Text('اللعبة جاهزة للإضافة في الجولة التالية.')));
 }
 
 class _Auren3DQuickPanel extends StatefulWidget {
