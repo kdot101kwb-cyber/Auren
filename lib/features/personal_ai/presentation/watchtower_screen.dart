@@ -1,7 +1,57 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+
 class AurenWatchtowerScreen extends StatelessWidget {
- const AurenWatchtowerScreen({super.key});
- @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Watchtower')),body:ListView(padding:const EdgeInsets.all(20),children:[Card(child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Icon(Icons.visibility_outlined,size:38),const SizedBox(height:12),const Text('Watchtower',style:TextStyle(fontSize:24,fontWeight:FontWeight.w800)),const SizedBox(height:8),const Text('راقب الإشارات المهمة واطلب من AUREN تحليلها عندما تحتاج.'),const SizedBox(height:16),FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'حلّل لي الإشارات المهمة التي يجب أن أنتبه لها الآن.'))),icon:const Icon(Icons.auto_awesome),label:const Text('اسأل AUREN'))])))]));}
-}
+  const AurenWatchtowerScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Watchtower'),
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const MessengerScreen(initialPrompt: 'ساعدني في Watchtower داخل AUREN واقترح أفضل الخيارات والخطوات.'),
+              ),
+            ),
+            icon: const Icon(Icons.auto_awesome),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Watchtower', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  const Text('راقب الإشارات المهمة واطلب من AUREN تحليلها عندما تحتاج.'),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const MessengerScreen(
+                          initialPrompt: 'حلّل احتياجي الآن وقدّم لي الخيارات المناسبة وخطة تنفيذ واضحة.',
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('اسأل AUREN'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
