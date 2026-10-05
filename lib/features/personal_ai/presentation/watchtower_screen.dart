@@ -1,45 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../services/auth/auth_service.dart';
-import '../../../services/personal_ai/watchtower_service.dart';
-class AurenWatchtowerScreen extends StatefulWidget{const AurenWatchtowerScreen({super.key});@override State<AurenWatchtowerScreen> createState()=>_AurenWatchtowerScreenState();}
-class _AurenWatchtowerScreenState extends State<AurenWatchtowerScreen>{final a=FirebaseAurenAuthService();late Future<List<AurenWatchtowerAlert>> f;@override void initState(){super.initState();f=_load();}Future<List<AurenWatchtowerAlert>> _load()async{final u=a.currentUserId;if(u==null)throw StateError('Sign in required');return WatchtowerService().scan(u);} @override
-Widget build(BuildContext c) {
-  return Scaffold(
-    appBar: AppBar(
-      title: const Text('AUREN Watchtower'),
-      actions: [
-        IconButton(
-          onPressed: () => setState(() => f = _load()),
-          icon: const Icon(Icons.refresh),
-        ),
-      ],
-    ),
-    body: FutureBuilder<List<AurenWatchtowerAlert>>(
-      future: f,
-      builder: (c, s) {
-        if (!s.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              'مراقبة ذكية',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...s.data!.map(
-              (x) => Card(
-                child: ListTile(
-                  leading: const Icon(Icons.visibility_outlined),
-                  title: Text(x.title),
-                  subtitle: Text(x.detail),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    ),
-  );
+import '../../messenger/presentation/messenger_screen.dart';
+class AurenWatchtowerScreen extends StatelessWidget {
+ const AurenWatchtowerScreen({super.key});
+ @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('Watchtower')),body:ListView(padding:const EdgeInsets.all(20),children:[Card(child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Icon(Icons.visibility_outlined,size:38),const SizedBox(height:12),const Text('Watchtower',style:TextStyle(fontSize:24,fontWeight:FontWeight.w800)),const SizedBox(height:8),const Text('راقب الإشارات المهمة واطلب من AUREN تحليلها عندما تحتاج.'),const SizedBox(height:16),FilledButton.icon(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'حلّل لي الإشارات المهمة التي يجب أن أنتبه لها الآن.'))),icon:const Icon(Icons.auto_awesome),label:const Text('اسأل AUREN'))])))]));}
 }
