@@ -76,9 +76,35 @@ jobs:
             read analyze_status < /tmp/flutter_analyze_status
             read test_status < /tmp/flutter_test_status
             read build_status < /tmp/flutter_android_build_status
+            echo "========== FLUTTER CI SUMMARY =========="
             echo "Flutter analyze: ${analyze_status}"
             echo "Flutter test: ${test_status}"
             echo "Android debug build: ${build_status}"
+
+            echo
+            echo "========== ANALYZE ERRORS =========="
+            grep -E "^[[:space:]]*(error|warning)[[:space:]]|^[[:space:]]*error •|^[[:space:]]*warning •" flutter_analyze.log | tail -n 80 || true
+
+            echo
+            echo "========== TEST FAILURES =========="
+            grep -E "FAILED|Error:|Exception:|Test failed|Some tests failed|Expected:|Actual:" flutter_test.log | tail -n 80 || true
+
+            echo
+            echo "========== BUILD ERRORS =========="
+            grep -E "ERROR:|FAILURE:|error:|Exception:|Execution failed|What went wrong|Could not" flutter_android_build.log | tail -n 100 || true
+
+            echo
+            echo "========== LAST ANALYZE LINES =========="
+            tail -n 40 flutter_analyze.log
+
+            echo
+            echo "========== LAST TEST LINES =========="
+            tail -n 40 flutter_test.log
+
+            echo
+            echo "========== LAST BUILD LINES =========="
+            tail -n 60 flutter_android_build.log
+
             if [ "${analyze_status}" -ne 0 ] || [ "${test_status}" -ne 0 ] || [ "${build_status}" -ne 0 ]; then
               exit 1
             fi
