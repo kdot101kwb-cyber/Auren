@@ -56,7 +56,7 @@ class _OriginalMusicCreationScreenState extends State<_OriginalMusicCreationScre
         durationSeconds: 30,
       );
       if (!mounted) return;
-      final jobId = String(result['jobId'] ?? '');
+      final jobId = (result['jobId'] ?? '').toString();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('تم إرسال الأغنية للإنتاج الفعلي • Job: $jobId')),
       );
@@ -140,7 +140,7 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
   final repo = EntertainmentRepository();
   final search = TextEditingController();
   String mood = 'الكل';
-  String context = 'تلقائي';
+  String _context = 'تلقائي';
   String activity = 'تلقائي';
   List<AurenEntertainmentItem> _latestSource = const <AurenEntertainmentItem>[];
 
@@ -474,16 +474,16 @@ class _MusicProductionStatusScreen extends StatelessWidget {
         builder: (context, snapshot) {
           final data = snapshot.data;
           if (data == null) return const Center(child: CircularProgressIndicator());
-          final status = String(data['status'] ?? 'queued');
-          final progress = ((double.tryParse(String(data['progress'] ?? '0')) ?? 0) / 100).clamp(0.0, 1.0);
+          final status = (data['status'] ?? 'queued').toString();
+          final progress = ((double.tryParse((data['progress'] ?? '0').toString()) ?? 0) / 100).clamp(0.0, 1.0);
           final output = data['output'];
-          final url = output is Map ? String(output['url'] ?? '') : '';
+          final url = output is Map ? (output['url'] ?? '').toString() : '';
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
               const Icon(Icons.graphic_eq_rounded, size: 60),
               const SizedBox(height: 12),
-              Text(String(data['title'] ?? 'Original Track'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+              Text((data['title'] ?? 'Original Track').toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
               const SizedBox(height: 18),
               LinearProgressIndicator(value: progress),
               const SizedBox(height: 10),
@@ -493,7 +493,7 @@ class _MusicProductionStatusScreen extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenAudioPlayerScreen(
                     item: AurenEntertainmentItem(
-                      id: jobId, title: String(data['title'] ?? 'AUREN Original Track'),
+                      id: jobId, title: (data['title'] ?? 'AUREN Original Track').toString(),
                       description: 'Original AUREN AI Music', imageUrl: '', mediaUrl: url,
                       mediaKind: 'audio', creatorId: uid, type: 'Music',
                     ),
