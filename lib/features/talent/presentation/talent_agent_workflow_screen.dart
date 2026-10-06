@@ -65,7 +65,7 @@ class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
   }
   Future<void> _runStep(int i) async {
     if(loading||i<0||i>=plan.steps.length)return; setState(()=>loading=true);
-    final step=plan.steps[i]; final contextOutput=previousOutput.trim().isEmpty?'لا توجد مخرجات سابقة.':previousOutput; final previous=_previousOutput(i); final incoming=_incomingForStep(i);
+    final step=plan.steps[i]; final previous=_previousOutput(i); final incoming=_incomingForStep(i);
     final prompt='أنت ${step.agent} في AUREN. ${step.instruction}\nالفرصة: ${plan.opportunity.title}\nالمطابقة: ${plan.matchScore}%\nالمهارات: ${plan.matchedSkills.join(', ')}\nفجوات المهارات: ${plan.skillGaps.map((g)=>g.skill).join(', ')}\nمخرجات الوكيل السابق: ${previous.isEmpty?'لا توجد مخرجات سابقة.':previous}\nابنِ على هذه المخرجات وقدّم نتيجة منظمة للوكيل التالي. لا تنفذ إجراءً حساساً أو مالياً دون موافقة صريحة.';
     await Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:prompt,onAiResponse:(output)=>_completeAndHandoff(i,incoming,output))));
     if(mounted)setState(()=>loading=false);
@@ -80,8 +80,6 @@ class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
       if(mounted){setState(()=>currentStep=i+1);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تم حفظ مخرجات ${plan.steps[i].agent} وتسليمها إلى ${next.agent}. يحتاج موافقتك.')));}
       debugPrint('AUREN collaboration task created: $id');
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر حفظ مخرجات الوكيل: $e')));}
-  }
-  Future<void> _resumeFromTask(AurenAgentTask task) async { if(task.status!='approved'||loading)return; final step=plan.steps.indexWhere((s)=>s.agent==task.targetAgent); if(step<0)return; setState(()=>previousOutput=task.input['previousOutput']?.toString()??''); await _runStep(step);
   }
   Future<void> _decide(AurenAgentTask task,String decision) async {try{await repo.decide(task.id,decision);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(decision=='approved'?'تمت الموافقة. يمكنك تشغيل الوكيل التالي.':'تم إلغاء التسليم.')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحديث المهمة: $e')));}}
   @override Widget build(BuildContext context){final uid=FirebaseAuth.instance.currentUser?.uid;return Scaffold(appBar:AppBar(title:Text(restored?'AUREN Talent Workflow • مستأنف':'AUREN Talent Workflow')),body:ListView(padding:const EdgeInsets.all(16),children:[
