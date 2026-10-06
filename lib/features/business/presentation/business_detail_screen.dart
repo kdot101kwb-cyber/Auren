@@ -34,7 +34,7 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
         const Text('تعديل Business',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),
         TextField(controller:n,decoration:const InputDecoration(labelText:'اسم النشاط')),
         TextField(controller:d,maxLines:3,decoration:const InputDecoration(labelText:'الوصف')),
-        DropdownButtonFormField<String>(value:cat,items:cats.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>cat=v!),decoration:const InputDecoration(labelText:'التصنيف')),DropdownButtonFormField<String>(value:types.contains(type)?type:types.first,items:types.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>type=v!),decoration:const InputDecoration(labelText:'نوع النشاط')),DropdownButtonFormField<String>(value:statuses.contains(status)?status:statuses.first,items:statuses.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>status=v!),decoration:const InputDecoration(labelText:'الحالة')),
+        DropdownButtonFormField<String>(initialValue:cat,items:cats.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>cat=v!),decoration:const InputDecoration(labelText:'التصنيف')),DropdownButtonFormField<String>(initialValue:types.contains(type)?type:types.first,items:types.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>type=v!),decoration:const InputDecoration(labelText:'نوع النشاط')),DropdownButtonFormField<String>(initialValue:statuses.contains(status)?status:statuses.first,items:statuses.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setModal(()=>status=v!),decoration:const InputDecoration(labelText:'الحالة')),
         TextField(controller:city,decoration:const InputDecoration(labelText:'المدينة')),
         TextField(controller:country,decoration:const InputDecoration(labelText:'الدولة')),
         TextField(controller:phone,decoration:const InputDecoration(labelText:'الهاتف')),
@@ -80,7 +80,7 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
           String reason=reasons.first;
           final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
             title:const Text('الإبلاغ عن Business'),
-            content:DropdownButtonFormField<String>(value:reason,items:reasons.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setD(()=>reason=v!)),
+            content:DropdownButtonFormField<String>(initialValue:reason,items:reasons.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setD(()=>reason=v!)),
             actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('إبلاغ'))],
           )));
           if(ok==true){await _repo.report(businessId:b.id,reporterUid:uid,reason:reason);if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إرسال البلاغ')));}
@@ -107,7 +107,7 @@ class _AurenBusinessDetailScreenState extends State<AurenBusinessDetailScreen> {
                 final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
                   title:const Text('تقييم Business'),
                   content:Column(mainAxisSize:MainAxisSize.min,children:[
-                    DropdownButtonFormField<int>(value:rating,items:[1,2,3,4,5].map((x)=>DropdownMenuItem(value:x,child:Text('$x نجوم'))).toList(),onChanged:(v)=>setD(()=>rating=v!)),
+                    DropdownButtonFormField<int>(initialValue:rating,items:[1,2,3,4,5].map((x)=>DropdownMenuItem(value:x,child:Text('$x نجوم'))).toList(),onChanged:(v)=>setD(()=>rating=v!)),
                     TextField(controller:ctl,maxLines:3,decoration:const InputDecoration(labelText:'تعليق')),
                   ]),
                   actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))],
