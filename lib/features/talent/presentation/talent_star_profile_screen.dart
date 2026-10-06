@@ -74,6 +74,8 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
             ),
           ),
           _section('About', talent.bio),
+          _profileTrustCard(),
+          if (talent.category.isNotEmpty) _infoCard('Category', talent.category, Icons.category_outlined),
           if (talent.skills.isNotEmpty) _chipsSection('Skills', talent.skills),
           if (talent.achievements.isNotEmpty) _chipsSection('Achievements', talent.achievements),
           if (talent.goals.isNotEmpty) _chipsSection('Goals', talent.goals),
@@ -185,6 +187,25 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _profileTrustCard() {
+    final hasEvidence = talent.verificationEvidence.isNotEmpty;
+    return Card(
+      child: ListTile(
+        leading: Icon(hasEvidence ? Icons.verified_outlined : Icons.info_outline),
+        title: Text(hasEvidence ? 'Evidence available' : 'Profile status'),
+        subtitle: Text(hasEvidence
+            ? 'يوجد دليل مضاف للملف، لكنه لا يُعد توثيقاً رسمياً من AUREN.'
+            : 'الملف غير موثق رسمياً. لا تعتمد على بيانات غير موثوقة كحقيقة.'),
+      ),
+    );
+  }
+
+  Widget _infoCard(String title, String value, IconData icon) {
+    return Card(
+      child: ListTile(leading: Icon(icon), title: Text(title), subtitle: Text(value)),
     );
   }
 
