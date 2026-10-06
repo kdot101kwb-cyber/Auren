@@ -28,7 +28,7 @@ class AurenTalentScoutResultsScreen extends StatelessWidget {
             if(f.missingSkills.isNotEmpty)...[const SizedBox(height:4),Text('ناقص: ${f.missingSkills.join(' • ')}')],
             const SizedBox(height:10),
             Wrap(spacing:8, children:[
-              if(f.status=='new') OutlinedButton.icon(icon:const Icon(Icons.visibility_outlined),label:const Text('تمت المراجعة'),onPressed:()=>service.markSeen(uid,f.id)),
+              if(f.status=='new') OutlinedButton.icon(icon:const Icon(Icons.visibility_outlined),label:const Text('تمت المراجعة'),onPressed:()=>service.markSeen(uid,f.id)),if(f.status!='interested'&&f.status!='dismissed') OutlinedButton.icon(icon:const Icon(Icons.star_outline),label:const Text('مهتم'),onPressed:()=>service.markInterested(uid,f.id)),
               if(f.status!='dismissed') OutlinedButton.icon(icon:const Icon(Icons.close),label:const Text('إخفاء'),onPressed:()=>service.dismiss(uid,f.id)),
             ]),
             const SizedBox(height:8),
