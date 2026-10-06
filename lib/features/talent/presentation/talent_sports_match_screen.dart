@@ -1,11 +1,55 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../../services/talent/talent_sports_data_service.dart';
 
-class AurenSportsMatchScreen extends StatelessWidget {
+class AurenSportsMatchScreen extends StatefulWidget {
   final Map<String, dynamic> event;
   const AurenSportsMatchScreen({super.key, required this.event});
 
   String _value(String key) => (event[key] ?? '').toString().trim();
+
+  @override
+  State<AurenSportsMatchScreen> createState() => _AurenSportsMatchScreenState();
+}
+
+class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
+  final _service = TalentSportsDataService();
+  String _homeBadge = '';
+  String _awayBadge = '';
+  bool _badgesLoading = false;
+
+  String _value(String key) => (widget.event[key] ?? '').toString().trim();
+
+  @override
+  void initState() {
+    super.initState();
+    _homeBadge = _value('strHomeTeamBadge');
+    _awayBadge = _value('strAwayTeamBadge');
+    _loadMissingBadges();
+  }
+
+  Future<void> _loadMissingBadges() async {
+    if (_homeBadge.isNotEmpty && _awayBadge.isNotEmpty) return;
+    if (_badgesLoading) return;
+    _badgesLoading = true;
+    try {
+      final homeId = _value('idHomeTeam');
+      final awayId = _value('idAwayTeam');
+      if (_homeBadge.isEmpty && homeId.isNotEmpty) {
+        final rows = await _service.lookupTeam(homeId);
+        if (rows.isNotEmpty) _homeBadge = (rows.first['strBadge'] ?? rows.first['strLogo'] ?? '').toString();
+      }
+      if (_awayBadge.isEmpty && awayId.isNotEmpty) {
+        final rows = await _service.lookupTeam(awayId);
+        if (rows.isNotEmpty) _awayBadge = (rows.first['strBadge'] ?? rows.first['strLogo'] ?? '').toString();
+      }
+      if (mounted) setState(() {});
+    } catch (_) {
+      // Missing badges must never prevent the match page from opening.
+    } finally {
+      _badgesLoading = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,8 +58,8 @@ class AurenSportsMatchScreen extends StatelessWidget {
     final eventName = _value('strEvent');
     final title = eventName.isNotEmpty ? eventName : (home.isEmpty ? 'Home' : home) + ' vs ' + (away.isEmpty ? 'Away' : away);
     final score = [_value('intHomeScore'), _value('intAwayScore')].where((v) => v.isNotEmpty).join(' - ');
-    final homeBadge = _value('strHomeTeamBadge');
-    final awayBadge = _value('strAwayTeamBadge');
+    final homeBadge = _homeBadge;
+    final awayBadge = _awayBadge;
     final round = _value('intRound');
     final venue = _value('strVenue');
     final status = _value('strStatus');
