@@ -4,6 +4,7 @@ import '../../../services/talent/talent_sports_directory_service.dart';
 import '../../../services/talent/talent_sports_trust_service.dart';
 import 'talent_sports_entity_screen.dart';
 import 'talent_sports_match_screen.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenTalentSportsHubScreen extends StatefulWidget {
   const AurenTalentSportsHubScreen({super.key});
@@ -143,6 +144,24 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
                     _modeChip('leagues', '🏆 Leagues'),
                   ],
                 ),
+
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ActionChip(
+                      avatar: const Icon(Icons.fact_check_outlined, size: 18),
+                      label: const Text('Sports Truth AI'),
+                      onPressed: () => _openSportsAi('تحقق من معلومة رياضية. فرّق بين البيان الرسمي ومصدر البيانات المرخص والصحفي الموثوق والمصدر الإعلامي والمنشور غير المؤكد. لا تخترع مصادر أو أدلة.'),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.account_tree_outlined, size: 18),
+                      label: const Text('Source Graph'),
+                      onPressed: () => _openSportsAi('حلل Source Graph لمعلومة رياضية: المصدر الأول إن كان معروفاً، من أكدها، من صححها أو نفاها، وما الأدلة المطلوبة. لا تخترع أي علاقة أو مصدر.'),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -210,6 +229,13 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     ),
   );
 
+
+  void _openSportsAi(String prompt) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)),
+    );
+  }
 
   Widget _sportsTrustCard() {
     final trust = _trust.forEntity(type: 'events');
