@@ -34,4 +34,16 @@ ${userQuestion.trim().isEmpty ? '' : 'سؤال المستخدم:\n$userQuestion\
     return prompt(agent: 'performance', sport: sport, context: context, userQuestion: 'حلل القياسات المسجلة أعلاه فقط. لا تخلط مؤشرات مختلفة أو وحدات مختلفة. وضّح أحدث اتجاه، وما يمكن استنتاجه فعلاً، وما لا يمكن استنتاجه.');
   }
   static String scoutPrompt(String sport, String context) => prompt(agent: 'scout', sport: sport, context: context, userQuestion: 'أنشئ تقرير Scout يوضح نقاط القوة والمهارات والأدلة المتاحة والفجوات والفرص المناسبة.');
+
+  static String athletePrompt({required String athleteName, required List<String> sports, required List<String> skills, required List<String> achievements}) {
+    final sportText = sports.where((e) => e.trim().isNotEmpty).join(', ');
+    final context = 'اللاعب: $athleteName\\nالرياضات: $sportText\\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}';
+    return prompt(agent: 'athlete', sport: sportText, context: context, userQuestion: 'حلل ملف الرياضي كما هو، واذكر نقاط القوة المحتملة والفجوات وما البيانات التي نحتاجها قبل أي استنتاج قوي. لا تعتبر اكتمال الملف دليلاً على مستوى اللاعب.');
+  }
+
+  static String athleteScoutPrompt({required String athleteName, required List<String> sports, required List<String> skills, required List<String> achievements, String level = '', String location = ''}) {
+    final sportText = sports.where((e) => e.trim().isNotEmpty).join(', ');
+    final context = 'اللاعب: $athleteName\\nالرياضات: $sportText\\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}\\nالمستوى: $level\\nالموقع: $location';
+    return prompt(agent: 'scout', sport: sportText, context: context, userQuestion: 'أنشئ تقرير Scout أولي يوضح نقاط القوة المدعومة بالملف، الفجوات، الأدلة المطلوبة، وأسئلة التحقق والفرص المحتملة. لا تخترع أندية أو بطولات أو أرقام أداء ولا تؤكد موهبة بشكل نهائي.');
+  }
 }
