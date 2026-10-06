@@ -145,7 +145,8 @@ Widget _card(BuildContext c, AurenTalent t) {
         c,
         MaterialPageRoute(builder: (_) => AurenTalentStarProfileScreen(talent: t)),
       ),
-    );
+    ),
+  );
 }
 
 
