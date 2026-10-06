@@ -29,7 +29,9 @@ class TalentScoutService {
         final sportSignals=<String>{_norm(talent.sport),_norm(talent.discipline),_norm(talent.level)}..removeWhere((x)=>x.isEmpty);
         final hay='${talent.bio} ${talent.category} ${talent.city} ${talent.country} ${talent.skills.join(' ')}'.toLowerCase();
         final hits=keywords.where((k)=>hay.contains(k)).toList();
-        final score=keywords.isEmpty?50:((hits.length/keywords.length)*100).round();
+        final signalHits=sportSignals.where((signal)=>hay.contains(signal)).toList();
+        final baseScore=keywords.isEmpty?50:((hits.length/keywords.length)*100).round();
+        final score=(baseScore + signalHits.length * 10).clamp(0, 100);
         if(score<20&&keywords.isNotEmpty)continue;
         final text=switch(scout.role){
           'market'=>'إشارات سوق مرتبطة بمهاراتك: ${hits.isEmpty?'راجع اتجاهات السوق والمهارات المطلوبة.':hits.join(' • ')}',
