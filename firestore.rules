@@ -750,7 +750,7 @@ service cloud.firestore {
         && request.resource.data.description.size() <= 3000
         && request.resource.data.sourceType is string
         && request.resource.data.sourceId is string
-        && request.resource.data.status in ['new','seen','dismissed']
+        && request.resource.data.status in ['new','seen','dismissed','interested']
         && request.resource.data.score is int
         && request.resource.data.score >= 0 && request.resource.data.score <= 100
         && request.resource.data.matchedSkills is list
@@ -770,7 +770,7 @@ service cloud.firestore {
         && request.resource.data.sourceId == resource.data.sourceId
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.expiresAt == resource.data.expiresAt
-        && request.resource.data.status in ['new','seen','dismissed']
+        && request.resource.data.status in ['new','seen','dismissed','interested']
         && request.resource.data.score is int
         && request.resource.data.score >= 0 && request.resource.data.score <= 100
         && request.resource.data.matchedSkills is list
