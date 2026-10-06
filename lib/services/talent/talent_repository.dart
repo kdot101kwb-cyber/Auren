@@ -11,7 +11,7 @@ class TalentRepository {
     final sp = sport.trim().toLowerCase();
     return db.collection('talents').where('status', isEqualTo: 'active').limit(100).snapshots().map((snap) {
       final list = snap.docs.map((d) => AurenTalent.fromMap(d.id, d.data()))
-          .where((t) => q.isEmpty || ('${t.displayName} ${t.bio} ${t.category} ${t.sport} ${t.discipline} ${t.level} ${t.city} ${t.country} ${t.skills.join(' ')} ${t.achievements.join(' ')}').toLowerCase().contains(q))
+          .where((t) => q.isEmpty || ('${t.displayName} ${t.bio} ${t.category} ${t.sport} ${t.discipline} ${t.level} ${t.city} ${t.country} ${t.skills.join(' ')} ${t.sports.join(' ')} ${t.achievements.join(' ')}').toLowerCase().contains(q))
           .where((t) => s.isEmpty || t.skills.any((x) => x.trim().toLowerCase() == s))
           .where((t) => sp.isEmpty || t.sport.toLowerCase() == sp || t.sports.any((x) => x.toLowerCase() == sp)).toList();
       list.sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
