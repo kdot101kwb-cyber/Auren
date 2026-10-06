@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenSportsMatchScreen extends StatelessWidget {
   final Map<String, dynamic> event;
@@ -56,6 +57,20 @@ class AurenSportsMatchScreen extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 12),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MessengerScreen(
+                  initialPrompt: 'حلل لي هذه المباراة: ' + title + '. استخدم فقط بيانات المباراة المعروضة، ولا تخترع إحصائيات أو نتيجة غير موجودة.',
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('حلل المباراة مع AUREN AI'),
+          ),
           const SizedBox(height: 12),
           const Card(
             child: ListTile(
