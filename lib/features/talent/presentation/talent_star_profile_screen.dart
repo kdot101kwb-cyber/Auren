@@ -98,14 +98,15 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
                     label: const Text('Connect with AUREN AI'),
                   ),
                   const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => AurenTalentClaimScreen(talentId: talent.id, talentName: talent.displayName)),
+                  if (FirebaseAuth.instance.currentUser?.uid != talent.ownerId)
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => AurenTalentClaimScreen(talentId: talent.id, talentName: talent.displayName)),
+                      ),
+                      icon: const Icon(Icons.assignment_ind_outlined),
+                      label: const Text('Claim this profile'),
                     ),
-                    icon: const Icon(Icons.assignment_ind_outlined),
-                    label: const Text('Claim this profile'),
-                  ),
                   if (FirebaseAuth.instance.currentUser?.uid == talent.ownerId) ...[
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
