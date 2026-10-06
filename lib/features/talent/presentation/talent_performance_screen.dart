@@ -156,6 +156,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
           final docs = snapshot.data?.docs ?? const [];
           final current = docs.where((d) => (d.data()['sport'] ?? '').toString() == sport).toList();
           final values = current.map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
+          final selectedMetricValues = current.where((d) => (d.data()['metric'] ?? '').toString().isNotEmpty).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
           final average = values.isEmpty ? null : values.reduce((a, b) => a + b) / values.length;
           final best = values.isEmpty ? null : values.reduce((a, b) => a > b ? a : b);
           final latest = values.isEmpty ? null : values.first;
