@@ -16,7 +16,7 @@ class _AurenCommunityDetailScreenState extends State<AurenCommunityDetailScreen>
     final result=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setLocal)=>AlertDialog(
       title:Text('نشر في ${c.name}'),
       content:SingleChildScrollView(child:Column(children:[
-        DropdownButtonFormField<String>(value:type,items:const[DropdownMenuItem(value:'moment',child:Text('Moment')),DropdownMenuItem(value:'question',child:Text('Question')),DropdownMenuItem(value:'idea',child:Text('Idea')),DropdownMenuItem(value:'project',child:Text('Project'))],onChanged:(v){if(v!=null)setLocal(()=>type=v);},decoration:const InputDecoration(labelText:'النوع')),
+        DropdownButtonFormField<String>(initialValue:type,items:const[DropdownMenuItem(value:'moment',child:Text('Moment')),DropdownMenuItem(value:'question',child:Text('Question')),DropdownMenuItem(value:'idea',child:Text('Idea')),DropdownMenuItem(value:'project',child:Text('Project'))],onChanged:(v){if(v!=null)setLocal(()=>type=v);},decoration:const InputDecoration(labelText:'النوع')),
         const SizedBox(height:10),TextField(controller:text,maxLines:6,maxLength:2200,decoration:const InputDecoration(hintText:'اكتب شيئاً للمجتمع…',border:OutlineInputBorder()))
       ])),
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('نشر'))],
