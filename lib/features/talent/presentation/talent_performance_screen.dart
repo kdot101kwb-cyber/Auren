@@ -162,6 +162,15 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                   decoration: const InputDecoration(border: OutlineInputBorder()),
                 ),
               ]))),
+              Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('مؤشرات الرياضة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                const Text('اختر مؤشرات مرتبطة بالرياضة الحالية. القيم تُسجل كما أدخلتها ولا تمثل حكماً طبياً.'),
+                const SizedBox(height: 10),
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  'التحمل','القوة','السرعة','الرشاقة','التوازن','الدقة','التقنية','الاستجابة'
+                ].map((x) => ActionChip(label: Text(x), onPressed: () => setState(() => metricController.text = x))).toList()),
+              ])),
               const SizedBox(height: 10),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('حاسبات الأداء', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
