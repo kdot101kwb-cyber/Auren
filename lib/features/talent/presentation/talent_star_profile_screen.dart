@@ -74,6 +74,7 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
             ),
           ),
           _section('About', talent.bio),
+          _profileSummaryCard(),
           _profileTrustCard(),
           if (talent.category.isNotEmpty) _infoCard('Category', talent.category, Icons.category_outlined),
           if (talent.skills.isNotEmpty) _chipsSection('Skills', talent.skills),
@@ -188,6 +189,20 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _profileSummaryCard() {
+    final values = <String, String>{
+      'الرياضات': '${talent.sports.length}',
+      'المهارات': '${talent.skills.length}',
+      'الإنجازات': '${talent.achievements.length}',
+      'الأهداف': '${talent.goals.length}',
+    };
+    return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Athlete Snapshot', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 10),
+      Wrap(spacing: 8, runSpacing: 8, children: values.entries.map((e) => Chip(avatar: const Icon(Icons.insights, size: 18), label: Text('${e.key}: ${e.value}'))).toList()),
+    ])));
   }
 
   Widget _profileTrustCard() {
