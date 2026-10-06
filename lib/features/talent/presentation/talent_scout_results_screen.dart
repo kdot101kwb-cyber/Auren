@@ -27,6 +27,11 @@ class AurenTalentScoutResultsScreen extends StatelessWidget {
             if(f.matchedSkills.isNotEmpty)...[const SizedBox(height:8),Text('مطابق: ${f.matchedSkills.join(' • ')}')],
             if(f.missingSkills.isNotEmpty)...[const SizedBox(height:4),Text('ناقص: ${f.missingSkills.join(' • ')}')],
             const SizedBox(height:10),
+            Wrap(spacing:8, children:[
+              if(f.status=='new') OutlinedButton.icon(icon:const Icon(Icons.visibility_outlined),label:const Text('تمت المراجعة'),onPressed:()=>service.markSeen(uid,f.id)),
+              if(f.status!='dismissed') OutlinedButton.icon(icon:const Icon(Icons.close),label:const Text('إخفاء'),onPressed:()=>service.dismiss(uid,f.id)),
+            ]),
+            const SizedBox(height:8),
             FilledButton.icon(icon:const Icon(Icons.auto_awesome),label:const Text('حلل مع AUREN'),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'حلل نتيجة كشاف المواهب: ${f.title}. ${f.description}. المهارات المتطابقة: ${f.matchedSkills.join(', ')}. المهارات الناقصة: ${f.missingSkills.join(', ')}. اقترح الخطوة التالية ولا تنفذ إجراءً حساساً دون موافقتي.')))),
           ])));
         });
