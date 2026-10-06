@@ -250,12 +250,40 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
   Widget _profileTrustCard() {
     final hasEvidence = talent.verificationEvidence.isNotEmpty;
     return Card(
-      child: ListTile(
-        leading: Icon(hasEvidence ? Icons.verified_outlined : Icons.info_outline),
-        title: Text(hasEvidence ? 'Evidence available' : 'Profile status'),
-        subtitle: Text(hasEvidence
-            ? 'يوجد دليل مضاف للملف، لكنه لا يُعد توثيقاً رسمياً من AUREN.'
-            : 'الملف غير موثق رسمياً. لا تعتمد على بيانات غير موثوقة كحقيقة.'),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(hasEvidence ? Icons.fact_check_outlined : Icons.info_outline),
+                const SizedBox(width: 8),
+                Text(
+                  hasEvidence ? 'Evidence available' : 'Profile status',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              hasEvidence
+                  ? 'الأدلة التالية أضافها صاحب الملف. وجودها لا يعني اعتمادها رسمياً من AUREN.'
+                  : 'الملف لا يحتوي حالياً على أدلة تحقق مسجلة.',
+            ),
+            if (hasEvidence) ...[
+              const SizedBox(height: 8),
+              ...talent.verificationEvidence.map(
+                (e) => ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.link_outlined, size: 20),
+                  title: Text(e),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
