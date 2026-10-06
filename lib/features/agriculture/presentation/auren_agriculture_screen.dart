@@ -131,6 +131,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.science_outlined, 'pH والملوحة', _showSoilPhSalinityTool),
             _toolButton(Icons.eco_outlined, 'المادة العضوية', _showOrganicMatterTool),
             _toolButton(Icons.layers_outlined, 'كمية محسن التربة', _showSoilAmendmentTool),
+            _toolButton(Icons.blender_outlined, 'خلطة السماد', _showFertilizerBlendTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -700,6 +701,20 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     );
     area.dispose(); rate.dispose();
     if (mounted && result != null) _showResult('كمية محسن التربة', result);
+  }
+  Future<void> _showFertilizerBlendTool() async {
+    final need=TextEditingController(text:'50');
+    final area=TextEditingController(text:'1000');
+    final pct=TextEditingController(text:'20');
+    final result=await _twoFieldTool(title:'خلطة السماد',first:need,second:area,firstLabel:'العنصر المطلوب كجم/هكتار',secondLabel:'المساحة م²',actionLabel:'احسب',calculate:(){
+      final n=double.tryParse(need.text.trim())??0;
+      final a=double.tryParse(area.text.trim())??0;
+      final p=double.tryParse(pct.text.trim())??0;
+      if(n<0||a<=0||p<=0||p>100)return 'أدخل قيماً صحيحة.';
+      return 'أدخل نسبة العنصر في السماد (%): ${p.toStringAsFixed(1)}.\\nالكمية التقديرية: ${(n*(a/10000)/(p/100)).toStringAsFixed(2)} كجم.\\n\\nهذه حسبة كمية فقط وليست توصية تسميد.';
+    });
+    need.dispose();area.dispose();pct.dispose();
+    if(mounted&&result!=null)_showResult('خلطة السماد',result);
   }
   Future<void> _showCostTool() async {
     final total = TextEditingController();
