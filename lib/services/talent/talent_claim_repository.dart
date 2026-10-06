@@ -10,6 +10,8 @@ class TalentClaimRepository {
     required String claimantUid,
     required String evidence,
   }) async {
+    final existing = await db.collection('talent_claims').where('talentId', isEqualTo: talentId).where('claimantUid', isEqualTo: claimantUid).where('status', isEqualTo: 'pending').limit(1).get();
+    if (existing.docs.isNotEmpty) throw StateError('لديك طلب معلّق بالفعل لهذا الملف.');
     final ref = db.collection('talent_claims').doc();
     await ref.set({
       'talentId': talentId,
