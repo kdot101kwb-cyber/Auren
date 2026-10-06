@@ -267,27 +267,6 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     );
   }
 
-  Widget _designStudios() {
-    const studios = [
-      ('Fashion & Footwear', 'ملابس، أحذية، حقائب، مقاسات وخامات', Icons.checkroom_outlined),
-      ('Architecture & Space', 'مبانٍ، غرف، مكاتب، محلات ومساحات', Icons.architecture_outlined),
-      ('Product & Industrial', 'منتجات، أجهزة، أثاث وعبوات', Icons.inventory_2_outlined),
-      ('Brand & Visual Identity', 'شعار، هوية، تغليف، إعلانات وواجهات', Icons.brush_outlined),
-      ('3D Prototype & Design-to-Make', 'نموذج أولي، مواد، مواصفات وتجهيز للتصنيع', Icons.view_in_ar_outlined),
-    ];
-    return Column(
-      children: studios.map((s) => Card(
-        child: ListTile(
-          leading: CircleAvatar(child: Icon(s.$3)),
-          title: Text(s.$1, style: const TextStyle(fontWeight: FontWeight.w800)),
-          subtitle: Text(s.$2),
-          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-          onTap: () => _openDesignPrompt(s.$1),
-        ),
-      )).toList(),
-    );
-  }
-
   Future<void> _openDesignPrompt(String studio) async {
     final controller = TextEditingController();
     final result = await showDialog<String>(
