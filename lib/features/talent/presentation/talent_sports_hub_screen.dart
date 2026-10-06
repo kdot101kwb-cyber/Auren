@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
+import '../../../services/talent/talent_sports_directory_service.dart';
 import 'talent_sports_entity_screen.dart';
 
 class AurenTalentSportsHubScreen extends StatefulWidget {
@@ -11,15 +12,22 @@ class AurenTalentSportsHubScreen extends StatefulWidget {
 class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen> {
   final _controller = TextEditingController();
   final _service = TalentSportsDataService();
+  final _directory = TalentSportsDirectoryService();
+
   String _mode = 'teams';
   bool _loading = false;
   String? _error;
   List<Map<String, dynamic>> _results = const [];
+  String _directoryMode = '';
 
   Future<void> _search() async {
     final query = _controller.text.trim();
     if (query.isEmpty) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+      _directoryMode = '';
+    });
     try {
       final results = switch (_mode) {
         'players' => await _service.searchPlayers(query),
@@ -37,8 +45,32 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     }
   }
 
+  Future<void> _loadDirectory(String mode) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+      _results = const [];
+      _directoryMode = mode;
+    });
+    try {
+      final results = mode == 'countries'
+          ? await _service.allCountries()
+          : await _directory.allLeagues();
+      if (!mounted) return;
+      setState(() => _results = results);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
-  void dispose() { _controller.dispose(); super.dispose(); }
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -47,7 +79,11 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
       actions: [
         IconButton(
           tooltip: 'Refresh',
-          onPressed: _loading ? null : _search,
+          onPressed: _loading
+              ? null
+              : _directoryMode.isNotEmpty
+                  ? () => _loadDirectory(_directoryMode)
+                  : _search,
           icon: const Icon(Icons.refresh),
         ),
       ],
@@ -64,11 +100,15 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
                 const Row(children: [
                   Icon(Icons.auto_awesome),
                   SizedBox(width: 8),
-                  Text('Sports Intelligence',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                  Text(
+                    'Sports Intelligence',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
                 ]),
                 const SizedBox(height: 6),
-                const Text('ابحث عن أندية، لاعبين أو مباريات من قاعدة رياضية خارجية.'),
+                const Text(
+                  'ابحث عن أندية، لاعبين، مباريات ودوريات، أو تصفح دليل الرياضات والدول.',
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _controller,
@@ -76,10 +116,10 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
                   onSubmitted: (_) => _search(),
                   decoration: InputDecoration(
                     hintText: _mode == 'players'
-                      ? 'مثال: Mohamed Salah'
-                      : _mode == 'matches'
-                        ? 'مثال: Arsenal Chelsea'
-                        : 'مثال: Arsenal',
+                        ? 'مثال: Mohamed Salah'
+                        : _mode == 'matches'
+                            ? 'مثال: Arsenal Chelsea'
+                            : 'مثال: Arsenal',
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(
                       onPressed: _search,
@@ -103,23 +143,54 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
           ),
         ),
         const SizedBox(height: 12),
-        if (_loading) const Center(child: Padding(
-          padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(),
-        )),
-        if (_error != null) Card(
+        Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(_error!),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sports Directory',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'استكشف الدول والدوريات أولاً، ثم انتقل إلى الأندية واللاعبين.',
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    _directoryChip('countries', '🌍 Countries'),
+                    _directoryChip('leagues', '🏆 All Leagues'),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
+        const SizedBox(height: 12),
+        if (_loading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        if (_error != null)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(_error!),
+            ),
+          ),
         if (!_loading && _error == null && _results.isNotEmpty)
           ..._results.map((item) => _resultCard(context, item)),
         if (!_loading && _error == null && _results.isEmpty)
           const Card(
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Text('اكتب اسم نادي أو لاعب أو مباراة للبدء.'),
+              child: Text('اكتب اسم نادي أو لاعب أو مباراة للبدء، أو افتح Sports Directory.'),
             ),
           ),
         const SizedBox(height: 8),
@@ -133,12 +204,19 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
 
   Widget _modeChip(String value, String label) => ChoiceChip(
     label: Text(label),
-    selected: _mode == value,
+    selected: _mode == value && _directoryMode.isEmpty,
     onSelected: (_) => setState(() {
       _mode = value;
       _results = const [];
       _error = null;
+      _directoryMode = '';
     }),
+  );
+
+  Widget _directoryChip(String value, String label) => ChoiceChip(
+    label: Text(label),
+    selected: _directoryMode == value,
+    onSelected: (_) => _loadDirectory(value),
   );
 
   String _localizedDescription(Map<String, dynamic> item, String language) {
@@ -163,34 +241,73 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
   }
 
   Widget _resultCard(BuildContext context, Map<String, dynamic> item) {
-    final title = _mode == 'players'
-      ? (item['strPlayer'] ?? 'Player').toString()
-      : _mode == 'matches'
-        ? (item['strEvent'] ?? 'Match').toString()
-        : _mode == 'leagues'
+    if (_directoryMode == 'countries') {
+      final country = (item['name_en'] ?? item['name'] ?? 'Country').toString();
+      return Card(
+        child: ListTile(
+          leading: const CircleAvatar(child: Icon(Icons.public)),
+          title: Text(country),
+          subtitle: const Text('Country sports directory'),
+        ),
+      );
+    }
+
+    final isDirectoryLeague = _directoryMode == 'leagues';
+    final title = isDirectoryLeague
         ? (item['strLeague'] ?? 'League').toString()
-        : (item['strTeam'] ?? 'Club').toString();
-    final description = _localizedDescription(item, Localizations.localeOf(context).languageCode);
+        : _mode == 'players'
+            ? (item['strPlayer'] ?? 'Player').toString()
+            : _mode == 'matches'
+                ? (item['strEvent'] ?? 'Match').toString()
+                : (item['strTeam'] ?? 'Club').toString();
+
+    final description = _localizedDescription(
+      item,
+      Localizations.localeOf(context).languageCode,
+    );
     final subtitle = _mode == 'matches'
-      ? '${item['dateEvent'] ?? ''} ${item['strTime'] ?? ''}'.trim()
-      : '${item['strSport'] ?? ''} • ${item['strLeague'] ?? item['strNationality'] ?? ''}'.trim();
-    final image = (_mode == 'players' ? item['strThumb'] : item['strBadge'])?.toString() ?? '';
+        ? '${item['dateEvent'] ?? ''} ${item['strTime'] ?? ''}'.trim()
+        : '${item['strSport'] ?? ''} • ${item['strLeague'] ?? item['strNationality'] ?? ''}'.trim();
+    final image = (isDirectoryLeague || _mode == 'leagues')
+        ? (item['strBadge'] ?? item['strLogo'])
+        : (_mode == 'players' ? item['strThumb'] : item['strBadge']);
+    final imageUrl = image?.toString() ?? '';
+
+    final id = isDirectoryLeague
+        ? item['idLeague']
+        : _mode == 'players'
+            ? item['idPlayer']
+            : item['idTeam'] ?? item['idLeague'];
+
+    final type = isDirectoryLeague
+        ? 'leagues'
+        : _mode;
+
     return Card(
       child: ListTile(
-        leading: image.isEmpty
-          ? const CircleAvatar(child: Icon(Icons.sports))
-          : CircleAvatar(backgroundImage: NetworkImage(image)),
+        leading: imageUrl.isEmpty
+            ? const CircleAvatar(child: Icon(Icons.sports))
+            : CircleAvatar(backgroundImage: NetworkImage(imageUrl)),
         title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
-        subtitle: Text(description.isEmpty ? (subtitle.isEmpty ? 'Sports data' : subtitle) : '$subtitle\n$description'),
-        trailing: ((item['idPlayer'] ?? item['idTeam'] ?? item['idLeague'])?.toString().isNotEmpty ?? false)
+        subtitle: Text(
+          description.isEmpty
+              ? (subtitle.isEmpty ? 'Sports data' : subtitle)
+              : '$subtitle\n$description',
+        ),
+        trailing: id?.toString().isNotEmpty ?? false
             ? const Icon(Icons.chevron_right)
             : null,
-        onTap: ((item['idPlayer'] ?? item['idTeam'] ?? item['idLeague'])?.toString().isNotEmpty ?? false)
-            ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSportsEntityScreen(
-                  type: _mode,
-                  id: (item['idPlayer'] ?? item['idTeam'] ?? item['idLeague']).toString(),
-                  title: title,
-                )))
+        onTap: id?.toString().isNotEmpty ?? false
+            ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AurenSportsEntityScreen(
+                      type: type,
+                      id: id.toString(),
+                      title: title,
+                    ),
+                  ),
+                )
             : null,
       ),
     );
