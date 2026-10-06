@@ -21,12 +21,28 @@ void _tools(BuildContext c){showModalBottomSheet(context:c,isScrollControlled:tr
 Future<void> _openTool(BuildContext c,String tool)async{Navigator.pop(c);if(tool=='load'){final m=await _two(c,'مدة التدريب بالدقائق','RPE من 1 إلى 10');if(m!=null)_result(c,'حمل التدريب',(m[0]*m[1]).toStringAsFixed(1)+' وحدة');}else if(tool=='pace'){final m=await _two(c,'المسافة بالكيلومتر','الزمن بالدقائق');if(m!=null&&m[0]>0)_result(c,'الوتيرة',(m[1]/m[0]).toStringAsFixed(2)+' دقيقة/كم');}else if(tool=='speed'){final m=await _two(c,'المسافة بالكيلومتر','الزمن بالساعات');if(m!=null&&m[1]>0)_result(c,'السرعة',(m[0]/m[1]).toStringAsFixed(2)+' كم/ساعة');}else{final m=await _two(c,'المحاولات الناجحة','إجمالي المحاولات');if(m!=null&&m[1]>0)_result(c,'نسبة النجاح',(m[0]/m[1]*100).toStringAsFixed(1)+'%');}}
 Future<List<double>?> _two(BuildContext c,String a,String b)async{final x=TextEditingController(),y=TextEditingController();final ok=await showDialog<bool>(context:c,builder:(d)=>AlertDialog(title:const Text('أداة أداء رياضي'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:x,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:a)),TextField(controller:y,keyboardType:TextInputType.number,decoration:InputDecoration(labelText:b))]),actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('احسب'))]));final a1=double.tryParse(x.text),b1=double.tryParse(y.text);x.dispose();y.dispose();return ok==true&&a1!=null&&b1!=null?[a1,b1]:null;}
 void _result(BuildContext c,String title,String value){showDialog(context:c,builder:(d)=>AlertDialog(title:Text(title),content:Text(value,style:const TextStyle(fontSize:22,fontWeight:FontWeight.w800)),actions:[TextButton(onPressed:()=>Navigator.pop(d),child:const Text('إغلاق'))]));}
+int _profileScore(AurenTalent t) {
+  var score = 0;
+  if (t.displayName.trim().isNotEmpty) score += 10;
+  if (t.bio.trim().length >= 40) score += 10;
+  if (t.sport.trim().isNotEmpty) score += 15;
+  if (t.discipline.trim().isNotEmpty) score += 10;
+  if (t.level.trim().isNotEmpty) score += 10;
+  if (t.city.trim().isNotEmpty && t.country.trim().isNotEmpty) score += 10;
+  score += (t.skills.length.clamp(0, 5)) * 5;
+  score += (t.achievements.length.clamp(0, 3)) * 3;
+  score += (t.goals.length.clamp(0, 3)) * 2;
+  return score.clamp(0, 100);
+}
+
 Widget _card(BuildContext c, AurenTalent t) {
+  final score = _profileScore(t);
   return Card(
     child: ListTile(
       leading: const CircleAvatar(child: Icon(Icons.person_search)),
       title: Text(t.displayName),
       subtitle: Text([t.sport.isEmpty?t.category:t.sport, t.discipline, t.level, t.city, t.country].where((x) => x.isNotEmpty).join(' • ')),
+      trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.workspace_premium_outlined,size:18),Text('$score/100',style:const TextStyle(fontWeight:FontWeight.w800))]),
       onTap: () => showModalBottomSheet(
         context: c,
         builder: (_) => Padding(
@@ -35,7 +51,7 @@ Widget _card(BuildContext c, AurenTalent t) {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(t.displayName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Row(children:[Expanded(child:Text(t.displayName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),Chip(label:Text('Profile Score $score/100'))]),
               const SizedBox(height: 8),
               Text(t.bio),
               if (t.sport.isNotEmpty) Padding(padding:const EdgeInsets.only(top:8),child:Text('الرياضة: ${t.sport}${t.discipline.isEmpty?'':' • '+t.discipline}${t.level.isEmpty?'':' • '+t.level}',style:const TextStyle(fontWeight:FontWeight.w700))),
