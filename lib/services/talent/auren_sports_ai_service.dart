@@ -30,14 +30,14 @@ ${userQuestion.trim().isEmpty ? '' : 'سؤال المستخدم:\n$userQuestion\
   static String performancePrompt(String sport, String context) => prompt(agent: 'performance', sport: sport, context: context, userQuestion: 'راجع قياسات أدائي، استخرج الاتجاهات ونقاط القوة والفجوات واقترح خطوات تدريب عامة قابلة للمتابعة.');
 
   static String performanceDataPrompt({required String sport, required List<String> measurements}) {
-    final context = measurements.where((e) => e.trim().isNotEmpty).join('\\n');
+    final context = measurements.where((e) => e.trim().isNotEmpty).join('\n');
     return prompt(agent: 'performance', sport: sport, context: context, userQuestion: 'حلل القياسات المسجلة أعلاه فقط. لا تخلط مؤشرات مختلفة أو وحدات مختلفة. وضّح أحدث اتجاه، وما يمكن استنتاجه فعلاً، وما لا يمكن استنتاجه.');
   }
   static String scoutPrompt(String sport, String context) => prompt(agent: 'scout', sport: sport, context: context, userQuestion: 'أنشئ تقرير Scout يوضح نقاط القوة والمهارات والأدلة المتاحة والفجوات والفرص المناسبة.');
 
   static String athletePrompt({required String athleteName, required List<String> sports, required List<String> skills, required List<String> achievements}) {
     final sportText = sports.where((e) => e.trim().isNotEmpty).join(', ');
-    final context = 'اللاعب: $athleteName\\nالرياضات: $sportText\\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}';
+    final context = 'اللاعب: $athleteName\nالرياضات: $sportText\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}';
     return prompt(agent: 'athlete', sport: sportText, context: context, userQuestion: 'حلل ملف الرياضي كما هو، واذكر نقاط القوة المحتملة والفجوات وما البيانات التي نحتاجها قبل أي استنتاج قوي. لا تعتبر اكتمال الملف دليلاً على مستوى اللاعب.');
   }
 
@@ -54,7 +54,7 @@ ${userQuestion.trim().isEmpty ? '' : 'سؤال المستخدم:\n$userQuestion\
     return prompt(
       agent: 'opportunity',
       sport: sport,
-      context: 'المستوى: $level\\nالأهداف: $goals\\nالأدلة المتاحة: $evidence',
+      context: 'المستوى: $level\nالأهداف: $goals\nالأدلة المتاحة: $evidence',
       userQuestion: 'أنشئ Sports Career Map واقعي: مسارات محتملة، مهارات مطلوبة، أدلة ناقصة، وخطوات تالية. لا تضمن عقداً أو انتقالاً أو نجاحاً.',
     );
   }
@@ -70,7 +70,7 @@ ${userQuestion.trim().isEmpty ? '' : 'سؤال المستخدم:\n$userQuestion\
 
   static String athleteScoutPrompt({required String athleteName, required List<String> sports, required List<String> skills, required List<String> achievements, String level = '', String location = ''}) {
     final sportText = sports.where((e) => e.trim().isNotEmpty).join(', ');
-    final context = 'اللاعب: $athleteName\\nالرياضات: $sportText\\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}\\nالمستوى: $level\\nالموقع: $location';
+    final context = 'اللاعب: $athleteName\nالرياضات: $sportText\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}\nالمستوى: $level\nالموقع: $location';
     return prompt(agent: 'scout', sport: sportText, context: context, userQuestion: 'أنشئ تقرير Scout أولي يوضح نقاط القوة المدعومة بالملف، الفجوات، الأدلة المطلوبة، وأسئلة التحقق والفرص المحتملة. لا تخترع أندية أو بطولات أو أرقام أداء ولا تؤكد موهبة بشكل نهائي.');
   }
 }
