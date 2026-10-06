@@ -124,6 +124,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.schedule_outlined, 'خطة الري', _showIrrigationPlanTool),
             _toolButton(Icons.solar_power_outlined, 'الري بالطاقة الشمسية', _showSolarIrrigationTool),
             _toolButton(Icons.waterfall_chart_outlined, 'المضخة والتصريف', _showPumpTool),
+            _toolButton(Icons.water_outlined, 'حجم الخزان', _showTankTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -370,6 +371,64 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     efficiency.dispose();
     hours.dispose();
     if (mounted && result != null) _showResult('المضخة والتصريف', result);
+  }
+
+  Future<void> _showTankTool() async {
+    final daily = TextEditingController(text: '10');
+    final days = TextEditingController(text: '2');
+    final reserve = TextEditingController(text: '20');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تقدير حجم خزان المياه'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: daily,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'الاستهلاك/الاحتياج اليومي م³'),
+            ),
+            TextField(
+              controller: days,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'أيام التخزين المطلوبة'),
+            ),
+            TextField(
+              controller: reserve,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'احتياطي إضافي %'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final d = double.tryParse(daily.text.trim()) ?? 0;
+              final n = double.tryParse(days.text.trim()) ?? 0;
+              final r = double.tryParse(reserve.text.trim()) ?? 0;
+              if (d <= 0 || n <= 0 || r < 0 || r > 100) {
+                Navigator.pop(context, 'أدخل قيماً صحيحة، والاحتياطي بين 0 و100%.');
+                return;
+              }
+              final base = d * n;
+              final tank = base * (1 + r / 100);
+              Navigator.pop(
+                context,
+                'الحجم الأساسي للتخزين: ${base.toStringAsFixed(2)} م³.\\n'
+                'الحجم التقديري مع الاحتياطي: ${tank.toStringAsFixed(2)} م³.\\n\\n'
+                'للاختيار النهائي راعِ مصدر المياه، معدل التعبئة، التبخر، جودة المياه، مساحة التركيب وسعة الخزان الفعلية.',
+              );
+            },
+            child: const Text('احسب'),
+          ),
+        ],
+      ),
+    );
+    daily.dispose();
+    days.dispose();
+    reserve.dispose();
+    if (mounted && result != null) _showResult('حجم الخزان', result);
   }
 
   Future<void> _showCostTool() async {
