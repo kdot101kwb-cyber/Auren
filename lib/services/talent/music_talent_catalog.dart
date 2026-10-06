@@ -165,7 +165,7 @@ class AurenMusicTalentCatalog {
     AurenMusicTalentCapability(
       id: 'audio_visualizer',
       name: 'Audio Visualizer',
-      description: 'Design an audio-reactive visualizer concept matched to the track's rhythm and energy.',
+      description: 'Design an audio-reactive visualizer concept matched to the track\'s rhythm and energy.',
     ),
     AurenMusicTalentCapability(
       id: 'artist_promo_video',
