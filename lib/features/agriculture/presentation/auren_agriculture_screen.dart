@@ -136,6 +136,9 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.search_outlined, 'مؤشر نقص العناصر', _showNutrientDeficiencyTool),
             _toolButton(Icons.monitor_weight_outlined, 'توازن العناصر', _showNutrientBalanceTool),
             _toolButton(Icons.grass_outlined, 'كثافة الزراعة', _showPlantDensityTool),
+            _toolButton(Icons.seedling_outlined, 'كمية التقاوي', _showSeedRateTool),
+            _toolButton(Icons.grid_3x3_outlined, 'عدد النباتات', _showPlantCountTool),
+            _toolButton(Icons.water_drop_outlined, 'كفاءة استخدام المياه', _showWaterProductivityTool),
             _toolButton(Icons.agriculture_outlined, 'تقدير الإنتاج', _showProductionEstimateTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
@@ -757,6 +760,42 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     }); area.dispose();spacing.dispose();if(mounted&&result!=null)_showResult('كثافة الزراعة',result);
   }
 
+  Future<void> _showSeedRateTool() async {
+    final area = TextEditingController(text: '1000'); final rate = TextEditingController(text: '80');
+    final result = await _twoFieldTool(title: 'كمية التقاوي', first: area, second: rate, firstLabel: 'المساحة م²', secondLabel: 'معدل التقاوي كجم/هكتار', actionLabel: 'احسب', calculate: () {
+      final a = double.tryParse(area.text.trim()) ?? 0; final r = double.tryParse(rate.text.trim()) ?? 0;
+      if (a <= 0 || r < 0) return 'أدخل مساحة صحيحة ومعدل تقاوي غير سالب.';
+      return 'كمية التقاوي التقريبية: ${(a / 10000 * r).toStringAsFixed(2)} كجم.\n\nيمكن تعديلها حسب نسبة الإنبات والنقاوة وطريقة الزراعة والصنف.';
+    });
+    area.dispose(); rate.dispose(); if (mounted && result != null) _showResult('كمية التقاوي', result);
+  }
+
+  Future<void> _showPlantCountTool() async {
+    final area = TextEditingController(text: '1000'); final row = TextEditingController(text: '1'); final plant = TextEditingController(text: '0.5');
+    final result = await showDialog<String>(context: context, builder: (_) => AlertDialog(title: const Text('عدد النباتات'), content: Column(mainAxisSize: MainAxisSize.min, children: [
+      TextField(controller: area, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'المساحة م²')),
+      TextField(controller: row, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'المسافة بين الصفوف م')),
+      TextField(controller: plant, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'المسافة بين النباتات م')),
+    ]), actions: [
+      TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+      FilledButton(onPressed: () {
+        final a = double.tryParse(area.text.trim()) ?? 0; final r = double.tryParse(row.text.trim()) ?? 0; final p = double.tryParse(plant.text.trim()) ?? 0;
+        if (a <= 0 || r <= 0 || p <= 0) { Navigator.pop(context, 'أدخل قيماً أكبر من صفر.'); return; }
+        Navigator.pop(context, 'العدد النظري للنباتات: ${(a / (r * p)).floor()} نبات.\n\nالعدد الفعلي يتأثر بالممرات ونمط الزراعة ونسبة الإنبات.');
+      }, child: const Text('احسب')),
+    ]));
+    area.dispose(); row.dispose(); plant.dispose(); if (mounted && result != null) _showResult('عدد النباتات', result);
+  }
+
+  Future<void> _showWaterProductivityTool() async {
+    final production = TextEditingController(text: '1000'); final water = TextEditingController(text: '500');
+    final result = await _twoFieldTool(title: 'كفاءة استخدام المياه', first: production, second: water, firstLabel: 'الإنتاج كجم', secondLabel: 'المياه المستخدمة م³', actionLabel: 'احسب', calculate: () {
+      final p = double.tryParse(production.text.trim()) ?? 0; final w = double.tryParse(water.text.trim()) ?? 0;
+      if (p < 0 || w <= 0) return 'أدخل إنتاجاً غير سالب وكمية مياه أكبر من صفر.';
+      return 'إنتاجية المياه: ${(p / w).toStringAsFixed(2)} كجم/م³.\n\nهذا مؤشر للمقارنة بين المواسم أو الحقول، وليس معياراً ثابتاً لكل المحاصيل.';
+    });
+    production.dispose(); water.dispose(); if (mounted && result != null) _showResult('كفاءة استخدام المياه', result);
+  }
   Future<void> _showProductionEstimateTool() async {
     final area=TextEditingController(text:'1000'); final rate=TextEditingController(text:'3');
     final result=await _twoFieldTool(title:'تقدير الإنتاج',first:area,second:rate,firstLabel:'المساحة م²',secondLabel:'الإنتاج المتوقع كجم/م²',actionLabel:'احسب',calculate:(){
