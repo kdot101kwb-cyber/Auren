@@ -89,6 +89,7 @@ class _EducationCourseDetail extends StatelessWidget{
     Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(course.description),const SizedBox(height:8),Text('عدد الدروس: ${course.lessonCount}'),const SizedBox(height:8),Text(course.skills.isEmpty?'':'Skills: ${course.skills.join(' • ')}')]))) ,
     const SizedBox(height:10),
     ...lessons.map((lesson)=>Card(child:ListTile(leading:CircleAvatar(child:Text('${lesson.order}')),title:Text(lesson.title),subtitle:Text('${lesson.durationMinutes} دقيقة'),onTap:()=>showDialog(context:context,builder:(_)=>AlertDialog(title:Text(lesson.title),content:SingleChildScrollView(child:Text(lesson.content)),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إغلاق'))]))))),
-  ];}))); 
+  ]);}));
+  }
 }
 extension<T> on Iterable<T>{T? get firstOrNull=>isEmpty?null:first;}
