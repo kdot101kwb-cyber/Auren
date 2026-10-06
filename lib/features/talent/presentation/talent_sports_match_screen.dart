@@ -84,7 +84,7 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
       'مصدر البيانات: ' + trust.sourceName,
       'مستوى الثقة: ' + trust.trustLevel,
       'نوع المصدر: ' + trust.label,
-      'إرشاد المصدر: ' + trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية',
+      'إرشاد المصدر: ' + (trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية'),
     ].join('\n');
     final aiPrompt = AurenSportsAiService.matchPrompt(title, sport, matchContext);
 
