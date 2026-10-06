@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../services/talent/talent_sports_catalog.dart';
 
 class AurenTalentPerformanceScreen extends StatefulWidget {
   final String sport;
@@ -11,12 +12,7 @@ class AurenTalentPerformanceScreen extends StatefulWidget {
 }
 
 class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScreen> {
-  static const sports = [
-    'Football','Basketball','Volleyball','Tennis','Table Tennis','Boxing','MMA',
-    'Athletics','Swimming','Cycling','Gymnastics','Archery','Weightlifting','Rugby',
-    'Cricket','Baseball','Hockey','Handball','Motorsport','Formula 1','NFL','Wrestling','Judo',
-    'Karate','Taekwondo','Fencing','Rowing','Badminton','Golf','Chess & Mind Sports'
-  ];
+  static const sports = TalentSportsCatalog.all;
 
   static const metrics = <String, String>{
     'training_load': 'حمل التدريب',
