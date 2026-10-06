@@ -23,7 +23,7 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
          _f(language, 'اللغة'),
          _f(interest, 'الاهتمام'),
          DropdownButtonFormField<int>(
-           value: size,
+           initialValue: size,
            decoration: const InputDecoration(labelText: 'حجم المجموعة', border: OutlineInputBorder()),
            items: [3, 4, 5, 6, 8].map((n) => DropdownMenuItem(value: n, child: Text('$n أشخاص'))).toList(),
            onChanged: (v) => setState(() => size = v ?? 4),
