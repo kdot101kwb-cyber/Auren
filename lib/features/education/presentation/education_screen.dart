@@ -82,14 +82,77 @@ class _EducationState extends State<AurenAURENEducationScreen> {
     Navigator.push(context,MaterialPageRoute(builder:(_)=>_EducationCourseDetail(course:course,repo:repo,uid:uid)));
   }
 }
-class _EducationCourseDetail extends StatelessWidget{
-  final AurenCourse course;final EducationRepository repo;final String uid;
-  const _EducationCourseDetail({required this.course,required this.repo,required this.uid});
-  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:Text(course.title)),body:StreamBuilder<List<AurenLesson>>(stream:repo.watchLessons(course.id),builder:(context,snapshot){final lessons=snapshot.data??const <AurenLesson>[];return ListView(padding:const EdgeInsets.all(16),children:[
-    Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(course.description),const SizedBox(height:8),Text('عدد الدروس: ${course.lessonCount}'),const SizedBox(height:8),Text(course.skills.isEmpty?'':'Skills: ${course.skills.join(' • ')}')]))) ,
-    const SizedBox(height:10),
-    ...lessons.map((lesson)=>Card(child:ListTile(leading:CircleAvatar(child:Text('${lesson.order}')),title:Text(lesson.title),subtitle:Text('${lesson.durationMinutes} دقيقة'),onTap:()=>showDialog(context:context,builder:(_)=>AlertDialog(title:Text(lesson.title),content:SingleChildScrollView(child:Text(lesson.content)),actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إغلاق'))]))))),
-  ]);}));
+class _EducationCourseDetail extends StatelessWidget {
+  final AurenCourse course;
+  final EducationRepository repo;
+  final String uid;
+
+  const _EducationCourseDetail({
+    required this.course,
+    required this.repo,
+    required this.uid,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(course.title)),
+      body: StreamBuilder<List<AurenLesson>>(
+        stream: repo.watchLessons(course.id),
+        builder: (context, snapshot) {
+          final lessons = snapshot.data ?? const <AurenLesson>[];
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(course.description),
+                      const SizedBox(height: 8),
+                      Text('عدد الدروس: ${course.lessonCount}'),
+                      const SizedBox(height: 8),
+                      if (course.skills.isNotEmpty)
+                        Text('Skills: ${course.skills.join(' • ')}'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ...lessons.map(
+                (lesson) => Card(
+                  child: ListTile(
+                    leading: CircleAvatar(child: Text('${lesson.order}')),
+                    title: Text(lesson.title),
+                    subtitle: Text('${lesson.durationMinutes} دقيقة'),
+                    onTap: () => showDialog<void>(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: Text(lesson.title),
+                        content: SingleChildScrollView(
+                          child: Text(lesson.content),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogContext),
+                            child: const Text('إغلاق'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
-extension<T> on Iterable<T>{T? get firstOrNull=>isEmpty?null:first;}
+
+extension<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
+}
