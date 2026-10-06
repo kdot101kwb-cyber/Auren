@@ -26,6 +26,7 @@ class TalentScoutService {
         }
       } else {
         final keywords=<String>{...scout.skills.map(_norm),...scout.interests.map(_norm)}..removeWhere((x)=>x.isEmpty);
+        final sportSignals=<String>{_norm(talent.sport),_norm(talent.discipline),_norm(talent.level)}..removeWhere((x)=>x.isEmpty);
         final hay='${talent.bio} ${talent.category} ${talent.city} ${talent.country} ${talent.skills.join(' ')}'.toLowerCase();
         final hits=keywords.where((k)=>hay.contains(k)).toList();
         final score=keywords.isEmpty?50:((hits.length/keywords.length)*100).round();
