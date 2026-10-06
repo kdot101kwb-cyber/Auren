@@ -35,6 +35,22 @@ class _AurenTalentClaimScreenState extends State<AurenTalentClaimScreen> {
     }
   }
 
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'approved': return 'تم اعتماد الطلب وربط الملف بحسابك.';
+      case 'rejected': return 'تم رفض الطلب بعد المراجعة.';
+      default: return 'قيد المراجعة.';
+    }
+  }
+
+  IconData _statusIcon(String status) {
+    switch (status) {
+      case 'approved': return Icons.verified;
+      case 'rejected': return Icons.cancel_outlined;
+      default: return Icons.hourglass_top;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -66,8 +82,9 @@ class _AurenTalentClaimScreenState extends State<AurenTalentClaimScreen> {
                   children: [
                     const ListTile(leading: Icon(Icons.history), title: Text('طلباتك')),
                     ...claims.map((claim) => ListTile(
-                      title: Text('طلب ' + (claim['talentId'] ?? '').toString()),
-                      subtitle: Text('الحالة: ' + (claim['status'] ?? 'pending').toString()),
+                      title: Text('ملف: ' + (claim['talentId'] ?? '').toString()),
+                      subtitle: Text(_statusLabel((claim['status'] ?? 'pending').toString())),
+                      leading: Icon(_statusIcon((claim['status'] ?? 'pending').toString())),
                     )),
                   ],
                 ),
