@@ -271,7 +271,8 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                   ),
                 ),
               ),
-              if (summaryValues.isNotEmpty)
+              ...[
+                if (summaryValues.isNotEmpty)
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -290,7 +291,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                             _stat('عدد القياسات', summaryValues.length.toString()),
                             if (delta != null) _stat('التغير', '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(2)}'),
                           ],
-                        ),
+                          ),
                         const SizedBox(height: 12),
                         Text('آخر ${summaryValues.length > 10 ? 10 : summaryValues.length} قياسات لنفس المؤشر.'),
                         const SizedBox(height: 10),
