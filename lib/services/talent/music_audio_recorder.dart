@@ -102,11 +102,11 @@ class AurenMusicAudioRecorder {
     final frameLength = math.min(8192, _largestPowerOfTwo(samples.length));
     final frame = samples.sublist(0, frameLength);
     final fft = FFT(frameLength);
-    final spectrum = fft.realFft(frame);
+    final spectrum = fft.realFft(frame).discardConjugates().magnitudes();
 
     var bestBin = 0;
     var bestMagnitude = 0.0;
-    final maxBin = math.min(spectrum.length ~/ 2, (1200 * frameLength / sampleRate).floor());
+    final maxBin = math.min(spectrum.length - 1, (1200 * frameLength / sampleRate).floor());
     final minBin = math.max(1, (60 * frameLength / sampleRate).floor());
 
     for (var bin = minBin; bin <= maxBin; bin++) {
