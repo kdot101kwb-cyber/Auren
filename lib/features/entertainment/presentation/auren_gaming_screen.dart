@@ -321,7 +321,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
       if(docs.isEmpty)return const Text('ابدأ Arena لتظهر هنا.');
       return Column(children:[for(var i=0;i<docs.length;i++)ListTile(dense:true,leading:CircleAvatar(child:Text((i+1).toString())),title:Text(docs[i].data()['displayName']?.toString()??'لاعب AUREN'),trailing:Text(((docs[i].data()['arenaWins'] as num?)?.toInt()??0).toString()+' 🏆'))]);
     }),
-  ]));
+  ])));
 
   Widget _arenaCard(){
     if(_arenaRoomId==null)return Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
