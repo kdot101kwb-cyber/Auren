@@ -214,7 +214,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                 const SizedBox(height: 10),
                 SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _addEntry, icon: const Icon(Icons.save_outlined), label: const Text('حفظ القياس'))),
               ]))),
-              if (values.isNotEmpty) ...[
+              if (summaryValues.isNotEmpty) ...[
                 Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('ملخص الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 10),
