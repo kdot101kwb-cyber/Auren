@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/talent/music_talent_catalog.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'music_audio_lab.dart';
 
 class AurenMusicTalentTools extends StatelessWidget {
   const AurenMusicTalentTools({super.key});
@@ -24,6 +25,8 @@ class AurenMusicTalentTools extends StatelessWidget {
               'أدوات متخصصة للمغنين والعازفين وكتاب الأغاني والملحنين والمنتجين والـDJ داخل Talent.',
             ),
             const SizedBox(height: 10),
+            const AurenMusicAudioLab(),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 6,
               runSpacing: 6,
