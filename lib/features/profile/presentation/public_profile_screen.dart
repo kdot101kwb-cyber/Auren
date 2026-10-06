@@ -310,7 +310,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                           ],
                           if (sections.isNotEmpty) ...[
                             const SizedBox(height: 10),
-                            Text(sections.join('\\n')),
+                            Text(sections.join('\n')),
                           ],
                           if (displayMode != mode) ...[
                             const SizedBox(height: 8),
