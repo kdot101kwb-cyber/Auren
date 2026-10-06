@@ -173,10 +173,9 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
         builder: (context, snapshot) {
           final docs = snapshot.data?.docs ?? const [];
           final current = docs.where((d) => (d.data()['sport'] ?? '').toString() == sport).toList();
-          final values = current.map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
           final selectedMetric = metricController.text.trim();
-          final selectedMetricValues = selectedMetric.isEmpty ? values : current.where((d) => (d.data()['metric'] ?? '').toString() == selectedMetric && (summaryUnit.isEmpty || (d.data()['unit'] ?? '').toString() == summaryUnit)).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
-          final summaryValues = selectedMetric.isEmpty ? values : selectedMetricValues;
+          final selectedMetricValues = selectedMetric.isEmpty ? current.map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList() : current.where((d) => (d.data()['metric'] ?? '').toString() == selectedMetric && (summaryUnit.isEmpty || (d.data()['unit'] ?? '').toString() == summaryUnit)).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
+          final summaryValues = selectedMetric.isEmpty ? current.map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList() : selectedMetricValues;
           final average = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a + b) / summaryValues.length;
           final best = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a > b ? a : b);
           final latest = summaryValues.isEmpty ? null : summaryValues.first;
@@ -188,175 +187,56 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('الرياضة', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: sport,
-                  isExpanded: true,
-                  items: sports.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                  onChanged: (v) => setState(() => sport = v ?? sport),
-                  decoration: const InputDecoration(border: OutlineInputBorder()),
-                ),
+                DropdownButtonFormField<String>(value: sport, isExpanded: true, items: sports.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) => setState(() => sport = v ?? sport), decoration: const InputDecoration(border: OutlineInputBorder())),
               ]))),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                OutlinedButton.icon(
-                  onPressed: current.isEmpty
-                      ? null
-                      : () {
-                          final measurements = current.take(20).map((d) {
-                            final data = d.data();
-                            return (data['metric'] ?? '').toString() + ': ' + (data['value'] ?? '').toString() + ' ' + (data['unit'] ?? '').toString();
-                          }).toList();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => MessengerScreen(
-                                initialPrompt: AurenSportsAiService.performanceDataPrompt(
-                                  sport: sport,
-                                  measurements: measurements,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                  icon: const Icon(Icons.auto_awesome),
-                  label: const Text('مراجعة الأداء مع AUREN AI'),
-                ),
+                OutlinedButton.icon(onPressed: current.isEmpty ? null : () { final measurements = current.take(20).map((d) { final data = d.data(); return (data['metric'] ?? '').toString() + ': ' + (data['value'] ?? '').toString() + ' ' + (data['unit'] ?? '').toString(); }).toList(); Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: AurenSportsAiService.performanceDataPrompt(sport: sport, measurements: measurements)))); }, icon: const Icon(Icons.auto_awesome), label: const Text('مراجعة الأداء مع AUREN AI')),
                 const SizedBox(height: 10),
                 const Text('مؤشرات الرياضة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
                 const Text('اختر مؤشراً مرتبطاً بالرياضة الحالية. الملخص يعرض القياسات لنفس المؤشر فقط ولا يخلط مؤشرات مختلفة.'),
                 const SizedBox(height: 10),
-                Wrap(spacing: 6, runSpacing: 6, children: [
-                  'التحمل','القوة','السرعة','الرشاقة','التوازن','نسبة النجاح','دقة التسديد','التقنية','زمن الاستجابة'
-                ].map((x) => ActionChip(label: Text(x), onPressed: () => setState(() => metricController.text = x))).toList()),
-              ])),
-              const SizedBox(height: 10),
+                Wrap(spacing: 6, runSpacing: 6, children: ['التحمل','القوة','السرعة','الرشاقة','التوازن','نسبة النجاح','دقة التسديد','التقنية','زمن الاستجابة'].map((x) => ActionChip(label: Text(x), onPressed: () => setState(() => metricController.text = x))).toList()),
+              ]))),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('حاسبات الأداء', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
                 const Text('مؤشرات تخطيطية وليست تشخيصاً طبياً أو بديلاً عن المدرب. قارن القياسات لنفس المؤشر والوحدة عند متابعة الاتجاه.'),
                 const SizedBox(height: 10),
-                Wrap(spacing: 8, runSpacing: 8, children: metrics.keys.map((id) => ActionChip(label: Text(metrics[id]! ), onPressed: () => _calculator(id))).toList()),
+                Wrap(spacing: 8, runSpacing: 8, children: metrics.keys.map((id) => ActionChip(label: Text(metrics[id]!), onPressed: () => _calculator(id))).toList()),
               ]))),
-              const SizedBox(height: 10),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('سجل قياس لـ $sport', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 10),
-                      DropdownButtonFormField<String>(
-                        value: metricController.text.isEmpty ? null : metricController.text,
-                        items: metrics.values.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
-                        onChanged: (v) => setState(() => metricController.text = v ?? ''),
-                        decoration: const InputDecoration(labelText: 'المؤشر', border: OutlineInputBorder()),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(controller: valueController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة', border: OutlineInputBorder())),
-                      const SizedBox(height: 8),
-                      TextField(controller: unitController, decoration: const InputDecoration(labelText: 'الوحدة (اختياري)', border: OutlineInputBorder())),
-                      const SizedBox(height: 8),
-                      TextField(controller: noteController, maxLines: 2, decoration: const InputDecoration(labelText: 'ملاحظة (اختياري)', border: OutlineInputBorder())),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: _addEntry,
-                          icon: const Icon(Icons.save_outlined),
-                          label: const Text('حفظ القياس'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              ...[
-                if (summaryValues.isNotEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('ملخص الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _stat('الأحدث', latest!.toStringAsFixed(2)),
-                            _stat('المتوسط', average!.toStringAsFixed(2)),
-                            _stat('الأفضل', best!.toStringAsFixed(2)),
-                            _stat('عدد القياسات', summaryValues.length.toString()),
-                            if (delta != null) _stat('التغير', '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(2)}'),
-                          ],
-                          ),
-                        const SizedBox(height: 12),
-                        Text('آخر ${summaryValues.length > 10 ? 10 : summaryValues.length} قياسات لنفس المؤشر.'),
-                        const SizedBox(height: 10),
-                        ...summaryValues.take(10).map((v) {
-                          final maxValue = summaryValues.reduce((a, b) => a > b ? a : b);
-                          final ratio = maxValue <= 0 ? 0.0 : (v / maxValue).clamp(0.0, 1.0);
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              children: [
-                                SizedBox(width: 70, child: Text(v.toStringAsFixed(1))),
-                                const SizedBox(width: 8),
-                                Expanded(child: LinearProgressIndicator(value: ratio, minHeight: 8)),
-                              ],
-                            ),
-                          );
-                        }),
-                        if (delta != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            delta == 0
-                                ? 'لا يوجد تغير عن القياس السابق.'
-                                : delta > 0
-                                    ? 'الاتجاه الأخير: ارتفاع عن القياس السابق.'
-                                    : 'الاتجاه الأخير: انخفاض عن القياس السابق.',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 10),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('آخر القياسات • $sport', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 8),
-                      if (current.isEmpty) const Text('لا توجد قياسات بعد.'),
-                      ...current.take(20).map((d) {
-                        final data = d.data();
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const CircleAvatar(child: Icon(Icons.insights)),
-                          title: Text((data['metric'] ?? 'مؤشر').toString()),
-                          subtitle: Text(
-                            (data['value'] ?? '').toString() +
-                                ' ' +
-                                (data['unit'] ?? '').toString() +
-                                ((data['note'] ?? '').toString().isEmpty ? '' : ' • ' + data['note'].toString()),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
+              Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('سجل قياس لـ $sport', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(value: metricController.text.isEmpty ? null : metricController.text, items: metrics.values.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(), onChanged: (v) => setState(() => metricController.text = v ?? ''), decoration: const InputDecoration(labelText: 'المؤشر', border: OutlineInputBorder())),
+                const SizedBox(height: 8),
+                TextField(controller: valueController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة', border: OutlineInputBorder())),
+                const SizedBox(height: 8),
+                TextField(controller: unitController, decoration: const InputDecoration(labelText: 'الوحدة (اختياري)', border: OutlineInputBorder())),
+                const SizedBox(height: 8),
+                TextField(controller: noteController, maxLines: 2, decoration: const InputDecoration(labelText: 'ملاحظة (اختياري)', border: OutlineInputBorder())),
+                const SizedBox(height: 10),
+                SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _addEntry, icon: const Icon(Icons.save_outlined), label: const Text('حفظ القياس'))),
+              ]))),
+              if (summaryValues.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('ملخص الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, runSpacing: 8, children: [_stat('الأحدث', latest!.toStringAsFixed(2)), _stat('المتوسط', average!.toStringAsFixed(2)), _stat('الأفضل', best!.toStringAsFixed(2)), _stat('عدد القياسات', summaryValues.length.toString()), if (delta != null) _stat('التغير', (delta >= 0 ? '+' : '') + delta.toStringAsFixed(2))]),
+                const SizedBox(height: 12),
+                Text('آخر ' + (summaryValues.length > 10 ? 10 : summaryValues.length).toString() + ' قياسات لنفس المؤشر.'),
+                const SizedBox(height: 10),
+                ...summaryValues.take(10).map((v) { final maxValue = summaryValues.reduce((a, b) => a > b ? a : b); final ratio = maxValue <= 0 ? 0.0 : (v / maxValue).clamp(0.0, 1.0); return Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [SizedBox(width: 70, child: Text(v.toStringAsFixed(1))), const SizedBox(width: 8), Expanded(child: LinearProgressIndicator(value: ratio, minHeight: 8))])); }),
+                if (delta != null) ...[const SizedBox(height: 8), Text(delta == 0 ? 'لا يوجد تغير عن القياس السابق.' : delta > 0 ? 'الاتجاه الأخير: ارتفاع عن القياس السابق.' : 'الاتجاه الأخير: انخفاض عن القياس السابق.', style: const TextStyle(fontWeight: FontWeight.w700))],
+              ]))),
+              Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('آخر القياسات • $sport', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                if (current.isEmpty) const Text('لا توجد قياسات بعد.'),
+                ...current.take(20).map((d) { final data = d.data(); return ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.insights)), title: Text((data['metric'] ?? 'مؤشر').toString()), subtitle: Text((data['value'] ?? '').toString() + ' ' + (data['unit'] ?? '').toString() + ((data['note'] ?? '').toString().isEmpty ? '' : ' • ' + data['note'].toString()))); }),
+              ]))),
             ],
           );
         },
       ),
     );
-  }
-}
+  }}
