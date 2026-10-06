@@ -144,6 +144,16 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
             _toolButton(Icons.scale_outlined, 'الإنتاجية', _showYieldTool),
+            _toolButton(Icons.percent_outlined, 'فاقد الحصاد', _showHarvestLossTool),
+            _toolButton(Icons.attach_money_outlined, 'الإيراد المتوقع', _showRevenueTool),
+            _toolButton(Icons.balance_outlined, 'نقطة التعادل', _showBreakEvenTool),
+            _toolButton(Icons.account_balance_wallet_outlined, 'هامش الربح', _showProfitMarginTool),
+            _toolButton(Icons.warehouse_outlined, 'سعة التخزين', _showStorageTool),
+            _toolButton(Icons.grain_outlined, 'احتياج العلف', _showFeedNeedTool),
+            _toolButton(Icons.pets_outlined, 'احتياج الماء للماشية', _showLivestockWaterTool),
+            _toolButton(Icons.egg_outlined, 'إنتاج البيض', _showEggProductionTool),
+            _toolButton(Icons.local_drink_outlined, 'إنتاج الحليب', _showMilkProductionTool),
+            _toolButton(Icons.home_work_outlined, 'مساحة البيت المحمي', _showGreenhouseTool),
           ]),
         ]),
       ),
@@ -795,6 +805,95 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
       return 'إنتاجية المياه: ${(p / w).toStringAsFixed(2)} كجم/م³.\n\nهذا مؤشر للمقارنة بين المواسم أو الحقول، وليس معياراً ثابتاً لكل المحاصيل.';
     });
     production.dispose(); water.dispose(); if (mounted && result != null) _showResult('كفاءة استخدام المياه', result);
+  }
+  Future<void> _showHarvestLossTool() async {
+    final harvested = TextEditingController(text: '1000'); final loss = TextEditingController(text: '5');
+    final result = await _twoFieldTool(title: 'فاقد الحصاد', first: harvested, second: loss, firstLabel: 'الإنتاج قبل الفرز كجم', secondLabel: 'نسبة الفاقد %', actionLabel: 'احسب', calculate: () {
+      final h = double.tryParse(harvested.text.trim()) ?? 0; final l = double.tryParse(loss.text.trim()) ?? -1;
+      if (h < 0 || l < 0 || l > 100) return 'أدخل إنتاجاً صحيحاً ونسبة فاقد بين 0 و100%.';
+      return 'الفاقد التقريبي: ${(h*l/100).toStringAsFixed(2)} كجم.\nالصافي بعد الفاقد: ${(h*(1-l/100)).toStringAsFixed(2)} كجم.';
+    }); harvested.dispose(); loss.dispose(); if (mounted && result != null) _showResult('فاقد الحصاد', result);
+  }
+
+  Future<void> _showRevenueTool() async {
+    final qty = TextEditingController(text: '1000'); final price = TextEditingController(text: '2');
+    final result = await _twoFieldTool(title: 'الإيراد المتوقع', first: qty, second: price, firstLabel: 'الكمية القابلة للبيع', secondLabel: 'سعر الوحدة', actionLabel: 'احسب', calculate: () {
+      final q = double.tryParse(qty.text.trim()) ?? 0; final p = double.tryParse(price.text.trim()) ?? 0;
+      if (q < 0 || p < 0) return 'أدخل قيماً غير سالبة.';
+      return 'الإيراد الإجمالي المتوقع: ${(q*p).toStringAsFixed(2)} من عملتك.';
+    }); qty.dispose(); price.dispose(); if (mounted && result != null) _showResult('الإيراد المتوقع', result);
+  }
+
+  Future<void> _showBreakEvenTool() async {
+    final fixed = TextEditingController(text: '1000'); final contribution = TextEditingController(text: '2');
+    final result = await _twoFieldTool(title: 'نقطة التعادل', first: fixed, second: contribution, firstLabel: 'التكاليف الثابتة', secondLabel: 'هامش المساهمة للوحدة', actionLabel: 'احسب', calculate: () {
+      final f = double.tryParse(fixed.text.trim()) ?? 0; final c = double.tryParse(contribution.text.trim()) ?? 0;
+      if (f < 0 || c <= 0) return 'أدخل تكلفة ثابتة غير سالبة وهامش مساهمة أكبر من صفر.';
+      return 'نقطة التعادل: ${(f/c).ceil()} وحدة تقريباً.';
+    }); fixed.dispose(); contribution.dispose(); if (mounted && result != null) _showResult('نقطة التعادل', result);
+  }
+
+  Future<void> _showProfitMarginTool() async {
+    final revenue = TextEditingController(text: '2000'); final cost = TextEditingController(text: '1400');
+    final result = await _twoFieldTool(title: 'هامش الربح', first: revenue, second: cost, firstLabel: 'الإيراد', secondLabel: 'التكلفة الإجمالية', actionLabel: 'احسب', calculate: () {
+      final r = double.tryParse(revenue.text.trim()) ?? 0; final c = double.tryParse(cost.text.trim()) ?? 0;
+      if (r <= 0 || c < 0) return 'أدخل إيراداً أكبر من صفر وتكلفة غير سالبة.';
+      final profit = r-c; return 'الربح: ${profit.toStringAsFixed(2)}.\nهامش الربح: ${(profit/r*100).toStringAsFixed(2)}%.';
+    }); revenue.dispose(); cost.dispose(); if (mounted && result != null) _showResult('هامش الربح', result);
+  }
+
+  Future<void> _showStorageTool() async {
+    final daily = TextEditingController(text: '500'); final days = TextEditingController(text: '10');
+    final result = await _twoFieldTool(title: 'سعة التخزين', first: daily, second: days, firstLabel: 'كمية يومية كجم', secondLabel: 'عدد أيام التخزين', actionLabel: 'احسب', calculate: () {
+      final d = double.tryParse(daily.text.trim()) ?? 0; final n = double.tryParse(days.text.trim()) ?? 0;
+      if (d < 0 || n <= 0) return 'أدخل كمية غير سالبة وعدد أيام أكبر من صفر.';
+      return 'السعة الأساسية: ${(d*n).toStringAsFixed(2)} كجم.\nأضف هامشاً مناسباً للمناولة والفقد حسب نوع المنتج.';
+    }); daily.dispose(); days.dispose(); if (mounted && result != null) _showResult('سعة التخزين', result);
+  }
+
+  Future<void> _showFeedNeedTool() async {
+    final animals = TextEditingController(text: '20'); final feed = TextEditingController(text: '5');
+    final result = await _twoFieldTool(title: 'احتياج العلف', first: animals, second: feed, firstLabel: 'عدد الحيوانات', secondLabel: 'كجم علف/حيوان/يوم', actionLabel: 'احسب', calculate: () {
+      final a = double.tryParse(animals.text.trim()) ?? 0; final f = double.tryParse(feed.text.trim()) ?? 0;
+      if (a < 0 || f < 0) return 'أدخل قيماً غير سالبة.';
+      return 'الاحتياج اليومي التقريبي: ${(a*f).toStringAsFixed(2)} كجم علف.\nهذه حسبة كمية فقط؛ الاحتياج الغذائي يختلف حسب النوع والعمر والوزن والإنتاج.';
+    }); animals.dispose(); feed.dispose(); if (mounted && result != null) _showResult('احتياج العلف', result);
+  }
+
+  Future<void> _showLivestockWaterTool() async {
+    final animals = TextEditingController(text: '20'); final water = TextEditingController(text: '40');
+    final result = await _twoFieldTool(title: 'احتياج الماء للماشية', first: animals, second: water, firstLabel: 'عدد الحيوانات', secondLabel: 'لتر/حيوان/يوم', actionLabel: 'احسب', calculate: () {
+      final a = double.tryParse(animals.text.trim()) ?? 0; final w = double.tryParse(water.text.trim()) ?? 0;
+      if (a < 0 || w < 0) return 'أدخل قيماً غير سالبة.';
+      return 'الاحتياج اليومي التقريبي: ${(a*w).toStringAsFixed(0)} لتر.\nالاحتياج الفعلي يتغير مع النوع والوزن والحرارة والعلف والإنتاج.';
+    }); animals.dispose(); water.dispose(); if (mounted && result != null) _showResult('احتياج الماء للماشية', result);
+  }
+
+  Future<void> _showEggProductionTool() async {
+    final hens = TextEditingController(text: '100'); final rate = TextEditingController(text: '80');
+    final result = await _twoFieldTool(title: 'إنتاج البيض', first: hens, second: rate, firstLabel: 'عدد الدجاج', secondLabel: 'نسبة الإنتاج %', actionLabel: 'احسب', calculate: () {
+      final h = double.tryParse(hens.text.trim()) ?? 0; final r = double.tryParse(rate.text.trim()) ?? 0;
+      if (h < 0 || r < 0 || r > 100) return 'أدخل عدداً صحيحاً ونسبة بين 0 و100%.';
+      return 'الإنتاج اليومي النظري: ${(h*r/100).toStringAsFixed(0)} بيضة تقريباً.';
+    }); hens.dispose(); rate.dispose(); if (mounted && result != null) _showResult('إنتاج البيض', result);
+  }
+
+  Future<void> _showMilkProductionTool() async {
+    final animals = TextEditingController(text: '20'); final milk = TextEditingController(text: '8');
+    final result = await _twoFieldTool(title: 'إنتاج الحليب', first: animals, second: milk, firstLabel: 'عدد الحيوانات الحلوب', secondLabel: 'لتر/حيوان/يوم', actionLabel: 'احسب', calculate: () {
+      final a = double.tryParse(animals.text.trim()) ?? 0; final m = double.tryParse(milk.text.trim()) ?? 0;
+      if (a < 0 || m < 0) return 'أدخل قيماً غير سالبة.';
+      return 'إنتاج الحليب اليومي التقريبي: ${(a*m).toStringAsFixed(2)} لتر.';
+    }); animals.dispose(); milk.dispose(); if (mounted && result != null) _showResult('إنتاج الحليب', result);
+  }
+
+  Future<void> _showGreenhouseTool() async {
+    final plants = TextEditingController(text: '1000'); final spacing = TextEditingController(text: '0.5');
+    final result = await _twoFieldTool(title: 'مساحة البيت المحمي', first: plants, second: spacing, firstLabel: 'عدد النباتات', secondLabel: 'المساحة التقريبية/نبات م²', actionLabel: 'احسب', calculate: () {
+      final p = double.tryParse(plants.text.trim()) ?? 0; final s = double.tryParse(spacing.text.trim()) ?? 0;
+      if (p <= 0 || s <= 0) return 'أدخل قيماً أكبر من صفر.';
+      return 'المساحة الصافية التقريبية: ${(p*s).toStringAsFixed(2)} م².\nأضف مساحة للممرات والخدمات والتهوية عند التخطيط الفعلي.';
+    }); plants.dispose(); spacing.dispose(); if (mounted && result != null) _showResult('مساحة البيت المحمي', result);
   }
   Future<void> _showProductionEstimateTool() async {
     final area=TextEditingController(text:'1000'); final rate=TextEditingController(text:'3');
