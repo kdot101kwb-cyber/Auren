@@ -16,6 +16,7 @@ import 'talent_club_coach_match_screen.dart';
 import 'talent_coach_screen.dart';
 import 'talent_verification_screen.dart';
 import 'talent_star_profile_screen.dart';
+import 'talent_general_ai_tools.dart';
 class AurenTalentScreen extends StatefulWidget{const AurenTalentScreen({super.key});@override State<AurenTalentScreen> createState()=>_AurenTalentScreenState();}
 class _AurenTalentScreenState extends State<AurenTalentScreen>{final repo=TalentRepository();final search=TextEditingController();String skill='';String selectedSport='';String selectedCategory='';bool evidenceOnly=false;
 static const sports=TalentSportsCatalog.all;
