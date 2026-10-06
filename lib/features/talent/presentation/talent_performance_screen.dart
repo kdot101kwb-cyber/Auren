@@ -122,6 +122,17 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
     );
   }
 
+  Widget _stat(String label, String value) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Theme.of(context).dividerColor)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(fontSize: 12)),
+      const SizedBox(height: 2),
+      Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+    ]),
+  );
+
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -133,6 +144,10 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
         builder: (context, snapshot) {
           final docs = snapshot.data?.docs ?? const [];
           final current = docs.where((d) => (d.data()['sport'] ?? '').toString() == sport).toList();
+          final values = current.map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
+          final average = values.isEmpty ? null : values.reduce((a, b) => a + b) / values.length;
+          final best = values.isEmpty ? null : values.reduce((a, b) => a > b ? a : b);
+          final latest = values.isEmpty ? null : values.first;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -174,7 +189,19 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                 const SizedBox(height: 10),
                 SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _addEntry, icon: const Icon(Icons.save_outlined), label: const Text('حفظ القياس'))),
               ]))),
-              const SizedBox(height: 10),
+              if (values.isNotEmpty) ...[
+                Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('ملخص الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 10),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    _stat('الأحدث', latest!.toStringAsFixed(2)),
+                    _stat('المتوسط', average!.toStringAsFixed(2)),
+                    _stat('الأفضل', best!.toStringAsFixed(2)),
+                    _stat('عدد القياسات', values.length.toString()),
+                  ]),
+                ]))),
+                const SizedBox(height: 10),
+              ],
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('آخر القياسات • $sport', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 8),
