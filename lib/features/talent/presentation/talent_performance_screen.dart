@@ -222,7 +222,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                     _stat('الأحدث', latest!.toStringAsFixed(2)),
                     _stat('المتوسط', average!.toStringAsFixed(2)),
                     _stat('الأفضل', best!.toStringAsFixed(2)),
-                    _stat('عدد القياسات', values.length.toString()),
+                    _stat('عدد القياسات', summaryValues.length.toString()),
                     if (delta != null) _stat('التغير', '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(2)}'),
                   ]),
                   if (delta != null) ...[
