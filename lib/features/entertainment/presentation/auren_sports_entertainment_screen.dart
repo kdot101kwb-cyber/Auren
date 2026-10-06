@@ -104,7 +104,7 @@ class _Explorer extends StatelessWidget{
   final TextEditingController query,country,league,season;final String sport,resource;final bool loading;final ValueChanged<String> onSport,onResource;final Future<void> Function() onSearch;
   const _Explorer({required this.query,required this.country,required this.league,required this.season,required this.sport,required this.resource,required this.loading,required this.onSport,required this.onResource,required this.onSearch});
   @override Widget build(BuildContext context)=>_Section(title:'استكشف',icon:Icons.explore_rounded,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-    TextField(controller:query,decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'فريق، لاعب، مباراة أو بطولة',suffixIcon:query.text.isEmpty?null:IconButton(icon:const Icon(Icons.clear),onPressed:query.clear),border:OutlineInputBorder())),
+    TextField(controller:query,decoration:InputDecoration(prefixIcon:const Icon(Icons.search),hintText:'فريق، لاعب، مباراة أو بطولة',suffixIcon:query.text.isEmpty?null:IconButton(icon:const Icon(Icons.clear),onPressed:query.clear),border:OutlineInputBorder())),
     const SizedBox(height:12),const Text('الرياضة',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:8),
     _chips(sports,sport,onSport),const SizedBox(height:14),const Text('المحتوى',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:8),
     _chips(resources.keys.toList(),resource,onResource,resources),const SizedBox(height:12),
@@ -120,5 +120,73 @@ class _Section extends StatelessWidget{
 }
 class _Empty extends StatelessWidget{const _Empty();@override Widget build(BuildContext context)=>Card(elevation:0,child:Padding(padding:const EdgeInsets.all(24),child:Column(children:[Icon(Icons.sports_score,size:44,color:Theme.of(context).colorScheme.primary),const SizedBox(height:12),const Text('ابدأ بالبحث عن رياضة أو فريق أو بطولة.',textAlign:TextAlign.center,style:TextStyle(fontWeight:FontWeight.w700))])));}
 
-class _SportsFollowingInline extends StatefulWidget{const _SportsFollowingInline();@override State<_SportsFollowingInline> createState()=>_SportsFollowingInlineState();}
-class _SportsFollowingInlineState extends State<_SportsFollowingInline>{bool loading=true;List<Map<String,dynamic>> teams=[];List<Map<String,dynamic>> alerts=[];@override void initState(){super.initState();_load();}Future<void> _load()async{setState(()=>loading=true);try{final f=FirebaseFunctions.instance;final a=await Future.wait([f.httpsCallable('getAurenSportsFollowing').call(),f.httpsCallable('getAurenSportsAlerts').call()]);final t=Map<String,dynamic>.from(a[0].data as Map);final n=Map<String,dynamic>.from(a[1].data as Map);if(mounted)setState((){teams=List<Map<String,dynamic>>.from(t['results']??const[]);alerts=List<Map<String,dynamic>>.from(n['alerts']??const[]);loading=false;});}catch(e){if(mounted){setState(()=>loading=false);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحميل رياضتي: $e')));}}}Future<void> _read(String id)async{try{await FirebaseFunctions.instance.httpsCallable('markAurenSportsAlertRead').call({'alertId':id});await _load();}catch(_){}}@override Widget build(BuildContext context){return Scaffold(appBar:AppBar(title:const Text('رياضتي'),actions:[IconButton(onPressed:_load,icon:const Icon(Icons.refresh))]),body:loading?const Center(child:CircularProgressIndicator()):RefreshIndicator(onRefresh:_load,child:ListView(padding:const EdgeInsets.all(16),children:[Card(child:ListTile(leading:const Icon(Icons.favorite_rounded),title:Text('الفرق التي أتابعها'),subtitle:Text(teams.isEmpty?'لم تتابع أي فريق بعد.':teams.map((e)=>(e['name']??'فريق').toString()).join(' • '))),),const SizedBox(height:12),Card(child:Column(children:[const ListTile(leading:Icon(Icons.notifications_active),title:Text('التنبيهات الرياضية')),if(alerts.isEmpty)const Padding(padding:EdgeInsets.all(16),child:Text('لا توجد تنبيهات بعد.')),for(final a in alerts)ListTile(title:Text((a['title']??'تنبيه رياضي').toString(),style:TextStyle(fontWeight:a['read']==true?FontWeight.w600:FontWeight.w900)),subtitle:Text((a['body']??'').toString()),leading:Icon(a['read']==true?Icons.notifications_none:Icons.notifications_active),onTap:a['read']==true?null:()=>_read((a['id']??'').toString()))]))]));}}
+class _SportsFollowingInline extends StatefulWidget {
+  const _SportsFollowingInline();
+  @override State<_SportsFollowingInline> createState()=>_SportsFollowingInlineState();
+}
+class _SportsFollowingInlineState extends State<_SportsFollowingInline> {
+  bool loading=true;
+  List<Map<String,dynamic>> teams=[];
+  List<Map<String,dynamic>> alerts=[];
+  @override void initState(){super.initState();_load();}
+  Future<void> _load() async {
+    setState(()=>loading=true);
+    try {
+      final f=FirebaseFunctions.instance;
+      final a=await Future.wait([
+        f.httpsCallable('getAurenSportsFollowing').call(),
+        f.httpsCallable('getAurenSportsAlerts').call(),
+      ]);
+      final t=Map<String,dynamic>.from(a[0].data as Map);
+      final n=Map<String,dynamic>.from(a[1].data as Map);
+      if(mounted)setState((){
+        teams=List<Map<String,dynamic>>.from(t['results']??const []);
+        alerts=List<Map<String,dynamic>>.from(n['alerts']??const []);
+        loading=false;
+      });
+    } catch(e) {
+      if(mounted){
+        setState(()=>loading=false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحميل رياضتي: $e')));
+      }
+    }
+  }
+  Future<void> _read(String id) async {
+    try {
+      await FirebaseFunctions.instance.httpsCallable('markAurenSportsAlertRead').call({'alertId':id});
+      await _load();
+    } catch(_){}
+  }
+  @override Widget build(BuildContext context){
+    return Scaffold(
+      appBar:AppBar(title:const Text('رياضتي'),actions:[IconButton(onPressed:_load,icon:const Icon(Icons.refresh))]),
+      body:loading
+        ? const Center(child:CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh:_load,
+            child:ListView(
+              padding:const EdgeInsets.all(16),
+              children:[
+                Card(child:ListTile(
+                  leading:const Icon(Icons.favorite_rounded),
+                  title:const Text('الفرق التي أتابعها'),
+                  subtitle:Text(teams.isEmpty?'لم تتابع أي فريق بعد.':teams.map((e)=>(e['name']??'فريق').toString()).join(' • ')),
+                )),
+                const SizedBox(height:12),
+                Card(child:Column(children:[
+                  const ListTile(leading:Icon(Icons.notifications_active),title:Text('التنبيهات الرياضية')),
+                  if(alerts.isEmpty) const Padding(padding:EdgeInsets.all(16),child:Text('لا توجد تنبيهات بعد.')),
+                  for(final a in alerts)
+                    ListTile(
+                      title:Text((a['title']??'تنبيه رياضي').toString(),style:TextStyle(fontWeight:a['read']==true?FontWeight.w600:FontWeight.w900)),
+                      subtitle:Text((a['body']??'').toString()),
+                      leading:Icon(a['read']==true?Icons.notifications_none:Icons.notifications_active),
+                      onTap:a['read']==true?null:()=>_read((a['id']??'').toString()),
+                    ),
+                ])),
+              ],
+            ),
+          ),
+    );
+  }
+}
