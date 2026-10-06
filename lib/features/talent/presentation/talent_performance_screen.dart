@@ -1,0 +1,198 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+class AurenTalentPerformanceScreen extends StatefulWidget {
+  final String sport;
+  const AurenTalentPerformanceScreen({super.key, this.sport = ''});
+
+  @override
+  State<AurenTalentPerformanceScreen> createState() => _AurenTalentPerformanceScreenState();
+}
+
+class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScreen> {
+  static const sports = [
+    'Football','Basketball','Volleyball','Tennis','Table Tennis','Boxing','MMA',
+    'Athletics','Swimming','Cycling','Gymnastics','Archery','Weightlifting','Rugby',
+    'Cricket','Baseball','Hockey','Handball','Motorsport','Wrestling','Judo',
+    'Karate','Taekwondo','Fencing','Rowing','Badminton','Golf','Chess & Mind Sports'
+  ];
+
+  static const metrics = <String, String>{
+    'training_load': 'حمل التدريب',
+    'pace': 'الوتيرة',
+    'speed': 'السرعة',
+    'accuracy': 'نسبة النجاح',
+    'win_rate': 'نسبة الفوز',
+    'reaction': 'زمن الاستجابة',
+    'vertical': 'الوثب العمودي',
+    'shooting': 'دقة التسديد',
+  };
+
+  late String sport;
+  final metricController = TextEditingController();
+  final valueController = TextEditingController();
+  final unitController = TextEditingController();
+  final noteController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    sport = widget.sport.isEmpty ? sports.first : widget.sport;
+  }
+
+  @override
+  void dispose() {
+    metricController.dispose();
+    valueController.dispose();
+    unitController.dispose();
+    noteController.dispose();
+    super.dispose();
+  }
+
+  CollectionReference<Map<String, dynamic>> get _entries {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return FirebaseFirestore.instance.collection('users').doc(uid).collection('talent_performance');
+  }
+
+  Future<void> _addEntry() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final value = double.tryParse(valueController.text.trim());
+    if (uid == null || value == null || value < 0 || metricController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل الرياضة والمؤشر وقيمة صحيحة.')));
+      return;
+    }
+    await _entries.add({
+      'ownerId': uid,
+      'sport': sport,
+      'metric': metricController.text.trim(),
+      'value': value,
+      'unit': unitController.text.trim(),
+      'note': noteController.text.trim(),
+      'recordedAt': FieldValue.serverTimestamp(),
+    });
+    if (!mounted) return;
+    valueController.clear();
+    noteController.clear();
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ القياس.')));
+  }
+
+  Future<void> _calculator(String id) async {
+    final a = TextEditingController();
+    final b = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(metrics[id] ?? 'حاسبة الأداء'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: a, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة الأولى')),
+          TextField(controller: b, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة الثانية')),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('احسب')),
+        ],
+      ),
+    );
+    final x = double.tryParse(a.text);
+    final y = double.tryParse(b.text);
+    a.dispose();
+    b.dispose();
+    if (ok != true || x == null || y == null) return;
+
+    double? result;
+    String unit = '';
+    if (id == 'training_load') { result = x * y; unit = 'وحدة'; }
+    if (id == 'pace' && x > 0) { result = y / x; unit = 'دقيقة/كم'; }
+    if (id == 'speed' && y > 0) { result = x / y; unit = 'كم/ساعة'; }
+    if (id == 'accuracy' && y > 0) { result = x / y * 100; unit = '%'; }
+    if (id == 'win_rate' && y > 0) { result = x / y * 100; unit = '%'; }
+    if (id == 'reaction') { result = x; unit = 'مللي ثانية'; }
+    if (id == 'vertical') { result = x; unit = 'سم'; }
+    if (id == 'shooting' && y > 0) { result = x / y * 100; unit = '%'; }
+
+    if (!mounted || result == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(metrics[id] ?? 'النتيجة'),
+        content: Text(result!.toStringAsFixed(2) + ' ' + unit, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إغلاق'))],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const Scaffold(body: Center(child: Text('يجب تسجيل الدخول.')));
+    return Scaffold(
+      appBar: AppBar(title: const Text('تحليل وتطوير الأداء')),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _entries.orderBy('recordedAt', descending: true).limit(50).snapshots(),
+        builder: (context, snapshot) {
+          final docs = snapshot.data?.docs ?? const [];
+          final current = docs.where((d) => (d.data()['sport'] ?? '').toString() == sport).toList();
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('الرياضة', style: TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: sport,
+                  isExpanded: true,
+                  items: sports.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  onChanged: (v) => setState(() => sport = v ?? sport),
+                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                ),
+              ]))),
+              const SizedBox(height: 10),
+              Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('حاسبات الأداء', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                const Text('مؤشرات تخطيطية وليست تشخيصاً طبياً أو بديلاً عن المدرب.'),
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, runSpacing: 8, children: metrics.keys.map((id) => ActionChip(label: Text(metrics[id]! ), onPressed: () => _calculator(id))).toList()),
+              ]))),
+              const SizedBox(height: 10),
+              Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
+                Text('سجل قياس لـ $sport', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: metricController.text.isEmpty ? null : metricController.text,
+                  items: metrics.values.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                  onChanged: (v) => metricController.text = v ?? '',
+                  decoration: const InputDecoration(labelText: 'المؤشر', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 8),
+                TextField(controller: valueController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة', border: OutlineInputBorder())),
+                const SizedBox(height: 8),
+                TextField(controller: unitController, decoration: const InputDecoration(labelText: 'الوحدة (اختياري)', border: OutlineInputBorder())),
+                const SizedBox(height: 8),
+                TextField(controller: noteController, maxLines: 2, decoration: const InputDecoration(labelText: 'ملاحظة (اختياري)', border: OutlineInputBorder())),
+                const SizedBox(height: 10),
+                SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _addEntry, icon: const Icon(Icons.save_outlined), label: const Text('حفظ القياس'))),
+              ]))),
+              const SizedBox(height: 10),
+              Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('آخر القياسات • $sport', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                if (current.isEmpty) const Text('لا توجد قياسات بعد.'),
+                ...current.take(20).map((d) {
+                  final data = d.data();
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(child: Icon(Icons.insights)),
+                    title: Text((data['metric'] ?? 'مؤشر').toString()),
+                    subtitle: Text((data['value'] ?? '').toString() + ' ' + (data['unit'] ?? '').toString() + ((data['note'] ?? '').toString().isEmpty ? '' : ' • ' + data['note'].toString())),
+                  );
+                }),
+              ]))),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
