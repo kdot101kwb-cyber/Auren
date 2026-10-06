@@ -879,7 +879,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     Text('النرد: ' + (_ludoDice == 0 ? '—' : _ludoDice.toString())),
     const SizedBox(height: 8),
     Wrap(spacing: 6, runSpacing: 6, children: List.generate(4, (i) => FilledButton.tonal(
-      onPressed: _isMyTurn && _ludoPendingDice != null ? () => _ludoMove(i),
+      onPressed: _isMyTurn && _ludoPendingDice != null ? () => _ludoMove(i) : null,
       child: Text('🔵 ' + (i + 1).toString() + ': ' + (_ludo[i] == -1 ? 'قاعدة' : _ludo[i].toString() + '/56')),
     ))),
     const SizedBox(height: 8),
