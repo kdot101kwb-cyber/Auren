@@ -51,7 +51,7 @@ Widget _card(BuildContext c, AurenTalent t) {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children:[Expanded(child:Text(t.displayName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),Chip(label:Text('Profile Score $score/100'))]),
+              Row(children:[Expanded(child:Text(t.displayName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),Chip(label:Text('اكتمال الملف $score/100'))]),
               const SizedBox(height: 8),
               Text(t.bio),
               if (t.sport.isNotEmpty) Padding(padding:const EdgeInsets.only(top:8),child:Text('الرياضة: ${t.sport}${t.discipline.isEmpty?'':' • '+t.discipline}${t.level.isEmpty?'':' • '+t.level}',style:const TextStyle(fontWeight:FontWeight.w700))),
