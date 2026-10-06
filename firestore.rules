@@ -2696,7 +2696,7 @@ service cloud.firestore {
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
         && request.resource.data.title.size() <= 160
-        && request.resource.data.type in ['crop','livestock','farm','soil','water','equipment','manufacturing','invention','research','energy','recycling','design']
+        && request.resource.data.type in ['crop','horticulture','orchard','floriculture','greenhouse','nursery','medicinal_plants','agroforestry','climate_smart','seeds','livestock','poultry','dairy','aquaculture','beekeeping','fisheries','veterinary','animal_nutrition','breeding','farm','soil','water','equipment','fertilizer','nutrients','pest','plant_disease','irrigation','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.location is string
         && request.resource.data.location.size() <= 200
         && request.resource.data.visibility == 'public'
@@ -2723,7 +2723,7 @@ service cloud.firestore {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','horticulture','orchard','floriculture','greenhouse','nursery','medicinal_plants','agroforestry','climate_smart','seeds','livestock','poultry','dairy','aquaculture','beekeeping','fisheries','veterinary','animal_nutrition','breeding','soil','fertilizer','nutrients','potassium','nitrogen','phosphorus','pest','plant_disease','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
       allow update: if isOwner(userId)
@@ -2734,7 +2734,7 @@ service cloud.firestore {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','horticulture','orchard','floriculture','greenhouse','nursery','medicinal_plants','agroforestry','climate_smart','seeds','livestock','poultry','dairy','aquaculture','beekeeping','fisheries','veterinary','animal_nutrition','breeding','soil','fertilizer','nutrients','potassium','nitrogen','phosphorus','pest','plant_disease','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.updatedAt is timestamp;
       allow delete: if isOwner(userId);
     }
@@ -3883,7 +3883,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','horticulture','orchard','floriculture','greenhouse','nursery','medicinal_plants','agroforestry','climate_smart','seeds','livestock','poultry','dairy','aquaculture','beekeeping','fisheries','veterinary','animal_nutrition','breeding','soil','fertilizer','nutrients','potassium','nitrogen','phosphorus','pest','plant_disease','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
       allow update: if isOwner(userId)
@@ -3894,7 +3894,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','horticulture','orchard','floriculture','greenhouse','nursery','medicinal_plants','agroforestry','climate_smart','seeds','livestock','poultry','dairy','aquaculture','beekeeping','fisheries','veterinary','animal_nutrition','breeding','soil','fertilizer','nutrients','potassium','nitrogen','phosphorus','pest','plant_disease','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.updatedAt is timestamp;
       allow delete: if isOwner(userId);
     }
@@ -5009,7 +5009,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','horticulture','orchard','floriculture','greenhouse','nursery','medicinal_plants','agroforestry','climate_smart','seeds','livestock','poultry','dairy','aquaculture','beekeeping','fisheries','veterinary','animal_nutrition','breeding','soil','fertilizer','nutrients','potassium','nitrogen','phosphorus','pest','plant_disease','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
       allow update: if isOwner(userId)
@@ -5020,7 +5020,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && request.resource.data.note is string
         && request.resource.data.note.size() > 0
         && request.resource.data.note.size() <= 5000
-        && request.resource.data.type in ['crop','livestock','soil','pest','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
+        && request.resource.data.type in ['crop','horticulture','orchard','floriculture','greenhouse','nursery','medicinal_plants','agroforestry','climate_smart','seeds','livestock','poultry','dairy','aquaculture','beekeeping','fisheries','veterinary','animal_nutrition','breeding','soil','fertilizer','nutrients','potassium','nitrogen','phosphorus','pest','plant_disease','irrigation','general','field','farm','manufacturing','invention','research','energy','recycling','design','business','production','costing','supply_chain','quality','feasibility']
         && request.resource.data.updatedAt is timestamp;
       allow delete: if isOwner(userId);
     }
