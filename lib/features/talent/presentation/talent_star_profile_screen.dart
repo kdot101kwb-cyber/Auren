@@ -8,6 +8,7 @@ import 'talent_claim_screen.dart';
 import 'talent_verification_screen.dart';
 import 'talent_coach_screen.dart';
 import '../../../services/talent/talent_score_service.dart';
+import '../../../services/talent/talent_skill_graph_service.dart';
 
 class AurenTalentStarProfileScreen extends StatelessWidget {
   final AurenTalent talent;
@@ -31,6 +32,7 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
       city: talent.city,
       country: talent.country,
     );
+    final graph = TalentSkillGraphService.build(talent);
     final location = [talent.city, talent.country]
         .where((v) => v.trim().isNotEmpty)
         .join(' • ');
@@ -89,6 +91,7 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
           ),
           _section('About', talent.bio),
           _talentScoreCard(score),
+          _skillGraphCard(graph),
           _profileSummaryCard(),
           _profileTrustCard(),
           if (talent.category.isNotEmpty) _infoCard('Category', talent.category, Icons.category_outlined),
@@ -231,6 +234,20 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _skillGraphCard(TalentSkillGraph graph) {
+    return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Skill Graph', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 6),
+      const Text('خريطة مبنية فقط على بيانات الملف الحالية؛ لا تعني قياساً احترافياً لمستوى اللاعب.'),
+      if (graph.coreSkills.isNotEmpty) ...[const SizedBox(height: 10), const Text('المهارات الأساسية', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 6, children: graph.coreSkills.map((e) => Chip(label: Text(e))).toList())],
+      if (graph.supportingSkills.isNotEmpty) ...[const SizedBox(height: 8), const Text('الرياضات المرتبطة', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 6, children: graph.supportingSkills.map((e) => Chip(label: Text(e))).toList())],
+      if (graph.evidenceSkills.isNotEmpty) ...[const SizedBox(height: 8), Text('الأدلة: ${graph.evidenceSkills.join(' • ')}')],
+      const SizedBox(height: 8),
+      const Text('الخطوة التالية', style: TextStyle(fontWeight: FontWeight.w800)),
+      ...graph.nextSkills.map((e) => ListTile(contentPadding: EdgeInsets.zero, dense: true, leading: const Icon(Icons.arrow_forward_outlined), title: Text(e))),
+    ])));
   }
 
   Widget _profileSummaryCard() {
