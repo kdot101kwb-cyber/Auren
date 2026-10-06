@@ -812,7 +812,8 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['level']) || (request.resource.data.level is string && request.resource.data.level.size() <= 60))
         && (!request.resource.data.keys().hasAny(['achievements']) || (request.resource.data.achievements is list && request.resource.data.achievements.size() <= 20))
         && (!request.resource.data.keys().hasAny(['goals']) || (request.resource.data.goals is list && request.resource.data.goals.size() <= 10))
-        && request.resource.data.keys().hasOnly(['ownerId','displayName','bio','category','sport','sports','discipline','level','city','country','skills','achievements','goals','status','updatedAt']);
+        && (!request.resource.data.keys().hasAny(['verificationEvidence']) || (request.resource.data.verificationEvidence is list && request.resource.data.verificationEvidence.size() <= 10))
+        && request.resource.data.keys().hasOnly(['ownerId','displayName','bio','category','sport','sports','discipline','level','city','country','skills','achievements','goals','verificationEvidence','status','updatedAt']);
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
