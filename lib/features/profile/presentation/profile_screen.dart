@@ -5,7 +5,6 @@ import '../../../services/users/user_repository.dart';
 import '../../../services/social/follow_repository.dart';
 import 'social_graph_screen.dart';
 import 'ai_profile_screen.dart';
-import '../../personal_ai/presentation/personal_ai_screen.dart';
 
 class AurenProfileScreen extends StatelessWidget {
   final String? userId;
