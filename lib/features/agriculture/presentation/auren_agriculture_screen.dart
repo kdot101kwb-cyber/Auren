@@ -1479,27 +1479,6 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     if (mounted && result != null) _showResult('جدولة الري اليومية', result);
   }
 
-  Future<void> _showIrrigationSectorTool() async {
-    final total = TextEditingController();
-    final sectors = TextEditingController(text: '4');
-    final result = await _twoFieldTool(
-      title: 'تقسيم مياه الري على القطاعات',
-      first: total,
-      second: sectors,
-      firstLabel: 'إجمالي المياه باللتر',
-      secondLabel: 'عدد القطاعات',
-      actionLabel: 'قسّم',
-      calculate: () {
-        final t = double.tryParse(total.text.trim()) ?? 0;
-        final s = int.tryParse(sectors.text.trim()) ?? 0;
-        if (t <= 0 || s <= 0) return 'أدخل قيماً أكبر من صفر.';
-        return 'إذا كانت القطاعات متساوية: \${(t / s).toStringAsFixed(1)} لتر لكل قطاع.\nعدّل التقسيم إذا اختلفت المساحات أو الضغوط أو الاحتياجات.';
-      },
-    );
-    total.dispose(); sectors.dispose();
-    if (mounted && result != null) _showResult('تقسيم مياه الري', result);
-  }
-
   Future<void> _showAdvancedSeedCorrectionTool() async {
     final base = TextEditingController();
     final germ = TextEditingController(text: '90');
@@ -1733,27 +1712,6 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     );
     milk.dispose(); animals.dispose();
     if (mounted && result != null) _showResult('إنتاج الحليب للفرد', result);
-  }
-
-  Future<void> _showPackagingTool() async {
-    final quantity = TextEditingController();
-    final capacity = TextEditingController();
-    final result = await _twoFieldTool(
-      title: 'احتياج عبوات التعبئة',
-      first: quantity,
-      second: capacity,
-      firstLabel: 'الكمية المطلوب تعبئتها',
-      secondLabel: 'سعة العبوة بنفس وحدة الكمية',
-      actionLabel: 'احسب',
-      calculate: () {
-        final q = double.tryParse(quantity.text.trim()) ?? 0;
-        final cap = double.tryParse(capacity.text.trim()) ?? 0;
-        if (q <= 0 || cap <= 0) return 'أدخل قيماً أكبر من صفر.';
-        return 'عدد العبوات التقريبي: \${(q / cap).ceil()} عبوة.\\nأضف هامشاً بسيطاً للتلف أو الفاقد أثناء التعبئة.';
-      },
-    );
-    quantity.dispose(); capacity.dispose();
-    if (mounted && result != null) _showResult('التعبئة', result);
   }
 
   Future<void> _showDailyStorageLossTool() async {
