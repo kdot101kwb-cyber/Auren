@@ -135,6 +135,7 @@ class _PersonalAiScreenState extends State<PersonalAiScreen> {
         _tile(context, Icons.hub_outlined, 'Core 5 Context', 'خلّي AUREN يربط أهدافك وPulse وBusiness وMarketplace وCreator.', null, () => _openCoreFive(context, uid)),
         if (uid != null) _coreFiveBuildCard(context, uid),
         _tile(context, Icons.alt_route_outlined, 'Goal → Content → Opportunity', 'حوّل هدفك إلى محتوى أو منتج أو فرصة Business عبر الوحدات الخمس.', null, () => _openCoreFive(context, uid)),
+        _tile(context, Icons.psychology_alt_outlined, 'Crazy Ideas / Idea Fusion', 'أفكار مجنونة، دمج مجالات، تحدي الافتراضات، وتجارب قابلة للاختبار.', const AurenIdeaLabScreen()),
         _tile(context, Icons.smart_toy_outlined, 'AUREN Agents', 'Marketplace + A2A + Trust + Wallet.', const AurenAgentHubScreen()),
       ],
     ),
