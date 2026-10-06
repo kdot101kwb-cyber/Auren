@@ -126,7 +126,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
     final description = _service.localized(item, language);
     final image = (item['strThumb'] ?? item['strBadge'] ?? item['strLogo'] ?? '').toString();
     final trust = _trust.forEntity(type: widget.type);
-    final truth = _trust.truthSignal(source: trust.sourceName, updatedAt: trust.updatePolicy);
+    final truth = _trust.truthSignal(source: trust.sourceName, updatedAt: null);
     final subtitle = [
       item['strSport'],
       item['strLeague'],
