@@ -158,6 +158,12 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.verified_outlined, 'تصحيح التقاوي', _showSeedCorrectionTool),
             _toolButton(Icons.science_outlined, 'خطة أخذ عينات التربة', _showSoilSamplingTool),
             _toolButton(Icons.percent_outlined, 'فاقد ما بعد الحصاد', _showPostHarvestLossTool),
+            _toolButton(Icons.sell_outlined, 'الكمية القابلة للبيع', _showMarketableQuantityTool),
+            _toolButton(Icons.calendar_today_outlined, 'مدة التخزين', _showStorageDurationTool),
+            _toolButton(Icons.thermostat_outlined, 'حمل التبريد', _showCoolingTool),
+            _toolButton(Icons.local_shipping_outlined, 'حجم النقل', _showTransportLoadTool),
+            _toolButton(Icons.people_outline, 'احتياج العمالة', _showLaborNeedTool),
+            _toolButton(Icons.schedule_outlined, 'ساعات التشغيل', _showOperatingHoursTool),
           ]),
         ]),
       ),
@@ -945,6 +951,67 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     qty.dispose(); loss.dispose();
     if (mounted && result != null) _showResult('فاقد ما بعد الحصاد', result);
   }
+
+  Future<void> _showMarketableQuantityTool() async {
+    final qty=TextEditingController(text:'1000'); final rate=TextEditingController(text:'90');
+    final result=await _twoFieldTool(title:'الكمية القابلة للبيع',first:qty,second:rate,firstLabel:'الإنتاج كجم',secondLabel:'نسبة القبول %',actionLabel:'احسب',calculate:(){
+      final q=double.tryParse(qty.text.trim())??0; final r=double.tryParse(rate.text.trim())??0;
+      if(q<0||r<0||r>100)return'أدخل كمية صحيحة ونسبة بين 0 و100%.';
+      return'الكمية القابلة للبيع تقريباً: '+(q*r/100).toStringAsFixed(2)+' كجم.';
+    });
+    qty.dispose();rate.dispose();if(mounted&&result!=null)_showResult('الكمية القابلة للبيع',result);
+  }
+
+  Future<void> _showStorageDurationTool() async {
+    final capacity=TextEditingController(text:'5000'); final daily=TextEditingController(text:'500');
+    final result=await _twoFieldTool(title:'مدة التخزين',first:capacity,second:daily,firstLabel:'سعة التخزين كجم',secondLabel:'الخروج اليومي كجم',actionLabel:'احسب',calculate:(){
+      final c=double.tryParse(capacity.text.trim())??0; final d=double.tryParse(daily.text.trim())??0;
+      if(c<=0||d<=0)return'أدخل قيماً أكبر من صفر.';
+      return'المدة النظرية: '+(c/d).toStringAsFixed(1)+' يوم.\nالمدة الفعلية تتأثر بنوع المنتج والحرارة والرطوبة.';
+    });
+    capacity.dispose();daily.dispose();if(mounted&&result!=null)_showResult('مدة التخزين',result);
+  }
+
+  Future<void> _showCoolingTool() async {
+    final mass=TextEditingController(text:'1000'); final factor=TextEditingController(text:'0.02');
+    final result=await _twoFieldTool(title:'حمل التبريد',first:mass,second:factor,firstLabel:'كتلة المنتج كجم',secondLabel:'معامل تقديري kW/كجم',actionLabel:'احسب',calculate:(){
+      final m=double.tryParse(mass.text.trim())??0; final f=double.tryParse(factor.text.trim())??0;
+      if(m<=0||f<=0)return'أدخل قيماً أكبر من صفر.';
+      return'الحمل التقديري: '+(m*f).toStringAsFixed(2)+' kW.\nهذه حسبة أولية؛ التصميم يحتاج بيانات حرارية وهندسية فعلية.';
+    });
+    mass.dispose();factor.dispose();if(mounted&&result!=null)_showResult('حمل التبريد',result);
+  }
+
+  Future<void> _showTransportLoadTool() async {
+    final qty=TextEditingController(text:'5000'); final capacity=TextEditingController(text:'1000');
+    final result=await _twoFieldTool(title:'حجم النقل',first:qty,second:capacity,firstLabel:'الكمية كجم',secondLabel:'حمولة المركبة كجم',actionLabel:'احسب',calculate:(){
+      final q=double.tryParse(qty.text.trim())??0; final c=double.tryParse(capacity.text.trim())??0;
+      if(q<0||c<=0)return'أدخل كمية غير سالبة وحمولة أكبر من صفر.';
+      return'عدد الرحلات التقريبي: '+(q/c).ceil().toString()+' رحلة.';
+    });
+    qty.dispose();capacity.dispose();if(mounted&&result!=null)_showResult('حجم النقل',result);
+  }
+
+  Future<void> _showLaborNeedTool() async {
+    final area=TextEditingController(text:'1'); final rate=TextEditingController(text:'5');
+    final result=await _twoFieldTool(title:'احتياج العمالة',first:area,second:rate,firstLabel:'المساحة هكتار',secondLabel:'أيام عمل/هكتار',actionLabel:'احسب',calculate:(){
+      final a=double.tryParse(area.text.trim())??0; final r=double.tryParse(rate.text.trim())??0;
+      if(a<0||r<0)return'أدخل قيماً غير سالبة.';
+      return'إجمالي أيام العمل التقريبية: '+(a*r).toStringAsFixed(1)+' يوم-عامل.';
+    });
+    area.dispose();rate.dispose();if(mounted&&result!=null)_showResult('احتياج العمالة',result);
+  }
+
+  Future<void> _showOperatingHoursTool() async {
+    final qty=TextEditingController(text:'10000'); final rate=TextEditingController(text:'1000');
+    final result=await _twoFieldTool(title:'ساعات التشغيل',first:qty,second:rate,firstLabel:'الكمية المطلوبة',secondLabel:'معدل الإنجاز/ساعة',actionLabel:'احسب',calculate:(){
+      final q=double.tryParse(qty.text.trim())??0; final r=double.tryParse(rate.text.trim())??0;
+      if(q<0||r<=0)return'أدخل كمية غير سالبة ومعدل أكبر من صفر.';
+      return'زمن التشغيل النظري: '+(q/r).toStringAsFixed(2)+' ساعة.';
+    });
+    qty.dispose();rate.dispose();if(mounted&&result!=null)_showResult('ساعات التشغيل',result);
+  }
+
   Future<void> _showProductionEstimateTool() async {
     final area=TextEditingController(text:'1000'); final rate=TextEditingController(text:'3');
     final result=await _twoFieldTool(title:'تقدير الإنتاج',first:area,second:rate,firstLabel:'المساحة م²',secondLabel:'الإنتاج المتوقع كجم/م²',actionLabel:'احسب',calculate:(){
