@@ -158,6 +158,8 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
           final average = values.isEmpty ? null : values.reduce((a, b) => a + b) / values.length;
           final best = values.isEmpty ? null : values.reduce((a, b) => a > b ? a : b);
           final latest = values.isEmpty ? null : values.first;
+          final previous = values.length > 1 ? values[1] : null;
+          final delta = latest != null && previous != null ? latest - previous : null;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -217,7 +219,12 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                     _stat('المتوسط', average!.toStringAsFixed(2)),
                     _stat('الأفضل', best!.toStringAsFixed(2)),
                     _stat('عدد القياسات', values.length.toString()),
+                    if (delta != null) _stat('التغير', '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(2)}'),
                   ]),
+                  if (delta != null) ...[
+                    const SizedBox(height: 8),
+                    Text(delta == 0 ? 'لا يوجد تغير عن القياس السابق.' : delta > 0 ? 'الاتجاه الأخير: ارتفاع عن القياس السابق.' : 'الاتجاه الأخير: انخفاض عن القياس السابق.', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ]
                 ]))),
                 const SizedBox(height: 10),
               ],
