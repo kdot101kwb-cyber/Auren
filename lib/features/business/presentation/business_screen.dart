@@ -166,7 +166,7 @@ class _AurenBusinessCreateScreenState extends State<AurenBusinessCreateScreen> {
             f(n, 'اسم النشاط', required: true),
             f(d, 'وصف النشاط', lines: 4),
             DropdownButtonFormField<String>(
-              value: cat,
+              initialValue: cat,
               items: cats
                   .map((value) => DropdownMenuItem(
                         value: value,
@@ -179,7 +179,7 @@ class _AurenBusinessCreateScreenState extends State<AurenBusinessCreateScreen> {
               decoration: const InputDecoration(labelText: 'التصنيف'),
             ),
             DropdownButtonFormField<String>(
-              value: type,
+              initialValue: type,
               items: types
                   .map((value) => DropdownMenuItem(
                         value: value,
