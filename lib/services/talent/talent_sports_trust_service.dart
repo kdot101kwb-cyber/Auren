@@ -41,6 +41,14 @@ class TalentSportsTrustService {
           isOfficial: false,
           trustLevel: 'Community data source',
         );
+      case 'events':
+        return const SportsTrustInfo(
+          sourceName: 'TheSportsDB',
+          coverage: 'Match/event schedule and available event data',
+          updatePolicy: 'Refresh from source when opened',
+          isOfficial: false,
+          trustLevel: 'Community data source',
+        );
       case 'leagues':
         return const SportsTrustInfo(
           sourceName: 'TheSportsDB',
