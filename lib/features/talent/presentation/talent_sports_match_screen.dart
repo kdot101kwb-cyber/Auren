@@ -151,11 +151,10 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
           Card(
             child: ListTile(
               leading: const Icon(Icons.info_outline),
-              title: Text(_trust.forEntity(type: 'events').label),
+              title: Text(trust.label + ' • ' + truth.label),
               subtitle: Text(
-                _trust.forEntity(type: 'events').sourceName + ' • ' +
-                    _trust.forEntity(type: 'events').trustLevel + '\n' +
-                    _trust.guidanceFor(_trust.forEntity(type: 'events').sourceName),
+                trust.sourceName + ' • ' + trust.trustLevel + '\n' +
+                    truth.explanation + '\n' + trust.guidanceFor(trust.sourceName),
               ),
             ),
           ),
