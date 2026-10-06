@@ -14,7 +14,6 @@ import 'user_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
-import '../../talent/presentation/talent_screen.dart';
 import '../../talent/presentation/talent_sports_hub_screen.dart';
 
 class AurenTimelineScreen extends StatefulWidget {
