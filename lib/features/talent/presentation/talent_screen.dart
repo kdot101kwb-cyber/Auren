@@ -18,6 +18,7 @@ import 'talent_verification_screen.dart';
 import 'talent_star_profile_screen.dart';
 import 'talent_general_ai_tools.dart';
 import 'music_talent_tools.dart';
+import 'talent_specialized_tools.dart';
 class AurenTalentScreen extends StatefulWidget{const AurenTalentScreen({super.key});@override State<AurenTalentScreen> createState()=>_AurenTalentScreenState();}
 class _AurenTalentScreenState extends State<AurenTalentScreen>{final repo=TalentRepository();final search=TextEditingController();String skill='';String selectedSport='';String selectedCategory='';bool evidenceOnly=false;
 static const sports=TalentSportsCatalog.all;
@@ -120,6 +121,8 @@ const SizedBox(height: 12),
 const AurenTalentGeneralAiTools(),
 const SizedBox(height: 12),
 const AurenMusicTalentTools(),
+const SizedBox(height: 12),
+const AurenTalentSpecializedTools(),
 const SizedBox(height: 12),
 const SizedBox(height:8),
 Expanded(child:StreamBuilder<List<AurenTalent>>(stream:repo.watchPublic(query:search.text,skill:skill,sport:selectedSport,evidenceOnly:evidenceOnly),builder:(c,s){if(s.hasError)return Center(child:Text('تعذر تحميل المواهب: '+s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());final list=s.data!;if(list.isEmpty)return const Center(child:Text('لا توجد مواهب مطابقة.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:list.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i)=>_card(c,list[i]));}))]));}
