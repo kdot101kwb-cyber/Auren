@@ -722,7 +722,7 @@ service cloud.firestore {
 
     match /users/{userId}/talent_scout_findings/{findingId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId)
+      allow create: if isOwner(userId)
         && request.resource.data.ownerId == userId
         && request.resource.data.scoutId is string
         && request.resource.data.scoutId.size() > 0
@@ -742,6 +742,24 @@ service cloud.firestore {
         && request.resource.data.missingSkills.size() <= 30
         && request.resource.data.createdAt is timestamp
         && request.resource.data.expiresAt is timestamp
+        && request.resource.data.keys().hasOnly(['ownerId','scoutId','type','title','description','sourceType','sourceId','status','score','matchedSkills','missingSkills','createdAt','expiresAt']);
+      allow update: if isOwner(userId)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.scoutId == resource.data.scoutId
+        && request.resource.data.type == resource.data.type
+        && request.resource.data.title == resource.data.title
+        && request.resource.data.description == resource.data.description
+        && request.resource.data.sourceType == resource.data.sourceType
+        && request.resource.data.sourceId == resource.data.sourceId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.expiresAt == resource.data.expiresAt
+        && request.resource.data.status in ['new','seen','dismissed']
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0 && request.resource.data.score <= 100
+        && request.resource.data.matchedSkills is list
+        && request.resource.data.matchedSkills.size() <= 30
+        && request.resource.data.missingSkills is list
+        && request.resource.data.missingSkills.size() <= 30
         && request.resource.data.keys().hasOnly(['ownerId','scoutId','type','title','description','sourceType','sourceId','status','score','matchedSkills','missingSkills','createdAt','expiresAt']);
       allow delete: if isOwner(userId);
     }
