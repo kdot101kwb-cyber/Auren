@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
 import '../../../services/talent/talent_sports_directory_service.dart';
+import '../../../services/talent/talent_sports_trust_service.dart';
 
 class AurenSportsEntityScreen extends StatefulWidget {
   final String type;
@@ -20,6 +21,7 @@ class AurenSportsEntityScreen extends StatefulWidget {
 class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
   final _service = TalentSportsDataService();
   final _directory = TalentSportsDirectoryService();
+  final _trust = TalentSportsTrustService();
   Map<String, dynamic>? _item;
   List<Map<String, dynamic>> _next = const [];
   List<Map<String, dynamic>> _related = const [];
@@ -115,6 +117,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
     final language = Localizations.localeOf(context).languageCode;
     final description = _service.localized(item, language);
     final image = (item['strThumb'] ?? item['strBadge'] ?? item['strLogo'] ?? '').toString();
+    final trust = _trust.forEntity(type: widget.type);
     final subtitle = [
       item['strSport'],
       item['strLeague'],
@@ -167,6 +170,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
               ],
             ),
           ),
+          _trustCard(trust),
           if (_next.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Text('Next matches', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
@@ -193,6 +197,18 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _trustCard(SportsTrustInfo trust) {
+    return Card(
+      child: ListTile(
+        leading: Icon(trust.isOfficial ? Icons.verified : Icons.info_outline),
+        title: Text(trust.label),
+        subtitle: Text(
+          trust.sourceName + ' • ' + trust.coverage + '\nآخر تحديث: ' + trust.updatePolicy,
+        ),
       ),
     );
   }
