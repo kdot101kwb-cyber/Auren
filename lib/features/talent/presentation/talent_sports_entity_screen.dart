@@ -176,7 +176,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => MessengerScreen(
-                                    initialPrompt: 'حلل لي هذا الكيان الرياضي: ${widget.title}. استخدم فقط البيانات المتاحة في الصفحة، واذكر بوضوح أي معلومة غير متوفرة.',
+                                    initialPrompt: 'حلل لي هذا الكيان الرياضي: ${widget.title}. الرياضة: ${item['strSport'] ?? ''}. الدوري: ${item['strLeague'] ?? ''}. الجنسية/الدولة: ${item['strNationality'] ?? item['strCountry'] ?? ''}. الإحصائيات المتاحة: ${_availableStatsPrompt(item)}. استخدم فقط هذه البيانات، واذكر بوضوح أي معلومة غير متوفرة.',
                                   ),
                                 ),
                               ),
@@ -234,7 +234,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
     );
   }
 
-  Widget _statsCard(Map<String, dynamic> item) {
+  String _availableStatsPrompt(Map<String, dynamic> item) { final keys = ['intPlayed','intAppearances','intGoals','intAssists','intMinutes','strRating','intWeight','intHeight']; return keys.where((k) => item[k] != null && item[k].toString().trim().isNotEmpty).map((k) => '$k=${item[k]}').join(', '); }\n\n  Widget _statsCard(Map<String, dynamic> item) {
     const keys = <String, String>{
       'Matches': 'intPlayed',
       'Appearances': 'intAppearances',
