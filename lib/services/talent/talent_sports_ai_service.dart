@@ -89,4 +89,33 @@ $facts
 - الخطوة التالية المقترحة
 - ما يحتاج إلى دليل أو مصدر موثوق.''';
   }
+
+  String buildScoutPrompt({
+    required String athleteName,
+    required List<String> sports,
+    required List<String> skills,
+    required List<String> achievements,
+    required String level,
+    required String location,
+  }) {
+    return '''أنت Scout AI متخصص في اكتشاف المواهب الرياضية داخل AUREN.
+الاسم: $athleteName
+الرياضات: ${sports.join(', ')}
+المهارات المسجلة: ${skills.join(', ')}
+الإنجازات المسجلة: ${achievements.join(', ')}
+المستوى المسجل: $level
+الموقع المسجل: $location
+
+أنشئ تقرير كشف أولي مبني فقط على البيانات المتاحة.
+اعرض:
+- نقاط القوة المدعومة بالبيانات
+- البيانات الناقصة التي تمنع تقييماً أقوى
+- نوع الفرصة الرياضية التي قد تستحق البحث
+- أسئلة التحقق التي يجب طرحها
+- الأدلة التي ينبغي طلبها
+
+لا تخترع أداءً أو إحصائيات أو أندية أو بطولات.
+لا تعتبر التقرير ترتيباً رسمياً للاعب.
+لا تمنح "موهبة مؤكدة" بدون أدلة أو تقييم بشري/جهة رياضية موثوقة.''';
+  }
 }
