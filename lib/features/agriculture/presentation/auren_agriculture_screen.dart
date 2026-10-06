@@ -227,6 +227,17 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.local_drink_outlined, 'كفاءة علف الحليب', _showMilkFeedEfficiencyTool),
             _toolButton(Icons.set_meal_outlined, 'بقاء الأسماك', _showFishSurvivalTool),
             _toolButton(Icons.inventory_2_outlined, 'عدد عبوات التعبئة', _showPackagingUnitsTool),
+                      _toolButton(Icons.analytics_outlined, 'إيراد المتر المربع', _showFarmRevenuePerAreaTool),
+            _toolButton(Icons.account_balance_outlined, 'الهامش الإجمالي', _showGrossMarginTool),
+            _toolButton(Icons.price_change_outlined, 'سعر البيع من التكلفة', _showMarkupTool),
+            _toolButton(Icons.inventory_2_outlined, 'أيام تغطية المخزون', _showStockCoverageTool),
+            _toolButton(Icons.warehouse_outlined, 'سعة التخزين المطلوبة', _showStorageCapacityByDaysTool),
+            _toolButton(Icons.local_shipping_outlined, 'عدد رحلات النقل', _showTransportTripsTool),
+            _toolButton(Icons.access_time_outlined, 'ساعات العمل المتاحة', _showLaborHoursTool),
+            _toolButton(Icons.bolt_outlined, 'تكلفة الكهرباء', _showEnergyCostTool),
+            _toolButton(Icons.local_gas_station_outlined, 'تكلفة الوقود', _showFuelCostTool),
+            _toolButton(Icons.delete_outline, 'فاقد التعبئة', _showPackagingWasteTool),
+            _toolButton(Icons.event_available_outlined, 'توقيت الحصاد', _showHarvestTimingTool),
           ]),
         ]),
       ),
@@ -371,7 +382,63 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
   Future<void> _showPackagingUnitsTool() async {
     final a=TextEditingController(),b=TextEditingController();
     final x=await _twoFieldTool(title:'عدد عبوات التعبئة',first:a,second:b,firstLabel:'الكمية بالكجم',secondLabel:'سعة العبوة بالكجم',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'عدد العبوات: '+(v/w).ceil().toString()+' عبوة.';});
-    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('عبوات التعبئة',x);
+    a.dispose();b.dispose();if(mounted&&x!=null)_showRe
+  Future<void> _showFarmRevenuePerAreaTool() async {
+    final production=TextEditingController(), price=TextEditingController();
+    final x=await _twoFieldTool(title:'إيراد المتر المربع',first:production,second:price,firstLabel:'الإنتاج بالكجم',secondLabel:'سعر الكجم',actionLabel:'احسب',calculate:(){final a=double.tryParse(production.text)??0,b=double.tryParse(price.text)??0;if(a<0||b<0)return 'أدخل قيماً غير سالبة.';return 'الإيراد: '+(a*b).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    production.dispose();price.dispose();if(mounted&&x!=null)_showResult('إيراد المتر المربع',x);
+  }
+  Future<void> _showGrossMarginTool() async {
+    final revenue=TextEditingController(), cost=TextEditingController();
+    final x=await _twoFieldTool(title:'الهامش الإجمالي',first:revenue,second:cost,firstLabel:'الإيرادات',secondLabel:'التكاليف المتغيرة',actionLabel:'احسب',calculate:(){final r=double.tryParse(revenue.text)??0,c=double.tryParse(cost.text)??0;if(r<0||c<0)return 'أدخل قيماً غير سالبة.';return 'الهامش الإجمالي: '+(r-c).toStringAsFixed(2)+'\nالهامش كنسبة من الإيراد: '+(r>0?((r-c)/r*100).toStringAsFixed(1):'0')+'%.';});
+    revenue.dispose();cost.dispose();if(mounted&&x!=null)_showResult('الهامش الإجمالي',x);
+  }
+  Future<void> _showMarkupTool() async {
+    final cost=TextEditingController(), percent=TextEditingController(text:'20');
+    final x=await _twoFieldTool(title:'سعر البيع من التكلفة',first:cost,second:percent,firstLabel:'تكلفة الوحدة',secondLabel:'نسبة الزيادة %',actionLabel:'احسب',calculate:(){final c=double.tryParse(cost.text)??0,p=double.tryParse(percent.text)??0;if(c<0||p<0)return 'أدخل قيماً غير سالبة.';return 'سعر البيع المقترح حسابياً: '+(c*(1+p/100)).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    cost.dispose();percent.dispose();if(mounted&&x!=null)_showResult('سعر البيع',x);
+  }
+  Future<void> _showStockCoverageTool() async {
+    final stock=TextEditingController(), daily=TextEditingController();
+    final x=await _twoFieldTool(title:'أيام تغطية المخزون',first:stock,second:daily,firstLabel:'المخزون بالكجم',secondLabel:'الاستهلاك اليومي بالكجم',actionLabel:'احسب',calculate:(){final s=double.tryParse(stock.text)??0,d=double.tryParse(daily.text)??0;if(s<0||d<=0)return 'أدخل مخزوناً غير سالب واستهلاكاً أكبر من صفر.';return 'التغطية التقريبية: '+(s/d).toStringAsFixed(1)+' يوم.';});
+    stock.dispose();daily.dispose();if(mounted&&x!=null)_showResult('تغطية المخزون',x);
+  }
+  Future<void> _showStorageCapacityByDaysTool() async {
+    final daily=TextEditingController(), days=TextEditingController();
+    final x=await _twoFieldTool(title:'سعة التخزين المطلوبة',first:daily,second:days,firstLabel:'الإنتاج اليومي بالكجم',secondLabel:'عدد أيام التخزين',actionLabel:'احسب',calculate:(){final d=double.tryParse(daily.text)??0,n=double.tryParse(days.text)??0;if(d<0||n<=0)return 'أدخل إنتاجاً غير سالب وأياماً أكبر من صفر.';return 'السعة الأساسية: '+(d*n).toStringAsFixed(2)+' كجم.';});
+    daily.dispose();days.dispose();if(mounted&&x!=null)_showResult('سعة التخزين',x);
+  }
+  Future<void> _showTransportTripsTool() async {
+    final quantity=TextEditingController(), capacity=TextEditingController();
+    final x=await _twoFieldTool(title:'عدد رحلات النقل',first:quantity,second:capacity,firstLabel:'الكمية بالكجم',secondLabel:'حمولة الرحلة بالكجم',actionLabel:'احسب',calculate:(){final q=double.tryParse(quantity.text)??0,c=double.tryParse(capacity.text)??0;if(q<=0||c<=0)return 'أدخل قيماً أكبر من صفر.';return 'عدد الرحلات: '+(q/c).ceil().toString()+' رحلة.';});
+    quantity.dispose();capacity.dispose();if(mounted&&x!=null)_showResult('رحلات النقل',x);
+  }
+  Future<void> _showLaborHoursTool() async {
+    final workers=TextEditingController(), hours=TextEditingController();
+    final x=await _twoFieldTool(title:'ساعات العمل المتاحة',first:workers,second:hours,firstLabel:'عدد العمال',secondLabel:'ساعات العامل',actionLabel:'احسب',calculate:(){final w=double.tryParse(workers.text)??0,h=double.tryParse(hours.text)??0;if(w<0||h<0)return 'أدخل قيماً غير سالبة.';return 'إجمالي ساعات العمل: '+(w*h).toStringAsFixed(2)+' ساعة.';});
+    workers.dispose();hours.dispose();if(mounted&&x!=null)_showResult('ساعات العمل',x);
+  }
+  Future<void> _showEnergyCostTool() async {
+    final kwh=TextEditingController(), price=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة الكهرباء الزراعية',first:kwh,second:price,firstLabel:'الاستهلاك kWh',secondLabel:'سعر kWh',actionLabel:'احسب',calculate:(){final k=double.tryParse(kwh.text)??0,p=double.tryParse(price.text)??0;if(k<0||p<0)return 'أدخل قيماً غير سالبة.';return 'التكلفة: '+(k*p).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    kwh.dispose();price.dispose();if(mounted&&x!=null)_showResult('تكلفة الكهرباء',x);
+  }
+  Future<void> _showFuelCostTool() async {
+    final liters=TextEditingController(), price=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة الوقود',first:liters,second:price,firstLabel:'اللترات المستهلكة',secondLabel:'سعر اللتر',actionLabel:'احسب',calculate:(){final l=double.tryParse(liters.text)??0,p=double.tryParse(price.text)??0;if(l<0||p<0)return 'أدخل قيماً غير سالبة.';return 'تكلفة الوقود: '+(l*p).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    liters.dispose();price.dispose();if(mounted&&x!=null)_showResult('تكلفة الوقود',x);
+  }
+  Future<void> _showPackagingWasteTool() async {
+    final input=TextEditingController(), loss=TextEditingController();
+    final x=await _twoFieldTool(title:'فاقد التعبئة',first:input,second:loss,firstLabel:'عدد الوحدات',secondLabel:'نسبة الفاقد %',actionLabel:'احسب',calculate:(){final q=double.tryParse(input.text)??0,p=double.tryParse(loss.text)??0;if(q<0||p<0||p>100)return 'تحقق من القيم.';return 'الفاقد التقريبي: '+(q*p/100).toStringAsFixed(2)+' وحدة.\nالصافي: '+(q*(1-p/100)).toStringAsFixed(2)+' وحدة.';});
+    input.dispose();loss.dispose();if(mounted&&x!=null)_showResult('فاقد التعبئة',x);
+  }
+  Future<void> _showHarvestTimingTool() async {
+    final days=TextEditingController(), delay=TextEditingController();
+    final x=await _twoFieldTool(title:'تاريخ الحصاد التخطيطي',first:days,second:delay,firstLabel:'أيام النمو المتوقعة',secondLabel:'أيام التأخير/الهامش',actionLabel:'احسب',calculate:(){final d=double.tryParse(days.text)??0,m=double.tryParse(delay.text)??0;if(d<0||m<0)return 'أدخل قيماً غير سالبة.';return 'الفترة التخطيطية: '+(d+m).toStringAsFixed(0)+' يوم من تاريخ البداية.\nهذه ليست توصية حصاد نهائية؛ راقب النضج الفعلي.';});
+    days.dispose();delay.dispose();if(mounted&&x!=null)_showResult('توقيت الحصاد',x);
+  }
+sult('عبوات التعبئة',x);
   }
 l=double.tryParse(losses.text.trim())??0;
       if(i<=0||l<0||l>i)return 'تحقق من القيم المدخلة.';
