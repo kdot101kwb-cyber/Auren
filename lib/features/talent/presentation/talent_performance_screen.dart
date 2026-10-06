@@ -164,7 +164,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
           final selectedMetric = metricController.text.trim();
           final selectedUnit = unitController.text.trim();
           final selectedMetricValues = selectedMetric.isEmpty ? values : current.where((d) => (d.data()['metric'] ?? '').toString() == selectedMetric && (selectedUnit.isEmpty || (d.data()['unit'] ?? '').toString() == selectedUnit)).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
-          final summaryValues = selectedMetricValues.isEmpty ? values : selectedMetricValues;
+          final summaryValues = selectedMetric.isEmpty ? values : selectedMetricValues;
           final average = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a + b) / summaryValues.length;
           final best = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a > b ? a : b);
           final latest = summaryValues.isEmpty ? null : summaryValues.first;
@@ -187,10 +187,10 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('مؤشرات الرياضة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
-                const Text('اختر مؤشرات مرتبطة بالرياضة الحالية. القيم تُسجل كما أدخلتها ولا تمثل حكماً طبياً.'),
+                const Text('اختر مؤشراً مرتبطاً بالرياضة الحالية. الملخص يعرض القياسات لنفس المؤشر فقط ولا يخلط مؤشرات مختلفة.'),
                 const SizedBox(height: 10),
                 Wrap(spacing: 6, runSpacing: 6, children: [
-                  'التحمل','القوة','السرعة','الرشاقة','التوازن','الدقة','التقنية','الاستجابة'
+                  'التحمل','القوة','السرعة','الرشاقة','التوازن','نسبة النجاح','دقة التسديد','التقنية','زمن الاستجابة'
                 ].map((x) => ActionChip(label: Text(x), onPressed: () => setState(() => metricController.text = x))).toList()),
               ])),
               const SizedBox(height: 10),
