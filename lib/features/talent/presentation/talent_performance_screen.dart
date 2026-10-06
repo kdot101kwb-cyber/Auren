@@ -324,6 +324,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                     ),
                   ),
                 ),
+              ],
               const SizedBox(height: 10),
               Card(
                 child: Padding(
