@@ -110,6 +110,18 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
     b.dispose();
     if (ok != true || x == null || y == null) return;
 
+    if (id == 'pace' || id == 'speed' || id == 'accuracy' || id == 'win_rate' || id == 'shooting') {
+      final divisor = id == 'pace' ? x : y;
+      if (divisor == 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('لا يمكن الحساب بالقسمة على صفر.')),
+          );
+        }
+        return;
+      }
+    }
+
     double? result;
     String unit = '';
     if (id == 'training_load') { result = x * y; unit = 'وحدة'; }
