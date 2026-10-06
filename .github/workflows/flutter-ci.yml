@@ -17,22 +17,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.47.2
           channel: stable
           cache: true
-
       - name: Toolchain diagnostics
         run: |
           flutter --version
           dart --version
-
       - name: Verify Flutter project
         run: flutter pub get
-
       - name: Format sources
         run: |
           set +e
@@ -43,7 +39,6 @@ jobs:
             exit 0
           fi
           exit ${status}
-
       - name: Analyze
         run: |
           set +e
@@ -51,7 +46,6 @@ jobs:
           status=${PIPESTATUS[0]}
           echo "flutter_analyze_exit_code=${status}" >> flutter-analyze.log
           exit ${status}
-
       - name: Upload Analyze diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -59,7 +53,6 @@ jobs:
           name: flutter-analyze-diagnostics
           path: flutter-analyze.log
           if-no-files-found: ignore
-
       - name: Test
         run: |
           set +e
@@ -67,7 +60,6 @@ jobs:
           status=${PIPESTATUS[0]}
           echo "flutter_test_exit_code=${status}" >> flutter-test.log
           exit ${status}
-
       - name: Upload Test diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -75,21 +67,18 @@ jobs:
           name: flutter-test-diagnostics
           path: flutter-test.log
           if-no-files-found: ignore
-
       - name: Ensure Android platform
         run: |
           if [ ! -f android/app/src/main/AndroidManifest.xml ]; then
             flutter create . --platforms=android --org com.auren
           fi
           test -f android/app/src/main/AndroidManifest.xml
-
       - name: Build Android debug APK
-        run: flutter build apk --debug
-
+        run: |
+          flutter build apk --debug || flutter build apk --debug
       - name: Upload Android debug APK
         uses: actions/upload-artifact@v4
         with:
           name: auren-android-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
-
