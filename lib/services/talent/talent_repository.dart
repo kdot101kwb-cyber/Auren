@@ -22,7 +22,7 @@ class TalentRepository {
   Future<String> save({
     required String ownerId, required String displayName, required String bio, required String category,
     String sport = '', String discipline = '', String level = '', required String city, required String country,
-    List<String> skills = const [], List<String> achievements = const [], List<String> goals = const [], List<String> sports = const [],
+    List<String> skills = const [], List<String> achievements = const [], List<String> goals = const [], List<String> sports = const [], List<String> verificationEvidence = const [],
   }) async {
     final ref = db.collection('talents').doc();
     String clean(String value) => value.trim();
@@ -30,7 +30,7 @@ class TalentRepository {
     await ref.set({
       'ownerId': ownerId, 'displayName': clean(displayName), 'bio': clean(bio), 'category': clean(category),
       'sport': clean(sport), 'sports': list(sports.isEmpty && sport.trim().isNotEmpty ? [sport] : sports, 10).toList(), 'discipline': clean(discipline), 'level': clean(level), 'city': clean(city), 'country': clean(country),
-      'skills': list(skills, 30).map((e) => e.toLowerCase()).toList(), 'achievements': list(achievements, 20), 'goals': list(goals, 10),
+      'skills': list(skills, 30).map((e) => e.toLowerCase()).toList(), 'achievements': list(achievements, 20), 'goals': list(goals, 10), 'verificationEvidence': list(verificationEvidence, 10),
       'status': 'active', 'updatedAt': FieldValue.serverTimestamp(),
     });
     return ref.id;
