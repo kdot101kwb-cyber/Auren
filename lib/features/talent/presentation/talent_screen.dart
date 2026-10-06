@@ -12,6 +12,7 @@ import 'talent_badges_screen.dart';
 import 'talent_radar_screen.dart';
 import 'talent_club_coach_match_screen.dart';
 import 'talent_coach_screen.dart';
+import 'talent_verification_screen.dart';
 class AurenTalentScreen extends StatefulWidget{const AurenTalentScreen({super.key});@override State<AurenTalentScreen> createState()=>_AurenTalentScreenState();}
 class _AurenTalentScreenState extends State<AurenTalentScreen>{final repo=TalentRepository();final search=TextEditingController();String skill='';String selectedSport='';
 static const sports=['Football','Basketball','Volleyball','Tennis','Table Tennis','Boxing','MMA','Athletics','Swimming','Cycling','Gymnastics','Archery','Weightlifting','Rugby','Cricket','Baseball','Hockey','Handball','Motorsport','Formula 1','Wrestling','Judo','Karate','Taekwondo','Fencing','Rowing','Badminton','Golf','Chess & Mind Sports','NFL'];
@@ -176,6 +177,20 @@ Widget _card(BuildContext c, AurenTalent t) {
                   onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => AurenTalentBadgesScreen(talentId: t.id, ownerId: t.ownerId, displayName: t.displayName, sports: t.sports, skills: t.skills, achievements: t.achievements, goals: t.goals))),
                   icon: const Icon(Icons.workspace_premium_outlined),
                   label: const Text('Achievements & Badges'),
+                ),
+              if (t.ownerId == FirebaseAuth.instance.currentUser?.uid) const SizedBox(height: 8),
+              if (t.ownerId == FirebaseAuth.instance.currentUser?.uid)
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => AurenTalentVerificationScreen(talentId: t.id, ownerId: t.ownerId, currentEvidence: t.verificationEvidence))),
+                  icon: const Icon(Icons.verified_outlined),
+                  label: const Text('Talent Verification'),
+                ),
+              if (t.ownerId == FirebaseAuth.instance.currentUser?.uid) const SizedBox(height: 8),
+              if (t.ownerId == FirebaseAuth.instance.currentUser?.uid)
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => AurenTalentCoachScreen(talentId: t.id, sport: t.sport, level: t.level, sports: t.sports))),
+                  icon: const Icon(Icons.sports),
+                  label: const Text('مدربي الشخصي'),
                 ),
               if (t.ownerId == FirebaseAuth.instance.currentUser?.uid) const SizedBox(height: 8),
               OutlinedButton.icon(
