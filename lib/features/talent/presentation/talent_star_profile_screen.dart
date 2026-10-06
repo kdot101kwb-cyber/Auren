@@ -3,6 +3,7 @@ import '../../../core/models/talent.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'talent_badges_screen.dart';
 import 'talent_performance_screen.dart';
+import 'talent_claim_screen.dart';
 
 class AurenTalentStarProfileScreen extends StatelessWidget {
   final AurenTalent talent;
@@ -92,6 +93,15 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.person_add_alt_1),
                     label: const Text('Connect with AUREN AI'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AurenTalentClaimScreen(talentId: talent.id, talentName: talent.displayName)),
+                    ),
+                    icon: const Icon(Icons.assignment_ind_outlined),
+                    label: const Text('Claim this profile'),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
