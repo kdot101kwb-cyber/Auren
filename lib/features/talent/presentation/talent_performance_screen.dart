@@ -187,7 +187,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('الرياضة', style: TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(value: sport, isExpanded: true, items: sports.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) => setState(() => sport = v ?? sport), decoration: const InputDecoration(border: OutlineInputBorder())),
+                DropdownButtonFormField<String>(initialValue: sport, isExpanded: true, items: sports.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v) => setState(() => sport = v ?? sport), decoration: const InputDecoration(border: OutlineInputBorder())),
               ]))),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 OutlinedButton.icon(onPressed: current.isEmpty ? null : () { final measurements = current.take(20).map((d) { final data = d.data(); return (data['metric'] ?? '').toString() + ': ' + (data['value'] ?? '').toString() + ' ' + (data['unit'] ?? '').toString(); }).toList(); Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: AurenSportsAiService.performanceDataPrompt(sport: sport, measurements: measurements)))); }, icon: const Icon(Icons.auto_awesome), label: const Text('مراجعة الأداء مع AUREN AI')),
@@ -208,7 +208,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('سجل قياس لـ $sport', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 10),
-                DropdownButtonFormField<String>(value: metricController.text.isEmpty ? null : metricController.text, items: metrics.values.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(), onChanged: (v) => setState(() => metricController.text = v ?? ''), decoration: const InputDecoration(labelText: 'المؤشر', border: OutlineInputBorder())),
+                DropdownButtonFormField<String>(initialValue: metricController.text.isEmpty ? null : metricController.text, items: metrics.values.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(), onChanged: (v) => setState(() => metricController.text = v ?? ''), decoration: const InputDecoration(labelText: 'المؤشر', border: OutlineInputBorder())),
                 const SizedBox(height: 8),
                 TextField(controller: valueController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة', border: OutlineInputBorder())),
                 const SizedBox(height: 8),
