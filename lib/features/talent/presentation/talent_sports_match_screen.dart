@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
+import '../../../services/talent/talent_sports_trust_service.dart';
 
 class AurenSportsMatchScreen extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -14,6 +15,7 @@ class AurenSportsMatchScreen extends StatefulWidget {
 
 class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
   final _service = TalentSportsDataService();
+  final _trust = TalentSportsTrustService();
   String _homeBadge = '';
   String _awayBadge = '';
   bool _badgesLoading = false;
@@ -142,6 +144,18 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
             ),
             icon: const Icon(Icons.auto_awesome),
             label: const Text('حلل المباراة مع AUREN AI'),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: Text(_trust.forEntity(type: 'events').label),
+              subtitle: Text(
+                _trust.forEntity(type: 'events').sourceName + ' • ' +
+                    _trust.forEntity(type: 'events').trustLevel + '\n' +
+                    _trust.guidanceFor(_trust.forEntity(type: 'events').sourceName),
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           const Card(
