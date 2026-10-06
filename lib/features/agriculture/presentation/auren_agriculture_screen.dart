@@ -108,12 +108,6 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
   }
 
 
-  String _advisorType(String type) {
-    const supported = {'crop', 'livestock', 'soil', 'pest', 'irrigation', 'general'};
-    if (supported.contains(type)) return type;
-    return 'general';
-  }
-
   String _aiAdvice(String type) {
     switch (type) {
       case 'crop':
@@ -195,7 +189,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               if (controller.text.trim().isEmpty) return;
               try {
                 final advice = await _repo.requestAiAdvice(
-                  type: _advisorType(_type),
+                  type: _type == 'design' ? 'design' : _type,
                   location: _location.text,
                   observations: 'Studio: ' + studio + '\n' + controller.text.trim(),
                 );
@@ -264,7 +258,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               if (controller.text.trim().isEmpty) return;
               try {
                 final advice = await _repo.requestAiAdvice(
-                  type: _advisorType('design'),
+                  type: 'design',
                   location: _location.text,
                   observations: 'Design studio: ' + studio + '\n' + controller.text.trim(),
                 );
@@ -324,7 +318,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             if (observations.text.trim().isEmpty) return;
             try {
               final advice = await _repo.requestAiAdvice(
-                type: _advisorType(_type),
+                type: _type == 'all' ? 'farm' : _type,
                 location: _location.text,
                 observations: observations.text,
                 material: '',
