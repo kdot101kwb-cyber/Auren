@@ -15,7 +15,7 @@ class _AurenRealEstateScreenState extends State<AurenRealEstateScreen>{
     String t='Apartment',lt='sale';
     final ok=await showDialog<bool>(context:context,builder:(d)=>AlertDialog(title:const Text('إضافة عقار'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
       TextField(controller:title,decoration:const InputDecoration(labelText:'العنوان')),TextField(controller:desc,decoration:const InputDecoration(labelText:'الوصف')),TextField(controller:ct,decoration:const InputDecoration(labelText:'المدينة')),TextField(controller:c,decoration:const InputDecoration(labelText:'الدولة')),TextField(controller:price,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'السعر')),TextField(controller:area,keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'المساحة m²')),
-      DropdownButtonFormField<String>(value:t,items:types.where((x)=>x!='All').map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>t=v??t),DropdownButtonFormField<String>(value:lt,items:const [DropdownMenuItem(value:'sale',child:Text('بيع')),DropdownMenuItem(value:'rent',child:Text('إيجار'))],onChanged:(v)=>lt=v??lt)
+      DropdownButtonFormField<String>(initialValue:t,items:types.where((x)=>x!='All').map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>t=v??t),DropdownButtonFormField<String>(initialValue:lt,items:const [DropdownMenuItem(value:'sale',child:Text('بيع')),DropdownMenuItem(value:'rent',child:Text('إيجار'))],onChanged:(v)=>lt=v??lt)
     ])),actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('نشر'))]))??false;
     if(!ok)return; await repo.publish(ownerId:uid,title:title.text,description:desc.text,city:ct.text,country:c.text,type:t,listingType:lt,currency:'USD',priceMinor:(int.tryParse(price.text)??0)*100,bedrooms:0,bathrooms:0,areaSqm:int.tryParse(area.text)??0,imageUrl:'');
   }
@@ -54,7 +54,7 @@ class _AurenRealEstateScreenState extends State<AurenRealEstateScreen>{
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: listing,
+                    initialValue: listing,
                     decoration: const InputDecoration(labelText: 'النوع'),
                     items: const [
                       DropdownMenuItem(value: 'All', child: Text('الكل')),
