@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
 import '../../../services/talent/talent_sports_directory_service.dart';
+import '../../../services/talent/talent_sports_trust_service.dart';
 import 'talent_sports_entity_screen.dart';
 import 'talent_sports_match_screen.dart';
 
@@ -14,6 +15,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
   final _controller = TextEditingController();
   final _service = TalentSportsDataService();
   final _directory = TalentSportsDirectoryService();
+  final _trust = TalentSportsTrustService();
 
   String _mode = 'teams';
   bool _loading = false;
@@ -174,6 +176,8 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
           ),
         ),
         const SizedBox(height: 12),
+        _sportsTrustCard(),
+        const SizedBox(height: 12),
         if (_loading)
           const Center(
             child: Padding(
@@ -205,6 +209,21 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
       ],
     ),
   );
+
+
+  Widget _sportsTrustCard() {
+    final trust = _trust.forEntity(type: 'events');
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.fact_check_outlined),
+        title: Text(trust.label + ' • ' + trust.trustLevel),
+        subtitle: Text(
+          trust.sourceName + '\n' + trust.coverage + '\n' + trust.guidanceFor(trust.sourceName),
+        ),
+        isThreeLine: true,
+      ),
+    );
+  }
 
   Widget _modeChip(String value, String label) => ChoiceChip(
     label: Text(label),
