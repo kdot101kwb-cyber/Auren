@@ -106,7 +106,7 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
             TextField(controller: _media, decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Media URL (اختياري)')),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _mediaType,
+              initialValue: _mediaType,
               decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'نوع الوسائط'),
               items: const [
                 DropdownMenuItem(value: 'none', child: Text('بدون')),
