@@ -1641,17 +1641,6 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 ),
                 if (query.isNotEmpty)
                   IconButton(onPressed: () { _search.clear(); setState(() => query = ''); }, icon: const Icon(Icons.clear)),
-              if (_watchTogether && _watchReactionOverlay.isNotEmpty)
-              Positioned(
-                right: 16,
-                bottom: 120,
-                child: Column(
-                  children: _watchReactionOverlay.asMap().entries.map((entry) => Padding(
-                    padding: EdgeInsets.only(bottom: 6 + entry.key * 2.0),
-                    child: Text(entry.value, style: const TextStyle(fontSize: 30)),
-                  )).toList(),
-                ),
-              ),
             ],
             ),
           ),
@@ -1857,6 +1846,17 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           );
         },
       )),
+      if (_watchTogether && _watchReactionOverlay.isNotEmpty)
+        Positioned(
+          right: 16,
+          bottom: 120,
+          child: Column(
+            children: _watchReactionOverlay.asMap().entries.map((entry) => Padding(
+              padding: EdgeInsets.only(bottom: 6 + entry.key * 2.0),
+              child: Text(entry.value, style: const TextStyle(fontSize: 30)),
+            )).toList(),
+          ),
+        ),
       if (_pipMode && player?.value.isInitialized == true)
         Positioned(
           right: 12,
