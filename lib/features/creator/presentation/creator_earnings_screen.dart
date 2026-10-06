@@ -61,9 +61,9 @@ class _AurenCreatorEarningsScreenState extends State<AurenCreatorEarningsScreen>
                 TextField(controller: _amount, keyboardType: const TextInputType.numberWithOptions(decimal:true), decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'المبلغ')),
                 const SizedBox(height: 8),
                 Row(children: [
-                  Expanded(child: DropdownButtonFormField<String>(value:_currency, decoration: const InputDecoration(border: OutlineInputBorder(), labelText:'العملة'), items: const [DropdownMenuItem(value:'USD',child:Text('USD')),DropdownMenuItem(value:'AED',child:Text('AED')),DropdownMenuItem(value:'SDG',child:Text('SDG'))], onChanged:(v)=>setState(()=>_currency=v??'USD'))),
+                  Expanded(child: DropdownButtonFormField<String>(initialValue:_currency, decoration: const InputDecoration(border: OutlineInputBorder(), labelText:'العملة'), items: const [DropdownMenuItem(value:'USD',child:Text('USD')),DropdownMenuItem(value:'AED',child:Text('AED')),DropdownMenuItem(value:'SDG',child:Text('SDG'))], onChanged:(v)=>setState(()=>_currency=v??'USD'))),
                   const SizedBox(width:8),
-                  Expanded(child: DropdownButtonFormField<String>(value:_method, decoration: const InputDecoration(border: OutlineInputBorder(), labelText:'الطريقة'), items: const [DropdownMenuItem(value:'manual',child:Text('Manual')),DropdownMenuItem(value:'bank',child:Text('Bank')),DropdownMenuItem(value:'mobile_money',child:Text('Mobile Money'))], onChanged:(v)=>setState(()=>_method=v??'manual'))),
+                  Expanded(child: DropdownButtonFormField<String>(initialValue:_method, decoration: const InputDecoration(border: OutlineInputBorder(), labelText:'الطريقة'), items: const [DropdownMenuItem(value:'manual',child:Text('Manual')),DropdownMenuItem(value:'bank',child:Text('Bank')),DropdownMenuItem(value:'mobile_money',child:Text('Mobile Money'))], onChanged:(v)=>setState(()=>_method=v??'manual'))),
                 ]),
                 const SizedBox(height: 8),
                 TextField(controller:_destination, maxLength:300, decoration: const InputDecoration(border: OutlineInputBorder(), labelText:'بيانات الاستلام')),
