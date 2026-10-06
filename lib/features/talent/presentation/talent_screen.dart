@@ -14,6 +14,7 @@ import 'talent_radar_screen.dart';
 import 'talent_club_coach_match_screen.dart';
 import 'talent_coach_screen.dart';
 import 'talent_verification_screen.dart';
+import 'talent_star_profile_screen.dart';
 class AurenTalentScreen extends StatefulWidget{const AurenTalentScreen({super.key});@override State<AurenTalentScreen> createState()=>_AurenTalentScreenState();}
 class _AurenTalentScreenState extends State<AurenTalentScreen>{final repo=TalentRepository();final search=TextEditingController();String skill='';String selectedSport='';
 static const sports=TalentSportsCatalog.all;
@@ -140,6 +141,21 @@ Widget _card(BuildContext c, AurenTalent t) {
       title: Text(t.displayName),
       subtitle: Text([t.sport.isEmpty?t.category:t.sport, t.discipline, t.level, t.city, t.country].where((x) => x.isNotEmpty).join(' • ')),
       trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.workspace_premium_outlined,size:18),Text('$score/100',style:const TextStyle(fontWeight:FontWeight.w800))]),
+      onTap: () => Navigator.push(
+        c,
+        MaterialPageRoute(builder: (_) => AurenTalentStarProfileScreen(talent: t)),
+      ),
+    );
+}
+
+Widget _legacyCardDetails(BuildContext c, AurenTalent t) => Card(
+    child: ListTile(
+      title: Text(t.displayName),
+      subtitle: Text(t.bio),
+    ),
+  );
+
+/* legacy details retained below
       onTap: () => showModalBottomSheet(
         context: c,
         builder: (_) => Padding(
@@ -206,6 +222,7 @@ Widget _card(BuildContext c, AurenTalent t) {
     ),
   );
 }
+*/
 Future<void> _create(BuildContext c,String uid)async{final n=TextEditingController(),b=TextEditingController(),s=TextEditingController(),sportsInput=TextEditingController(),city=TextEditingController(),country=TextEditingController(),sport=TextEditingController(),discipline=TextEditingController(),level=TextEditingController(),achievements=TextEditingController(),goals=TextEditingController();final ok=await showDialog<bool>(context:c,builder:(ctx)=>AlertDialog(title:const Text('ملف موهبة'),content:SingleChildScrollView(child:Column(children:[TextField(controller:n,decoration:const InputDecoration(labelText:'الاسم')),TextField(controller:b,maxLines:4,decoration:const InputDecoration(labelText:'نبذة')),TextField(controller:s,decoration:const InputDecoration(labelText:'Skills, comma separated')),TextField(controller:sport,decoration:const InputDecoration(labelText:'الرياضة الأساسية (اختياري)')),TextField(controller:sportsInput,decoration:const InputDecoration(labelText:'رياضات أخرى (افصل بينها بفاصلة)')),TextField(controller:discipline,decoration:const InputDecoration(labelText:'التخصص / المركز (اختياري)')),TextField(controller:level,decoration:const InputDecoration(labelText:'المستوى (اختياري)')),TextField(controller:achievements,decoration:const InputDecoration(labelText:'الإنجازات (افصل بينها بفاصلة)')),TextField(controller:goals,decoration:const InputDecoration(labelText:'الأهداف (افصل بينها بفاصلة)')),TextField(controller:city,decoration:const InputDecoration(labelText:'المدينة')),TextField(controller:country,decoration:const InputDecoration(labelText:'الدولة'))])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))]));if(ok==true&&n.text.trim().isNotEmpty)await repo.save(ownerId:uid,displayName:n.text,bio:b.text,category:sport.text.trim().isEmpty?'General':sport.text.trim(),sport:sport.text, sports:sportsInput.text.split(',').followedBy(sport.text.split(',')).map((x)=>x.trim()).where((x)=>x.isNotEmpty).toSet().toList(),discipline:discipline.text,level:level.text,city:city.text,country:country.text,skills:s.text.split(','),achievements:achievements.text.split(','),goals:goals.text.split(','));for(final x in[n,b,s,sportsInput,city,country,sport,discipline,level,achievements,goals])x.dispose();}
 }
 class _ActionChip extends StatelessWidget{
