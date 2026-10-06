@@ -351,7 +351,6 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                   ),
                 ),
               ),
-              ]))),
             ],
           );
         },
