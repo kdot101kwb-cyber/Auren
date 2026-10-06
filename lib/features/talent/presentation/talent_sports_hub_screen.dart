@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
 import '../../../services/talent/talent_sports_directory_service.dart';
 import 'talent_sports_entity_screen.dart';
+import 'talent_sports_match_screen.dart';
 
 class AurenTalentSportsHubScreen extends StatefulWidget {
   const AurenTalentSportsHubScreen({super.key});
@@ -309,18 +310,25 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
             : null,
         onTap: isDirectorySport
             ? null
-            : (id?.toString().isNotEmpty ?? false)
+            : _mode == 'matches' && _directoryMode.isEmpty
                 ? () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AurenSportsEntityScreen(
-                      type: type,
-                      id: id.toString(),
-                      title: title,
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AurenSportsMatchScreen(event: item),
                     ),
-                  ),
-                )
-                : null,
+                  )
+                : (id?.toString().isNotEmpty ?? false)
+                    ? () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AurenSportsEntityScreen(
+                            type: type,
+                            id: id.toString(),
+                            title: title,
+                          ),
+                        ),
+                      )
+                    : null
       ),
     );
   }
