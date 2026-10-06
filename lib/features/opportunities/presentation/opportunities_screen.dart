@@ -343,7 +343,7 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
                 TextField(controller: title, decoration: const InputDecoration(labelText: 'العنوان')),
                 TextField(controller: desc, maxLines: 4, decoration: const InputDecoration(labelText: 'الوصف')),
                 DropdownButtonFormField<String>(
-                  value: typeValue,
+                  initialValue: typeValue,
                   items: types.where((x) => x != 'All').map((x) => DropdownMenuItem(value: x, child: Text(x))).toList(),
                   onChanged: (value) => setDialogState(() => typeValue = value ?? typeValue),
                   decoration: const InputDecoration(labelText: 'النوع'),
