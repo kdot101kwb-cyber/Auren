@@ -270,13 +270,6 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     );
   }
 
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)),
-    );
-  }
-
   Widget _sportsTrustCard() {
     final trust = _trust.forEntity(type: 'events');
     return Card(
