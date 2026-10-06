@@ -5,23 +5,39 @@ class TalentSportsDataService {
   static const _base = 'https://www.thesportsdb.com/api/v1/json/123';
 
   String localized(dynamic item, String language) {
-    final suffix = switch (language) {
-      'ar' => 'DescriptionAr',
-      'de' => 'DescriptionDe',
-      'es' => 'DescriptionEs',
-      'fr' => 'DescriptionFr',
-      'it' => 'DescriptionIt',
-      'pt' => 'DescriptionPt',
-      'ru' => 'DescriptionRu',
-      'ja' => 'DescriptionJp',
-      'nl' => 'DescriptionNl',
-      'pl' => 'DescriptionPl',
-      'no' => 'DescriptionNo',
-      'sv' => 'DescriptionSe',
-      'zh' => 'DescriptionCn',
-      _ => 'DescriptionEn',
+    const fields = <String, String>{
+      'ar': 'strDescriptionAR',
+      'de': 'strDescriptionDE',
+      'es': 'strDescriptionES',
+      'fr': 'strDescriptionFR',
+      'it': 'strDescriptionIT',
+      'pt': 'strDescriptionPT',
+      'ru': 'strDescriptionRU',
+      'ja': 'strDescriptionJP',
+      'nl': 'strDescriptionNL',
+      'pl': 'strDescriptionPL',
+      'no': 'strDescriptionNO',
+      'sv': 'strDescriptionSE',
+      'zh': 'strDescriptionCN',
+      'en': 'strDescriptionEN',
     };
-    return (item['str$suffix'] ?? item['strDescriptionEN'] ?? item['strDescription'] ?? '').toString();
+    final key = fields[language] ?? fields['en']!;
+    return (item[key] ?? item['strDescriptionEN'] ?? item['strDescription'] ?? '').toString();
+  }
+
+  Future<List<Map<String, dynamic>>> lookupTeam(String id) async {
+    final data = await _get('/lookupteam.php', {'id': id});
+    return _maps(data['teams']);
+  }
+
+  Future<List<Map<String, dynamic>>> lookupPlayer(String id) async {
+    final data = await _get('/lookupplayer.php', {'id': id});
+    return _maps(data['players']);
+  }
+
+  Future<List<Map<String, dynamic>>> lookupLeague(String id) async {
+    final data = await _get('/lookupleague.php', {'id': id});
+    return _maps(data['leagues']);
   }
 
   Future<List<Map<String, dynamic>>> searchLeagues(String query) async {
