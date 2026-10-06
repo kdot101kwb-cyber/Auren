@@ -238,6 +238,16 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.local_gas_station_outlined, 'تكلفة الوقود', _showFuelCostTool),
             _toolButton(Icons.delete_outline, 'فاقد التعبئة', _showPackagingWasteTool),
             _toolButton(Icons.event_available_outlined, 'توقيت الحصاد', _showHarvestTimingTool),
+                      _toolButton(Icons.crop_square_outlined, 'محيط الأرض', _showFarmPerimeterTool),
+            _toolButton(Icons.water_drop_outlined, 'تصريف نقاط التنقيط', _showDripEmitterFlowTool),
+            _toolButton(Icons.schedule_outlined, 'ساعات الري', _showIrrigationHoursTool),
+            _toolButton(Icons.solar_power_outlined, 'مياه الضخ الشمسي', _showSolarDailyWaterTool),
+            _toolButton(Icons.agriculture_outlined, 'تكلفة تشغيل الآلة', _showMachineryOperatingCostTool),
+            _toolButton(Icons.badge_outlined, 'تكلفة العمالة', _showLaborCostTool),
+            _toolButton(Icons.inventory_2_outlined, 'عدد الأكياس', _showSackCountTool),
+            _toolButton(Icons.layers_outlined, 'عدد الطبالي', _showPalletCountTool),
+            _toolButton(Icons.balance_outlined, 'كمية التعادل', _showBreakEvenQuantityTool),
+            _toolButton(Icons.trending_up_outlined, 'الربح المبسط', _showProfitTool),
           ]),
         ]),
       ),
@@ -442,7 +452,58 @@ sult('عبوات التعبئة',x);
   }
 l=double.tryParse(losses.text.trim())??0;
       if(i<=0||l<0||l>i)return 'تحقق من القيم المدخلة.';
-      return 'الطوائف المتبقية: ${(i-l).toStringAsFixed(0)}\\nمعدل البقاء: ${((i-l)/i*100).toStringAsFixed(1)}%.';
+      retur
+  Future<void> _showFarmPerimeterTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'محيط الأرض',first:a,second:b,firstLabel:'الطول بالمتر',secondLabel:'العرض بالمتر',actionLabel:'احسب',calculate:(){final l=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(l<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'المحيط: '+(2*(l+w)).toStringAsFixed(2)+' متر.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('محيط الأرض',x);
+  }
+  Future<void> _showDripEmitterFlowTool() async {
+    final n=TextEditingController(),q=TextEditingController();
+    final x=await _twoFieldTool(title:'تصريف نقاط التنقيط',first:n,second:q,firstLabel:'عدد النقاط',secondLabel:'تصريف النقطة لتر/ساعة',actionLabel:'احسب',calculate:(){final a=double.tryParse(n.text)??0,b=double.tryParse(q.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'التدفق الكلي: '+(a*b).toStringAsFixed(2)+' لتر/ساعة.';});
+    n.dispose();q.dispose();if(mounted&&x!=null)_showResult('تصريف التنقيط',x);
+  }
+  Future<void> _showIrrigationHoursTool() async {
+    final v=TextEditingController(),f=TextEditingController();
+    final x=await _twoFieldTool(title:'ساعات الري',first:v,second:f,firstLabel:'حجم المياه باللتر',secondLabel:'التدفق لتر/ساعة',actionLabel:'احسب',calculate:(){final a=double.tryParse(v.text)??0,b=double.tryParse(f.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'زمن الري: '+(a/b).toStringAsFixed(2)+' ساعة.';});
+    v.dispose();f.dispose();if(mounted&&x!=null)_showResult('زمن الري',x);
+  }
+  Future<void> _showSolarDailyWaterTool() async {
+    final p=TextEditingController(),h=TextEditingController();
+    final x=await _twoFieldTool(title:'مياه الضخ بالطاقة الشمسية',first:p,second:h,firstLabel:'قدرة المضخة kW',secondLabel:'ساعات التشغيل/اليوم',actionLabel:'احسب',calculate:(){final a=double.tryParse(p.text)??0,b=double.tryParse(h.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'طاقة التشغيل اليومية: '+(a*b).toStringAsFixed(2)+' kWh. هذا لا يحول الطاقة إلى حجم ماء دون معرفة تصريف المضخة والرفع.';});
+    p.dispose();h.dispose();if(mounted&&x!=null)_showResult('الضخ الشمسي',x);
+  }
+  Future<void> _showMachineryOperatingCostTool() async {
+    final fuel=TextEditingController(),hour=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة تشغيل الآلة',first:fuel,second:hour,firstLabel:'تكلفة الوقود/ساعة',secondLabel:'عدد ساعات التشغيل',actionLabel:'احسب',calculate:(){final a=double.tryParse(fuel.text)??0,b=double.tryParse(hour.text)??0;if(a<0||b<0)return 'أدخل قيماً غير سالبة.';return 'تكلفة الوقود: '+(a*b).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    fuel.dispose();hour.dispose();if(mounted&&x!=null)_showResult('تشغيل الآلة',x);
+  }
+  Future<void> _showLaborCostTool() async {
+    final workers=TextEditingController(),rate=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة العمالة',first:workers,second:rate,firstLabel:'ساعات العمل',secondLabel:'أجر الساعة',actionLabel:'احسب',calculate:(){final a=double.tryParse(workers.text)??0,b=double.tryParse(rate.text)??0;if(a<0||b<0)return 'أدخل قيماً غير سالبة.';return 'تكلفة العمالة: '+(a*b).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    workers.dispose();rate.dispose();if(mounted&&x!=null)_showResult('تكلفة العمالة',x);
+  }
+  Future<void> _showSackCountTool() async {
+    final q=TextEditingController(),s=TextEditingController();
+    final x=await _twoFieldTool(title:'عدد الأكياس',first:q,second:s,firstLabel:'الكمية بالكجم',secondLabel:'وزن الكيس بالكجم',actionLabel:'احسب',calculate:(){final a=double.tryParse(q.text)??0,b=double.tryParse(s.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'عدد الأكياس: '+(a/b).ceil().toString()+' كيس.';});
+    q.dispose();s.dispose();if(mounted&&x!=null)_showResult('عدد الأكياس',x);
+  }
+  Future<void> _showPalletCountTool() async {
+    final q=TextEditingController(),c=TextEditingController();
+    final x=await _twoFieldTool(title:'عدد الطبالي',first:q,second:c,firstLabel:'عدد الوحدات',secondLabel:'سعة الطبلية بالوحدات',actionLabel:'احسب',calculate:(){final a=double.tryParse(q.text)??0,b=double.tryParse(c.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'عدد الطبالي: '+(a/b).ceil().toString()+'.';});
+    q.dispose();c.dispose();if(mounted&&x!=null)_showResult('الطبالي',x);
+  }
+  Future<void> _showBreakEvenQuantityTool() async {
+    final fixed=TextEditingController(),margin=TextEditingController();
+    final x=await _twoFieldTool(title:'كمية التعادل',first:fixed,second:margin,firstLabel:'التكاليف الثابتة',secondLabel:'هامش الوحدة',actionLabel:'احسب',calculate:(){final a=double.tryParse(fixed.text)??0,b=double.tryParse(margin.text)??0;if(a<0||b<=0)return 'أدخل تكلفة غير سالبة وهامش وحدة أكبر من صفر.';return 'كمية التعادل: '+(a/b).ceil().toString()+' وحدة.';});
+    fixed.dispose();margin.dispose();if(mounted&&x!=null)_showResult('كمية التعادل',x);
+  }
+  Future<void> _showProfitTool() async {
+    final revenue=TextEditingController(),cost=TextEditingController();
+    final x=await _twoFieldTool(title:'الربح الصافي المبسط',first:revenue,second:cost,firstLabel:'الإيرادات',secondLabel:'إجمالي التكاليف',actionLabel:'احسب',calculate:(){final a=double.tryParse(revenue.text)??0,b=double.tryParse(cost.text)??0;if(a<0||b<0)return 'أدخل قيماً غير سالبة.';return 'الربح/الخسارة: '+(a-b).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    revenue.dispose();cost.dispose();if(mounted&&x!=null)_showResult('الربح المبسط',x);
+  }
+n 'الطوائف المتبقية: ${(i-l).toStringAsFixed(0)}\\nمعدل البقاء: ${((i-l)/i*100).toStringAsFixed(1)}%.';
     });
     initial.dispose();losses.dispose();if(mounted&&result!=null)_showResult('بقاء النحل',result);
   }
