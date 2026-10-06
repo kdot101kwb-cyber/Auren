@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/business.dart';
 import '../../../services/business/business_growth_service.dart';
@@ -26,7 +25,7 @@ class _AurenBusinessGrowthScreenState extends State<AurenBusinessGrowthScreen> {
               context,
               MaterialPageRoute(
                 builder: (_) => MessengerScreen(
-                  initialPrompt: 'حلّل نشاط \${widget.business.name} وابنِ خطة نمو تشمل العملاء، التسويق، الشراكات والتوسع.',
+                  initialPrompt: 'حلّل نشاط ${widget.business.name} وابنِ خطة نمو تشمل العملاء، التسويق، الشراكات والتوسع.',
                 ),
               ),
             ),
@@ -56,7 +55,7 @@ class _AurenBusinessGrowthScreenState extends State<AurenBusinessGrowthScreen> {
           StreamBuilder<List<Map<String, dynamic>>>(
             stream: service.watchCampaigns(widget.business.id),
             builder: (context, snapshot) {
-              if (snapshot.hasError) return Text('تعذر تحميل الحملات: \${snapshot.error}');
+              if (snapshot.hasError) return Text('تعذر تحميل الحملات: ${snapshot.error}');
               final items = snapshot.data ?? const <Map<String, dynamic>>[];
               if (items.isEmpty) return const Card(child: Padding(padding: EdgeInsets.all(18), child: Text('لا توجد حملات بعد. أنشئ أول حملة من الزر أدناه.')));
               return Column(
@@ -68,7 +67,7 @@ class _AurenBusinessGrowthScreenState extends State<AurenBusinessGrowthScreen> {
                   return Card(
                     child: ListTile(
                       title: Text(name),
-                      subtitle: Text('\$channel • \$status'),
+                      subtitle: Text('$channel • $status'),
                       trailing: PopupMenuButton<String>(
                         onSelected: (value) => service.updateCampaignStatus(businessId: widget.business.id, campaignId: id, status: value),
                         itemBuilder: (_) => const [
@@ -95,7 +94,7 @@ class _AurenBusinessGrowthScreenState extends State<AurenBusinessGrowthScreen> {
         child: OutlinedButton.icon(
           onPressed: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: '\$prompt لنشاط \${widget.business.name}')),
+            MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: '$prompt لنشاط ${widget.business.name}')),
           ),
           icon: Icon(icon),
           label: Text(title),
