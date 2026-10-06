@@ -390,6 +390,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
 
 
   Widget _athleteModeCard(BuildContext context, AurenTalent talent) {
+    final sportsAi = const TalentSportsAiService();
     final sports = talent.sports.isEmpty && talent.sport.isNotEmpty ? [talent.sport] : talent.sports;
     final score = TalentScoreService.calculate(
       displayName: talent.displayName,
@@ -438,6 +439,20 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
           ],
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(
+                initialPrompt: sportsAi.buildAthletePrompt(athleteName: talent.displayName, sports: sports, skills: talent.skills, achievements: talent.achievements),
+              ))),
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Athlete AI'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(
+                initialPrompt: sportsAi.buildScoutPrompt(athleteName: talent.displayName, sports: sports, skills: talent.skills, achievements: talent.achievements, level: talent.level, location: [talent.city, talent.country].where((v) => v.trim().isNotEmpty).join(', ')),
+              ))),
+              icon: const Icon(Icons.search),
+              label: const Text('Scout AI'),
+            ),
             OutlinedButton.icon(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenTalentPerformanceScreen(
                 sport: talent.sport.isEmpty ? (sports.isEmpty ? talent.category : sports.first) : talent.sport,
