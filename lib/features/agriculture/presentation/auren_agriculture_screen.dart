@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
@@ -1656,7 +1657,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               Navigator.pop(context, 'أدخل كمية ونسبة صحيحتين وعدد أيام أكبر من صفر.');
               return;
             }
-            final remaining = q * pow(1 - r / 100, d);
+            final remaining = q * math.pow(1 - r / 100, d);
             Navigator.pop(context, 'الكمية المتبقية بعد الفاقد المركب تقريبياً: \${remaining.toStringAsFixed(2)}.\\nهذه محاكاة حسابية؛ الفاقد الفعلي يعتمد على المنتج وظروف التخزين.');
           }, child: const Text('احسب')),
         ],
