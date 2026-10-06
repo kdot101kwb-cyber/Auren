@@ -122,6 +122,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
           Wrap(spacing: 8, runSpacing: 8, children: [
             _toolButton(Icons.water_drop_outlined, 'تقدير الري', _showIrrigationTool),
             _toolButton(Icons.schedule_outlined, 'خطة الري', _showIrrigationPlanTool),
+            _toolButton(Icons.solar_power_outlined, 'الري بالطاقة الشمسية', _showSolarIrrigationTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -229,6 +230,76 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     depth.dispose();
     efficiency.dispose();
     if (mounted && result != null) _showResult('خطة الري', result);
+  }
+
+  Future<void> _showSolarIrrigationTool() async {
+    final power = TextEditingController(text: '1');
+    final hours = TextEditingController(text: '6');
+    final loadHours = TextEditingController(text: '5');
+    final efficiency = TextEditingController(text: '75');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تقدير الري بالطاقة الشمسية'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: power,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'قدرة المضخة بالكيلوواط'),
+            ),
+            TextField(
+              controller: hours,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'ساعات الشمس الفعالة يومياً'),
+            ),
+            TextField(
+              controller: loadHours,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'ساعات تشغيل المضخة يومياً'),
+            ),
+            TextField(
+              controller: efficiency,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'كفاءة المنظومة % (مثلاً 75)'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final p = double.tryParse(power.text.trim()) ?? 0;
+              final sun = double.tryParse(hours.text.trim()) ?? 0;
+              final run = double.tryParse(loadHours.text.trim()) ?? 0;
+              final eff = double.tryParse(efficiency.text.trim()) ?? 0;
+              if (p <= 0 || sun <= 0 || run <= 0 || eff <= 0 || eff > 100) {
+                Navigator.pop(context, 'أدخل قيماً صحيحة، وكفاءة بين 1 و100%.');
+                return;
+              }
+              final dailyEnergy = p * run;
+              final panelKw = dailyEnergy / (sun * (eff / 100));
+              final panelCount = (panelKw / 0.55).ceil();
+              final inverterKw = p * 1.25;
+              Navigator.pop(
+                context,
+                'الاستهلاك التقريبي: ${dailyEnergy.toStringAsFixed(2)} kWh/يوم.\\n'
+                'قدرة الألواح التقديرية: ${panelKw.toStringAsFixed(2)} kWp.\\n'
+                'إذا استخدمت ألواحاً بقدرة 550W: حوالي $panelCount لوحاً.\\n'
+                'قدرة العاكس المقترحة مبدئياً: ${inverterKw.toStringAsFixed(2)} kW.\\n\\n'
+                'هذه حسبة أولية فقط؛ التصميم النهائي يحتاج قدرة المضخة الفعلية، التصريف، الرفع، ساعات الشمس المحلية، نوع العاكس/المضخة، الكابلات والخزانات والتظليل، ويجب مراجعته مع مختص طاقة ومياه.',
+              );
+            },
+            child: const Text('احسب النظام'),
+          ),
+        ],
+      ),
+    );
+    power.dispose();
+    hours.dispose();
+    loadHours.dispose();
+    efficiency.dispose();
+    if (mounted && result != null) _showResult('الري بالطاقة الشمسية', result);
   }
 
   Future<void> _showCostTool() async {
