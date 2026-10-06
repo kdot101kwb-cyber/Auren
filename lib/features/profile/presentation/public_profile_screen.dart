@@ -14,6 +14,7 @@ import '../../../services/creator/creator_studio_repository.dart';
 import '../../../core/models/talent.dart';
 import '../../../services/talent/talent_score_service.dart';
 import '../../../services/talent/talent_skill_graph_service.dart';
+import '../../../services/talent/auren_sports_ai_service.dart';
 import '../../talent/presentation/talent_claim_screen.dart';
 import '../../talent/presentation/talent_verification_screen.dart';
 import '../../talent/presentation/talent_coach_screen.dart';
