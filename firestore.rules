@@ -773,12 +773,13 @@ service cloud.firestore {
         && request.resource.data.city is string && request.resource.data.city.size() <= 100
         && request.resource.data.country is string && request.resource.data.country.size() <= 100
         && request.resource.data.skills is list && request.resource.data.skills.size() <= 30
+        && (!request.resource.data.keys().hasAny(['sports']) || (request.resource.data.sports is list && request.resource.data.sports.size() <= 10))
         && (!request.resource.data.keys().hasAny(['sport']) || (request.resource.data.sport is string && request.resource.data.sport.size() <= 80))
         && (!request.resource.data.keys().hasAny(['discipline']) || (request.resource.data.discipline is string && request.resource.data.discipline.size() <= 100))
         && (!request.resource.data.keys().hasAny(['level']) || (request.resource.data.level is string && request.resource.data.level.size() <= 60))
         && (!request.resource.data.keys().hasAny(['achievements']) || (request.resource.data.achievements is list && request.resource.data.achievements.size() <= 20))
         && (!request.resource.data.keys().hasAny(['goals']) || (request.resource.data.goals is list && request.resource.data.goals.size() <= 10))
-        && request.resource.data.keys().hasOnly(['ownerId','displayName','bio','category','sport','discipline','level','city','country','skills','achievements','goals','status','updatedAt']);
+        && request.resource.data.keys().hasOnly(['ownerId','displayName','bio','category','sport','sports','discipline','level','city','country','skills','achievements','goals','status','updatedAt']);
       allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.displayName is string && request.resource.data.displayName.size() > 0 && request.resource.data.displayName.size() <= 120
@@ -787,6 +788,7 @@ service cloud.firestore {
         && request.resource.data.city is string && request.resource.data.city.size() <= 100
         && request.resource.data.country is string && request.resource.data.country.size() <= 100
         && request.resource.data.skills is list && request.resource.data.skills.size() <= 30
+        && (!request.resource.data.keys().hasAny(['sports']) || (request.resource.data.sports is list && request.resource.data.sports.size() <= 10))
         && (!request.resource.data.keys().hasAny(['sport']) || (request.resource.data.sport is string && request.resource.data.sport.size() <= 80))
         && (!request.resource.data.keys().hasAny(['discipline']) || (request.resource.data.discipline is string && request.resource.data.discipline.size() <= 100))
         && (!request.resource.data.keys().hasAny(['level']) || (request.resource.data.level is string && request.resource.data.level.size() <= 60))
