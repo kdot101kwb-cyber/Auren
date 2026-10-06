@@ -161,8 +161,163 @@ Widget _card(BuildContext c, AurenTalent t) {
 }
 
 
-Future<void> _create(BuildContext c,String uid)async{final n=TextEditingController(),b=TextEditingController(),s=TextEditingController(),sportsInput=TextEditingController(),city=TextEditingController(),country=TextEditingController(),sport=TextEditingController(),discipline=TextEditingController(),level=TextEditingController(),achievements=TextEditingController(),goals=TextEditingController();String selected='sports';final ok=await showDialog<bool>(context:c,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialogState)=>AlertDialog(title:const Text('ملف موهبة'),content:SingleChildScrollView(child:Column(children:[DropdownButtonFormField<String>(value:selected,decoration:const InputDecoration(labelText:'مجال الموهبة'),items:AurenTalentCategories.all.map((cat)=>DropdownMenuItem(value:cat.id,child:Text(cat.name))).toList(),onChanged:(v)=>setDialogState(()=>selected=v??'other')),TextField(controller:n,decoration:const InputDecoration(labelText:'الاسم')),TextField(controller:b,maxLines:4,decoration:const InputDecoration(labelText:'نبذة')),TextField(controller:s,decoration:const InputDecoration(labelText:'Skills, comma separated')),if(selected=='sports')... [TextField(controller:sport,decoration:const InputDecoration(labelText:'الرياضة الأساسية (اختياري)')),TextField(controller:sportsInput,decoration:const InputDecoration(labelText:'رياضات أخرى (افصل بينها بفاصلة)'))],TextField(controller:discipline,decoration:const InputDecoration(labelText:'التخصص / المركز (اختياري)')),TextField(controller:level,decoration:const InputDecoration(labelText:'المستوى (اختياري)')),TextField(controller:achievements,decoration:const InputDecoration(labelText:'الإنجازات (افصل بينها بفاصلة)')),TextField(controller:goals,decoration:const InputDecoration(labelText:'الأهداف (افصل بينها بفاصلة)')),TextField(controller:city,decoration:const InputDecoration(labelText:'المدينة')),TextField(controller:country,decoration:const InputDecoration(labelText:'الدولة'))])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))]));if(ok==true&&n.text.trim().isNotEmpty)await repo.save(ownerId:uid,displayName:n.text,bio:b.text,category:selected,sport:sport.text, sports:sportsInput.text.split(',').followedBy(sport.text.split(',')).map((x)=>x.trim()).where((x)=>x.isNotEmpty).toSet().toList(),discipline:discipline.text,level:level.text,city:city.text,country:country.text,skills:s.text.split(','),achievements:achievements.text.split(','),goals:goals.text.split(','));for(final x in[n,b,s,sportsInput,city,country,sport,discipline,level,achievements,goals])x.dispose();}
+Future<void> _create(BuildContext c, String uid) async {
+  final n = TextEditingController();
+  final b = TextEditingController();
+  final s = TextEditingController();
+  final sportsInput = TextEditingController();
+  final city = TextEditingController();
+  final country = TextEditingController();
+  final sport = TextEditingController();
+  final discipline = TextEditingController();
+  final level = TextEditingController();
+  final achievements = TextEditingController();
+  final goals = TextEditingController();
+  String selected = 'sports';
+
+  try {
+    final ok = await showDialog<bool>(
+      context: c,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('ملف موهبة'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selected,
+                  decoration: const InputDecoration(labelText: 'مجال الموهبة'),
+                  items: AurenTalentCategories.all
+                      .map((cat) => DropdownMenuItem(
+                            value: cat.id,
+                            child: Text(cat.name),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setDialogState(() {
+                    selected = v ?? 'other';
+                  }),
+                ),
+                TextField(
+                  controller: n,
+                  decoration: const InputDecoration(labelText: 'الاسم'),
+                ),
+                TextField(
+                  controller: b,
+                  maxLines: 4,
+                  decoration: const InputDecoration(labelText: 'نبذة'),
+                ),
+                TextField(
+                  controller: s,
+                  decoration: const InputDecoration(
+                    labelText: 'Skills, comma separated',
+                  ),
+                ),
+                if (selected == 'sports') ...[
+                  TextField(
+                    controller: sport,
+                    decoration: const InputDecoration(
+                      labelText: 'الرياضة الأساسية (اختياري)',
+                    ),
+                  ),
+                  TextField(
+                    controller: sportsInput,
+                    decoration: const InputDecoration(
+                      labelText: 'رياضات أخرى (افصل بينها بفاصلة)',
+                    ),
+                  ),
+                ],
+                TextField(
+                  controller: discipline,
+                  decoration: const InputDecoration(
+                    labelText: 'التخصص / المركز (اختياري)',
+                  ),
+                ),
+                TextField(
+                  controller: level,
+                  decoration: const InputDecoration(
+                    labelText: 'المستوى (اختياري)',
+                  ),
+                ),
+                TextField(
+                  controller: achievements,
+                  decoration: const InputDecoration(
+                    labelText: 'الإنجازات (افصل بينها بفاصلة)',
+                  ),
+                ),
+                TextField(
+                  controller: goals,
+                  decoration: const InputDecoration(
+                    labelText: 'الأهداف (افصل بينها بفاصلة)',
+                  ),
+                ),
+                TextField(
+                  controller: city,
+                  decoration: const InputDecoration(labelText: 'المدينة'),
+                ),
+                TextField(
+                  controller: country,
+                  decoration: const InputDecoration(labelText: 'الدولة'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (ok == true && n.text.trim().isNotEmpty) {
+      final sports = sportsInput.text
+          .split(',')
+          .followedBy(sport.text.split(','))
+          .map((x) => x.trim())
+          .where((x) => x.isNotEmpty)
+          .toSet()
+          .toList();
+      await repo.save(
+        ownerId: uid,
+        displayName: n.text,
+        bio: b.text,
+        category: selected,
+        sport: sport.text,
+        sports: sports,
+        discipline: discipline.text,
+        level: level.text,
+        city: city.text,
+        country: country.text,
+        skills: s.text.split(','),
+        achievements: achievements.text.split(','),
+        goals: goals.text.split(','),
+      );
+    }
+  } finally {
+    for (final x in [
+      n,
+      b,
+      s,
+      sportsInput,
+      city,
+      country,
+      sport,
+      discipline,
+      level,
+      achievements,
+      goals,
+    ]) {
+      x.dispose();
+    }
+  }
 }
+
 class _ActionChip extends StatelessWidget{
  final String title; final String prompt;
  const _ActionChip(this.title,this.prompt);
