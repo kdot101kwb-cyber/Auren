@@ -16,6 +16,12 @@ class SportsTrustInfo {
   String get label => isOfficial ? 'Official source' : 'Data source';
 }
 
+class SportsTruthSignal {
+  final String label;
+  final String explanation;
+  const SportsTruthSignal({required this.label, required this.explanation});
+}
+
 class TalentSportsTrustService {
   SportsTrustInfo forEntity({required String type}) {
     switch (type) {
@@ -52,6 +58,16 @@ class TalentSportsTrustService {
           trustLevel: 'Unverified',
         );
     }
+  }
+
+  SportsTruthSignal truthSignal({required String source, required String? updatedAt}) {
+    if (source == 'TheSportsDB') {
+      return const SportsTruthSignal(label: 'Community data', explanation: 'هذه البيانات مناسبة للاكتشاف والمساعدة، لكنها ليست تصريحاً رسمياً.');
+    }
+    if (source.trim().isEmpty) {
+      return const SportsTruthSignal(label: 'Unverified', explanation: 'لا يوجد مصدر مصنف لهذه المعلومة.');
+    }
+    return SportsTruthSignal(label: 'Source identified', explanation: updatedAt == null || updatedAt.trim().isEmpty ? 'المصدر معروف، لكن وقت التحديث غير متوفر.' : 'المصدر معروف ووقت التحديث متوفر.');
   }
 
   String guidanceFor(String source) {
