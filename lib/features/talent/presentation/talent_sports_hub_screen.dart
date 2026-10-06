@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
+import 'talent_sports_entity_screen.dart';
 
 class AurenTalentSportsHubScreen extends StatefulWidget {
   const AurenTalentSportsHubScreen({super.key});
@@ -181,6 +182,16 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
           : CircleAvatar(backgroundImage: NetworkImage(image)),
         title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
         subtitle: Text(description.isEmpty ? (subtitle.isEmpty ? 'Sports data' : subtitle) : '$subtitle\n$description'),
+        trailing: ((item['idPlayer'] ?? item['idTeam'] ?? item['idLeague'])?.toString().isNotEmpty ?? false)
+            ? const Icon(Icons.chevron_right)
+            : null,
+        onTap: ((item['idPlayer'] ?? item['idTeam'] ?? item['idLeague'])?.toString().isNotEmpty ?? false)
+            ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSportsEntityScreen(
+                  type: _mode,
+                  id: (item['idPlayer'] ?? item['idTeam'] ?? item['idLeague']).toString(),
+                  title: title,
+                )))
+            : null,
       ),
     );
   }
