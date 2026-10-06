@@ -126,6 +126,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
     final description = _service.localized(item, language);
     final image = (item['strThumb'] ?? item['strBadge'] ?? item['strLogo'] ?? '').toString();
     final trust = _trust.forEntity(type: widget.type);
+    final truth = _trust.truthSignal(source: trust.sourceName, updatedAt: trust.updatePolicy);
     final subtitle = [
       item['strSport'],
       item['strLeague'],
@@ -196,7 +197,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
               ],
             ),
           ),
-          _trustCard(trust),
+          _trustCard(trust, truth),
           _statsCard(item),
           if (_last.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -273,14 +274,16 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
       ),
     );
   }
-  Widget _trustCard(SportsTrustInfo trust) {
+  Widget _trustCard(SportsTrustInfo trust, SportsTruthSignal truth) {
     return Card(
       child: ListTile(
         leading: Icon(trust.isOfficial ? Icons.verified : Icons.info_outline),
-        title: Text(trust.label),
+        title: Text(trust.label + ' • ' + truth.label),
         subtitle: Text(
           trust.sourceName + ' • ' + trust.coverage + '\nآخر تحديث: ' + trust.updatePolicy,
         ),
+          const SizedBox(height: 4),
+          Text(truth.explanation),
       ),
     );
   }
