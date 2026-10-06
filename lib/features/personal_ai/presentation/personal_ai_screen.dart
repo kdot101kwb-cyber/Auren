@@ -18,6 +18,7 @@ import 'context_switch_screen.dart';
 import 'explain_my_data_screen.dart';
 import 'rescue_mode_screen.dart';
 import 'handoff_screen.dart';
+import 'idea_lab_screen.dart';
 import 'continuity_screen.dart';
 import 'daily_review_screen.dart';
 import 'weekly_review_screen.dart';
