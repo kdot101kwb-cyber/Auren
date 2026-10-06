@@ -216,6 +216,17 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.hive_outlined, 'بقاء طوائف النحل', _showBeeSurvivalTool),
             _toolButton(Icons.home_work_outlined, 'سعة البيت المحمي', _showGreenhouseCapacityTool),
 
+                      _toolButton(Icons.water_drop_outlined, 'احتياج ماء الحقل', _showFieldWaterRequirementTool),
+            _toolButton(Icons.event_repeat_outlined, 'فاصل الري', _showIrrigationIntervalTool),
+            _toolButton(Icons.timer_outlined, 'زمن ملء الخزان', _showWaterTankFillTimeTool),
+            _toolButton(Icons.timer_outlined, 'زمن تفريغ الخزان', _showWaterTankDrainTimeTool),
+            _toolButton(Icons.payments_outlined, 'تكلفة السماد', _showFertilizerCostTool),
+            _toolButton(Icons.payments_outlined, 'تكلفة التقاوي', _showSeedCostTool),
+            _toolButton(Icons.payments_outlined, 'تكلفة العلف', _showFeedCostTool),
+            _toolButton(Icons.egg_outlined, 'كفاءة علف البياض', _showEggFeedConversionTool),
+            _toolButton(Icons.local_drink_outlined, 'كفاءة علف الحليب', _showMilkFeedEfficiencyTool),
+            _toolButton(Icons.set_meal_outlined, 'بقاء الأسماك', _showFishSurvivalTool),
+            _toolButton(Icons.inventory_2_outlined, 'عدد عبوات التعبئة', _showPackagingUnitsTool),
           ]),
         ]),
       ),
@@ -306,7 +317,63 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
   Future<void> _showBeeSurvivalTool() async {
     final initial=TextEditingController(), losses=TextEditingController();
     final result=await _twoFieldTool(title:'بقاء طوائف النحل',first:initial,second:losses,firstLabel:'عدد الطوائف في البداية',secondLabel:'عدد الطوائف المفقودة',actionLabel:'احسب',calculate:(){
-      final i=double.tryParse(initial.text.trim())??0,l=double.tryParse(losses.text.trim())??0;
+      final i=double.tryParse(initial.text.trim())??0,
+  Future<void> _showFieldWaterRequirementTool() async {
+    final a=TextEditingController(),d=TextEditingController(text:'5');
+    final x=await _twoFieldTool(title:'احتياج ماء الحقل',first:a,second:d,firstLabel:'المساحة بالمتر المربع',secondLabel:'عمق الماء بالملليمتر',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(d.text)??0;if(v<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'الاحتياج النظري: '+(v*w).toStringAsFixed(0)+' لتر.';});
+    a.dispose();d.dispose();if(mounted&&x!=null)_showResult('احتياج ماء الحقل',x);
+  }
+  Future<void> _showIrrigationIntervalTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'الفاصل بين الريات',first:a,second:b,firstLabel:'الاحتياج اليومي باللتر',secondLabel:'حجم الري المتاح باللتر',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'الفاصل النظري: '+(w/v).toStringAsFixed(2)+' يوم.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('فاصل الري',x);
+  }
+  Future<void> _showWaterTankFillTimeTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'زمن ملء الخزان',first:a,second:b,firstLabel:'حجم الخزان باللتر',secondLabel:'تدفق المصدر لتر/دقيقة',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'زمن الملء: '+(v/w).toStringAsFixed(2)+' دقيقة.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('ملء الخزان',x);
+  }
+  Future<void> _showWaterTankDrainTimeTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'زمن تفريغ الخزان',first:a,second:b,firstLabel:'حجم المياه باللتر',secondLabel:'معدل الخروج لتر/دقيقة',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'زمن التفريغ: '+(v/w).toStringAsFixed(2)+' دقيقة.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('تفريغ الخزان',x);
+  }
+  Future<void> _showFertilizerCostTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة السماد',first:a,second:b,firstLabel:'كمية السماد بالكجم',secondLabel:'سعر الكيلو',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<0)return 'أدخل كمية صحيحة وسعراً غير سالب.';return 'التكلفة: '+(v*w).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('تكلفة السماد',x);
+  }
+  Future<void> _showSeedCostTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة التقاوي',first:a,second:b,firstLabel:'كمية التقاوي بالكجم',secondLabel:'سعر الكيلو',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<0)return 'أدخل كمية صحيحة وسعراً غير سالب.';return 'التكلفة: '+(v*w).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('تكلفة التقاوي',x);
+  }
+  Future<void> _showFeedCostTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة العلف',first:a,second:b,firstLabel:'كمية العلف بالكجم',secondLabel:'سعر الكيلو',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<0)return 'أدخل كمية صحيحة وسعراً غير سالب.';return 'التكلفة: '+(v*w).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('تكلفة العلف',x);
+  }
+  Future<void> _showEggFeedConversionTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'كفاءة علف البياض',first:a,second:b,firstLabel:'العلف المستهلك بالكجم',secondLabel:'كتلة البيض بالكجم',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'معامل التحويل: '+(v/w).toStringAsFixed(2)+' كجم علف/كجم بيض.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('كفاءة علف البياض',x);
+  }
+  Future<void> _showMilkFeedEfficiencyTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'كفاءة العلف لإنتاج الحليب',first:a,second:b,firstLabel:'العلف المستهلك بالكجم',secondLabel:'الحليب المنتج باللتر',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'العلف لكل لتر: '+(v/w).toStringAsFixed(2)+' كجم/لتر.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('كفاءة علف الحليب',x);
+  }
+  Future<void> _showFishSurvivalTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'معدل بقاء الأسماك',first:a,second:b,firstLabel:'عدد الأسماك عند التخزين',secondLabel:'عدد الأسماك الحالية',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<0||w>v)return 'تحقق من القيم.';return 'معدل البقاء: '+(w/v*100).toStringAsFixed(1)+'%.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('بقاء الأسماك',x);
+  }
+  Future<void> _showPackagingUnitsTool() async {
+    final a=TextEditingController(),b=TextEditingController();
+    final x=await _twoFieldTool(title:'عدد عبوات التعبئة',first:a,second:b,firstLabel:'الكمية بالكجم',secondLabel:'سعة العبوة بالكجم',actionLabel:'احسب',calculate:(){final v=double.tryParse(a.text)??0,w=double.tryParse(b.text)??0;if(v<=0||w<=0)return 'أدخل قيماً أكبر من صفر.';return 'عدد العبوات: '+(v/w).ceil().toString()+' عبوة.';});
+    a.dispose();b.dispose();if(mounted&&x!=null)_showResult('عبوات التعبئة',x);
+  }
+l=double.tryParse(losses.text.trim())??0;
       if(i<=0||l<0||l>i)return 'تحقق من القيم المدخلة.';
       return 'الطوائف المتبقية: ${(i-l).toStringAsFixed(0)}\\nمعدل البقاء: ${((i-l)/i*100).toStringAsFixed(1)}%.';
     });
