@@ -27,11 +27,11 @@ class TalentScoutService {
       } else {
         final keywords=<String>{...scout.skills.map(_norm),...scout.interests.map(_norm)}..removeWhere((x)=>x.isEmpty);
         final sportSignals=<String>{_norm(talent.sport),_norm(talent.discipline),_norm(talent.level)}..removeWhere((x)=>x.isEmpty);
-        final hay='${talent.bio} ${talent.category} ${talent.city} ${talent.country} ${talent.skills.join(' ')}'.toLowerCase();
+        final hay='${talent.bio} ${talent.category} ${talent.sport} ${talent.discipline} ${talent.level} ${talent.city} ${talent.country} ${talent.skills.join(' ')}'.toLowerCase();
         final hits=keywords.where((k)=>hay.contains(k)).toList();
         final signalHits=sportSignals.where((signal)=>hay.contains(signal)).toList();
         final baseScore=keywords.isEmpty?50:((hits.length/keywords.length)*100).round();
-        final score=(baseScore + signalHits.length * 10).clamp(0, 100);
+        final score=(baseScore + signalHits.length * 10).clamp(0, 100).toInt();
         if(score<20&&keywords.isNotEmpty)continue;
         final text=switch(scout.role){
           'market'=>'إشارات سوق مرتبطة بمهاراتك: ${hits.isEmpty?'راجع اتجاهات السوق والمهارات المطلوبة.':hits.join(' • ')}',
