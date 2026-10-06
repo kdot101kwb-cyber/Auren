@@ -302,7 +302,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
             const SizedBox(height: 6),
             Text(truth.explanation),
             const SizedBox(height: 6),
-            Text(trust.guidanceFor(trust.sourceName)),
+            Text(trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية'),
           ],
         ),
       ),
