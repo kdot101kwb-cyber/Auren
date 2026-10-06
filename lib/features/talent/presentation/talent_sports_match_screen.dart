@@ -80,12 +80,12 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
 
     final sport = _value('strSport');
     final matchContext = [
-      if (details.isNotEmpty) details.map((e) => e.key + ': ' + e.value).join('\\n'),
+      if (details.isNotEmpty) details.map((e) => e.key + ': ' + e.value).join('\n'),
       'مصدر البيانات: ' + trust.sourceName,
       'مستوى الثقة: ' + trust.trustLevel,
       'نوع المصدر: ' + trust.label,
       'إرشاد المصدر: ' + trust.guidanceFor(trust.sourceName),
-    ].join('\\n');
+    ].join('\n');
     final aiPrompt = AurenSportsAiService.matchPrompt(title, sport, matchContext);
 
     return Scaffold(
