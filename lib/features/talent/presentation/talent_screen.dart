@@ -10,6 +10,7 @@ import 'talent_scouts_screen.dart';
 import 'talent_performance_screen.dart';
 import 'talent_badges_screen.dart';
 import 'talent_radar_screen.dart';
+import 'talent_club_coach_match_screen.dart';
 class AurenTalentScreen extends StatefulWidget{const AurenTalentScreen({super.key});@override State<AurenTalentScreen> createState()=>_AurenTalentScreenState();}
 class _AurenTalentScreenState extends State<AurenTalentScreen>{final repo=TalentRepository();final search=TextEditingController();String skill='';String selectedSport='';
 static const sports=['Football','Basketball','Volleyball','Tennis','Table Tennis','Boxing','MMA','Athletics','Swimming','Cycling','Gymnastics','Archery','Weightlifting','Rugby','Cricket','Baseball','Hockey','Handball','Motorsport','Formula 1','Wrestling','Judo','Karate','Taekwondo','Fencing','Rowing','Badminton','Golf','Chess & Mind Sports','NFL'];
@@ -29,6 +30,7 @@ _ActionChip('Opportunity Ready','قيّم جاهزيتي لفرصة أو ناد�
 _ActionChip('AI Coach Plan','ابنِ لي خطة تطوير أسبوعية حسب رياضتي أو مهارتي ووقتي ومستواي، مع مؤشرات متابعة واضحة.'),
 _ActionChip('Highlight Story','حوّل إنجازاتي وبيانات أدائي إلى قصة مختصرة مناسبة لعرضها على مدرب أو شركة أو جمهور.'),
 _ActionChip('Team Match','اقترح نوع الفريق أو النادي أو الشريك الذي يناسب مهاراتي وأهدافي، مع سبب المطابقة.'),
+                  _ActionChip('Club & Coach Match','افتح المطابقة الفعلية مع فرص الأندية والمدربين والفرق الرياضية المفتوحة.',onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenClubCoachMatchScreen()))),
 _ActionChip('AI Scout Report','أنشئ تقرير كشف موهبة احترافي يختصر نقاط القوة والمهارات والأداء والفرص ومجالات التطوير.'),
 _ActionChip('Competition Ready','قيّم جاهزيتي للمنافسة القادمة من خلال أهدافي وبيانات أدائي المسجلة، وأنشئ قائمة تحقق عملية قبل المنافسة.'),
 _ActionChip('Coach Brief','أنشئ ملخصاً سريعاً لمدرب أو نادي يوضح من أنا، رياضتي، مهاراتي، إنجازاتي، أهدافي وما أحتاج إلى تطويره.'),
