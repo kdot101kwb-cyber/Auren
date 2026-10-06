@@ -162,7 +162,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                 DropdownButtonFormField<String>(
                   value: metricController.text.isEmpty ? null : metricController.text,
                   items: metrics.values.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
-                  onChanged: (v) => metricController.text = v ?? '',
+                  onChanged: (v) => setState(() => metricController.text = v ?? ''),
                   decoration: const InputDecoration(labelText: 'المؤشر', border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 8),
