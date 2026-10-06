@@ -132,7 +132,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.eco_outlined, 'المادة العضوية', _showOrganicMatterTool),
             _toolButton(Icons.layers_outlined, 'كمية محسن التربة', _showSoilAmendmentTool),
             _toolButton(Icons.blender_outlined, 'خلطة السماد', _showFertilizerBlendTool),
-            _toolButton(Icons.splitscreen_outlined, 'تقسيم جرعات السماد', _showFertilizerSplitTool),
+            _toolButton(Icons.split_screen_outlined, 'تقسيم جرعات السماد', _showFertilizerSplitTool),
             _toolButton(Icons.search_outlined, 'مؤشر نقص العناصر', _showNutrientDeficiencyTool),
             _toolButton(Icons.monitor_weight_outlined, 'توازن العناصر', _showNutrientBalanceTool),
             _toolButton(Icons.grass_outlined, 'كثافة الزراعة', _showPlantDensityTool),
@@ -708,18 +708,17 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     if (mounted && result != null) _showResult('كمية محسن التربة', result);
   }
   Future<void> _showFertilizerBlendTool() async {
-    final need=TextEditingController(text:'50');
-    final area=TextEditingController(text:'1000');
-    final pct=TextEditingController(text:'20');
-    final result=await _twoFieldTool(title:'خلطة السماد',first:need,second:area,firstLabel:'العنصر المطلوب كجم/هكتار',secondLabel:'المساحة م²',actionLabel:'احسب',calculate:(){
-      final n=double.tryParse(need.text.trim())??0;
-      final a=double.tryParse(area.text.trim())??0;
-      final p=double.tryParse(pct.text.trim())??0;
-      if(n<0||a<=0||p<=0||p>100)return 'أدخل قيماً صحيحة.';
-      return 'أدخل نسبة العنصر في السماد (%): ${p.toStringAsFixed(1)}.\\nالكمية التقديرية: ${(n*(a/10000)/(p/100)).toStringAsFixed(2)} كجم.\\n\\nهذه حسبة كمية فقط وليست توصية تسميد.';
-    });
-    need.dispose();area.dispose();pct.dispose();
-    if(mounted&&result!=null)_showResult('خلطة السماد',result);
+    final need = TextEditingController(text: '50'); final area = TextEditingController(text: '1000'); final pct = TextEditingController(text: '20');
+    final result = await showDialog<String>(context: context,builder: (_) => AlertDialog(title: const Text('خلطة السماد'),content: Column(mainAxisSize: MainAxisSize.min,children: [
+      TextField(controller: need,keyboardType: const TextInputType.numberWithOptions(decimal: true),decoration: const InputDecoration(labelText: 'العنصر المطلوب كجم/هكتار')),
+      TextField(controller: area,keyboardType: const TextInputType.numberWithOptions(decimal: true),decoration: const InputDecoration(labelText: 'المساحة م²')),
+      TextField(controller: pct,keyboardType: const TextInputType.numberWithOptions(decimal: true),decoration: const InputDecoration(labelText: 'نسبة العنصر في السماد %'))]),actions: [
+      TextButton(onPressed: () => Navigator.pop(context),child: const Text('إلغاء')),FilledButton(onPressed: () {
+        final n = double.tryParse(need.text.trim()) ?? 0; final a = double.tryParse(area.text.trim()) ?? 0; final p = double.tryParse(pct.text.trim()) ?? 0;
+        if(n < 0 || a <= 0 || p <= 0 || p > 100){Navigator.pop(context,'أدخل قيماً صحيحة ونسبة عنصر بين 0 و100%.');return;}
+        final kg = n * (a / 10000) / (p / 100); Navigator.pop(context,'كمية السماد التقديرية: ' + kg.toStringAsFixed(2) + ' كجم.\n\nهذه حسبة كمية فقط وليست توصية تسميد.');
+      },child: const Text('احسب'))]));
+    need.dispose(); area.dispose(); pct.dispose(); if(mounted && result != null)_showResult('خلطة السماد',result);
   }
   Future<void> _showFertilizerSplitTool() async {
     final total=TextEditingController(text:'100'); final first=TextEditingController(text:'40'); final second=TextEditingController(text:'30');
@@ -737,14 +736,18 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     nutrient.dispose();symptom.dispose();if(mounted&&result!=null)_showResult('مؤشر نقص العناصر',result);
   }
   Future<void> _showNutrientBalanceTool() async {
-    final n=TextEditingController(text:'100'); final p=TextEditingController(text:'50');
-    final result=await _twoFieldTool(title:'توازن العناصر',first:n,second:p,firstLabel:'N كجم/هكتار',secondLabel:'P كجم/هكتار',actionLabel:'احسب',calculate:(){
-      final nv=double.tryParse(n.text.trim())??0; final pv=double.tryParse(p.text.trim())??0;
-      if(nv<0||pv<0)return 'أدخل قيماً غير سالبة.';
-      return 'N: $nv كجم/هكتار — P: $pv كجم/هكتار.\n\nأضف K في التحليل الكامل. هذا مؤشر للمقارنة فقط وليس وصفة تسميد.';
-    }); n.dispose();p.dispose();if(mounted&&result!=null)_showResult('توازن العناصر',result);
+    final n=TextEditingController(text:'100'); final p=TextEditingController(text:'50'); final k=TextEditingController(text:'100');
+    final result=await showDialog<String>(context:context,builder:(_) => AlertDialog(title:const Text('توازن N-P-K'),content:Column(mainAxisSize:MainAxisSize.min,children: [
+      TextField(controller:n,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'N كجم/هكتار')),
+      TextField(controller:p,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'P كجم/هكتار')),
+      TextField(controller:k,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'K كجم/هكتار'))]),actions:[
+      TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إلغاء')),FilledButton(onPressed:(){
+        final nv=double.tryParse(n.text.trim())??0; final pv=double.tryParse(p.text.trim())??0; final kv=double.tryParse(k.text.trim())??0;
+        if(nv<0||pv<0||kv<0||nv+pv+kv<=0){Navigator.pop(context,'أدخل قيماً صحيحة.');return;}
+        final total=nv+pv+kv; Navigator.pop(context,'N: '+(nv/total*100).toStringAsFixed(1)+'%\nP: '+(pv/total*100).toStringAsFixed(1)+'%\nK: '+(kv/total*100).toStringAsFixed(1)+'%\n\nهذا مؤشر نسبي للمقارنة فقط، وليس وصفة تسميد.');
+      },child:const Text('احسب'))]));
+    n.dispose();p.dispose();k.dispose();if(mounted&&result!=null)_showResult('توازن N-P-K',result);
   }
-
   Future<void> _showPlantDensityTool() async {
     final area=TextEditingController(text:'1000'); final spacing=TextEditingController(text:'0.5');
     final result=await _twoFieldTool(title:'كثافة الزراعة',first:area,second:spacing,firstLabel:'المساحة م²',secondLabel:'المسافة بين النباتات م',actionLabel:'احسب',calculate:(){
@@ -815,7 +818,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
       second: quantity,
       firstLabel: 'اسم الصنف',
       secondLabel: 'الكمية الحالية',
-      actionLabel: 'حفظ محلي',
+      actionLabel: 'تسجيل سريع',
       calculate: () {
         final name = item.text.trim();
         final q = double.tryParse(quantity.text.trim()) ?? 0;
