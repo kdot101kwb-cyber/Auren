@@ -15,6 +15,7 @@ class _AurenBusinessScreenState extends State<AurenBusinessScreen>{
  static const cats=['All','Retail','Food','Services','Technology','Manufacturing','Education','Travel','Creative','Agriculture','Other'];
  @override void dispose(){_search.dispose();super.dispose();}
  void _create(){if(FirebaseAuth.instance.currentUser==null)return;Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenBusinessCreateScreen()));}
+ Widget _chips(List<String> values, String selected, ValueChanged<String> onSelected) => SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: values.map((v) => Padding(padding: const EdgeInsetsDirectional.only(end: 8), child: ChoiceChip(label: Text(v), selected: selected == v, onSelected: (_) => onSelected(v)))).toList()));
  @override
  Widget build(BuildContext context) {
    final uid = FirebaseAuth.instance.currentUser?.uid;
