@@ -224,6 +224,21 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
               ]))),
               if (summaryValues.isNotEmpty) ...[
                 Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('لوحة اتجاه الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 6),
+                  Text('عرض بصري لآخر ${summaryValues.length > 10 ? 10 : summaryValues.length} قياسات لنفس المؤشر.'),
+                  const SizedBox(height: 10),
+                  ...summaryValues.take(10).map((v) {
+                    final maxValue = summaryValues.reduce((a, b) => a > b ? a : b);
+                    final ratio = maxValue <= 0 ? 0.0 : (v / maxValue).clamp(0.0, 1.0);
+                    return Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
+                      SizedBox(width: 70, child: Text(v.toStringAsFixed(1))),
+                      const SizedBox(width: 8),
+                      Expanded(child: LinearProgressIndicator(value: ratio, minHeight: 8)),
+                    ]));
+                  }),
+                ]))),
+                const SizedBox(height: 10),
                   const Text('ملخص الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 10),
                   Wrap(spacing: 8, runSpacing: 8, children: [
