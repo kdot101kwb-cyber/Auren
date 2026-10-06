@@ -181,7 +181,7 @@ Future<void> _create(BuildContext c, String uid) async {
             child: Column(
               children: [
                 DropdownButtonFormField<String>(
-                  value: selected,
+                  initialValue: selected,
                   decoration: const InputDecoration(labelText: 'مجال الموهبة'),
                   items: AurenTalentCategories.all
                       .map((cat) => DropdownMenuItem(
