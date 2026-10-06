@@ -466,7 +466,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                     Theme.of(context).colorScheme.secondaryContainer,
                   ]),
                 ),
-                child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Icon(Icons.auto_awesome_rounded, size: 40),
                   SizedBox(height: 8),
                   Text('قل لـ AUREN ماذا تريد أن تشاهد', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
