@@ -248,6 +248,17 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.layers_outlined, 'عدد الطبالي', _showPalletCountTool),
             _toolButton(Icons.balance_outlined, 'كمية التعادل', _showBreakEvenQuantityTool),
             _toolButton(Icons.trending_up_outlined, 'الربح المبسط', _showProfitTool),
+                      _toolButton(Icons.water_outlined, 'قدرة مصدر المياه', _showWaterSourceCapacityTool),
+            _toolButton(Icons.loop_outlined, 'تغطية الخزان', _showReservoirCyclesTool),
+            _toolButton(Icons.price_check_outlined, 'تكلفة الكيلو المنتج', _showCostPerKgTool),
+            _toolButton(Icons.landscape_outlined, 'تكلفة الهكتار', _showCostPerHectareTool),
+            _toolButton(Icons.groups_outlined, 'إنتاجية العامل', _showWorkerProductivityTool),
+            _toolButton(Icons.inventory_outlined, 'مواد التعبئة', _showPackagingMaterialTool),
+            _toolButton(Icons.hive_outlined, 'تغذية النحل', _showBeeFeedTool),
+            _toolButton(Icons.grid_view_outlined, 'مساحة البيت المحمي الصافية', _showGreenhouseUsableAreaTool),
+            _toolButton(Icons.local_florist_outlined, 'نباتات البيت المحمي', _showGreenhousePlantCountTool),
+            _toolButton(Icons.warehouse_outlined, 'السعة التخزينية الصافية', _showStorageReserveTool),
+            _toolButton(Icons.set_meal_outlined, 'تكلفة علف الأسماك', _showFishFeedCostTool),
           ]),
         ]),
       ),
@@ -500,7 +511,63 @@ l=double.tryParse(losses.text.trim())??0;
   }
   Future<void> _showProfitTool() async {
     final revenue=TextEditingController(),cost=TextEditingController();
-    final x=await _twoFieldTool(title:'الربح الصافي المبسط',first:revenue,second:cost,firstLabel:'الإيرادات',secondLabel:'إجمالي التكاليف',actionLabel:'احسب',calculate:(){final a=double.tryParse(revenue.text)??0,b=double.tryParse(cost.text)??0;if(a<0||b<0)return 'أدخل قيماً غير سالبة.';return 'الربح/الخسارة: '+(a-b).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    final x=await _twoFieldTool(title:'الربح الصافي المبسط',first:revenue,second:cost,firstLabel:'الإيرادات',secondLabel:'إجمالي التكاليف',actionLabel:'احسب',calculate:(){final a=double.tryParse(revenue.text)??0,b=double.tryParse(cost.text)??0;if(a<0||b<0)return 'أدخل قيماً غير سالبة.';return 'الربح/الخسارة: '+(a-b).
+  Future<void> _showWaterSourceCapacityTool() async {
+    final f=TextEditingController(),h=TextEditingController();
+    final x=await _twoFieldTool(title:'قدرة مصدر المياه اليومية',first:f,second:h,firstLabel:'التدفق لتر/ساعة',secondLabel:'ساعات التشغيل/اليوم',actionLabel:'احسب',calculate:(){final a=double.tryParse(f.text)??0,b=double.tryParse(h.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'القدرة اليومية النظرية: '+(a*b).toStringAsFixed(2)+' لتر/يوم.';});
+    f.dispose();h.dispose();if(mounted&&x!=null)_showResult('مصدر المياه',x);
+  }
+  Future<void> _showReservoirCyclesTool() async {
+    final cap=TextEditingController(),need=TextEditingController();
+    final x=await _twoFieldTool(title:'دورات تعبئة الخزان',first:cap,second:need,firstLabel:'سعة الخزان لتر',secondLabel:'الاحتياج اليومي لتر',actionLabel:'احسب',calculate:(){final a=double.tryParse(cap.text)??0,b=double.tryParse(need.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'التغطية: '+(a/b).toStringAsFixed(2)+' يوم من الاحتياج.';});
+    cap.dispose();need.dispose();if(mounted&&x!=null)_showResult('الخزان',x);
+  }
+  Future<void> _showCostPerKgTool() async {
+    final cost=TextEditingController(),prod=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة الكيلو المنتج',first:cost,second:prod,firstLabel:'إجمالي التكلفة',secondLabel:'الإنتاج بالكجم',actionLabel:'احسب',calculate:(){final a=double.tryParse(cost.text)??0,b=double.tryParse(prod.text)??0;if(a<0||b<=0)return 'أدخل تكلفة غير سالبة وإنتاجاً أكبر من صفر.';return 'التكلفة لكل كجم: '+(a/b).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    cost.dispose();prod.dispose();if(mounted&&x!=null)_showResult('تكلفة الإنتاج',x);
+  }
+  Future<void> _showCostPerHectareTool() async {
+    final cost=TextEditingController(),area=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة الهكتار',first:cost,second:area,firstLabel:'إجمالي التكلفة',secondLabel:'المساحة بالمتر المربع',actionLabel:'احسب',calculate:(){final a=double.tryParse(cost.text)??0,b=double.tryParse(area.text)??0;if(a<0||b<=0)return 'أدخل تكلفة غير سالبة ومساحة أكبر من صفر.';return 'التكلفة/هكتار: '+(a*10000/b).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    cost.dispose();area.dispose();if(mounted&&x!=null)_showResult('تكلفة الهكتار',x);
+  }
+  Future<void> _showWorkerProductivityTool() async {
+    final prod=TextEditingController(),workers=TextEditingController();
+    final x=await _twoFieldTool(title:'إنتاجية العامل',first:prod,second:workers,firstLabel:'الإنتاج بالكجم',secondLabel:'عدد العمال',actionLabel:'احسب',calculate:(){final a=double.tryParse(prod.text)??0,b=double.tryParse(workers.text)??0;if(a<0||b<=0)return 'أدخل إنتاجاً غير سالب وعدداً أكبر من صفر.';return 'الإنتاج لكل عامل: '+(a/b).toStringAsFixed(2)+' كجم/عامل.';});
+    prod.dispose();workers.dispose();if(mounted&&x!=null)_showResult('إنتاجية العامل',x);
+  }
+  Future<void> _showPackagingMaterialTool() async {
+    final units=TextEditingController(),weight=TextEditingController();
+    final x=await _twoFieldTool(title:'مواد التعبئة',first:units,second:weight,firstLabel:'عدد الوحدات',secondLabel:'وزن المادة لكل وحدة بالكجم',actionLabel:'احسب',calculate:(){final a=double.tryParse(units.text)??0,b=double.tryParse(weight.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'إجمالي مادة التعبئة: '+(a*b).toStringAsFixed(2)+' كجم.';});
+    units.dispose();weight.dispose();if(mounted&&x!=null)_showResult('مواد التعبئة',x);
+  }
+  Future<void> _showBeeFeedTool() async {
+    final hives=TextEditingController(),feed=TextEditingController();
+    final x=await _twoFieldTool(title:'احتياج تغذية النحل',first:hives,second:feed,firstLabel:'عدد الطوائف',secondLabel:'كمية التغذية للطائفة بالكجم',actionLabel:'احسب',calculate:(){final a=double.tryParse(hives.text)??0,b=double.tryParse(feed.text)??0;if(a<0||b<0)return 'أدخل قيماً غير سالبة.';return 'إجمالي التغذية: '+(a*b).toStringAsFixed(2)+' كجم. هذا تقدير حسابي وليس وصفة تغذية.';});
+    hives.dispose();feed.dispose();if(mounted&&x!=null)_showResult('تغذية النحل',x);
+  }
+  Future<void> _showGreenhouseUsableAreaTool() async {
+    final area=TextEditingController(),aisle=TextEditingController();
+    final x=await _twoFieldTool(title:'المساحة الصالحة للزراعة',first:area,second:aisle,firstLabel:'مساحة البيت المحمي م²',secondLabel:'نسبة الممرات %',actionLabel:'احسب',calculate:(){final a=double.tryParse(area.text)??0,b=double.tryParse(aisle.text)??0;if(a<=0||b<0||b>=100)return 'أدخل مساحة صحيحة ونسبة ممرات بين 0 و99.';return 'المساحة الصالحة: '+(a*(1-b/100)).toStringAsFixed(2)+' م².';});
+    area.dispose();aisle.dispose();if(mounted&&x!=null)_showResult('المساحة الصالحة',x);
+  }
+  Future<void> _showGreenhousePlantCountTool() async {
+    final area=TextEditingController(),space=TextEditingController();
+    final x=await _twoFieldTool(title:'عدد نباتات البيت المحمي',first:area,second:space,firstLabel:'المساحة الصالحة م²',secondLabel:'المساحة لكل نبات م²',actionLabel:'احسب',calculate:(){final a=double.tryParse(area.text)??0,b=double.tryParse(space.text)??0;if(a<=0||b<=0)return 'أدخل قيماً أكبر من صفر.';return 'العدد النظري للنباتات: '+(a/b).floor().toString()+' نبات.';});
+    area.dispose();space.dispose();if(mounted&&x!=null)_showResult('نباتات البيت المحمي',x);
+  }
+  Future<void> _showStorageReserveTool() async {
+    final cap=TextEditingController(),reserve=TextEditingController();
+    final x=await _twoFieldTool(title:'السعة التخزينية الصافية',first:cap,second:reserve,firstLabel:'السعة الإجمالية',secondLabel:'نسبة الاحتياطي %',actionLabel:'احسب',calculate:(){final a=double.tryParse(cap.text)??0,b=double.tryParse(reserve.text)??0;if(a<=0||b<0||b>=100)return 'أدخل سعة صحيحة واحتياطي بين 0 و99.';return 'السعة المتاحة: '+(a*(1-b/100)).toStringAsFixed(2)+' وحدة.';});
+    cap.dispose();reserve.dispose();if(mounted&&x!=null)_showResult('السعة التخزينية',x);
+  }
+  Future<void> _showFishFeedCostTool() async {
+    final feed=TextEditingController(),price=TextEditingController();
+    final x=await _twoFieldTool(title:'تكلفة علف الأسماك',first:feed,second:price,firstLabel:'كمية العلف بالكجم',secondLabel:'سعر الكجم',actionLabel:'احسب',calculate:(){final a=double.tryParse(feed.text)??0,b=double.tryParse(price.text)??0;if(a<0||b<0)return 'أدخل قيماً غير سالبة.';return 'تكلفة العلف: '+(a*b).toStringAsFixed(2)+' من نفس وحدة العملة.';});
+    feed.dispose();price.dispose();if(mounted&&x!=null)_showResult('علف الأسماك',x);
+  }
+toStringAsFixed(2)+' من نفس وحدة العملة.';});
     revenue.dispose();cost.dispose();if(mounted&&x!=null)_showResult('الربح المبسط',x);
   }
 n 'الطوائف المتبقية: ${(i-l).toStringAsFixed(0)}\\nمعدل البقاء: ${((i-l)/i*100).toStringAsFixed(1)}%.';
