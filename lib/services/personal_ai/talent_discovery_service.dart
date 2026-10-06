@@ -12,7 +12,7 @@ class AurenTalentMatch {
 
 class AurenTalentDiscoveryService {
   final PostRepository _posts;
-  AurenTalentDiscoveryService({PostRepository? posts, UserRepository? users}) : _posts = posts ?? PostRepository();
+  AurenTalentDiscoveryService({PostRepository? posts}) : _posts = posts ?? PostRepository();
 
   Stream<List<AurenTalentMatch>> watch({required String query, String type = 'All'}) {
     return _posts.watchFeed().asyncMap((posts) async {
