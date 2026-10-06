@@ -12,7 +12,7 @@ class _AurenClubCoachMatchScreenState extends State<AurenClubCoachMatchScreen>{
  @override void initState(){super.initState(); _load();}
  Future<void> _load() async {
   final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null){setState(()=>loading=false);return;}
-  try { final t=await FirebaseFirestore.instance.collection('talents').where('ownerId',isEqualTo:uid).limit(1).get(); if(t.docs.isEmpty){setState(()=>loading=false);return;} final talent=AurenTalent.fromMap(t.docs.first.id,t.docs.first.data()); final o=await FirebaseFirestore.instance.collection('opportunities').where('status',isEqualTo:'open').limit(100).get(); final ops=o.docs.map((d)=>AurenOpportunity.fromMap(d.id,d.data())).toList(); final found=await TalentScoutService().findSportsMatches(talent:talent,opportunities:ops); if(mounted)setState(()=>{loading=false,matches=found}); } catch(e){if(mounted)setState(()=>{loading=false,error=e.toString()});}
+  try { final t=await FirebaseFirestore.instance.collection('talents').where('ownerId',isEqualTo:uid).limit(1).get(); if(t.docs.isEmpty){setState(()=>loading=false);return;} final talent=AurenTalent.fromMap(t.docs.first.id,t.docs.first.data()); final o=await FirebaseFirestore.instance.collection('opportunities').where('status',isEqualTo:'open').limit(100).get(); final ops=o.docs.map((d)=>AurenOpportunity.fromMap(d.id,d.data())).toList(); final found=await TalentScoutService().findSportsMatches(talent:talent,opportunities:ops); if(mounted)setState(() { loading = false; matches = found; }); } catch(e){if(mounted)setState(() { loading = false; error = e.toString(); });}
  }
  List<Map<String,dynamic>> get filteredMatches {
   return matches.where((m) {
