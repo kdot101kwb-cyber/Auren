@@ -10,7 +10,6 @@ import '../../messenger/presentation/messenger_screen.dart';
 import 'talent_agents_screen.dart';
 import 'talent_scouts_screen.dart';
 import 'talent_performance_screen.dart';
-import 'talent_badges_screen.dart';
 import 'talent_radar_screen.dart';
 import 'talent_club_coach_match_screen.dart';
 import 'talent_coach_screen.dart';
