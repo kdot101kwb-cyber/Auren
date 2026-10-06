@@ -11,10 +11,19 @@ import '../../social/presentation/safety_actions_sheet.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/social/adaptive_profile_service.dart';
 import '../../../services/creator/creator_studio_repository.dart';
+import '../../../core/models/talent.dart';
+import '../../../services/talent/talent_score_service.dart';
+import '../../../services/talent/talent_skill_graph_service.dart';
+import '../../talent/presentation/talent_claim_screen.dart';
+import '../../talent/presentation/talent_verification_screen.dart';
+import '../../talent/presentation/talent_coach_screen.dart';
+import '../../talent/presentation/talent_performance_screen.dart';
+import '../../talent/presentation/talent_badges_screen.dart';
 
 class AurenPublicProfileScreen extends StatefulWidget {
   final AurenUserProfile profile;
-  const AurenPublicProfileScreen({super.key, required this.profile});
+  final AurenTalent? athlete;
+  const AurenPublicProfileScreen({super.key, required this.profile, this.athlete});
   @override
   State<AurenPublicProfileScreen> createState() => _AurenPublicProfileScreenState();
 }
@@ -317,6 +326,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
               );
             },
           ),
+          if (widget.athlete != null) _athleteModeCard(context, widget.athlete!),
           const SizedBox(height: 12),
           if (!own && me != null)
             StreamBuilder<bool>(
@@ -374,6 +384,114 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
               },
             ),
         ],
+      ),
+    );
+  }
+
+
+  Widget _athleteModeCard(BuildContext context, AurenTalent talent) {
+    final sports = talent.sports.isEmpty && talent.sport.isNotEmpty ? [talent.sport] : talent.sports;
+    final score = TalentScoreService.calculate(
+      displayName: talent.displayName,
+      bio: talent.bio,
+      sports: sports,
+      skills: talent.skills,
+      achievements: talent.achievements,
+      goals: talent.goals,
+      verificationEvidence: talent.verificationEvidence,
+      level: talent.level,
+      discipline: talent.discipline,
+      city: talent.city,
+      country: talent.country,
+    );
+    final graph = TalentSkillGraphService.build(talent);
+    final owner = FirebaseAurenAuthService().currentUserId == talent.ownerId;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Row(children: [
+            Icon(Icons.sports_outlined),
+            SizedBox(width: 8),
+            Expanded(child: Text('Athlete Mode', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
+          ]),
+          const SizedBox(height: 6),
+          Text([talent.discipline, talent.level].where((v) => v.trim().isNotEmpty).join(' • ')),
+          if (sports.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(spacing: 6, runSpacing: 6, children: sports.map((s) => Chip(label: Text(s))).toList()),
+          ],
+          if (talent.skills.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('Skills: ' + talent.skills.take(6).join(' • ')),
+          ],
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: Text('Talent Score ' + score.score.toString() + '/100', style: const TextStyle(fontWeight: FontWeight.w800))),
+            SizedBox(width: 90, child: LinearProgressIndicator(value: score.score / 100)),
+          ]),
+          const SizedBox(height: 6),
+          const Text('هذا المؤشر يقيس اكتمال المعلومات والأدلة، وليس مستوى اللاعب أو ترتيبه الرسمي.'),
+          if (graph.nextSkills.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('الخطوة التالية: ' + graph.nextSkills.first),
+          ],
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenTalentPerformanceScreen(
+                sport: talent.sport.isEmpty ? (sports.isEmpty ? talent.category : sports.first) : talent.sport,
+              ))),
+              icon: const Icon(Icons.insights_outlined),
+              label: const Text('Performance'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenTalentBadgesScreen(
+                talentId: talent.id,
+                ownerId: talent.ownerId,
+                displayName: talent.displayName,
+                sports: sports,
+                skills: talent.skills,
+                achievements: talent.achievements,
+                goals: talent.goals,
+              ))),
+              icon: const Icon(Icons.workspace_premium_outlined),
+              label: const Text('Badges'),
+            ),
+            if (!owner)
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenTalentClaimScreen(
+                  talentId: talent.id,
+                  talentName: talent.displayName,
+                ))),
+                icon: const Icon(Icons.assignment_ind_outlined),
+                label: const Text('Claim'),
+              ),
+            if (owner) ...[
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenTalentVerificationScreen(
+                  talentId: talent.id,
+                  ownerId: talent.ownerId,
+                  currentEvidence: talent.verificationEvidence,
+                ))),
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('Evidence'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenTalentCoachScreen(
+                  talentId: talent.id,
+                  sport: talent.sport,
+                  level: talent.level,
+                  sports: sports,
+                ))),
+                icon: const Icon(Icons.sports_outlined),
+                label: const Text('Coach'),
+              ),
+            ],
+          ]),
+          const SizedBox(height: 6),
+          const Text('البيانات الرياضية تظهر كطبقة داخل نفس Profile، وليست صفحة شخصية منفصلة.'),
+        ]),
       ),
     );
   }
