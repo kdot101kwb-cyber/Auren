@@ -24,6 +24,21 @@ class TalentSportsDataService {
     return (item['str$suffix'] ?? item['strDescriptionEN'] ?? item['strDescription'] ?? '').toString();
   }
 
+  Future<List<Map<String, dynamic>>> searchLeagues(String query) async {
+    final data = await _get('/searchleague.php', {'l': query});
+    return _maps(data['leagues']);
+  }
+
+  Future<List<Map<String, dynamic>>> allCountries() async {
+    final data = await _get('/all_countries.php', {});
+    return _maps(data['countries']);
+  }
+
+  Future<List<Map<String, dynamic>>> allSports() async {
+    final data = await _get('/all_sports.php', {});
+    return _maps(data['sports']);
+  }
+
   Future<List<Map<String, dynamic>>> searchTeams(String query) async {
     final data = await _get('/searchteams.php', {'t': query});
     return _maps(data['teams']);
