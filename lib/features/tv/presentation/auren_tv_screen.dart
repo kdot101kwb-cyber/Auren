@@ -1846,6 +1846,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
           );
         },
       )),
+      ]),
       if (_watchTogether && _watchReactionOverlay.isNotEmpty)
         Positioned(
           right: 16,
