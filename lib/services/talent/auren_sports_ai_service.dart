@@ -70,7 +70,7 @@ ${userQuestion.trim().isEmpty ? '' : 'سؤال المستخدم:\n$userQuestion\
 
   static String athleteScoutPrompt({required String athleteName, required List<String> sports, required List<String> skills, required List<String> achievements, String level = '', String location = ''}) {
     final sportText = sports.where((e) => e.trim().isNotEmpty).join(', ');
-    final context = 'اللاعب: $athleteName\nالرياضات: $sportText\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}\nالمستوى: $level\nالموقع: $location';
+    final context = 'اللاعب: $athleteName\nالرياضات: $sportText\nالمهارات: ${skills.join(', ')}\nالإنجازات: ${achievements.join(', ')}\nالمستوى: $level\nالموقع: $location';
     return prompt(agent: 'scout', sport: sportText, context: context, userQuestion: 'أنشئ تقرير Scout أولي يوضح نقاط القوة المدعومة بالملف، الفجوات، الأدلة المطلوبة، وأسئلة التحقق والفرص المحتملة. لا تخترع أندية أو بطولات أو أرقام أداء ولا تؤكد موهبة بشكل نهائي.');
   }
 }
