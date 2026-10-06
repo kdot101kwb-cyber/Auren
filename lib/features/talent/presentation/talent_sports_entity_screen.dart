@@ -1,0 +1,194 @@
+import 'package:flutter/material.dart';
+import '../../../services/talent/talent_sports_data_service.dart';
+
+class AurenSportsEntityScreen extends StatefulWidget {
+  final String type;
+  final String id;
+  final String title;
+  const AurenSportsEntityScreen({
+    super.key,
+    required this.type,
+    required this.id,
+    required this.title,
+  });
+
+  @override
+  State<AurenSportsEntityScreen> createState() => _AurenSportsEntityScreenState();
+}
+
+class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
+  final _service = TalentSportsDataService();
+  Map<String, dynamic>? _item;
+  List<Map<String, dynamic>> _next = const [];
+  bool _loading = true;
+  String? _error;
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      List<Map<String, dynamic>> result;
+      if (widget.type == 'players') {
+        result = await _service.lookupPlayer(widget.id);
+      } else if (widget.type == 'leagues') {
+        result = await _service.lookupLeague(widget.id);
+      } else {
+        result = await _service.lookupTeam(widget.id);
+      }
+      if (result.isEmpty) {
+        throw Exception('Sports profile not found.');
+      }
+      final item = result.first;
+      List<Map<String, dynamic>> next = const [];
+      if (widget.type == 'teams') {
+        next = await _service.teamNextEvents(widget.id);
+      }
+      if (!mounted) return;
+      setState(() {
+        _item = item;
+        _next = next;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = _item;
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.title)),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? _errorView()
+              : item == null
+                  ? const Center(child: Text('No sports data.'))
+                  : _body(context, item),
+    );
+  }
+
+  Widget _errorView() => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, size: 42),
+              const SizedBox(height: 10),
+              Text(_error!),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  Widget _body(BuildContext context, Map<String, dynamic> item) {
+    final language = Localizations.localeOf(context).languageCode;
+    final description = _service.localized(item, language);
+    final image = (item['strThumb'] ?? item['strBadge'] ?? item['strLogo'] ?? '').toString();
+    final subtitle = [
+      item['strSport'],
+      item['strLeague'],
+      item['strNationality'],
+      item['strCountry'],
+    ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' • ');
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
+        children: [
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (image.isNotEmpty)
+                  AspectRatio(
+                    aspectRatio: 16 / 8,
+                    child: Image.network(
+                      image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const ColoredBox(
+                        color: Colors.black12,
+                        child: Center(child: Icon(Icons.sports, size: 48)),
+                      ),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                      ),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(subtitle),
+                      ],
+                      if (description.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        Text(description),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_next.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text('Next matches', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            ..._next.take(10).map(_eventCard),
+          ],
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.auto_awesome),
+              title: const Text('AUREN Sports AI'),
+              subtitle: const Text('استخدم الصفحة كنقطة انطلاق للتحليل، الإحصائيات والفرص المرتبطة بهذا الكيان.'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _eventCard(Map<String, dynamic> event) {
+    final home = (event['strHomeTeam'] ?? '').toString();
+    final away = (event['strAwayTeam'] ?? '').toString();
+    final score = [
+      event['intHomeScore'],
+      event['intAwayScore'],
+    ].where((v) => v != null).map((v) => v.toString()).join(' - ');
+    final date = (event['dateEvent'] ?? '').toString();
+    final time = (event['strTime'] ?? '').toString();
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.event),
+        title: Text(home.isEmpty && away.isEmpty ? (event['strEvent'] ?? 'Match').toString() : '$home vs $away'),
+        subtitle: Text([date, time, score].where((v) => v.isNotEmpty).join(' • ')),
+      ),
+    );
+  }
+}
