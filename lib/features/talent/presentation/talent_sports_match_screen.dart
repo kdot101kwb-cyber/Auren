@@ -163,7 +163,8 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
               title: Text(trust.label + ' • ' + truth.label),
               subtitle: Text(
                 trust.sourceName + ' • ' + trust.trustLevel + '\n' +
-                    truth.explanation + '\n' + trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية',
+                    truth.explanation + '\n' +
+                    (trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية'),
               ),
             ),
           ),
