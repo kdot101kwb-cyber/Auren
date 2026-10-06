@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/talent/talent_sports_catalog.dart';
+import '../../../services/talent/auren_sports_ai_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenTalentPerformanceScreen extends StatefulWidget {
@@ -196,7 +197,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                 ),
               ]))),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                OutlinedButton.icon(onPressed: current.isEmpty ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'راجع بيانات أدائي الرياضي في $sport، ولخص نقاط القوة والاتجاهات والفجوات واقترح خطة متابعة. استخدم فقط البيانات المسجلة في الصفحة.')), icon: const Icon(Icons.auto_awesome), label: const Text('مراجعة الأداء مع AUREN AI')),\n                const SizedBox(height: 10),\n                const Text('مؤشرات الرياضة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                OutlinedButton.icon(onPressed: current.isEmpty ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: AurenSportsAiService.performancePrompt(sport, 'القياسات المسجلة في هذه الصفحة فقط'))), icon: const Icon(Icons.auto_awesome), label: const Text('مراجعة الأداء مع AUREN AI')),\n                const SizedBox(height: 10),\n                const Text('مؤشرات الرياضة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
                 const Text('اختر مؤشراً مرتبطاً بالرياضة الحالية. الملخص يعرض القياسات لنفس المؤشر فقط ولا يخلط مؤشرات مختلفة.'),
                 const SizedBox(height: 10),
