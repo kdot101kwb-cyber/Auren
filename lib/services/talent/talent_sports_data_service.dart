@@ -4,6 +4,26 @@ import 'package:http/http.dart' as http;
 class TalentSportsDataService {
   static const _base = 'https://www.thesportsdb.com/api/v1/json/123';
 
+  String localized(dynamic item, String language) {
+    final suffix = switch (language) {
+      'ar' => 'DescriptionAr',
+      'de' => 'DescriptionDe',
+      'es' => 'DescriptionEs',
+      'fr' => 'DescriptionFr',
+      'it' => 'DescriptionIt',
+      'pt' => 'DescriptionPt',
+      'ru' => 'DescriptionRu',
+      'ja' => 'DescriptionJp',
+      'nl' => 'DescriptionNl',
+      'pl' => 'DescriptionPl',
+      'no' => 'DescriptionNo',
+      'sv' => 'DescriptionSe',
+      'zh' => 'DescriptionCn',
+      _ => 'DescriptionEn',
+    };
+    return (item['str$suffix'] ?? item['strDescriptionEN'] ?? item['strDescription'] ?? '').toString();
+  }
+
   Future<List<Map<String, dynamic>>> searchTeams(String query) async {
     final data = await _get('/searchteams.php', {'t': query});
     return _maps(data['teams']);
