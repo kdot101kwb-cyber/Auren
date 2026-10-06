@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
 import '../../../services/talent/talent_sports_directory_service.dart';
 import '../../../services/talent/talent_sports_trust_service.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenSportsEntityScreen extends StatefulWidget {
   final String type;
@@ -160,6 +161,24 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
                         const SizedBox(height: 6),
                         Text(subtitle),
                       ],
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => MessengerScreen(
+                                    initialPrompt: 'حلل لي هذا الكيان الرياضي: ${widget.title}. استخدم فقط البيانات المتاحة في الصفحة، واذكر بوضوح أي معلومة غير متوفرة.',
+                                  ),
+                                ),
+                              ),
+                              icon: const Icon(Icons.auto_awesome),
+                              label: const Text('حلل مع AUREN AI'),
+                            ),
+                          ),
+                        ],
+                      ),
                       if (description.isNotEmpty) ...[
                         const SizedBox(height: 14),
                         Text(description),
