@@ -249,7 +249,7 @@ class _AurenWatchTogetherScreenState extends State<AurenWatchTogetherScreen> {
           Text(AurenWatchTogetherAnalytics.membersLabel(members.length) + ' • ' +
               'المشاهدة: ' + ((data['isPlaying'] == true) ? 'تشغيل' : 'متوقفة') +
               ' • ' + (data['positionSeconds'] ?? 0).toString() + ' ثانية'),
-          if (_syncError != null) ...[const SizedBox(height: 8), Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)), color: Colors.redAccent.withOpacity(.12)), child: Row(children: [const Expanded(child: Text('تعذر تحديث حالة المشاهدة.')) , TextButton(onPressed: _retrySync, child: const Text('إعادة المحاولة'))]))],
+          if (_syncError != null) ...[const SizedBox(height: 8), Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12)), color: Colors.redAccent.withValues(alpha: .12)), child: Row(children: [const Expanded(child: Text('تعذر تحديث حالة المشاهدة.')) , TextButton(onPressed: _retrySync, child: const Text('إعادة المحاولة'))]))],
           const SizedBox(height: 14),
           if (members.length < 8)
             OutlinedButton.icon(
