@@ -166,6 +166,13 @@ Widget _card(BuildContext c, AurenTalent t) {
                 label: const Text('AI Connect'),
               ),
               const SizedBox(height: 8),
+              if (t.ownerId == FirebaseAuth.instance.currentUser?.uid)
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => AurenTalentBadgesScreen(talentId: t.id, ownerId: t.ownerId, displayName: t.displayName, sports: t.sports, skills: t.skills, achievements: t.achievements, goals: t.goals))),
+                  icon: const Icon(Icons.workspace_premium_outlined),
+                  label: const Text('Achievements & Badges'),
+                ),
+              if (t.ownerId == FirebaseAuth.instance.currentUser?.uid) const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => AurenTalentPerformanceScreen(sport: t.sport.isEmpty ? t.category : t.sport))),
                 icon: const Icon(Icons.insights_outlined),
