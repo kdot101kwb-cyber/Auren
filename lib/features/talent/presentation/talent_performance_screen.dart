@@ -14,7 +14,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
   static const sports = [
     'Football','Basketball','Volleyball','Tennis','Table Tennis','Boxing','MMA',
     'Athletics','Swimming','Cycling','Gymnastics','Archery','Weightlifting','Rugby',
-    'Cricket','Baseball','Hockey','Handball','Motorsport','Wrestling','Judo',
+    'Cricket','Baseball','Hockey','Handball','Motorsport','Formula 1','NFL','Wrestling','Judo',
     'Karate','Taekwondo','Fencing','Rowing','Badminton','Golf','Chess & Mind Sports'
   ];
 
@@ -101,7 +101,12 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
     );
     final x = double.tryParse(a.text);
     final y = double.tryParse(b.text);
-    if (x != null && y != null && (x < 0 || y < 0)) return;
+    if (x != null && y != null && (x < 0 || y < 0)) {
+      a.dispose();
+      b.dispose();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('القيم يجب أن تكون صفر أو أكبر.')));
+      return;
+    }
     a.dispose();
     b.dispose();
     if (ok != true || x == null || y == null) return;
@@ -157,7 +162,8 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
           final current = docs.where((d) => (d.data()['sport'] ?? '').toString() == sport).toList();
           final values = current.map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
           final selectedMetric = metricController.text.trim();
-          final selectedMetricValues = selectedMetric.isEmpty ? values : current.where((d) => (d.data()['metric'] ?? '').toString() == selectedMetric).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
+          final selectedUnit = unitController.text.trim();
+          final selectedMetricValues = selectedMetric.isEmpty ? values : current.where((d) => (d.data()['metric'] ?? '').toString() == selectedMetric && (selectedUnit.isEmpty || (d.data()['unit'] ?? '').toString() == selectedUnit)).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
           final summaryValues = selectedMetricValues.isEmpty ? values : selectedMetricValues;
           final average = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a + b) / summaryValues.length;
           final best = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a > b ? a : b);
