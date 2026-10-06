@@ -3,6 +3,7 @@ import '../../core/models/talent.dart';
 import '../../core/models/talent_scout.dart';
 import '../../core/models/opportunity.dart';
 import '../../core/models/talent_scout_finding.dart';
+import 'talent_sports_catalog.dart';
 
 class TalentScoutService {
   final FirebaseFirestore db;
@@ -78,18 +79,23 @@ class TalentScoutService {
     final talentSkills = talent.skills.map(_norm).where((x) => x.isNotEmpty).toSet();
     final sports = <String>{...talent.sports.map(_norm), _norm(talent.sport), _norm(talent.discipline)}..removeWhere((x) => x.isEmpty);
     final level = _norm(talent.level);
-    final location = _norm('${talent.city} ${talent.country}');
+    final city = _norm(talent.city);
+    final country = _norm(talent.country);
     final results = <Map<String, dynamic>>[];
     for (final opportunity in opportunities) {
       final hay = _norm('${opportunity.title} ${opportunity.description} ${opportunity.skills.join(' ')}');
       final matchedSkills = opportunity.skills.map(_norm).where(talentSkills.contains).toSet();
       final sportHits = sports.where(hay.contains).toSet();
       final levelHit = level.isNotEmpty && hay.contains(level);
-      final locationText = _norm('${opportunity.city} ${opportunity.country}');
-      final locationHit = location.isNotEmpty && locationText.isNotEmpty && location.split(' ').any((part) => part.length >= 3 && locationText.contains(part));
+      final opportunityCity = _norm(opportunity.city);
+      final opportunityCountry = _norm(opportunity.country);
+      final cityHit = city.isNotEmpty && opportunityCity.isNotEmpty && city == opportunityCity;
+      final countryHit = country.isNotEmpty && opportunityCountry.isNotEmpty && country == opportunityCountry;
+      final locationHit = cityHit || countryHit;
       var score = matchedSkills.length * 15 + sportHits.length * 25 + (levelHit ? 10 : 0) + (locationHit ? 10 : 0);
       final sportsText = '${opportunity.title} ${opportunity.description}'.toLowerCase();
-      final sportsContext = ['club','team','coach','academy','sports','football','basketball','volleyball','tennis','boxing','athletics','swimming','cycling','gym','نادي','فريق','مدرب','أكاديمية','رياضة'].any(sportsText.contains);
+      final catalogSports = TalentSportsCatalog.all.map(_norm).where((s) => s.isNotEmpty).toList();
+      final sportsContext = ['club','team','coach','academy','sports','gym','نادي','فريق','مدرب','أكاديمية','رياضة', ...catalogSports].any(sportsText.contains);
       if (!sportsContext) continue;
       if (score < 20) score = 20;
       if (score > 100) score = 100;
