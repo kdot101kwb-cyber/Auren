@@ -11,6 +11,7 @@ import 'talent_performance_screen.dart';
 import 'talent_badges_screen.dart';
 import 'talent_radar_screen.dart';
 import 'talent_club_coach_match_screen.dart';
+import 'talent_coach_screen.dart';
 class AurenTalentScreen extends StatefulWidget{const AurenTalentScreen({super.key});@override State<AurenTalentScreen> createState()=>_AurenTalentScreenState();}
 class _AurenTalentScreenState extends State<AurenTalentScreen>{final repo=TalentRepository();final search=TextEditingController();String skill='';String selectedSport='';
 static const sports=['Football','Basketball','Volleyball','Tennis','Table Tennis','Boxing','MMA','Athletics','Swimming','Cycling','Gymnastics','Archery','Weightlifting','Rugby','Cricket','Baseball','Hockey','Handball','Motorsport','Formula 1','Wrestling','Judo','Karate','Taekwondo','Fencing','Rowing','Badminton','Golf','Chess & Mind Sports','NFL'];
@@ -28,6 +29,7 @@ _ActionChip('Talent Passport','أنشئ جواز موهبة احترافي يخ�
 _ActionChip('Skill Graph','حلّل مهاراتي وابنِ خريطة مهارات توضّح نقاط القوة والفجوات والمهارات التالية المقترحة.'),
 _ActionChip('Opportunity Ready','قيّم جاهزيتي لفرصة أو نادٍ أو مشروع، وحدد ما ينقصني قبل التقديم.'),
 _ActionChip('AI Coach Plan','ابنِ لي خطة تطوير أسبوعية حسب رياضتي أو مهارتي ووقتي ومستواي، مع مؤشرات متابعة واضحة.'),
+_ActionChip('Personal Coach','افتح مدربي الشخصي في AUREN واختر AI Coach أو مدرباً بشرياً مع إعداد الرياضة والهدف والحصص الأسبوعية.',onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>AurenTalentCoachScreen(talentId:t.id,sport:t.sport,level:t.level,sports:t.sports)))),
 _ActionChip('Highlight Story','حوّل إنجازاتي وبيانات أدائي إلى قصة مختصرة مناسبة لعرضها على مدرب أو شركة أو جمهور.'),
 _ActionChip('Team Match','اقترح نوع الفريق أو النادي أو الشريك الذي يناسب مهاراتي وأهدافي، مع سبب المطابقة.'),
                   _ActionChip('Club & Coach Match','افتح المطابقة الفعلية مع فرص الأندية والمدربين والفرق الرياضية المفتوحة.',onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenClubCoachMatchScreen()))),
