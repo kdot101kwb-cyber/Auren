@@ -101,6 +101,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
     );
     final x = double.tryParse(a.text);
     final y = double.tryParse(b.text);
+    if (x != null && y != null && (x < 0 || y < 0)) return;
     a.dispose();
     b.dispose();
     if (ok != true || x == null || y == null) return;
