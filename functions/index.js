@@ -4011,6 +4011,7 @@ Object.assign(module.exports, require('./global_data'));
 Object.assign(module.exports, require('./global_data_country_registry'));
 Object.assign(module.exports, require('./faostat_global_data'));
 Object.assign(module.exports, require('./agri_market_prices'));
+Object.assign(module.exports, require('./agri_logistics_evidence'));
 Object.assign(module.exports, require('./faostat_bulk_ingest'));
 Object.assign(module.exports, require('./faostat_ingest_scheduler'));
 Object.assign(module.exports, require('./fao_agri_intelligence'));
