@@ -14,9 +14,11 @@ class AurenTalent {
 
   factory AurenTalent.fromMap(String id, Map<String, dynamic> d) => AurenTalent(
     id: id, ownerId: d['ownerId']?.toString() ?? '', displayName: d['displayName']?.toString() ?? '',
-    bio: d['bio']?.toString() ?? '', category: d['category']?.toString() ?? '',
-    sport: d['sport']?.toString() ?? d['category']?.toString() ?? '',
-    discipline: d['discipline']?.toString() ?? '', level: d['level']?.toString() ?? '',
+    bio: d['bio']?.toString() ?? '',
+    category: d['category']?.toString() ?? '',
+    sport: d['sport']?.toString() ?? '',
+    discipline: d['discipline']?.toString() ?? '',
+    level: d['level']?.toString() ?? '',
     city: d['city']?.toString() ?? '', country: d['country']?.toString() ?? '',
     status: d['status']?.toString() ?? 'active',
     skills: d['skills'] is List ? List<String>.from((d['skills'] as List).map((e) => e.toString())) : const [],
