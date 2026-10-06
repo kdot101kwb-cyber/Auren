@@ -127,6 +127,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.water_outlined, 'حجم الخزان', _showTankTool),
             _toolButton(Icons.grass_outlined, 'احتياج المحصول للمياه', _showCropWaterNeedTool),
             _toolButton(Icons.science_outlined, 'حساب الأسمدة', _showFertilizerTool),
+            _toolButton(Icons.biotech_outlined, 'تحليل N-P-K', _showNpkTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -549,6 +550,73 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     dose.dispose();
     nitrogen.dispose();
     if (mounted && result != null) _showResult('حساب الأسمدة', result);
+  }
+
+  Future<void> _showNpkTool() async {
+    final area = TextEditingController(text: '1000');
+    final n = TextEditingController(text: '40');
+    final p = TextEditingController(text: '20');
+    final k = TextEditingController(text: '30');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تحليل N-P-K'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: area,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'المساحة م²'),
+            ),
+            TextField(
+              controller: n,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'احتياج N كجم/هكتار'),
+            ),
+            TextField(
+              controller: p,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'احتياج P كجم/هكتار'),
+            ),
+            TextField(
+              controller: k,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'احتياج K كجم/هكتار'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final a = double.tryParse(area.text.trim()) ?? 0;
+              final nv = double.tryParse(n.text.trim()) ?? 0;
+              final pv = double.tryParse(p.text.trim()) ?? 0;
+              final kv = double.tryParse(k.text.trim()) ?? 0;
+              if (a <= 0 || nv < 0 || pv < 0 || kv < 0) {
+                Navigator.pop(context, 'أدخل قيماً صحيحة.');
+                return;
+              }
+              final factor = a / 10000;
+              Navigator.pop(
+                context,
+                'الاحتياج التقديري للمساحة:\\n'
+                'N: ${(nv * factor).toStringAsFixed(2)} كجم\\n'
+                'P: ${(pv * factor).toStringAsFixed(2)} كجم\\n'
+                'K: ${(kv * factor).toStringAsFixed(2)} كجم\\n\\n'
+                'هذه أداة حساب كمية وليست تشخيصاً للتربة. التحليل المخبري وتوصية المهندس الزراعي يحددان الجرعة الفعلية.',
+              );
+            },
+            child: const Text('احسب'),
+          ),
+        ],
+      ),
+    );
+    area.dispose();
+    n.dispose();
+    p.dispose();
+    k.dispose();
+    if (mounted && result != null) _showResult('تحليل N-P-K', result);
   }
 
   Future<void> _showCostTool() async {
