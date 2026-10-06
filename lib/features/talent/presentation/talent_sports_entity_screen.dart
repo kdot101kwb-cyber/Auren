@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
+import '../../../services/talent/talent_sports_directory_service.dart';
 
 class AurenSportsEntityScreen extends StatefulWidget {
   final String type;
@@ -18,8 +19,10 @@ class AurenSportsEntityScreen extends StatefulWidget {
 
 class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
   final _service = TalentSportsDataService();
+  final _directory = TalentSportsDirectoryService();
   Map<String, dynamic>? _item;
   List<Map<String, dynamic>> _next = const [];
+  List<Map<String, dynamic>> _related = const [];
   bool _loading = true;
   String? _error;
 
@@ -40,15 +43,24 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
       if (result.isEmpty) {
         throw Exception('Sports profile not found.');
       }
+
       final item = result.first;
       List<Map<String, dynamic>> next = const [];
+      List<Map<String, dynamic>> related = const [];
+
       if (widget.type == 'teams') {
         next = await _service.teamNextEvents(widget.id);
+        related = await _directory.playersByTeam(widget.id);
+      } else if (widget.type == 'leagues') {
+        final leagueName = (item['strLeague'] ?? widget.title).toString();
+        related = await _directory.teamsByLeague(league: leagueName);
       }
+
       if (!mounted) return;
       setState(() {
         _item = item;
         _next = next;
+        _related = related;
       });
     } catch (e) {
       if (!mounted) return;
@@ -161,15 +173,65 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
             const SizedBox(height: 6),
             ..._next.take(10).map(_eventCard),
           ],
+          if (_related.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              widget.type == 'teams' ? 'Players' : 'Clubs',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            ..._related.take(30).map((related) => _relatedCard(context, related)),
+          ],
           const SizedBox(height: 12),
           Card(
             child: ListTile(
               leading: const Icon(Icons.auto_awesome),
               title: const Text('AUREN Sports AI'),
-              subtitle: const Text('استخدم الصفحة كنقطة انطلاق للتحليل، الإحصائيات والفرص المرتبطة بهذا الكيان.'),
+              subtitle: const Text(
+                'استخدم الصفحة كنقطة انطلاق للتحليل، الإحصائيات والفرص المرتبطة بهذا الكيان.',
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _relatedCard(BuildContext context, Map<String, dynamic> item) {
+    final isTeam = widget.type == 'leagues';
+    final title = isTeam
+        ? (item['strTeam'] ?? 'Club').toString()
+        : (item['strPlayer'] ?? 'Player').toString();
+    final id = isTeam ? item['idTeam'] : item['idPlayer'];
+    final image = (isTeam ? item['strBadge'] : item['strThumb'])?.toString() ?? '';
+
+    return Card(
+      child: ListTile(
+        leading: image.isEmpty
+            ? const CircleAvatar(child: Icon(Icons.sports))
+            : CircleAvatar(backgroundImage: NetworkImage(image)),
+        title: Text(title),
+        subtitle: Text(
+          [item['strSport'], item['strLeague'], item['strPosition']]
+              .whereType<String>()
+              .where((v) => v.trim().isNotEmpty)
+              .join(' • '),
+        ),
+        trailing: id?.toString().isNotEmpty ?? false
+            ? const Icon(Icons.chevron_right)
+            : null,
+        onTap: id?.toString().isNotEmpty ?? false
+            ? () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AurenSportsEntityScreen(
+                      type: isTeam ? 'teams' : 'players',
+                      id: id.toString(),
+                      title: title,
+                    ),
+                  ),
+                )
+            : null,
       ),
     );
   }
@@ -186,8 +248,14 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.event),
-        title: Text(home.isEmpty && away.isEmpty ? (event['strEvent'] ?? 'Match').toString() : '$home vs $away'),
-        subtitle: Text([date, time, score].where((v) => v.isNotEmpty).join(' • ')),
+        title: Text(
+          home.isEmpty && away.isEmpty
+              ? (event['strEvent'] ?? 'Match').toString()
+              : '$home vs $away',
+        ),
+        subtitle: Text(
+          [date, time, score].where((v) => v.isNotEmpty).join(' • '),
+        ),
       ),
     );
   }
