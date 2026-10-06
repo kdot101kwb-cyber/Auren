@@ -244,6 +244,59 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     return (item[key] ?? item['strDescriptionEN'] ?? item['strDescription'] ?? '').toString();
   }
 
+  Future<void> _browseCountry(String country) async {
+    final sportController = TextEditingController();
+    final sport = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('رياضات $country'),
+        content: TextField(
+          controller: sportController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'اسم الرياضة',
+            hintText: 'Football',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              sportController.text.trim(),
+            ),
+            child: const Text('استكشف'),
+          ),
+        ],
+      ),
+    );
+    sportController.dispose();
+    if (!mounted || sport == null || sport.isEmpty) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _results = const [];
+      _directoryMode = 'country_teams';
+    });
+    try {
+      final results = await _directory.teamsByCountryAndSport(
+        country: country,
+        sport: sport,
+      );
+      if (!mounted) return;
+      setState(() => _results = results);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Widget _resultCard(BuildContext context, Map<String, dynamic> item) {
     if (_directoryMode == 'countries') {
       final country = (item['name_en'] ?? item['name'] ?? 'Country').toString();
@@ -251,7 +304,9 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
         child: ListTile(
           leading: const CircleAvatar(child: Icon(Icons.public)),
           title: Text(country),
-          subtitle: const Text('Country sports directory'),
+          subtitle: const Text('اختر رياضة لعرض الأندية المتاحة'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _browseCountry(country),
         ),
       );
     }
