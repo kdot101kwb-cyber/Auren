@@ -157,9 +157,10 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
           final current = docs.where((d) => (d.data()['sport'] ?? '').toString() == sport).toList();
           final values = current.map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
           final selectedMetricValues = current.where((d) => (d.data()['metric'] ?? '').toString().isNotEmpty).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
-          final average = values.isEmpty ? null : values.reduce((a, b) => a + b) / values.length;
-          final best = values.isEmpty ? null : values.reduce((a, b) => a > b ? a : b);
-          final latest = values.isEmpty ? null : values.first;
+          final summaryValues = selectedMetricValues.isEmpty ? values : selectedMetricValues;
+          final average = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a + b) / summaryValues.length;
+          final best = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a > b ? a : b);
+          final latest = summaryValues.isEmpty ? null : summaryValues.first;
           final previous = values.length > 1 ? values[1] : null;
           final delta = latest != null && previous != null ? latest - previous : null;
           return ListView(
