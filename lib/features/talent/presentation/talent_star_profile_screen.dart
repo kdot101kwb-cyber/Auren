@@ -7,6 +7,7 @@ import 'talent_performance_screen.dart';
 import 'talent_claim_screen.dart';
 import 'talent_verification_screen.dart';
 import 'talent_coach_screen.dart';
+import '../../../services/talent/talent_score_service.dart';
 
 class AurenTalentStarProfileScreen extends StatelessWidget {
   final AurenTalent talent;
@@ -17,6 +18,19 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
     final sports = talent.sports.isEmpty && talent.sport.isNotEmpty
         ? [talent.sport]
         : talent.sports;
+    final score = TalentScoreService.calculate(
+      displayName: talent.displayName,
+      bio: talent.bio,
+      sports: sports,
+      skills: talent.skills,
+      achievements: talent.achievements,
+      goals: talent.goals,
+      verificationEvidence: talent.verificationEvidence,
+      level: talent.level,
+      discipline: talent.discipline,
+      city: talent.city,
+      country: talent.country,
+    );
     final location = [talent.city, talent.country]
         .where((v) => v.trim().isNotEmpty)
         .join(' • ');
@@ -74,6 +88,7 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
             ),
           ),
           _section('About', talent.bio),
+          _talentScoreCard(score),
           _profileSummaryCard(),
           _profileTrustCard(),
           if (talent.category.isNotEmpty) _infoCard('Category', talent.category, Icons.category_outlined),
@@ -187,6 +202,33 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _talentScoreCard(TalentScoreBreakdown score) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.insights_outlined),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('AUREN Talent Score', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
+                Text('${score.score}/100', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: score.score / 100),
+            const SizedBox(height: 10),
+            Text('Profile ${score.profile} • Skills ${score.skills} • Achievements ${score.achievements} • Evidence ${score.evidence} • Goals ${score.goals}'),
+            const SizedBox(height: 8),
+            const Text('هذا المؤشر يقيس قوة المعلومات والأدلة الموجودة في الملف، وليس مستوى اللاعب أو احتمالية نجاحه الرياضي.'),
+          ],
+        ),
       ),
     );
   }
