@@ -164,6 +164,16 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.local_shipping_outlined, 'حجم النقل', _showTransportLoadTool),
             _toolButton(Icons.people_outline, 'احتياج العمالة', _showLaborNeedTool),
             _toolButton(Icons.schedule_outlined, 'ساعات التشغيل', _showOperatingHoursTool),
+            _toolButton(Icons.swap_horiz_outlined, 'تحويل مساحة', _showAreaConversionTool),
+            _toolButton(Icons.scale_outlined, 'تحويل وزن', _showWeightConversionTool),
+            _toolButton(Icons.water_drop_outlined, 'تحويل حجم المياه', _showWaterVolumeConversionTool),
+            _toolButton(Icons.calendar_month_outlined, 'جدولة الري اليومية', _showDailyIrrigationScheduleTool),
+            _toolButton(Icons.grid_view_outlined, 'تقسيم مياه الري', _showIrrigationSectorTool),
+            _toolButton(Icons.verified_outlined, 'تصحيح التقاوي المتقدم', _showAdvancedSeedCorrectionTool),
+            _toolButton(Icons.map_outlined, 'المساحة من التقاوي', _showAreaFromSeedTool),
+            _toolButton(Icons.delete_sweep_outlined, 'هدر التخزين', _showStorageWasteTool),
+            _toolButton(Icons.grain_outlined, 'معامل تحويل العلف', _showFeedConversionTool),
+            _toolButton(Icons.hive_outlined, 'تقدير إنتاج العسل', _showHoneyProductionTool),
             _toolButton(Icons.square_foot_outlined, 'تحويل المساحة', _showAreaConverterTool),
             _toolButton(Icons.scale_outlined, 'تحويل الوزن', _showWeightConverterTool),
             _toolButton(Icons.water_outlined, 'تحويل حجم المياه', _showWaterVolumeConverterTool),
@@ -1254,6 +1264,227 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     ));
     workers.dispose(); days.dispose(); wage.dispose(); if (mounted && result != null) _showResult('تكلفة العمالة', result);
   }
+
+  Future<void> _showAreaConversionTool() async {
+    final value = TextEditingController();
+    final dummy = TextEditingController(text: '1');
+    final result = await _twoFieldTool(
+      title: 'تحويل المساحة',
+      first: value,
+      second: dummy,
+      firstLabel: 'القيمة بالمتر المربع',
+      secondLabel: 'اتركها 1 للحساب',
+      actionLabel: 'حوّل',
+      calculate: () {
+        final v = double.tryParse(value.text.trim()) ?? 0;
+        if (v < 0) return 'أدخل مساحة غير سالبة.';
+        return '\$v م² = \${(v / 10000).toStringAsFixed(4)} هكتار.';
+      },
+    );
+    value.dispose(); dummy.dispose();
+    if (mounted && result != null) _showResult('تحويل المساحة', result);
+  }
+
+  Future<void> _showWeightConversionTool() async {
+    final value = TextEditingController();
+    final dummy = TextEditingController(text: '1');
+    final result = await _twoFieldTool(
+      title: 'تحويل الوزن',
+      first: value,
+      second: dummy,
+      firstLabel: 'القيمة بالكيلوجرام',
+      secondLabel: 'اتركها 1 للحساب',
+      actionLabel: 'حوّل',
+      calculate: () {
+        final v = double.tryParse(value.text.trim()) ?? 0;
+        if (v < 0) return 'أدخل وزناً غير سالب.';
+        return '\$v كجم = \${(v / 1000).toStringAsFixed(4)} طن متري.';
+      },
+    );
+    value.dispose(); dummy.dispose();
+    if (mounted && result != null) _showResult('تحويل الوزن', result);
+  }
+
+  Future<void> _showWaterVolumeConversionTool() async {
+    final value = TextEditingController();
+    final dummy = TextEditingController(text: '1');
+    final result = await _twoFieldTool(
+      title: 'تحويل حجم المياه',
+      first: value,
+      second: dummy,
+      firstLabel: 'القيمة باللتر',
+      secondLabel: 'اتركها 1 للحساب',
+      actionLabel: 'حوّل',
+      calculate: () {
+        final v = double.tryParse(value.text.trim()) ?? 0;
+        if (v < 0) return 'أدخل حجماً غير سالب.';
+        return '\$v لتر = \${(v / 1000).toStringAsFixed(4)} م³.';
+      },
+    );
+    value.dispose(); dummy.dispose();
+    if (mounted && result != null) _showResult('تحويل حجم المياه', result);
+  }
+
+  Future<void> _showDailyIrrigationScheduleTool() async {
+    final daily = TextEditingController();
+    final events = TextEditingController(text: '2');
+    final result = await _twoFieldTool(
+      title: 'جدولة الري اليومية',
+      first: daily,
+      second: events,
+      firstLabel: 'كمية المياه اليومية باللتر',
+      secondLabel: 'عدد الريات يومياً',
+      actionLabel: 'قسّم',
+      calculate: () {
+        final d = double.tryParse(daily.text.trim()) ?? 0;
+        final e = int.tryParse(events.text.trim()) ?? 0;
+        if (d <= 0 || e <= 0) return 'أدخل كمية وعدداً أكبر من صفر.';
+        return 'الكمية التقريبية لكل رية: \${(d / e).toStringAsFixed(1)} لتر.\nهذه جدولة حسابية فقط؛ التوقيت الفعلي يعتمد على التربة والمحصول والطقس وكفاءة النظام.';
+      },
+    );
+    daily.dispose(); events.dispose();
+    if (mounted && result != null) _showResult('جدولة الري اليومية', result);
+  }
+
+  Future<void> _showIrrigationSectorTool() async {
+    final total = TextEditingController();
+    final sectors = TextEditingController(text: '4');
+    final result = await _twoFieldTool(
+      title: 'تقسيم مياه الري على القطاعات',
+      first: total,
+      second: sectors,
+      firstLabel: 'إجمالي المياه باللتر',
+      secondLabel: 'عدد القطاعات',
+      actionLabel: 'قسّم',
+      calculate: () {
+        final t = double.tryParse(total.text.trim()) ?? 0;
+        final s = int.tryParse(sectors.text.trim()) ?? 0;
+        if (t <= 0 || s <= 0) return 'أدخل قيماً أكبر من صفر.';
+        return 'إذا كانت القطاعات متساوية: \${(t / s).toStringAsFixed(1)} لتر لكل قطاع.\nعدّل التقسيم إذا اختلفت المساحات أو الضغوط أو الاحتياجات.';
+      },
+    );
+    total.dispose(); sectors.dispose();
+    if (mounted && result != null) _showResult('تقسيم مياه الري', result);
+  }
+
+  Future<void> _showAdvancedSeedCorrectionTool() async {
+    final base = TextEditingController();
+    final germ = TextEditingController(text: '90');
+    final purity = TextEditingController(text: '95');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تصحيح التقاوي بالإنبات والنقاوة'),
+        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: base, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'معدل التقاوي الأساسي كجم/هكتار')),
+          TextField(controller: germ, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'نسبة الإنبات %')),
+          TextField(controller: purity, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'نسبة النقاوة %')),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(onPressed: () {
+            final b = double.tryParse(base.text.trim()) ?? 0;
+            final g = double.tryParse(germ.text.trim()) ?? 0;
+            final p = double.tryParse(purity.text.trim()) ?? 0;
+            if (b <= 0 || g <= 0 || g > 100 || p <= 0 || p > 100) {
+              Navigator.pop(context, 'أدخل معدل التقاوي ونسباً بين 1 و100%.');
+              return;
+            }
+            final corrected = b / ((g / 100) * (p / 100));
+            Navigator.pop(context, 'معدل التقاوي المصحح تقريبياً: \${corrected.toStringAsFixed(2)} كجم/هكتار.\nالنتيجة تقديرية وقد تتأثر بطريقة الزراعة والصنف وحجم البذرة والمسافات.');
+          }, child: const Text('احسب')),
+        ],
+      ),
+    );
+    base.dispose(); germ.dispose(); purity.dispose();
+    if (mounted && result != null) _showResult('تصحيح التقاوي المتقدم', result);
+  }
+
+  Future<void> _showAreaFromSeedTool() async {
+    final seed = TextEditingController();
+    final rate = TextEditingController();
+    final result = await _twoFieldTool(
+      title: 'تقدير المساحة من كمية التقاوي',
+      first: seed,
+      second: rate,
+      firstLabel: 'كمية التقاوي بالكجم',
+      secondLabel: 'معدل التقاوي كجم/هكتار',
+      actionLabel: 'احسب',
+      calculate: () {
+        final s = double.tryParse(seed.text.trim()) ?? 0;
+        final r = double.tryParse(rate.text.trim()) ?? 0;
+        if (s <= 0 || r <= 0) return 'أدخل قيماً أكبر من صفر.';
+        return 'المساحة التقديرية: \${(s / r).toStringAsFixed(3)} هكتار.';
+      },
+    );
+    seed.dispose(); rate.dispose();
+    if (mounted && result != null) _showResult('المساحة من التقاوي', result);
+  }
+
+  Future<void> _showStorageWasteTool() async {
+    final qty = TextEditingController();
+    final loss = TextEditingController(text: '5');
+    final result = await _twoFieldTool(
+      title: 'هدر التخزين',
+      first: qty,
+      second: loss,
+      firstLabel: 'الكمية المخزنة',
+      secondLabel: 'نسبة الفاقد %',
+      actionLabel: 'احسب',
+      calculate: () {
+        final q = double.tryParse(qty.text.trim()) ?? 0;
+        final l = double.tryParse(loss.text.trim()) ?? 0;
+        if (q < 0 || l < 0 || l > 100) return 'أدخل كمية صحيحة ونسبة بين 0 و100%.';
+        final waste = q * l / 100;
+        return 'الفاقد التقديري: \${waste.toStringAsFixed(2)} من نفس وحدة الكمية.\nالمتبقي: \${(q - waste).toStringAsFixed(2)}.';
+      },
+    );
+    qty.dispose(); loss.dispose();
+    if (mounted && result != null) _showResult('هدر التخزين', result);
+  }
+
+  Future<void> _showFeedConversionTool() async {
+    final feed = TextEditingController();
+    final gain = TextEditingController();
+    final result = await _twoFieldTool(
+      title: 'معامل تحويل العلف FCR',
+      first: feed,
+      second: gain,
+      firstLabel: 'كمية العلف المستهلك كجم',
+      secondLabel: 'الزيادة في الوزن كجم',
+      actionLabel: 'احسب',
+      calculate: () {
+        final f = double.tryParse(feed.text.trim()) ?? 0;
+        final g = double.tryParse(gain.text.trim()) ?? 0;
+        if (f < 0 || g <= 0) return 'أدخل علفاً غير سالب وزيادة وزن أكبر من صفر.';
+        return 'FCR التقديري: \${(f / g).toStringAsFixed(2)} كجم علف لكل كجم زيادة.\nيُستخدم للمقارنة التشغيلية وليس معياراً ثابتاً لكل نوع أو عمر.';
+      },
+    );
+    feed.dispose(); gain.dispose();
+    if (mounted && result != null) _showResult('معامل تحويل العلف', result);
+  }
+
+  Future<void> _showHoneyProductionTool() async {
+    final colonies = TextEditingController();
+    final yieldPer = TextEditingController(text: '10');
+    final result = await _twoFieldTool(
+      title: 'تقدير إنتاج العسل',
+      first: colonies,
+      second: yieldPer,
+      firstLabel: 'عدد الطوائف',
+      secondLabel: 'كجم عسل تقديري لكل طائفة',
+      actionLabel: 'قدّر',
+      calculate: () {
+        final c = double.tryParse(colonies.text.trim()) ?? 0;
+        final y = double.tryParse(yieldPer.text.trim()) ?? 0;
+        if (c < 0 || y < 0) return 'أدخل قيماً غير سالبة.';
+        return 'الإنتاج التقديري: \${(c * y).toStringAsFixed(2)} كجم عسل.\nالإنتاج الفعلي يتغير بشدة حسب السلالة والمرعى والموسم وصحة الطوائف والإدارة.';
+      },
+    );
+    colonies.dispose(); yieldPer.dispose();
+    if (mounted && result != null) _showResult('تقدير إنتاج العسل', result);
+  }
+
   Future<String?> _twoFieldTool({
     required String title,
     required TextEditingController first,
