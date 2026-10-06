@@ -47,7 +47,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   List<String> _dominoHand = [];
   List<String> _dominoCpu = [];
   List<String> _dominoPool = [];
-  List<String> _dominoBoard = [];
+  List<String> _dominoTable = [];
   bool _dominoPlayerTurn = true;
   int _dominoLeft = 0, _dominoRight = 0;
 
@@ -125,7 +125,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     'energy': _energy, 'distance': _distance, 'message': _message,
     'ludo': _ludo, 'cpuLudo': _cpuLudo, 'ludoDice': _ludoDice, 'ludoPendingDice': _ludoPendingDice,
     'dominoHand': _dominoHand, 'dominoCpu': _dominoCpu,
-    'dominoPool': _dominoPool, 'dominoBoard': _dominoBoard,
+    'dominoPool': _dominoPool, 'dominoBoard': _dominoTable,
     'dominoPlayerTurn': _dominoPlayerTurn, 'dominoLeft': _dominoLeft,
     'dominoRight': _dominoRight,
     'unoHand': _unoHand, 'unoCpu': _unoCpu, 'unoDeck': _unoDeck,
@@ -170,7 +170,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       _dominoHand = List<String>.from(state['dominoHand'] ?? _dominoHand);
       _dominoCpu = List<String>.from(state['dominoCpu'] ?? _dominoCpu);
       _dominoPool = List<String>.from(state['dominoPool'] ?? _dominoPool);
-      _dominoBoard = List<String>.from(state['dominoBoard'] ?? _dominoBoard);
+      _dominoTable = List<String>.from(state['dominoBoard'] ?? _dominoTable);
       _dominoPlayerTurn = state['dominoPlayerTurn'] as bool? ?? _dominoPlayerTurn;
       _dominoLeft = (state['dominoLeft'] as num?)?.toInt() ?? _dominoLeft;
       _dominoRight = (state['dominoRight'] as num?)?.toInt() ?? _dominoRight;
@@ -618,7 +618,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     _dominoCpu = List<String>.from(_dominoPool.take(7));
     _dominoPool = _dominoPool.skip(7).toList();
     final first = _dominoPool.removeLast();
-    _dominoBoard = [first];
+    _dominoTable = [first];
     final p = _dominoValues(first);
     _dominoLeft = p[0]; _dominoRight = p[1];
     _dominoPlayerTurn = true;
@@ -671,13 +671,13 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
   void _dominoPlace(String piece) {
     final p = _dominoValues(piece);
     if (p[1] == _dominoLeft) {
-      _dominoLeft = p[0]; _dominoBoard.insert(0, piece);
+      _dominoLeft = p[0]; _dominoTable.insert(0, piece);
     } else if (p[0] == _dominoLeft) {
-      _dominoLeft = p[1]; _dominoBoard.insert(0, piece);
+      _dominoLeft = p[1]; _dominoTable.insert(0, piece);
     } else if (p[0] == _dominoRight) {
-      _dominoRight = p[1]; _dominoBoard.add(piece);
+      _dominoRight = p[1]; _dominoTable.add(piece);
     } else {
-      _dominoRight = p[0]; _dominoBoard.add(piece);
+      _dominoRight = p[0]; _dominoTable.add(piece);
     }
   }
 
@@ -854,7 +854,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       ]))),
       const SizedBox(height: 12),
       if (_localIndex == 0) _ludoBoard(),
-      if (_localIndex == 1) _dominoBoard(),
+      if (_localIndex == 1) _dominoTable(),
       if (_localIndex == 2) _unoBoard(),
       if (_localIndex == 3) _crimeBoard(),
       if (_localIndex >= 4) _actionBoard(),
@@ -888,10 +888,10 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     LinearProgressIndicator(value: _ludo.fold<int>(0, (a, b) => a + max(0, b)) / 224),
   ])));
 
-  Widget _dominoBoard() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    Text('Domino • يدك: ${_dominoHand.length} • الطاولة: ${_dominoBoard.length}', style: const TextStyle(fontWeight: FontWeight.w800)),
+  Widget _dominoTable() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text('Domino • يدك: ${_dominoHand.length} • الطاولة: ${_dominoTable.length}', style: const TextStyle(fontWeight: FontWeight.w800)),
     const SizedBox(height: 8),
-    if (_dominoBoard.isNotEmpty) Text(_dominoBoard.join(' • ')),
+    if (_dominoTable.isNotEmpty) Text(_dominoTable.join(' • ')),
     const SizedBox(height: 8),
     Wrap(spacing: 6, runSpacing: 6, children: [
       for (var i = 0; i < _dominoHand.length; i++)
