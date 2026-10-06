@@ -320,6 +320,9 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
     ].where((v) => v != null).map((v) => v.toString()).join(' - ');
     final date = (event['dateEvent'] ?? '').toString();
     final time = (event['strTime'] ?? '').toString();
+    final status = (event['strStatus'] ?? '').toString();
+    final venue = (event['strVenue'] ?? '').toString();
+    final details = [date, time, status, venue, score].where((v) => v.isNotEmpty).join(' • ');
     return Card(
       child: ListTile(
         leading: const Icon(Icons.event),
@@ -329,7 +332,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
               : '$home vs $away',
         ),
         subtitle: Text(
-          [date, time, score].where((v) => v.isNotEmpty).join(' • '),
+          details,
         ),
       ),
     );
