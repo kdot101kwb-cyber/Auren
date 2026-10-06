@@ -145,7 +145,7 @@ class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>
     final title=TextEditingController(),description=TextEditingController(),media=TextEditingController(),image=TextEditingController();
     String channelId=mine.first.id;
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(title:const Text('نشر فيديو'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
-      DropdownButtonFormField<String>(value:channelId,items:mine.map((c)=>DropdownMenuItem(value:c.id,child:Text(c.name))).toList(),onChanged:(v){if(v!=null)setDialog(()=>channelId=v);},decoration:const InputDecoration(labelText:'القناة')),
+      DropdownButtonFormField<String>(initialValue:channelId,items:mine.map((c)=>DropdownMenuItem(value:c.id,child:Text(c.name))).toList(),onChanged:(v){if(v!=null)setDialog(()=>channelId=v);},decoration:const InputDecoration(labelText:'القناة')),
       TextField(controller:title,decoration:const InputDecoration(labelText:'العنوان')),TextField(controller:description,decoration:const InputDecoration(labelText:'الوصف')),TextField(controller:media,decoration:const InputDecoration(labelText:'رابط الفيديو MP4/M3U8')),TextField(controller:image,decoration:const InputDecoration(labelText:'رابط الصورة المصغرة'))
     ])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),ElevatedButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('نشر'))])));
     if(ok!=true)return;
