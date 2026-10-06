@@ -10,12 +10,13 @@ class AurenTalentRadarScreen extends StatefulWidget {
 
 class _AurenTalentRadarScreenState extends State<AurenTalentRadarScreen> {
   String filter = 'all';
+  bool _cleaning = false;
   @override Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const Scaffold(body: Center(child: Text('سجّل الدخول أولاً.')));
     final service = TalentScoutService();
     return Scaffold(
-      appBar: AppBar(title: const Text('Talent Radar')),
+      appBar: AppBar(title: const Text('Talent Radar'), actions: [IconButton(tooltip: 'تنظيف الإشارات المنتهية', icon: _cleaning ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cleaning_services_outlined), onPressed: _cleaning ? null : () async { setState(() => _cleaning = true); await service.clearExpired(uid); if (mounted) setState(() => _cleaning = false); })]),
       body: StreamBuilder<List<AurenTalentScoutFinding>>(
         stream: service.watchFindings(uid),
         builder: (context, snap) {
@@ -33,7 +34,7 @@ class _AurenTalentRadarScreenState extends State<AurenTalentRadarScreen> {
                 const SizedBox(height: 6), Text(f.description),
                 if (f.matchedSkills.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text('مطابق: ${f.matchedSkills.join(' • ')}')),
                 if (f.missingSkills.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('فجوات: ${f.missingSkills.join(' • ')}')),
-                const SizedBox(height: 8), Wrap(spacing: 8, children: [if (f.status == 'new') OutlinedButton(onPressed: () => service.markSeen(uid, f.id), child: const Text('مراجعة')), if (f.status != 'dismissed') OutlinedButton(onPressed: () => service.dismiss(uid, f.id), child: const Text('إخفاء'))]),
+                const SizedBox(height: 8), Wrap(spacing: 8, children: [if (f.status == 'new') OutlinedButton(onPressed: () => service.markSeen(uid, f.id), child: const Text('مراجعة')), if (f.status != 'interested' && f.status != 'dismissed') OutlinedButton(onPressed: () => service.markInterested(uid, f.id), child: const Text('مهتم')), if (f.status != 'dismissed') OutlinedButton(onPressed: () => service.dismiss(uid, f.id), child: const Text('إخفاء'))]),
               ]))); },
             )),
           ]);
