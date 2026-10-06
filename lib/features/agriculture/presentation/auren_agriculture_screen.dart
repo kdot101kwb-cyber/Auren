@@ -121,6 +121,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
             _toolButton(Icons.water_drop_outlined, 'تقدير الري', _showIrrigationTool),
+            _toolButton(Icons.schedule_outlined, 'خطة الري', _showIrrigationPlanTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -160,6 +161,74 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     area.dispose();
     depth.dispose();
     if (mounted && result != null) _showResult('تقدير الري', result);
+  }
+
+  Future<void> _showIrrigationPlanTool() async {
+    final crop = TextEditingController();
+    final area = TextEditingController();
+    final depth = TextEditingController(text: '5');
+    final efficiency = TextEditingController(text: '80');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('خطة ري أولية'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: crop, decoration: const InputDecoration(labelText: 'المحصول / النشاط')),
+            TextField(
+              controller: area,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'المساحة بالمتر المربع'),
+            ),
+            TextField(
+              controller: depth,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'عمق الري المستهدف بالملليمتر'),
+            ),
+            TextField(
+              controller: efficiency,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'كفاءة النظام % (مثلاً 80)'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+
+          FilledButton(
+            onPressed: () {
+              final name = crop.text.trim();
+              final a = double.tryParse(area.text.trim()) ?? 0;
+              final d = double.tryParse(depth.text.trim()) ?? 0;
+              final e = double.tryParse(efficiency.text.trim()) ?? 0;
+              if (name.isEmpty || a <= 0 || d <= 0 || e <= 0 || e > 100) {
+                Navigator.pop(context, 'أدخل المحصول والقيم الصحيحة، وكفاءة بين 1 و100%.');
+                return;
+              }
+              final theoretical = a * d;
+              final applied = theoretical / (e / 100);
+              final note = e < 60
+                  ? 'الكفاءة منخفضة نسبياً؛ افحص التسرب والتوزيع والضغط.'
+                  : 'اضبط التوقيت والكمية حسب التربة والطقس ومرحلة نمو $name.';
+              Navigator.pop(
+                context,
+                'المحصول: $name\\n'
+                'الاحتياج النظري: ${theoretical.toStringAsFixed(0)} لتر لكل رية\\n'
+                'الكمية التقريبية بعد احتساب الكفاءة: ${applied.toStringAsFixed(0)} لتر\\n\\n'
+                '$note\\n'
+                'هذه خطة تقديرية وليست توصية ري نهائية.',
+              );
+            },
+            child: const Text('أنشئ الخطة'),
+          ),
+        ],
+      ),
+    );
+    crop.dispose();
+    area.dispose();
+    depth.dispose();
+    efficiency.dispose();
+    if (mounted && result != null) _showResult('خطة الري', result);
   }
 
   Future<void> _showCostTool() async {
