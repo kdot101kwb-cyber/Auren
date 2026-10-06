@@ -726,7 +726,7 @@ service cloud.firestore {
         && request.resource.data.ownerId == userId
         && request.resource.data.scoutId is string
         && request.resource.data.scoutId.size() > 0
-        && request.resource.data.type in ['opportunity','market','talent','brand','learning']
+        && request.resource.data.type in ['opportunity','market','talent','brand','learning','sports']
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 200
         && request.resource.data.description is string
