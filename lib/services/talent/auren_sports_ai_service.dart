@@ -37,7 +37,7 @@ ${userQuestion.trim().isEmpty ? '' : 'سؤال المستخدم:\n$userQuestion\
 
   static String athletePrompt({required String athleteName, required List<String> sports, required List<String> skills, required List<String> achievements}) {
     final sportText = sports.where((e) => e.trim().isNotEmpty).join(', ');
-    final context = 'اللاعب: $athleteName\nالرياضات: $sportText\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}';
+    final context = 'اللاعب: $athleteName\nالرياضات: $sportText\nالمهارات: ${skills.join(', ')}\nالإنجازات: ${achievements.join(', ')}';
     return prompt(agent: 'athlete', sport: sportText, context: context, userQuestion: 'حلل ملف الرياضي كما هو، واذكر نقاط القوة المحتملة والفجوات وما البيانات التي نحتاجها قبل أي استنتاج قوي. لا تعتبر اكتمال الملف دليلاً على مستوى اللاعب.');
   }
 
