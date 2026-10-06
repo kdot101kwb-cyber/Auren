@@ -18,8 +18,28 @@ class _AurenTalentCoachScreenState extends State<AurenTalentCoachScreen> {
   String mode = 'ai';
   int sessions = 3;
   bool saving = false;
+  bool loading = true;
 
   String get primarySport => widget.sport.isNotEmpty ? widget.sport : (widget.sports.isNotEmpty ? widget.sports.first : 'رياضتي');
+
+  @override void initState() {
+    super.initState();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      repo.watch(uid).first.then((data) {
+        if (!mounted || data == null) return;
+        setState(() {
+          mode = data['coachMode']?.toString() == 'human' ? 'human' : 'ai';
+          if ((data['goal']?.toString() ?? '').isNotEmpty) goal.text = data['goal'].toString();
+          final saved = (data['weeklySessions'] as num?)?.toInt();
+          if (saved != null && saved >= 1 && saved <= 7) sessions = saved;
+          loading = false;
+        });
+      }).catchError((_) { if (mounted) setState(() => loading = false); });
+    } else {
+      loading = false;
+    }
+  }
 
   @override void dispose() { goal.dispose(); super.dispose(); }
 
@@ -44,7 +64,7 @@ class _AurenTalentCoachScreenState extends State<AurenTalentCoachScreen> {
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('مدربي الشخصي')),
-    body: ListView(padding: const EdgeInsets.all(16), children: [
+    body: loading ? const Center(child: CircularProgressIndicator()) : ListView(padding: const EdgeInsets.all(16), children: [
       Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('مدربك مع AUREN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
         const SizedBox(height: 6), Text('رياضتك: ' + primarySport),
