@@ -163,6 +163,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
                   children: [
                     _directoryChip('countries', '🌍 Countries'),
                     _directoryChip('leagues', '🏆 All Leagues'),
+                    _directoryChip('sports', '🏅 Sports'),
                   ],
                 ),
               ],
@@ -253,8 +254,11 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     }
 
     final isDirectoryLeague = _directoryMode == 'leagues';
+    final isDirectorySport = _directoryMode == 'sports';
     final title = isDirectoryLeague
         ? (item['strLeague'] ?? 'League').toString()
+        : isDirectorySport
+            ? (item['strSport'] ?? 'Sport').toString()
         : _mode == 'players'
             ? (item['strPlayer'] ?? 'Player').toString()
             : _mode == 'matches'
@@ -268,20 +272,24 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     final subtitle = _mode == 'matches'
         ? '${item['dateEvent'] ?? ''} ${item['strTime'] ?? ''}'.trim()
         : '${item['strSport'] ?? ''} • ${item['strLeague'] ?? item['strNationality'] ?? ''}'.trim();
-    final image = (isDirectoryLeague || _mode == 'leagues')
+    final image = (isDirectoryLeague || isDirectorySport || _mode == 'leagues')
         ? (item['strBadge'] ?? item['strLogo'])
         : (_mode == 'players' ? item['strThumb'] : item['strBadge']);
     final imageUrl = image?.toString() ?? '';
 
     final id = isDirectoryLeague
         ? item['idLeague']
+        : isDirectorySport
+            ? item['idSport']
         : _mode == 'players'
             ? item['idPlayer']
             : item['idTeam'] ?? item['idLeague'];
 
     final type = isDirectoryLeague
         ? 'leagues'
-        : _mode;
+        : isDirectorySport
+            ? 'sports'
+            : _mode;
 
     return Card(
       child: ListTile(
@@ -297,8 +305,10 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
         trailing: id?.toString().isNotEmpty ?? false
             ? const Icon(Icons.chevron_right)
             : null,
-        onTap: id?.toString().isNotEmpty ?? false
-            ? () => Navigator.push(
+        onTap: isDirectorySport
+            ? null
+            : (id?.toString().isNotEmpty ?? false)
+                ? () => Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => AurenSportsEntityScreen(
@@ -308,7 +318,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
                     ),
                   ),
                 )
-            : null,
+                : null,
       ),
     );
   }
