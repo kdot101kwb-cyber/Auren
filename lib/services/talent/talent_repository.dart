@@ -5,7 +5,7 @@ class TalentRepository {
   final FirebaseFirestore db;
   TalentRepository({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
 
-  Stream<List<AurenTalent>> watchPublic({String query = '', String skill = '', String sport = ''}) {
+  Stream<List<AurenTalent>> watchPublic({String query = '', String skill = '', String sport = '', bool evidenceOnly = false}) {
     final q = query.trim().toLowerCase();
     final s = skill.trim().toLowerCase();
     final sp = sport.trim().toLowerCase();
@@ -13,7 +13,8 @@ class TalentRepository {
       final list = snap.docs.map((d) => AurenTalent.fromMap(d.id, d.data()))
           .where((t) => q.isEmpty || ('${t.displayName} ${t.bio} ${t.category} ${t.sport} ${t.discipline} ${t.level} ${t.city} ${t.country} ${t.skills.join(' ')} ${t.sports.join(' ')} ${t.achievements.join(' ')}').toLowerCase().contains(q))
           .where((t) => s.isEmpty || t.skills.any((x) => x.trim().toLowerCase() == s))
-          .where((t) => sp.isEmpty || t.sport.toLowerCase() == sp || t.sports.any((x) => x.toLowerCase() == sp)).toList();
+          .where((t) => sp.isEmpty || t.sport.toLowerCase() == sp || t.sports.any((x) => x.toLowerCase() == sp))
+          .where((t) => !evidenceOnly || t.verificationEvidence.isNotEmpty).toList();
       list.sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
       return list;
     });
