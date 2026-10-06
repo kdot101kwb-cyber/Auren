@@ -29,8 +29,8 @@ class _AurenProductionStudioScreenState extends State<AurenProductionStudioScree
         Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           const Text('Create production',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),const SizedBox(height:12),
           TextField(controller:_title,decoration:const InputDecoration(labelText:'Title',hintText:'My first AUREN film')),const SizedBox(height:12),
-          DropdownButtonFormField<AurenProductionType>(value:_type,decoration:const InputDecoration(labelText:'Type'),items:AurenProductionType.values.map((v)=>DropdownMenuItem(value:v,child:Text(v.label))).toList(),onChanged:(v)=>setState(()=>_type=v??_type)),const SizedBox(height:12),
-          DropdownButtonFormField<AurenVideoEngine>(value:_engine,decoration:const InputDecoration(labelText:'Video engine'),items:AurenVideoEngine.values.map((v)=>DropdownMenuItem(value:v,child:Text(v.label))).toList(),onChanged:(v)=>setState(()=>_engine=v??_engine)),const SizedBox(height:8),
+          DropdownButtonFormField<AurenProductionType>(initialValue:_type,decoration:const InputDecoration(labelText:'Type'),items:AurenProductionType.values.map((v)=>DropdownMenuItem(value:v,child:Text(v.label))).toList(),onChanged:(v)=>setState(()=>_type=v??_type)),const SizedBox(height:12),
+          DropdownButtonFormField<AurenVideoEngine>(initialValue:_engine,decoration:const InputDecoration(labelText:'Video engine'),items:AurenVideoEngine.values.map((v)=>DropdownMenuItem(value:v,child:Text(v.label))).toList(),onChanged:(v)=>setState(()=>_engine=v??_engine)),const SizedBox(height:8),
           Text('Target length: '+_minutes.round().toString()+' min'),Slider(value:_minutes,min:_type==AurenProductionType.short?1:10,max:_type==AurenProductionType.seriesEpisode?120:240,divisions:_type==AurenProductionType.short?9:23,onChanged:(v)=>setState(()=>_minutes=v)),
           SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_create,icon:const Icon(Icons.movie_creation_outlined),label:const Text('Start production'))),
         ]))),
