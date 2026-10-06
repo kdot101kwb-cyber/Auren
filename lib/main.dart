@@ -32,11 +32,11 @@ Future<void> main() async {
     // Activate App Check before any authenticated Firebase callable/service traffic.
     await FirebaseAppCheck.instance.activate(
       providerAndroid: kDebugMode
-          ? AndroidProvider.debug
-          : AndroidProvider.playIntegrity,
+          ? const AndroidDebugProvider()
+          : const AndroidPlayIntegrityProvider(),
       providerApple: kDebugMode
-          ? AppleProvider.debug
-          : AppleProvider.deviceCheck,
+          ? const AppleDebugProvider()
+          : const AppleDeviceCheckProvider(),
     );
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     if (FirebaseAuth.instance.currentUser == null) {
