@@ -27,6 +27,11 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
     'reaction': 'زمن الاستجابة',
     'vertical': 'الوثب العمودي',
     'shooting': 'دقة التسديد',
+    'endurance': 'التحمل',
+    'strength': 'القوة',
+    'agility': 'الرشاقة',
+    'balance': 'التوازن',
+    'technique': 'التقنية',
   };
 
   late String sport;
@@ -110,6 +115,11 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
     if (id == 'reaction') { result = x; unit = 'مللي ثانية'; }
     if (id == 'vertical') { result = x; unit = 'سم'; }
     if (id == 'shooting' && y > 0) { result = x / y * 100; unit = '%'; }
+    if (id == 'endurance') { result = x; unit = 'نقطة'; }
+    if (id == 'strength') { result = x; unit = 'كجم'; }
+    if (id == 'agility') { result = x; unit = 'ثانية'; }
+    if (id == 'balance') { result = x; unit = 'ثانية'; }
+    if (id == 'technique') { result = x; unit = 'نقطة'; }
 
     if (!mounted || result == null) return;
     await showDialog<void>(
