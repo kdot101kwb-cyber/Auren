@@ -1,7 +1,8 @@
-/// Canonical multi-talent categories for AUREN Talent.
+/// Canonical talent categories for AUREN Talent.
 ///
-/// Sports remains a first-class category, while the Talent system also
-/// supports creative, technical, academic, business and social disciplines.
+/// Talent focuses on personal ability, creativity, achievement and growth.
+/// Employment, business operations, agriculture sectors and skilled-service
+/// work belong to their dedicated AUREN systems, not Talent.
 class AurenTalentCategory {
   final String id;
   final String name;
@@ -44,17 +45,17 @@ class AurenTalentCategories {
     AurenTalentCategory(
       id: 'technology',
       name: 'Technology & Coding',
-      description: 'Software, engineering, cybersecurity, data and technical skills.',
+      description: 'Coding, software building, engineering and technical creativity.',
     ),
     AurenTalentCategory(
       id: 'ai_innovation',
       name: 'AI & Innovation',
-      description: 'Artificial intelligence, research, invention and emerging technology.',
+      description: 'AI projects, invention, experimentation and emerging technology.',
     ),
     AurenTalentCategory(
       id: 'writing',
       name: 'Writing & Literature',
-      description: 'Writing, poetry, novels, journalism and editorial work.',
+      description: 'Writing, poetry, novels, journalism and storytelling.',
     ),
     AurenTalentCategory(
       id: 'creator',
@@ -64,7 +65,7 @@ class AurenTalentCategories {
     AurenTalentCategory(
       id: 'science_academic',
       name: 'Science & Academic',
-      description: 'Science, mathematics, research, education and academic excellence.',
+      description: 'Scientific ability, mathematics, research and academic achievement.',
     ),
     AurenTalentCategory(
       id: 'gaming_esports',
@@ -74,27 +75,12 @@ class AurenTalentCategories {
     AurenTalentCategory(
       id: 'fashion_beauty',
       name: 'Fashion & Beauty',
-      description: 'Fashion, modeling, styling, makeup and beauty skills.',
-    ),
-    AurenTalentCategory(
-      id: 'business',
-      name: 'Business & Entrepreneurship',
-      description: 'Entrepreneurship, leadership, sales, marketing and business building.',
-    ),
-    AurenTalentCategory(
-      id: 'agriculture',
-      name: 'Agriculture & Nature',
-      description: 'Agriculture, livestock, environmental skills and nature-based expertise.',
-    ),
-    AurenTalentCategory(
-      id: 'crafts',
-      name: 'Crafts & Skilled Trades',
-      description: 'Craftsmanship, repair, making and practical skilled trades.',
+      description: 'Fashion, modeling, styling, makeup and beauty creativity.',
     ),
     AurenTalentCategory(
       id: 'food',
       name: 'Food & Cooking',
-      description: 'Cooking, baking, culinary arts and food creation.',
+      description: 'Cooking, baking, culinary arts and food creativity.',
     ),
     AurenTalentCategory(
       id: 'languages',
@@ -126,9 +112,6 @@ class AurenTalentCategories {
     'science_academic',
     'gaming_esports',
     'fashion_beauty',
-    'business',
-    'agriculture',
-    'crafts',
     'food',
     'languages',
     'leadership_impact',
