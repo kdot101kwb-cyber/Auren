@@ -265,7 +265,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => MessengerScreen(initialPrompt: '$title\\n\\n$prompt'),
+        builder: (_) => MessengerScreen(initialPrompt: '$title\n\n$prompt'),
       ),
     );
   }
