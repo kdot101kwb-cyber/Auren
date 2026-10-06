@@ -56,6 +56,8 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
           const SizedBox(height: 16),
           _quickTools(),
           const SizedBox(height: 16),
+          _investmentHub(),
+          const SizedBox(height: 16),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -2035,6 +2037,179 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     }
   }
 
+
+  Widget _investmentHub() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Row(children: [
+            Icon(Icons.trending_up_rounded),
+            SizedBox(width: 8),
+            Text('بوابة الاستثمار الزراعي', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+          ]),
+          const SizedBox(height: 6),
+          const Text('اكتشف وحلل فرص الاستثمار في الزراعة والثروة الحيوانية والتصنيع والطاقة وإعادة التدوير.'),
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _investmentButton(Icons.search_rounded, 'استكشاف الفرص', () => _showInvestmentExplorer()),
+            _investmentButton(Icons.calculate_outlined, 'حاسبة الاستثمار', () => _showInvestmentCalculator()),
+            _investmentButton(Icons.auto_awesome_rounded, 'تحليل فرصة بالذكاء الاصطناعي', () => _showInvestmentAi()),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _investmentButton(IconData icon, String label, VoidCallback onTap) {
+    return OutlinedButton.icon(onPressed: onTap, icon: Icon(icon), label: Text(label));
+  }
+
+  Future<void> _showInvestmentExplorer() async {
+    final items = const [
+      ('مشاريع المحاصيل', 'أرض • ماء • إنتاج • سوق', Icons.agriculture_outlined),
+      ('الثروة الحيوانية', 'أعلاف • قطيع • إنتاج • صحة', Icons.pets_outlined),
+      ('التصنيع الزراعي', 'مواد خام • مصنع • سوق • توزيع', Icons.precision_manufacturing_outlined),
+      ('الطاقة الزراعية', 'طاقة شمسية • ري • تخزين', Icons.solar_power_outlined),
+      ('الاستزراع السمكي', 'مياه • أعلاف • كثافة • سوق', Icons.set_meal_outlined),
+      ('إعادة التدوير', 'مخلفات • معالجة • منتج • سوق', Icons.recycling_outlined),
+    ];
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('فرص الاستثمار'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: items.map((item) => ListTile(
+              leading: CircleAvatar(child: Icon(item.$3)),
+              title: Text(item.$1, style: const TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: Text(item.$2),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                _showInvestmentCategory(item.$1);
+              },
+            )).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showInvestmentCategory(String category) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(category),
+        content: TextField(
+          controller: controller,
+          minLines: 4,
+          maxLines: 8,
+          decoration: const InputDecoration(
+            hintText: 'اكتب الدولة/الموقع، حجم المشروع، رأس المال المتاح، المنتج، الطاقة الإنتاجية والسوق المستهدف...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              if (controller.text.trim().isEmpty) return;
+              Navigator.pop(context, controller.text.trim());
+            },
+            child: const Text('حفظ كمسودة'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || result == null) return;
+    await _showResult('مسودة فرصة استثمار', 'القطاع: $category\n\n$result\n\nهذه مسودة تخطيطية وليست عرضاً استثمارياً أو توصية مالية.');
+  }
+
+  Future<void> _showInvestmentCalculator() async {
+    final capital = TextEditingController();
+    final revenue = TextEditingController();
+    final operating = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('حاسبة الاستثمار'),
+        content: SingleChildScrollView(
+          child: Column(children: [
+            TextField(controller: capital, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'رأس المال / الاستثمار الأولي')),
+            TextField(controller: revenue, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الإيراد السنوي المتوقع')),
+            TextField(controller: operating, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'التكلفة التشغيلية السنوية')),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final c = double.tryParse(capital.text.trim()) ?? 0;
+              final r = double.tryParse(revenue.text.trim()) ?? 0;
+              final o = double.tryParse(operating.text.trim()) ?? 0;
+              if (c <= 0 || r < 0 || o < 0 || r < o) return;
+              final profit = r - o;
+              final roi = profit / c * 100;
+              final payback = profit > 0 ? c / profit : double.infinity;
+              Navigator.pop(context, 'الربح التشغيلي السنوي: ${profit.toStringAsFixed(2)}\nالعائد البسيط على الاستثمار: ${roi.toStringAsFixed(2)}%\nمدة الاسترداد التقريبية: ${payback.isFinite ? payback.toStringAsFixed(2) : 'غير متاحة'} سنة\n\nاستخدم نفس وحدة العملة في جميع المدخلات. هذه حاسبة تقديرية وليست توصية استثمارية.');
+            },
+            child: const Text('احسب'),
+          ),
+        ],
+      ),
+    );
+    capital.dispose();
+    revenue.dispose();
+    operating.dispose();
+    if (!mounted || result == null) return;
+    await _showResult('نتيجة الاستثمار', result);
+  }
+
+  Future<void> _showInvestmentAi() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تحليل فرصة استثمارية بالـAI'),
+        content: TextField(
+          controller: controller,
+          minLines: 5,
+          maxLines: 9,
+          decoration: const InputDecoration(
+            hintText: 'صف المشروع: الموقع، الأرض/المبنى، رأس المال، الإنتاج، السوق، الإيرادات والتكاليف والمخاطر...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () async {
+              if (controller.text.trim().isEmpty) return;
+              try {
+                final advice = await _repo.requestAiAdvice(
+                  type: 'business',
+                  location: _location.text,
+                  observations: 'Investment analysis request:\n${controller.text.trim()}',
+                );
+                if (context.mounted) Navigator.pop(context, advice);
+              } catch (_) {
+                if (context.mounted) Navigator.pop(context, 'تعذر الوصول إلى محلل الاستثمار حالياً. حاول مرة أخرى.');
+              }
+            },
+            child: const Text('حلل الفرصة'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || result == null) return;
+    await _showResult('تحليل AUREN AI للاستثمار', result);
+  }
 
   Widget _businessStudios() {
     final studios = _type == 'design'
