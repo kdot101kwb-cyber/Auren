@@ -37,7 +37,7 @@ class _AurenCreatorGrowthScreenState extends State<AurenCreatorGrowthScreen> {
         const SizedBox(height:10),
         TextField(controller:_title,decoration:const InputDecoration(border:OutlineInputBorder(),hintText:'شنو المحتوى الجاي؟')),
         const SizedBox(height:8),
-        DropdownButtonFormField<String>(value:_format,items:const[DropdownMenuItem(value:'post',child:Text('Post')),DropdownMenuItem(value:'short',child:Text('Short')),DropdownMenuItem(value:'video',child:Text('Video')),DropdownMenuItem(value:'live',child:Text('Live')),DropdownMenuItem(value:'audio',child:Text('Audio'))],onChanged:(v)=>setState(()=>_format=v??'post'),decoration:const InputDecoration(border:OutlineInputBorder(),labelText:'Format')),
+        DropdownButtonFormField<String>(initialValue:_format,items:const[DropdownMenuItem(value:'post',child:Text('Post')),DropdownMenuItem(value:'short',child:Text('Short')),DropdownMenuItem(value:'video',child:Text('Video')),DropdownMenuItem(value:'live',child:Text('Live')),DropdownMenuItem(value:'audio',child:Text('Audio'))],onChanged:(v)=>setState(()=>_format=v??'post'),decoration:const InputDecoration(border:OutlineInputBorder(),labelText:'Format')),
         const SizedBox(height:8),
         OutlinedButton(onPressed:()async{final now=DateTime.now();final picked=await showDatePicker(context:context,firstDate:now,lastDate:now.add(const Duration(days:365)),initialDate:now);if(picked!=null)setState(()=>_scheduledAt=picked);},child:Text(_scheduledAt==null?'اختيار موعد':'تم اختيار موعد')),
         const SizedBox(height:8),
