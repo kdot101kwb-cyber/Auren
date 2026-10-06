@@ -14,6 +14,7 @@ import 'user_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/core/auren_core_five_repository.dart';
+import '../../talent/presentation/talent_screen.dart';
 
 class AurenTimelineScreen extends StatefulWidget {
   const AurenTimelineScreen({super.key});
@@ -102,15 +103,17 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                 final types = const [('all', 'All'), ('moment', 'Moments'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
-                  itemCount: posts.length + 4,
+                  itemCount: posts.length + 5,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
                     if (i == 0) return _PulseCoreFiveCard(uid: uid);
                     if (i == 1) return const _MomentsStrip();
-                    if (i == 2) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
-                    if (i == 3) return _PulseSignals(opportunities: opportunities, projects: projects);
+                    if (i == 2) return _SportsPulseCard(uid: uid);
+                    if (i == 3) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
+                    if (i == 4) return _PulseSignals(opportunities: opportunities, projects: projects);
                     if (posts.isEmpty) return const _EmptyPulse();
-                    return _PulseCard(post: posts[i - 4], uid: uid);
+                    return _PulseCard(post: posts[i - 5], uid: uid);
+
                   },
                 );
               },
@@ -249,6 +252,69 @@ class _MomentsStrip extends StatelessWidget {
         break;
     }
   }
+}
+
+
+class _SportsPulseCard extends StatelessWidget {
+  final String uid;
+  const _SportsPulseCard({required this.uid});
+
+  @override
+  Widget build(BuildContext context) => Card(
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                const Icon(Icons.sports_soccer),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Sports Pulse',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AurenTalentScreen()),
+                  ),
+                  child: const Text('Sports Hub'),
+                ),
+              ]),
+              const SizedBox(height: 4),
+              const Text(
+                'رياضة حية داخل الـTimeline: مباريات، أخبار، أندية، لاعبين وتحليل AI حسب اهتماماتك.',
+              ),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  _sportsAction(context, '🔴 Live', 'أرني المباريات المباشرة والنتائج الرياضية الحالية التي تهمني.'),
+                  _sportsAction(context, '📅 Matches', 'أرني المباريات القادمة والبطولات التي أتابعها، مرتبة حسب الأهمية.'),
+                  _sportsAction(context, '📰 News', 'لخص لي أهم أخبار الرياضة واللاعبين والأندية التي تهمني اليوم.'),
+                  _sportsAction(context, '🏟️ Clubs', 'أرني أخبار ونتائج الأندية والفرق الرياضية التي أتابعها.'),
+                  _sportsAction(context, '👤 Players', 'أرني أخبار وإحصائيات اللاعبين والرياضيين الذين أتابعهم.'),
+                ]),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  Widget _sportsAction(BuildContext context, String label, String prompt) => Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: ActionChip(
+          avatar: const Icon(Icons.auto_awesome, size: 16),
+          label: Text(label),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MessengerScreen(initialPrompt: prompt),
+            ),
+          ),
+        ),
+      );
 }
 
 class _PulseFilterBar extends StatelessWidget {
