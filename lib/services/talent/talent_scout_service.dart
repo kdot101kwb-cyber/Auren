@@ -20,9 +20,10 @@ class TalentScoutService {
           final required=o.skills.map(_norm).where((x)=>x.isNotEmpty).toSet();
           final matched=required.where(talentSkills.contains).toList();
           final missing=required.difference(talentSkills).toList();
+          final evidence=<String>[if(matched.isNotEmpty) 'مهارات مطابقة: ${matched.join('، ')}', if(missing.isNotEmpty) 'مهارات مطلوبة غير موجودة: ${missing.join('، ')}'];
           final score=required.isEmpty?35:((matched.length/required.length)*100).round();
           if(score<25)continue;
-          results.add(AurenTalentScoutFinding(id:'${scout.id}_${o.id}',ownerId:uid,scoutId:scout.id,type:'opportunity',title:o.title,description:o.description,sourceType:'opportunity',sourceId:o.id,status:'new',score:score,matchedSkills:matched,missingSkills:missing,createdAt:DateTime.now(),expiresAt:DateTime.now().add(const Duration(days:14))));
+          results.add(AurenTalentScoutFinding(id:'${scout.id}_${o.id}',ownerId:uid,scoutId:scout.id,type:'opportunity',title:o.title,description:o.description,sourceType:'opportunity',sourceId:o.id,status:'new',score:score,matchedSkills:matched,missingSkills:missing,evidence:evidence,createdAt:DateTime.now(),expiresAt:DateTime.now().add(const Duration(days:14))));
         }
       } else {
         final keywords=<String>{...scout.skills.map(_norm),...scout.interests.map(_norm)}..removeWhere((x)=>x.isEmpty);
@@ -30,6 +31,7 @@ class TalentScoutService {
         final hay='${talent.bio} ${talent.category} ${talent.sport} ${talent.sports.join(' ')} ${talent.discipline} ${talent.level} ${talent.city} ${talent.country} ${talent.skills.join(' ')}'.toLowerCase();
         final hits=keywords.where((k)=>hay.contains(k)).toList();
         final signalHits=sportSignals.where((signal)=>hay.contains(signal)).toList();
+        final evidence=<String>[if(hits.isNotEmpty) 'كلمات/مهارات متطابقة: ${hits.join('، ')}', if(signalHits.isNotEmpty) 'إشارات رياضية متطابقة: ${signalHits.join('، ')}'];
         final baseScore=keywords.isEmpty?50:((hits.length/keywords.length)*100).round();
         final score=(baseScore + signalHits.length * 10).clamp(0, 100).toInt();
         if(score<20&&keywords.isNotEmpty)continue;
@@ -41,12 +43,12 @@ class TalentScoutService {
           'sports'=>'إشارات أداء رياضي لمجالك: ${talent.sport.isEmpty ? talent.category : talent.sport}. راجع التدريب والمهارات والمؤشرات المسجلة قبل أي قرار.',
           _=>'تحليل كشاف المواهب.',
         };
-        results.add(AurenTalentScoutFinding(id:'${scout.id}_${talent.id}',ownerId:uid,scoutId:scout.id,type:scout.role,title:scout.name,description:text,sourceType:'talent',sourceId:talent.id,status:'new',score:score,matchedSkills:hits,missingSkills:const [],createdAt:DateTime.now(),expiresAt:DateTime.now().add(const Duration(days:7))));
+        results.add(AurenTalentScoutFinding(id:'${scout.id}_${talent.id}',ownerId:uid,scoutId:scout.id,type:scout.role,title:scout.name,description:text,sourceType:'talent',sourceId:talent.id,status:'new',score:score,matchedSkills:hits,missingSkills:const [],evidence:evidence,createdAt:DateTime.now(),expiresAt:DateTime.now().add(const Duration(days:7))));
       }
     }
     final col=db.collection('users').doc(uid).collection('talent_scout_findings');
     for(final f in results) {
-      await col.doc(f.id).set({'ownerId':uid,'scoutId':f.scoutId,'type':f.type,'title':f.title,'description':f.description,'sourceType':f.sourceType,'sourceId':f.sourceId,'status':f.status,'score':f.score,'matchedSkills':f.matchedSkills.take(30).toList(),'missingSkills':f.missingSkills.take(30).toList(),'createdAt':FieldValue.serverTimestamp(),'expiresAt':Timestamp.fromDate(f.expiresAt!)},SetOptions(merge:true));
+      await col.doc(f.id).set({'ownerId':uid,'scoutId':f.scoutId,'type':f.type,'title':f.title,'description':f.description,'sourceType':f.sourceType,'sourceId':f.sourceId,'status':f.status,'score':f.score,'matchedSkills':f.matchedSkills.take(30).toList(),'missingSkills':f.missingSkills.take(30).toList(),'evidence':f.evidence.take(20).toList(),'createdAt':FieldValue.serverTimestamp(),'expiresAt':Timestamp.fromDate(f.expiresAt!)},SetOptions(merge:true));
     }
     return results;
   }
