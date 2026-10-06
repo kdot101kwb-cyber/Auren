@@ -696,6 +696,22 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    match /users/{userId}/talent_badges/{badgeId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.ownerId == userId
+        && request.resource.data.talentId is string
+        && request.resource.data.talentId.size() > 0
+        && request.resource.data.talentId.size() <= 128
+        && request.resource.data.badgeId is string
+        && request.resource.data.badgeId in ['profile_ready','multi_sport','skill_builder','achievement_proof','goal_setter']
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.earnedAt is timestamp
+        && request.resource.data.keys().hasOnly(['ownerId','talentId','badgeId','title','earnedAt']);
+      allow delete: if isOwner(userId);
+    }
+
     match /users/{userId}/talent_scouts/{scoutId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
