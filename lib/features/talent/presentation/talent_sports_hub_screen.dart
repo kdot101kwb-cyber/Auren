@@ -23,6 +23,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
       final results = switch (_mode) {
         'players' => await _service.searchPlayers(query),
         'matches' => await _service.searchEvents(query.replaceAll(' ', '_')),
+        'leagues' => await _service.searchLeagues(query),
         _ => await _service.searchTeams(query),
       };
       if (!mounted) return;
@@ -93,6 +94,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
                     _modeChip('teams', '🏟️ Clubs'),
                     _modeChip('players', '👤 Players'),
                     _modeChip('matches', '📅 Matches'),
+                    _modeChip('leagues', '🏆 Leagues'),
                   ],
                 ),
               ],
@@ -164,6 +166,8 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
       ? (item['strPlayer'] ?? 'Player').toString()
       : _mode == 'matches'
         ? (item['strEvent'] ?? 'Match').toString()
+        : _mode == 'leagues'
+        ? (item['strLeague'] ?? 'League').toString()
         : (item['strTeam'] ?? 'Club').toString();
     final description = _localizedDescription(item, Localizations.localeOf(context).languageCode);
     final subtitle = _mode == 'matches'
