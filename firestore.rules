@@ -703,7 +703,7 @@ service cloud.firestore {
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 120
-        && request.resource.data.role in ['opportunity','market','talent','brand','learning']
+        && request.resource.data.role in ['opportunity','market','talent','brand','learning','sports']
         && request.resource.data.description is string
         && request.resource.data.description.size() <= 1000
         && request.resource.data.enabled is bool
@@ -788,7 +788,7 @@ service cloud.firestore {
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 120
-        && request.resource.data.role in ['career', 'discovery', 'portfolio', 'brand', 'negotiation']
+        && request.resource.data.role in ['career', 'discovery', 'portfolio', 'brand', 'negotiation', 'sports']
         && request.resource.data.description is string
         && request.resource.data.description.size() <= 1000
         && request.resource.data.enabled is bool
