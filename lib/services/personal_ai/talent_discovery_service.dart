@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/post.dart';
 import '../../core/models/user_profile.dart';
 import '../social/post_repository.dart';
-import '../users/user_repository.dart';
 
 class AurenTalentMatch {
   final AurenUserProfile profile;
