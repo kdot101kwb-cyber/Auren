@@ -15,7 +15,6 @@ class AurenBusinessProductsScreen extends StatefulWidget {
 }
 class _AurenBusinessProductsScreenState extends State<AurenBusinessProductsScreen>{
   final repo=MarketplaceRepository();
-  bool get _owner => FirebaseAuth.instance.currentUser?.uid != null;
   Future<void> add() async {
     final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;
     final business=await FirebaseFirestore.instance.collection('businesses').doc(widget.businessId).get();
