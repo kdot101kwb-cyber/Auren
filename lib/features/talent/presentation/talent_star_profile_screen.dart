@@ -1,0 +1,180 @@
+import 'package:flutter/material.dart';
+import '../../../core/models/talent.dart';
+import '../../messenger/presentation/messenger_screen.dart';
+import 'talent_badges_screen.dart';
+import 'talent_performance_screen.dart';
+
+class AurenTalentStarProfileScreen extends StatelessWidget {
+  final AurenTalent talent;
+  const AurenTalentStarProfileScreen({super.key, required this.talent});
+
+  @override
+  Widget build(BuildContext context) {
+    final sports = talent.sports.isEmpty && talent.sport.isNotEmpty
+        ? [talent.sport]
+        : talent.sports;
+    final location = [talent.city, talent.country]
+        .where((v) => v.trim().isNotEmpty)
+        .join(' • ');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Athlete Profile'),
+        actions: [
+          IconButton(
+            tooltip: 'AUREN AI',
+            icon: const Icon(Icons.auto_awesome),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MessengerScreen(
+                  initialPrompt:
+                      'حلل ملف الرياضي ' + talent.displayName + ' اعتماداً فقط على البيانات الظاهرة: الرياضة، المهارات، الإنجازات، الأهداف والأداء. وضّح أي بيانات غير متوفرة.',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
+        children: [
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+              child: Column(
+                children: [
+                  const CircleAvatar(radius: 42, child: Icon(Icons.person, size: 42)),
+                  const SizedBox(height: 12),
+                  Text(talent.displayName, textAlign: TextAlign.center, style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
+                  if (location.isNotEmpty) ...[const SizedBox(height: 5), Text(location)],
+                  if (sports.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: sports.map((s) => Chip(label: Text(s))).toList(),
+                    ),
+                  ],
+                  if (talent.level.isNotEmpty || talent.discipline.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      [talent.discipline, talent.level].where((v) => v.trim().isNotEmpty).join(' • '),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          _section('About', talent.bio),
+          if (talent.skills.isNotEmpty) _chipsSection('Skills', talent.skills),
+          if (talent.achievements.isNotEmpty) _chipsSection('Achievements', talent.achievements),
+          if (talent.goals.isNotEmpty) _chipsSection('Goals', talent.goals),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Talent actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MessengerScreen(
+                          initialPrompt: 'ساعدني أفهم ملف ' + talent.displayName + ' وأفضل طريقة للتواصل معه بناءً على البيانات المتاحة فقط.',
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.person_add_alt_1),
+                    label: const Text('Connect with AUREN AI'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AurenTalentPerformanceScreen(
+                          sport: talent.sport.isEmpty ? talent.category : talent.sport,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.insights_outlined),
+                    label: const Text('Performance'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AurenTalentBadgesScreen(
+                          talentId: talent.id,
+                          ownerId: talent.ownerId,
+                          displayName: talent.displayName,
+                          sports: sports,
+                          skills: talent.skills,
+                          achievements: talent.achievements,
+                          goals: talent.goals,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.workspace_premium_outlined),
+                    label: const Text('Achievements & Badges'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Card(
+            child: ListTile(
+              leading: Icon(Icons.verified_outlined),
+              title: Text('Verification'),
+              subtitle: Text('أي علامة تحقق رسمية يجب أن تعتمد على دليل أو جهة موثوقة؛ وجود الملف وحده لا يعني أنه حساب رسمي.'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _section(String title, String value) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            Text(value),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chipsSection(String title, List<String> values) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: values.map((v) => Chip(label: Text(v))).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
