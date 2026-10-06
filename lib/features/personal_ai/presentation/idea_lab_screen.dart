@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 /// AUREN Idea Lab: a multi-agent creative engine that intentionally
 /// challenges normal answers instead of behaving like a generic chatbot.
@@ -45,7 +46,40 @@ class _AurenIdeaLabScreenState extends State<AurenIdeaLabScreen> {
   }
 
   void _ignite() {
-    setState(() => _ideas = AurenIdeaLab.generate(_controller.text));
+    final topic = _controller.text.trim();
+    if (topic.isEmpty) return;
+    setState(() => _ideas = AurenIdeaLab.generate(topic));
+  }
+
+  void _openWithAuren() {
+    final topic = _controller.text.trim();
+    if (topic.isEmpty) return;
+    final prompt = '''
+أنت AUREN Idea Lab، ولست chatbot تقليديًا.
+الموضوع: $topic
+
+شغّل سبعة أدوار إبداعية مستقلة:
+1) Mad Inventor: ابتكر فكرة جريئة وغير تقليدية.
+2) Fusion AI: ادمج الموضوع مع مجالين بعيدين على الأقل.
+3) Contrarian AI: تحدَّ الافتراض الأساسي واقترح العكس.
+4) Future AI: تخيل الفكرة بعد 10 سنوات ثم أعدها للحاضر.
+5) Experiment AI: صمّم تجربة صغيرة قابلة للاختبار خلال أسبوع.
+6) Wildcard AI: أعطني فكرة مفاجئة خارج المسار المتوقع.
+7) Founder Challenger: انتقد أقوى فكرة وابحث عن طريقة تجعلها أقوى 10 مرات.
+
+بعد ذلك:
+- رتّب أفضل 3 أفكار.
+- اشرح لماذا هي مختلفة.
+- اذكر المخاطر والتعقيد بشكل تقريبي.
+- اقترح MVP واضحًا لكل فكرة.
+- لا توافق على فكرتي لمجرد إرضائي؛ تحداني عندما يكون ذلك مفيدًا.
+''';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MessengerScreen(initialPrompt: prompt),
+      ),
+    );
   }
 
   @override
@@ -88,6 +122,12 @@ class _AurenIdeaLabScreenState extends State<AurenIdeaLabScreen> {
                     'تجرب، تفاجئك، وتتحدى الفكرة بدل الموافقة عليها تلقائيًا.',
                   ),
                   const SizedBox(height: 14),
+                  FilledButton.icon(
+                    onPressed: _openWithAuren,
+                    icon: const Icon(Icons.local_fire_department_outlined),
+                    label: const Text('شغّل مختبر الأفكار مع AUREN AI'),
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _controller,
                     textInputAction: TextInputAction.done,
@@ -126,13 +166,8 @@ class _AurenIdeaLabScreenState extends State<AurenIdeaLabScreen> {
                   leading: CircleAvatar(child: Text('${entry.key + 1}')),
                   title: Text(entry.value),
                   trailing: IconButton(
-                    tooltip: 'Copy idea',
-                    onPressed: () {
-                      final messenger = ScaffoldMessenger.of(context);
-                      messenger.showSnackBar(
-                        const SnackBar(content: Text('الفكرة جاهزة للنقل إلى AUREN AI.')),
-                      );
-                    },
+                    tooltip: 'Open in AUREN AI',
+                    onPressed: _openWithAuren,
                     icon: const Icon(Icons.arrow_forward),
                   ),
                 ),
