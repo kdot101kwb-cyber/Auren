@@ -55,7 +55,9 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     try {
       final results = mode == 'countries'
           ? await _service.allCountries()
-          : await _directory.allLeagues();
+          : mode == 'sports'
+              ? await _service.allSports()
+              : await _directory.allLeagues();
       if (!mounted) return;
       setState(() => _results = results);
     } catch (e) {
