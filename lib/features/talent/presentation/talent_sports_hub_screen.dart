@@ -287,7 +287,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
         leading: const Icon(Icons.fact_check_outlined),
         title: Text(trust.label + ' • ' + trust.trustLevel),
         subtitle: Text(
-          trust.sourceName + '\n' + trust.coverage + '\n' + trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية',
+          trust.sourceName + '\n' + trust.coverage + '\n' + (trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية'),
         ),
         isThreeLine: true,
       ),
