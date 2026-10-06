@@ -30,7 +30,7 @@ class _AurenTalentSpecializedToolsState extends State<AurenTalentSpecializedTool
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: selected,
+              initialValue: selected,
               decoration: const InputDecoration(
                 labelText: 'اختر مجال الموهبة',
                 border: OutlineInputBorder(),
