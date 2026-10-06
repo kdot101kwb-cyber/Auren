@@ -278,7 +278,7 @@ class _SportsPulseCard extends StatelessWidget {
                 TextButton(
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AurenTalentScreen()),
+                    MaterialPageRoute(builder: (_) => const AurenTalentSportsHubScreen()),
                   ),
                   child: const Text('Sports Hub'),
                 ),
