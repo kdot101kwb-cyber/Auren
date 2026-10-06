@@ -43,5 +43,5 @@ class AurenWorkArtifact {
   }
 
   static AurenWorkArtifact fromSnapshot(DocumentSnapshot<Map<String,dynamic>> doc) =>
-      fromDoc(doc.id, doc.data() ?? const {});
+      AurenWorkArtifact.fromDoc(doc.id, doc.data() ?? const {});
 }
