@@ -235,7 +235,9 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
     );
   }
 
-  String _availableStatsPrompt(Map<String, dynamic> item) { final keys = ['intPlayed','intAppearances','intGoals','intAssists','intMinutes','strRating','intWeight','intHeight']; return keys.where((k) => item[k] != null && item[k].toString().trim().isNotEmpty).map((k) => '$k=${item[k]}').join(', '); }\n\n  Widget _statsCard(Map<String, dynamic> item) {
+  String _availableStatsPrompt(Map<String, dynamic> item) { final keys = ['intPlayed','intAppearances','intGoals','intAssists','intMinutes','strRating','intWeight','intHeight']; return keys.where((k) => item[k] != null && item[k].toString().trim().isNotEmpty).map((k) => '$k=${item[k]}').join(', '); }
+
+  Widget _statsCard(Map<String, dynamic> item) {
     const keys = <String, String>{
       'Matches': 'intPlayed',
       'Appearances': 'intAppearances',
