@@ -14,6 +14,11 @@ class AurenSportsMatchScreen extends StatelessWidget {
     final eventName = _value('strEvent');
     final title = eventName.isNotEmpty ? eventName : (home.isEmpty ? 'Home' : home) + ' vs ' + (away.isEmpty ? 'Away' : away);
     final score = [_value('intHomeScore'), _value('intAwayScore')].where((v) => v.isNotEmpty).join(' - ');
+    final homeBadge = _value('strHomeTeamBadge');
+    final awayBadge = _value('strAwayTeamBadge');
+    final round = _value('intRound');
+    final venue = _value('strVenue');
+    final status = _value('strStatus');
     final details = <MapEntry<String, String>>[
       MapEntry('التاريخ', _value('dateEvent')),
       MapEntry('الوقت', _value('strTime')),
@@ -34,7 +39,14 @@ class AurenSportsMatchScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  const Icon(Icons.sports, size: 48),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _teamBadge(homeBadge),
+                      const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('VS', style: TextStyle(fontWeight: FontWeight.w900))),
+                      _teamBadge(awayBadge),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
                   if (score.isNotEmpty) ...[
@@ -57,7 +69,23 @@ class AurenSportsMatchScreen extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          if (status.isNotEmpty || venue.isNotEmpty || round.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (status.isNotEmpty) Chip(label: Text('Status: ' + status)),
+                    if (venue.isNotEmpty) Chip(label: Text('Venue: ' + venue)),
+                    if (round.isNotEmpty) Chip(label: Text('Round: ' + round)),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: () => Navigator.push(
@@ -82,5 +110,10 @@ class AurenSportsMatchScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _teamBadge(String url) {
+    if (url.isEmpty) return const CircleAvatar(radius: 28, child: Icon(Icons.sports));
+    return CircleAvatar(radius: 28, backgroundImage: NetworkImage(url));
   }
 }
