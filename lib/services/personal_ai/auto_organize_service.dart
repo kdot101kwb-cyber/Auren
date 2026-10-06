@@ -1,6 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../core/models/memory_item.dart';
-import '../goals/goal_repository.dart';
 
 class AurenOrganizationItem {
   final String id;
