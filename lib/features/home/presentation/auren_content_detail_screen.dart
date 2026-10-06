@@ -72,7 +72,7 @@ class _AurenContentDetailScreenState extends State<AurenContentDetailScreen> {
                 },
               )
             else if (isImage)
-              ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(mediaUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox(height: 100, child: Center(child: Icon(Icons.broken_image_outlined))))))
+              ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(mediaUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox(height: 100, child: Center(child: Icon(Icons.broken_image_outlined)))))
             else
               Text(text.isEmpty ? 'لا يوجد وصف أو وسائط متاحة.' : text),
             if (_video != null || isImage) ...[
