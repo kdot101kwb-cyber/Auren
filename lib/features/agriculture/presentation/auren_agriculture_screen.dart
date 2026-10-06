@@ -53,6 +53,8 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          _quickTools(),
+          const SizedBox(height: 16),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -107,6 +109,189 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     );
   }
 
+
+  Widget _quickTools() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('أدوات زراعية سريعة', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 6),
+          const Text('أدوات عملية للحساب والتخطيط بدون الحاجة إلى اتصال خارجي.'),
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _toolButton(Icons.water_drop_outlined, 'تقدير الري', _showIrrigationTool),
+            _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
+            _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
+            _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
+            _toolButton(Icons.scale_outlined, 'الإنتاجية', _showYieldTool),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _toolButton(IconData icon, String label, VoidCallback onTap) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon),
+      label: Text(label),
+    );
+  }
+
+  Future<void> _showIrrigationTool() async {
+    final area = TextEditingController();
+    final depth = TextEditingController(text: '5');
+    final result = await _twoFieldTool(
+      title: 'تقدير كمية الري',
+      first: area,
+      second: depth,
+      firstLabel: 'المساحة بالمتر المربع',
+      secondLabel: 'عمق الري بالملليمتر',
+      actionLabel: 'احسب',
+      calculate: () {
+        final a = double.tryParse(area.text.trim()) ?? 0;
+        final d = double.tryParse(depth.text.trim()) ?? 0;
+        if (a <= 0 || d <= 0) return 'أدخل أرقاماً صحيحة أكبر من صفر.';
+        final liters = a * d;
+        return 'التقدير النظري: ${liters.toStringAsFixed(0)} لتر.\nيجب تعديل الرقم حسب كفاءة نظام الري والتربة والطقس والمحصول.';
+      },
+    );
+    area.dispose();
+    depth.dispose();
+    if (mounted && result != null) _showResult('تقدير الري', result);
+  }
+
+  Future<void> _showCostTool() async {
+    final total = TextEditingController();
+    final units = TextEditingController();
+    final result = await _twoFieldTool(
+      title: 'تكلفة الوحدة',
+      first: total,
+      second: units,
+      firstLabel: 'إجمالي التكلفة',
+      secondLabel: 'عدد الوحدات المنتجة',
+      actionLabel: 'احسب',
+      calculate: () {
+        final t = double.tryParse(total.text.trim()) ?? 0;
+        final u = double.tryParse(units.text.trim()) ?? 0;
+        if (t < 0 || u <= 0) return 'أدخل تكلفة صحيحة وعدد وحدات أكبر من صفر.';
+        return 'تكلفة الوحدة التقريبية: ${(t / u).toStringAsFixed(2)}.\nلا تشمل هذه الأداة التسعير أو هامش الربح أو الضرائب تلقائياً.';
+      },
+    );
+    total.dispose();
+    units.dispose();
+    if (mounted && result != null) _showResult('تكلفة الوحدة', result);
+  }
+
+  Future<void> _showYieldTool() async {
+    final area = TextEditingController();
+    final production = TextEditingController();
+    final result = await _twoFieldTool(
+      title: 'حساب الإنتاجية',
+      first: production,
+      second: area,
+      firstLabel: 'الإنتاج الكلي',
+      secondLabel: 'المساحة',
+      actionLabel: 'احسب',
+      calculate: () {
+        final p = double.tryParse(production.text.trim()) ?? 0;
+        final a = double.tryParse(area.text.trim()) ?? 0;
+        if (p < 0 || a <= 0) return 'أدخل إنتاجاً صحيحاً ومساحة أكبر من صفر.';
+        return 'الإنتاجية: ${(p / a).toStringAsFixed(2)} وحدة لكل وحدة مساحة.';
+      },
+    );
+    area.dispose();
+    production.dispose();
+    if (mounted && result != null) _showResult('الإنتاجية', result);
+  }
+
+  Future<void> _showInventoryTool() async {
+    final item = TextEditingController();
+    final quantity = TextEditingController();
+    final result = await _twoFieldTool(
+      title: 'سجل مخزون سريع',
+      first: item,
+      second: quantity,
+      firstLabel: 'اسم الصنف',
+      secondLabel: 'الكمية الحالية',
+      actionLabel: 'حفظ محلي',
+      calculate: () {
+        final name = item.text.trim();
+        final q = double.tryParse(quantity.text.trim()) ?? 0;
+        if (name.isEmpty || q < 0) return 'أدخل اسم الصنف وكمية صحيحة.';
+        return 'تم تجهيز سجل: $name — كمية $q.\nهذه النسخة لا تحفظ في السحابة بعد.';
+      },
+    );
+    item.dispose();
+    quantity.dispose();
+    if (mounted && result != null) _showResult('المخزون', result);
+  }
+
+  Future<void> _showSeasonTool() async {
+    final crop = TextEditingController();
+    final days = TextEditingController(text: '90');
+    final result = await _twoFieldTool(
+      title: 'خطة موسم أولية',
+      first: crop,
+      second: days,
+      firstLabel: 'المحصول / النشاط',
+      secondLabel: 'مدة الموسم بالأيام',
+      actionLabel: 'أنشئ الخطة',
+      calculate: () {
+        final name = crop.text.trim();
+        final d = int.tryParse(days.text.trim()) ?? 0;
+        if (name.isEmpty || d <= 0) return 'أدخل النشاط ومدة موجبة.';
+        final stages = [
+          'تجهيز الموقع والمدخلات',
+          'الزراعة/البداية والمتابعة',
+          'الري والتغذية والمراقبة',
+          'الآفات والأمراض والجودة',
+          'الحصاد أو الإنتاج وما بعد الحصاد',
+        ];
+        return 'خطة $name لمدة $d يوم:\n\n${stages.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')}\n\nعدّل المواعيد حسب الصنف والمناخ والموقع.';
+      },
+    );
+    crop.dispose();
+    days.dispose();
+    if (mounted && result != null) _showResult('خطة الموسم', result);
+  }
+
+  Future<String?> _twoFieldTool({
+    required String title,
+    required TextEditingController first,
+    required TextEditingController second,
+    required String firstLabel,
+    required String secondLabel,
+    required String actionLabel,
+    required String Function() calculate,
+  }) async {
+    return showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: first, decoration: InputDecoration(labelText: firstLabel)),
+          TextField(controller: second, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: secondLabel)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(context, calculate()), child: Text(actionLabel)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showResult(String title, String result) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(child: Text(result)),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('تم'))],
+      ),
+    );
+  }
 
   String _aiAdvice(String type) {
     switch (type) {
