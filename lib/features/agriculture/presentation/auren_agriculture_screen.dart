@@ -1505,7 +1505,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               return;
             }
             final corrected = b / ((g / 100) * (p / 100));
-            Navigator.pop(context, 'معدل التقاوي المصحح تقريبياً: \${corrected.toStringAsFixed(2)} كجم/هكتار.\nالنتيجة تقديرية وقد تتأثر بطريقة الزراعة والصنف وحجم البذرة والمسافات.');
+            Navigator.pop(context, 'معدل التقاوي المصحح تقريبياً: ${corrected.toStringAsFixed(2)} كجم/هكتار.\nالنتيجة تقديرية وقد تتأثر بطريقة الزراعة والصنف وحجم البذرة والمسافات.');
           }, child: const Text('احسب')),
         ],
       ),
@@ -1550,7 +1550,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
         final l = double.tryParse(loss.text.trim()) ?? 0;
         if (q < 0 || l < 0 || l > 100) return 'أدخل كمية صحيحة ونسبة بين 0 و100%.';
         final waste = q * l / 100;
-        return 'الفاقد التقديري: \${waste.toStringAsFixed(2)} من نفس وحدة الكمية.\nالمتبقي: \${(q - waste).toStringAsFixed(2)}.';
+        return 'الفاقد التقديري: ${waste.toStringAsFixed(2)} من نفس وحدة الكمية.\nالمتبقي: \${(q - waste).toStringAsFixed(2)}.';
       },
     );
     qty.dispose(); loss.dispose();
@@ -1740,7 +1740,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
               return;
             }
             final remaining = q * math.pow(1 - r / 100, d);
-            Navigator.pop(context, 'الكمية المتبقية بعد الفاقد المركب تقريبياً: \${remaining.toStringAsFixed(2)}.\\nهذه محاكاة حسابية؛ الفاقد الفعلي يعتمد على المنتج وظروف التخزين.');
+            Navigator.pop(context, 'الكمية المتبقية بعد الفاقد المركب تقريبياً: ${remaining.toStringAsFixed(2)}.\\nهذه محاكاة حسابية؛ الفاقد الفعلي يعتمد على المنتج وظروف التخزين.');
           }, child: const Text('احسب')),
         ],
       ),
