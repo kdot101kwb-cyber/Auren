@@ -197,7 +197,29 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                 ),
               ]))),
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                OutlinedButton.icon(onPressed: current.isEmpty ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: AurenSportsAiService.performanceDataPrompt(sport: sport, measurements: current.take(20).map((d) { final data = d.data(); return (data['metric'] ?? '').toString() + ': ' + (data['value'] ?? '').toString() + ' ' + (data['unit'] ?? '').toString(); }).toList()))), icon: const Icon(Icons.auto_awesome), label: const Text('مراجعة الأداء مع AUREN AI')),
+                OutlinedButton.icon(
+                  onPressed: current.isEmpty
+                      ? null
+                      : () {
+                          final measurements = current.take(20).map((d) {
+                            final data = d.data();
+                            return (data['metric'] ?? '').toString() + ': ' + (data['value'] ?? '').toString() + ' ' + (data['unit'] ?? '').toString();
+                          }).toList();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MessengerScreen(
+                                initialPrompt: AurenSportsAiService.performanceDataPrompt(
+                                  sport: sport,
+                                  measurements: measurements,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('مراجعة الأداء مع AUREN AI'),
+                ),
                 const SizedBox(height: 10),
                 const Text('مؤشرات الرياضة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
