@@ -76,19 +76,22 @@ class TalentScoutService {
     final talentSkills = talent.skills.map(_norm).where((x) => x.isNotEmpty).toSet();
     final sports = <String>{...talent.sports.map(_norm), _norm(talent.sport), _norm(talent.discipline)}..removeWhere((x) => x.isEmpty);
     final level = _norm(talent.level);
+    final location = _norm('${talent.city} ${talent.country}');
     final results = <Map<String, dynamic>>[];
     for (final opportunity in opportunities) {
       final hay = _norm('${opportunity.title} ${opportunity.description} ${opportunity.skills.join(' ')}');
       final matchedSkills = opportunity.skills.map(_norm).where(talentSkills.contains).toSet();
       final sportHits = sports.where(hay.contains).toSet();
       final levelHit = level.isNotEmpty && hay.contains(level);
-      var score = matchedSkills.length * 15 + sportHits.length * 25 + (levelHit ? 10 : 0);
+      final locationText = _norm('${opportunity.city} ${opportunity.country}');
+      final locationHit = location.isNotEmpty && locationText.isNotEmpty && location.split(' ').any((part) => part.length >= 3 && locationText.contains(part));
+      var score = matchedSkills.length * 15 + sportHits.length * 25 + (levelHit ? 10 : 0) + (locationHit ? 10 : 0);
       final sportsText = '${opportunity.title} ${opportunity.description}'.toLowerCase();
       final sportsContext = ['club','team','coach','academy','sports','football','basketball','volleyball','tennis','boxing','athletics','swimming','cycling','gym','نادي','فريق','مدرب','أكاديمية','رياضة'].any(sportsText.contains);
       if (!sportsContext) continue;
       if (score < 20) score = 20;
       if (score > 100) score = 100;
-      results.add({'id': opportunity.id, 'title': opportunity.title, 'description': opportunity.description, 'score': score, 'matchedSkills': matchedSkills.toList(), 'sportHits': sportHits.toList(), 'levelMatch': levelHit});
+      results.add({'id': opportunity.id, 'title': opportunity.title, 'description': opportunity.description, 'score': score, 'matchedSkills': matchedSkills.toList(), 'sportHits': sportHits.toList(), 'levelMatch': levelHit, 'locationMatch': locationHit});
     }
     results.sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
     return results.take(50).toList();
