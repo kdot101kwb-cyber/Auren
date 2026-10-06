@@ -59,6 +59,12 @@ Widget _card(BuildContext c, AurenTalent t) {
                 icon: const Icon(Icons.auto_awesome),
                 label: const Text('AI Connect'),
               ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => AurenTalentPerformanceScreen(sport: t.sport.isEmpty ? t.category : t.sport))),
+                icon: const Icon(Icons.insights_outlined),
+                label: const Text('تحليل الأداء'),
+              ),
             ],
           ),
         ),
