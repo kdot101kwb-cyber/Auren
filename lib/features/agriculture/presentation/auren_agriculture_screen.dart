@@ -164,6 +164,16 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.local_shipping_outlined, 'حجم النقل', _showTransportLoadTool),
             _toolButton(Icons.people_outline, 'احتياج العمالة', _showLaborNeedTool),
             _toolButton(Icons.schedule_outlined, 'ساعات التشغيل', _showOperatingHoursTool),
+            _toolButton(Icons.square_foot_outlined, 'تحويل المساحة', _showAreaConverterTool),
+            _toolButton(Icons.scale_outlined, 'تحويل الوزن', _showWeightConverterTool),
+            _toolButton(Icons.water_outlined, 'تحويل حجم المياه', _showWaterVolumeConverterTool),
+            _toolButton(Icons.schedule_outlined, 'جدولة الري اليومية', _showIrrigationScheduleTool),
+            _toolButton(Icons.call_split_outlined, 'تقسيم مياه الري', _showIrrigationSectorTool),
+            _toolButton(Icons.grass_outlined, 'تقدير المساحة من التقاوي', _showSeedAreaTool),
+            _toolButton(Icons.inventory_2_outlined, 'فاقد التخزين', _showStorageLossTool),
+            _toolButton(Icons.inventory_outlined, 'احتياج التعبئة', _showPackagingTool),
+            _toolButton(Icons.local_gas_station_outlined, 'استهلاك الوقود', _showFuelConsumptionTool),
+            _toolButton(Icons.calculate_outlined, 'تكلفة العمالة', _showLaborCostTool),
           ]),
         ]),
       ),
@@ -919,16 +929,37 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
   }
 
   Future<void> _showSeedCorrectionTool() async {
-    final base = TextEditingController(text: '20'); final germ = TextEditingController(text: '85'); final purity = TextEditingController(text: '95');
-    final result = await _twoFieldTool(title: 'تصحيح التقاوي', first: base, second: germ, firstLabel: 'الكمية الأساسية كجم', secondLabel: 'نسبة الإنبات %', actionLabel: 'احسب', calculate: () {
-      final b = double.tryParse(base.text.trim()) ?? 0; final g = double.tryParse(germ.text.trim()) ?? 0; final p = double.tryParse(purity.text.trim()) ?? 95;
-      if (b <= 0 || g <= 0 || g > 100 || p <= 0 || p > 100) return 'أدخل قيماً صحيحة والنسب بين 1 و100%. النقاوة الافتراضية 95%. ' + purity.text;
-      return 'التقاوي المصححة تقريباً: ' + (b / ((g / 100) * (p / 100))).toStringAsFixed(2) + ' كجم.\nهذه حسبة فقط وليست توصية للصنف أو الكثافة.';
-    });
+    final base = TextEditingController();
+    final germ = TextEditingController(text: '90');
+    final purity = TextEditingController(text: '95');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تصحيح كمية التقاوي'),
+        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: base, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الكمية الأساسية كجم')),
+          TextField(controller: germ, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'نسبة الإنبات %')),
+          TextField(controller: purity, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'نقاوة البذور %')),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(onPressed: () {
+            final b = double.tryParse(base.text.trim()) ?? 0;
+            final g = double.tryParse(germ.text.trim()) ?? 0;
+            final p = double.tryParse(purity.text.trim()) ?? 0;
+            if (b <= 0 || g <= 0 || g > 100 || p <= 0 || p > 100) {
+              Navigator.pop(context, 'أدخل كمية موجبة ونسباً بين 1 و100%.');
+              return;
+            }
+            final corrected = b / ((g / 100) * (p / 100));
+            Navigator.pop(context, 'الكمية المصححة التقريبية: ' + corrected.toStringAsFixed(2) + ' كجم.\\nالحسبة تعتمد على الإنبات والنقاوة فقط؛ راعِ الصنف وطريقة الزراعة والمسافات ومعدل البذر المحلي.');
+          }, child: const Text('احسب')),
+        ],
+      ),
+    );
     base.dispose(); germ.dispose(); purity.dispose();
     if (mounted && result != null) _showResult('تصحيح التقاوي', result);
   }
-
   Future<void> _showSoilSamplingTool() async {
     final area = TextEditingController(text: '5'); final depth = TextEditingController(text: '20');
     final result = await _twoFieldTool(title: 'خطة أخذ عينات التربة', first: area, second: depth, firstLabel: 'مساحة الحقل هكتار', secondLabel: 'عمق العينة سم', actionLabel: 'احسب', calculate: () {
@@ -1115,6 +1146,114 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     if (mounted && result != null) _showResult('خطة الموسم', result);
   }
 
+  Future<void> _showAreaConverterTool() async {
+    final value = TextEditingController();
+    final ref = TextEditingController(text: '10000');
+    final result = await _twoFieldTool(title: 'تحويل المساحة', first: value, second: ref, firstLabel: 'المساحة بالمتر المربع', secondLabel: 'م² لكل هكتار (10000)', actionLabel: 'احسب', calculate: () {
+      final v = double.tryParse(value.text.trim()) ?? 0; final r = double.tryParse(ref.text.trim()) ?? 0;
+      if (v <= 0 || r <= 0) return 'أدخل قيماً موجبة.';
+      return v.toStringAsFixed(2) + ' م² = ' + (v / r).toStringAsFixed(4) + ' هكتار.';
+    });
+    value.dispose(); ref.dispose(); if (mounted && result != null) _showResult('تحويل المساحة', result);
+  }
+
+  Future<void> _showWeightConverterTool() async {
+    final value = TextEditingController();
+    final result = await _twoFieldTool(title: 'تحويل الوزن', first: value, second: TextEditingController(text: '1000'), firstLabel: 'الوزن بالكيلوغرام', secondLabel: 'كجم لكل طن', actionLabel: 'احسب', calculate: () {
+      final v = double.tryParse(value.text.trim()) ?? 0; if (v < 0) return 'أدخل وزناً صحيحاً.';
+      return v.toStringAsFixed(2) + ' كجم = ' + (v / 1000).toStringAsFixed(3) + ' طن.';
+    });
+    value.dispose(); if (mounted && result != null) _showResult('تحويل الوزن', result);
+  }
+
+  Future<void> _showWaterVolumeConverterTool() async {
+    final value = TextEditingController();
+    final result = await _twoFieldTool(title: 'تحويل حجم المياه', first: value, second: TextEditingController(text: '1000'), firstLabel: 'الحجم باللتر', secondLabel: 'لتر لكل متر مكعب', actionLabel: 'احسب', calculate: () {
+      final v = double.tryParse(value.text.trim()) ?? 0; if (v < 0) return 'أدخل حجماً صحيحاً.';
+      return v.toStringAsFixed(2) + ' لتر = ' + (v / 1000).toStringAsFixed(3) + ' م³.';
+    });
+    value.dispose(); if (mounted && result != null) _showResult('تحويل حجم المياه', result);
+  }
+
+  Future<void> _showIrrigationScheduleTool() async {
+    final daily = TextEditingController(); final events = TextEditingController(text: '2');
+    final result = await _twoFieldTool(title: 'جدولة الري اليومية', first: daily, second: events, firstLabel: 'كمية المياه اليومية باللتر', secondLabel: 'عدد الريات في اليوم', actionLabel: 'احسب', calculate: () {
+      final d = double.tryParse(daily.text.trim()) ?? 0; final n = int.tryParse(events.text.trim()) ?? 0;
+      if (d <= 0 || n <= 0) return 'أدخل كمية يومية وعدد ريات صحيحاً.';
+      return 'إجمالي المياه: ' + d.toStringAsFixed(0) + ' لتر/يوم.\\nالتوزيع النظري: ' + (d / n).toStringAsFixed(0) + ' لتر لكل رية.\\nاضبط التوقيت والجرعات حسب التربة والمحصول والطقس وكفاءة النظام.';
+    });
+    daily.dispose(); events.dispose(); if (mounted && result != null) _showResult('جدولة الري', result);
+  }
+
+  Future<void> _showIrrigationSectorTool() async {
+    final total = TextEditingController(); final sectors = TextEditingController(text: '4');
+    final result = await _twoFieldTool(title: 'تقسيم مياه الري على القطاعات', first: total, second: sectors, firstLabel: 'إجمالي المياه باللتر', secondLabel: 'عدد القطاعات', actionLabel: 'قسّم', calculate: () {
+      final t = double.tryParse(total.text.trim()) ?? 0; final s = int.tryParse(sectors.text.trim()) ?? 0;
+      if (t <= 0 || s <= 0) return 'أدخل قيماً موجبة.';
+      return 'عند التوزيع المتساوي: ' + (t / s).toStringAsFixed(0) + ' لتر لكل قطاع.\\nيمكن تعديل الحصة إذا اختلفت المساحة أو التربة أو المحصول.';
+    });
+    total.dispose(); sectors.dispose(); if (mounted && result != null) _showResult('تقسيم مياه الري', result);
+  }
+
+  Future<void> _showSeedAreaTool() async {
+    final seed = TextEditingController(); final rate = TextEditingController();
+    final result = await _twoFieldTool(title: 'تقدير المساحة من التقاوي', first: seed, second: rate, firstLabel: 'كمية التقاوي كجم', secondLabel: 'معدل البذر كجم/هكتار', actionLabel: 'احسب', calculate: () {
+      final q = double.tryParse(seed.text.trim()) ?? 0; final r = double.tryParse(rate.text.trim()) ?? 0;
+      if (q <= 0 || r <= 0) return 'أدخل قيماً موجبة.';
+      final ha = q / r; return 'المساحة النظرية: ' + ha.toStringAsFixed(2) + ' هكتار (' + (ha * 10000).toStringAsFixed(0) + ' م²).\\nالتقدير يفترض أن معدل البذر مناسب للصنف وطريقة الزراعة.';
+    });
+    seed.dispose(); rate.dispose(); if (mounted && result != null) _showResult('المساحة من التقاوي', result);
+  }
+
+  Future<void> _showStorageLossTool() async {
+    final qty = TextEditingController(); final loss = TextEditingController(text: '5');
+    final result = await _twoFieldTool(title: 'فاقد التخزين', first: qty, second: loss, firstLabel: 'الكمية المخزنة كجم', secondLabel: 'نسبة الفاقد %', actionLabel: 'احسب', calculate: () {
+      final q = double.tryParse(qty.text.trim()) ?? 0; final p = double.tryParse(loss.text.trim()) ?? 0;
+      if (q <= 0 || p < 0 || p > 100) return 'أدخل كمية موجبة ونسبة بين 0 و100%.';
+      final lost = q * p / 100; return 'الفاقد التقديري: ' + lost.toStringAsFixed(2) + ' كجم.\\nالكمية المتبقية: ' + (q - lost).toStringAsFixed(2) + ' كجم.';
+    });
+    qty.dispose(); loss.dispose(); if (mounted && result != null) _showResult('فاقد التخزين', result);
+  }
+
+  Future<void> _showPackagingTool() async {
+    final qty = TextEditingController(); final pack = TextEditingController(text: '25');
+    final result = await _twoFieldTool(title: 'احتياج التعبئة', first: qty, second: pack, firstLabel: 'الكمية كجم', secondLabel: 'وزن العبوة كجم', actionLabel: 'احسب', calculate: () {
+      final q = double.tryParse(qty.text.trim()) ?? 0; final p = double.tryParse(pack.text.trim()) ?? 0;
+      if (q <= 0 || p <= 0) return 'أدخل قيماً موجبة.'; final n = (q / p).ceil();
+      return 'عدد العبوات المطلوبة: ' + n.toString() + '.\\nالسعة الاسمية الإجمالية: ' + (n * p).toStringAsFixed(2) + ' كجم.';
+    });
+    qty.dispose(); pack.dispose(); if (mounted && result != null) _showResult('احتياج التعبئة', result);
+  }
+
+  Future<void> _showFuelConsumptionTool() async {
+    final hours = TextEditingController(); final rate = TextEditingController(text: '2');
+    final result = await _twoFieldTool(title: 'استهلاك الوقود', first: hours, second: rate, firstLabel: 'ساعات التشغيل', secondLabel: 'استهلاك الوقود لتر/ساعة', actionLabel: 'احسب', calculate: () {
+      final h = double.tryParse(hours.text.trim()) ?? 0; final r = double.tryParse(rate.text.trim()) ?? 0;
+      if (h <= 0 || r < 0) return 'أدخل ساعات موجبة ومعدل وقود صحيح.'; return 'الاستهلاك التقديري: ' + (h * r).toStringAsFixed(2) + ' لتر.';
+    });
+    hours.dispose(); rate.dispose(); if (mounted && result != null) _showResult('استهلاك الوقود', result);
+  }
+
+  Future<void> _showLaborCostTool() async {
+    final workers = TextEditingController(); final days = TextEditingController(); final wage = TextEditingController();
+    final result = await showDialog<String>(context: context, builder: (_) => AlertDialog(
+      title: const Text('تكلفة العمالة'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: workers, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'عدد العمال')),
+        TextField(controller: days, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'عدد الأيام')),
+        TextField(controller: wage, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'أجر العامل في اليوم')),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+        FilledButton(onPressed: () {
+          final w = int.tryParse(workers.text.trim()) ?? 0; final d = int.tryParse(days.text.trim()) ?? 0; final p = double.tryParse(wage.text.trim()) ?? 0;
+          if (w <= 0 || d <= 0 || p < 0) { Navigator.pop(context, 'أدخل قيماً صحيحة.'); return; }
+          Navigator.pop(context, 'إجمالي تكلفة العمالة: ' + (w * d * p).toStringAsFixed(2) + '\\nهذه لا تشمل النقل أو السكن أو الإضافات أو الضرائب إن وجدت.');
+        }, child: const Text('احسب')),
+      ],
+    ));
+    workers.dispose(); days.dispose(); wage.dispose(); if (mounted && result != null) _showResult('تكلفة العمالة', result);
+  }
   Future<String?> _twoFieldTool({
     required String title,
     required TextEditingController first,
