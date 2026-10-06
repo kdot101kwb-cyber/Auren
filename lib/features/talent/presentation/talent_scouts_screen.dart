@@ -7,7 +7,6 @@ import '../../../core/models/opportunity.dart';
 import '../../../services/talent/talent_scout_service.dart';
 import 'talent_scout_results_screen.dart';
 import '../../../services/talent/talent_scout_repository.dart';
-import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenTalentScoutsScreen extends StatelessWidget {
   const AurenTalentScoutsScreen({super.key});
