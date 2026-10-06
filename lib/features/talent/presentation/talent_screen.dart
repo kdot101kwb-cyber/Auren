@@ -119,6 +119,8 @@ _ActionChip('Talent Radar','حدد معايير بحث شخصية للفرص ا�
 const SizedBox(height: 12),
 const AurenTalentGeneralAiTools(),
 const SizedBox(height: 12),
+const AurenMusicTalentTools(),
+const SizedBox(height: 12),
 const SizedBox(height:8),
 Expanded(child:StreamBuilder<List<AurenTalent>>(stream:repo.watchPublic(query:search.text,skill:skill,sport:selectedSport,evidenceOnly:evidenceOnly),builder:(c,s){if(s.hasError)return Center(child:Text('تعذر تحميل المواهب: '+s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());final list=s.data!;if(list.isEmpty)return const Center(child:Text('لا توجد مواهب مطابقة.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:list.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i)=>_card(c,list[i]));}))]));}
 void _tools(BuildContext c){showModalBottomSheet(context:c,isScrollControlled:true,builder:(_)=>_PerformanceTools(onOpen:(tool)=>_openTool(c,tool)));}
