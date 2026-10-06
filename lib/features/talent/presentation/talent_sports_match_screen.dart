@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
 import '../../../services/talent/talent_sports_trust_service.dart';
+import '../../../services/talent/talent_sports_ai_service.dart';
 
 class AurenSportsMatchScreen extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -16,6 +17,7 @@ class AurenSportsMatchScreen extends StatefulWidget {
 class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
   final _service = TalentSportsDataService();
   final _trust = TalentSportsTrustService();
+  final _sportsAi = TalentSportsAiService();
   String _homeBadge = '';
   String _awayBadge = '';
   bool _badgesLoading = false;
@@ -76,6 +78,12 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
       MapEntry('الرياضة', _value('strSport')),
       MapEntry('الجولة', _value('intRound')),
     ].where((e) => e.value.isNotEmpty).toList();
+
+    final aiPrompt = _sportsAi.buildMatchPrompt(
+      title: title,
+      details: Map.fromEntries(details),
+      trust: trust,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Match')),
@@ -139,13 +147,11 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => MessengerScreen(
-                  initialPrompt: 'حلل لي هذه المباراة: ' + title + '. استخدم فقط بيانات المباراة المعروضة، ولا تخترع إحصائيات أو نتيجة غير موجودة.',
-                ),
+                builder: (_) => MessengerScreen(initialPrompt: aiPrompt),
               ),
             ),
             icon: const Icon(Icons.auto_awesome),
-            label: const Text('حلل المباراة مع AUREN AI'),
+            label: const Text('حلل المباراة مع Sports Analyst AI'),
           ),
           const SizedBox(height: 12),
           Card(
