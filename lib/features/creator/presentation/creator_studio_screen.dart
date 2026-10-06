@@ -156,6 +156,6 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
       Icon(icon), const SizedBox(height: 6),
       Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
       Text(label, style: const TextStyle(fontSize: 12)),
-    ])),
+    ]))),
   );
 }
