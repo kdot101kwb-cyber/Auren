@@ -138,6 +138,27 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
     }),
   );
 
+  String _localizedDescription(Map<String, dynamic> item, String language) {
+    const fields = {
+      'ar': 'strDescriptionAR',
+      'de': 'strDescriptionDE',
+      'es': 'strDescriptionES',
+      'fr': 'strDescriptionFR',
+      'it': 'strDescriptionIT',
+      'pt': 'strDescriptionPT',
+      'ru': 'strDescriptionRU',
+      'ja': 'strDescriptionJP',
+      'nl': 'strDescriptionNL',
+      'pl': 'strDescriptionPL',
+      'no': 'strDescriptionNO',
+      'sv': 'strDescriptionSE',
+      'zh': 'strDescriptionCN',
+      'en': 'strDescriptionEN',
+    };
+    final key = fields[language] ?? fields['en']!;
+    return (item[key] ?? item['strDescriptionEN'] ?? item['strDescription'] ?? '').toString();
+  }
+
   Widget _resultCard(BuildContext context, Map<String, dynamic> item) {
     final title = _mode == 'players'
       ? (item['strPlayer'] ?? 'Player').toString()
@@ -154,7 +175,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
           ? const CircleAvatar(child: Icon(Icons.sports))
           : CircleAvatar(backgroundImage: NetworkImage(image)),
         title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
-        subtitle: Text(subtitle.isEmpty ? 'Sports data' : subtitle),
+        subtitle: Text(description.isEmpty ? (subtitle.isEmpty ? 'Sports data' : subtitle) : '$subtitle\n$description'),
       ),
     );
   }
