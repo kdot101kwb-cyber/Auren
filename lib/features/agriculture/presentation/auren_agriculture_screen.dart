@@ -154,6 +154,10 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.egg_outlined, 'إنتاج البيض', _showEggProductionTool),
             _toolButton(Icons.local_drink_outlined, 'إنتاج الحليب', _showMilkProductionTool),
             _toolButton(Icons.home_work_outlined, 'مساحة البيت المحمي', _showGreenhouseTool),
+            _toolButton(Icons.calculate_outlined, 'تحويل معدل السماد', _showFertilizerUnitTool),
+            _toolButton(Icons.verified_outlined, 'تصحيح التقاوي', _showSeedCorrectionTool),
+            _toolButton(Icons.science_outlined, 'خطة أخذ عينات التربة', _showSoilSamplingTool),
+            _toolButton(Icons.percent_outlined, 'فاقد ما بعد الحصاد', _showPostHarvestLossTool),
           ]),
         ]),
       ),
@@ -894,6 +898,52 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
       if (p <= 0 || s <= 0) return 'أدخل قيماً أكبر من صفر.';
       return 'المساحة الصافية التقريبية: ${(p*s).toStringAsFixed(2)} م².\nأضف مساحة للممرات والخدمات والتهوية عند التخطيط الفعلي.';
     }); plants.dispose(); spacing.dispose(); if (mounted && result != null) _showResult('مساحة البيت المحمي', result);
+  }
+  Future<void> _showFertilizerUnitTool() async {
+    final area = TextEditingController(text: '1');
+    final rate = TextEditingController(text: '100');
+    final result = await _twoFieldTool(title: 'تحويل معدل السماد', first: area, second: rate, firstLabel: 'المساحة م²', secondLabel: 'المعدل كجم/هكتار', actionLabel: 'احسب', calculate: () {
+      final a = double.tryParse(area.text.trim()) ?? 0;
+      final r = double.tryParse(rate.text.trim()) ?? 0;
+      if (a <= 0 || r < 0) return 'أدخل مساحة أكبر من صفر ومعدل غير سالب.';
+      return 'المعدل المكافئ: ' + (r / 10000).toStringAsFixed(4) + ' كجم/م².\nالكمية لهذه المساحة: ' + (a * r / 10000).toStringAsFixed(2) + ' كجم.';
+    });
+    area.dispose(); rate.dispose();
+    if (mounted && result != null) _showResult('تحويل معدل السماد', result);
+  }
+
+  Future<void> _showSeedCorrectionTool() async {
+    final base = TextEditingController(text: '20'); final germ = TextEditingController(text: '85'); final purity = TextEditingController(text: '95');
+    final result = await _twoFieldTool(title: 'تصحيح التقاوي', first: base, second: germ, firstLabel: 'الكمية الأساسية كجم', secondLabel: 'نسبة الإنبات %', actionLabel: 'احسب', calculate: () {
+      final b = double.tryParse(base.text.trim()) ?? 0; final g = double.tryParse(germ.text.trim()) ?? 0; final p = double.tryParse(purity.text.trim()) ?? 95;
+      if (b <= 0 || g <= 0 || g > 100 || p <= 0 || p > 100) return 'أدخل قيماً صحيحة والنسب بين 1 و100%. النقاوة الافتراضية 95%. ' + purity.text;
+      return 'التقاوي المصححة تقريباً: ' + (b / ((g / 100) * (p / 100))).toStringAsFixed(2) + ' كجم.\nهذه حسبة فقط وليست توصية للصنف أو الكثافة.';
+    });
+    base.dispose(); germ.dispose(); purity.dispose();
+    if (mounted && result != null) _showResult('تصحيح التقاوي', result);
+  }
+
+  Future<void> _showSoilSamplingTool() async {
+    final area = TextEditingController(text: '5'); final depth = TextEditingController(text: '20');
+    final result = await _twoFieldTool(title: 'خطة أخذ عينات التربة', first: area, second: depth, firstLabel: 'مساحة الحقل هكتار', secondLabel: 'عمق العينة سم', actionLabel: 'احسب', calculate: () {
+      final a = double.tryParse(area.text.trim()) ?? 0; final d = double.tryParse(depth.text.trim()) ?? 0;
+      if (a <= 0 || d <= 0) return 'أدخل مساحة وعمقاً أكبر من صفر.';
+      final samples = (a * 5).ceil().clamp(1, 50);
+      return 'ابدأ تقريبياً بـ ' + samples.toString() + ' عينات موزعة على مناطق متجانسة، بعمق ' + d.toStringAsFixed(0) + ' سم.\nالعدد النهائي يعتمد على تجانس الحقل ونظام المختبر.';
+    });
+    area.dispose(); depth.dispose();
+    if (mounted && result != null) _showResult('خطة أخذ عينات التربة', result);
+  }
+
+  Future<void> _showPostHarvestLossTool() async {
+    final qty = TextEditingController(text: '1000'); final loss = TextEditingController(text: '8');
+    final result = await _twoFieldTool(title: 'فاقد ما بعد الحصاد', first: qty, second: loss, firstLabel: 'الكمية كجم', secondLabel: 'نسبة الفاقد %', actionLabel: 'احسب', calculate: () {
+      final q = double.tryParse(qty.text.trim()) ?? 0; final l = double.tryParse(loss.text.trim()) ?? 0;
+      if (q < 0 || l < 0 || l > 100) return 'أدخل كمية صحيحة ونسبة بين 0 و100%.';
+      return 'الفاقد المتوقع: ' + (q * l / 100).toStringAsFixed(2) + ' كجم.\nالمتبقي: ' + (q * (1 - l / 100)).toStringAsFixed(2) + ' كجم.';
+    });
+    qty.dispose(); loss.dispose();
+    if (mounted && result != null) _showResult('فاقد ما بعد الحصاد', result);
   }
   Future<void> _showProductionEstimateTool() async {
     final area=TextEditingController(text:'1000'); final rate=TextEditingController(text:'3');
