@@ -128,6 +128,9 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.grass_outlined, 'احتياج المحصول للمياه', _showCropWaterNeedTool),
             _toolButton(Icons.science_outlined, 'حساب الأسمدة', _showFertilizerTool),
             _toolButton(Icons.biotech_outlined, 'تحليل N-P-K', _showNpkTool),
+            _toolButton(Icons.science_outlined, 'pH والملوحة', _showSoilPhSalinityTool),
+            _toolButton(Icons.eco_outlined, 'المادة العضوية', _showOrganicMatterTool),
+            _toolButton(Icons.layers_outlined, 'كمية محسن التربة', _showSoilAmendmentTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -619,6 +622,85 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     if (mounted && result != null) _showResult('تحليل N-P-K', result);
   }
 
+  Future<void> _showSoilPhSalinityTool() async {
+    final ph = TextEditingController(text: '7');
+    final ec = TextEditingController(text: '1');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('فحص pH وملوحة التربة'),
+        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: ph, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'درجة pH')),
+          TextField(controller: ec, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'EC الملوحة dS/m')),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(onPressed: () {
+            final p = double.tryParse(ph.text.trim());
+            final e = double.tryParse(ec.text.trim());
+            if (p == null || e == null || p < 0 || p > 14 || e < 0) { Navigator.pop(context, 'أدخل pH بين 0 و14 وقيمة EC غير سالبة.'); return; }
+            final phLabel = p < 5.5 ? 'حامضية مرتفعة' : p < 6.5 ? 'حامضية خفيفة' : p <= 7.5 ? 'قريبة من المتعادلة' : p <= 8.5 ? 'قلوية خفيفة' : 'قلوية مرتفعة';
+            final salinity = e < 2 ? 'ملوحة منخفضة غالباً' : e < 4 ? 'ملوحة تحتاج انتباهاً' : 'ملوحة مرتفعة';
+            Navigator.pop(context, 'pH: ${p.toStringAsFixed(2)} — $phLabel.\nEC: ${e.toStringAsFixed(2)} dS/m — $salinity.\n\nالتفسير الفعلي يعتمد على طريقة القياس والمحصول ونوع التربة. استخدم تحليل مختبر زراعي قبل قرارات المعالجة أو الغسيل.');
+          }, child: const Text('حلّل')),
+        ],
+      ),
+    );
+    ph.dispose();
+    ec.dispose();
+    if (mounted && result != null) _showResult('pH والملوحة', result);
+  }
+
+  Future<void> _showOrganicMatterTool() async {
+    final area = TextEditingController(text: '1000');
+    final depth = TextEditingController(text: '0.2');
+    final bulkDensity = TextEditingController(text: '1.3');
+    final organic = TextEditingController(text: '2');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تقدير كمية المادة العضوية في التربة'),
+        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: area, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'المساحة م²')),
+          TextField(controller: depth, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'عمق الطبقة بالمتر')),
+          TextField(controller: bulkDensity, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الكثافة الظاهرية g/cm³')),
+          TextField(controller: organic, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'المادة العضوية %')),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(onPressed: () {
+            final a = double.tryParse(area.text.trim()) ?? 0;
+            final d = double.tryParse(depth.text.trim()) ?? 0;
+            final bd = double.tryParse(bulkDensity.text.trim()) ?? 0;
+            final om = double.tryParse(organic.text.trim()) ?? 0;
+            if (a <= 0 || d <= 0 || bd <= 0 || om < 0 || om > 100) { Navigator.pop(context, 'أدخل قيماً صحيحة، ونسبة المادة العضوية بين 0 و100%.'); return; }
+            final soilMassTonnes = a * d * bd;
+            final organicTonnes = soilMassTonnes * (om / 100);
+            Navigator.pop(context, 'كتلة التربة التقديرية في الطبقة: ${soilMassTonnes.toStringAsFixed(2)} طن تقريباً.\nالمادة العضوية الموجودة تقريباً: ${organicTonnes.toStringAsFixed(2)} طن.\n\nهذه كمية تقديرية مبنية على الكثافة الظاهرية؛ لا تعني أن الكمية نفسها يجب إضافتها كسماد أو كمبوست.');
+          }, child: const Text('احسب')),
+        ],
+      ),
+    );
+    area.dispose(); depth.dispose(); bulkDensity.dispose(); organic.dispose();
+    if (mounted && result != null) _showResult('المادة العضوية', result);
+  }
+
+  Future<void> _showSoilAmendmentTool() async {
+    final area = TextEditingController(text: '1000');
+    final rate = TextEditingController(text: '2');
+    final result = await _twoFieldTool(
+      title: 'كمية محسن التربة', first: area, second: rate, firstLabel: 'المساحة م²', secondLabel: 'معدل الإضافة كجم/م²', actionLabel: 'احسب',
+      calculate: () {
+        final a = double.tryParse(area.text.trim()) ?? 0;
+        final r = double.tryParse(rate.text.trim()) ?? 0;
+        if (a <= 0 || r < 0) return 'أدخل مساحة صحيحة ومعدل إضافة غير سالب.';
+        final kg = a * r;
+        return 'الكمية الإجمالية التقديرية: ${kg.toStringAsFixed(2)} كجم (${(kg / 1000).toStringAsFixed(2)} طن).\n\nاستخدم معدل الإضافة من تحليل التربة أو توصية مختص؛ الأداة لا تحدد جرعة الجير أو الجبس أو الكمبوست من تلقاء نفسها.';
+      },
+    );
+    area.dispose(); rate.dispose();
+    if (mounted && result != null) _showResult('كمية محسن التربة', result);
+  }
   Future<void> _showCostTool() async {
     final total = TextEditingController();
     final units = TextEditingController();
@@ -756,8 +838,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
         return 'المحاصيل: راقب رطوبة التربة، حالة الأوراق، الآفات والطقس قبل قرار الري أو المعالجة.';
       case 'livestock':
         return 'الثروة الحيوانية: إدارة القطيع، التغذية، الماء، السكن، الصحة والوقاية مع الرجوع للطبيب البيطري عند المرض.';
-      case 'veterinary':
-        return 'البيطرة: راقب الأعراض والسلوك والحرارة والتغذية، واعزل الحالة المشتبه بها واستعن بطبيب بيطري للتشخيص والعلاج.';
+      case 'veterinary':        return 'البيطرة: راقب الأعراض والسلوك والحرارة والتغذية، واعزل الحالة المشتبه بها واستعن بطبيب بيطري للتشخيص والعلاج.';
       case 'animal_nutrition':
         return 'تغذية الحيوان: راعِ النوع والعمر والإنتاج والماء وجودة العلف وتوازن الطاقة والبروتين والمعادن والفيتامينات.';
       case 'breeding':
