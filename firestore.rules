@@ -703,6 +703,7 @@ service cloud.firestore {
         && request.resource.data.talentId is string
         && request.resource.data.talentId.size() > 0
         && request.resource.data.talentId.size() <= 128
+        && get(/databases/$(database)/documents/talents/$(request.resource.data.talentId)).data.ownerId == userId
         && request.resource.data.badgeId is string
         && request.resource.data.badgeId in ['profile_ready','multi_sport','skill_builder','achievement_proof','goal_setter']
         && request.resource.data.title is string
