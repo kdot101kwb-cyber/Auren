@@ -1,19 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/talent.dart';
+import 'talent_categories.dart';
 
 class TalentRepository {
   final FirebaseFirestore db;
   TalentRepository({FirebaseFirestore? firestore}) : db = firestore ?? FirebaseFirestore.instance;
 
-  Stream<List<AurenTalent>> watchPublic({String query = '', String skill = '', String sport = '', bool evidenceOnly = false}) {
+  Stream<List<AurenTalent>> watchPublic({
+    String query = '',
+    String skill = '',
+    String sport = '',
+    String category = '',
+    bool evidenceOnly = false,
+  }) {
     final q = query.trim().toLowerCase();
     final s = skill.trim().toLowerCase();
     final sp = sport.trim().toLowerCase();
+    final cat = category.trim().toLowerCase();
     return db.collection('talents').where('status', isEqualTo: 'active').limit(100).snapshots().map((snap) {
       final list = snap.docs.map((d) => AurenTalent.fromMap(d.id, d.data()))
           .where((t) => q.isEmpty || ('${t.displayName} ${t.bio} ${t.category} ${t.sport} ${t.discipline} ${t.level} ${t.city} ${t.country} ${t.skills.join(' ')} ${t.sports.join(' ')} ${t.achievements.join(' ')}').toLowerCase().contains(q))
           .where((t) => s.isEmpty || t.skills.any((x) => x.trim().toLowerCase() == s))
-          .where((t) => sp.isEmpty || t.sport.toLowerCase() == sp || t.sports.any((x) => x.toLowerCase() == sp))
+          .where((t) => cat.isEmpty || t.category.trim().toLowerCase() == cat)
+          .where((t) => sp.isEmpty || (t.category.trim().toLowerCase() == 'sports' && (t.sport.toLowerCase() == sp || t.sports.any((x) => x.toLowerCase() == sp))))
           .where((t) => !evidenceOnly || t.verificationEvidence.isNotEmpty).toList();
       list.sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
       return list;
@@ -36,11 +45,31 @@ class TalentRepository {
     final ref = db.collection('talents').doc();
     String clean(String value) => value.trim();
     List<String> list(Iterable<String> values, int max) => values.map(clean).where((x) => x.isNotEmpty).take(max).toList();
+
+    final requestedCategory = clean(category).toLowerCase();
+    final canonicalCategory = AurenTalentCategories.contains(requestedCategory)
+        ? requestedCategory
+        : 'other';
+    final cleanSport = clean(sport);
+    final isSports = canonicalCategory == 'sports';
+
     await ref.set({
-      'ownerId': ownerId, 'displayName': clean(displayName), 'bio': clean(bio), 'category': clean(category),
-      'sport': clean(sport), 'sports': list(sports.isEmpty && sport.trim().isNotEmpty ? [sport] : sports, 10).toList(), 'discipline': clean(discipline), 'level': clean(level), 'city': clean(city), 'country': clean(country),
-      'skills': list(skills, 30).map((e) => e.toLowerCase()).toList(), 'achievements': list(achievements, 20), 'goals': list(goals, 10), 'verificationEvidence': list(verificationEvidence, 10),
-      'status': 'active', 'updatedAt': FieldValue.serverTimestamp(),
+      'ownerId': ownerId,
+      'displayName': clean(displayName),
+      'bio': clean(bio),
+      'category': canonicalCategory,
+      'sport': isSports ? cleanSport : '',
+      'sports': isSports ? list(sports.isEmpty && cleanSport.isNotEmpty ? [cleanSport] : sports, 10) : <String>[],
+      'discipline': clean(discipline),
+      'level': clean(level),
+      'city': clean(city),
+      'country': clean(country),
+      'skills': list(skills, 30).map((e) => e.toLowerCase()).toList(),
+      'achievements': list(achievements, 20),
+      'goals': list(goals, 10),
+      'verificationEvidence': list(verificationEvidence, 10),
+      'status': 'active',
+      'updatedAt': FieldValue.serverTimestamp(),
     });
     return ref.id;
   }
