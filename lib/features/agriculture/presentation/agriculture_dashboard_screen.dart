@@ -71,7 +71,6 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
   Widget build(BuildContext context) {
     final snapshot = data?['globalLocalMarket'] is Map ? Map<String, dynamic>.from(data!['globalLocalMarket'] as Map) : const <String, dynamic>{};
     final readiness = data?['readiness'] is Map ? Map<String, dynamic>.from(data!['readiness'] as Map) : const <String, dynamic>{};
-    final snapshotFx = snapshot['fx'] is Map ? Map<String, dynamic>.from(snapshot['fx'] as Map) : const <String, dynamic>{};
     final countries = snapshot['countries'] is List ? List<dynamic>.from(snapshot['countries'] as List) : const <dynamic>[];
     final producer = data?['producer'] is Map ? Map<String, dynamic>.from(data!['producer'] as Map) : const <String, dynamic>{};
     final latest = producer['latest'] is Map ? Map<String, dynamic>.from(producer['latest'] as Map) : const <String, dynamic>{};
