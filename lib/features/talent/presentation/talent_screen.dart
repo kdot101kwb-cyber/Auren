@@ -99,7 +99,10 @@ _ActionChip('Talent Opportunity Matrix','رتب الفرص المحتملة حس
 _ActionChip('Sports Skill Map','ابنِ خريطة تربط رياضتي بالمهارات الأساسية والفرعية والمهارات التي أحتاجها للانتقال للمستوى التالي.')
 ,
 _ActionChip('Video Performance Analysis','حلل فيديو أدائي الرياضي عند إرفاقه، واستخرج الملاحظات الفنية الظاهرة ونقاط القوة ومجالات التحسين دون تشخيص طبي أو ادعاء قياسات لا يمكن للفيديو إثباتها.')
-])
+,
+_ActionChip('Talent Verification','جهز ملف إثبات للمهارات والإنجازات يعتمد على أدلة يمكنني تقديمها مثل النتائج والشهادات والروابط والمقاطع، مع توضيح أن التحقق النهائي يحتاج جهة موثوقة.'),
+_ActionChip('Achievements & Badges','استخرج إنجازات قابلة للتحويل إلى شارات من ملفي وسجلات أدائي، واقترح شروطاً واضحة لكل شارة بدون اختلاق إنجازات.'),
+_ActionChip('Talent Radar','حدد معايير بحث شخصية للفرص الرياضية المناسبة لي مثل الرياضة والمستوى والموقع ونوع الفرصة، ثم اقترح كيف أتابعها داخل AUREN.')])
 ])))),
 const SizedBox(height:8),
 Expanded(child:StreamBuilder<List<AurenTalent>>(stream:repo.watchPublic(query:search.text,skill:skill,sport:selectedSport),builder:(c,s){if(s.hasError)return Center(child:Text('تعذر تحميل المواهب: '+s.error.toString()));if(!s.hasData)return const Center(child:CircularProgressIndicator());final list=s.data!;if(list.isEmpty)return const Center(child:Text('لا توجد مواهب مطابقة.'));return ListView.separated(padding:const EdgeInsets.all(16),itemCount:list.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(_,i)=>_card(c,list[i]));}))]));}
