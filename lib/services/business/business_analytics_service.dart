@@ -27,7 +27,7 @@ class BusinessAnalyticsService {
         case 'view': views++; break;
       }
       final ts=data['createdAt'];
-      if(ts is Timestamp){final d=ts.toDate(); if(latest==null||d.isAfter(latest!)) latest=d;}
+      if(ts is Timestamp){final d=ts.toDate(); final currentLatest = latest; if(currentLatest==null||d.isAfter(currentLatest)) latest=d;}
     }
     return AurenBusinessAnalytics(views:views,saves:saves,reviews:reviews,contacts:contacts,leads:leads,messages:messages,totalEvents:events.docs.length,products:0,latestActivity:latest);
   });
