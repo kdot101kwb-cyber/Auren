@@ -81,7 +81,7 @@ class _AurenCreatorSettlementCenterScreenState extends State<AurenCreatorSettlem
       ),
       const SizedBox(height:12),
       DropdownButtonFormField<String>(
-        value:_filter,
+        initialValue:_filter,
         decoration:const InputDecoration(border:OutlineInputBorder(),labelText:'الحالة'),
         items:_statuses.map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),
         onChanged:(v){if(v!=null){setState(()=>_filter=v);_load();}},
