@@ -1876,7 +1876,6 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                   IconButton(icon: Icon(player!.value.isPlaying ? Icons.pause : Icons.play_arrow, size: 20), onPressed: () async { if (player!.value.isPlaying) { await player!.pause(); } else if (!lowData) { await player!.play(); } if (_watchTogetherRoom != null) await AurenTvWatchTogetherService.instance.sync(_watchTogetherRoom!, positionSeconds: player!.value.position.inMilliseconds / 1000.0, isPlaying: player!.value.isPlaying); if (mounted) setState(() {}); }),
       ]),
     ]),
-              ]),
             ),
           ),
         ),
