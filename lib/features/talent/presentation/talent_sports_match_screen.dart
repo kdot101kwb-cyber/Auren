@@ -65,6 +65,8 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
     final round = _value('intRound');
     final venue = _value('strVenue');
     final status = _value('strStatus');
+    final trust = _trust.forEntity(type: 'events');
+    final truth = _trust.truthSignal(source: trust.sourceName, updatedAt: trust.updatePolicy);
     final details = <MapEntry<String, String>>[
       MapEntry('التاريخ', _value('dateEvent')),
       MapEntry('الوقت', _value('strTime')),
