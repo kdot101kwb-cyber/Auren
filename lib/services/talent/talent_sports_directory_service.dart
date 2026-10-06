@@ -23,7 +23,7 @@ class TalentSportsDirectoryService {
       'c': country,
       's': sport,
     });
-    return _maps(data['countries']);
+    return _maps(data['leagues']);
   }
 
   Future<List<Map<String, dynamic>>> teamsByLeague({
