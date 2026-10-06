@@ -44,7 +44,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
                 const SizedBox(height: 10),
                 Wrap(spacing: 8, children: [
                   for (final item in const {
-                    'all':'الكل','crop':'محاصيل','livestock':'الثروة الحيوانية','poultry':'دواجن','dairy':'ألبان','aquaculture':'أسماك واستزراع','veterinary':'بيطرة وصحة حيوانية','animal_nutrition':'تغذية وأعلاف','breeding':'تربية وتناسل','farm':'مزارع','soil':'التربة','fertilizer':'الأسمدة','nutrients':'العناصر الغذائية','potassium':'البوتاسيوم','nitrogen':'النيتروجين','phosphorus':'الفوسفور','pest':'الآفات','plant_disease':'أمراض النبات','irrigation':'الري',
+                    'all':'الكل','crop':'محاصيل','horticulture':'بستنة ومحاصيل بستانية','orchard':'بساتين وأشجار مثمرة','floriculture':'زراعة الزهور','greenhouse':'بيوت محمية','nursery':'مشاتل وشتلات','medicinal_plants':'نباتات طبية وعطرية','agroforestry':'زراعة حراجية','climate_smart':'زراعة ذكية مناخياً','seeds':'بذور وأصناف','livestock':'الثروة الحيوانية','poultry':'دواجن','dairy':'ألبان','aquaculture':'أسماك واستزراع','beekeeping':'نحل وعسل','fisheries':'مصايد وأسماك','veterinary':'بيطرة وصحة حيوانية','animal_nutrition':'تغذية وأعلاف','breeding':'تربية وتناسل','farm':'مزارع','soil':'التربة','fertilizer':'الأسمدة','nutrients':'العناصر الغذائية','potassium':'البوتاسيوم','nitrogen':'النيتروجين','phosphorus':'الفوسفور','pest':'الآفات','plant_disease':'أمراض النبات','irrigation':'الري',
                     'manufacturing':'تصنيع','invention':'اختراعات','research':'بحث','energy':'طاقة','recycling':'تدوير','design':'تصميم','business':'دراسة جدوى','production':'خط إنتاج','costing':'التكاليف','supply_chain':'الموردون','quality':'الجودة','feasibility':'دراسة الجدوى'
                   }.entries)
                     ChoiceChip(label: Text(item.value), selected: _type == item.key, onSelected: (_) => setState(() => _type = item.key)),
@@ -144,8 +144,28 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
         return 'أمراض النبات: صِف الأعراض ومكانها وتطورها والطقس والري، ولا تعتمد على التشخيص من الوصف وحده.';
       case 'irrigation':
         return 'الري: اربط الكمية والتوقيت بنوع التربة والمحصول والطقس ومرحلة النمو وكفاءة النظام.';
-      case 'livestock':
-        return 'المواشي: راقب الشهية، النشاط، التنفس، الحرارة وأي تغير مفاجئ، واعزل الحيوان المشتبه بإصابته واطلب مختصاً عند الحاجة.';
+      case 'horticulture':
+        return 'البستنة: اختر الصنف والموقع ونظام الري وفق المناخ والتربة، وراقب الإزهار والإثمار والآفات وجودة الثمار.';
+      case 'orchard':
+        return 'البساتين: خطط للأصناف والتلقيح والري والتقليم والتغذية ومكافحة الآفات وإدارة ما بعد الحصاد.';
+      case 'floriculture':
+        return 'زراعة الزهور: راقب الصنف والضوء والحرارة والرطوبة والري وجودة التربة ومراحل الإزهار والتسويق.';
+      case 'greenhouse':
+        return 'البيوت المحمية: راقب الحرارة والرطوبة والتهوية والري والتغذية والآفات، واربط القرارات ببيانات البيئة.';
+      case 'nursery':
+        return 'المشاتل: ركز على جودة البذور والشتلات والوسط الزراعي والري والتغذية والأمراض والتدرج قبل النقل.';
+      case 'medicinal_plants':
+        return 'النباتات الطبية والعطرية: وثّق النوع والصنف وظروف الزراعة والحصاد والتجفيف والتخزين، ولا تفترض فوائد علاجية دون دليل.';
+      case 'agroforestry':
+        return 'الزراعة الحراجية: وازن بين الأشجار والمحاصيل والماء والتربة والتنوع الحيوي ودورة الإنتاج.';
+      case 'climate_smart':
+        return 'الزراعة الذكية مناخياً: حسّن كفاءة الماء والمدخلات، وراقب مخاطر الحرارة والجفاف والفيضانات وتوقيت العمليات.';
+      case 'seeds':
+        return 'البذور والأصناف: قارن الصنف والملاءمة المحلية وجودة البذور ومصدرها ومقاومتها وظروف التخزين قبل الزراعة.';
+      case 'beekeeping':
+        return 'تربية النحل: راقب صحة الطوائف، الغذاء، الماء، الملكة، الآفات، التهوية والمراعي، واستعن بمختص عند الاشتباه بمرض.';
+      case 'fisheries':
+        return 'المصايد والأسماك: راقب النوع والموسم والمخزون وجودة المياه وسلامة الصيد والتبريد وسلسلة القيمة.';
       case 'farm':
         return 'المزرعة: اجمع بيانات الماء والتربة والمحاصيل والمخزون والتكاليف، ثم استخدمها لاتخاذ قرارات أدق.';
       case 'manufacturing':
