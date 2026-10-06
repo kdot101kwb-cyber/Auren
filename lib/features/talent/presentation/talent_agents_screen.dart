@@ -13,6 +13,7 @@ class AurenTalentAgentsScreen extends StatelessWidget {
     {'role': 'portfolio', 'name': 'Portfolio Agent', 'icon': Icons.collections_bookmark_outlined, 'description': 'ينظم الأعمال والإنجازات ويبني ملفاً احترافياً قابلاً للمشاركة.', 'capabilities': ['portfolio', 'bio', 'case_study']},
     {'role': 'brand', 'name': 'Talent Brand Agent', 'icon': Icons.auto_awesome, 'description': 'يساعد الموهبة في المحتوى والهوية والعرض أمام الجمهور والعملاء.', 'capabilities': ['content', 'personal_brand', 'audience']},
     {'role': 'negotiation', 'name': 'Negotiation Agent', 'icon': Icons.handshake_outlined, 'description': 'يساعد في إعداد العروض والأسئلة ونقاط التفاوض قبل أي اتفاق.', 'capabilities': ['proposal', 'negotiation_prep', 'terms_review']},
+    {'role': 'sports', 'name': 'Sports Performance Agent', 'icon': Icons.insights_outlined, 'description': 'يحوّل بيانات الأداء الرياضي إلى مؤشرات واضحة وخطوات تطوير قابلة للمتابعة.', 'capabilities': ['performance_analysis', 'training_metrics', 'progress_tracking']},
   ];
 
   Future<void> _create(BuildContext context, String uid, Map<String, dynamic> d) async {
