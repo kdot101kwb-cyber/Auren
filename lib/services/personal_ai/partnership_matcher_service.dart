@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../business/business_repository.dart';
 import '../goals/goal_repository.dart';
 class AurenPartnershipMatch{final String businessId,name,category,city,country,reason;final int signals;const AurenPartnershipMatch({required this.businessId,required this.name,required this.category,required this.city,required this.country,required this.reason,required this.signals});}
