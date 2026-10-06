@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/talent/talent_sports_data_service.dart';
 import '../../../services/talent/talent_sports_trust_service.dart';
-import '../../../services/talent/talent_sports_ai_service.dart';
+import '../../../services/talent/auren_sports_ai_service.dart';
 
 class AurenSportsMatchScreen extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -17,7 +17,6 @@ class AurenSportsMatchScreen extends StatefulWidget {
 class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
   final _service = TalentSportsDataService();
   final _trust = TalentSportsTrustService();
-  final _sportsAi = TalentSportsAiService();
   String _homeBadge = '';
   String _awayBadge = '';
   bool _badgesLoading = false;
@@ -79,11 +78,15 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
       MapEntry('الجولة', _value('intRound')),
     ].where((e) => e.value.isNotEmpty).toList();
 
-    final aiPrompt = _sportsAi.buildMatchPrompt(
-      title: title,
-      details: Map.fromEntries(details),
-      trust: trust,
-    );
+    final sport = _value('strSport');
+    final matchContext = [
+      if (details.isNotEmpty) details.map((e) => e.key + ': ' + e.value).join('\\n'),
+      'مصدر البيانات: ' + trust.sourceName,
+      'مستوى الثقة: ' + trust.trustLevel,
+      'نوع المصدر: ' + trust.label,
+      'إرشاد المصدر: ' + trust.guidanceFor(trust.sourceName),
+    ].join('\\n');
+    final aiPrompt = AurenSportsAiService.matchPrompt(title, sport, matchContext);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Match')),
