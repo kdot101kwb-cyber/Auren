@@ -276,14 +276,33 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
   }
   Widget _trustCard(SportsTrustInfo trust, SportsTruthSignal truth) {
     return Card(
-      child: ListTile(
-        leading: Icon(trust.isOfficial ? Icons.verified : Icons.info_outline),
-        title: Text(trust.label + ' • ' + truth.label),
-        subtitle: Text(
-          trust.sourceName + ' • ' + trust.coverage + '\nآخر تحديث: ' + trust.updatePolicy,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(trust.isOfficial ? Icons.verified : Icons.info_outline),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    trust.label + ' • ' + truth.label,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(trust.sourceName + ' • ' + trust.coverage),
+            const SizedBox(height: 4),
+            Text('سياسة التحديث: ' + trust.updatePolicy),
+            const SizedBox(height: 6),
+            Text(truth.explanation),
+            const SizedBox(height: 6),
+            Text(trust.guidanceFor(trust.sourceName)),
+          ],
         ),
-          const SizedBox(height: 4),
-          Text(truth.explanation),
       ),
     );
   }
