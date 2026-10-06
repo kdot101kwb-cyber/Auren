@@ -84,7 +84,7 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
       'مصدر البيانات: ' + trust.sourceName,
       'مستوى الثقة: ' + trust.trustLevel,
       'نوع المصدر: ' + trust.label,
-      'إرشاد المصدر: ' + trust.guidanceFor(trust.sourceName),
+      'إرشاد المصدر: ' + trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية',
     ].join('\n');
     final aiPrompt = AurenSportsAiService.matchPrompt(title, sport, matchContext);
 
@@ -163,7 +163,7 @@ class _AurenSportsMatchScreenState extends State<AurenSportsMatchScreen> {
               title: Text(trust.label + ' • ' + truth.label),
               subtitle: Text(
                 trust.sourceName + ' • ' + trust.trustLevel + '\n' +
-                    truth.explanation + '\n' + trust.guidanceFor(trust.sourceName),
+                    truth.explanation + '\n' + trust.isOfficial ? 'تحقق من المصدر الرسمي' : 'مصدر مساعد وليس جهة رسمية',
               ),
             ),
           ),
