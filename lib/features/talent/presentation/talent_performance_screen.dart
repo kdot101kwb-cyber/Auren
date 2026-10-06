@@ -235,36 +235,44 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                 SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _addEntry, icon: const Icon(Icons.save_outlined), label: const Text('حفظ القياس'))),
               ]))),
               if (summaryValues.isNotEmpty) ...[
-                Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('لوحة اتجاه الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 6),
-                  Text('عرض بصري لآخر ${summaryValues.length > 10 ? 10 : summaryValues.length} قياسات لنفس المؤشر.'),
-                  const SizedBox(height: 10),
-                  ...summaryValues.take(10).map((v) {
-                    final maxValue = summaryValues.reduce((a, b) => a > b ? a : b);
-                    final ratio = maxValue <= 0 ? 0.0 : (v / maxValue).clamp(0.0, 1.0);
-                    return Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
-                      SizedBox(width: 70, child: Text(v.toStringAsFixed(1))),
-                      const SizedBox(width: 8),
-                      Expanded(child: LinearProgressIndicator(value: ratio, minHeight: 8)),
-                    ]));
-                  }),
-                ]))),
-                const SizedBox(height: 10),
-                  const Text('ملخص الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 10),
-                  Wrap(spacing: 8, runSpacing: 8, children: [
-                    _stat('الأحدث', latest!.toStringAsFixed(2)),
-                    _stat('المتوسط', average!.toStringAsFixed(2)),
-                    _stat('الأفضل', best!.toStringAsFixed(2)),
-                    _stat('عدد القياسات', summaryValues.length.toString()),
-                    if (delta != null) _stat('التغير', '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(2)}'),
-                  ]),
-                  if (delta != null) ...[
-                    const SizedBox(height: 8),
-                    Text(delta == 0 ? 'لا يوجد تغير عن القياس السابق.' : delta > 0 ? 'الاتجاه الأخير: ارتفاع عن القياس السابق.' : 'الاتجاه الأخير: انخفاض عن القياس السابق.', style: TextStyle(fontWeight: FontWeight.w700)),
-                  ]
-                ]))),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('ملخص الأداء', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 10),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        _stat('الأحدث', latest!.toStringAsFixed(2)),
+                        _stat('المتوسط', average!.toStringAsFixed(2)),
+                        _stat('الأفضل', best!.toStringAsFixed(2)),
+                        _stat('عدد القياسات', summaryValues.length.toString()),
+                        if (delta != null) _stat('التغير', '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(2)}'),
+                      ]),
+                      const SizedBox(height: 12),
+                      Text('آخر ${summaryValues.length > 10 ? 10 : summaryValues.length} قياسات لنفس المؤشر.'),
+                      const SizedBox(height: 10),
+                      ...summaryValues.take(10).map((v) {
+                        final maxValue = summaryValues.reduce((a, b) => a > b ? a : b);
+                        final ratio = maxValue <= 0 ? 0.0 : (v / maxValue).clamp(0.0, 1.0);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(children: [
+                            SizedBox(width: 70, child: Text(v.toStringAsFixed(1))),
+                            const SizedBox(width: 8),
+                            Expanded(child: LinearProgressIndicator(value: ratio, minHeight: 8)),
+                          ]),
+                        );
+                      }),
+                      if (delta != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          delta == 0 ? 'لا يوجد تغير عن القياس السابق.' : delta > 0 ? 'الاتجاه الأخير: ارتفاع عن القياس السابق.' : 'الاتجاه الأخير: انخفاض عن القياس السابق.',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ]),
+                  ),
+                ),
                 const SizedBox(height: 10),
               ],
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
