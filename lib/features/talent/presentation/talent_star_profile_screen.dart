@@ -1,9 +1,12 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/models/talent.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'talent_badges_screen.dart';
 import 'talent_performance_screen.dart';
 import 'talent_claim_screen.dart';
+import 'talent_verification_screen.dart';
+import 'talent_coach_screen.dart';
 
 class AurenTalentStarProfileScreen extends StatelessWidget {
   final AurenTalent talent;
@@ -103,6 +106,39 @@ class AurenTalentStarProfileScreen extends StatelessWidget {
                     icon: const Icon(Icons.assignment_ind_outlined),
                     label: const Text('Claim this profile'),
                   ),
+                  if (FirebaseAuth.instance.currentUser?.uid == talent.ownerId) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AurenTalentVerificationScreen(
+                            talentId: talent.id,
+                            ownerId: talent.ownerId,
+                            currentEvidence: talent.verificationEvidence,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.verified_outlined),
+                      label: const Text('Talent Verification'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AurenTalentCoachScreen(
+                            talentId: talent.id,
+                            sport: talent.sport,
+                            level: talent.level,
+                            sports: sports,
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.sports_outlined),
+                      label: const Text('مدربي الشخصي'),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.push(
