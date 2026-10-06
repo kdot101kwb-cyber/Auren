@@ -162,7 +162,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
           final average = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a + b) / summaryValues.length;
           final best = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a > b ? a : b);
           final latest = summaryValues.isEmpty ? null : summaryValues.first;
-          final previous = values.length > 1 ? values[1] : null;
+          final previous = selectedMetricValues.length > 1 ? selectedMetricValues[1] : null;
           final delta = latest != null && previous != null ? latest - previous : null;
           return ListView(
             padding: const EdgeInsets.all(16),
