@@ -85,12 +85,21 @@ class AurenAgricultureRepository {
     const supportedTypes = {
       'crop',
       'livestock',
-      'soil',
-      'pest',
-      'irrigation',
-      'general',
+      'farm',
+      'manufacturing',
+      'invention',
+      'research',
+      'energy',
+      'recycling',
+      'design',
+      'business',
+      'production',
+      'costing',
+      'supply_chain',
+      'quality',
+      'feasibility',
     };
-    final cleanType = supportedTypes.contains(type) ? type : 'general';
+    final cleanType = supportedTypes.contains(type) ? type : 'crop';
     final cleanObservations = observations.trim();
 
     if (cleanObservations.isEmpty || cleanObservations.length > 5000) {
