@@ -1,3 +1,4 @@
+/// Centralized provenance guidance for sports data.
 class SportsTrustInfo {
   final String sourceName;
   final String coverage;
