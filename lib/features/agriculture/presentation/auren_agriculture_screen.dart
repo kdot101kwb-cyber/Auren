@@ -134,6 +134,9 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.blender_outlined, 'خلطة السماد', _showFertilizerBlendTool),
             _toolButton(Icons.splitscreen_outlined, 'تقسيم جرعات السماد', _showFertilizerSplitTool),
             _toolButton(Icons.search_outlined, 'مؤشر نقص العناصر', _showNutrientDeficiencyTool),
+            _toolButton(Icons.monitor_weight_outlined, 'توازن العناصر', _showNutrientBalanceTool),
+            _toolButton(Icons.grass_outlined, 'كثافة الزراعة', _showPlantDensityTool),
+            _toolButton(Icons.agriculture_outlined, 'تقدير الإنتاج', _showProductionEstimateTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -732,6 +735,32 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     final nutrient=TextEditingController();final symptom=TextEditingController();
     final result=await _twoFieldTool(title:'مؤشر نقص العناصر',first:nutrient,second:symptom,firstLabel:'العنصر المشتبه به (N/P/K/حديد...)',secondLabel:'وصف العرض',actionLabel:'حلّل',calculate:(){final n=nutrient.text.trim();final s=symptom.text.trim();if(n.isEmpty||s.isEmpty)return 'اكتب العنصر ووصف العرض.';return 'العنصر: $n\\nالعرض: $s\\n\\nهذا مؤشر أولي فقط؛ الأعراض قد تتشابه مع pH أو الملوحة أو مشاكل الجذور والآفات. التأكيد يحتاج فحصاً وتحليلاً مناسباً.';});
     nutrient.dispose();symptom.dispose();if(mounted&&result!=null)_showResult('مؤشر نقص العناصر',result);
+  }
+  Future<void> _showNutrientBalanceTool() async {
+    final n=TextEditingController(text:'100'); final p=TextEditingController(text:'50');
+    final result=await _twoFieldTool(title:'توازن العناصر',first:n,second:p,firstLabel:'N كجم/هكتار',secondLabel:'P كجم/هكتار',actionLabel:'احسب',calculate:(){
+      final nv=double.tryParse(n.text.trim())??0; final pv=double.tryParse(p.text.trim())??0;
+      if(nv<0||pv<0)return 'أدخل قيماً غير سالبة.';
+      return 'N: $nv كجم/هكتار — P: $pv كجم/هكتار.\n\nأضف K في التحليل الكامل. هذا مؤشر للمقارنة فقط وليس وصفة تسميد.';
+    }); n.dispose();p.dispose();if(mounted&&result!=null)_showResult('توازن العناصر',result);
+  }
+
+  Future<void> _showPlantDensityTool() async {
+    final area=TextEditingController(text:'1000'); final spacing=TextEditingController(text:'0.5');
+    final result=await _twoFieldTool(title:'كثافة الزراعة',first:area,second:spacing,firstLabel:'المساحة م²',secondLabel:'المسافة بين النباتات م',actionLabel:'احسب',calculate:(){
+      final a=double.tryParse(area.text.trim())??0; final s=double.tryParse(spacing.text.trim())??0;
+      if(a<=0||s<=0)return 'أدخل قيماً أكبر من صفر.';
+      return 'الكثافة التقريبية: ${(a/(s*s)).toStringAsFixed(0)} نبات.\n\nراعِ مسافة الصفوف والممرات ونمط الزراعة.';
+    }); area.dispose();spacing.dispose();if(mounted&&result!=null)_showResult('كثافة الزراعة',result);
+  }
+
+  Future<void> _showProductionEstimateTool() async {
+    final area=TextEditingController(text:'1000'); final rate=TextEditingController(text:'3');
+    final result=await _twoFieldTool(title:'تقدير الإنتاج',first:area,second:rate,firstLabel:'المساحة م²',secondLabel:'الإنتاج المتوقع كجم/م²',actionLabel:'احسب',calculate:(){
+      final a=double.tryParse(area.text.trim())??0; final y=double.tryParse(rate.text.trim())??0;
+      if(a<=0||y<0)return 'أدخل مساحة صحيحة وإنتاجاً غير سالب.';
+      final kg=a*y; return 'الإنتاج التقديري: ${kg.toStringAsFixed(1)} كجم (${(kg/1000).toStringAsFixed(2)} طن).\n\nالتقدير يتأثر بالصنف والمناخ والإدارة والآفات والري.';
+    }); area.dispose();rate.dispose();if(mounted&&result!=null)_showResult('تقدير الإنتاج',result);
   }
   Future<void> _showCostTool() async {
     final total = TextEditingController();
