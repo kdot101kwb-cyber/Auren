@@ -673,6 +673,29 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /users/{userId}/talent_performance/{entryId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.ownerId == userId
+        && request.resource.data.sport is string && request.resource.data.sport.size() > 0 && request.resource.data.sport.size() <= 80
+        && request.resource.data.metric is string && request.resource.data.metric.size() > 0 && request.resource.data.metric.size() <= 80
+        && request.resource.data.value is number && request.resource.data.value >= 0 && request.resource.data.value <= 1000000000
+        && request.resource.data.unit is string && request.resource.data.unit.size() <= 40
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && request.resource.data.recordedAt is timestamp
+        && request.resource.data.keys().hasOnly(['ownerId','sport','metric','value','unit','note','recordedAt']);
+      allow update: if isOwner(userId)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.sport is string && request.resource.data.sport.size() > 0 && request.resource.data.sport.size() <= 80
+        && request.resource.data.metric is string && request.resource.data.metric.size() > 0 && request.resource.data.metric.size() <= 80
+        && request.resource.data.value is number && request.resource.data.value >= 0 && request.resource.data.value <= 1000000000
+        && request.resource.data.unit is string && request.resource.data.unit.size() <= 40
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && request.resource.data.recordedAt is timestamp
+        && request.resource.data.keys().hasOnly(['ownerId','sport','metric','value','unit','note','recordedAt']);
+      allow delete: if isOwner(userId);
+    }
+
     match /users/{userId}/talent_scouts/{scoutId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
@@ -728,11 +751,30 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.displayName is string && request.resource.data.displayName.size() > 0 && request.resource.data.displayName.size() <= 120
         && request.resource.data.bio is string && request.resource.data.bio.size() <= 2000
+        && request.resource.data.category is string && request.resource.data.category.size() <= 100
+        && request.resource.data.city is string && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() <= 100
         && request.resource.data.skills is list && request.resource.data.skills.size() <= 30
-        && request.resource.data.keys().hasOnly(['ownerId','displayName','bio','category','city','country','skills','status','updatedAt']);
+        && (!request.resource.data.keys().hasAny(['sport']) || (request.resource.data.sport is string && request.resource.data.sport.size() <= 80))
+        && (!request.resource.data.keys().hasAny(['discipline']) || (request.resource.data.discipline is string && request.resource.data.discipline.size() <= 100))
+        && (!request.resource.data.keys().hasAny(['level']) || (request.resource.data.level is string && request.resource.data.level.size() <= 60))
+        && (!request.resource.data.keys().hasAny(['achievements']) || (request.resource.data.achievements is list && request.resource.data.achievements.size() <= 20))
+        && (!request.resource.data.keys().hasAny(['goals']) || (request.resource.data.goals is list && request.resource.data.goals.size() <= 10))
+        && request.resource.data.keys().hasOnly(['ownerId','displayName','bio','category','sport','discipline','level','city','country','skills','achievements','goals','status','updatedAt']);
       allow update: if request.auth != null && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
-        && request.resource.data.keys().hasOnly(['ownerId','displayName','bio','category','city','country','skills','status','updatedAt']);
+        && request.resource.data.displayName is string && request.resource.data.displayName.size() > 0 && request.resource.data.displayName.size() <= 120
+        && request.resource.data.bio is string && request.resource.data.bio.size() <= 2000
+        && request.resource.data.category is string && request.resource.data.category.size() <= 100
+        && request.resource.data.city is string && request.resource.data.city.size() <= 100
+        && request.resource.data.country is string && request.resource.data.country.size() <= 100
+        && request.resource.data.skills is list && request.resource.data.skills.size() <= 30
+        && (!request.resource.data.keys().hasAny(['sport']) || (request.resource.data.sport is string && request.resource.data.sport.size() <= 80))
+        && (!request.resource.data.keys().hasAny(['discipline']) || (request.resource.data.discipline is string && request.resource.data.discipline.size() <= 100))
+        && (!request.resource.data.keys().hasAny(['level']) || (request.resource.data.level is string && request.resource.data.level.size() <= 60))
+        && (!request.resource.data.keys().hasAny(['achievements']) || (request.resource.data.achievements is list && request.resource.data.achievements.size() <= 20))
+        && (!request.resource.data.keys().hasAny(['goals']) || (request.resource.data.goals is list && request.resource.data.goals.size() <= 10))
+        && request.resource.data.keys().hasOnly(['ownerId','displayName','bio','category','sport','discipline','level','city','country','skills','achievements','goals','status','updatedAt']);
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
