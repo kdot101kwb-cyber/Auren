@@ -132,6 +132,8 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.eco_outlined, 'المادة العضوية', _showOrganicMatterTool),
             _toolButton(Icons.layers_outlined, 'كمية محسن التربة', _showSoilAmendmentTool),
             _toolButton(Icons.blender_outlined, 'خلطة السماد', _showFertilizerBlendTool),
+            _toolButton(Icons.splitscreen_outlined, 'تقسيم جرعات السماد', _showFertilizerSplitTool),
+            _toolButton(Icons.search_outlined, 'مؤشر نقص العناصر', _showNutrientDeficiencyTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -715,6 +717,21 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     });
     need.dispose();area.dispose();pct.dispose();
     if(mounted&&result!=null)_showResult('خلطة السماد',result);
+  }
+  Future<void> _showFertilizerSplitTool() async {
+    final total=TextEditingController(text:'100'); final first=TextEditingController(text:'40'); final second=TextEditingController(text:'30');
+    final result=await showDialog<String>(context:context,builder:(_)=>AlertDialog(title:const Text('تقسيم جرعات السماد'),content:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextField(controller:total,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'إجمالي الكمية كجم')),
+      TextField(controller:first,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'الدفعة الأولى %')),
+      TextField(controller:second,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'الدفعة الثانية %'))]),actions:[
+      TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إلغاء')),FilledButton(onPressed:(){final t=double.tryParse(total.text.trim())??0;final a=double.tryParse(first.text.trim())??0;final b=double.tryParse(second.text.trim())??0;if(t<0||a<0||b<0||a+b>100){Navigator.pop(context,'أدخل قيماً صحيحة.');return;}final c=100-a-b;Navigator.pop(context,'الدفعة الأولى: ${(t*a/100).toStringAsFixed(2)} كجم.\\nالدفعة الثانية: ${(t*b/100).toStringAsFixed(2)} كجم.\\nالمتبقي: ${(t*c/100).toStringAsFixed(2)} كجم.\\n\\nالتوقيت يعتمد على المحصول ونوع السماد والتربة وطريقة الري.');},child:const Text('قسّم'))]));
+    total.dispose();first.dispose();second.dispose();if(mounted&&result!=null)_showResult('تقسيم جرعات السماد',result);
+  }
+
+  Future<void> _showNutrientDeficiencyTool() async {
+    final nutrient=TextEditingController();final symptom=TextEditingController();
+    final result=await _twoFieldTool(title:'مؤشر نقص العناصر',first:nutrient,second:symptom,firstLabel:'العنصر المشتبه به (N/P/K/حديد...)',secondLabel:'وصف العرض',actionLabel:'حلّل',calculate:(){final n=nutrient.text.trim();final s=symptom.text.trim();if(n.isEmpty||s.isEmpty)return 'اكتب العنصر ووصف العرض.';return 'العنصر: $n\\nالعرض: $s\\n\\nهذا مؤشر أولي فقط؛ الأعراض قد تتشابه مع pH أو الملوحة أو مشاكل الجذور والآفات. التأكيد يحتاج فحصاً وتحليلاً مناسباً.';});
+    nutrient.dispose();symptom.dispose();if(mounted&&result!=null)_showResult('مؤشر نقص العناصر',result);
   }
   Future<void> _showCostTool() async {
     final total = TextEditingController();
