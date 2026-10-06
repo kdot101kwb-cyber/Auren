@@ -123,6 +123,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.water_drop_outlined, 'تقدير الري', _showIrrigationTool),
             _toolButton(Icons.schedule_outlined, 'خطة الري', _showIrrigationPlanTool),
             _toolButton(Icons.solar_power_outlined, 'الري بالطاقة الشمسية', _showSolarIrrigationTool),
+            _toolButton(Icons.waterfall_chart_outlined, 'المضخة والتصريف', _showPumpTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -300,6 +301,75 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     loadHours.dispose();
     efficiency.dispose();
     if (mounted && result != null) _showResult('الري بالطاقة الشمسية', result);
+  }
+
+  Future<void> _showPumpTool() async {
+    final flow = TextEditingController(text: '10');
+    final head = TextEditingController(text: '20');
+    final efficiency = TextEditingController(text: '60');
+    final hours = TextEditingController(text: '5');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('تقدير المضخة والتصريف'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: flow,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'التصريف المطلوب لتر/دقيقة'),
+            ),
+            TextField(
+              controller: head,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'الرفع الكلي بالمتر'),
+            ),
+            TextField(
+              controller: efficiency,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'كفاءة المضخة/النظام %'),
+            ),
+            TextField(
+              controller: hours,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'ساعات التشغيل يومياً'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final q = double.tryParse(flow.text.trim()) ?? 0;
+              final h = double.tryParse(head.text.trim()) ?? 0;
+              final e = double.tryParse(efficiency.text.trim()) ?? 0;
+              final t = double.tryParse(hours.text.trim()) ?? 0;
+              if (q <= 0 || h <= 0 || e <= 0 || e > 100 || t <= 0) {
+                Navigator.pop(context, 'أدخل قيماً صحيحة، والكفاءة بين 1 و100%.');
+                return;
+              }
+              final flowM3s = q / 60000;
+              final hydraulicKw = 9.81 * flowM3s * h;
+              final inputKw = hydraulicKw / (e / 100);
+              final dailyM3 = q * t * 60 / 1000;
+              Navigator.pop(
+                context,
+                'المياه المضخوخة يومياً: ${dailyM3.toStringAsFixed(2)} م³.\\n'
+                'القدرة الهيدروليكية النظرية: ${hydraulicKw.toStringAsFixed(2)} kW.\\n'
+                'القدرة الكهربائية التقديرية: ${inputKw.toStringAsFixed(2)} kW.\\n\\n'
+                'استخدم هذه النتيجة لتقدير حجم النظام فقط؛ اختيار المضخة النهائي يعتمد على منحنى المضخة، الرفع الديناميكي، الأنابيب، الفواقد وجودة المياه.',
+              );
+            },
+            child: const Text('احسب'),
+          ),
+        ],
+      ),
+    );
+    flow.dispose();
+    head.dispose();
+    efficiency.dispose();
+    hours.dispose();
+    if (mounted && result != null) _showResult('المضخة والتصريف', result);
   }
 
   Future<void> _showCostTool() async {
