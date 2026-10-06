@@ -160,6 +160,30 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
                       label: const Text('Source Graph'),
                       onPressed: () => _openSportsAi('حلل Source Graph لمعلومة رياضية: المصدر الأول إن كان معروفاً، من أكدها، من صححها أو نفاها، وما الأدلة المطلوبة. لا تخترع أي علاقة أو مصدر.'),
                     ),
+                    ActionChip(
+                      avatar: const Icon(Icons.science_outlined, size: 18),
+                      label: const Text('What-If Lab'),
+                      onPressed: () => _openSportsInnovation(
+                        'What-If Sports Lab',
+                        'حلل سيناريو رياضي افتراضي مع توضيح الفرضيات والآثار المحتملة والبيانات الناقصة، ولا تقدمه كتوقع مؤكد.',
+                      ),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.route_outlined, size: 18),
+                      label: const Text('Career Map'),
+                      onPressed: () => _openSportsInnovation(
+                        'Sports Career Map',
+                        'أنشئ خريطة مسار رياضي واقعية من المستوى الحالي إلى الفرص المحتملة، مع المهارات والأدلة والخطوات التالية، دون ضمان النجاح.',
+                      ),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.folder_special_outlined, size: 18),
+                      label: const Text('Evidence Locker'),
+                      onPressed: () => _openSportsInnovation(
+                        'Sports Evidence Locker',
+                        'حلل الأدلة الرياضية التي أقدمها، وميّز بين المصدر الواضح والإقرار الذاتي وما يحتاج تحققاً، واقترح أسئلة التحقق.',
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -231,6 +255,22 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
 
 
   void _openSportsAi(String prompt) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)),
+    );
+  }
+
+  void _openSportsInnovation(String title, String prompt) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MessengerScreen(initialPrompt: '$title\\n\\n$prompt'),
+      ),
+    );
+  }
+
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: prompt)),
