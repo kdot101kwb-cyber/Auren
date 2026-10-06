@@ -5478,5 +5478,25 @@ match /users/{userId}/kids_activity_progress/{activityId} {
     }
 
 
+  match /talent_claims/{claimId} {
+    allow read: if request.auth != null
+      && resource.data.claimantUid == request.auth.uid;
+    allow create: if request.auth != null
+      && request.resource.data.claimantUid == request.auth.uid
+      && request.resource.data.talentId is string
+      && request.resource.data.talentId.size() > 0
+      && request.resource.data.talentId.size() <= 128
+      && request.resource.data.evidence is string
+      && request.resource.data.evidence.size() > 0
+      && request.resource.data.evidence.size() <= 1200
+      && request.resource.data.status == 'pending'
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.updatedAt is timestamp
+      && request.resource.data.keys().hasOnly([
+        'talentId','claimantUid','evidence','status','createdAt','updatedAt'
+      ]);
+    allow update, delete: if false;
+  }
+
   }
 }
