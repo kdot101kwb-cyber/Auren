@@ -26,6 +26,7 @@ class AurenTalentScoutResultsScreen extends StatelessWidget {
             const SizedBox(height:8),Text(f.description),
             if(f.matchedSkills.isNotEmpty)...[const SizedBox(height:8),Text('مطابق: ${f.matchedSkills.join(' • ')}')],
             if(f.missingSkills.isNotEmpty)...[const SizedBox(height:4),Text('ناقص: ${f.missingSkills.join(' • ')}')],
+            if(f.evidence.isNotEmpty)...[const SizedBox(height:8),const Text('أدلة المطابقة',style:TextStyle(fontWeight:FontWeight.w800)),const SizedBox(height:4),...f.evidence.map((e)=>Padding(padding:const EdgeInsets.only(bottom:2),child:Text('• $e')))],
             if(f.type=='sports' || f.type=='opportunity') ...[
               const SizedBox(height:8),
               const Text('لماذا ظهرت هذه النتيجة؟',style:TextStyle(fontWeight:FontWeight.w800)),
