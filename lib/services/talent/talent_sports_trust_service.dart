@@ -13,7 +13,7 @@ class SportsTrustInfo {
     required this.trustLevel,
   });
 
-  String get label => isOfficial ? 'Verified source' : 'Data source';
+  String get label => isOfficial ? 'Official source' : 'Data source';
 }
 
 class TalentSportsTrustService {
