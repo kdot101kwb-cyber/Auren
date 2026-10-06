@@ -288,11 +288,11 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                             _stat('المتوسط', average!.toStringAsFixed(2)),
                             _stat('الأفضل', best!.toStringAsFixed(2)),
                             _stat('عدد القياسات', summaryValues.length.toString()),
-                            if (delta != null) _stat('التغير', '\${delta >= 0 ? '+' : ''}\${delta.toStringAsFixed(2)}'),
+                            if (delta != null) _stat('التغير', '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(2)}'),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Text('آخر \${summaryValues.length > 10 ? 10 : summaryValues.length} قياسات لنفس المؤشر.'),
+                        Text('آخر ${summaryValues.length > 10 ? 10 : summaryValues.length} قياسات لنفس المؤشر.'),
                         const SizedBox(height: 10),
                         ...summaryValues.take(10).map((v) {
                           final maxValue = summaryValues.reduce((a, b) => a > b ? a : b);
