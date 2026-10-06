@@ -35,6 +35,7 @@ class TalentScoutService {
           'talent'=>'فرص لاكتشاف مواهب أو فرق مرتبطة بمجالك: ${talent.category.isEmpty?'مجالك الحالي':talent.category}.',
           'brand'=>'أفكار لزيادة ظهورك وبناء علامتك الشخصية حول: ${talent.skills.take(5).join(' • ')}.',
           'learning'=>'مسار تعلم عملي لسد الفجوات حول مهاراتك الحالية: ${talent.skills.take(5).join(' • ')}.',
+          'sports'=>'إشارات أداء رياضي لمجالك: ${talent.sport.isEmpty ? talent.category : talent.sport}. راجع التدريب والمهارات والمؤشرات المسجلة قبل أي قرار.',
           _=>'تحليل كشاف المواهب.',
         };
         results.add(AurenTalentScoutFinding(id:'${scout.id}_${talent.id}',ownerId:uid,scoutId:scout.id,type:scout.role,title:scout.name,description:text,sourceType:'talent',sourceId:talent.id,status:'new',score:score,matchedSkills:hits,missingSkills:const [],createdAt:DateTime.now(),expiresAt:DateTime.now().add(const Duration(days:7))));
