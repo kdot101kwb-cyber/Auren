@@ -25,6 +25,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
   final _trust = TalentSportsTrustService();
   Map<String, dynamic>? _item;
   List<Map<String, dynamic>> _next = const [];
+  List<Map<String, dynamic>> _last = const [];
   List<Map<String, dynamic>> _related = const [];
   bool _loading = true;
   String? _error;
@@ -53,6 +54,11 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
 
       if (widget.type == 'teams') {
         next = await _service.teamNextEvents(widget.id);
+        try {
+          _last = await _service.teamLastEvents(widget.id);
+        } catch (_) {
+          _last = const [];
+        }
         related = await _directory.playersByTeam(widget.id);
       } else if (widget.type == 'leagues') {
         final leagueName = (item['strLeague'] ?? widget.title).toString();
@@ -191,6 +197,12 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
           ),
           _trustCard(trust),
           _statsCard(item),
+          if (_last.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text('Recent results', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            ..._last.take(10).map(_eventCard),
+          ],
           if (_next.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Text('Next matches', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
