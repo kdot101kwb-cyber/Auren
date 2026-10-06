@@ -171,6 +171,7 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
             ),
           ),
           _trustCard(trust),
+          _statsCard(item),
           if (_next.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Text('Next matches', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
@@ -201,6 +202,45 @@ class _AurenSportsEntityScreenState extends State<AurenSportsEntityScreen> {
     );
   }
 
+  Widget _statsCard(Map<String, dynamic> item) {
+    const keys = <String, String>{
+      'Matches': 'intPlayed',
+      'Appearances': 'intAppearances',
+      'Goals': 'intGoals',
+      'Assists': 'intAssists',
+      'Minutes': 'intMinutes',
+      'Rating': 'strRating',
+      'Weight': 'intWeight',
+      'Height': 'intHeight',
+    };
+    final rows = <MapEntry<String, String>>[];
+    for (final entry in keys.entries) {
+      final value = item[entry.value];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        rows.add(MapEntry(entry.key, value.toString()));
+      }
+    }
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Available stats', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: rows.map((row) => Chip(avatar: const Icon(Icons.insights, size: 18), label: Text(row.key + ': ' + row.value))).toList(),
+            ),
+            const SizedBox(height: 6),
+            const Text('تظهر فقط الإحصائيات التي يوفرها مصدر البيانات لهذا الكيان.', style: TextStyle(fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
   Widget _trustCard(SportsTrustInfo trust) {
     return Card(
       child: ListTile(
