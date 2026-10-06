@@ -17,6 +17,7 @@ class AurenTalentScoutsScreen extends StatelessWidget {
     {'id':'talent','name':'Talent Scout','role':'talent','desc':'يكتشف المواهب والمهارات التي قد تناسب فرصاً أو فرقاً.'},
     {'id':'brand','name':'Talent Brand Scout','role':'brand','desc':'يبحث عن فرص ظهور وبناء ملف شخصي ومحتوى للمواهب.'},
     {'id':'learning','name':'Learning Scout','role':'learning','desc':'يكتشف مسارات تعلم ومشاريع عملية لسد فجوات المهارات.'},
+    {'id':'sports','name':'Sports Scout','role':'sports','desc':'يطابق الرياضة والتخصص ومستوى الأداء مع فرق ومدربين وفرص رياضية.'},
   ];
   @override Widget build(BuildContext context){
     final uid=FirebaseAuth.instance.currentUser?.uid;
