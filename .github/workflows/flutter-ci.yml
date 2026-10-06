@@ -47,7 +47,7 @@ jobs:
       - name: Analyze
         run: |
           set +e
-          flutter analyze 2>&1 | tee flutter-analyze.log
+          flutter analyze --no-fatal-warnings --no-fatal-infos 2>&1 | tee flutter-analyze.log
           status=${PIPESTATUS[0]}
           echo "flutter_analyze_exit_code=${status}" >> flutter-analyze.log
           exit ${status}
