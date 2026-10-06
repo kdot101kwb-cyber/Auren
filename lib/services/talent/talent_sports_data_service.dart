@@ -74,6 +74,11 @@ class TalentSportsDataService {
     final data = await _get('/eventsnext.php', {'id': teamId});
     return _maps(data['events']);
   }
+  Future<List<Map<String, dynamic>>> teamLastEvents(String teamId) async {
+    final data = await _get('/eventslast.php', {'id': teamId});
+    return _maps(data['results'] ?? data['events']);
+  }
+
 
   Future<Map<String, dynamic>> _get(
     String path,
