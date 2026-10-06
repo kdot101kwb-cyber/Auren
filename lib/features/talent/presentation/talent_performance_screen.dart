@@ -190,7 +190,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
               Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Text('حاسبات الأداء', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
-                const Text('مؤشرات تخطيطية وليست تشخيصاً طبياً أو بديلاً عن المدرب.'),
+                const Text('مؤشرات تخطيطية وليست تشخيصاً طبياً أو بديلاً عن المدرب. قارن القياسات لنفس المؤشر والوحدة عند متابعة الاتجاه.'),
                 const SizedBox(height: 10),
                 Wrap(spacing: 8, runSpacing: 8, children: metrics.keys.map((id) => ActionChip(label: Text(metrics[id]! ), onPressed: () => _calculator(id))).toList()),
               ]))),
