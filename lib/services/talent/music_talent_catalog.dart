@@ -137,6 +137,66 @@ class AurenMusicTalentCatalog {
       name: 'Music Evidence Vault',
       description: 'Organize recordings, videos, releases, credits and achievements as evidence for a music talent profile.',
     ),
+    AurenMusicTalentCapability(
+      id: 'song_generator',
+      name: 'AI Song Generator',
+      description: 'Create a production-ready generation brief from lyrics, genre, mood, instruments, BPM and key.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'cover_art',
+      name: 'Cover Art Studio',
+      description: 'Create a cover-art brief from the song identity, title, lyrics and optional reference image.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'music_video',
+      name: 'Music Video Studio',
+      description: 'Plan a complete music video from the song, cover image or reference images, including scenes, motion and timing.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'image_to_video',
+      name: 'Image-to-Video Music',
+      description: 'Turn an artist or cover image into a music-video scene concept with camera motion, lighting and visual rhythm.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'lyric_video',
+      name: 'Lyric Video Studio',
+      description: 'Build a synchronized lyric-video plan from the song structure and lyrics.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'audio_visualizer',
+      name: 'Audio Visualizer',
+      description: 'Design an audio-reactive visualizer concept matched to the track's rhythm and energy.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'artist_promo_video',
+      name: 'Artist Promo Video',
+      description: 'Create a short promotional video concept from artist imagery and the song identity.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'social_music_clips',
+      name: 'Music Social Clips',
+      description: 'Generate multiple short-form clip concepts with hooks, cut points and captions for the song.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'music_storyboard',
+      name: 'Music Video Storyboard',
+      description: 'Turn the song concept into a shot-by-shot storyboard before video production.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'release_media_pack',
+      name: 'Release Media Pack',
+      description: 'Prepare a coordinated release pack: cover, lyric video, visualizer, promo clips and metadata.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'production_stems',
+      name: 'Production & Stems Plan',
+      description: 'Plan vocal, instrumental, drums and other stems and explain what source files are needed.',
+    ),
+    AurenMusicTalentCapability(
+      id: 'music_creator_suite',
+      name: 'Music Creator Suite',
+      description: 'Coordinate the song workflow from idea and recording through analysis, artwork, video and release media.',
+    ),
   ];
 
   static bool contains(String id) =>
