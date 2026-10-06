@@ -125,6 +125,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.solar_power_outlined, 'الري بالطاقة الشمسية', _showSolarIrrigationTool),
             _toolButton(Icons.waterfall_chart_outlined, 'المضخة والتصريف', _showPumpTool),
             _toolButton(Icons.water_outlined, 'حجم الخزان', _showTankTool),
+            _toolButton(Icons.grass_outlined, 'احتياج المحصول للمياه', _showCropWaterNeedTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -429,6 +430,65 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     days.dispose();
     reserve.dispose();
     if (mounted && result != null) _showResult('حجم الخزان', result);
+  }
+
+  Future<void> _showCropWaterNeedTool() async {
+    final area = TextEditingController(text: '1000');
+    final depth = TextEditingController(text: '5');
+    final efficiency = TextEditingController(text: '70');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('احتياج المحصول للمياه'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: area,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'مساحة الزراعة م²'),
+            ),
+            TextField(
+              controller: depth,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'عمق المياه المطلوب يومياً mm'),
+            ),
+            TextField(
+              controller: efficiency,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'كفاءة نظام الري %'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final a = double.tryParse(area.text.trim()) ?? 0;
+              final d = double.tryParse(depth.text.trim()) ?? 0;
+              final e = double.tryParse(efficiency.text.trim()) ?? 0;
+              if (a <= 0 || d <= 0 || e <= 0 || e > 100) {
+                Navigator.pop(context, 'أدخل قيماً صحيحة، والكفاءة بين 1 و100%.');
+                return;
+              }
+              final netLiters = a * d;
+              final grossLiters = netLiters / (e / 100);
+              Navigator.pop(
+                context,
+                'الاحتياج النظري: ${netLiters.toStringAsFixed(0)} لتر/يوم.\\n'
+                'المياه المطلوبة بعد احتساب كفاءة الري: ${grossLiters.toStringAsFixed(0)} لتر/يوم '
+                '(${(grossLiters / 1000).toStringAsFixed(2)} م³/يوم).\\n\\n'
+                'هذا تقدير أولي؛ الاحتياج الحقيقي يتغير حسب المحصول، المناخ، التربة، مرحلة النمو والأمطار.',
+              );
+            },
+            child: const Text('احسب'),
+          ),
+        ],
+      ),
+    );
+    area.dispose();
+    depth.dispose();
+    efficiency.dispose();
+    if (mounted && result != null) _showResult('احتياج المحصول للمياه', result);
   }
 
   Future<void> _showCostTool() async {
