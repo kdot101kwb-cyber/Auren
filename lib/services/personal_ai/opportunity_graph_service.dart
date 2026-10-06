@@ -4,7 +4,6 @@ import '../../core/models/memory_item.dart';
 import '../goals/goal_repository.dart';
 import '../memory/memory_repository.dart';
 import '../business/business_repository.dart';
-import '../../core/models/business.dart';
 
 class AurenOpportunityGraphNode {
   final String id, type, title, detail;
