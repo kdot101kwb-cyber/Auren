@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/models/emergency.dart';
 import '../../../services/emergency/emergency_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
