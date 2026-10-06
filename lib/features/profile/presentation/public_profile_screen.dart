@@ -93,7 +93,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
             content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
               TextField(controller: amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'المبلغ')),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(value: currency, items: const ['USD','AED','SDG'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => currency = v ?? 'USD'), decoration: const InputDecoration(labelText: 'العملة')),
+              DropdownButtonFormField<String>(initialValue: currency, items: const ['USD','AED','SDG'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => currency = v ?? 'USD'), decoration: const InputDecoration(labelText: 'العملة')),
               const SizedBox(height: 8),
               TextField(controller: message, maxLength: 500, maxLines: 3, decoration: const InputDecoration(labelText: 'رسالة (اختياري)')),
               const Text('هذا طلب دعم؛ لا يتم تحويل أموال تلقائياً في هذه المرحلة.'),
