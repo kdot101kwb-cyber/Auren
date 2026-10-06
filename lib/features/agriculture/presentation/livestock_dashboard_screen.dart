@@ -97,13 +97,13 @@ class LivestockDashboardScreen extends StatelessWidget {
         title: const Text('حاسبة العلف والماء'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           DropdownButtonFormField<String>(
-            value: animal.id,
+            initialValue: animal.id,
             decoration: const InputDecoration(labelText: 'الحيوان'),
             items: animals.map((a) => DropdownMenuItem(value: a.id, child: Text(a.tag + ' • ' + a.species))).toList(),
             onChanged: (id) { for (final a in animals) { if (a.id == id) setLocal(() => animal = a); } },
           ),
           DropdownButtonFormField<String>(
-            value: stage,
+            initialValue: stage,
             decoration: const InputDecoration(labelText: 'مرحلة الإنتاج'),
             items: const [
               DropdownMenuItem(value: 'maintenance', child: Text('صيانة')),
