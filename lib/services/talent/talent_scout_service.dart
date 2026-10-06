@@ -47,5 +47,13 @@ class TalentScoutService {
     }
     return results;
   }
+  Future<void> markSeen(String uid, String findingId) async {
+    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(findingId).update({'status':'seen'});
+  }
+
+  Future<void> dismiss(String uid, String findingId) async {
+    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(findingId).update({'status':'dismissed'});
+  }
+
   String _norm(String value)=>value.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9\u0600-\u06ff ]+'),' ').replaceAll(RegExp(r'\s+'),' ');
 }
