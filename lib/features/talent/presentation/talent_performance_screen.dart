@@ -39,6 +39,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
   final valueController = TextEditingController();
   final unitController = TextEditingController();
   final noteController = TextEditingController();
+  String summaryUnit = '';
 
   @override
   void initState() {
@@ -85,13 +86,15 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
   Future<void> _calculator(String id) async {
     final a = TextEditingController();
     final b = TextEditingController();
+    const singleValueMetrics = {'reaction','vertical','endurance','strength','agility','balance','technique'};
+    final isSingleValue = singleValueMetrics.contains(id);
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(metrics[id] ?? 'حاسبة الأداء'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: a, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة الأولى')),
-          TextField(controller: b, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة الثانية')),
+          TextField(controller: a, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: isSingleValue ? 'القيمة' : 'القيمة الأولى')),
+          if (!isSingleValue) TextField(controller: b, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'القيمة الثانية')),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
@@ -99,8 +102,8 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
         ],
       ),
     );
-    final x = double.tryParse(a.text);
-    final y = double.tryParse(b.text);
+    final x = double.tryParse(a.text.trim());
+    final y = isSingleValue ? 1.0 : double.tryParse(b.text.trim());
     if (x != null && y != null && (x < 0 || y < 0)) {
       a.dispose();
       b.dispose();
@@ -162,8 +165,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
           final current = docs.where((d) => (d.data()['sport'] ?? '').toString() == sport).toList();
           final values = current.map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
           final selectedMetric = metricController.text.trim();
-          final selectedUnit = unitController.text.trim();
-          final selectedMetricValues = selectedMetric.isEmpty ? values : current.where((d) => (d.data()['metric'] ?? '').toString() == selectedMetric && (selectedUnit.isEmpty || (d.data()['unit'] ?? '').toString() == selectedUnit)).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
+          final selectedMetricValues = selectedMetric.isEmpty ? values : current.where((d) => (d.data()['metric'] ?? '').toString() == selectedMetric && (summaryUnit.isEmpty || (d.data()['unit'] ?? '').toString() == summaryUnit)).map((d) => (d.data()['value'] as num?)?.toDouble()).whereType<double>().toList();
           final summaryValues = selectedMetric.isEmpty ? values : selectedMetricValues;
           final average = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a + b) / summaryValues.length;
           final best = summaryValues.isEmpty ? null : summaryValues.reduce((a, b) => a > b ? a : b);
