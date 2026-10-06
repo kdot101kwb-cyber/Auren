@@ -515,32 +515,31 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
               FilledButton.icon(onPressed: () => _generate(source),
                 icon: const Icon(Icons.auto_awesome_rounded), label: const Text('AUREN جهّز لي المشاهدة')),
               if (_plan.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => setState(() => _plan = _buildPlan(source)),
-                  icon: const Icon(Icons.shuffle_rounded),
-                  label: const Text('اكتشف Mix مختلف'),
-                ),
-              ],
-              if (_plan.isNotEmpty) ...[
                 const SizedBox(height: 18),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Expanded(
-                      child: Text(
-                        _planInsight(),
-                    if (_adaptiveTip().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          _adaptiveTip(),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _planInsight(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          if (_adaptiveTip().isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                _adaptiveTip(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     FilledButton.icon(
@@ -548,6 +547,10 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text('ابدأ الخطة'),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
                   children: [
                     Expanded(
                       child: Text(
@@ -555,29 +558,12 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'ملخص الخطة',
-                      onPressed: _showWatchSummary,
-                      icon: const Icon(Icons.insights_rounded),
-                    ),
-                    IconButton(
-                      tooltip: 'خلط الترتيب',
-                      onPressed: _shufflePlan,
-                      icon: const Icon(Icons.shuffle_rounded),
-                    ),
-                    IconButton(
-                      tooltip: 'إعادة إنشاء',
-                      onPressed: () => _regenerate(source),
-                      icon: const Icon(Icons.refresh_rounded),
-                    ),
-                    IconButton(
-                      tooltip: 'مسح الخطة',
-                      onPressed: _clearPlan,
-                      icon: const Icon(Icons.delete_sweep_rounded),
-                    ),
+                    IconButton(tooltip: 'ملخص الخطة', onPressed: _showWatchSummary, icon: const Icon(Icons.insights_rounded)),
+                    IconButton(tooltip: 'خلط الترتيب', onPressed: _shufflePlan, icon: const Icon(Icons.shuffle_rounded)),
+                    IconButton(tooltip: 'إعادة إنشاء', onPressed: () => _regenerate(source), icon: const Icon(Icons.refresh_rounded)),
+                    IconButton(tooltip: 'مسح الخطة', onPressed: _clearPlan, icon: const Icon(Icons.delete_sweep_rounded)),
                   ],
                 ),
-                const SizedBox(height: 8),
                 ReorderableListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
