@@ -286,7 +286,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
                 const SizedBox(height:7),Text(s['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),
                 const SizedBox(height:5),Text([s['category'],s['year'],s['region']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:1,overflow:TextOverflow.ellipsis),
                 const SizedBox(height:5),Text(s['countries']?.toString()??'',maxLines:1,overflow:TextOverflow.ellipsis),
-              ]))));
+              ])))));
             })),
           ],
           if (_magazineResults.isNotEmpty || _magazineLoading) ...[
@@ -327,7 +327,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
                 Text(s['title']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontWeight:FontWeight.w800)),
                 const SizedBox(height:5),Text([s['country'],s['kind'],s['language']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' • '),maxLines:1,overflow:TextOverflow.ellipsis),
                 const SizedBox(height:5),Text(s['description']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11))
-              ]))));
+              ])))));
             }))
           ],
           if (_comicResults.isNotEmpty || _comicLoading) ...[
