@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../../services/messaging/conversation_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../core/models/property.dart';
 import '../../../services/real_estate/auren_real_estate_service.dart';
