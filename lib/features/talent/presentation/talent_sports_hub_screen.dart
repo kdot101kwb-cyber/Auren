@@ -165,6 +165,7 @@ class _AurenTalentSportsHubScreenState extends State<AurenTalentSportsHubScreen>
       : _mode == 'matches'
         ? (item['strEvent'] ?? 'Match').toString()
         : (item['strTeam'] ?? 'Club').toString();
+    final description = _localizedDescription(item, Localizations.localeOf(context).languageCode);
     final subtitle = _mode == 'matches'
       ? '${item['dateEvent'] ?? ''} ${item['strTime'] ?? ''}'.trim()
       : '${item['strSport'] ?? ''} • ${item['strLeague'] ?? item['strNationality'] ?? ''}'.trim();
