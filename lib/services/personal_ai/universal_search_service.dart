@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import '../../core/models/business.dart';
 import '../../core/models/post.dart';
 import '../../core/models/product.dart';
+import '../business/business_repository.dart';
 import '../marketplace/marketplace_repository.dart';
 import '../social/post_repository.dart';
 
