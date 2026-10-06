@@ -57,6 +57,9 @@ class TalentScoutService {
   Future<void> dismiss(String uid, String findingId) async {
     await db.collection('users').doc(uid).collection('talent_scout_findings').doc(findingId).update({'status':'dismissed'});
   }
+  Future<void> markInterested(String uid, String findingId) async {
+    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(findingId).update({'status':'interested'});
+  }
 
   Future<List<Map<String, dynamic>>> findSportsMatches({
     required AurenTalent talent,
