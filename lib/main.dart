@@ -31,10 +31,10 @@ Future<void> main() async {
     );
     // Activate App Check before any authenticated Firebase callable/service traffic.
     await FirebaseAppCheck.instance.activate(
-      androidProvider: kDebugMode
+      providerAndroid: kDebugMode
           ? AndroidProvider.debug
           : AndroidProvider.playIntegrity,
-      appleProvider: kDebugMode
+      providerApple: kDebugMode
           ? AppleProvider.debug
           : AppleProvider.deviceCheck,
     );
