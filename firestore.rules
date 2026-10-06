@@ -842,6 +842,26 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    match /users/{userId}/talent_coach/{profileId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && profileId == 'profile'
+        && request.resource.data.keys().hasOnly(['ownerId','coachMode','sport','level','goal','weeklySessions','updatedAt'])
+        && request.resource.data.ownerId == userId
+        && request.resource.data.coachMode in ['ai','human']
+        && request.resource.data.sport is string
+        && request.resource.data.sport.size() <= 100
+        && request.resource.data.level is string
+        && request.resource.data.level.size() <= 60
+        && request.resource.data.goal is string
+        && request.resource.data.goal.size() <= 500
+        && request.resource.data.weeklySessions is int
+        && request.resource.data.weeklySessions >= 1
+        && request.resource.data.weeklySessions <= 7
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if isOwner(userId);
+    }
+
     match /posts/{postId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
