@@ -205,10 +205,122 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.inventory_outlined, 'احتياج التعبئة', _showPackagingTool),
             _toolButton(Icons.local_gas_station_outlined, 'استهلاك الوقود', _showFuelConsumptionTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة العمالة', _showLaborCostTool),
+          _toolButton(Icons.square_foot_outlined, 'مساحة الأرض من الأبعاد', _showFarmAreaTool),
+            _toolButton(Icons.fence_outlined, 'طول السور', _showFenceLengthTool),
+            _toolButton(Icons.water_drop_outlined, 'عدد نقاط التنقيط', _showEmitterCountTool),
+            _toolButton(Icons.linear_scale_outlined, 'طول خطوط التنقيط', _showDriplineLengthTool),
+            _toolButton(Icons.speed_outlined, 'معدل تدفق الري', _showIrrigationFlowTool),
+            _toolButton(Icons.timer_outlined, 'زمن تشغيل المضخة', _showPumpRuntimeTool),
+            _toolButton(Icons.set_meal_outlined, 'كثافة تخزين الأسماك', _showFishStockingDensityTool),
+            _toolButton(Icons.paid_outlined, 'احتياج علف الدواجن', _showPoultryFeedCostTool),
+            _toolButton(Icons.hive_outlined, 'بقاء طوائف النحل', _showBeeSurvivalTool),
+            _toolButton(Icons.home_work_outlined, 'سعة البيت المحمي', _showGreenhouseCapacityTool),
+
           ]),
         ]),
       ),
     );
+  }
+
+
+  Future<void> _showFarmAreaTool() async {
+    final length=TextEditingController(), width=TextEditingController();
+    final result=await _twoFieldTool(title:'مساحة الأرض من الأبعاد',first:length,second:width,firstLabel:'الطول بالمتر',secondLabel:'العرض بالمتر',actionLabel:'احسب',calculate:(){
+      final l=double.tryParse(length.text.trim())??0,w=double.tryParse(width.text.trim())??0;
+      if(l<=0||w<=0)return 'أدخل أبعاداً أكبر من صفر.';
+      return 'المساحة: ${{(l*w).toStringAsFixed(2)} متر مربع.';
+    });
+    length.dispose();width.dispose();if(mounted&&result!=null)_showResult('مساحة الأرض',result);
+  }
+
+  Future<void> _showFenceLengthTool() async {
+    final length=TextEditingController(), width=TextEditingController();
+    final result=await _twoFieldTool(title:'طول السور أو خط المياه',first:length,second:width,firstLabel:'الطول بالمتر',secondLabel:'العرض بالمتر',actionLabel:'احسب',calculate:(){
+      final l=double.tryParse(length.text.trim())??0,w=double.tryParse(width.text.trim())??0;
+      if(l<=0||w<=0)return 'أدخل أبعاداً أكبر من صفر.';
+      return 'المحيط التقريبي: ${{(2*(l+w)).toStringAsFixed(2)} متر.';
+    });
+    length.dispose();width.dispose();if(mounted&&result!=null)_showResult('طول السور',result);
+  }
+
+  Future<void> _showEmitterCountTool() async {
+    final line=TextEditingController(), spacing=TextEditingController(text:'0.3');
+    final result=await _twoFieldTool(title:'عدد نقاط التنقيط',first:line,second:spacing,firstLabel:'طول خط التنقيط بالمتر',secondLabel:'المسافة بين النقاط بالمتر',actionLabel:'احسب',calculate:(){
+      final l=double.tryParse(line.text.trim())??0,s=double.tryParse(spacing.text.trim())??0;
+      if(l<=0||s<=0)return 'أدخل قيماً أكبر من صفر.';
+      return 'عدد النقاط التقريبي: ${{(l/s).ceil()} نقطة.';
+    });
+    line.dispose();spacing.dispose();if(mounted&&result!=null)_showResult('نقاط التنقيط',result);
+  }
+
+  Future<void> _showDriplineLengthTool() async {
+    final rows=TextEditingController(), rowLength=TextEditingController();
+    final result=await _twoFieldTool(title:'طول خطوط التنقيط',first:rows,second:rowLength,firstLabel:'عدد الخطوط',secondLabel:'طول الخط بالمتر',actionLabel:'احسب',calculate:(){
+      final r=double.tryParse(rows.text.trim())??0,l=double.tryParse(rowLength.text.trim())??0;
+      if(r<=0||l<=0)return 'أدخل قيماً أكبر من صفر.';
+      return 'إجمالي طول الخطوط: ${{(r*l).toStringAsFixed(2)} متر.';
+    });
+    rows.dispose();rowLength.dispose();if(mounted&&result!=null)_showResult('خطوط التنقيط',result);
+  }
+
+  Future<void> _showIrrigationFlowTool() async {
+    final volume=TextEditingController(), time=TextEditingController();
+    final result=await _twoFieldTool(title:'معدل تدفق الري',first:volume,second:time,firstLabel:'حجم المياه باللتر',secondLabel:'الزمن بالدقائق',actionLabel:'احسب',calculate:(){
+      final v=double.tryParse(volume.text.trim())??0,t=double.tryParse(time.text.trim())??0;
+      if(v<=0||t<=0)return 'أدخل قيماً أكبر من صفر.';
+      return 'معدل التدفق: ${{(v/t).toStringAsFixed(2)} لتر/دقيقة.';
+    });
+    volume.dispose();time.dispose();if(mounted&&result!=null)_showResult('تدفق الري',result);
+  }
+
+  Future<void> _showPumpRuntimeTool() async {
+    final volume=TextEditingController(), flow=TextEditingController();
+    final result=await _twoFieldTool(title:'زمن تشغيل المضخة',first:volume,second:flow,firstLabel:'حجم المياه المطلوب باللتر',secondLabel:'تدفق المضخة لتر/دقيقة',actionLabel:'احسب',calculate:(){
+      final v=double.tryParse(volume.text.trim())??0,f=double.tryParse(flow.text.trim())??0;
+      if(v<=0||f<=0)return 'أدخل قيماً أكبر من صفر.';
+      return 'زمن التشغيل: ${{(v/f).toStringAsFixed(2)} دقيقة.';
+    });
+    volume.dispose();flow.dispose();if(mounted&&result!=null)_showResult('زمن المضخة',result);
+  }
+
+  Future<void> _showFishStockingDensityTool() async {
+    final fish=TextEditingController(), volume=TextEditingController();
+    final result=await _twoFieldTool(title:'كثافة تخزين الأسماك',first:fish,second:volume,firstLabel:'عدد الأسماك',secondLabel:'حجم الماء بالمتر المكعب',actionLabel:'احسب',calculate:(){
+      final f=double.tryParse(fish.text.trim())??0,v=double.tryParse(volume.text.trim())??0;
+      if(f<=0||v<=0)return 'أدخل قيماً أكبر من صفر.';
+      return 'الكثافة: ${{(f/v).toStringAsFixed(2)} سمكة/م³. هذه قيمة تخطيطية؛ النوع والحجم وجودة المياه مهمة.';
+    });
+    fish.dispose();volume.dispose();if(mounted&&result!=null)_showResult('كثافة الأسماك',result);
+  }
+
+  Future<void> _showPoultryFeedCostTool() async {
+    final birds=TextEditingController(), feed=TextEditingController();
+    final result=await _twoFieldTool(title:'احتياج علف الدواجن',first:birds,second:feed,firstLabel:'عدد الطيور',secondLabel:'العلف لكل طائر بالكجم',actionLabel:'احسب',calculate:(){
+      final b=double.tryParse(birds.text.trim())??0,f=double.tryParse(feed.text.trim())??0;
+      if(b<=0||f<0)return 'أدخل عدداً صحيحاً للطيور وكمية علف غير سالبة.';
+      return 'إجمالي العلف: ${{(b*f).toStringAsFixed(2)} كجم.';
+    });
+    birds.dispose();feed.dispose();if(mounted&&result!=null)_showResult('علف الدواجن',result);
+  }
+
+  Future<void> _showBeeSurvivalTool() async {
+    final initial=TextEditingController(), losses=TextEditingController();
+    final result=await _twoFieldTool(title:'بقاء طوائف النحل',first:initial,second:losses,firstLabel:'عدد الطوائف في البداية',secondLabel:'عدد الطوائف المفقودة',actionLabel:'احسب',calculate:(){
+      final i=double.tryParse(initial.text.trim())??0,l=double.tryParse(losses.text.trim())??0;
+      if(i<=0||l<0||l>i)return 'تحقق من القيم المدخلة.';
+      return 'الطوائف المتبقية: ${{(i-l).toStringAsFixed(0)}\\nمعدل البقاء: ${{((i-l)/i*100).toStringAsFixed(1)}%.';
+    });
+    initial.dispose();losses.dispose();if(mounted&&result!=null)_showResult('بقاء النحل',result);
+  }
+
+  Future<void> _showGreenhouseCapacityTool() async {
+    final area=TextEditingController(), plantArea=TextEditingController(text:'0.25');
+    final result=await _twoFieldTool(title:'سعة البيت المحمي',first:area,second:plantArea,firstLabel:'المساحة بالمتر المربع',secondLabel:'المساحة التقريبية للنبات بالمتر المربع',actionLabel:'احسب',calculate:(){
+      final a=double.tryParse(area.text.trim())??0,s=double.tryParse(plantArea.text.trim())??0;
+      if(a<=0||s<=0)return 'أدخل قيماً أكبر من صفر.';
+      return 'السعة النظرية: ${{(a/s).floor()} نبات. اطرح الممرات والخدمات قبل اعتماد العدد النهائي.';
+    });
+    area.dispose();plantArea.dispose();if(mounted&&result!=null)_showResult('سعة البيت المحمي',result);
   }
 
   Widget _toolButton(IconData icon, String label, VoidCallback onTap) {
