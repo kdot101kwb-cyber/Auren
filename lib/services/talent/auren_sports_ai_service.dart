@@ -41,6 +41,33 @@ ${userQuestion.trim().isEmpty ? '' : 'سؤال المستخدم:\n$userQuestion\
     return prompt(agent: 'athlete', sport: sportText, context: context, userQuestion: 'حلل ملف الرياضي كما هو، واذكر نقاط القوة المحتملة والفجوات وما البيانات التي نحتاجها قبل أي استنتاج قوي. لا تعتبر اكتمال الملف دليلاً على مستوى اللاعب.');
   }
 
+  static String whatIfPrompt({required String sport, required String scenario, required String context}) {
+    return prompt(
+      agent: 'analyst',
+      sport: sport,
+      context: context,
+      userQuestion: 'حلل سيناريو What-If التالي: $scenario. اعرض الفرضيات والآثار المحتملة والبيانات الناقصة، ولا تقدمه كتوقع مؤكد أو حقيقة.',
+    );
+  }
+
+  static String careerPrompt({required String sport, required String level, required String goals, required String evidence}) {
+    return prompt(
+      agent: 'opportunity',
+      sport: sport,
+      context: 'المستوى: $level\\nالأهداف: $goals\\nالأدلة المتاحة: $evidence',
+      userQuestion: 'أنشئ Sports Career Map واقعي: مسارات محتملة، مهارات مطلوبة، أدلة ناقصة، وخطوات تالية. لا تضمن عقداً أو انتقالاً أو نجاحاً.',
+    );
+  }
+
+  static String evidencePrompt({required String sport, required String evidence}) {
+    return prompt(
+      agent: 'truth',
+      sport: sport,
+      context: 'الأدلة التي قدمها المستخدم: $evidence',
+      userQuestion: 'حلل Sports Evidence Locker: صنّف كل دليل كمعلومة ذات مصدر واضح أو ذاتية الإبلاغ أو تحتاج تحققاً، واقترح أسئلة التحقق. لا تمنح اعتماداً رسمياً.',
+    );
+  }
+
   static String athleteScoutPrompt({required String athleteName, required List<String> sports, required List<String> skills, required List<String> achievements, String level = '', String location = ''}) {
     final sportText = sports.where((e) => e.trim().isNotEmpty).join(', ');
     final context = 'اللاعب: $athleteName\\nالرياضات: $sportText\\nالمهارات: ${skills.join(', ')}\\nالإنجازات: ${achievements.join(', ')}\\nالمستوى: $level\\nالموقع: $location';
