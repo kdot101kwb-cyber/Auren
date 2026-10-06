@@ -362,7 +362,7 @@ class _AurenBooksMangaScreenState extends State<AurenBooksMangaScreen> {
                 Icon(_subjectIcon(s['id']?.toString() ?? ''), size:28), const SizedBox(height:8),
                 Text(s['title']?.toString() ?? '', maxLines:1, overflow:TextOverflow.ellipsis, style:const TextStyle(fontWeight:FontWeight.w800)),
                 const SizedBox(height:4), Text(s['description']?.toString() ?? '', maxLines:2, overflow:TextOverflow.ellipsis, style:const TextStyle(fontSize:11)),
-              ]))));
+              ])))));
             })),
           ],
           const SizedBox(height:12),
