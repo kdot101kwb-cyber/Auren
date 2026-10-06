@@ -141,7 +141,7 @@ int _profileScore(AurenTalent t) {
   score += (t.skills.length.clamp(0, 5)) * 5;
   score += (t.achievements.length.clamp(0, 3)) * 3;
   score += (t.goals.length.clamp(0, 3)) * 2;
-  return score.clamp(0, 100);
+  return score.clamp(0, 100).toInt();
 }
 
 Widget _card(BuildContext c, AurenTalent t) {
