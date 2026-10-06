@@ -27,7 +27,7 @@ class _AurenProductDetailScreenState extends State<AurenProductDetailScreen> {
           .map((x) => SimpleDialogOption(onPressed: () => Navigator.pop(d, x), child: Text(x))).toList()));
     if (reason == null || !mounted) return;
     try {
-      await repo.report(productId: widget.product.id, reporterUid: FirebaseAuth.instance.currentUser!.uid, reason: reason);
+      await repo.report(productId: widget.product.id, reporterUid: FirebaseAuth.instance.currentUser.uid, reason: reason);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إرسال البلاغ.')));
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر إرسال البلاغ: $e'))); }
   }
