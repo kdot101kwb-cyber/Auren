@@ -29,15 +29,7 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
-    }
-    await AurenTvWatchTogetherService.instance.initializeNotificationRouting();
-    await AurenFcmService.instance.initialize();
-    // Activate App Check before AUREN starts using Firebase services.
-    // Enforcement is intentionally configured in Firebase Console after monitoring,
-    // so existing development builds are not locked out.
+    // Activate App Check before any authenticated Firebase callable/service traffic.
     await FirebaseAppCheck.instance.activate(
       androidProvider: kDebugMode
           ? AndroidProvider.debug
@@ -46,6 +38,12 @@ Future<void> main() async {
           ? AppleProvider.debug
           : AppleProvider.deviceCheck,
     );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+    await AurenTvWatchTogetherService.instance.initializeNotificationRouting();
+    await AurenFcmService.instance.initialize();
   } catch (error) {
     firebaseError = error;
   }
