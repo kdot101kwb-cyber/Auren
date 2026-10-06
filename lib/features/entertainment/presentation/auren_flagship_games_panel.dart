@@ -854,7 +854,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       ]))),
       const SizedBox(height: 12),
       if (_localIndex == 0) _ludoBoard(),
-      if (_localIndex == 1) _dominoTable(),
+      if (_localIndex == 1) _dominoBoardWidget(),
       if (_localIndex == 2) _unoBoard(),
       if (_localIndex == 3) _crimeBoard(),
       if (_localIndex >= 4) _actionBoard(),
@@ -888,7 +888,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
     LinearProgressIndicator(value: _ludo.fold<int>(0, (a, b) => a + max(0, b)) / 224),
   ])));
 
-  Widget _dominoTable() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  Widget _dominoBoardWidget() => Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text('Domino • يدك: ${_dominoHand.length} • الطاولة: ${_dominoTable.length}', style: const TextStyle(fontWeight: FontWeight.w800)),
     const SizedBox(height: 8),
     if (_dominoTable.isNotEmpty) Text(_dominoTable.join(' • ')),
