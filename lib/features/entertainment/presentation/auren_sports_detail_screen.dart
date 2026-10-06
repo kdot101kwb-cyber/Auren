@@ -112,11 +112,11 @@ class _AurenSportsDetailScreenState extends State<AurenSportsDetailScreen> {
   Widget _scoreCard(){
     final x=rows.isNotEmpty && rows.first is Map ? Map<String,dynamic>.from(rows.first as Map):widget.data;
     final teams=x['teams']; final goals=x['goals']; final fixture=x['fixture'];
-    final home=(teams is Map?teams['home']?['name']:null)??widget.data['home']??'Home';
-    final away=(teams is Map?teams['away']?['name']:null)??widget.data['away']??'Away';
+    final home=(teams is Map?(teams['home'] is Map ? teams['home']['name'] : null):null)??widget.data['home']??'Home';
+    final away=(teams is Map?(teams['away'] is Map ? teams['away']['name'] : null):null)??widget.data['away']??'Away';
     final hg=goals is Map?goals['home']:null;
     final ag=goals is Map?goals['away']:null;
-    final venue=fixture is Map?fixture['venue']?['name']:null;
+    final venue=fixture is Map?(fixture['venue'] is Map ? fixture['venue']['name'] : null):null;
     return Card(elevation:0,child:Padding(padding:const EdgeInsets.all(18),child:Column(children:[
       Text(home.toString()+'  •  '+away.toString(),textAlign:TextAlign.center,style:const TextStyle(fontSize:20,fontWeight:FontWeight.w900)),
       const SizedBox(height:10),Text((hg??'-').toString()+'  —  '+(ag??'-').toString(),style:const TextStyle(fontSize:34,fontWeight:FontWeight.w900)),
