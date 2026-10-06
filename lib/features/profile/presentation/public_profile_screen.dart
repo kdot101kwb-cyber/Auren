@@ -391,7 +391,6 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
 
 
   Widget _athleteModeCard(BuildContext context, AurenTalent talent) {
-    final sportsAi = AurenSportsAiService();
     final sports = talent.sports.isEmpty && talent.sport.isNotEmpty ? [talent.sport] : talent.sports;
     final score = TalentScoreService.calculate(
       displayName: talent.displayName,
