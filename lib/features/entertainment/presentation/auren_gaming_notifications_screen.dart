@@ -18,7 +18,7 @@ class _AurenGamingNotificationsScreenState extends State<AurenGamingNotification
      leading:const Icon(Icons.emoji_events),
      title:Text('Season Reward • Rank '+(x['rank']?.toString()??'—')),
      subtitle:Text((x['reward']?.toString()??'0')+' Coins'),
-     trailing:Icon(x['claimed']==true?Icons.check_circle:Icons.card_giftcard),tileColor:x['readAt']==null?Theme.of(context).colorScheme.primaryContainer.withOpacity(.25):null,
+     trailing:Icon(x['claimed']==true?Icons.check_circle:Icons.card_giftcard),tileColor:x['readAt']==null?Theme.of(context).colorScheme.primaryContainer.withValues(alpha: .25):null,
     )),
    ]),
   ),
