@@ -26,6 +26,12 @@ class AurenTalentScoutResultsScreen extends StatelessWidget {
             const SizedBox(height:8),Text(f.description),
             if(f.matchedSkills.isNotEmpty)...[const SizedBox(height:8),Text('مطابق: ${f.matchedSkills.join(' • ')}')],
             if(f.missingSkills.isNotEmpty)...[const SizedBox(height:4),Text('ناقص: ${f.missingSkills.join(' • ')}')],
+            if(f.type=='sports' || f.type=='opportunity') ...[
+              const SizedBox(height:8),
+              const Text('لماذا ظهرت هذه النتيجة؟',style:TextStyle(fontWeight:FontWeight.w800)),
+              const SizedBox(height:4),
+              Text(_matchReason(f)),
+            ],
             const SizedBox(height:10),
             Wrap(spacing:8, children:[
               if(f.status=='new') OutlinedButton.icon(icon:const Icon(Icons.visibility_outlined),label:const Text('تمت المراجعة'),onPressed:()=>service.markSeen(uid,f.id)),if(f.status!='interested'&&f.status!='dismissed') OutlinedButton.icon(icon:const Icon(Icons.star_outline),label:const Text('مهتم'),onPressed:()=>service.markInterested(uid,f.id)),
@@ -37,5 +43,12 @@ class AurenTalentScoutResultsScreen extends StatelessWidget {
         });
       }),
     );
+  String _matchReason(AurenTalentScoutFinding f) {
+    final parts=<String>[];
+    if(f.matchedSkills.isNotEmpty) parts.add('مهارات متطابقة: ${f.matchedSkills.join('، ')}');
+    if(f.missingSkills.isNotEmpty) parts.add('فجوات ظاهرة: ${f.missingSkills.join('، ')}');
+    if(parts.isEmpty) return 'النتيجة مبنية على إشارات الملف المتاحة للكشاف، وليست حكماً نهائياً على ملاءمة اللاعب.';
+    return '${parts.join(' • ')}. الدرجة إشارة للمطابقة فقط وليست تصنيفاً رسمياً للاعب.';
+  }
   }
 }
