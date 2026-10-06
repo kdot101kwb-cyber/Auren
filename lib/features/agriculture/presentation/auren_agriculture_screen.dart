@@ -126,6 +126,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.waterfall_chart_outlined, 'المضخة والتصريف', _showPumpTool),
             _toolButton(Icons.water_outlined, 'حجم الخزان', _showTankTool),
             _toolButton(Icons.grass_outlined, 'احتياج المحصول للمياه', _showCropWaterNeedTool),
+            _toolButton(Icons.science_outlined, 'حساب الأسمدة', _showFertilizerTool),
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
@@ -489,6 +490,65 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     depth.dispose();
     efficiency.dispose();
     if (mounted && result != null) _showResult('احتياج المحصول للمياه', result);
+  }
+
+  Future<void> _showFertilizerTool() async {
+    final area = TextEditingController(text: '1000');
+    final dose = TextEditingController(text: '100');
+    final nitrogen = TextEditingController(text: '20');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('حاسبة الأسمدة'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: area,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'المساحة م²'),
+            ),
+            TextField(
+              controller: dose,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'معدل السماد كجم/هكتار'),
+            ),
+            TextField(
+              controller: nitrogen,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'نسبة النيتروجين في السماد %'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final a = double.tryParse(area.text.trim()) ?? 0;
+              final d = double.tryParse(dose.text.trim()) ?? 0;
+              final n = double.tryParse(nitrogen.text.trim()) ?? 0;
+              if (a <= 0 || d <= 0 || n < 0 || n > 100) {
+                Navigator.pop(context, 'أدخل قيماً صحيحة، ونسبة النيتروجين بين 0 و100%.');
+                return;
+              }
+              final hectares = a / 10000;
+              final fertilizerKg = hectares * d;
+              final nutrientKg = fertilizerKg * n / 100;
+              Navigator.pop(
+                context,
+                'كمية السماد التقديرية: ${fertilizerKg.toStringAsFixed(2)} كجم.\\n'
+                'النيتروجين المضاف تقريباً: ${nutrientKg.toStringAsFixed(2)} كجم.\\n\\n'
+                'هذا حساب كمي فقط، وليس توصية تسميد. تحديد الجرعة المناسبة يحتاج تحليل التربة والمحصول ومرحلة النمو ومصدر السماد.',
+              );
+            },
+            child: const Text('احسب'),
+          ),
+        ],
+      ),
+    );
+    area.dispose();
+    dose.dispose();
+    nitrogen.dispose();
+    if (mounted && result != null) _showResult('حساب الأسمدة', result);
   }
 
   Future<void> _showCostTool() async {
