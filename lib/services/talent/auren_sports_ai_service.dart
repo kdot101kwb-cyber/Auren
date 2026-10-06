@@ -28,5 +28,10 @@ ${userQuestion.trim().isEmpty ? '' : 'سؤال المستخدم:\n$userQuestion\
 
   static String matchPrompt(String title, String sport, String context) => prompt(agent: 'analyst', sport: sport, context: context, userQuestion: 'حلل المباراة $title من البيانات المتاحة فقط، واشرح عوامل الأداء والتغير في المباراة دون اختراع إحصائيات.');
   static String performancePrompt(String sport, String context) => prompt(agent: 'performance', sport: sport, context: context, userQuestion: 'راجع قياسات أدائي، استخرج الاتجاهات ونقاط القوة والفجوات واقترح خطوات تدريب عامة قابلة للمتابعة.');
+
+  static String performanceDataPrompt({required String sport, required List<String> measurements}) {
+    final context = measurements.where((e) => e.trim().isNotEmpty).join('\\n');
+    return prompt(agent: 'performance', sport: sport, context: context, userQuestion: 'حلل القياسات المسجلة أعلاه فقط. لا تخلط مؤشرات مختلفة أو وحدات مختلفة. وضّح أحدث اتجاه، وما يمكن استنتاجه فعلاً، وما لا يمكن استنتاجه.');
+  }
   static String scoutPrompt(String sport, String context) => prompt(agent: 'scout', sport: sport, context: context, userQuestion: 'أنشئ تقرير Scout يوضح نقاط القوة والمهارات والأدلة المتاحة والفجوات والفرص المناسبة.');
 }
