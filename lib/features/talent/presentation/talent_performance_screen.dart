@@ -271,6 +271,7 @@ class _AurenTalentPerformanceScreenState extends State<AurenTalentPerformanceScr
                   ),
                 ),
               ),
+              ),
               if (summaryValues.isNotEmpty)
                 Card(
                   child: Padding(
