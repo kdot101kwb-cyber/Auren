@@ -866,7 +866,7 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
   }
 
   Widget _buildRpsRoom(BuildContext context, Map<String,dynamic> data, String? uid) {
-    final players=List<String>.from((data['playerUids'] as List<dynamic>?? const []).map((e)=>e.toString()));
+    final players=List<String>.from((data['playerUids'] as List<dynamic>? ?? const []).map((e)=>e.toString()));
     final moves=data['rpsMoves'] is Map?Map<String,dynamic>.from(data['rpsMoves'] as Map):<String,dynamic>{};
     final ready=players.length==2;
     final mine=moves.containsKey(uid);
@@ -1003,7 +1003,7 @@ class AurenGamingService {
     final ref = _db.collection('gaming_rooms').doc(roomId);
     await _db.runTransaction((tx) async {
       final snap=await tx.get(ref); if(!snap.exists) throw StateError('الغرفة غير موجودة.');
-      final d=snap.data()??{}; final players=List<String>.from((d['playerUids'] as List<dynamic>?? const []).map((e)=>e.toString()));
+      final d=snap.data()??{}; final players=List<String>.from((d['playerUids'] as List<dynamic>? ?? const []).map((e)=>e.toString()));
       if(players.contains(uid)) return; if(players.length>=2) throw StateError('الغرفة ممتلئة.');
       players.add(uid); tx.update(ref,{'playerUids':players,'marks.$uid':'B','status':'ready','updatedAt':FieldValue.serverTimestamp()});
     });
