@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/talent.dart';
-import '../../../services/talent/talent_repository.dart';
 import '../../../services/talent/talent_discovery_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'talent_agent_workflow_screen.dart';
