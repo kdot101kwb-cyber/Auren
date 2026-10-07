@@ -112,7 +112,7 @@ _ActionChip('Talent Verification','جهز ملف إثبات للمهارات و�
 _ActionChip('Achievements & Badges','استخرج إنجازات قابلة للتحويل إلى شارات من ملفي وسجلات أدائي، واقترح شروطاً واضحة لكل شارة بدون اختلاق إنجازات.'),
 _ActionChip('Talent Radar','حدد معايير بحث شخصية للفرص الرياضية المناسبة لي مثل الرياضة والمستوى والموقع ونوع الفرصة، ثم اقترح كيف أتابعها داخل AUREN.')])
   ],
-),)))),
+),])))),
 const SizedBox(height: 12),
 const AurenTalentGeneralAiTools(),
 const SizedBox(height: 12),
