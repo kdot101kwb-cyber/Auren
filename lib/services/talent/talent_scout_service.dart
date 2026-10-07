@@ -87,24 +87,31 @@ class TalentScoutService {
   Future<void> clearExpired(String uid) async {
     final now = Timestamp.now();
     const pageSize = 200;
-    DocumentSnapshot<Map<String, dynamic>>? lastDoc;
-    do {
-      Query<Map<String, dynamic>> query = db.collection('users').doc(uid).collection('talent_scout_findings')
-          .where('expiresAt', isLessThan: now)
-          .limit(pageSize);
-      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
-      final snap = await query.get();
-      if (snap.docs.isEmpty) return;
-      final batch = db.batch();
-      for (final doc in snap.docs) {
-        batch.update(doc.reference, {'status': 'dismissed'});
-      }
-      await batch.commit();
-      lastDoc = snap.docs.last;
-      if (snap.docs.length < pageSize) break;
-    } while (lastDoc != null);
-  }
+    final statuses = ['new', 'seen', 'interested'];
+    final col = db.collection('users').doc(uid).collection('talent_scout_findings');
 
+    for (final status in statuses) {
+      DocumentSnapshot<Map<String, dynamic>>? lastDoc;
+      while (true) {
+        Query<Map<String, dynamic>> query = col
+            .where('status', isEqualTo: status)
+            .where('expiresAt', isLessThan: now)
+            .limit(pageSize);
+        if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+        final snap = await query.get();
+        if (snap.docs.isEmpty) break;
+
+        final batch = db.batch();
+        for (final doc in snap.docs) {
+          batch.update(doc.reference, {'status': 'dismissed'});
+        }
+        await batch.commit();
+
+        lastDoc = snap.docs.last;
+        if (snap.docs.length < pageSize) break;
+      }
+    }
+  }
   Future<List<Map<String, dynamic>>> findSportsMatches({
     required AurenTalent talent,
     List<AurenOpportunity> opportunities = const [],
