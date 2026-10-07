@@ -39,6 +39,7 @@ class AurenAdaptiveHomeFocus extends StatelessWidget {
       onTap: () => onPrompt('حلّل وضعي الحالي واقترح لي أفضل خطوة تالية مرتبطة بأهدافي.'),
     ),
   );
+  }
 }
 
 class AurenHomeV2 extends StatelessWidget {
