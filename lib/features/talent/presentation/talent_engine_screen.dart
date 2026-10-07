@@ -110,7 +110,15 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
         ]))),
       ],
       const SizedBox(height:10),
-      if(!_loading&&_results.isEmpty) const Padding(padding:EdgeInsets.all(20),child:Text('ابدأ بمهارة أو دور محدد.')),
+      if(!_loading&&_results.isEmpty)
+        Padding(
+          padding:const EdgeInsets.all(20),
+          child:Text(
+            widget.opportunityId!=null
+                ? 'لا توجد مطابقات بمهارات موثقة لهذه الفرصة.'
+                : 'ابدأ بمهارة أو دور محدد.',
+          ),
+        ),
       ..._results.map((candidate)=>Card(child:ListTile(
         leading:CircleAvatar(child:Text('${candidate.score}')),
         title:Text(candidate.headline.isEmpty?'AUREN Professional':candidate.headline),
