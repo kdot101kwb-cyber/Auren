@@ -48,7 +48,14 @@ class AurenTalentSkillGraph extends StatelessWidget {
             children: [
               Text(skill, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
-              Text('Proof Chain • ' + (confidence * 100).round().toString() + '% ثقة'),
+              Row(children: [
+                Text('Proof Chain • ' + (confidence * 100).round().toString() + '% ثقة'),
+                if (data['verified'] == true) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.verified, size: 18),
+                  const Text(' موثقة'),
+                ],
+              ]),
               const SizedBox(height: 14),
               const Text('كيف وصلت AUREN لهذا الترشيح؟', style: TextStyle(fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
@@ -148,6 +155,7 @@ class AurenTalentSkillGraph extends StatelessWidget {
                   final confidence = ((data['confidence'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
                   final evidenceCount = (data['evidenceCount'] as num?)?.toInt() ?? 0;
                   final skill = (data['skill'] ?? 'مهارة غير معروفة').toString();
+                  final verified = data['verified'] == true;
                   final evidence = (data['lastResult'] ?? '').toString();
 
                   return Padding(
@@ -163,9 +171,14 @@ class AurenTalentSkillGraph extends StatelessWidget {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(
-                                skill,
-                                style: const TextStyle(fontWeight: FontWeight.w800),
+                              child: Row(
+                                children: [
+                                  Flexible(child: Text(skill, style: const TextStyle(fontWeight: FontWeight.w800))),
+                                  if (verified) ...[
+                                    const SizedBox(width: 6),
+                                    const Icon(Icons.verified, size: 17),
+                                  ],
+                                ],
                               ),
                             ),
                             Text('${(confidence * 100).round()}%'),
