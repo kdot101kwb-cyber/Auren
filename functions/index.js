@@ -4124,12 +4124,33 @@ exports.evaluateTalentSkillVerificationRequest = onDocumentCreated(
 
     const ownerId = String(data.ownerId || '').trim();
     const skill = String(data.skill || '').trim();
-    const proof = data.proof && typeof data.proof === 'object' ? data.proof : {};
     if (!ownerId || !skill) return;
 
-    const evidenceCount = Number(proof.evidenceCount || 0);
-    const result = String(proof.result || '').trim();
-    const evidence = String(proof.evidence || '').trim();
+    // Verification evidence is authoritative only when read from the server-owned
+    // mission evidence collection. Never trust proof fields supplied by the client.
+    const skillCategories = {
+      'creative problem solving': ['إبداع'],
+      'writing': ['كتابة'],
+      'problem solving': ['حل المشكلات'],
+      'design thinking': ['تصميم'],
+      'leadership': ['قيادة'],
+      'analytical thinking': ['تحليل'],
+      'content creation': ['محتوى'],
+      'adaptability': ['اكتشاف'],
+    };
+    const categories = skillCategories[skill.toLowerCase().trim()] || [];
+    const evidenceSnap = await db.collection('talent_mission_evidence')
+      .where('ownerId', '==', ownerId)
+      .limit(100)
+      .get();
+    const matchingEvidence = evidenceSnap.docs
+      .map((doc) => doc.data() || {})
+      .filter((item) => categories.includes(String(item.category || '').trim()))
+      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    const evidenceCount = matchingEvidence.length;
+    const latest = matchingEvidence[0] || {};
+    const result = String(latest.result || '').trim();
+    const evidence = String(latest.evidence || '').trim();
     const reasons = [];
     if (evidenceCount >= 2) reasons.push('multiple_evidence');
     if (result) reasons.push('mission_result');
