@@ -82,7 +82,7 @@ class _EditNameDialogState extends State<_EditNameDialog> {
   }
   @override Widget build(BuildContext context) => AlertDialog(
     title: Text(AurenLocalizations.of(context).editProfile),
-    content: TextField(controller: c, autofocus: true, maxLength: 80, decoration: const InputDecoration(labelText: AurenLocalizations.of(context).displayName)),
+    content: TextField(controller: c, autofocus: true, maxLength: 80, decoration: InputDecoration(labelText: AurenLocalizations.of(context).displayName)),
     actions: [
       TextButton(onPressed: saving ? null : () => Navigator.pop(context), child: Text(AurenLocalizations.of(context).cancel)),
       FilledButton(onPressed: saving ? null : save, child: Text(AurenLocalizations.of(context).save)),
