@@ -414,14 +414,55 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                 Text('Verified Skills', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
               ]),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: skills.map((data) => Chip(
-                  avatar: const Icon(Icons.verified, size: 16),
-                  label: Text((data['skill'] ?? 'Skill').toString()),
-                )).toList(),
-              ),
+              ...skills.map((data) {
+                final skill = (data['skill'] ?? 'Skill').toString();
+                final evidence = (data['evidence'] ?? '').toString().trim();
+                final result = (data['lastResult'] ?? '').toString().trim();
+                final source = (data['verificationSource'] ?? data['source'] ?? 'AUREN').toString();
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  child: ListTile(
+                    leading: const Icon(Icons.verified, size: 20),
+                    title: Text(skill, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: Text([
+                      'موثقة',
+                      if (result.isNotEmpty) 'نتيجة: $result',
+                    ].join(' • ')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => showModalBottomSheet(
+                      context: context,
+                      showDragHandle: true,
+                      builder: (_) => Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            Text(skill, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                            const SizedBox(height: 10),
+                            const Text('Proof Chain', style: TextStyle(fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 8),
+                            Text('المصدر: $source'),
+                            if (result.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              const Text('النتيجة', style: TextStyle(fontWeight: FontWeight.w700)),
+                              Text(result),
+                            ],
+                            if (evidence.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              const Text('الدليل المرفق', style: TextStyle(fontWeight: FontWeight.w700)),
+                              SelectableText(evidence),
+                            ],
+                            const SizedBox(height: 12),
+                            const Text(
+                              'هذه المعلومات تعرض الأدلة المسجلة التي بُني عليها التوثيق، ولا تعني حكماً نهائياً على قدرات الشخص.',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
               const SizedBox(height: 6),
               Text(
                 'مهارات موثقة بناءً على أدلة تمت مراجعتها داخل AUREN.',
