@@ -183,18 +183,21 @@ class AurenTalentEngineService {
     if(cleanOwnerId == cleanTalentUid) throw ArgumentError('لا يمكن دعوة نفسك.');
     if(cleanTitle.isEmpty || cleanTitle.length > 200) throw ArgumentError('عنوان الفرصة غير صالح.');
     final ref=_db.collection('opportunity_invitations').doc(cleanOpportunityId + '_' + cleanTalentUid);
-    final existing = await ref.get();
-    if (existing.exists) {
-      throw StateError('تم إرسال دعوة لهذه الموهبة لهذه الفرصة من قبل.');
+    try {
+      await ref.create({
+        'ownerId': cleanOwnerId,
+        'talentUid': cleanTalentUid,
+        'opportunityId': cleanOpportunityId,
+        'opportunityTitle': cleanTitle,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } on FirebaseException catch (e) {
+      if (e.code == 'already-exists') {
+        throw StateError('تم إرسال دعوة لهذه الموهبة لهذه الفرصة من قبل.');
+      }
+      rethrow;
     }
-    await ref.set({
-      'ownerId': cleanOwnerId,
-      'talentUid': cleanTalentUid,
-      'opportunityId': cleanOpportunityId,
-      'opportunityTitle': cleanTitle,
-      'status': 'pending',
-      'createdAt': FieldValue.serverTimestamp(),
-    });
   }
 
   Future<void> respondToInvitation({required String invitationId,required String talentUid,required String status}) async {
