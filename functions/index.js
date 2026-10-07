@@ -4344,7 +4344,7 @@ async function computeOpportunityApplicationMatchForSnapshot(snap, applicantId, 
     db.collection('talent_skill_graph')
       .where('ownerId', '==', applicantId)
       .where('verified', '==', true)
-      .limit(50)
+      .limit(200)
       .get(),
   ]);
 
