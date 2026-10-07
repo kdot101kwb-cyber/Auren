@@ -5563,6 +5563,30 @@ match /users/{userId}/kids_activity_progress/{activityId} {
     }
 
 
+  // Discovery Mission evidence is private to its owner. It is the raw proof
+  // used later by Skill Graph and verification workflows.
+  match /talent_mission_evidence/{evidenceId} {
+    allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    allow create: if request.auth != null
+      && request.resource.data.ownerId == request.auth.uid
+      && request.resource.data.mission is string
+      && request.resource.data.mission.size() > 0
+      && request.resource.data.mission.size() <= 200
+      && request.resource.data.category is string
+      && request.resource.data.category.size() > 0
+      && request.resource.data.category.size() <= 80
+      && request.resource.data.result is string
+      && request.resource.data.result.size() > 0
+      && request.resource.data.result.size() <= 5000
+      && request.resource.data.evidence is string
+      && request.resource.data.evidence.size() <= 5000
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.keys().hasOnly([
+        'ownerId','mission','category','result','evidence','createdAt'
+      ]);
+    allow update, delete: if false;
+  }
+
   match /talent_claims/{claimId} {
     allow read: if request.auth != null
       && (resource.data.claimantUid == request.auth.uid || isAdmin());
