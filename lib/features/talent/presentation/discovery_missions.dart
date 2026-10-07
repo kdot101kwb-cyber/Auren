@@ -32,12 +32,14 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(_missions[index].title),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+        content: StatefulBuilder(
+          builder: (context, setDialogState) => SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: controller,
+                onChanged: (_) => setDialogState(() {}),
                 maxLines: 5,
                 maxLength: 2000,
                 decoration: const InputDecoration(
@@ -49,6 +51,7 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
               const SizedBox(height: 12),
               TextField(
                 controller: evidenceController,
+                onChanged: (_) => setDialogState(() {}),
                 maxLines: 4,
                 maxLength: 2000,
                 decoration: const InputDecoration(
