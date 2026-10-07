@@ -25,6 +25,7 @@ class TalentScoreService {
     required String bio,
     required List<String> sports,
     required List<String> skills,
+    List<String> verifiedSkills = const [],
     required List<String> achievements,
     required List<String> goals,
     required List<String> verificationEvidence,
@@ -44,7 +45,10 @@ class TalentScoreService {
           (country.trim().isNotEmpty ? 2 : 0),
       34,
     );
-    final skillsScore = capped(skills.length * 2, 20);
+    final verifiedSkillCount = verifiedSkills.isNotEmpty ? verifiedSkills.toSet().length : 0;
+    final skillsScore = verifiedSkills.isNotEmpty
+        ? capped(verifiedSkillCount * 4, 20)
+        : capped(skills.length * 2, 20);
     final achievementsScore = capped(achievements.length * 2, 20);
     final evidenceScore = capped(verificationEvidence.length * 1, 10);
     final goalsScore = capped(goals.length * 2, 16);
