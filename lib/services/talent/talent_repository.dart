@@ -33,7 +33,7 @@ class TalentRepository {
     final ref = db.collection('talents').doc(talentId);
     final snap = await ref.get();
     if (!snap.exists || snap.data()?['ownerId']?.toString() != ownerId.trim()) throw StateError('Not talent owner');
-    final cleanEvidence = evidence.map((e) => e.trim()).where((e) => e.isNotEmpty).take(10).toList();
+    final cleanEvidence = evidence.map((e) => e.trim()).where((e) => e.isNotEmpty && e.length <= 1200).take(10).toList();
     await ref.update({'verificationEvidence': cleanEvidence, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
@@ -245,6 +245,11 @@ class TalentRepository {
         ? requestedCategory
         : 'other';
     final cleanSport = clean(sport);
+    final cleanDiscipline = clean(discipline);
+    final cleanLevel = clean(level);
+    if (cleanSport.length > 80 || cleanDiscipline.length > 100 || cleanLevel.length > 60) {
+      throw ArgumentError('بيانات التخصص الرياضي تتجاوز الحد المسموح.');
+    }
     final isSports = canonicalCategory == 'sports';
 
     await ref.set({
@@ -254,8 +259,8 @@ class TalentRepository {
       'category': canonicalCategory,
       'sport': isSports ? cleanSport : '',
       'sports': isSports ? list(sports.isEmpty && cleanSport.isNotEmpty ? [cleanSport] : sports, 10, 80) : <String>[],
-      'discipline': clean(discipline),
-      'level': clean(level),
+      'discipline': cleanDiscipline,
+      'level': cleanLevel,
       'city': cleanCity,
       'country': cleanCountry,
       'skills': list(skills, 30, 120).map((e) => e.toLowerCase()).toList(),
