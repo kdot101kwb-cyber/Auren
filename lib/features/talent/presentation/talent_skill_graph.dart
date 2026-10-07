@@ -1,9 +1,34 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../../services/talent/talent_repository.dart';
 
 class AurenTalentSkillGraph extends StatelessWidget {
   const AurenTalentSkillGraph({super.key});
+
+  Future<void> _requestVerification(BuildContext context, Map<String, dynamic> data) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final skill = (data['skill'] ?? '').toString();
+    try {
+      await TalentRepository().requestSkillVerification(
+        ownerId: uid,
+        skill: skill,
+        proof: {
+          'evidenceCount': data['evidenceCount'] ?? 0,
+          'result': data['lastResult'] ?? '',
+          'evidence': data['evidence'] ?? '',
+          'source': data['source'] ?? 'discovery_mission',
+        },
+      );
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم إرسال طلب توثيق المهارة.')));
+      }
+    } catch (_) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر إرسال طلب التوثيق.')));
+    }
+  }
 
   void _showProofChain(BuildContext context, Map<String, dynamic> data) {
     final skill = (data['skill'] ?? 'مهارة').toString();
@@ -49,6 +74,12 @@ class AurenTalentSkillGraph extends StatelessWidget {
               Text(
                 'هذا استنتاج مبني على الأدلة المتاحة، وليس إثباتاً نهائياً للمهارة.',
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () => _requestVerification(context, data),
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('اطلب توثيق هذه المهارة'),
               ),
             ],
           ),
