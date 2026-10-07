@@ -16,13 +16,16 @@ class TalentBadgeRepository {
     if(cleanUid.isEmpty || cleanTalentId.isEmpty) return;
     final ref = db.collection('users').doc(cleanUid).collection('talent_badges');
     final cleanSports = sports.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
+    final cleanSkills = skills.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
+    final cleanAchievements = achievements.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
+    final cleanGoals = goals.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
     final rules = <String, String>{'profile_ready': 'Profile Ready', 'multi_sport': 'Multi-Sport', 'skill_builder': 'Skill Builder', 'achievement_proof': 'Achievement Proof', 'goal_setter': 'Goal Setter'};
     final earned = <String>{
-      if (displayName.trim().isNotEmpty && skills.isNotEmpty && goals.isNotEmpty) 'profile_ready',
+      if (displayName.trim().isNotEmpty && cleanSkills.isNotEmpty && cleanGoals.isNotEmpty) 'profile_ready',
       if (cleanSports.length >= 2) 'multi_sport',
-      if (skills.length >= 5) 'skill_builder',
-      if (achievements.isNotEmpty) 'achievement_proof',
-      if (goals.length >= 3) 'goal_setter',
+      if (cleanSkills.length >= 5) 'skill_builder',
+      if (cleanAchievements.isNotEmpty) 'achievement_proof',
+      if (cleanGoals.length >= 3) 'goal_setter',
     };
     final batch = db.batch();
     for (final entry in rules.entries) {
