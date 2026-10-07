@@ -479,19 +479,33 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
 
   Widget _talentModeCard(BuildContext context, AurenTalent talent) {
     final sports = talent.sports.isEmpty && talent.sport.isNotEmpty ? [talent.sport] : talent.sports;
-    final score = TalentScoreService.calculate(
-      displayName: talent.displayName,
-      bio: talent.bio,
-      sports: sports,
-      skills: talent.skills,
-      achievements: talent.achievements,
-      goals: talent.goals,
-      verificationEvidence: talent.verificationEvidence,
-      level: talent.level,
-      discipline: talent.discipline,
-      city: talent.city,
-      country: talent.country,
-    );
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('talent_skill_graph')
+          .where('ownerId', isEqualTo: talent.ownerId)
+          .where('verified', isEqualTo: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final verifiedSkills = snapshot.data?.docs
+                .map((doc) => (doc.data()['skill'] ?? '').toString().trim())
+                .where((skill) => skill.isNotEmpty)
+                .toSet()
+                .toList() ??
+            const <String>[];
+        final score = TalentScoreService.calculate(
+          displayName: talent.displayName,
+          bio: talent.bio,
+          sports: sports,
+          skills: talent.skills,
+          verifiedSkills: verifiedSkills,
+          achievements: talent.achievements,
+          goals: talent.goals,
+          verificationEvidence: talent.verificationEvidence,
+          level: talent.level,
+          discipline: talent.discipline,
+          city: talent.city,
+          country: talent.country,
+        );
     final graph = TalentSkillGraphService.build(talent);
     final owner = FirebaseAurenAuthService().currentUserId == talent.ownerId;
     return Card(
