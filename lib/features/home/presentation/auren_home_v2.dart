@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/i18n/auren_localizations.dart';
 import '../../../services/goals/goal_repository.dart';
 import '../../../core/models/goal.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -30,8 +31,8 @@ class AurenAdaptiveHomeFocus extends StatelessWidget {
   @override Widget build(BuildContext context) => Card(
     child: ListTile(
       leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
-      title: const Text('AUREN Adaptive Home', style: TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: const Text('AUREN يتكيف مع هدفك الحالي ويقترح الخطوة التالية.'),
+      title: Text(l.adaptiveHome, style: TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text(l.adaptiveHomeSubtitle),
       trailing: const Icon(Icons.arrow_forward),
       onTap: () => onPrompt('حلّل وضعي الحالي واقترح لي أفضل خطوة تالية مرتبطة بأهدافي.'),
     ),
@@ -44,6 +45,7 @@ class AurenHomeV2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    final l = AurenLocalizations.of(context);
     return Scaffold(
     appBar: AppBar(
       title: const Text('AUREN'),
@@ -53,7 +55,7 @@ class AurenHomeV2 extends StatelessWidget {
           builder: (context, snapshot) {
             final count = snapshot.data ?? 0;
             return IconButton(
-              tooltip: count > 0 ? 'Notifications: $count unread' : 'Notifications',
+              tooltip: l.notifications,
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenNotificationsScreen())),
               icon: Stack(
                 clipBehavior: Clip.none,
@@ -85,7 +87,7 @@ class AurenHomeV2 extends StatelessWidget {
         IconButton(
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGlobalSearchScreen())),
           icon: const Icon(Icons.search),
-          tooltip: 'Search AUREN',
+          tooltip: l.searchAuren,
         ),
       ],
     ),
@@ -94,7 +96,7 @@ class AurenHomeV2 extends StatelessWidget {
       children: [
         Text(_greeting(), style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        const Text('AUREN يتكيف معك، وليس العكس.'),
+        Text(l.adaptsToYou),
         const SizedBox(height: 16),
         if (uid != null) ...[
           AurenAdaptiveProfileSurface(
@@ -339,14 +341,14 @@ class AurenHomeV2 extends StatelessWidget {
         const SizedBox(height: 12),
         Card(child: ListTile(
           leading: const Icon(Icons.layers_outlined),
-          title: const Text('AUREN Core 5'),
+          title: Text(l.aurenCore5),
           subtitle: const Text('AI • Social • Business • Marketplace • Creator'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCoreFiveScreen())),
         )),
         Card(child: ListTile(
           leading: const Icon(Icons.more_horiz),
-          title: const Text('More'),
+          title: Text(l.more),
           subtitle: const Text('Pulse • Business • Marketplace • Education • Travel • Entertainment • Agents'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMoreScreen())),
