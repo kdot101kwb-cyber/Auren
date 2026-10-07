@@ -102,6 +102,7 @@ class TalentRepository {
           'lastMission': mission['mission'],
           'lastResult': mission['result'],
           'hasEvidence': mission['evidence']!.isNotEmpty,
+          'evidence': mission['evidence'],
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       }
