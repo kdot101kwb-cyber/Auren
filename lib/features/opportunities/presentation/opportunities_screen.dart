@@ -50,6 +50,23 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
             icon: const Icon(Icons.auto_awesome_outlined),
             onPressed: () => _showVerifiedMatches(context, uid),
           ),
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: repo.watchApplicationNotifications(uid),
+            builder: (context, snapshot) {
+              final unread = (snapshot.data ?? const <Map<String, dynamic>>[])
+                  .where((n) => n['read'] != true)
+                  .length;
+              return IconButton(
+                tooltip: unread == 0 ? 'إشعارات الفرص' : 'إشعارات الفرص ($unread)',
+                icon: Badge(
+                  isLabelVisible: unread > 0,
+                  label: Text(unread > 99 ? '99+' : '$unread'),
+                  child: const Icon(Icons.notifications_none_outlined),
+                ),
+                onPressed: () => _applicationNotifications(context, uid),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'طلباتي',
             icon: const Icon(Icons.assignment_outlined),
@@ -127,6 +144,67 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _applicationNotifications(BuildContext context, String uid) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => SizedBox(
+        height: MediaQuery.of(context).size.height * .72,
+        child: StreamBuilder<List<Map<String, dynamic>>>(
+          stream: repo.watchApplicationNotifications(uid),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('تعذر تحميل الإشعارات: ${snapshot.error}'));
+            }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final notifications = snapshot.data!;
+            if (notifications.isEmpty) {
+              return const Center(child: Text('لا توجد إشعارات فرص حالياً.'));
+            }
+            return ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+              itemCount: notifications.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (_, index) {
+                final n = notifications[index];
+                final id = n['id']?.toString() ?? '';
+                final read = n['read'] == true;
+                final title = n['title']?.toString() ?? 'إشعار فرصة';
+                final status = n['status']?.toString();
+                final opportunityId = n['opportunityId']?.toString() ?? '';
+                return ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  tileColor: read ? null : Theme.of(context).colorScheme.primaryContainer.withOpacity(.35),
+                  leading: Icon(
+                    status == 'accepted'
+                        ? Icons.check_circle_outline
+                        : status == 'rejected'
+                            ? Icons.cancel_outlined
+                            : Icons.work_outline,
+                  ),
+                  title: Text(title, style: TextStyle(fontWeight: read ? FontWeight.normal : FontWeight.w700)),
+                  subtitle: opportunityId.isEmpty ? null : Text('الفرصة: $opportunityId'),
+                  trailing: read
+                      ? null
+                      : const Icon(Icons.fiber_manual_record, size: 10),
+                  onTap: read
+                      ? null
+                      : () async {
+                          try {
+                            await repo.markApplicationNotificationRead(uid, id);
+                          } catch (_) {}
+                        },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -405,6 +483,7 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
                         if (accepted != true || !context.mounted) return;
                         try {
                           await repo.updateApplicationStatus(
+                            ownerId: uid,
                             applicantId: a.applicantId,
                             opportunityId: a.opportunityId,
                             status: status,
