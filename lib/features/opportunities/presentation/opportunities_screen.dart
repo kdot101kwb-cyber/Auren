@@ -346,7 +346,14 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
                 ...snapshot.data!.map((a) => Card(
                   child: ListTile(
                     title: Text(a.title),
-                    subtitle: Text(a.note.isEmpty ? 'بدون ملاحظة' : a.note),
+                    subtitle: Text([
+                      a.note.isEmpty ? 'بدون ملاحظة' : a.note,
+                      'مطابقة موثقة: ${(a.matchScore * 100).round()}%',
+                      if (a.matchedVerifiedSkills.isNotEmpty)
+                        'سبب المطابقة: ${a.matchedVerifiedSkills.join(' • ')}'
+                      else
+                        'سبب المطابقة: لا توجد مهارات موثقة مشتركة بعد',
+                    ].join('\\n')),
                     trailing: PopupMenuButton<String>(
                       onSelected: (status) async {
                         try {
