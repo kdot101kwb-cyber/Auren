@@ -180,9 +180,32 @@ class AurenTalentEngineService {
     await ref.update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
   }
 
-  Stream<List<Map<String,dynamic>>> watchInvitations(String talentUid) => _db.collection('opportunity_invitations')
-      .where('talentUid',isEqualTo:talentUid).limit(100).snapshots()
-      .map((s)=>s.docs.map((d)=>{'id':d.id,...d.data()}).toList());
+  Stream<List<Map<String,dynamic>>> watchInvitations(String talentUid) {
+    final uid = talentUid.trim();
+    if (uid.isEmpty) return Stream.value(const <Map<String, dynamic>>[]);
+
+    return _db
+        .collection('opportunity_invitations')
+        .where('talentUid', isEqualTo: uid)
+        .limit(100)
+        .snapshots()
+        .map((s) {
+          final items = s.docs
+              .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+              .toList();
+          items.sort((a, b) {
+            final aTime = a['createdAt'];
+            final bTime = b['createdAt'];
+            int millis(dynamic value) {
+              if (value is Timestamp) return value.millisecondsSinceEpoch;
+              if (value is DateTime) return value.millisecondsSinceEpoch;
+              return 0;
+            }
+            return millis(bTime).compareTo(millis(aTime));
+          });
+          return items;
+        });
+  }
 
   List<String> _strings(dynamic v)=>v is List?v.whereType<String>().map((x)=>x.trim()).where((x)=>x.isNotEmpty).take(30).toList():const [];
   String _normalize(String value){var s=value.toLowerCase();const marks='\u064B\u064C\u064D\u064E\u064F\u0650\u0651\u0652\u0670';for(final r in marks.runes){s=s.replaceAll(String.fromCharCode(r),'');}return s.replaceAll('أ','ا').replaceAll('إ','ا').replaceAll('آ','ا').replaceAll('ى','ي').replaceAll('ة','ه').replaceAll('ـ',' ').replaceAll(RegExp(r'\s+'),' ').trim();}
