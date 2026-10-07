@@ -5,6 +5,7 @@ import '../../../services/users/user_repository.dart';
 import '../../../services/social/follow_repository.dart';
 import 'social_graph_screen.dart';
 import 'ai_profile_screen.dart';
+import '../../../core/i18n/auren_localizations.dart';
 
 class AurenProfileScreen extends StatelessWidget {
   final String? userId;
@@ -13,14 +14,14 @@ class AurenProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final uid = userId ?? FirebaseAurenAuthService().currentUserId;
-    if (uid == null) return const Scaffold(body: Center(child: Text('Sign in required')));
+    if (uid == null) return Scaffold(body: Center(child: Text(AurenLocalizations.of(context).signInRequired)));
     final follows = FollowRepository();
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(AurenLocalizations.of(context).profile)),
       body: StreamBuilder(
         stream: UserRepository().watch(uid),
         builder: (context, s) {
-          if (s.hasError) return const Center(child: Text('Could not load profile.'));
+          if (s.hasError) return Center(child: Text(AurenLocalizations.of(context).profileLoadError));
           if (!s.hasData) return const Center(child: CircularProgressIndicator());
           final p = s.data!;
           return ListView(
@@ -32,17 +33,17 @@ class AurenProfileScreen extends StatelessWidget {
               const Text('Connect. Create. Achieve.'),
               const SizedBox(height: 18),
               Row(children: [
-                Expanded(child: _Count(label: 'Followers', stream: follows.followersCount(uid), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSocialGraphScreen(uid: uid))))),
-                Expanded(child: _Count(label: 'Following', stream: follows.followingCount(uid), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSocialGraphScreen(uid: uid))))),
+                Expanded(child: _Count(label: AurenLocalizations.of(context).followers, stream: follows.followersCount(uid), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSocialGraphScreen(uid: uid))))),
+                Expanded(child: _Count(label: AurenLocalizations.of(context).following, stream: follows.followingCount(uid), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSocialGraphScreen(uid: uid))))),
               ]),
               const SizedBox(height: 18),
-              Card(child: ListTile(leading: const Icon(Icons.edit), title: const Text('Edit profile'), onTap: () => showDialog(context: context, builder: (_) => _EditNameDialog(uid: uid, current: p.displayName)))),
-              Card(child: ListTile(leading: const Icon(Icons.auto_awesome), title: const Text('AI Profile'), subtitle: const Text('Personal • Creator • Professional • Business'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAiProfileScreen())))),
-              Card(child: ListTile(leading: const Icon(Icons.people_outline), title: const Text('Social Graph'), subtitle: const Text('Followers, following and communities'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSocialGraphScreen(uid: uid))))),
-              Card(child: ListTile(leading: const Icon(Icons.share_outlined), title: const Text('Share my AUREN profile'), subtitle: const Text('انسخ رابط ملفك وشاركه مع الآخرين'), onTap: () async {
+              Card(child: ListTile(leading: const Icon(Icons.edit), title: Text(AurenLocalizations.of(context).editProfile), onTap: () => showDialog(context: context, builder: (_) => _EditNameDialog(uid: uid, current: p.displayName)))),
+              Card(child: ListTile(leading: const Icon(Icons.auto_awesome), title: Text(AurenLocalizations.of(context).aiProfile), subtitle: Text(AurenLocalizations.of(context).profileModes), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAiProfileScreen())))),
+              Card(child: ListTile(leading: const Icon(Icons.people_outline), title: Text(AurenLocalizations.of(context).socialGraph), subtitle: Text(AurenLocalizations.of(context).socialGraphDescription), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSocialGraphScreen(uid: uid))))),
+              Card(child: ListTile(leading: const Icon(Icons.share_outlined), title: Text(AurenLocalizations.of(context).shareProfile), subtitle: Text(AurenLocalizations.of(context).shareProfileDescription), onTap: () async {
                 final link = 'https://auren.app/u/$uid';
                 await Clipboard.setData(ClipboardData(text: link));
-                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ رابط الملف.')));
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AurenLocalizations.of(context).copiedProfileLink)));
               })),
             ],
           );
@@ -80,11 +81,11 @@ class _EditNameDialogState extends State<_EditNameDialog> {
     catch (_) { if (mounted) setState(() => saving = false); }
   }
   @override Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Edit profile'),
-    content: TextField(controller: c, autofocus: true, maxLength: 80, decoration: const InputDecoration(labelText: 'Display name')),
+    title: Text(AurenLocalizations.of(context).editProfile),
+    content: TextField(controller: c, autofocus: true, maxLength: 80, decoration: const InputDecoration(labelText: AurenLocalizations.of(context).displayName)),
     actions: [
-      TextButton(onPressed: saving ? null : () => Navigator.pop(context), child: const Text('Cancel')),
-      FilledButton(onPressed: saving ? null : save, child: const Text('Save')),
+      TextButton(onPressed: saving ? null : () => Navigator.pop(context), child: Text(AurenLocalizations.of(context).cancel)),
+      FilledButton(onPressed: saving ? null : save, child: Text(AurenLocalizations.of(context).save)),
     ],
   );
   @override void dispose() { c.dispose(); super.dispose(); }
