@@ -54,6 +54,23 @@ class TalentRepository {
     });
   }
 
+  Future<void> requestSkillVerification({
+    required String ownerId,
+    required String skill,
+    required Map<String, dynamic> proof,
+  }) async {
+    final cleanSkill = skill.trim();
+    if (ownerId.trim().isEmpty || cleanSkill.isEmpty) return;
+    await FirebaseFirestore.instance.collection('talent_skill_verification_requests').add({
+      'ownerId': ownerId,
+      'skill': cleanSkill,
+      'status': 'pending',
+      'proof': proof,
+      'requestedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<List<String>> promoteMissionEvidenceToSkillGraph({
     required String ownerId,
     required List<Map<String, String>> missions,
