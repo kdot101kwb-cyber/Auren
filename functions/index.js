@@ -4359,7 +4359,7 @@ function normalizeTalentSkill(value) {
     .trim();
 }
 
-async function computeOpportunityApplicationMatchForSnapshot(snap, applicantId, opportunityId) {
+async async function computeOpportunityApplicationMatchForSnapshot(snap, applicantId, opportunityId) {
   if (!snap || !applicantId || !opportunityId) return;
 
   const opportunityRef = db.collection('opportunities').doc(opportunityId);
