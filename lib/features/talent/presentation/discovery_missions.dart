@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../../services/talent/talent_repository.dart';
 
 class AurenDiscoveryMissions extends StatefulWidget {
   const AurenDiscoveryMissions({super.key});
@@ -21,9 +22,11 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
 
   final _done = <int>{};
   final _notes = <int, String>{};
+  final _evidence = <int, String>{};
 
   Future<void> _submit(int index) async {
     final controller = TextEditingController(text: _notes[index] ?? '');
+    final evidenceController = TextEditingController(text: _evidence[index] ?? '');
     final result = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -43,15 +46,24 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
       ),
     );
     controller.dispose();
-    if (result == null || result.isEmpty) return;
+    if (result == null || result.isEmpty) { evidenceController.dispose(); return; }
+    evidenceController.dispose();
     setState(() {
       _done.add(index);
       _notes[index] = result;
+      _evidence[index] = evidenceController.text.trim();
     });
+    await _saveEvidence(index);
+  }
+
+  Future<void> _saveEvidence(int index) async {
+    final uid = (await TalentRepository().currentUserId()).trim();
+    if (uid.isEmpty) return;
+    await TalentRepository().saveMissionEvidence(ownerId: uid, mission: _missions[index].title, category: _missions[index].category, result: _notes[index] ?? '', evidence: _evidence[index] ?? '');
   }
 
   void _review() {
-    final completed = _done.map((i) => '${_missions[i].title}: ${_notes[i] ?? ''}').join('\n');
+    final completed = _done.map((i) => '${_missions[i].title}: ${_notes[i] ?? ''} | الدليل: ${_evidence[i] ?? ''}').join('\n');
     final prompt = completed.isEmpty
         ? 'أريد بدء Discovery Missions في AUREN Talent. اقترح لي أول 3 مهمات عملية قصيرة لاكتشاف مواهب محتملة عندي، ولكل مهمة طريقة واضحة لتسجيل النتيجة والدليل.'
         : 'راجع نتائج Discovery Missions التالية:\n${completed}\nاستخرج الأنماط التي قد تشير إلى مهارات أو مواهب، افصل الأدلة عن الاستنتاجات، ثم اقترح مهمة واحدة فقط كخطوة تالية.';
@@ -83,7 +95,7 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(child: Icon(done ? Icons.check : Icons.flag_outlined)),
               title: Text(mission.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-              subtitle: Text('${mission.category} • ${mission.description}'),
+              subtitle: Text('${mission.category} • ${mission.description}${done && (_evidence[index] ?? '').isNotEmpty ? '\nدليل: ${_evidence[index]}' : ''}'),
               trailing: IconButton(
                 tooltip: done ? 'تعديل النتيجة' : 'ابدأ المهمة',
                 icon: Icon(done ? Icons.edit_outlined : Icons.play_arrow),
