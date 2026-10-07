@@ -1776,7 +1776,7 @@ service cloud.firestore {
     match /talent_skill_graph/{skillId} {
       allow read: if request.auth != null
         && (resource.data.ownerId == request.auth.uid || resource.data.verified == true);
-      allow create, update: if request.auth != null
+      allow create: if request.auth != null
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.skill is string
         && request.resource.data.skill.size() > 0
@@ -1793,6 +1793,26 @@ service cloud.firestore {
         ])
         && (!request.resource.data.keys().hasAny(['evidence']) || request.resource.data.evidence is string)
         && (!request.resource.data.keys().hasAny(['verified']) || request.resource.data.verified == false || isAdmin());
+
+      // Owners may update their evidence fields, but only admins may change
+      // a skill to verified or set verification metadata.
+      allow update: if request.auth != null
+        && (
+          (
+            resource.data.ownerId == request.auth.uid
+            && request.resource.data.ownerId == resource.data.ownerId
+            && (!request.resource.data.keys().hasAny(['verified']) || request.resource.data.verified == resource.data.verified)
+            && (!request.resource.data.keys().hasAny(['verificationSource']) || request.resource.data.verificationSource == resource.data.verificationSource)
+            && (!request.resource.data.keys().hasAny(['verifiedAt']) || request.resource.data.verifiedAt == resource.data.verifiedAt)
+          )
+          ||
+          (
+            isAdmin()
+            && request.resource.data.ownerId == resource.data.ownerId
+            && request.resource.data.verified == true
+            && request.resource.data.verificationSource is string
+          )
+        );
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
