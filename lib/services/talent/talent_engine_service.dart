@@ -84,5 +84,5 @@ class AurenTalentEngineService {
       .map((s)=>s.docs.map((d)=>{'id':d.id,...d.data()}).toList());
 
   List<String> _strings(dynamic v)=>v is List?v.whereType<String>().map((x)=>x.trim()).where((x)=>x.isNotEmpty).take(30).toList():const [];
-  String _normalize(String value){var s=value.toLowerCase();const marks='\\u064B\\u064C\\u064D\\u064E\\u064F\\u0650\\u0651\\u0652\\u0670';for(final r in marks.runes){s=s.replaceAll(String.fromCharCode(r),'');}return s.replaceAll('أ','ا').replaceAll('إ','ا').replaceAll('آ','ا').replaceAll('ى','ي').replaceAll('ة','ه').replaceAll('ـ',' ').replaceAll(RegExp(r'\\s+'),' ').trim();}
+  String _normalize(String value){var s=value.toLowerCase();const marks='\u064B\u064C\u064D\u064E\u064F\u0650\u0651\u0652\u0670';for(final r in marks.runes){s=s.replaceAll(String.fromCharCode(r),'');}return s.replaceAll('أ','ا').replaceAll('إ','ا').replaceAll('آ','ا').replaceAll('ى','ي').replaceAll('ة','ه').replaceAll('ـ',' ').replaceAll(RegExp(r'\s+'),' ').trim();}
 }
