@@ -128,6 +128,7 @@ class TalentRepository {
         .collection('talent_skill_verification_requests')
         .where('ownerId', isEqualTo: cleanOwnerId)
         .where('status', isEqualTo: 'pending')
+        .limit(100)
         .get();
     if (existing.docs.any((doc) =>
         doc.data()['status']?.toString() == 'pending' &&
