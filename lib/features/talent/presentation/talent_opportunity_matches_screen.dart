@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/talent.dart';
 import '../../../services/talent/talent_discovery_service.dart';
+import '../../../services/opportunities/opportunity_repository.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'talent_agent_workflow_screen.dart';
 
@@ -12,6 +14,54 @@ class TalentOpportunityMatchesScreen extends StatefulWidget {
 class _TalentOpportunityMatchesScreenState extends State<TalentOpportunityMatchesScreen>{
   late Future<List<AurenTalentMatch>> _future;
   @override void initState(){super.initState();_future=TalentDiscoveryService().matchOpportunities(widget.talent);}
+  Future<void> _applyToOpportunity(AurenTalentMatch match) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid == match.opportunity.ownerId) return;
+    final note = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('التقديم على الفرصة'),
+        content: TextField(
+          controller: note,
+          maxLines: 5,
+          maxLength: 2000,
+          decoration: const InputDecoration(
+            hintText: 'اكتب ملاحظة لصاحب الفرصة (اختياري)',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('إرسال التقديم')),
+        ],
+      ),
+    );
+    if (ok != true) {
+      note.dispose();
+      return;
+    }
+    try {
+      await OpportunityRepository().apply(
+        uid: uid,
+        opportunity: match.opportunity,
+        note: note.text,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم إرسال التقديم. المطابقة الموثقة سيحسبها الخادم.')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر التقديم: $e')),
+        );
+      }
+    } finally {
+      note.dispose();
+    }
+  }
+
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('Talent Matches')),
     body:FutureBuilder<List<AurenTalentMatch>>(
@@ -31,6 +81,11 @@ class _TalentOpportunityMatchesScreenState extends State<TalentOpportunityMatche
               if(m.missingSkills.isNotEmpty)Text('مهارات مطلوبة إضافية: '+m.missingSkills.join(' • ')),
               const SizedBox(height:10),
               Wrap(alignment:WrapAlignment.end,spacing:8,runSpacing:8,children:[FilledButton.icon(
+                icon:const Icon(Icons.send_outlined),label:const Text('قدّم الآن'),
+                onPressed:FirebaseAuth.instance.currentUser?.uid == null || FirebaseAuth.instance.currentUser?.uid == m.opportunity.ownerId
+                    ? null
+                    : ()=>_applyToOpportunity(m),
+              ),FilledButton.icon(
                 icon:const Icon(Icons.auto_awesome),label:const Text('ابدأ خطة الوكلاء'),
                 onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>TalentAgentWorkflowScreen(talent:widget.talent,match:m))),
               ),FilledButton.icon(
