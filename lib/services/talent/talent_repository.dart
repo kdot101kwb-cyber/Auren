@@ -54,6 +54,61 @@ class TalentRepository {
     });
   }
 
+  Future<List<String>> promoteMissionEvidenceToSkillGraph({
+    required String ownerId,
+    required List<Map<String, String>> missions,
+  }) async {
+    final cleanMissions = missions
+        .map((m) => {
+              'mission': (m['mission'] ?? '').trim(),
+              'category': (m['category'] ?? '').trim(),
+              'result': (m['result'] ?? '').trim(),
+              'evidence': (m['evidence'] ?? '').trim(),
+            })
+        .where((m) => m['mission']!.isNotEmpty && m['result']!.isNotEmpty)
+        .toList();
+    if (cleanMissions.isEmpty) return const [];
+
+    const categorySkills = <String, List<String>>{
+      'إبداع': ['creative problem solving'],
+      'كتابة': ['writing'],
+      'حل المشكلات': ['problem solving'],
+      'تصميم': ['design thinking'],
+      'قيادة': ['leadership'],
+      'تحليل': ['analytical thinking'],
+      'محتوى': ['content creation'],
+      'اكتشاف': ['adaptability'],
+    };
+
+    final candidates = <String>{};
+    for (final mission in cleanMissions) {
+      final skills = categorySkills[mission['category']] ?? const <String>[];
+      for (final skill in skills) {
+        candidates.add(skill);
+        final safeSkill = skill.replaceAll(RegExp(r'[^a-zA-Z0-9_ -]'), '_');
+        final ref = db.collection('talent_skill_graph').doc('${ownerId}_$safeSkill');
+        final existing = await ref.get();
+        final previousCount =
+            (existing.data()?['evidenceCount'] as num?)?.toInt() ?? 0;
+        final evidenceCount = previousCount + 1;
+        final confidence =
+            (0.45 + (evidenceCount - 1) * 0.10).clamp(0.45, 0.85);
+        await ref.set({
+          'ownerId': ownerId,
+          'skill': skill,
+          'confidence': confidence,
+          'evidenceCount': evidenceCount,
+          'source': 'discovery_mission',
+          'lastMission': mission['mission'],
+          'lastResult': mission['result'],
+          'hasEvidence': mission['evidence']!.isNotEmpty,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    }
+    return candidates.toList()..sort();
+  }
+
   Future<String> save({
     required String ownerId, required String displayName, required String bio, required String category,
     String sport = '', String discipline = '', String level = '', required String city, required String country,
