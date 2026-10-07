@@ -14,12 +14,37 @@ class TalentDiscoveryService {
   final FirebaseFirestore db;
   TalentDiscoveryService({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
 
+  String _norm(String value) => value
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
   Future<List<AurenTalentMatch>> matchOpportunities(AurenTalent talent,{int limit=20}) async {
+    final ownerId = talent.ownerId.trim();
+    if (ownerId.isEmpty) return const [];
+
+    final verifiedSnap = await db.collection('talent_skill_graph')
+        .where('ownerId',isEqualTo:ownerId)
+        .where('verified',isEqualTo:true)
+        .limit(50)
+        .get();
+    final userSkills = verifiedSnap.docs
+        .map((d)=>_norm((d.data()['skill'] ?? '').toString()))
+        .where((e)=>e.isNotEmpty)
+        .toSet();
+
+    if (userSkills.isEmpty) return const [];
+
     final snap=await db.collection('opportunities').where('status',isEqualTo:'open').limit(100).get();
-    final userSkills=talent.skills.map(_norm).where((e)=>e.isNotEmpty).toSet();
     final matches=<AurenTalentMatch>[];
     for(final d in snap.docs){
-      final o=AurenOpportunity.fromMap(d.id,d.data());
+      final data=d.data();
+      final opportunityOwner=(data['ownerId'] ?? '').toString().trim();
+      if(opportunityOwner==ownerId) continue;
+
+      final o=AurenOpportunity.fromMap(d.id,data);
       final oppSkills=o.skills.map(_norm).where((e)=>e.isNotEmpty).toSet();
       if(oppSkills.isEmpty) continue;
       final common=userSkills.intersection(oppSkills).toList()..sort();
@@ -30,6 +55,4 @@ class TalentDiscoveryService {
     matches.sort((a,b)=>b.score.compareTo(a.score));
     return matches.take(limit).toList();
   }
-
-  static String _norm(String value)=>value.trim().toLowerCase().replaceAll(RegExp(r'\\s+'),' ');
 }
