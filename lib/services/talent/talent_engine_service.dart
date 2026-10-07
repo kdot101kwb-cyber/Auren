@@ -16,7 +16,22 @@ class AurenTalentEngineService {
   Future<List<AurenTalentCandidate>> scout({required String query, String? excludeUid, int limit=20}) async {
     final q=_normalize(query);
     if(q.isEmpty) return const [];
-    final snap=await _db.collectionGroup('profile_modes').where('discoverable',isEqualTo:true).limit(500).get();
+    // Page discoverable profiles so candidates beyond the first 500 are
+    // not silently excluded as the public profile-mode collection grows.
+    final profileDocs=<QueryDocumentSnapshot<Map<String,dynamic>>>[];
+    const profilePageSize=500;
+    DocumentSnapshot<Map<String,dynamic>>? lastProfileDoc;
+    do {
+      Query<Map<String,dynamic>> profileQuery=_db.collectionGroup('profile_modes')
+          .where('discoverable',isEqualTo:true)
+          .limit(profilePageSize);
+      if(lastProfileDoc!=null) profileQuery=profileQuery.startAfterDocument(lastProfileDoc!);
+      final page=await profileQuery.get();
+      if(page.docs.isEmpty) break;
+      profileDocs.addAll(page.docs);
+      lastProfileDoc=page.docs.last;
+      if(page.docs.length<profilePageSize) break;
+    } while(lastProfileDoc!=null);
     // Load the complete verified Skill Graph in pages. A global limit could
     // otherwise hide a candidate's verified skill when the collection grows.
     final verifiedByOwner=<String,List<String>>{};
@@ -40,7 +55,7 @@ class AurenTalentEngineService {
       if(page.docs.length<pageSize) break;
     } while(lastVerifiedDoc!=null);
     final candidates=<AurenTalentCandidate>[];
-    for(final doc in snap.docs){
+    for(final doc in profileDocs){
       final d=doc.data(); final owner=doc.reference.parent.parent?.id ?? '';
       if(owner.isEmpty || owner==excludeUid) continue;
       final skills=_strings(d['skills']), verifiedSkills=verifiedByOwner[owner] ?? const <String>[], interests=_strings(d['interests']), goals=_strings(d['goals']), languages=_strings(d['languages']), services=_strings(d['services']);
@@ -76,11 +91,25 @@ class AurenTalentEngineService {
     // Do not route opportunity matching through the text-search scout:
     // a strong verified candidate can be missed simply because their profile
     // text does not contain the opportunity title/description wording.
-    final profileSnap = await _db
-        .collectionGroup('profile_modes')
-        .where('discoverable', isEqualTo: true)
-        .limit(500)
-        .get();
+    // Page discoverable profiles instead of imposing a hard global cap.
+    final profileDocs =
+        <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    const profilePageSize = 500;
+    DocumentSnapshot<Map<String, dynamic>>? lastProfileDoc;
+    do {
+      Query<Map<String, dynamic>> profileQuery = _db
+          .collectionGroup('profile_modes')
+          .where('discoverable', isEqualTo: true)
+          .limit(profilePageSize);
+      if (lastProfileDoc != null) {
+        profileQuery = profileQuery.startAfterDocument(lastProfileDoc!);
+      }
+      final page = await profileQuery.get();
+      if (page.docs.isEmpty) break;
+      profileDocs.addAll(page.docs);
+      lastProfileDoc = page.docs.last;
+      if (page.docs.length < profilePageSize) break;
+    } while (lastProfileDoc != null);
 
     final verifiedByOwner = <String, List<String>>{};
     const pageSize = 500;
@@ -108,7 +137,7 @@ class AurenTalentEngineService {
 
     final matches = <AurenTalentCandidate>[];
     final seenOwners = <String>{};
-    for (final doc in profileSnap.docs) {
+    for (final doc in profileDocs) {
       final d = doc.data();
       final owner = doc.reference.parent.parent?.id ?? '';
       if (owner.isEmpty || owner == excludeUid || !seenOwners.add(owner)) continue;
