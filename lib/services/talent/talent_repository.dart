@@ -37,6 +37,23 @@ class TalentRepository {
     await ref.update({'verificationEvidence': cleanEvidence, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
+  Future<void> saveMissionEvidence({
+    required String ownerId,
+    required String mission,
+    required String category,
+    required String result,
+    required String evidence,
+  }) async {
+    await db.collection('talent_mission_evidence').add({
+      'ownerId': ownerId,
+      'mission': mission.trim(),
+      'category': category.trim(),
+      'result': result.trim(),
+      'evidence': evidence.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<String> save({
     required String ownerId, required String displayName, required String bio, required String category,
     String sport = '', String discipline = '', String level = '', required String city, required String country,
