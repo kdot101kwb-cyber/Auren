@@ -47,8 +47,54 @@ class AurenTalentEngineService {
     return candidates.take(limit.clamp(1,50).toInt()).toList();
   }
 
-  Future<List<AurenTalentCandidate>> matchOpportunity({required String title,required String description,required List<String> skills,String? excludeUid,int limit=20}) async =>
-      scout(query:[title,description,...skills].join(' '),excludeUid:excludeUid,limit:limit);
+  Future<List<AurenTalentCandidate>> matchOpportunity({
+    required String title,
+    required String description,
+    required List<String> skills,
+    String? excludeUid,
+    int limit = 20,
+  }) async {
+    final requiredSkills = skills.map(_normalize).where((x) => x.isNotEmpty).toSet();
+    if (requiredSkills.isEmpty) return const [];
+
+    // Opportunity matching is stricter than general Talent discovery:
+    // a candidate must have at least one server-verified Skill Graph skill
+    // matching an explicit opportunity skill. Profile text alone is not proof.
+    final candidates = await scout(
+      query: [title, description, ...skills].join(' '),
+      excludeUid: excludeUid,
+      limit: 50,
+    );
+    final matches = <AurenTalentCandidate>[];
+    for (final candidate in candidates) {
+      final matched = candidate.verifiedSkills
+          .where((skill) => requiredSkills.contains(_normalize(skill)))
+          .toList();
+      if (matched.isEmpty) continue;
+      final reasons = <String>{
+        ...candidate.reasons,
+        'مهارات موثقة مطابقة للفرصة',
+      }.toList();
+      final score = (60 + matched.length * 15).clamp(0, 100).toInt();
+      matches.add(AurenTalentCandidate(
+        uid: candidate.uid,
+        mode: candidate.mode,
+        headline: candidate.headline,
+        bio: candidate.bio,
+        skills: candidate.skills,
+        verifiedSkills: candidate.verifiedSkills,
+        interests: candidate.interests,
+        goals: candidate.goals,
+        languages: candidate.languages,
+        services: candidate.services,
+        showContact: candidate.showContact,
+        score: score,
+        reasons: reasons,
+      ));
+    }
+    matches.sort((a, b) => b.score.compareTo(a.score));
+    return matches.take(limit.clamp(1, 50).toInt()).toList();
+  }
 
   Future<void> inviteToOpportunity({required String ownerId,required String talentUid,required String opportunityId,required String opportunityTitle}) async {
     final cleanOwnerId=ownerId.trim(), cleanTalentUid=talentUid.trim(), cleanOpportunityId=opportunityId.trim(), cleanTitle=opportunityTitle.trim();
