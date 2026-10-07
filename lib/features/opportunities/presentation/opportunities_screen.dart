@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/opportunities/opportunity_repository.dart';
 import '../../../core/models/opportunity.dart';
+import '../../../core/models/user_profile.dart';
+import '../../profile/presentation/public_profile_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../talent/presentation/talent_engine_screen.dart';
 
@@ -354,6 +356,7 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
                       else
                         'سبب المطابقة: لا توجد مهارات موثقة مشتركة بعد',
                     ].join('\\n')),
+                    onTap: () => _openApplicantProfile(context, a),
                     trailing: PopupMenuButton<String>(
                       onSelected: (status) async {
                         try {
@@ -383,6 +386,31 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openApplicantProfile(BuildContext context, AurenOpportunityApplication application) async {
+    if (application.applicantId.trim().isEmpty) return;
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(application.applicantId)
+          .get();
+      if (!context.mounted) return;
+      final data = snap.data() ?? <String, dynamic>{};
+      final profile = AurenUserProfile.fromMap(application.applicantId, data);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AurenPublicProfileScreen(profile: profile),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر فتح ملف المتقدم: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _create(BuildContext context, String uid) async {
