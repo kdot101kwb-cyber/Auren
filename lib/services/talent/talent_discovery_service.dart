@@ -25,12 +25,22 @@ class TalentDiscoveryService {
     final ownerId = talent.ownerId.trim();
     if (ownerId.isEmpty) return const [];
 
-    final verifiedSnap = await db.collection('talent_skill_graph')
-        .where('ownerId',isEqualTo:ownerId)
-        .where('verified',isEqualTo:true)
-        .limit(50)
-        .get();
-    final userSkills = verifiedSnap.docs
+    final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    const pageSize = 200;
+    DocumentSnapshot<Map<String, dynamic>>? lastDoc;
+    do {
+      Query<Map<String, dynamic>> query = db.collection('talent_skill_graph')
+          .where('ownerId',isEqualTo:ownerId)
+          .where('verified',isEqualTo:true)
+          .limit(pageSize);
+      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+      final page = await query.get();
+      if (page.docs.isEmpty) break;
+      verifiedDocs.addAll(page.docs);
+      lastDoc = page.docs.last;
+      if (page.docs.length < pageSize) break;
+    } while (lastDoc != null);
+    final userSkills = verifiedDocs
         .map((d)=>_norm((d.data()['skill'] ?? '').toString()))
         .where((e)=>e.isNotEmpty)
         .toSet();
