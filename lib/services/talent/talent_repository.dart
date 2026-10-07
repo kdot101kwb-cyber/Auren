@@ -85,21 +85,29 @@ class TalentRepository {
     final cleanOwnerId = ownerId.trim();
     if (cleanOwnerId.isEmpty) return const [];
 
-    final snap = await db
-        .collection('talent_mission_evidence')
-        .where('ownerId', isEqualTo: cleanOwnerId)
-        .limit(200)
-        .get();
-
-    final missions = snap.docs.map((doc) {
-      final data = doc.data();
-      return <String, String>{
-        'mission': (data['mission'] ?? '').toString(),
-        'category': (data['category'] ?? '').toString(),
-        'result': (data['result'] ?? '').toString(),
-        'evidence': (data['evidence'] ?? '').toString(),
-      };
-    }).toList();
+    final missions = <Map<String, String>>[];
+    const pageSize = 200;
+    DocumentSnapshot<Map<String, dynamic>>? lastDoc;
+    do {
+      var query = db
+          .collection('talent_mission_evidence')
+          .where('ownerId', isEqualTo: cleanOwnerId)
+          .limit(pageSize);
+      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+      final page = await query.get();
+      if (page.empty) break;
+      for (final doc in page.docs) {
+        final data = doc.data();
+        missions.add({
+          'mission': (data['mission'] ?? '').toString(),
+          'category': (data['category'] ?? '').toString(),
+          'result': (data['result'] ?? '').toString(),
+          'evidence': (data['evidence'] ?? '').toString(),
+        });
+      }
+      lastDoc = page.docs.last;
+      if (page.docs.length < pageSize) break;
+    } while (lastDoc != null);
 
     return promoteMissionEvidenceToSkillGraph(
       ownerId: cleanOwnerId,
