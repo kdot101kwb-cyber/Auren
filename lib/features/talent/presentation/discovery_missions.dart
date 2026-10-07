@@ -94,20 +94,10 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
 
   Future<void> _promoteToSkillGraph() async {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    if (uid.isEmpty || _done.isEmpty) return;
-    final missions = _done
-        .map((i) => <String, String>{
-              'mission': _missions[i].title,
-              'category': _missions[i].category,
-              'result': _notes[i] ?? '',
-              'evidence': _evidence[i] ?? '',
-            })
-        .toList();
+    if (uid.isEmpty) return;
     try {
-      final skills = await TalentRepository().promoteMissionEvidenceToSkillGraph(
-        ownerId: uid,
-        missions: missions,
-      );
+      final skills = await TalentRepository()
+          .promoteSavedMissionEvidenceToSkillGraph(ownerId: uid);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -125,7 +115,6 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
       );
     }
   }
-
   void _review() {
     final completed = _done.map((i) => '${_missions[i].title}: ${_notes[i] ?? ''} | الدليل: ${_evidence[i] ?? ''}').join('\n');
     final prompt = completed.isEmpty
