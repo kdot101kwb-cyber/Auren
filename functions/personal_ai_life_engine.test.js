@@ -37,7 +37,7 @@ test('Personal AI rules protect plan tasks and memory controls', () => {
   assert.match(rulesSource, /match\s*\/daily_plans\/\{planId\}/);
   assert.match(rulesSource, /match\s*\/tasks\/\{taskId\}/);
   assert.match(rulesSource, /match\s*\/memory\/\{memoryId\}/);
-  assert.match(rulesSource, /request\.resource\.data\.completed is bool/);
+  assert.match(rulesSource, /(?:request\.resource\.data|requestData\(\))\.completed is bool/);
 });
 
 test('Daily Plan UI can execute and reflect task completion', () => {

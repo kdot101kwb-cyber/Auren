@@ -902,7 +902,8 @@ rules_version='2';service cloud.firestore{match/databases/{database}/documents{f
         && requestData().progress >= 0
         && requestData().progress <= 100
         && requestData().status in ['active','completed']
-        && ((requestData().status == 'completed' && requestData().progress == 100)
+        && ((requestData().status == 'completed' && requestData().progress == 100
+            && requestData().completedLessons == get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount)
           || (requestData().status == 'active' && requestData().progress < 100))
         && requestData().createdAt == resource.data.createdAt
         && requestData().updatedAt is timestamp;
@@ -2055,7 +2056,8 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && requestData().progress >= 0
         && requestData().progress <= 100
         && requestData().status in ['active','completed']
-        && ((requestData().status == 'completed' && requestData().progress == 100)
+        && ((requestData().status == 'completed' && requestData().progress == 100
+            && requestData().completedLessons == get(/databases/$(database)/documents/courses/$(courseId)).data.lessonCount)
           || (requestData().status == 'active' && requestData().progress < 100))
         && requestData().createdAt == resource.data.createdAt
         && requestData().updatedAt is timestamp;
