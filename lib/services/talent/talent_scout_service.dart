@@ -14,12 +14,24 @@ class TalentScoutService {
   Future<List<AurenTalentScoutFinding>> runNow({required String uid,required List<AurenTalentScout> scouts,required AurenTalent talent,List<AurenOpportunity> opportunities=const []}) async {
     final enabled=scouts.where((s)=>s.enabled).toList();
     final results=<AurenTalentScoutFinding>[];
-    final verifiedSnap = await db.collection('talent_skill_graph')
-        .where('ownerId', isEqualTo: uid)
-        .where('verified', isEqualTo: true)
-        .limit(200)
-        .get();
-    final talentSkillLabels = verifiedSnap.docs
+    final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    const verifiedPageSize = 200;
+    DocumentSnapshot<Map<String, dynamic>>? lastVerifiedDoc;
+    do {
+      Query<Map<String, dynamic>> query = db.collection('talent_skill_graph')
+          .where('ownerId', isEqualTo: uid)
+          .where('verified', isEqualTo: true)
+          .limit(verifiedPageSize);
+      if (lastVerifiedDoc != null) {
+        query = query.startAfterDocument(lastVerifiedDoc!);
+      }
+      final page = await query.get();
+      if (page.docs.isEmpty) break;
+      verifiedDocs.addAll(page.docs);
+      lastVerifiedDoc = page.docs.last;
+      if (page.docs.length < verifiedPageSize) break;
+    } while (lastVerifiedDoc != null);
+    final talentSkillLabels = verifiedDocs
         .map((d) => (d.data()['skill'] ?? '').toString().trim())
         .where((x) => x.isNotEmpty)
         .toSet();
