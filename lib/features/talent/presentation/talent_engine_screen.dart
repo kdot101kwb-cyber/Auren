@@ -50,12 +50,22 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
           const Text('دعوات الفرص',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
           const SizedBox(height:8),
           StreamBuilder<List<Map<String,dynamic>>>(stream: _service.watchInvitations(FirebaseAuth.instance.currentUser?.uid??''),builder:(context,snap){
+            if(snap.hasError)return Padding(
+              padding:const EdgeInsets.all(8),
+              child:Text('تعذر تحميل الدعوات: ${snap.error}'),
+            );
             if(!snap.hasData)return const Padding(padding:EdgeInsets.all(8),child:CircularProgressIndicator());
             final items=snap.data!;
             if(items.isEmpty)return const Text('لا توجد دعوات جديدة.');
+            String statusLabel(dynamic value)=>switch(value?.toString()){
+              'pending'=>'بانتظار ردك',
+              'accepted'=>'تم القبول',
+              'declined'=>'تم الرفض',
+              _=>'حالة غير معروفة',
+            };
             return Column(children:items.map((inv)=>ListTile(
               title:Text(inv['opportunityTitle']?.toString()??'فرصة'),
-              subtitle:Text(inv['status']?.toString()??'pending'),
+              subtitle:Text(statusLabel(inv['status'])),
               trailing:inv['status']=='pending'?Wrap(children:[
                 IconButton(tooltip:'قبول',icon:const Icon(Icons.check),onPressed:()=>_respond(inv['id'].toString(),'accepted')),
                 IconButton(tooltip:'رفض',icon:const Icon(Icons.close),onPressed:()=>_respond(inv['id'].toString(),'declined')),
