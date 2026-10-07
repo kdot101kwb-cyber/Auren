@@ -129,7 +129,7 @@ class TalentScoutService {
     if(cleanUid.isEmpty) return;
     final now = Timestamp.now();
     const pageSize = 200;
-    final col = db.collection('users').doc(uid).collection('talent_scout_findings');
+    final col = db.collection('users').doc(cleanUid).collection('talent_scout_findings');
     DocumentSnapshot<Map<String, dynamic>>? lastDoc;
 
     while (true) {
@@ -163,12 +163,14 @@ class TalentScoutService {
     required AurenTalent talent,
     List<AurenOpportunity> opportunities = const [],
   }) async {
+    final cleanOwnerId = talent.ownerId.trim();
+    if (cleanOwnerId.isEmpty) return const [];
     final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
     const pageSize = 200;
     DocumentSnapshot<Map<String, dynamic>>? lastDoc;
     do {
       Query<Map<String, dynamic>> query = db.collection('talent_skill_graph')
-          .where('ownerId', isEqualTo: talent.ownerId)
+          .where('ownerId', isEqualTo: cleanOwnerId)
           .where('verified', isEqualTo: true)
           .limit(pageSize);
       if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
