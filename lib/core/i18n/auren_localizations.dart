@@ -36,6 +36,21 @@ class AurenLocalizations {
       : 'Incoming random call from an AUREN user';
   String get decline => isArabic ? 'رفض' : 'Decline';
   String get accept => isArabic ? 'قبول' : 'Accept';
+  String get signInRequired => isArabic ? 'يجب تسجيل الدخول' : 'Sign in required';
+  String get profileLoadError => isArabic ? 'تعذر تحميل الملف الشخصي.' : 'Could not load profile.';
+  String get editProfile => isArabic ? 'تعديل الملف الشخصي' : 'Edit profile';
+  String get aiProfile => isArabic ? 'الملف الشخصي بالذكاء الاصطناعي' : 'AI Profile';
+  String get profileModes => isArabic ? 'شخصي • منشئ محتوى • مهني • تجاري' : 'Personal • Creator • Professional • Business';
+  String get socialGraph => isArabic ? 'الرسم الاجتماعي' : 'Social Graph';
+  String get socialGraphDescription => isArabic ? 'المتابعون والمتابَعون والمجتمعات' : 'Followers, following and communities';
+  String get shareProfile => isArabic ? 'مشاركة ملف AUREN' : 'Share my AUREN profile';
+  String get shareProfileDescription => isArabic ? 'انسخ رابط ملفك وشاركه مع الآخرين' : 'Copy your profile link and share it';
+  String get copiedProfileLink => isArabic ? 'تم نسخ رابط الملف.' : 'Profile link copied.';
+  String get followers => isArabic ? 'المتابعون' : 'Followers';
+  String get following => isArabic ? 'المتابَعون' : 'Following';
+  String get displayName => isArabic ? 'اسم العرض' : 'Display name';
+  String get cancel => isArabic ? 'إلغاء' : 'Cancel';
+  String get save => isArabic ? 'حفظ' : 'Save';
 }
 
 class _AurenLocalizationsDelegate
