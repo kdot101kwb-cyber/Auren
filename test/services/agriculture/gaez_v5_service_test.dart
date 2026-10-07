@@ -13,9 +13,11 @@ void main() {
       input: 'HILM',
     );
 
+    expect(url.scheme, 'https');
+    expect(url.host, 'storage.googleapis.com');
     expect(
-      url.toString(),
-      'https://storage.googleapis.com/fao-gismgr-gaez-v5-data/DATA/GAEZ-V5/MAPSET/RES05-ETL/GAEZ-V5.RES05-ETL.HP0120.AGERA5.HIST.ALF.HILM.tif',
+      url.path,
+      '/fao-gismgr-gaez-v5-data/DATA/GAEZ-V5/MAPSET/RES05-ETL/GAEZ-V5.RES05-ETL.HP0120.AGERA5.HIST.ALF.HILM.tif',
     );
   });
 
