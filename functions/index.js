@@ -4189,6 +4189,73 @@ exports.evaluateTalentSkillVerificationRequest = onDocumentCreated(
   },
 );
 
+// Invitation validation is server-authoritative. An opportunity invitation must
+// point to an existing opportunity owned by the inviter and a talent profile with
+// at least one matching verified Skill Graph skill.
+exports.validateTalentOpportunityInvitation = onDocumentCreated(
+  {
+    document: 'opportunity_invitations/{invitationId}',
+    region: 'us-central1',
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const data = snap.data() || {};
+    if (String(data.status || '') !== 'pending') return;
+
+    const ownerId = String(data.ownerId || '').trim();
+    const talentUid = String(data.talentUid || '').trim();
+    const opportunityId = String(data.opportunityId || '').trim();
+    if (!ownerId || !talentUid || !opportunityId || ownerId === talentUid) {
+      await snap.ref.update({
+        status: 'declined',
+        validationStatus: 'invalid_invitation',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    const opportunitySnap = await db.collection('opportunities').doc(opportunityId).get();
+    if (!opportunitySnap.exists || String(opportunitySnap.data()?.ownerId || '').trim() !== ownerId) {
+      await snap.ref.update({
+        status: 'declined',
+        validationStatus: 'opportunity_not_owned',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    const requiredSkills = Array.isArray(opportunitySnap.data()?.skills)
+      ? opportunitySnap.data().skills.map(normalizeTalentSkill).filter(Boolean)
+      : [];
+    const verifiedSnap = await db.collection('talent_skill_graph')
+      .where('ownerId', '==', talentUid)
+      .where('verified', '==', true)
+      .limit(50)
+      .get();
+    const verifiedSkills = new Set(
+      verifiedSnap.docs.map((doc) => normalizeTalentSkill(doc.data()?.skill)).filter(Boolean),
+    );
+    const matched = [...new Set(requiredSkills.filter((skill) => verifiedSkills.has(skill)))];
+
+    if (requiredSkills.length === 0 || matched.length === 0) {
+      await snap.ref.update({
+        status: 'declined',
+        validationStatus: 'no_verified_skill_match',
+        matchedVerifiedSkills: [],
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    await snap.ref.update({
+      validationStatus: 'verified_skill_match',
+      matchedVerifiedSkills: matched,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+
 // Talent claim intake is server-authoritative. A client may request a claim,
 // but the backend rejects nonexistent profiles, already-owned profiles, and
 // duplicate pending claims before any admin review.
