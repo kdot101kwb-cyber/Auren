@@ -70,7 +70,30 @@ class TalentScoutService {
     }
     final col=db.collection('users').doc(uid).collection('talent_scout_findings');
     for(final f in results) {
-      await col.doc(f.id).set({'ownerId':uid,'scoutId':f.scoutId,'type':f.type,'title':f.title,'description':f.description,'sourceType':f.sourceType,'sourceId':f.sourceId,'status':f.status,'score':f.score,'matchedSkills':f.matchedSkills.take(30).toList(),'missingSkills':f.missingSkills.take(30).toList(),'evidence':f.evidence.take(20).toList(),'createdAt':FieldValue.serverTimestamp(),'expiresAt':Timestamp.fromDate(f.expiresAt!)},SetOptions(merge:true));
+      final ref = col.doc(f.id);
+      final existing = await ref.get();
+      final data = <String, dynamic>{
+        'ownerId':uid,
+        'scoutId':f.scoutId,
+        'type':f.type,
+        'title':f.title,
+        'description':f.description,
+        'sourceType':f.sourceType,
+        'sourceId':f.sourceId,
+        'score':f.score,
+        'matchedSkills':f.matchedSkills.take(30).toList(),
+        'missingSkills':f.missingSkills.take(30).toList(),
+        'evidence':f.evidence.take(20).toList(),
+        'expiresAt':Timestamp.fromDate(f.expiresAt!),
+        'updatedAt':FieldValue.serverTimestamp(),
+      };
+      // A scout rerun must refresh the finding without undoing the user's
+      // decision (seen/interested/dismissed) or resetting its original age.
+      if (!existing.exists) {
+        data['status'] = 'new';
+        data['createdAt'] = FieldValue.serverTimestamp();
+      }
+      await ref.set(data, SetOptions(merge:true));
     }
     return results;
   }
