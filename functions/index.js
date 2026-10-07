@@ -5,6 +5,7 @@ const {onDocumentCreated, onDocumentUpdated, onDocumentWritten} = require('fireb
 const {defineSecret} = require('firebase-functions/params');
 const {initializeApp} = require('firebase-admin/app');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
+const {payloadHash, constantTimeEqual} = require('./action_security');
 
 initializeApp();
 const db = getFirestore();
@@ -315,10 +316,13 @@ exports.approveAurenAction = require('firebase-functions/v2/https').onCall(
       }
       const definition = validateAurenAction(String(data.actionType || ''), data.payload || {});
       if (!definition.requiresApproval) throw aurenHttpsError('failed-precondition', 'Approval is not required.');
+      const approvedPayloadHash = payloadHash(data.payload || {});
       tx.update(ref, {
         status:'approved',
         approvedAt:FieldValue.serverTimestamp(),
         approvedBy:uid,
+        approvedActionType:String(data.actionType || ''),
+        approvedPayloadHash,
         updatedAt:FieldValue.serverTimestamp(),
       });
     });
@@ -367,8 +371,27 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         tx.update(ref, {status:'expired', expiredAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
         throw aurenHttpsError('deadline-exceeded', 'This approved action has expired.');
       }
-      validateAurenAction(String(data.actionType || ''), data.payload || {});
-      action = {type:String(data.actionType), payload:data.payload || {}, conversationId:String(data.conversationId || '')};
+      const actionType = String(data.actionType || '');
+      validateAurenAction(actionType, data.payload || {});
+
+      // Server-side TOCTOU guard: execution is allowed only for the exact
+      // action type and exact payload that the authenticated user approved.
+      const approvedBy = String(data.approvedBy || '');
+      const approvedActionType = String(data.approvedActionType || '');
+      const approvedPayloadHash = String(data.approvedPayloadHash || '');
+      const currentPayloadHash = payloadHash(data.payload || {});
+
+      if (approvedBy !== uid) {
+        throw aurenHttpsError('permission-denied', 'Approval identity does not match the current user.');
+      }
+      if (approvedActionType !== actionType) {
+        throw aurenHttpsError('failed-precondition', 'Approved action type no longer matches.');
+      }
+      if (!approvedPayloadHash || !constantTimeEqual(approvedPayloadHash, currentPayloadHash)) {
+        throw aurenHttpsError('failed-precondition', 'Approved action payload was modified after approval.');
+      }
+
+      action = {type:actionType, payload:data.payload || {}, conversationId:String(data.conversationId || '')};
       tx.update(ref,{status:'executing',executionStartedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
     });
 
