@@ -144,33 +144,10 @@ class TalentRepository {
     final cleanOwnerId = ownerId.trim();
     if (cleanOwnerId.isEmpty) return const [];
 
-    final missions = <Map<String, String>>[];
-    const pageSize = 200;
-    DocumentSnapshot<Map<String, dynamic>>? lastDoc;
-    do {
-      var query = db
-          .collection('talent_mission_evidence')
-          .where('ownerId', isEqualTo: cleanOwnerId)
-          .limit(pageSize);
-      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
-      final page = await query.get();
-      if (page.docs.isEmpty) break;
-      for (final doc in page.docs) {
-        final data = doc.data();
-        missions.add({
-          'mission': (data['mission'] ?? '').toString(),
-          'category': (data['category'] ?? '').toString(),
-          'result': (data['result'] ?? '').toString(),
-          'evidence': (data['evidence'] ?? '').toString(),
-        });
-      }
-      lastDoc = page.docs.last;
-      if (page.docs.length < pageSize) break;
-    } while (lastDoc != null);
-
+    final saved = await loadMissionEvidence(ownerId: cleanOwnerId);
     return promoteMissionEvidenceToSkillGraph(
       ownerId: cleanOwnerId,
-      missions: missions,
+      missions: saved,
     );
   }
 
@@ -224,7 +201,7 @@ class TalentRepository {
       final evidenceCount = uniqueEvidence.length;
       final confidence =
           (0.45 + (evidenceCount - 1) * 0.10).clamp(0.45, 0.85);
-      final latest = matchingMissions.last;
+      final latest = matchingMissions.first;
 
       await ref.set({
           'ownerId': ownerId,
