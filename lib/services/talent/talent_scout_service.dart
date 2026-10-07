@@ -88,23 +88,32 @@ class TalentScoutService {
     final now = Timestamp.now();
     const pageSize = 200;
     final col = db.collection('users').doc(uid).collection('talent_scout_findings');
+    DocumentSnapshot<Map<String, dynamic>>? lastDoc;
 
     while (true) {
-      final snap = await col
+      Query<Map<String, dynamic>> query = col
           .where('expiresAt', isLessThan: now)
-          .limit(pageSize)
-          .get();
+          .orderBy('expiresAt')
+          .limit(pageSize);
+      if (lastDoc != null) {
+        query = query.startAfterDocument(lastDoc!);
+      }
+
+      final snap = await query.get();
       if (snap.docs.isEmpty) break;
 
       final batch = db.batch();
+      var changed = 0;
       for (final doc in snap.docs) {
         final status = doc.data()['status']?.toString();
         if (status != 'dismissed') {
           batch.update(doc.reference, {'status': 'dismissed'});
+          changed++;
         }
       }
-      await batch.commit();
+      if (changed > 0) await batch.commit();
 
+      lastDoc = snap.docs.last;
       if (snap.docs.length < pageSize) break;
     }
   }
