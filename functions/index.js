@@ -4363,14 +4363,25 @@ async function computeOpportunityApplicationMatchForSnapshot(snap, applicantId, 
   if (!snap || !applicantId || !opportunityId) return;
 
   const opportunityRef = db.collection('opportunities').doc(opportunityId);
-  const [opportunitySnap, verifiedSnap] = await Promise.all([
-    opportunityRef.get(),
-    db.collection('talent_skill_graph')
+  const opportunitySnap = await opportunityRef.get();
+
+  // Read all verified skills in pages. A fixed global limit could hide a
+  // legitimate match as a user's Skill Graph grows.
+  const verifiedDocs = [];
+  const pageSize = 200;
+  let lastVerifiedDoc = null;
+  do {
+    let query = db.collection('talent_skill_graph')
       .where('ownerId', '==', applicantId)
       .where('verified', '==', true)
-      .limit(200)
-      .get(),
-  ]);
+      .limit(pageSize);
+    if (lastVerifiedDoc) query = query.startAfter(lastVerifiedDoc);
+    const page = await query.get();
+    if (page.empty) break;
+    verifiedDocs.push(...page.docs);
+    lastVerifiedDoc = page.docs[page.docs.length - 1];
+    if (page.size < pageSize) break;
+  } while (lastVerifiedDoc);
 
   if (!opportunitySnap.exists) {
     await snap.ref.update({
@@ -4395,7 +4406,7 @@ async function computeOpportunityApplicationMatchForSnapshot(snap, applicantId, 
   }
 
   const verifiedSkills = new Set(
-    verifiedSnap.docs
+    verifiedDocs
       .map((doc) => normalizeTalentSkill(doc.data()?.skill))
       .filter(Boolean),
   );
