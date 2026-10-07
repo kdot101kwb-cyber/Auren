@@ -4437,20 +4437,31 @@ exports.recomputeOpportunityMatchesOnTalentSkillChange = onDocumentWritten(
       return;
     }
 
-    const applications = await db.collectionGroup('opportunityApplications')
-      .where('applicantId', '==', ownerId)
-      .limit(200)
-      .get();
+    // Recompute all of the user's applications, not just the first page.
+    // A large talent profile can have more than 200 historical applications.
+    const pageSize = 200;
+    let lastDoc = null;
+    do {
+      let query = db.collectionGroup('opportunityApplications')
+        .where('applicantId', '==', ownerId)
+        .limit(pageSize);
+      if (lastDoc) query = query.startAfter(lastDoc);
+      const page = await query.get();
+      if (page.empty) break;
 
-    await Promise.all(
-      applications.docs.map((application) =>
-        computeOpportunityApplicationMatchForSnapshot(
-          application,
-          ownerId,
-          String(application.data()?.opportunityId || application.id).trim(),
+      await Promise.all(
+        page.docs.map((application) =>
+          computeOpportunityApplicationMatchForSnapshot(
+            application,
+            ownerId,
+            String(application.data()?.opportunityId || application.id).trim(),
+          ),
         ),
-      ),
-    );
+      );
+
+      lastDoc = page.docs[page.docs.length - 1];
+      if (page.size < pageSize) break;
+    } while (lastDoc);
   },
 );
 
