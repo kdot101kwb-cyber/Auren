@@ -139,23 +139,9 @@ Future<void> apply({required String uid, required AurenOpportunity opportunity, 
   final cleanNote = note.trim();
   if (cleanNote.length > 2000) throw ArgumentError('الملاحظة طويلة جداً');
 
-  final verifiedSnap = await db.collection('talent_skill_graph')
-      .where('ownerId', isEqualTo: uid)
-      .where('verified', isEqualTo: true)
-      .limit(30)
-      .get();
-  final verifiedSkills = verifiedSnap.docs
-      .map((d) => (d.data()['skill'] ?? '').toString().trim().toLowerCase())
-      .where((s) => s.isNotEmpty)
-      .toSet();
-  final matchedSkills = opportunity.skills
-      .map((s) => s.trim().toLowerCase())
-      .where((s) => verifiedSkills.contains(s))
-      .toSet()
-      .toList();
-  final matchScore = opportunity.skills.isEmpty
-      ? 0.0
-      : (matchedSkills.length / opportunity.skills.length).clamp(0.0, 1.0);
+  // Match score and matched verified skills are computed server-side by a Firestore trigger.
+  // The client intentionally submits empty match evidence to prevent tampering.
+
 
   final ref = db.collection('users').doc(uid).collection('opportunityApplications').doc(opportunity.id);
   final existing = await ref.get();
@@ -166,8 +152,8 @@ Future<void> apply({required String uid, required AurenOpportunity opportunity, 
     'applicantId': uid,
     'title': opportunity.title,
     'note': cleanNote,
-    'matchScore': matchScore,
-    'matchedVerifiedSkills': matchedSkills,
+    'matchScore': 0.0,
+    'matchedVerifiedSkills': const <String>[],
     'status': 'pending',
     'createdAt': FieldValue.serverTimestamp(),
     'updatedAt': FieldValue.serverTimestamp(),
