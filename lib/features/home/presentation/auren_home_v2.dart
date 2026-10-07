@@ -29,7 +29,8 @@ class AurenAdaptiveHomeFocus extends StatelessWidget {
   final ValueChanged<String> onPrompt;
   const AurenAdaptiveHomeFocus({super.key, required this.uid, required this.onPrompt});
   @override Widget build(BuildContext context) {
-    final l = AurenLocalizations.of(context);\n    return Card(
+    final l = AurenLocalizations.of(context);
+    return Card(
     child: ListTile(
       leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
       title: Text(l.adaptiveHome, style: TextStyle(fontWeight: FontWeight.w800)),
