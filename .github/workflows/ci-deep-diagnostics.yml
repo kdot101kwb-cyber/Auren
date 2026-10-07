@@ -2,8 +2,6 @@ name: AUREN CI Deep Diagnostics
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
