@@ -117,7 +117,7 @@ class TalentRepository {
     if (cleanOwnerId.isEmpty || cleanSkill.isEmpty) {
       throw ArgumentError('بيانات طلب التحقق غير مكتملة.');
     }
-    if (cleanOwnerId.length > 128 || cleanSkill.length > 200) {
+    if (cleanOwnerId.length > 128 || cleanSkill.length > 120) {
       throw ArgumentError('بيانات طلب التحقق طويلة جدًا.');
     }
     final existing = await db
