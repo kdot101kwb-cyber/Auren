@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/opportunity.dart';
 
 class AurenOpportunityApplication {
-  final String id, opportunityId, ownerId, applicantId, title, note, status;
+  final String id, opportunityId, ownerId, applicantId, title, note, status; final double matchScore; final List<String> matchedVerifiedSkills;
   final DateTime? createdAt, updatedAt;
   const AurenOpportunityApplication({required this.id,required this.opportunityId,required this.ownerId,required this.applicantId,required this.title,required this.note,required this.status,this.createdAt,this.updatedAt});
-  factory AurenOpportunityApplication.fromMap(String id, Map<String,dynamic> d) => AurenOpportunityApplication(id:id,opportunityId:d['opportunityId']?.toString()??'',ownerId:d['ownerId']?.toString()??'',applicantId:d['applicantId']?.toString()??'',title:d['title']?.toString()??'',note:d['note']?.toString()??'',status:d['status']?.toString()??'pending',createdAt:d['createdAt'] is Timestamp?(d['createdAt'] as Timestamp).toDate():null,updatedAt:d['updatedAt'] is Timestamp?(d['updatedAt'] as Timestamp).toDate():null);
+  factory AurenOpportunityApplication.fromMap(String id, Map<String,dynamic> d) => AurenOpportunityApplication(id:id,opportunityId:d['opportunityId']?.toString()??'',ownerId:d['ownerId']?.toString()??'',applicantId:d['applicantId']?.toString()??'',title:d['title']?.toString()??'',note:d['note']?.toString()??'',status:d['status']?.toString()??'pending',matchScore:(d['matchScore'] as num?)?.toDouble()??0.0,matchedVerifiedSkills:(d['matchedVerifiedSkills'] as List?)?.map((e)=>e.toString()).toList()??const <String>[],createdAt:d['createdAt'] is Timestamp?(d['createdAt'] as Timestamp).toDate():null,updatedAt:d['updatedAt'] is Timestamp?(d['updatedAt'] as Timestamp).toDate():null);
 }
 
 class OpportunityRepository{final FirebaseFirestore db;OpportunityRepository({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
