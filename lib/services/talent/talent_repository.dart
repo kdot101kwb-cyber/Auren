@@ -130,21 +130,21 @@ class TalentRepository {
         .toList();
     if (cleanMissions.isEmpty) return const [];
 
-    const categorySkills = <String, List<String>>{
-      'إبداع': ['creative problem solving'],
-      'كتابة': ['writing'],
-      'حل المشكلات': ['problem solving'],
-      'تصميم': ['design thinking'],
-      'قيادة': ['leadership'],
-      'تحليل': ['analytical thinking'],
-      'محتوى': ['content creation'],
-      'اكتشاف': ['adaptability'],
+    const categorySkills = <String, String>{
+      'إبداع': 'creative problem solving',
+      'كتابة': 'writing',
+      'حل المشكلات': 'problem solving',
+      'تصميم': 'design thinking',
+      'قيادة': 'leadership',
+      'تحليل': 'analytical thinking',
+      'محتوى': 'content creation',
+      'اكتشاف': 'adaptability',
     };
 
     final candidates = <String>{};
     for (final skillEntry in categorySkills.entries) {
       final matchingMissions = cleanMissions
-          .where((mission) => skillEntry.value.contains(mission['category']))
+          .where((mission) => mission['category'] == skillEntry.key)
           .toList();
       if (matchingMissions.isEmpty) continue;
 
@@ -158,18 +158,16 @@ class TalentRepository {
         uniqueEvidence[key] = mission;
       }
 
-      for (final skill in skillEntry.value) {
-        candidates.add(skill);
-        final safeSkill = skill.replaceAll(RegExp(r'[^a-zA-Z0-9_ -]'), '_');
-        final ref = db.collection('talent_skill_graph').doc('${ownerId}_$safeSkill');
-        final existing = await ref.get();
-        final data = existing.data();
-        final evidenceCount = uniqueEvidence.length;
-        final confidence =
-            (0.45 + (evidenceCount - 1) * 0.10).clamp(0.45, 0.85);
-        final latest = matchingMissions.last;
+      final skill = skillEntry.value;
+      candidates.add(skill);
+      final safeSkill = skill.replaceAll(RegExp(r'[^a-zA-Z0-9_ -]'), '_');
+      final ref = db.collection('talent_skill_graph').doc('${ownerId}_$safeSkill');
+      final evidenceCount = uniqueEvidence.length;
+      final confidence =
+          (0.45 + (evidenceCount - 1) * 0.10).clamp(0.45, 0.85);
+      final latest = matchingMissions.last;
 
-        await ref.set({
+      await ref.set({
           'ownerId': ownerId,
           'skill': skill,
           'confidence': confidence,
@@ -180,8 +178,7 @@ class TalentRepository {
           'hasEvidence': latest['evidence']!.isNotEmpty,
           'evidence': latest['evidence'],
           'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      }
+      }, SetOptions(merge: true));
     }
     return candidates.toList()..sort();
   }
