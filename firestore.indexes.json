@@ -209,6 +209,24 @@
       ]
     },
     {
+      "collectionGroup": "talent_claims",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "talentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "claimantUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "talent_skill_graph",
       "queryScope": "COLLECTION",
       "fields": [
