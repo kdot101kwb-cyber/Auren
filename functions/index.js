@@ -4394,7 +4394,22 @@ async async function computeOpportunityApplicationMatchForSnapshot(snap, applica
   }
 
   const opportunity = opportunitySnap.data() || {};
-  const opportunityOwner = String(opportunity.ownerId || '');
+  const opportunityOwner = String(opportunity.ownerId || '').trim();
+  const application = snap.data() || {};
+  const applicationOwner = String(application.ownerId || '').trim();
+  const applicationApplicant = String(application.applicantId || '').trim();
+
+  if (!opportunityOwner || applicationOwner !== opportunityOwner ||
+      applicationApplicant !== applicantId) {
+    await snap.ref.update({
+      matchScore: 0,
+      matchedVerifiedSkills: [],
+      matchStatus: 'invalid_application_identity',
+      matchUpdatedAt: FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+
   if (opportunityOwner === applicantId) {
     await snap.ref.update({
       matchScore: 0,
