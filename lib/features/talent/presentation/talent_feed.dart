@@ -24,27 +24,21 @@ class AurenTalentFeed extends StatelessWidget {
         }
         final talents = snapshot.data ?? const <AurenTalent>[];
         if (talents.isEmpty) {
-          return Card(
+          return const Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.dynamic_feed_outlined),
                       SizedBox(width: 8),
                       Text('Talent Feed', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  const Text('أول محتوى سيظهر هنا عندما تبدأ المواهب بالنشر داخل AUREN.'),
-                  const SizedBox(height: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.explore_outlined),
-                    label: const Text('استكشف المواهب'),
-                  ),
+                  SizedBox(height: 8),
+                  Text('أول محتوى سيظهر هنا عندما تبدأ المواهب بالنشر داخل AUREN.'),
                 ],
               ),
             ),
