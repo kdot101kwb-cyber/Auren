@@ -4108,6 +4108,66 @@ exports.aurenMatchEverythingIntelligence = require('firebase-functions/v2/https'
   }
 );
 
+
+// Talent verification is evaluated server-side. Clients may request verification,
+// but they can never promote their own Skill Graph to verified.
+exports.evaluateTalentSkillVerificationRequest = onDocumentCreated(
+  {
+    document: 'talent_skill_verification_requests/{requestId}',
+    region: 'us-central1',
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const data = snap.data() || {};
+    if (String(data.status || '') !== 'pending') return;
+
+    const ownerId = String(data.ownerId || '').trim();
+    const skill = String(data.skill || '').trim();
+    const proof = data.proof && typeof data.proof === 'object' ? data.proof : {};
+    if (!ownerId || !skill) return;
+
+    const evidenceCount = Number(proof.evidenceCount || 0);
+    const result = String(proof.result || '').trim();
+    const evidence = String(proof.evidence || '').trim();
+    const reasons = [];
+    if (evidenceCount >= 2) reasons.push('multiple_evidence');
+    if (result) reasons.push('mission_result');
+    if (evidence) reasons.push('attached_evidence');
+    const qualifies = evidenceCount >= 2 && !!result && !!evidence;
+    const status = qualifies ? 'verified' : 'needs_more_evidence';
+
+    const safeSkill = skill.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const skillId = ownerId + '_' + safeSkill;
+    const requestRef = snap.ref;
+    const skillRef = db.collection('talent_skill_graph').doc(skillId);
+
+    const batch = db.batch();
+    batch.update(requestRef, {
+      status,
+      evaluation: {
+        qualifies,
+        reasons,
+        evaluatedAt: FieldValue.serverTimestamp(),
+      },
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    if (qualifies) {
+      batch.set(skillRef, {
+        ownerId,
+        skill,
+        verified: true,
+        verifiedAt: FieldValue.serverTimestamp(),
+        verificationSource: 'talent_verification_engine',
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+    }
+
+    await batch.commit();
+  },
+);
+
 // Opportunity application match evidence is server-authoritative.
 // The client creates a pending application with empty match fields; this trigger
 // recomputes the score from the applicant's verified Skill Graph.
