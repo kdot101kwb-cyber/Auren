@@ -1,7 +1,7 @@
 'use strict';
 
 const {onCall, onRequest, HttpsError} = require('firebase-functions/v2/https');
-const {onDocumentCreated, onDocumentUpdated} = require('firebase-functions/v2/firestore');
+const {onDocumentCreated, onDocumentUpdated, onDocumentWritten} = require('firebase-functions/v2/firestore');
 const {defineSecret} = require('firebase-functions/params');
 const {initializeApp} = require('firebase-admin/app');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
@@ -4190,8 +4190,76 @@ exports.evaluateTalentSkillVerificationRequest = onDocumentCreated(
 );
 
 // Opportunity application match evidence is server-authoritative.
-// The client creates a pending application with empty match fields; this trigger
-// recomputes the score from the applicant's verified Skill Graph.
+// Matching uses the same canonical skill normalization for application creation
+// and later Skill Graph changes, so new verification evidence cannot leave stale
+// application scores behind.
+function normalizeTalentSkill(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function computeOpportunityApplicationMatchForSnapshot(snap, applicantId, opportunityId) {
+  if (!snap || !applicantId || !opportunityId) return;
+
+  const opportunityRef = db.collection('opportunities').doc(opportunityId);
+  const [opportunitySnap, verifiedSnap] = await Promise.all([
+    opportunityRef.get(),
+    db.collection('talent_skill_graph')
+      .where('ownerId', '==', applicantId)
+      .where('verified', '==', true)
+      .limit(50)
+      .get(),
+  ]);
+
+  if (!opportunitySnap.exists) {
+    await snap.ref.update({
+      matchScore: 0,
+      matchedVerifiedSkills: [],
+      matchStatus: 'opportunity_not_found',
+      matchUpdatedAt: FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+
+  const opportunity = opportunitySnap.data() || {};
+  const opportunityOwner = String(opportunity.ownerId || '');
+  if (opportunityOwner === applicantId) {
+    await snap.ref.update({
+      matchScore: 0,
+      matchedVerifiedSkills: [],
+      matchStatus: 'invalid_self_application',
+      matchUpdatedAt: FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+
+  const verifiedSkills = new Set(
+    verifiedSnap.docs
+      .map((doc) => normalizeTalentSkill(doc.data()?.skill))
+      .filter(Boolean),
+  );
+  const opportunitySkills = Array.isArray(opportunity.skills)
+    ? opportunity.skills.map(normalizeTalentSkill).filter(Boolean)
+    : [];
+  const matchedVerifiedSkills = [...new Set(
+    opportunitySkills.filter((skill) => verifiedSkills.has(skill)),
+  )];
+  const matchScore = opportunitySkills.length
+    ? Math.max(0, Math.min(1, matchedVerifiedSkills.length / opportunitySkills.length))
+    : 0;
+
+  await snap.ref.update({
+    matchScore,
+    matchedVerifiedSkills,
+    matchStatus: 'computed',
+    matchUpdatedAt: FieldValue.serverTimestamp(),
+  });
+}
+
 exports.computeOpportunityApplicationMatch = onDocumentCreated(
   {
     document: 'users/{applicantId}/opportunityApplications/{opportunityId}',
@@ -4200,64 +4268,56 @@ exports.computeOpportunityApplicationMatch = onDocumentCreated(
   async (event) => {
     const snap = event.data;
     if (!snap) return;
-    const data = snap.data() || {};
-    const applicantId = String(event.params.applicantId || '').trim();
-    const opportunityId = String(event.params.opportunityId || '').trim();
-    if (!applicantId || !opportunityId) return;
-
-    const opportunityRef = db.collection('opportunities').doc(opportunityId);
-    const [opportunitySnap, verifiedSnap] = await Promise.all([
-      opportunityRef.get(),
-      db.collection('talent_skill_graph')
-        .where('ownerId', '==', applicantId)
-        .where('verified', '==', true)
-        .limit(50)
-        .get(),
-    ]);
-
-    if (!opportunitySnap.exists) {
-      await snap.ref.update({
-        matchScore: 0,
-        matchedVerifiedSkills: [],
-        matchStatus: 'opportunity_not_found',
-        matchUpdatedAt: FieldValue.serverTimestamp(),
-      });
-      return;
-    }
-
-    const opportunity = opportunitySnap.data() || {};
-    const opportunityOwner = String(opportunity.ownerId || '');
-    if (opportunityOwner === applicantId) {
-      await snap.ref.update({
-        matchScore: 0,
-        matchedVerifiedSkills: [],
-        matchStatus: 'invalid_self_application',
-        matchUpdatedAt: FieldValue.serverTimestamp(),
-      });
-      return;
-    }
-
-    const verifiedSkills = new Set(
-      verifiedSnap.docs
-        .map((doc) => String(doc.data()?.skill || '').trim().toLowerCase())
-        .filter(Boolean),
+    await computeOpportunityApplicationMatchForSnapshot(
+      snap,
+      String(event.params.applicantId || '').trim(),
+      String(event.params.opportunityId || '').trim(),
     );
-    const opportunitySkills = Array.isArray(opportunity.skills)
-      ? opportunity.skills.map((skill) => String(skill || '').trim().toLowerCase()).filter(Boolean)
-      : [];
-    const matchedVerifiedSkills = [...new Set(
-      opportunitySkills.filter((skill) => verifiedSkills.has(skill)),
-    )];
-    const matchScore = opportunitySkills.length
-      ? Math.max(0, Math.min(1, matchedVerifiedSkills.length / opportunitySkills.length))
-      : 0;
+  },
+);
 
-    await snap.ref.update({
-      matchScore,
-      matchedVerifiedSkills,
-      matchStatus: 'computed',
-      matchUpdatedAt: FieldValue.serverTimestamp(),
-    });
+// Recompute existing applications whenever a user's verified Skill Graph changes.
+// This covers a newly verified skill and future verification/revocation changes.
+exports.recomputeOpportunityMatchesOnTalentSkillChange = onDocumentWritten(
+  {
+    document: 'talent_skill_graph/{skillId}',
+    region: 'us-central1',
+  },
+  async (event) => {
+    const before = event.data?.before;
+    const after = event.data?.after;
+    if (!after?.exists) {
+      if (!before?.exists) return;
+    }
+
+    const beforeData = before?.data() || {};
+    const afterData = after?.data() || {};
+    const ownerId = String(afterData.ownerId || beforeData.ownerId || '').trim();
+    if (!ownerId) return;
+
+    const beforeVerified = beforeData.verified === true;
+    const afterVerified = afterData.verified === true;
+    const beforeSkill = normalizeTalentSkill(beforeData.skill);
+    const afterSkill = normalizeTalentSkill(afterData.skill);
+
+    if (before?.exists && beforeVerified === afterVerified && beforeSkill === afterSkill) {
+      return;
+    }
+
+    const applications = await db.collectionGroup('opportunityApplications')
+      .where('applicantId', '==', ownerId)
+      .limit(200)
+      .get();
+
+    await Promise.all(
+      applications.docs.map((application) =>
+        computeOpportunityApplicationMatchForSnapshot(
+          application,
+          ownerId,
+          String(application.data()?.opportunityId || application.id).trim(),
+        ),
+      ),
+    );
   },
 );
 
