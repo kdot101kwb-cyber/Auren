@@ -197,15 +197,18 @@ Future<void> _create(BuildContext c, String uid) async {
                 ),
                 TextField(
                   controller: n,
+                  maxLength: 120,
                   decoration: const InputDecoration(labelText: 'الاسم'),
                 ),
                 TextField(
                   controller: b,
                   maxLines: 4,
+                  maxLength: 1000,
                   decoration: const InputDecoration(labelText: 'نبذة'),
                 ),
                 TextField(
                   controller: s,
+                  maxLength: 600,
                   decoration: const InputDecoration(
                     labelText: 'Skills, comma separated',
                   ),
@@ -281,21 +284,42 @@ Future<void> _create(BuildContext c, String uid) async {
           .where((x) => x.isNotEmpty)
           .toSet()
           .toList();
-      await repo.save(
-        ownerId: uid,
-        displayName: n.text,
-        bio: b.text,
-        category: selected,
-        sport: sport.text,
-        sports: sports,
-        discipline: discipline.text,
-        level: level.text,
-        city: city.text,
-        country: country.text,
-        skills: s.text.split(','),
-        achievements: achievements.text.split(','),
-        goals: goals.text.split(','),
-      );
+      if (city.text.trim().isEmpty || country.text.trim().isEmpty) {
+        if (c.mounted) {
+          ScaffoldMessenger.of(c).showSnackBar(
+            const SnackBar(content: Text('المدينة والدولة مطلوبتان.')),
+          );
+        }
+        return;
+      }
+      try {
+        await repo.save(
+          ownerId: uid,
+          displayName: n.text,
+          bio: b.text,
+          category: selected,
+          sport: sport.text,
+          sports: sports,
+          discipline: discipline.text,
+          level: level.text,
+          city: city.text,
+          country: country.text,
+          skills: s.text.split(','),
+          achievements: achievements.text.split(','),
+          goals: goals.text.split(','),
+        );
+        if (c.mounted) {
+          ScaffoldMessenger.of(c).showSnackBar(
+            const SnackBar(content: Text('تم إنشاء ملف الموهبة بنجاح.')),
+          );
+        }
+      } catch (e) {
+        if (c.mounted) {
+          ScaffoldMessenger.of(c).showSnackBar(
+            SnackBar(content: Text('تعذر حفظ ملف الموهبة: $e')),
+          );
+        }
+      }
     }
   } finally {
     for (final x in [
