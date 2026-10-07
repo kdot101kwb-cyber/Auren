@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../../services/talent/talent_repository.dart';
 
@@ -47,17 +48,18 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
     );
     controller.dispose();
     if (result == null || result.isEmpty) { evidenceController.dispose(); return; }
+    final evidence = evidenceController.text.trim();
     evidenceController.dispose();
     setState(() {
       _done.add(index);
       _notes[index] = result;
-      _evidence[index] = evidenceController.text.trim();
+      _evidence[index] = evidence;
     });
     await _saveEvidence(index);
   }
 
   Future<void> _saveEvidence(int index) async {
-    final uid = (await TalentRepository().currentUserId()).trim();
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (uid.isEmpty) return;
     await TalentRepository().saveMissionEvidence(ownerId: uid, mission: _missions[index].title, category: _missions[index].category, result: _notes[index] ?? '', evidence: _evidence[index] ?? '');
   }
