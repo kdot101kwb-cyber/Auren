@@ -14,7 +14,15 @@ class TalentScoutService {
   Future<List<AurenTalentScoutFinding>> runNow({required String uid,required List<AurenTalentScout> scouts,required AurenTalent talent,List<AurenOpportunity> opportunities=const []}) async {
     final enabled=scouts.where((s)=>s.enabled).toList();
     final results=<AurenTalentScoutFinding>[];
-    final talentSkills=talent.skills.map(_norm).where((x)=>x.isNotEmpty).toSet();
+    final verifiedSnap = await db.collection('talent_skill_graph')
+        .where('ownerId', isEqualTo: uid)
+        .where('verified', isEqualTo: true)
+        .limit(50)
+        .get();
+    final talentSkills = verifiedSnap.docs
+        .map((d) => _norm((d.data()['skill'] ?? '').toString()))
+        .where((x) => x.isNotEmpty)
+        .toSet();
     for(final scout in enabled) {
       if(scout.role=='opportunity') {
         for(final o in opportunities) {
@@ -76,7 +84,15 @@ class TalentScoutService {
     required AurenTalent talent,
     List<AurenOpportunity> opportunities = const [],
   }) async {
-    final talentSkills = talent.skills.map(_norm).where((x) => x.isNotEmpty).toSet();
+    final verifiedSnap = await db.collection('talent_skill_graph')
+        .where('ownerId', isEqualTo: talent.ownerId)
+        .where('verified', isEqualTo: true)
+        .limit(50)
+        .get();
+    final talentSkills = verifiedSnap.docs
+        .map((d) => _norm((d.data()['skill'] ?? '').toString()))
+        .where((x) => x.isNotEmpty)
+        .toSet();
     final sports = <String>{...talent.sports.map(_norm), _norm(talent.sport), _norm(talent.discipline)}..removeWhere((x) => x.isEmpty);
     final level = _norm(talent.level);
     final city = _norm(talent.city);
