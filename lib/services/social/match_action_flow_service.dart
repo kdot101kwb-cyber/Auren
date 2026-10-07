@@ -126,12 +126,55 @@ class AurenMatchActionFlowRepository {
     required AurenMatchItem item,
     required String status,
   }) async {
-    const allowed = {'active', 'waiting_response', 'replied', 'completed'};
+    const allowed = {
+      'active',
+      'waiting_response',
+      'replied',
+      'completed',
+      'failed',
+      'cancelled',
+    };
     if (!allowed.contains(status)) {
       throw ArgumentError('Invalid flow status');
     }
     await _ref(uid, item).update({
       'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> retry({
+    required String uid,
+    required AurenMatchItem item,
+  }) async {
+    final ref = _ref(uid, item);
+    await ref.update({
+      'status': 'active',
+      'lastError': FieldValue.delete(),
+      'cancelledAt': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> fail({
+    required String uid,
+    required AurenMatchItem item,
+    String? reason,
+  }) async {
+    await _ref(uid, item).update({
+      'status': 'failed',
+      if (reason != null && reason.trim().isNotEmpty) 'lastError': reason.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> cancel({
+    required String uid,
+    required AurenMatchItem item,
+  }) async {
+    await _ref(uid, item).update({
+      'status': 'cancelled',
+      'cancelledAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
