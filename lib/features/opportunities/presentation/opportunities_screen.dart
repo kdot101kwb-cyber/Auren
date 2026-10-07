@@ -317,7 +317,7 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
                 const Text('طلباتي', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                 ...snapshot.data!.map((a) => ListTile(
                   title: Text(a.title),
-                  subtitle: Text(a.note.isEmpty ? 'بدون ملاحظة' : a.note),
+                  subtitle: Text([a.note.isEmpty ? 'بدون ملاحظة' : a.note, if (a.matchScore > 0) 'مطابقة موثقة: ${(a.matchScore * 100).round()}%', if (a.matchedVerifiedSkills.isNotEmpty) 'مهارات: ${a.matchedVerifiedSkills.join(' • ')}'].join('\n')),
                   trailing: Text(a.status),
                 )),
               ],
