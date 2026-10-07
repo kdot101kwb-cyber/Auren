@@ -32,12 +32,32 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(_missions[index].title),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          decoration: const InputDecoration(
-            hintText: 'ماذا فعلت؟ وما النتيجة أو الدليل الذي خرجت به؟',
-            border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                maxLines: 5,
+                maxLength: 2000,
+                decoration: const InputDecoration(
+                  labelText: 'النتيجة',
+                  hintText: 'ماذا فعلت؟ وما النتيجة التي وصلت إليها؟',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: evidenceController,
+                maxLines: 4,
+                maxLength: 2000,
+                decoration: const InputDecoration(
+                  labelText: 'الدليل',
+                  hintText: 'رابط، ملف، نتيجة، شهادة، لقطة شاشة أو وصف يمكن مراجعته.',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
