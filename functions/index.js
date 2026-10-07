@@ -4377,9 +4377,15 @@ function normalizeTalentSkill(value) {
 }
 
 async function computeOpportunityApplicationMatchForSnapshot(snap, applicantId, opportunityId) {
-  if (!snap || !applicantId || !opportunityId) return;
+  if (!snap || !applicantId) return;
 
-  const opportunityRef = db.collection('opportunities').doc(opportunityId);
+  // The application document ID is the canonical opportunity ID. Prefer it
+  // over caller-supplied route parameters so recomputes cannot target a
+  // different opportunity when the application path is the source of truth.
+  const canonicalOpportunityId = String(snap.id || opportunityId || '').trim();
+  if (!canonicalOpportunityId) return;
+
+  const opportunityRef = db.collection('opportunities').doc(canonicalOpportunityId);
   const opportunitySnap = await opportunityRef.get();
 
   // Read all verified skills in pages. A fixed global limit could hide a
