@@ -41,7 +41,7 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
                 controller: controller,
                 onChanged: (_) => setDialogState(() {}),
                 maxLines: 5,
-                maxLength: 2000,
+                maxLength: 1000,
                 decoration: const InputDecoration(
                   labelText: 'النتيجة',
                   hintText: 'ماذا فعلت؟ وما النتيجة التي وصلت إليها؟',
@@ -53,7 +53,7 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
                 controller: evidenceController,
                 onChanged: (_) => setDialogState(() {}),
                 maxLines: 4,
-                maxLength: 2000,
+                maxLength: 1200,
                 decoration: const InputDecoration(
                   labelText: 'الدليل',
                   hintText: 'رابط، ملف، نتيجة، شهادة، لقطة شاشة أو وصف يمكن مراجعته.',
@@ -78,18 +78,36 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
     if (result == null || result.isEmpty) { evidenceController.dispose(); return; }
     final evidence = evidenceController.text.trim();
     evidenceController.dispose();
-    setState(() {
-      _done.add(index);
-      _notes[index] = result;
-      _evidence[index] = evidence;
-    });
-    await _saveEvidence(index);
+    try {
+      await _saveEvidence(index, result: result, evidence: evidence);
+      if (!mounted) return;
+      setState(() {
+        _done.add(index);
+        _notes[index] = result;
+        _evidence[index] = evidence;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر حفظ المهمة حالياً. حاول مرة أخرى.')),
+      );
+    }
   }
 
-  Future<void> _saveEvidence(int index) async {
+  Future<void> _saveEvidence(
+    int index, {
+    required String result,
+    required String evidence,
+  }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    if (uid.isEmpty) return;
-    await TalentRepository().saveMissionEvidence(ownerId: uid, mission: _missions[index].title, category: _missions[index].category, result: _notes[index] ?? '', evidence: _evidence[index] ?? '');
+    if (uid.isEmpty) throw StateError('المستخدم غير مسجل الدخول.');
+    await TalentRepository().saveMissionEvidence(
+      ownerId: uid,
+      mission: _missions[index].title,
+      category: _missions[index].category,
+      result: result,
+      evidence: evidence,
+    );
   }
 
   Future<void> _promoteToSkillGraph() async {
