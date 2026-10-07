@@ -1681,7 +1681,8 @@ service cloud.firestore {
         ||
         (resource.data.ownerId == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
-          && request.resource.data.status in ['pending','declined'])
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'declined')
       )
       && request.resource.data.updatedAt is timestamp;
     allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
