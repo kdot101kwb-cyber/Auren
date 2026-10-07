@@ -4218,7 +4218,10 @@ exports.validateTalentOpportunityInvitation = onDocumentCreated(
     const ownerId = String(data.ownerId || '').trim();
     const talentUid = String(data.talentUid || '').trim();
     const opportunityId = String(data.opportunityId || '').trim();
-    if (!ownerId || !talentUid || !opportunityId || ownerId === talentUid) {
+    const opportunityTitle = String(data.opportunityTitle || '').trim();
+    if (!ownerId || ownerId.length > 128 || !talentUid || talentUid.length > 128 ||
+        !opportunityId || opportunityId.length > 128 || !opportunityTitle ||
+        opportunityTitle.length > 200 || ownerId === talentUid) {
       await snap.ref.update({
         status: 'declined',
         validationStatus: 'invalid_invitation',
