@@ -47,9 +47,26 @@ class TalentDiscoveryService {
 
     if (userSkills.isEmpty) return const [];
 
-    final snap=await db.collection('opportunities').where('status',isEqualTo:'open').limit(100).get();
+    final opportunityDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    const opportunityPageSize = 200;
+    DocumentSnapshot<Map<String, dynamic>>? lastOpportunity;
+    do {
+      Query<Map<String, dynamic>> query = db
+          .collection('opportunities')
+          .where('status', isEqualTo: 'open')
+          .limit(opportunityPageSize);
+      if (lastOpportunity != null) {
+        query = query.startAfterDocument(lastOpportunity!);
+      }
+      final page = await query.get();
+      if (page.docs.isEmpty) break;
+      opportunityDocs.addAll(page.docs);
+      lastOpportunity = page.docs.last;
+      if (page.docs.length < opportunityPageSize) break;
+    } while (lastOpportunity != null);
+
     final matches=<AurenTalentMatch>[];
-    for(final d in snap.docs){
+    for(final d in opportunityDocs){
       final data=d.data();
       final opportunityOwner=(data['ownerId'] ?? '').toString().trim();
       if(opportunityOwner==ownerId) continue;
