@@ -31,7 +31,9 @@ class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
   Future<void> _restoreWorkflow() async {
     final uid=FirebaseAuth.instance.currentUser?.uid; if(uid==null)return;
     try {
-      final tasks=(await repo.watch(uid).first).where((t)=>t.input['workflowId']==workflowId || t.input['opportunityId']==plan.opportunity.id).toList();
+      final tasks=(await repo.watch(uid).first)
+          .where((t)=>t.input['workflowId']==workflowId)
+          .toList();
       if(tasks.isEmpty||!mounted)return;
       tasks.sort((a,b)=>(a.input['step'] is int ? a.input['step'] as int : -1).compareTo(b.input['step'] is int ? b.input['step'] as int : -1));
       final latest=tasks.last;
@@ -65,7 +67,7 @@ class _TalentAgentWorkflowScreenState extends State<TalentAgentWorkflowScreen> {
   }
   Future<void> _runStep(int i) async {
     if(loading||i<0||i>=plan.steps.length)return; setState(()=>loading=true);
-    final step=plan.steps[i]; final previous=_previousOutput(i); final incoming=_incomingForStep(i);
+    final step=plan.steps[i]; final previous=i==0 ? previousOutput : _previousOutput(i); final incoming=_incomingForStep(i);
     final prompt='أنت ${step.agent} في AUREN. ${step.instruction}\nالفرصة: ${plan.opportunity.title}\nالمطابقة: ${plan.matchScore}%\nالمهارات: ${plan.matchedSkills.join(', ')}\nفجوات المهارات: ${plan.skillGaps.map((g)=>g.skill).join(', ')}\nمخرجات الوكيل السابق: ${previous.isEmpty?'لا توجد مخرجات سابقة.':previous}\nابنِ على هذه المخرجات وقدّم نتيجة منظمة للوكيل التالي. لا تنفذ إجراءً حساساً أو مالياً دون موافقة صريحة.';
     await Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:prompt,onAiResponse:(output)=>_completeAndHandoff(i,incoming,output))));
     if(mounted)setState(()=>loading=false);
