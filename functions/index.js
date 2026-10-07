@@ -4107,6 +4107,79 @@ exports.aurenMatchEverythingIntelligence = require('firebase-functions/v2/https'
     };
   }
 );
+
+// Opportunity application match evidence is server-authoritative.
+// The client creates a pending application with empty match fields; this trigger
+// recomputes the score from the applicant's verified Skill Graph.
+exports.computeOpportunityApplicationMatch = onDocumentCreated(
+  {
+    document: 'users/{applicantId}/opportunityApplications/{opportunityId}',
+    region: 'us-central1',
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const data = snap.data() || {};
+    const applicantId = String(event.params.applicantId || '').trim();
+    const opportunityId = String(event.params.opportunityId || '').trim();
+    if (!applicantId || !opportunityId) return;
+
+    const opportunityRef = db.collection('opportunities').doc(opportunityId);
+    const [opportunitySnap, verifiedSnap] = await Promise.all([
+      opportunityRef.get(),
+      db.collection('talent_skill_graph')
+        .where('ownerId', '==', applicantId)
+        .where('verified', '==', true)
+        .limit(50)
+        .get(),
+    ]);
+
+    if (!opportunitySnap.exists) {
+      await snap.ref.update({
+        matchScore: 0,
+        matchedVerifiedSkills: [],
+        matchStatus: 'opportunity_not_found',
+        matchUpdatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    const opportunity = opportunitySnap.data() || {};
+    const opportunityOwner = String(opportunity.ownerId || '');
+    if (opportunityOwner === applicantId) {
+      await snap.ref.update({
+        matchScore: 0,
+        matchedVerifiedSkills: [],
+        matchStatus: 'invalid_self_application',
+        matchUpdatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    const verifiedSkills = new Set(
+      verifiedSnap.docs
+        .map((doc) => String(doc.data()?.skill || '').trim().toLowerCase())
+        .filter(Boolean),
+    );
+    const opportunitySkills = Array.isArray(opportunity.skills)
+      ? opportunity.skills.map((skill) => String(skill || '').trim().toLowerCase()).filter(Boolean)
+      : [];
+    const matchedVerifiedSkills = [...new Set(
+      opportunitySkills.filter((skill) => verifiedSkills.has(skill)),
+    )];
+    const matchScore = opportunitySkills.length
+      ? Math.max(0, Math.min(1, matchedVerifiedSkills.length / opportunitySkills.length))
+      : 0;
+
+    await snap.ref.update({
+      matchScore,
+      matchedVerifiedSkills,
+      matchStatus: 'computed',
+      matchUpdatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+
 Object.assign(module.exports, require('./gaez_global_data'));
 
 
