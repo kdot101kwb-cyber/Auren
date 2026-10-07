@@ -65,7 +65,9 @@ class TalentRepository {
         .collection('talent_skill_verification_requests')
         .where('ownerId', isEqualTo: cleanOwnerId)
         .get();
-    if (existing.docs.any((doc) => doc.data()['status']?.toString() == 'pending')) {
+    if (existing.docs.any((doc) =>
+        doc.data()['status']?.toString() == 'pending' &&
+        doc.data()['skill']?.toString().trim().toLowerCase() == cleanSkill.toLowerCase())) {
       return;
     }
     await db.collection('talent_skill_verification_requests').add({
