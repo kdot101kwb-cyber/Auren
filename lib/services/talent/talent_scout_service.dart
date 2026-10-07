@@ -17,7 +17,7 @@ class TalentScoutService {
     final verifiedSnap = await db.collection('talent_skill_graph')
         .where('ownerId', isEqualTo: uid)
         .where('verified', isEqualTo: true)
-        .limit(50)
+        .limit(200)
         .get();
     final talentSkillLabels = verifiedSnap.docs
         .map((d) => (d.data()['skill'] ?? '').toString().trim())
@@ -88,7 +88,7 @@ class TalentScoutService {
     final verifiedSnap = await db.collection('talent_skill_graph')
         .where('ownerId', isEqualTo: talent.ownerId)
         .where('verified', isEqualTo: true)
-        .limit(50)
+        .limit(200)
         .get();
     final talentSkills = verifiedSnap.docs
         .map((d) => _norm((d.data()['skill'] ?? '').toString()))
