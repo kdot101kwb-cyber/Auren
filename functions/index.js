@@ -4516,7 +4516,7 @@ exports.recomputeOpportunityMatchesOnTalentSkillChange = onDocumentWritten(
           computeOpportunityApplicationMatchForSnapshot(
             application,
             ownerId,
-            String(application.data()?.opportunityId || application.id).trim(),
+            application.id,
           ),
         ),
       );
