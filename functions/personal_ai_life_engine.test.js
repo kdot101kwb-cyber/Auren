@@ -34,9 +34,9 @@ test('Personal AI has authenticated ownership boundaries', () => {
 });
 
 test('Personal AI rules protect plan tasks and memory controls', () => {
-  assert.match(rulesSource, /match \/daily_plans\/\{planId\}/);
-  assert.match(rulesSource, /match \/tasks\/\{taskId\}/);
-  assert.match(rulesSource, /match \/memory\/\{memoryId\}/);
+  assert.match(rulesSource, /match\s*\/daily_plans\/\{planId\}/);
+  assert.match(rulesSource, /match\s*\/tasks\/\{taskId\}/);
+  assert.match(rulesSource, /match\s*\/memory\/\{memoryId\}/);
   assert.match(rulesSource, /request\.resource\.data\.completed is bool/);
 });
 
