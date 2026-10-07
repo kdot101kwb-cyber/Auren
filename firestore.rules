@@ -1789,9 +1789,10 @@ service cloud.firestore {
         && request.resource.data.evidenceCount <= 1000
         && request.resource.data.keys().hasOnly([
           'ownerId','skill','confidence','evidenceCount','source','lastMission',
-          'lastResult','hasEvidence','updatedAt','verified','verifiedAt','verificationSource'
+          'lastResult','hasEvidence','evidence','updatedAt','verified','verifiedAt','verificationSource'
         ])
-        && (!request.resource.data.keys().hasAny(['verified']) || request.resource.data.verified is bool);
+        && (!request.resource.data.keys().hasAny(['evidence']) || request.resource.data.evidence is string)
+        && (!request.resource.data.keys().hasAny(['verified']) || request.resource.data.verified == false || isAdmin());
       allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
@@ -1803,8 +1804,14 @@ service cloud.firestore {
         && request.resource.data.skill.size() > 0
         && request.resource.data.skill.size() <= 120
         && request.resource.data.status == 'pending'
-        && request.resource.data.requestedAt is timestamp;
-      allow update, delete: if false;
+        && request.resource.data.proof is map
+        && request.resource.data.requestedAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','evaluation','updatedAt'])
+        && request.resource.data.status in ['pending','needs_more_evidence'];
+      allow delete: if false;
     }
 
     match /opportunities/{opportunityId} {
