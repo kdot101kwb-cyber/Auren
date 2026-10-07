@@ -4231,17 +4231,22 @@ exports.validateTalentOpportunityInvitation = onDocumentCreated(
     }
 
     const opportunitySnap = await db.collection('opportunities').doc(opportunityId).get();
-    if (!opportunitySnap.exists || String(opportunitySnap.data()?.ownerId || '').trim() !== ownerId) {
+    const opportunity = opportunitySnap.data() || {};
+    const opportunityOwnerId = String(opportunity.ownerId || '').trim();
+    const opportunityStatus = String(opportunity.status || '').trim();
+    if (!opportunitySnap.exists || opportunityOwnerId !== ownerId || opportunityStatus !== 'open') {
       await snap.ref.update({
         status: 'declined',
-        validationStatus: 'opportunity_not_owned',
+        validationStatus: opportunitySnap.exists && opportunityOwnerId === ownerId
+          ? 'opportunity_not_open'
+          : 'opportunity_not_owned',
         updatedAt: FieldValue.serverTimestamp(),
       });
       return;
     }
 
-    const requiredSkills = Array.isArray(opportunitySnap.data()?.skills)
-      ? opportunitySnap.data().skills.map(normalizeTalentSkill).filter(Boolean)
+    const requiredSkills = Array.isArray(opportunity.skills)
+      ? [...new Set(opportunity.skills.map(normalizeTalentSkill).filter(Boolean))]
       : [];
     // Read the full verified Skill Graph in pages so invitations do not
     // miss a valid match for talent profiles with many verified skills.
