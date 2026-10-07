@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/follow_repository.dart';
@@ -327,6 +328,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
               );
             },
           ),
+          _verifiedSkillsCard(context, widget.profile.uid),
           if (widget.athlete != null) _talentModeCard(context, widget.athlete!),
           const SizedBox(height: 12),
           if (!own && me != null)
@@ -389,6 +391,48 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
     );
   }
 
+
+  Widget _verifiedSkillsCard(BuildContext context, String ownerId) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('talent_skill_graph')
+          .where('ownerId', isEqualTo: ownerId)
+          .where('verified', isEqualTo: true)
+          .limit(8)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const SizedBox.shrink();
+        final skills = snapshot.data!.docs.map((d) => d.data()).toList()
+          ..sort((a, b) => ((b['confidence'] as num?)?.compareTo((a['confidence'] as num?) ?? 0) ?? 0));
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Row(children: [
+                Icon(Icons.verified_outlined),
+                SizedBox(width: 8),
+                Text('Verified Skills', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+              ]),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: skills.map((data) => Chip(
+                  avatar: const Icon(Icons.verified, size: 16),
+                  label: Text((data['skill'] ?? 'Skill').toString()),
+                )).toList(),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'مهارات موثقة بناءً على أدلة تمت مراجعتها داخل AUREN.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ]),
+          ),
+        );
+      },
+    );
+  }
 
   Widget _talentModeCard(BuildContext context, AurenTalent talent) {
     final sports = talent.sports.isEmpty && talent.sport.isNotEmpty ? [talent.sport] : talent.sports;
