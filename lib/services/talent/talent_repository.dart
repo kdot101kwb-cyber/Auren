@@ -91,7 +91,7 @@ class TalentRepository {
           .limit(pageSize);
       if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
       final page = await query.get();
-      if (page.empty) break;
+      if (page.docs.isEmpty) break;
       for (final doc in page.docs) {
         final data = doc.data();
         missions.add({
@@ -154,7 +154,7 @@ class TalentRepository {
           .limit(pageSize);
       if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
       final page = await query.get();
-      if (page.empty) break;
+      if (page.docs.isEmpty) break;
       for (final doc in page.docs) {
         final data = doc.data();
         missions.add({
