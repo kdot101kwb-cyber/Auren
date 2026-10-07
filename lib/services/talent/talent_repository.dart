@@ -104,9 +104,13 @@ Future<List<String>> promoteMissionEvidenceToSkillGraph({
         final safeSkill = skill.replaceAll(RegExp(r'[^a-zA-Z0-9_ -]'), '_');
         final ref = db.collection('talent_skill_graph').doc('${ownerId}_$safeSkill');
         final existing = await ref.get();
-        final previousCount =
-            (existing.data()?['evidenceCount'] as num?)?.toInt() ?? 0;
-        final evidenceCount = previousCount + 1;
+        final data = existing.data();
+        final sameEvidence = existing.exists &&
+            data?['lastMission']?.toString() == mission['mission'] &&
+            data?['lastResult']?.toString() == mission['result'] &&
+            data?['evidence']?.toString() == mission['evidence'];
+        final previousCount = (data?['evidenceCount'] as num?)?.toInt() ?? 0;
+        final evidenceCount = sameEvidence ? previousCount : previousCount + 1;
         final confidence =
             (0.45 + (evidenceCount - 1) * 0.10).clamp(0.45, 0.85);
         await ref.set({
