@@ -303,19 +303,29 @@ exports.approveAurenAction = require('firebase-functions/v2/https').onCall(
     const uid = request.auth?.uid;
     if (!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
     const actionId = String(request.data?.actionId || '').trim();
+    const expectedVersion = request.data?.expectedVersion;
     if (!actionId || actionId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid action id.');
+    if (!Number.isInteger(expectedVersion) || expectedVersion < 0) {
+      throw aurenHttpsError('invalid-argument', 'A valid expectedVersion is required.');
+    }
     const ref = db.collection('users').doc(uid).collection('actions').doc(actionId);
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       if (!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
       const data = snap.data() || {};
       if (data.status !== 'pending') throw aurenHttpsError('failed-precondition', 'Action is not pending.');
+      if (!Number.isInteger(data.draftVersion) || data.draftVersion !== expectedVersion) {
+        throw aurenHttpsError('aborted', 'Action draft changed. Refresh the action and review it again.');
+      }
       if (actionIsExpired(data)) {
         tx.update(ref, {status:'expired', expiredAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
         throw aurenHttpsError('deadline-exceeded', 'This action has expired. Ask AUREN to create it again.');
       }
       const definition = validateAurenAction(String(data.actionType || ''), data.payload || {});
       if (!definition.requiresApproval) throw aurenHttpsError('failed-precondition', 'Approval is not required.');
+
+      // The server is the sole authority for the approval hash. The client
+      // supplies only the expected draft version, never a client-computed hash.
       const approvedPayloadHash = payloadHash(data.payload || {});
       tx.update(ref, {
         status:'approved',
@@ -746,6 +756,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         approvalLevel: definition?.approvalLevel || 1,
         requiresApproval: true,
         status: 'pending',
+        draftVersion: 0,
         createdAt: FieldValue.serverTimestamp(),
         expiresAtMs: Date.now() + AUREN_ACTION_TTL_MS,
         updatedAt: FieldValue.serverTimestamp(),
