@@ -44,6 +44,11 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
             )),
           ),
           IconButton(
+            tooltip: 'Verified Skill Matches',
+            icon: const Icon(Icons.auto_awesome_outlined),
+            onPressed: () => _showVerifiedMatches(context, uid),
+          ),
+          IconButton(
             tooltip: 'طلباتي',
             icon: const Icon(Icons.assignment_outlined),
             onPressed: () => _myApplications(context, uid),
@@ -122,6 +127,54 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _showVerifiedMatches(BuildContext context, String uid) async {
+    try {
+      final matches = await repo.findVerifiedSkillMatches(uid);
+      if (!context.mounted) return;
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => SizedBox(
+          height: MediaQuery.of(context).size.height * .75,
+          child: matches.isEmpty
+              ? const Center(child: Text('لا توجد فرص مطابقة لمهاراتك الموثقة بعد.'))
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const Text('Match Everything • Verified Skills',
+                        style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 6),
+                    const Text('AUREN استخدم فقط المهارات الموثقة لرفع دقة المطابقة.'),
+                    const SizedBox(height: 12),
+                    ...matches.map((item) {
+                      final opportunity = item['opportunity'] as AurenOpportunity;
+                      final matched = (item['matchedSkills'] as List).join(' • ');
+                      final score = ((item['score'] as num) * 100).round();
+                      return Card(
+                        child: ListTile(
+                          leading: const CircleAvatar(child: Icon(Icons.work_outline)),
+                          title: Text(opportunity.title),
+                          subtitle: Text('$score% match • $matched'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _details(context, opportunity, uid);
+                          },
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر حساب المطابقات: $e')),
+        );
+      }
+    }
   }
 
   Widget _card(BuildContext context, AurenOpportunity opportunity, String uid) {
