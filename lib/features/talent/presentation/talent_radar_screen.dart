@@ -32,7 +32,7 @@ class _AurenTalentRadarScreenState extends State<AurenTalentRadarScreen> {
               itemBuilder: (_, i) { final f = items[i]; return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [const Icon(Icons.radar), const SizedBox(width: 8), Expanded(child: Text(f.title, style: const TextStyle(fontWeight: FontWeight.w900))), Chip(label: Text('${f.score}%'))]),
                 const SizedBox(height: 6), Text(f.description),
-                if (f.matchedSkills.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text('مطابق: ${f.matchedSkills.join(' • ')}')),
+                if (f.matchedSkills.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text('المهارات الموثقة المطابقة: ${f.matchedSkills.join(' • ')}')),
                 if (f.missingSkills.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('فجوات: ${f.missingSkills.join(' • ')}')),
                 const SizedBox(height: 8), Wrap(spacing: 8, children: [if (f.status == 'new') OutlinedButton(onPressed: () => service.markSeen(uid, f.id), child: const Text('مراجعة')), if (f.status != 'interested' && f.status != 'dismissed') OutlinedButton(onPressed: () => service.markInterested(uid, f.id), child: const Text('مهتم')), if (f.status != 'dismissed') OutlinedButton(onPressed: () => service.dismiss(uid, f.id), child: const Text('إخفاء'))]),
               ]))); },
