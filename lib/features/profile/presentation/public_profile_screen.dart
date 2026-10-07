@@ -327,7 +327,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
               );
             },
           ),
-          if (widget.athlete != null) _athleteModeCard(context, widget.athlete!),
+          if (widget.athlete != null) _talentModeCard(context, widget.athlete!),
           const SizedBox(height: 12),
           if (!own && me != null)
             StreamBuilder<bool>(
@@ -390,7 +390,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
   }
 
 
-  Widget _athleteModeCard(BuildContext context, AurenTalent talent) {
+  Widget _talentModeCard(BuildContext context, AurenTalent talent) {
     final sports = talent.sports.isEmpty && talent.sport.isNotEmpty ? [talent.sport] : talent.sports;
     final score = TalentScoreService.calculate(
       displayName: talent.displayName,
@@ -412,9 +412,9 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Row(children: [
-            Icon(Icons.sports_outlined),
+            Icon(Icons.auto_awesome_outlined),
             SizedBox(width: 8),
-            Expanded(child: Text('Athlete Mode', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
+            Expanded(child: Text('Talent', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
           ]),
           const SizedBox(height: 6),
           Text([talent.discipline, talent.level].where((v) => v.trim().isNotEmpty).join(' • ')),
@@ -432,10 +432,10 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
             SizedBox(width: 90, child: LinearProgressIndicator(value: score.score / 100)),
           ]),
           const SizedBox(height: 6),
-          const Text('هذا المؤشر يقيس اكتمال المعلومات والأدلة، وليس مستوى اللاعب أو ترتيبه الرسمي.'),
+          const Text('هذا المؤشر يقيس اكتمال ملف الموهبة والأدلة، وليس تصنيفاً رسمياً للشخص.'),
           if (graph.nextSkills.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text('الخطوة التالية: ' + graph.nextSkills.first),
+            Text('المهارة التالية: ' + graph.nextSkills.first),
           ],
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
@@ -444,7 +444,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                 initialPrompt: AurenSportsAiService.athletePrompt(athleteName: talent.displayName, sports: sports, skills: talent.skills, achievements: talent.achievements),
               ))),
               icon: const Icon(Icons.auto_awesome),
-              label: const Text('Athlete AI'),
+              label: const Text('Talent AI'),
             ),
             OutlinedButton.icon(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(
@@ -505,7 +505,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
             ],
           ]),
           const SizedBox(height: 6),
-          const Text('البيانات الرياضية تظهر كطبقة داخل نفس Profile، وليست صفحة شخصية منفصلة.'),
+          const Text('Talent يظهر كطبقة داخل نفس Profile العام، ولا ينشئ بروفايل منفصلاً.'),
         ]),
       ),
     );
