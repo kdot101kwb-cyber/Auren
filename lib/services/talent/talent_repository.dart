@@ -155,6 +155,11 @@ class TalentRepository {
     required String ownerId,
     required List<Map<String, String>> missions,
   }) async {
+    final cleanOwnerId = ownerId.trim();
+    if (cleanOwnerId.isEmpty || cleanOwnerId.length > 128) {
+      throw ArgumentError('معرّف مالك الموهبة غير صالح.');
+    }
+
     final cleanMissions = missions
         .map((m) => {
               'mission': (m['mission'] ?? '').trim(),
@@ -162,7 +167,13 @@ class TalentRepository {
               'result': (m['result'] ?? '').trim(),
               'evidence': (m['evidence'] ?? '').trim(),
             })
-        .where((m) => m['mission']!.isNotEmpty && m['result']!.isNotEmpty)
+        .where((m) =>
+            m['mission']!.isNotEmpty &&
+            m['result']!.isNotEmpty &&
+            m['mission']!.length <= 200 &&
+            m['category']!.length <= 80 &&
+            m['result']!.length <= 1000 &&
+            m['evidence']!.length <= 1200)
         .toList();
     if (cleanMissions.isEmpty) return const [];
 
@@ -190,21 +201,21 @@ class TalentRepository {
           mission['mission']!,
           mission['result']!,
           mission['evidence']!,
-        ].join('\\u001f');
+        ].join('\u001f');
         uniqueEvidence[key] = mission;
       }
 
       final skill = skillEntry.value;
       candidates.add(skill);
       final safeSkill = skill.replaceAll(RegExp(r'[^a-zA-Z0-9_ -]'), '_');
-      final ref = db.collection('talent_skill_graph').doc('${ownerId}_$safeSkill');
+      final ref = db.collection('talent_skill_graph').doc('${cleanOwnerId}_$safeSkill');
       final evidenceCount = uniqueEvidence.length;
       final confidence =
           (0.45 + (evidenceCount - 1) * 0.10).clamp(0.45, 0.85);
       final latest = matchingMissions.first;
 
       await ref.set({
-          'ownerId': ownerId,
+          'ownerId': cleanOwnerId,
           'skill': skill,
           'confidence': confidence,
           'evidenceCount': evidenceCount,
@@ -232,7 +243,7 @@ class TalentRepository {
     if (cleanOwnerId.isEmpty || cleanDisplayName.isEmpty || cleanCity.isEmpty || cleanCountry.isEmpty) {
       throw ArgumentError('بيانات ملف الموهبة الأساسية غير مكتملة.');
     }
-    if (cleanOwnerId.length > 128 || cleanDisplayName.length > 120 || cleanBio.length > 1000 || cleanCity.length > 120 || cleanCountry.length > 120) {
+    if (cleanOwnerId.length > 128 || cleanDisplayName.length > 120 || cleanBio.length > 2000 || cleanCity.length > 100 || cleanCountry.length > 100) {
       throw ArgumentError('بيانات ملف الموهبة تتجاوز الحد المسموح.');
     }
 
