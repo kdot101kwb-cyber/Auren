@@ -10,13 +10,13 @@ class AurenTalentEngineScreen extends StatefulWidget{
 }
 class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
   final _service=AurenTalentEngineService(); final _query=TextEditingController();
-  bool _loading=false; List<AurenTalentCandidate> _results=[];
+  bool _loading=false; String? _invitingUid; List<AurenTalentCandidate> _results=[];
   @override void dispose(){_query.dispose();super.dispose();}
   Future<void> _scout() async{
     final uid=FirebaseAuth.instance.currentUser?.uid;
     final q=_query.text.trim();
-    final inOpportunityMode=widget.opportunityId!=null && widget.opportunitySkills.isNotEmpty;
-    if(uid==null || (!inOpportunityMode && q.isEmpty))return;
+    final inOpportunityMode=widget.opportunityId!=null;
+    if(uid==null || (inOpportunityMode && widget.opportunitySkills.isEmpty) || (!inOpportunityMode && q.isEmpty))return;
     setState(()=>_loading=true);
     try{
       final r=inOpportunityMode
@@ -45,10 +45,16 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
   Future<void> _invite(AurenTalentCandidate candidate) async {
     final uid=FirebaseAuth.instance.currentUser?.uid;
     final oid=widget.opportunityId; final title=widget.opportunityTitle;
-    if(uid==null||oid==null||title==null)return;
-    try{await _service.inviteToOpportunity(ownerId:uid,talentUid:candidate.uid,opportunityId:oid,opportunityTitle:title);
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إرسال الدعوة للمواهب.')));}
-    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إرسال الدعوة: $e')));}
+    if(uid==null||oid==null||title==null||_invitingUid!=null)return;
+    setState(()=>_invitingUid=candidate.uid);
+    try{
+      await _service.inviteToOpportunity(ownerId:uid,talentUid:candidate.uid,opportunityId:oid,opportunityTitle:title);
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم إرسال الدعوة للمواهب.')));
+    } catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر إرسال الدعوة: $e')));
+    } finally{
+      if(mounted)setState(()=>_invitingUid=null);
+    }
   }
 
   @override Widget build(BuildContext context)=>Scaffold(
@@ -56,9 +62,20 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
     body:ListView(padding:const EdgeInsets.all(16),children:[
       Card(child:Padding(padding:const EdgeInsets.all(18),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Text('AI Talent Scout',style:TextStyle(fontSize:24,fontWeight:FontWeight.bold)),
-        const SizedBox(height:6),const Text('اكتب المهارة أو الدور أو الخدمة التي تبحث عنها، وAUREN يبحث في الملفات المهنية القابلة للاكتشاف.'),
-        const SizedBox(height:14),TextField(controller:_query,onSubmitted:(_)=>_scout(),maxLines:2,decoration:const InputDecoration(border:OutlineInputBorder(),hintText:'مثال: Flutter developer • مصمم • مدرس لغة')),
-        const SizedBox(height:12),SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_loading?null:_scout,icon:_loading?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.search),label:Text(_loading?'جاري البحث...':'ابحث عن المواهب'))),
+        const SizedBox(height:6),
+        Text(widget.opportunityId!=null
+            ? 'مطابقة المواهب لهذه الفرصة تعتمد على المهارات الموثقة فقط.'
+            : 'اكتب المهارة أو الدور أو الخدمة التي تبحث عنها، وAUREN يبحث في الملفات المهنية القابلة للاكتشاف.'),
+        if(widget.opportunityId==null) ...[
+          const SizedBox(height:14),
+          TextField(controller:_query,onSubmitted:(_)=>_scout(),maxLines:2,decoration:const InputDecoration(border:OutlineInputBorder(),hintText:'مثال: Flutter developer • مصمم • مدرس لغة')),
+        ],
+        const SizedBox(height:12),
+        SizedBox(width:double.infinity,child:FilledButton.icon(
+          onPressed:_loading?null:_scout,
+          icon:_loading?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.search),
+          label:Text(_loading?'جاري البحث...':widget.opportunityId!=null?'ابحث عن أفضل المطابقات':'ابحث عن المواهب'),
+        )),
       ]))),
       if(widget.opportunityId==null) ...[
         const SizedBox(height:18),
@@ -97,7 +114,13 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
         title:Text(candidate.headline.isEmpty?'AUREN Professional':candidate.headline),
         subtitle:Text('${candidate.reasons.join(' • ')}\n${[...candidate.verifiedSkills,...candidate.services].take(5).join(' • ')}'),
         isThreeLine:true,
-        trailing:(widget.opportunityId!=null)?IconButton(icon:const Icon(Icons.mail_outline),tooltip:'دعوة للفرصة',onPressed:()=>_invite(candidate)):candidate.showContact?IconButton(icon:const Icon(Icons.chat_outlined),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد التواصل مع صاحب هذا الملف بخصوص: ${_query.text.trim()}')))):null,
+        trailing:(widget.opportunityId!=null)?IconButton(
+          icon:_invitingUid==candidate.uid
+              ? const SizedBox(width:20,height:20,child:CircularProgressIndicator(strokeWidth:2))
+              : const Icon(Icons.mail_outline),
+          tooltip:'دعوة للفرصة',
+          onPressed:_invitingUid==null?()=>_invite(candidate):null,
+        ):candidate.showContact?IconButton(icon:const Icon(Icons.chat_outlined),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد التواصل مع صاحب هذا الملف بخصوص: ${_query.text.trim()}')))):null,
       ))),
     ]));
 }
