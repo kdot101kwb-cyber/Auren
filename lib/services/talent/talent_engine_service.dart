@@ -44,7 +44,7 @@ class AurenTalentEngineService {
       candidates.add(AurenTalentCandidate(uid:owner,mode:d['mode']?.toString()??'personal',headline:d['headline']?.toString()??'',bio:d['bio']?.toString()??'',skills:skills,verifiedSkills:verifiedSkills,interests:interests,goals:goals,languages:languages,services:services,showContact:d['showContact']==true,score:score,reasons:reasons.isEmpty?const ['مطابقة نصية']:reasons));
     }
     candidates.sort((a,b)=>b.score.compareTo(a.score));
-    return candidates.take(limit.clamp(1,50).toInt()).toList();
+    return candidates.take(limit.clamp(1,100).toInt()).toList();
   }
 
   Future<List<AurenTalentCandidate>> matchOpportunity({
@@ -63,7 +63,7 @@ class AurenTalentEngineService {
     final candidates = await scout(
       query: [title, description, ...skills].join(' '),
       excludeUid: excludeUid,
-      limit: 50,
+      limit: 100,
     );
     final matches = <AurenTalentCandidate>[];
     for (final candidate in candidates) {
@@ -93,7 +93,7 @@ class AurenTalentEngineService {
       ));
     }
     matches.sort((a, b) => b.score.compareTo(a.score));
-    return matches.take(limit.clamp(1, 50).toInt()).toList();
+    return matches.take(limit.clamp(1, 100).toInt()).toList();
   }
 
   Future<void> inviteToOpportunity({required String ownerId,required String talentUid,required String opportunityId,required String opportunityTitle}) async {
