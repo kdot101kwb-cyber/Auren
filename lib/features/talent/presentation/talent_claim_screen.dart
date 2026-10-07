@@ -64,7 +64,7 @@ class _AurenTalentClaimScreenState extends State<AurenTalentClaimScreen> {
           const SizedBox(height: 12),
           const Card(child: Padding(padding: EdgeInsets.all(14), child: Text('المطالبة لا تعني التحقق تلقائياً. اذكر أدلة يمكن مراجعتها، مثل رابط حساب رسمي، صفحة نادي أو اتحاد، أو إثبات آخر مناسب. لا ترسل كلمات مرور أو بيانات حساسة.'))),
           const SizedBox(height: 12),
-          TextField(controller: _evidence, maxLines: 7, maxLength: 1200, decoration: const InputDecoration(labelText: 'أدلة الملكية أو الهوية', hintText: 'ضع الروابط أو وصف الأدلة التي تثبت أنك صاحب الصفحة...', border: OutlineInputBorder())),
+          TextField(controller: _evidence, onChanged: (_) => setState(() {}), maxLines: 7, maxLength: 1200, decoration: const InputDecoration(labelText: 'أدلة الملكية أو الهوية', hintText: 'ضع الروابط أو وصف الأدلة التي تثبت أنك صاحب الصفحة...', border: OutlineInputBorder())),
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: _saving || _evidence.text.trim().isEmpty ? null : _submit,
