@@ -24,32 +24,29 @@ class _AurenGaezV5CardState extends State<AurenGaezV5Card> {
   Future<void> _check() async {
     final crop = _crop.text.trim();
     if (crop.isEmpty) {
-      setState(() => _status = 'أدخل كود المحصول من GAEZ v5.');
+      setState(() => _status = 'أدخل كود المحصول في GAEZ v5.');
       return;
     }
     setState(() {
       _loading = true;
-      _status = 'جارٍ فحص مصدر FAO...';
+      _status = 'جارٍ الاستعلام من كتالوج FAO RES05...';
     });
     try {
-      final data = _service.historicalCropDataset(crop: crop, input: _input);
-      final exists = await _service.exists(
-        mapset: data['mapset'] as String,
-        period: data['period'] as String,
-        climate: data['climate'] as String,
-        scenario: data['scenario'] as String,
-        crop: data['crop'] as String,
-        input: data['input'] as String,
+      final data = await _service.queryOfficialCatalog(
+        crop: crop,
+        inputLevel: _input,
       );
+      final features = data['features'];
+      final count = features is List ? features.length : 0;
       if (!mounted) return;
       setState(() {
-        _status = exists
-            ? 'مصدر البيانات استجاب بنجاح. يمكن استخدامه في طبقة تحليل GAEZ.'
-            : 'لم يتم تأكيد الملف بهذا الكود. راجع كود المحصول وأبعاد GAEZ v5.';
+        _status = count > 0
+            ? 'تم العثور على $count سجل/سجلات حقيقية في كتالوج FAO RES05.'
+            : 'لم يعثر الكتالوج على نتائج بهذا الكود ومستوى الإدارة.';
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _status = 'تعذر فحص مصدر GAEZ v5 حالياً.');
+        setState(() => _status = 'تعذر الوصول إلى كتالوج GAEZ v5 حالياً.');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
