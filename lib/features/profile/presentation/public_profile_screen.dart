@@ -463,7 +463,6 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                       ),
                     ) : null,
                   ),
-                ),
               );
               }),
               const SizedBox(height: 6),
