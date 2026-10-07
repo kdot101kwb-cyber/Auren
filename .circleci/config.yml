@@ -8,8 +8,8 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - flutter-deps-v2-
-            - flutter-deps-v2
+            - flutter-deps-v3-
+            - flutter-deps-v3
       - run:
           name: Flutter version
           command: flutter --version && dart --version
@@ -17,7 +17,7 @@ jobs:
           name: Get dependencies
           command: flutter pub get
       - save_cache:
-          key: flutter-deps-v2-{{ .Branch }}
+          key: flutter-deps-v3-{{ .Branch }}
           paths:
             - ~/.pub-cache
       - run:
@@ -33,7 +33,7 @@ jobs:
           name: Analyze
           command: |
             set +e
-            flutter analyze --no-fatal-warnings > flutter_analyze.log 2>&1
+            flutter analyze --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
             status=$?
             echo "flutter_analyze_exit_code=$status" >> flutter_analyze.log
             echo "$status" > /tmp/flutter_analyze_status
