@@ -17,15 +17,28 @@ class AurenTalentEngineService {
     final q=_normalize(query);
     if(q.isEmpty) return const [];
     final snap=await _db.collectionGroup('profile_modes').where('discoverable',isEqualTo:true).limit(500).get();
-    final verifiedSnap=await _db.collection('talent_skill_graph').where('verified',isEqualTo:true).limit(1000).get();
+    // Load the complete verified Skill Graph in pages. A global limit could
+    // otherwise hide a candidate's verified skill when the collection grows.
     final verifiedByOwner=<String,List<String>>{};
-    for(final skillDoc in verifiedSnap.docs){
-      final data=skillDoc.data();
-      final owner=(data['ownerId']??'').toString().trim();
-      final skill=(data['skill']??'').toString().trim();
-      if(owner.isEmpty || skill.isEmpty) continue;
-      verifiedByOwner.putIfAbsent(owner,()=>[]).add(skill);
-    }
+    const pageSize=500;
+    DocumentSnapshot<Map<String,dynamic>>? lastVerifiedDoc;
+    do {
+      Query<Map<String,dynamic>> query=_db.collection('talent_skill_graph')
+          .where('verified',isEqualTo:true)
+          .limit(pageSize);
+      if(lastVerifiedDoc!=null) query=query.startAfterDocument(lastVerifiedDoc!);
+      final page=await query.get();
+      if(page.docs.isEmpty) break;
+      for(final skillDoc in page.docs){
+        final data=skillDoc.data();
+        final owner=(data['ownerId']??'').toString().trim();
+        final skill=(data['skill']??'').toString().trim();
+        if(owner.isEmpty || skill.isEmpty) continue;
+        verifiedByOwner.putIfAbsent(owner,()=>[]).add(skill);
+      }
+      lastVerifiedDoc=page.docs.last;
+      if(page.docs.length<pageSize) break;
+    } while(lastVerifiedDoc!=null);
     final candidates=<AurenTalentCandidate>[];
     for(final doc in snap.docs){
       final d=doc.data(); final owner=doc.reference.parent.parent?.id ?? '';
