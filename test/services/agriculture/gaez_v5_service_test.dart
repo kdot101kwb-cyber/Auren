@@ -27,4 +27,20 @@ void main() {
     expect(result['crop'], 'ALF');
     expect(result['input'], 'HRLM');
   });
+  test('builds the official RES05 catalog query', () {
+    final service = AurenGaezV5Service();
+    final url = service.buildOfficialQueryUrl(
+      crop: 'ALF',
+      waterSupply: 'RAIN-FED',
+      inputLevel: 'HRLM',
+    );
+
+    expect(url.host, 'gaez-services.fao.org');
+    expect(url.path, '/server/rest/services/res05/ImageServer');
+    expect(url.queryParameters['f'], 'json');
+    expect(url.queryParameters['input_level'], isNull);
+    expect(url.queryParameters['where'], contains("crop='ALF'"));
+    expect(url.queryParameters['where'], contains("water_supply='RAIN-FED'"));
+    expect(url.queryParameters['where'], contains("input_level='HRLM'"));
+  });
 }
