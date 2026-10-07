@@ -14,12 +14,6 @@ class AurenTalentSkillGraph extends StatelessWidget {
       await TalentRepository().requestSkillVerification(
         ownerId: uid,
         skill: skill,
-        proof: {
-          'evidenceCount': data['evidenceCount'] ?? 0,
-          'result': data['lastResult'] ?? '',
-          'evidence': data['evidence'] ?? '',
-          'source': data['source'] ?? 'discovery_mission',
-        },
       );
       if (context.mounted) {
         Navigator.of(context).pop();
