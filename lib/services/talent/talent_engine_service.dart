@@ -218,6 +218,7 @@ class AurenTalentEngineService {
     return _db
         .collection('opportunity_invitations')
         .where('talentUid', isEqualTo: uid)
+        .orderBy('createdAt', descending: true)
         .limit(100)
         .snapshots()
         .map((s) {
