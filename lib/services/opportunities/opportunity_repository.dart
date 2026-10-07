@@ -8,7 +8,16 @@ class AurenOpportunityApplication {
   factory AurenOpportunityApplication.fromMap(String id, Map<String,dynamic> d) => AurenOpportunityApplication(id:id,opportunityId:d['opportunityId']?.toString()??'',ownerId:d['ownerId']?.toString()??'',applicantId:d['applicantId']?.toString()??'',title:d['title']?.toString()??'',note:d['note']?.toString()??'',status:d['status']?.toString()??'pending',matchScore:(d['matchScore'] as num?)?.toDouble()??0.0,matchedVerifiedSkills:(d['matchedVerifiedSkills'] as List?)?.map((e)=>e.toString()).toList()??const <String>[],createdAt:d['createdAt'] is Timestamp?(d['createdAt'] as Timestamp).toDate():null,updatedAt:d['updatedAt'] is Timestamp?(d['updatedAt'] as Timestamp).toDate():null);
 }
 
-class OpportunityRepository{final FirebaseFirestore db;OpportunityRepository({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
+class OpportunityRepository{
+  final FirebaseFirestore db;
+  OpportunityRepository({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
+
+  String _normalizeSkill(String value) => value
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^\\p{L}\\p{N}]+', unicode: true), ' ')
+      .replaceAll(RegExp(r'\\s+'), ' ')
+      .trim();
 Stream<List<AurenOpportunity>> watchOpen({String query='',String type='All'}){final q=query.trim().toLowerCase();return db.collection('opportunities').where('status',isEqualTo:'open').limit(100).snapshots().map((s){final list=s.docs.map((d)=>AurenOpportunity.fromMap(d.id,d.data())).where((o)=>type=='All'||o.type==type).where((o)=>q.isEmpty||('${o.title} ${o.description} ${o.category} ${o.city} ${o.country} ${o.skills.join(' ')}').toLowerCase().contains(q)).toList();list.sort((a,b)=>(b.createdAt??DateTime.fromMillisecondsSinceEpoch(0)).compareTo(a.createdAt??DateTime.fromMillisecondsSinceEpoch(0)));return list;});}
 Stream<List<AurenOpportunity>> watchSaved(String uid) => db.collection('users').doc(uid).collection('savedOpportunities').orderBy('createdAt', descending: true).limit(100).snapshots().map((s) => s.docs.map((d) => AurenOpportunity.fromMap(d.id, {
   'ownerId': '',
@@ -41,7 +50,7 @@ Future<List<Map<String, dynamic>>> findVerifiedSkillMatches(String uid) async {
       .get();
 
   final verifiedSkills = verifiedSnap.docs
-      .map((d) => (d.data()['skill'] ?? '').toString().trim().toLowerCase())
+      .map((d) => _normalizeSkill((d.data()['skill'] ?? '').toString()))
       .where((s) => s.isNotEmpty)
       .toSet();
   if (verifiedSkills.isEmpty) return const <Map<String, dynamic>>[];
@@ -57,7 +66,7 @@ Future<List<Map<String, dynamic>>> findVerifiedSkillMatches(String uid) async {
     if (opportunity.ownerId == uid) continue;
 
     final matched = opportunity.skills
-        .map((s) => s.trim().toLowerCase())
+        .map(_normalizeSkill)
         .where(verifiedSkills.contains)
         .toSet()
         .toList();
