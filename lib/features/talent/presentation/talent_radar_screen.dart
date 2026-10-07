@@ -16,7 +16,20 @@ class _AurenTalentRadarScreenState extends State<AurenTalentRadarScreen> {
     if (uid == null) return const Scaffold(body: Center(child: Text('سجّل الدخول أولاً.')));
     final service = TalentScoutService();
     return Scaffold(
-      appBar: AppBar(title: const Text('Talent Radar'), actions: [IconButton(tooltip: 'تنظيف الإشارات المنتهية', icon: _cleaning ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cleaning_services_outlined), onPressed: _cleaning ? null : () async { setState(() => _cleaning = true); await service.clearExpired(uid); if (mounted) setState(() => _cleaning = false); })]),
+      appBar: AppBar(title: const Text('Talent Radar'), actions: [IconButton(tooltip: 'تنظيف الإشارات المنتهية', icon: _cleaning ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cleaning_services_outlined), onPressed: _cleaning ? null : () async {
+        setState(() => _cleaning = true);
+        try {
+          await service.clearExpired(uid);
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('تعذر تنظيف الإشارات: $e')),
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _cleaning = false);
+        }
+      })]),
       body: StreamBuilder<List<AurenTalentScoutFinding>>(
         stream: service.watchFindings(uid),
         builder: (context, snap) {
