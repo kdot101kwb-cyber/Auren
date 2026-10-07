@@ -87,6 +87,7 @@ class TalentRepository {
       var query = db
           .collection('talent_mission_evidence')
           .where('ownerId', isEqualTo: cleanOwnerId)
+          .orderBy('createdAt', descending: true)
           .limit(pageSize);
       if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
       final page = await query.get();
