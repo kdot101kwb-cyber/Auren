@@ -80,7 +80,7 @@ class TalentScoutService {
       final ref = col.doc(f.id);
       final existing = await ref.get();
       final data = <String, dynamic>{
-        'ownerId':uid,
+        'ownerId':cleanUid,
         'scoutId':f.scoutId,
         'type':f.type,
         'title':f.title,
@@ -105,14 +105,24 @@ class TalentScoutService {
     return results;
   }
   Future<void> markSeen(String uid, String findingId) async {
+    final cleanUid = uid.trim();
+    final cleanFindingId = findingId.trim();
+    if (cleanUid.isEmpty || cleanFindingId.isEmpty) return;
     await db.collection('users').doc(cleanUid).collection('talent_scout_findings').doc(cleanFindingId).update({'status':'seen'});
   }
 
   Future<void> dismiss(String uid, String findingId) async {
-    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(cleanFindingId).update({'status':'dismissed'});
+    final cleanUid = uid.trim();
+    final cleanFindingId = findingId.trim();
+    if (cleanUid.isEmpty || cleanFindingId.isEmpty) return;
+    await db.collection('users').doc(cleanUid).collection('talent_scout_findings').doc(cleanFindingId).update({'status':'dismissed'});
   }
+
   Future<void> markInterested(String uid, String findingId) async {
-    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(cleanFindingId).update({'status':'interested'});
+    final cleanUid = uid.trim();
+    final cleanFindingId = findingId.trim();
+    if (cleanUid.isEmpty || cleanFindingId.isEmpty) return;
+    await db.collection('users').doc(cleanUid).collection('talent_scout_findings').doc(cleanFindingId).update({'status':'interested'});
   }
   Future<void> clearExpired(String uid) async {
     final cleanUid=uid.trim();
