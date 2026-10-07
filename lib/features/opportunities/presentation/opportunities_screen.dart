@@ -359,12 +359,39 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
                     onTap: () => _openApplicantProfile(context, a),
                     trailing: PopupMenuButton<String>(
                       onSelected: (status) async {
+                        final accepted = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: Text(status == 'accepted' ? 'قبول المتقدم؟' : 'رفض الطلب؟'),
+                            content: Text(
+                              status == 'accepted'
+                                  ? 'سيتم تسجيل هذا الطلب كمقبول.'
+                                  : 'سيتم تسجيل هذا الطلب كمرفوض.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext, false),
+                                child: const Text('إلغاء'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(dialogContext, true),
+                                child: Text(status == 'accepted' ? 'قبول' : 'رفض'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (accepted != true || !context.mounted) return;
                         try {
                           await repo.updateApplicationStatus(
                             applicantId: a.applicantId,
                             opportunityId: a.opportunityId,
                             status: status,
                           );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(status == 'accepted' ? 'تم قبول المتقدم.' : 'تم رفض الطلب.')),
+                            );
+                          }
                         } catch (e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
