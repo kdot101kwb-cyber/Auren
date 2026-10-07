@@ -67,44 +67,82 @@ class AurenTalentEngineService {
     String? excludeUid,
     int limit = 20,
   }) async {
-    final requiredSkills = skills.map(_normalize).where((x) => x.isNotEmpty).toSet();
+    final requiredSkills = skills
+        .map(_normalize)
+        .where((x) => x.isNotEmpty)
+        .toSet();
     if (requiredSkills.isEmpty) return const [];
 
-    // Opportunity matching is stricter than general Talent discovery:
-    // a candidate must have at least one server-verified Skill Graph skill
-    // matching an explicit opportunity skill. Profile text alone is not proof.
-    final candidates = await scout(
-      query: [title, description, ...skills].join(' '),
-      excludeUid: excludeUid,
-      limit: 100,
-    );
+    // Do not route opportunity matching through the text-search scout:
+    // a strong verified candidate can be missed simply because their profile
+    // text does not contain the opportunity title/description wording.
+    final profileSnap = await _db
+        .collectionGroup('profile_modes')
+        .where('discoverable', isEqualTo: true)
+        .limit(500)
+        .get();
+
+    final verifiedByOwner = <String, List<String>>{};
+    const pageSize = 500;
+    DocumentSnapshot<Map<String, dynamic>>? lastVerifiedDoc;
+    do {
+      Query<Map<String, dynamic>> query = _db
+          .collection('talent_skill_graph')
+          .where('verified', isEqualTo: true)
+          .limit(pageSize);
+      if (lastVerifiedDoc != null) {
+        query = query.startAfterDocument(lastVerifiedDoc!);
+      }
+      final page = await query.get();
+      if (page.docs.isEmpty) break;
+      for (final skillDoc in page.docs) {
+        final data = skillDoc.data();
+        final owner = (data['ownerId'] ?? '').toString().trim();
+        final skill = (data['skill'] ?? '').toString().trim();
+        if (owner.isEmpty || skill.isEmpty) continue;
+        verifiedByOwner.putIfAbsent(owner, () => []).add(skill);
+      }
+      lastVerifiedDoc = page.docs.last;
+      if (page.docs.length < pageSize) break;
+    } while (lastVerifiedDoc != null);
+
     final matches = <AurenTalentCandidate>[];
-    for (final candidate in candidates) {
-      final matched = candidate.verifiedSkills
+    final seenOwners = <String>{};
+    for (final doc in profileSnap.docs) {
+      final d = doc.data();
+      final owner = doc.reference.parent.parent?.id ?? '';
+      if (owner.isEmpty || owner == excludeUid || !seenOwners.add(owner)) continue;
+
+      final verifiedSkills = verifiedByOwner[owner] ?? const <String>[];
+      final matched = verifiedSkills
           .where((skill) => requiredSkills.contains(_normalize(skill)))
           .toList();
       if (matched.isEmpty) continue;
-      final reasons = <String>{
-        ...candidate.reasons,
-        'مهارات موثقة مطابقة للفرصة',
-      }.toList();
+
+      final skillsList = _strings(d['skills']);
+      final interests = _strings(d['interests']);
+      final goals = _strings(d['goals']);
+      final languages = _strings(d['languages']);
+      final services = _strings(d['services']);
       final score = (60 + matched.length * 15).clamp(0, 100).toInt();
+
       matches.add(AurenTalentCandidate(
-        uid: candidate.uid,
-        mode: candidate.mode,
-        headline: candidate.headline,
-        bio: candidate.bio,
-        skills: candidate.skills,
-        verifiedSkills: candidate.verifiedSkills,
-        interests: candidate.interests,
-        goals: candidate.goals,
-        languages: candidate.languages,
-        services: candidate.services,
-        showContact: candidate.showContact,
+        uid: owner,
+        mode: d['mode']?.toString() ?? 'personal',
+        headline: d['headline']?.toString() ?? '',
+        bio: d['bio']?.toString() ?? '',
+        skills: skillsList,
+        verifiedSkills: verifiedSkills,
+        interests: interests,
+        goals: goals,
+        languages: languages,
+        services: services,
+        showContact: d['showContact'] == true,
         score: score,
-        reasons: reasons,
+        reasons: const ['مهارات موثقة مطابقة للفرصة'],
       ));
     }
+
     matches.sort((a, b) => b.score.compareTo(a.score));
     return matches.take(limit.clamp(1, 100).toInt()).toList();
   }
