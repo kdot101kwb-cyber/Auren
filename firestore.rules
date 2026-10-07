@@ -1624,6 +1624,9 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/opportunities/$(opportunityId)).data.status == 'open'
         && get(/databases/$(database)/documents/opportunities/$(opportunityId)).data.ownerId == request.resource.data.ownerId
         && request.resource.data.ownerId is string
+        && request.resource.data.ownerId.size() > 0
+        && request.resource.data.ownerId.size() <= 128
+        && request.resource.data.applicantId is string
         && request.resource.data.applicantId == request.auth.uid
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0
