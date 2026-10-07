@@ -16,6 +16,9 @@ class TalentClaimRepository {
     if (cleanTalentId.isEmpty || cleanClaimantUid.isEmpty || cleanEvidence.isEmpty) {
       throw ArgumentError('بيانات المطالبة غير مكتملة.');
     }
+    if (cleanTalentId.length > 128 || cleanClaimantUid.length > 128) {
+      throw ArgumentError('معرّف المطالبة طويل جدًا.');
+    }
     if (cleanEvidence.length > 1200) {
       throw ArgumentError('الدليل يجب ألا يتجاوز 1200 حرف.');
     }
