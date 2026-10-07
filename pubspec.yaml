@@ -24,7 +24,7 @@ dependencies:
   flutter_webrtc: ^1.6.2+hotfix.3
   video_player: ^2.14.0
   just_audio: ^0.10.5
-  record: ^6.2.1
+  record: ^7.1.1
   fftea: ^1.5.0+1
   share_plus: ^12.0.1
   flutter_local_notifications: ^19.4.1
