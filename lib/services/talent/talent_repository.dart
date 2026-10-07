@@ -54,6 +54,48 @@ class TalentRepository {
     });
   }
 
+  Future<Map<String, dynamic>> evaluateSkillVerificationRequest({
+    required String requestId,
+    required String ownerId,
+    required String skill,
+    required Map<String, dynamic> proof,
+  }) async {
+    final evidenceCount = (proof['evidenceCount'] as num?)?.toInt() ?? 0;
+    final result = (proof['result'] ?? '').toString().trim();
+    final evidence = (proof['evidence'] ?? '').toString().trim();
+    final reasons = <String>[];
+    if (evidenceCount >= 2) reasons.add('multiple_evidence');
+    if (result.isNotEmpty) reasons.add('mission_result');
+    if (evidence.isNotEmpty) reasons.add('attached_evidence');
+    final qualifies = evidenceCount >= 2 && result.isNotEmpty && evidence.isNotEmpty;
+    final status = qualifies ? 'verified' : 'needs_more_evidence';
+
+    final batch = FirebaseFirestore.instance.batch();
+    final requestRef = FirebaseFirestore.instance.collection('talent_skill_verification_requests').doc(requestId);
+    final safeSkill = skill.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    final skillRef = FirebaseFirestore.instance.collection('talent_skill_graph').doc(ownerId + '_' + safeSkill);
+
+    batch.set(requestRef, {
+      'status': status,
+      'evaluation': {
+        'qualifies': qualifies,
+        'reasons': reasons,
+        'evaluatedAt': FieldValue.serverTimestamp(),
+      },
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (qualifies) {
+      batch.set(skillRef, {
+        'verified': true,
+        'verifiedAt': FieldValue.serverTimestamp(),
+        'verificationSource': 'talent_verification_engine',
+      }, SetOptions(merge: true));
+    }
+    await batch.commit();
+    return {'status': status, 'verified': qualifies, 'reasons': reasons};
+  }
+
   Future<void> requestSkillVerification({
     required String ownerId,
     required String skill,
