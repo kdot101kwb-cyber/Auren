@@ -44,12 +44,32 @@ class TalentRepository {
     required String result,
     required String evidence,
   }) async {
+    final cleanOwnerId = ownerId.trim();
+    final cleanMission = mission.trim();
+    final cleanCategory = category.trim();
+    final cleanResult = result.trim();
+    final cleanEvidence = evidence.trim();
+
+    if (cleanOwnerId.isEmpty ||
+        cleanMission.isEmpty ||
+        cleanCategory.isEmpty ||
+        cleanResult.isEmpty) {
+      throw ArgumentError('بيانات المهمة غير مكتملة.');
+    }
+    if (cleanOwnerId.length > 128 ||
+        cleanMission.length > 200 ||
+        cleanCategory.length > 80 ||
+        cleanResult.length > 1000 ||
+        cleanEvidence.length > 1200) {
+      throw ArgumentError('بيانات المهمة تتجاوز الحد المسموح.');
+    }
+
     await db.collection('talent_mission_evidence').add({
-      'ownerId': ownerId,
-      'mission': mission.trim(),
-      'category': category.trim(),
-      'result': result.trim(),
-      'evidence': evidence.trim(),
+      'ownerId': cleanOwnerId,
+      'mission': cleanMission,
+      'category': cleanCategory,
+      'result': cleanResult,
+      'evidence': cleanEvidence,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
