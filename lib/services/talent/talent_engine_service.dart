@@ -49,7 +49,7 @@ class AurenTalentEngineService {
         final owner=(data['ownerId']??'').toString().trim();
         final skill=(data['skill']??'').toString().trim();
         if(owner.isEmpty || skill.isEmpty) continue;
-        verifiedByOwner.putIfAbsent(owner,()=>[]).add(skill);
+        final list = verifiedByOwner.putIfAbsent(owner, () => []); if (!list.contains(skill)) list.add(skill);
       }
       lastVerifiedDoc=page.docs.last;
       if(page.docs.length<pageSize) break;
@@ -129,7 +129,7 @@ class AurenTalentEngineService {
         final owner = (data['ownerId'] ?? '').toString().trim();
         final skill = (data['skill'] ?? '').toString().trim();
         if (owner.isEmpty || skill.isEmpty) continue;
-        verifiedByOwner.putIfAbsent(owner, () => []).add(skill);
+        final list = verifiedByOwner.putIfAbsent(owner, () => []); if (!list.contains(skill)) list.add(skill);
       }
       lastVerifiedDoc = page.docs.last;
       if (page.docs.length < pageSize) break;
