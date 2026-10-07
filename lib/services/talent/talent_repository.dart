@@ -74,6 +74,39 @@ class TalentRepository {
     });
   }
 
+  Future<List<Map<String, String>>> loadMissionEvidence({
+    required String ownerId,
+  }) async {
+    final cleanOwnerId = ownerId.trim();
+    if (cleanOwnerId.isEmpty) return const [];
+
+    final missions = <Map<String, String>>[];
+    const pageSize = 200;
+    DocumentSnapshot<Map<String, dynamic>>? lastDoc;
+    do {
+      var query = db
+          .collection('talent_mission_evidence')
+          .where('ownerId', isEqualTo: cleanOwnerId)
+          .limit(pageSize);
+      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+      final page = await query.get();
+      if (page.empty) break;
+      for (final doc in page.docs) {
+        final data = doc.data();
+        missions.add({
+          'mission': (data['mission'] ?? '').toString().trim(),
+          'category': (data['category'] ?? '').toString().trim(),
+          'result': (data['result'] ?? '').toString().trim(),
+          'evidence': (data['evidence'] ?? '').toString().trim(),
+        });
+      }
+      lastDoc = page.docs.last;
+      if (page.docs.length < pageSize) break;
+    } while (lastDoc != null);
+
+    return missions;
+  }
+
   Future<void> requestSkillVerification({
     required String ownerId,
     required String skill,
