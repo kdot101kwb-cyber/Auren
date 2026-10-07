@@ -4,6 +4,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'core/i18n/auren_localizations.dart';
+import 'core/i18n/auren_locale_controller.dart';
 
 import 'firebase_options.dart';
 import 'features/shell/presentation/auren_shell.dart';
@@ -20,6 +24,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 final GlobalKey<NavigatorState> aurenNavigatorKey = GlobalKey<NavigatorState>();
+final AurenLocaleController aurenLocaleController = AurenLocaleController();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +53,7 @@ Future<void> main() async {
     firebaseError = error;
   }
 
+  await aurenLocaleController.load();
   ErrorWidget.builder = (details) => const _AurenErrorView();
   await AurenOfflineSyncService.instance.start();
   runApp(AurenApp(firebaseError: firebaseError));
@@ -112,14 +118,27 @@ class AurenApp extends StatelessWidget {
   const AurenApp({super.key, this.firebaseError});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        navigatorKey: aurenNavigatorKey,
-        debugShowCheckedModeBanner: false,
-        title: 'AUREN',
-        theme: ThemeData.dark(useMaterial3: true),
-        home: firebaseError == null
-            ? const AurenShell()
-            : FirebaseSetupScreen(error: firebaseError!),
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: aurenLocaleController,
+        builder: (context, _) => MaterialApp(
+          navigatorKey: aurenNavigatorKey,
+          debugShowCheckedModeBanner: false,
+          title: 'AUREN',
+          theme: ThemeData.dark(useMaterial3: true),
+          locale: aurenLocaleController.languageCode == null
+              ? null
+              : Locale(aurenLocaleController.languageCode!),
+          supportedLocales: AurenLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AurenLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: firebaseError == null
+              ? const AurenShell()
+              : FirebaseSetupScreen(error: firebaseError!),
+        ),
       );
 }
 
