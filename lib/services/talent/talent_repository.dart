@@ -213,6 +213,18 @@ class TalentRepository {
     String sport = '', String discipline = '', String level = '', required String city, required String country,
     List<String> skills = const [], List<String> achievements = const [], List<String> goals = const [], List<String> sports = const [], List<String> verificationEvidence = const [],
   }) async {
+    final cleanOwnerId = ownerId.trim();
+    final cleanDisplayName = displayName.trim();
+    final cleanBio = bio.trim();
+    final cleanCity = city.trim();
+    final cleanCountry = country.trim();
+    if (cleanOwnerId.isEmpty || cleanDisplayName.isEmpty || cleanCity.isEmpty || cleanCountry.isEmpty) {
+      throw ArgumentError('بيانات ملف الموهبة الأساسية غير مكتملة.');
+    }
+    if (cleanOwnerId.length > 128 || cleanDisplayName.length > 120 || cleanBio.length > 1000 || cleanCity.length > 120 || cleanCountry.length > 120) {
+      throw ArgumentError('بيانات ملف الموهبة تتجاوز الحد المسموح.');
+    }
+
     final ref = db.collection('talents').doc();
     String clean(String value) => value.trim();
     List<String> list(Iterable<String> values, int max) => values.map(clean).where((x) => x.isNotEmpty).take(max).toList();
@@ -225,16 +237,16 @@ class TalentRepository {
     final isSports = canonicalCategory == 'sports';
 
     await ref.set({
-      'ownerId': ownerId.trim(),
-      'displayName': clean(displayName),
-      'bio': clean(bio),
+      'ownerId': cleanOwnerId,
+      'displayName': cleanDisplayName,
+      'bio': cleanBio,
       'category': canonicalCategory,
       'sport': isSports ? cleanSport : '',
       'sports': isSports ? list(sports.isEmpty && cleanSport.isNotEmpty ? [cleanSport] : sports, 10) : <String>[],
       'discipline': clean(discipline),
       'level': clean(level),
-      'city': clean(city),
-      'country': clean(country),
+      'city': cleanCity,
+      'country': cleanCountry,
       'skills': list(skills, 30).map((e) => e.toLowerCase()).toList(),
       'achievements': list(achievements, 20),
       'goals': list(goals, 10),
