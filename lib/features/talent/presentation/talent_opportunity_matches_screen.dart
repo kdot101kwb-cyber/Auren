@@ -20,14 +20,14 @@ class _TalentOpportunityMatchesScreenState extends State<TalentOpportunityMatche
         if(s.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator());
         if(s.hasError)return Center(child:Text('تعذر تحميل المطابقات: ${s.error}'));
         final items=s.data??const <AurenTalentMatch>[];
-        if(items.isEmpty)return const Center(child:Text('لا توجد مطابقة حالياً. أضف مهارات إلى ملفك وجرب لاحقاً.'));
+        if(items.isEmpty)return const Center(child:Text('لا توجد مطابقة موثقة حالياً. أضف أدلة، ثم اطلب توثيق المهارات وجرب لاحقاً.'));
         return ListView.builder(
           padding:const EdgeInsets.all(16),itemCount:items.length,itemBuilder:(context,i){
             final m=items[i];
             return Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
               Row(children:[Expanded(child:Text(m.opportunity.title,style:const TextStyle(fontSize:17,fontWeight:FontWeight.bold))),Text('${m.score}%')]),
               const SizedBox(height:8),Text(m.opportunity.description),
-              const SizedBox(height:10),Text('المهارات المتطابقة: '+(m.matchedSkills.isEmpty?'لا توجد':m.matchedSkills.join(' • '))),
+              const SizedBox(height:10),Text('المهارات الموثقة المتطابقة: '+(m.matchedSkills.isEmpty?'لا توجد':m.matchedSkills.join(' • '))),
               if(m.missingSkills.isNotEmpty)Text('مهارات مطلوبة إضافية: '+m.missingSkills.join(' • ')),
               const SizedBox(height:10),
               Wrap(alignment:WrapAlignment.end,spacing:8,runSpacing:8,children:[FilledButton.icon(
