@@ -103,6 +103,10 @@ class AurenTalentEngineService {
     if(cleanOwnerId == cleanTalentUid) throw ArgumentError('لا يمكن دعوة نفسك.');
     if(cleanTitle.isEmpty || cleanTitle.length > 200) throw ArgumentError('عنوان الفرصة غير صالح.');
     final ref=_db.collection('opportunity_invitations').doc(cleanOpportunityId + '_' + cleanTalentUid);
+    final existing = await ref.get();
+    if (existing.exists) {
+      throw StateError('تم إرسال دعوة لهذه الموهبة لهذه الفرصة من قبل.');
+    }
     await ref.set({
       'ownerId': cleanOwnerId,
       'talentUid': cleanTalentUid,
