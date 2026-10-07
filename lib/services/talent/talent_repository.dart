@@ -32,7 +32,7 @@ class TalentRepository {
   Future<void> updateVerificationEvidence({required String talentId, required String ownerId, required List<String> evidence}) async {
     final ref = db.collection('talents').doc(talentId);
     final snap = await ref.get();
-    if (!snap.exists || snap.data()?['ownerId']?.toString() != ownerId) throw StateError('Not talent owner');
+    if (!snap.exists || snap.data()?['ownerId']?.toString() != ownerId.trim()) throw StateError('Not talent owner');
     final cleanEvidence = evidence.map((e) => e.trim()).where((e) => e.isNotEmpty).take(10).toList();
     await ref.update({'verificationEvidence': cleanEvidence, 'updatedAt': FieldValue.serverTimestamp()});
   }
@@ -220,7 +220,7 @@ class TalentRepository {
     final isSports = canonicalCategory == 'sports';
 
     await ref.set({
-      'ownerId': ownerId,
+      'ownerId': ownerId.trim(),
       'displayName': clean(displayName),
       'bio': clean(bio),
       'category': canonicalCategory,
