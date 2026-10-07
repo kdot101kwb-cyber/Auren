@@ -238,7 +238,7 @@ class TalentRepository {
 
     final ref = db.collection('talents').doc();
     String clean(String value) => value.trim();
-    List<String> list(Iterable<String> values, int max) => values.map(clean).where((x) => x.isNotEmpty).take(max).toList();
+    List<String> list(Iterable<String> values, int max, int maxLength) => values.map(clean).where((x) => x.isNotEmpty && x.length <= maxLength).take(max).toList();
 
     final requestedCategory = clean(category).toLowerCase();
     final canonicalCategory = AurenTalentCategories.contains(requestedCategory)
@@ -253,15 +253,15 @@ class TalentRepository {
       'bio': cleanBio,
       'category': canonicalCategory,
       'sport': isSports ? cleanSport : '',
-      'sports': isSports ? list(sports.isEmpty && cleanSport.isNotEmpty ? [cleanSport] : sports, 10) : <String>[],
+      'sports': isSports ? list(sports.isEmpty && cleanSport.isNotEmpty ? [cleanSport] : sports, 10, 80) : <String>[],
       'discipline': clean(discipline),
       'level': clean(level),
       'city': cleanCity,
       'country': cleanCountry,
-      'skills': list(skills, 30).map((e) => e.toLowerCase()).toList(),
-      'achievements': list(achievements, 20),
-      'goals': list(goals, 10),
-      'verificationEvidence': list(verificationEvidence, 10),
+      'skills': list(skills, 30, 120).map((e) => e.toLowerCase()).toList(),
+      'achievements': list(achievements, 20, 500),
+      'goals': list(goals, 10, 300),
+      'verificationEvidence': list(verificationEvidence, 10, 1200),
       'status': 'active',
       'updatedAt': FieldValue.serverTimestamp(),
     });
