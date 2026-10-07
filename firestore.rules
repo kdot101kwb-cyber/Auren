@@ -1772,6 +1772,41 @@ service cloud.firestore {
         && resource.data.ownerId == request.auth.uid;
     }
 
+    // Talent skill graph: verified skills are discoverable; unverified evidence stays owner-only.
+    match /talent_skill_graph/{skillId} {
+      allow read: if request.auth != null
+        && (resource.data.ownerId == request.auth.uid || resource.data.verified == true);
+      allow create, update: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.skill is string
+        && request.resource.data.skill.size() > 0
+        && request.resource.data.skill.size() <= 120
+        && request.resource.data.confidence is number
+        && request.resource.data.confidence >= 0
+        && request.resource.data.confidence <= 1
+        && request.resource.data.evidenceCount is int
+        && request.resource.data.evidenceCount >= 0
+        && request.resource.data.evidenceCount <= 1000
+        && request.resource.data.keys().hasOnly([
+          'ownerId','skill','confidence','evidenceCount','source','lastMission',
+          'lastResult','hasEvidence','updatedAt','verified','verifiedAt','verificationSource'
+        ])
+        && (!request.resource.data.keys().hasAny(['verified']) || request.resource.data.verified is bool);
+      allow delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /talent_skill_verification_requests/{requestId} {
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.skill is string
+        && request.resource.data.skill.size() > 0
+        && request.resource.data.skill.size() <= 120
+        && request.resource.data.status == 'pending'
+        && request.resource.data.requestedAt is timestamp;
+      allow update, delete: if false;
+    }
+
     match /opportunities/{opportunityId} {
       allow read: if request.auth != null && resource.data.visibility == 'public';
       allow create: if request.auth != null
