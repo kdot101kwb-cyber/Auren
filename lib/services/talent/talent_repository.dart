@@ -54,13 +54,20 @@ class TalentRepository {
     });
   }
 
-    Future<void> requestSkillVerification({
+  Future<void> requestSkillVerification({
     required String ownerId,
     required String skill,
   }) async {
     final cleanOwnerId = ownerId.trim();
     final cleanSkill = skill.trim();
     if (cleanOwnerId.isEmpty || cleanSkill.isEmpty) return;
+    final existing = await db.collection('talent_skill_verification_requests')
+        .where('ownerId', isEqualTo: cleanOwnerId)
+        .where('skill', isEqualTo: cleanSkill)
+        .where('status', isEqualTo: 'pending')
+        .limit(1)
+        .get();
+    if (existing.docs.isNotEmpty) return;
     await db.collection('talent_skill_verification_requests').add({
       'ownerId': cleanOwnerId,
       'skill': cleanSkill,
@@ -70,7 +77,7 @@ class TalentRepository {
     });
   }
 
-Future<List<String>> promoteMissionEvidenceToSkillGraph({
+  Future<List<String>> promoteMissionEvidenceToSkillGraph({
     required String ownerId,
     required List<Map<String, String>> missions,
   }) async {
