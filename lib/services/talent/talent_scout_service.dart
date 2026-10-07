@@ -85,12 +85,22 @@ class TalentScoutService {
     required AurenTalent talent,
     List<AurenOpportunity> opportunities = const [],
   }) async {
-    final verifiedSnap = await db.collection('talent_skill_graph')
-        .where('ownerId', isEqualTo: talent.ownerId)
-        .where('verified', isEqualTo: true)
-        .limit(200)
-        .get();
-    final talentSkills = verifiedSnap.docs
+    final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    const pageSize = 200;
+    DocumentSnapshot<Map<String, dynamic>>? lastDoc;
+    do {
+      Query<Map<String, dynamic>> query = db.collection('talent_skill_graph')
+          .where('ownerId', isEqualTo: talent.ownerId)
+          .where('verified', isEqualTo: true)
+          .limit(pageSize);
+      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+      final page = await query.get();
+      if (page.docs.isEmpty) break;
+      verifiedDocs.addAll(page.docs);
+      lastDoc = page.docs.last;
+      if (page.docs.length < pageSize) break;
+    } while (lastDoc != null);
+    final talentSkills = verifiedDocs
         .map((d) => _norm((d.data()['skill'] ?? '').toString()))
         .where((x) => x.isNotEmpty)
         .toSet();
