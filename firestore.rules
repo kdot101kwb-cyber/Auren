@@ -1643,10 +1643,9 @@ service cloud.firestore {
         && request.resource.data.note is string
         && request.resource.data.note.size() <= 2000
         && request.resource.data.matchScore is number
-        && request.resource.data.matchScore >= 0
-        && request.resource.data.matchScore <= 1
+        && request.resource.data.matchScore == 0
         && request.resource.data.matchedVerifiedSkills is list
-        && request.resource.data.matchedVerifiedSkills.size() <= 20
+        && request.resource.data.matchedVerifiedSkills.size() == 0
         && request.resource.data.status == 'pending'
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
