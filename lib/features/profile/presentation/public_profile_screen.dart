@@ -25,7 +25,9 @@ import '../../talent/presentation/talent_badges_screen.dart';
 class AurenPublicProfileScreen extends StatefulWidget {
   final AurenUserProfile profile;
   final AurenTalent? athlete;
-  const AurenPublicProfileScreen({super.key, required this.profile, this.athlete});
+  /// Allows an opportunity owner to inspect the evidence behind verified skills.
+  final bool viewerCanInspectProof;
+  const AurenPublicProfileScreen({super.key, required this.profile, this.athlete, this.viewerCanInspectProof = false});
   @override
   State<AurenPublicProfileScreen> createState() => _AurenPublicProfileScreenState();
 }
@@ -428,8 +430,8 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                       'موثقة',
                       if (result.isNotEmpty) 'نتيجة: $result',
                     ].join(' • ')),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => showModalBottomSheet(
+                    trailing: widget.viewerCanInspectProof ? const Icon(Icons.chevron_right) : null,
+                    onTap: widget.viewerCanInspectProof ? () => showModalBottomSheet(
                       context: context,
                       showDragHandle: true,
                       builder: (_) => Padding(
