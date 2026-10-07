@@ -35,7 +35,15 @@ class _AurenTalentRadarScreenState extends State<AurenTalentRadarScreen> {
         builder: (context, snap) {
           if (snap.hasError) return Center(child: Text('تعذر تحميل الرادار: ${snap.error}'));
           final all = snap.data ?? const <AurenTalentScoutFinding>[];
-          final items = filter == 'all' ? all : all.where((x) => x.type == filter).toList();
+          // Dismissed and expired findings should not remain visible in the
+          // active Radar surface even if the cleanup action has not run yet.
+          final now = DateTime.now();
+          final active = all.where((x) =>
+              x.status != 'dismissed' &&
+              (x.expiresAt == null || x.expiresAt!.isAfter(now))).toList();
+          final items = filter == 'all'
+              ? active
+              : active.where((x) => x.type == filter).toList();
           return Column(children: [
             Padding(padding: const EdgeInsets.all(12), child: Wrap(spacing: 6, children: [
               for (final x in const ['all','opportunity','sports','learning','market','brand','talent']) FilterChip(label: Text(x == 'all' ? 'الكل' : x), selected: filter == x, onSelected: (_) => setState(() => filter = x)),
