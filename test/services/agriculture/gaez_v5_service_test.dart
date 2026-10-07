@@ -13,8 +13,10 @@ void main() {
       input: 'HILM',
     );
 
-    expect(url,
-        'https://storage.googleapis.com/fao-gismgr-gaez-v5-data/DATA/GAEZ-V5/MAPSET/RES05-ETL/GAEZ-V5.RES05-ETL.HP0120.AGERA5.HIST.ALF.HILM.tif');
+    expect(
+      url.toString(),
+      'https://storage.googleapis.com/fao-gismgr-gaez-v5-data/DATA/GAEZ-V5/MAPSET/RES05-ETL/GAEZ-V5.RES05-ETL.HP0120.AGERA5.HIST.ALF.HILM.tif',
+    );
   });
 
   test('describes a historical crop dataset', () {
@@ -27,6 +29,7 @@ void main() {
     expect(result['crop'], 'ALF');
     expect(result['input'], 'HRLM');
   });
+
   test('builds the official RES05 catalog query', () {
     final service = AurenGaezV5Service();
     final url = service.buildOfficialQueryUrl(
