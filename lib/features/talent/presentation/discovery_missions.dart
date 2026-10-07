@@ -24,6 +24,41 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
   final _done = <int>{};
   final _notes = <int, String>{};
   final _evidence = <int, String>{};
+  bool _loadingPersisted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPersistedEvidence();
+  }
+
+  Future<void> _loadPersistedEvidence() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (uid.isEmpty) return;
+    setState(() => _loadingPersisted = true);
+    try {
+      final saved = await TalentRepository().loadMissionEvidence(ownerId: uid);
+      if (!mounted) return;
+      final byMission = <String, Map<String, String>>{};
+      for (final item in saved) {
+        final mission = (item['mission'] ?? '').trim();
+        if (mission.isNotEmpty) byMission.putIfAbsent(mission, () => item);
+      }
+      setState(() {
+        for (var index = 0; index < _missions.length; index++) {
+          final item = byMission[_missions[index].title];
+          if (item == null) continue;
+          _done.add(index);
+          _notes[index] = item['result'] ?? '';
+          _evidence[index] = item['evidence'] ?? '';
+        }
+        _loadingPersisted = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingPersisted = false);
+    }
+  }
 
   Future<void> _submit(int index) async {
     final controller = TextEditingController(text: _notes[index] ?? '');
@@ -157,7 +192,8 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
           const SizedBox(height: 6),
           const Text('اختبارات عملية قصيرة لاكتشاف الموهبة من الفعل والنتيجة، وليس من التقييم النظري فقط.'),
           const SizedBox(height: 10),
-          LinearProgressIndicator(value: completed / _missions.length),
+          if (_loadingPersisted) const LinearProgressIndicator(),
+          if (!_loadingPersisted) LinearProgressIndicator(value: completed / _missions.length),
           const SizedBox(height: 10),
           ...List.generate(_missions.length, (index) {
             final mission = _missions[index];
