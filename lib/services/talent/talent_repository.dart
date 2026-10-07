@@ -80,7 +80,12 @@ class TalentRepository {
   }) async {
     final cleanOwnerId = ownerId.trim();
     final cleanSkill = skill.trim();
-    if (cleanOwnerId.isEmpty || cleanSkill.isEmpty) return;
+    if (cleanOwnerId.isEmpty || cleanSkill.isEmpty) {
+      throw ArgumentError('بيانات طلب التحقق غير مكتملة.');
+    }
+    if (cleanOwnerId.length > 128 || cleanSkill.length > 200) {
+      throw ArgumentError('بيانات طلب التحقق طويلة جدًا.');
+    }
     final existing = await db
         .collection('talent_skill_verification_requests')
         .where('ownerId', isEqualTo: cleanOwnerId)
