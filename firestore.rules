@@ -751,38 +751,26 @@ service cloud.firestore {
         && request.resource.data.title is string
         && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 200
         && request.resource.data.description is string
-        && request.resource.data.description.size() <= 3000
-        && request.resource.data.sourceType is string
+        && request.resource.data.description.size() <= 5000
+        && request.resource.data.sourceType in ['talent','opportunity']
         && request.resource.data.sourceId is string
-        && request.resource.data.status in ['new','seen','dismissed','interested']
+        && request.resource.data.sourceId.size() > 0
+        && request.resource.data.status == 'new'
         && request.resource.data.score is int
         && request.resource.data.score >= 0 && request.resource.data.score <= 100
         && request.resource.data.matchedSkills is list
         && request.resource.data.matchedSkills.size() <= 30
         && request.resource.data.missingSkills is list
         && request.resource.data.missingSkills.size() <= 30
+        && request.resource.data.evidence is list
+        && request.resource.data.evidence.size() <= 20
         && request.resource.data.createdAt is timestamp
         && request.resource.data.expiresAt is timestamp
-        && request.resource.data.keys().hasOnly(['ownerId','scoutId','type','title','description','sourceType','sourceId','status','score','matchedSkills','missingSkills','createdAt','expiresAt']);
+        && request.resource.data.keys().hasOnly(['ownerId','scoutId','type','title','description','sourceType','sourceId','status','score','matchedSkills','missingSkills','evidence','createdAt','expiresAt']);
       allow update: if isOwner(userId)
-        && request.resource.data.ownerId == resource.data.ownerId
-        && request.resource.data.scoutId == resource.data.scoutId
-        && request.resource.data.type == resource.data.type
-        && request.resource.data.title == resource.data.title
-        && request.resource.data.description == resource.data.description
-        && request.resource.data.sourceType == resource.data.sourceType
-        && request.resource.data.sourceId == resource.data.sourceId
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.expiresAt == resource.data.expiresAt
-        && request.resource.data.status in ['new','seen','dismissed','interested']
-        && request.resource.data.score is int
-        && request.resource.data.score >= 0 && request.resource.data.score <= 100
-        && request.resource.data.matchedSkills is list
-        && request.resource.data.matchedSkills.size() <= 30
-        && request.resource.data.missingSkills is list
-        && request.resource.data.missingSkills.size() <= 30
-        && request.resource.data.keys().hasOnly(['ownerId','scoutId','type','title','description','sourceType','sourceId','status','score','matchedSkills','missingSkills','createdAt','expiresAt']);
-      allow delete: if isOwner(userId);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['new','seen','dismissed','interested'];
+      allow delete: if false;
     }
 
     match /talents/{talentId} {
