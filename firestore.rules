@@ -2867,10 +2867,30 @@ service cloud.firestore {
 
     match /users/{userId}/actions/{actionId} {
       allow read: if isOwner(userId);
-      // Action requests are created and mutated by trusted server code.
-      // Clients may read their own requests and use callable functions for
-      // approve/reject/cancel/execute decisions.
-      allow create, update, delete: if false;
+
+      // Action documents are created by trusted server code. While an action is
+      // pending, the owner may edit only the user-facing draft fields.
+      // Approval/execution fields remain server-owned at all times.
+      allow create, delete: if false;
+
+      allow update: if isOwner(userId)
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.actionType == resource.data.actionType
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.draftVersion is int
+        && request.resource.data.draftVersion == resource.data.draftVersion + 1
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 2000
+        && request.resource.data.payload is map
+        && request.resource.data.payload.keys().size() <= 50
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title','description','payload','draftVersion','updatedAt'
+        ]);
     }
     match /users/{userId}/notes/{noteId} {
       allow read: if isOwner(userId);
@@ -4027,10 +4047,30 @@ match /users/{userId}/kids_activity_progress/{activityId} {
 
     match /users/{userId}/actions/{actionId} {
       allow read: if isOwner(userId);
-      // Action requests are created and mutated by trusted server code.
-      // Clients may read their own requests and use callable functions for
-      // approve/reject/cancel/execute decisions.
-      allow create, update, delete: if false;
+
+      // Action documents are created by trusted server code. While an action is
+      // pending, the owner may edit only the user-facing draft fields.
+      // Approval/execution fields remain server-owned at all times.
+      allow create, delete: if false;
+
+      allow update: if isOwner(userId)
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.actionType == resource.data.actionType
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.draftVersion is int
+        && request.resource.data.draftVersion == resource.data.draftVersion + 1
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 2000
+        && request.resource.data.payload is map
+        && request.resource.data.payload.keys().size() <= 50
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title','description','payload','draftVersion','updatedAt'
+        ]);
     }
     match /users/{userId}/notes/{noteId} {
       allow read: if isOwner(userId);
@@ -5153,10 +5193,30 @@ match /users/{userId}/kids_activity_progress/{activityId} {
 
     match /users/{userId}/actions/{actionId} {
       allow read: if isOwner(userId);
-      // Action requests are created and mutated by trusted server code.
-      // Clients may read their own requests and use callable functions for
-      // approve/reject/cancel/execute decisions.
-      allow create, update, delete: if false;
+
+      // Action documents are created by trusted server code. While an action is
+      // pending, the owner may edit only the user-facing draft fields.
+      // Approval/execution fields remain server-owned at all times.
+      allow create, delete: if false;
+
+      allow update: if isOwner(userId)
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'pending'
+        && request.resource.data.actionType == resource.data.actionType
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.draftVersion is int
+        && request.resource.data.draftVersion == resource.data.draftVersion + 1
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 2000
+        && request.resource.data.payload is map
+        && request.resource.data.payload.keys().size() <= 50
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title','description','payload','draftVersion','updatedAt'
+        ]);
     }
     match /users/{userId}/notes/{noteId} {
       allow read: if isOwner(userId);
