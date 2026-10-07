@@ -9,9 +9,15 @@ class TalentScoutService {
   final FirebaseFirestore db;
   TalentScoutService({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
 
-  Stream<List<AurenTalentScoutFinding>> watchFindings(String uid)=>db.collection('users').doc(uid).collection('talent_scout_findings').orderBy('score',descending:true).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenTalentScoutFinding.fromMap(d.id,d.data())).toList());
+  Stream<List<AurenTalentScoutFinding>> watchFindings(String uid){
+    final cleanUid=uid.trim();
+    if(cleanUid.isEmpty) return Stream.value(const []);
+    return db.collection('users').doc(cleanUid).collection('talent_scout_findings').orderBy('score',descending:true).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenTalentScoutFinding.fromMap(d.id,d.data())).toList());
+  }
 
   Future<List<AurenTalentScoutFinding>> runNow({required String uid,required List<AurenTalentScout> scouts,required AurenTalent talent,List<AurenOpportunity> opportunities=const []}) async {
+    final cleanUid=uid.trim();
+    if(cleanUid.isEmpty) return const [];
     final enabled=scouts.where((s)=>s.enabled).toList();
     final results=<AurenTalentScoutFinding>[];
     final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
@@ -19,7 +25,7 @@ class TalentScoutService {
     DocumentSnapshot<Map<String, dynamic>>? lastVerifiedDoc;
     do {
       Query<Map<String, dynamic>> query = db.collection('talent_skill_graph')
-          .where('ownerId', isEqualTo: uid)
+          .where('ownerId', isEqualTo: cleanUid)
           .where('verified', isEqualTo: true)
           .limit(verifiedPageSize);
       if (lastVerifiedDoc != null) {
@@ -39,14 +45,14 @@ class TalentScoutService {
     for(final scout in enabled) {
       if(scout.role=='opportunity') {
         for(final o in opportunities) {
-          if (o.ownerId.trim() == uid) continue;
+          if (o.ownerId.trim() == cleanUid) continue;
           final required=o.skills.map(_norm).where((x)=>x.isNotEmpty).toSet();
           final matched=required.where(talentSkills.contains).toList();
           final missing=required.difference(talentSkills).toList();
           final evidence=<String>[if(matched.isNotEmpty) 'مهارات مطابقة: ${matched.join('، ')}', if(missing.isNotEmpty) 'مهارات مطلوبة غير موجودة: ${missing.join('، ')}'];
           final score=required.isEmpty?35:((matched.length/required.length)*100).round();
           if(score<25)continue;
-          results.add(AurenTalentScoutFinding(id:'${scout.id}_${o.id}',ownerId:uid,scoutId:scout.id,type:'opportunity',title:o.title,description:o.description,sourceType:'opportunity',sourceId:o.id,status:'new',score:score,matchedSkills:matched,missingSkills:missing,evidence:evidence,createdAt:DateTime.now(),expiresAt:DateTime.now().add(const Duration(days:14))));
+          results.add(AurenTalentScoutFinding(id:'${scout.id}_${o.id}',ownerId:cleanUid,scoutId:scout.id,type:'opportunity',title:o.title,description:o.description,sourceType:'opportunity',sourceId:o.id,status:'new',score:score,matchedSkills:matched,missingSkills:missing,evidence:evidence,createdAt:DateTime.now(),expiresAt:DateTime.now().add(const Duration(days:14))));
         }
       } else {
         final keywords=<String>{...scout.skills.map(_norm),...scout.interests.map(_norm)}..removeWhere((x)=>x.isEmpty);
@@ -69,7 +75,7 @@ class TalentScoutService {
         results.add(AurenTalentScoutFinding(id:'${scout.id}_${talent.id}',ownerId:uid,scoutId:scout.id,type:scout.role,title:scout.name,description:text,sourceType:'talent',sourceId:talent.id,status:'new',score:score,matchedSkills:hits,missingSkills:const [],evidence:evidence,createdAt:DateTime.now(),expiresAt:DateTime.now().add(const Duration(days:7))));
       }
     }
-    final col=db.collection('users').doc(uid).collection('talent_scout_findings');
+    final col=db.collection('users').doc(cleanUid).collection('talent_scout_findings');
     for(final f in results) {
       final ref = col.doc(f.id);
       final existing = await ref.get();
@@ -99,16 +105,18 @@ class TalentScoutService {
     return results;
   }
   Future<void> markSeen(String uid, String findingId) async {
-    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(findingId).update({'status':'seen'});
+    await db.collection('users').doc(cleanUid).collection('talent_scout_findings').doc(cleanFindingId).update({'status':'seen'});
   }
 
   Future<void> dismiss(String uid, String findingId) async {
-    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(findingId).update({'status':'dismissed'});
+    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(cleanFindingId).update({'status':'dismissed'});
   }
   Future<void> markInterested(String uid, String findingId) async {
-    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(findingId).update({'status':'interested'});
+    await db.collection('users').doc(uid).collection('talent_scout_findings').doc(cleanFindingId).update({'status':'interested'});
   }
   Future<void> clearExpired(String uid) async {
+    final cleanUid=uid.trim();
+    if(cleanUid.isEmpty) return;
     final now = Timestamp.now();
     const pageSize = 200;
     final col = db.collection('users').doc(uid).collection('talent_scout_findings');
