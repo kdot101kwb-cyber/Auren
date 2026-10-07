@@ -131,6 +131,8 @@ class _FlowCardState extends State<_FlowCard> {
       'waiting_response' => 'في انتظار الرد',
       'replied' => 'تم الرد',
       'completed' => 'مكتمل',
+      'failed' => 'فشل التنفيذ',
+      'cancelled' => 'ملغي',
       _ => 'نشط',
     };
 
@@ -166,6 +168,52 @@ class _FlowCardState extends State<_FlowCard> {
               const Text(
                 'AUREN تراقب المحادثة لهذا المسار. عند وصول رد من الطرف الآخر ستتحدث الحالة تلقائياً.',
                 style: TextStyle(fontSize: 12),
+              ),
+            ],
+            if (status == 'failed') ...[
+              const SizedBox(height: 10),
+              const Text(
+                'تعذر تنفيذ هذا المسار. يمكنك إعادة المحاولة من هنا.',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _retryFlow(context),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _cancelFlow(context),
+                      icon: const Icon(Icons.close),
+                      label: const Text('إلغاء'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (status == 'cancelled') ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => _retryFlow(context),
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة فتح المسار'),
+              ),
+            ],
+            if (status != 'completed' && status != 'failed' && status != 'cancelled') ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: OutlinedButton.icon(
+                  onPressed: () => _cancelFlow(context),
+                  icon: const Icon(Icons.close),
+                  label: const Text('إلغاء المسار'),
+                ),
               ),
             ],
             if (status == 'replied') ...[
@@ -436,19 +484,57 @@ class _FlowCardState extends State<_FlowCard> {
     );
   }
 
+  Future<void> _retryFlow(BuildContext context) async {
+    final item = _buildFlowItem();
+    try {
+      await AurenMatchActionFlowRepository().retry(uid: widget.uid, item: item);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تمت إعادة فتح المسار للمحاولة.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذرت إعادة المحاولة الآن.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _cancelFlow(BuildContext context) async {
+    final item = _buildFlowItem();
+    try {
+      await AurenMatchActionFlowRepository().cancel(uid: widget.uid, item: item);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إلغاء المسار.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر إلغاء المسار الآن.')),
+        );
+      }
+    }
+  }
+
+  AurenMatchItem _buildFlowItem() => AurenMatchItem(
+        id: (widget.data['targetId'] ?? '').toString(),
+        title: '',
+        subtitle: '',
+        kind: _kindFrom((widget.data['targetKind'] ?? '').toString()),
+        score: 0,
+        reasons: const [],
+        data: widget.data,
+        action: _actionFrom((widget.data['action'] ?? '').toString()),
+        actionLabel: '',
+        actionReason: '',
+      );
+
   Future<void> _completeFlow(BuildContext context) async {
-    final item = AurenMatchItem(
-      id: (widget.data['targetId'] ?? '').toString(),
-      title: '',
-      subtitle: '',
-      kind: _kindFrom((widget.data['targetKind'] ?? '').toString()),
-      score: 0,
-      reasons: const [],
-      data: widget.data,
-      action: _actionFrom((widget.data['action'] ?? '').toString()),
-      actionLabel: '',
-      actionReason: '',
-    );
+    final item = _buildFlowItem();
     try {
       await AurenMatchActionFlowRepository().complete(
         uid: widget.uid,
