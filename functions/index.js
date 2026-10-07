@@ -4240,13 +4240,25 @@ exports.validateTalentOpportunityInvitation = onDocumentCreated(
     const requiredSkills = Array.isArray(opportunitySnap.data()?.skills)
       ? opportunitySnap.data().skills.map(normalizeTalentSkill).filter(Boolean)
       : [];
-    const verifiedSnap = await db.collection('talent_skill_graph')
-      .where('ownerId', '==', talentUid)
-      .where('verified', '==', true)
-      .limit(50)
-      .get();
+    // Read the full verified Skill Graph in pages so invitations do not
+    // miss a valid match for talent profiles with many verified skills.
+    const verifiedDocs = [];
+    const pageSize = 200;
+    let lastVerifiedDoc = null;
+    do {
+      let query = db.collection('talent_skill_graph')
+        .where('ownerId', '==', talentUid)
+        .where('verified', '==', true)
+        .limit(pageSize);
+      if (lastVerifiedDoc) query = query.startAfter(lastVerifiedDoc);
+      const page = await query.get();
+      if (page.empty) break;
+      verifiedDocs.push(...page.docs);
+      lastVerifiedDoc = page.docs[page.docs.length - 1];
+      if (page.size < pageSize) break;
+    } while (lastVerifiedDoc);
     const verifiedSkills = new Set(
-      verifiedSnap.docs.map((doc) => normalizeTalentSkill(doc.data()?.skill)).filter(Boolean),
+      verifiedDocs.map((doc) => normalizeTalentSkill(doc.data()?.skill)).filter(Boolean),
     );
     const matched = [...new Set(requiredSkills.filter((skill) => verifiedSkills.has(skill)))];
 
