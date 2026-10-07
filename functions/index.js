@@ -4426,7 +4426,7 @@ async async function computeOpportunityApplicationMatchForSnapshot(snap, applica
       .filter(Boolean),
   );
   const opportunitySkills = Array.isArray(opportunity.skills)
-    ? opportunity.skills.map(normalizeTalentSkill).filter(Boolean)
+    ? [...new Set(opportunity.skills.map(normalizeTalentSkill).filter(Boolean))]
     : [];
   const matchedVerifiedSkills = [...new Set(
     opportunitySkills.filter((skill) => verifiedSkills.has(skill)),
