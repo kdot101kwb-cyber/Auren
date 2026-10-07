@@ -156,7 +156,7 @@ Widget _card(BuildContext c, AurenTalent t) {
       leading: const CircleAvatar(child: Icon(Icons.person_search)),
       title: Text(t.displayName),
       subtitle: Text([AurenTalentCategories.byId(t.category).name, t.category == 'sports' ? t.sport : '', t.discipline, t.level, t.city, t.country].where((x) => x.isNotEmpty).join(' • ')),
-      trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.workspace_premium_outlined,size:18),Text('$score/100',style:const TextStyle(fontWeight:FontWeight.w800))]),
+      trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.checklist_outlined,size:18),Text('اكتمال $score%',style:const TextStyle(fontWeight:FontWeight.w800))]),
       onTap: () => Navigator.push(
         c,
         MaterialPageRoute(builder: (_) => AurenTalentStarProfileScreen(talent: t)),
