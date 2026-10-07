@@ -69,7 +69,7 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
       ..._results.map((candidate)=>Card(child:ListTile(
         leading:CircleAvatar(child:Text('${candidate.score}')),
         title:Text(candidate.headline.isEmpty?'AUREN Professional':candidate.headline),
-        subtitle:Text('${candidate.reasons.join(' • ')}\n${[...candidate.skills,...candidate.services].take(5).join(' • ')}'),
+        subtitle:Text('${candidate.reasons.join(' • ')}\n${[...candidate.verifiedSkills,...candidate.services].take(5).join(' • ')}'),
         isThreeLine:true,
         trailing:(widget.opportunityId!=null)?IconButton(icon:const Icon(Icons.mail_outline),tooltip:'دعوة للفرصة',onPressed:()=>_invite(candidate)):candidate.showContact?IconButton(icon:const Icon(Icons.chat_outlined),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>MessengerScreen(initialPrompt:'أريد التواصل مع صاحب هذا الملف بخصوص: ${_query.text.trim()}')))):null,
       ))),
