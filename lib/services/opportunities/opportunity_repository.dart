@@ -31,6 +31,53 @@ Stream<List<AurenOpportunityApplication>> watchMyApplications(String uid) => db.
 
 Stream<List<AurenOpportunityApplication>> watchReceived(String ownerId) => db.collectionGroup('opportunityApplications').where('ownerId',isEqualTo:ownerId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenOpportunityApplication.fromMap(d.id,d.data())).toList());
 
+Future<List<Map<String, dynamic>>> findVerifiedSkillMatches(String uid) async {
+  if (uid.trim().isEmpty) return const <Map<String, dynamic>>[];
+
+  final verifiedSnap = await db.collection('talent_skill_graph')
+      .where('ownerId', isEqualTo: uid)
+      .where('verified', isEqualTo: true)
+      .limit(50)
+      .get();
+
+  final verifiedSkills = verifiedSnap.docs
+      .map((d) => (d.data()['skill'] ?? '').toString().trim().toLowerCase())
+      .where((s) => s.isNotEmpty)
+      .toSet();
+  if (verifiedSkills.isEmpty) return const <Map<String, dynamic>>[];
+
+  final opportunitySnap = await db.collection('opportunities')
+      .where('status', isEqualTo: 'open')
+      .limit(100)
+      .get();
+
+  final matches = <Map<String, dynamic>>[];
+  for (final doc in opportunitySnap.docs) {
+    final opportunity = AurenOpportunity.fromMap(doc.id, doc.data());
+    if (opportunity.ownerId == uid) continue;
+
+    final matched = opportunity.skills
+        .map((s) => s.trim().toLowerCase())
+        .where(verifiedSkills.contains)
+        .toSet()
+        .toList();
+    if (matched.isEmpty) continue;
+
+    final score = opportunity.skills.isEmpty
+        ? 0.0
+        : (matched.length / opportunity.skills.length).clamp(0.0, 1.0);
+    matches.add({
+      'opportunity': opportunity,
+      'matchedSkills': matched,
+      'score': score,
+    });
+  }
+
+  matches.sort((a, b) =>
+      (b['score'] as double).compareTo(a['score'] as double));
+  return matches.take(20).toList();
+}
+
 Stream<List<Map<String, dynamic>>> watchApplicationNotifications(String uid) =>
     db.collection('opportunity_application_notifications')
       .where('recipientUid', isEqualTo: uid)
