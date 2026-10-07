@@ -4189,6 +4189,72 @@ exports.evaluateTalentSkillVerificationRequest = onDocumentCreated(
   },
 );
 
+// Talent claim intake is server-authoritative. A client may request a claim,
+// but the backend rejects nonexistent profiles, already-owned profiles, and
+// duplicate pending claims before any admin review.
+exports.validateTalentClaim = onDocumentCreated(
+  {
+    document: 'talent_claims/{claimId}',
+    region: 'us-central1',
+  },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const data = snap.data() || {};
+    if (String(data.status || '') !== 'pending') return;
+
+    const talentId = String(data.talentId || '').trim();
+    const claimantUid = String(data.claimantUid || '').trim();
+    if (!talentId || !claimantUid) return;
+
+    const talentSnap = await db.collection('talents').doc(talentId).get();
+    if (!talentSnap.exists) {
+      await snap.ref.update({
+        status: 'rejected',
+        reviewReason: 'talent_not_found',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    const talent = talentSnap.data() || {};
+    const currentOwnerId = String(talent.ownerId || '').trim();
+    if (currentOwnerId && currentOwnerId !== claimantUid) {
+      await snap.ref.update({
+        status: 'rejected',
+        reviewReason: 'profile_already_claimed',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    if (currentOwnerId === claimantUid) {
+      await snap.ref.update({
+        status: 'rejected',
+        reviewReason: 'already_owner',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    const pending = await db.collection('talent_claims')
+      .where('talentId', '==', talentId)
+      .where('claimantUid', '==', claimantUid)
+      .where('status', '==', 'pending')
+      .limit(2)
+      .get();
+
+    const duplicate = pending.docs.some((doc) => doc.id !== snap.id);
+    if (duplicate) {
+      await snap.ref.update({
+        status: 'rejected',
+        reviewReason: 'duplicate_pending_claim',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+  },
+);
+
 // Opportunity application match evidence is server-authoritative.
 // Matching uses the same canonical skill normalization for application creation
 // and later Skill Graph changes, so new verification evidence cannot leave stale
