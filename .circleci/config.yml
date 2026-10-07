@@ -134,8 +134,22 @@ jobs:
             status=${PIPESTATUS[0]}
             echo "npm_test_exit_code=${status}" >> functions_test.log
             exit $status
+      - run:
+          name: Run Firestore Action Rules emulator gate
+          command: |
+            set -e
+            if ! java -version >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y openjdk-21-jre-headless
+            fi
+            npx --yes firebase-tools emulators:exec --only firestore "node --test functions/action_rules.integration.test.js" 2>&1 | tee firestore_action_rules.log
+            status=${PIPESTATUS[0]}
+            echo "firestore_action_rules_exit_code=${status}" >> firestore_action_rules.log
+            exit ${status}
       - store_artifacts:
           path: functions/functions_test.log
+      - store_artifacts:
+          path: firestore_action_rules.log
 
   action_executor_tests:
     docker:
