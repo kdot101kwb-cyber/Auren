@@ -4139,11 +4139,23 @@ exports.evaluateTalentSkillVerificationRequest = onDocumentCreated(
       'adaptability': ['اكتشاف'],
     };
     const categories = skillCategories[skill.toLowerCase().trim()] || [];
-    const evidenceSnap = await db.collection('talent_mission_evidence')
-      .where('ownerId', '==', ownerId)
-      .limit(100)
-      .get();
-    const matchingEvidence = evidenceSnap.docs
+    // Read the complete evidence history in pages so verification does not
+    // silently ignore evidence once a user has more than 100 missions.
+    const evidenceDocs = [];
+    const pageSize = 200;
+    let lastEvidenceDoc = null;
+    do {
+      let query = db.collection('talent_mission_evidence')
+        .where('ownerId', '==', ownerId)
+        .limit(pageSize);
+      if (lastEvidenceDoc) query = query.startAfter(lastEvidenceDoc);
+      const page = await query.get();
+      if (page.empty) break;
+      evidenceDocs.push(...page.docs);
+      lastEvidenceDoc = page.docs[page.docs.length - 1];
+      if (page.size < pageSize) break;
+    } while (lastEvidenceDoc);
+    const matchingEvidence = evidenceDocs
       .map((doc) => doc.data() || {})
       .filter((item) => categories.includes(String(item.category || '').trim()))
       .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
