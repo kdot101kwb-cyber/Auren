@@ -1806,7 +1806,12 @@ service cloud.firestore {
         && request.resource.data.evidenceCount is int
         && request.resource.data.evidenceCount >= 0
         && request.resource.data.evidenceCount <= 1000
-        && (!request.resource.data.keys().hasAny(['evidence']) || request.resource.data.evidence is string)
+        && (!request.resource.data.keys().hasAny(['source']) || (request.resource.data.source is string && request.resource.data.source.size() <= 120))
+        && (!request.resource.data.keys().hasAny(['lastMission']) || (request.resource.data.lastMission is string && request.resource.data.lastMission.size() <= 200))
+        && (!request.resource.data.keys().hasAny(['lastResult']) || (request.resource.data.lastResult is string && request.resource.data.lastResult.size() <= 1000))
+        && (!request.resource.data.keys().hasAny(['hasEvidence']) || request.resource.data.hasEvidence is bool)
+        && (!request.resource.data.keys().hasAny(['evidence']) || (request.resource.data.evidence is string && request.resource.data.evidence.size() <= 1200))
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || request.resource.data.updatedAt is timestamp)
         && (!request.resource.data.keys().hasAny(['verified']) || request.resource.data.verified == resource.data.verified || isAdmin())
         && (!request.resource.data.keys().hasAny(['verificationSource']) || request.resource.data.verificationSource == resource.data.verificationSource || isAdmin())
         && (!request.resource.data.keys().hasAny(['verifiedAt']) || request.resource.data.verifiedAt == resource.data.verifiedAt || isAdmin())
