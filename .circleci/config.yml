@@ -135,6 +135,18 @@ jobs:
             echo "npm_test_exit_code=${status}" >> functions_test.log
             exit $status
       - run:
+          name: Firestore Rules source size guard
+          command: |
+            set -e
+            bytes=$(wc -c < firestore.rules)
+            max_bytes=258000
+            echo "firestore.rules bytes: \${bytes}"
+            if [ "\${bytes}" -ge "\${max_bytes}" ]; then
+              echo "ERROR: firestore.rules is too close to Firebase's 256 KiB source limit."
+              exit 1
+            fi
+            echo "Firestore Rules source-size guard passed."
+      - run:
           name: Run Firestore Action Rules emulator gate
           command: |
             set -e
