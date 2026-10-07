@@ -79,6 +79,34 @@ class TalentRepository {
     });
   }
 
+  Future<List<String>> promoteSavedMissionEvidenceToSkillGraph({
+    required String ownerId,
+  }) async {
+    final cleanOwnerId = ownerId.trim();
+    if (cleanOwnerId.isEmpty) return const [];
+
+    final snap = await db
+        .collection('talent_mission_evidence')
+        .where('ownerId', isEqualTo: cleanOwnerId)
+        .limit(200)
+        .get();
+
+    final missions = snap.docs.map((doc) {
+      final data = doc.data();
+      return <String, String>{
+        'mission': (data['mission'] ?? '').toString(),
+        'category': (data['category'] ?? '').toString(),
+        'result': (data['result'] ?? '').toString(),
+        'evidence': (data['evidence'] ?? '').toString(),
+      };
+    }).toList();
+
+    return promoteMissionEvidenceToSkillGraph(
+      ownerId: cleanOwnerId,
+      missions: missions,
+    );
+  }
+
   Future<List<String>> promoteMissionEvidenceToSkillGraph({
     required String ownerId,
     required List<Map<String, String>> missions,
