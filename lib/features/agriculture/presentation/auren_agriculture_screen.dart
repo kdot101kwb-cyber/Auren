@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
+import '../widgets/gaez_v5_card.dart';
 
 class AurenAgricultureScreen extends StatefulWidget {
   const AurenAgricultureScreen({super.key});
@@ -55,6 +56,8 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
           ),
           const SizedBox(height: 16),
           _quickTools(),
+          const SizedBox(height: 16),
+          const AurenGaezV5Card(),
           const SizedBox(height: 16),
           _investmentHub(),
           const SizedBox(height: 16),
