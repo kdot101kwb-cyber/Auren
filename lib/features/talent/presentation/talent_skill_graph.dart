@@ -77,11 +77,12 @@ class AurenTalentSkillGraph extends StatelessWidget {
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: () => _requestVerification(context, data),
-                icon: const Icon(Icons.verified_outlined),
-                label: const Text('اطلب توثيق هذه المهارة'),
-              ),
+              if (data['verified'] != true)
+                FilledButton.icon(
+                  onPressed: () => _requestVerification(context, data),
+                  icon: const Icon(Icons.verified_outlined),
+                  label: const Text('اطلب توثيق هذه المهارة'),
+                ),
             ],
           ),
         ),
