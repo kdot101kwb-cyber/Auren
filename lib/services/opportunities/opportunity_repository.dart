@@ -33,7 +33,16 @@ Stream<List<AurenOpportunityApplication>> watchReceived(String ownerId) => db.co
 
 Future<void> updateApplicationStatus({required String applicantId,required String opportunityId,required String status}) async {
   if(!['accepted','rejected'].contains(status)) throw ArgumentError('حالة الطلب غير صالحة');
-  await db.collection('users').doc(applicantId).collection('opportunityApplications').doc(opportunityId).update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
+  final ref = db.collection('users').doc(applicantId).collection('opportunityApplications').doc(opportunityId);
+  await ref.update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
+  await db.collection('opportunity_application_notifications').add({
+    'recipientUid': applicantId,
+    'opportunityId': opportunityId,
+    'title': status == 'accepted' ? 'تم قبول طلبك' : 'تم رفض طلبك',
+    'status': status,
+    'createdAt': FieldValue.serverTimestamp(),
+    'read': false,
+  });
 }
 
 Future<void> apply({required String uid, required AurenOpportunity opportunity, required String note}) async {
