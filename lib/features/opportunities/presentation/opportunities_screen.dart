@@ -401,7 +401,7 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => AurenPublicProfileScreen(profile: profile),
+          builder: (_) => AurenPublicProfileScreen(profile: profile, viewerCanInspectProof: true),
         ),
       );
     } catch (e) {
