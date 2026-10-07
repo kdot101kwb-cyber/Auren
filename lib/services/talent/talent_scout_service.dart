@@ -39,6 +39,7 @@ class TalentScoutService {
     for(final scout in enabled) {
       if(scout.role=='opportunity') {
         for(final o in opportunities) {
+          if (o.ownerId.trim() == uid) continue;
           final required=o.skills.map(_norm).where((x)=>x.isNotEmpty).toSet();
           final matched=required.where(talentSkills.contains).toList();
           final missing=required.difference(talentSkills).toList();
@@ -84,7 +85,6 @@ class TalentScoutService {
         'matchedSkills':f.matchedSkills.take(30).toList(),
         'missingSkills':f.missingSkills.take(30).toList(),
         'evidence':f.evidence.take(20).toList(),
-        'expiresAt':Timestamp.fromDate(f.expiresAt!),
         'updatedAt':FieldValue.serverTimestamp(),
       };
       // A scout rerun must refresh the finding without undoing the user's
@@ -92,6 +92,7 @@ class TalentScoutService {
       if (!existing.exists) {
         data['status'] = 'new';
         data['createdAt'] = FieldValue.serverTimestamp();
+        data['expiresAt'] = Timestamp.fromDate(f.expiresAt!);
       }
       await ref.set(data, SetOptions(merge:true));
     }
