@@ -4170,8 +4170,8 @@ exports.evaluateTalentSkillVerificationRequest = onDocumentCreated(
     const qualifies = evidenceCount >= 2 && !!result && !!evidence;
     const status = qualifies ? 'verified' : 'needs_more_evidence';
 
-    const safeSkill = skill.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-    const skillId = ownerId + '_' + safeSkill;
+    const normalizedSkill = normalizeTalentSkill(skill);
+    const skillId = ownerId + '_' + encodeURIComponent(normalizedSkill).slice(0, 500);
     const requestRef = snap.ref;
     const skillRef = db.collection('talent_skill_graph').doc(skillId);
 
