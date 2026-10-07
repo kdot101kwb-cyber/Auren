@@ -31,10 +31,50 @@ Stream<List<AurenOpportunityApplication>> watchMyApplications(String uid) => db.
 
 Stream<List<AurenOpportunityApplication>> watchReceived(String ownerId) => db.collectionGroup('opportunityApplications').where('ownerId',isEqualTo:ownerId).limit(100).snapshots().map((s)=>s.docs.map((d)=>AurenOpportunityApplication.fromMap(d.id,d.data())).toList());
 
-Future<void> updateApplicationStatus({required String applicantId,required String opportunityId,required String status}) async {
+Stream<List<Map<String, dynamic>>> watchApplicationNotifications(String uid) =>
+    db.collection('opportunity_application_notifications')
+      .where('recipientUid', isEqualTo: uid)
+      .limit(100)
+      .snapshots()
+      .map((s) {
+        final list = s.docs.map((d) => <String, dynamic>{
+          'id': d.id,
+          ...d.data(),
+        }).toList();
+        list.sort((a, b) {
+          final at = (a['createdAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+          final bt = (b['createdAt'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+          return bt.compareTo(at);
+        });
+        return list;
+      });
+
+Future<void> markApplicationNotificationRead(String uid, String notificationId) async {
+  if (uid.trim().isEmpty || notificationId.trim().isEmpty) return;
+  final ref = db.collection('opportunity_application_notifications').doc(notificationId);
+  final snap = await ref.get();
+  if (!snap.exists || snap.data()?['recipientUid'] != uid) {
+    throw StateError('الإشعار غير متاح.');
+  }
+  await ref.update({'read': true});
+}
+
+Future<void> updateApplicationStatus({required String ownerId, required String applicantId,required String opportunityId,required String status}) async {
   if(!['accepted','rejected'].contains(status)) throw ArgumentError('حالة الطلب غير صالحة');
-  final ref = db.collection('users').doc(applicantId).collection('opportunityApplications').doc(opportunityId);
-  await ref.update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
+  if (ownerId.trim().isEmpty || applicantId.trim().isEmpty || opportunityId.trim().isEmpty) {
+    throw ArgumentError('بيانات الطلب غير صالحة');
+  }
+  final opportunityRef = db.collection('opportunities').doc(opportunityId);
+  final applicationRef = db.collection('users').doc(applicantId).collection('opportunityApplications').doc(opportunityId);
+  final opportunitySnap = await opportunityRef.get();
+  if (!opportunitySnap.exists || opportunitySnap.data()?['ownerId']?.toString() != ownerId) {
+    throw StateError('ليس لديك صلاحية تعديل هذا الطلب.');
+  }
+  final applicationSnap = await applicationRef.get();
+  if (!applicationSnap.exists || applicationSnap.data()?['ownerId']?.toString() != ownerId) {
+    throw StateError('الطلب غير متاح أو لا يتبع فرصتك.');
+  }
+  await applicationRef.update({'status':status,'updatedAt':FieldValue.serverTimestamp()});
   await db.collection('opportunity_application_notifications').add({
     'recipientUid': applicantId,
     'opportunityId': opportunityId,
