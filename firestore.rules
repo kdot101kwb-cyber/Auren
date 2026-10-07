@@ -1627,7 +1627,10 @@ service cloud.firestore {
     match /users/{userId}/opportunityApplications/{opportunityId} {
       allow read: if isOwner(userId) || (request.auth != null && resource.data.ownerId == request.auth.uid);
       allow create: if isOwner(userId)
-        && request.resource.data.keys().hasOnly(['opportunityId','ownerId','applicantId','title','note','status','createdAt','updatedAt'])
+        && request.resource.data.keys().hasOnly([
+          'opportunityId','ownerId','applicantId','title','note','status',
+          'matchScore','matchedVerifiedSkills','createdAt','updatedAt'
+        ])
         && request.resource.data.opportunityId == opportunityId
         && exists(/databases/$(database)/documents/opportunities/$(opportunityId))
         && get(/databases/$(database)/documents/opportunities/$(opportunityId)).data.status == 'open'
@@ -1639,6 +1642,11 @@ service cloud.firestore {
         && request.resource.data.title.size() <= 200
         && request.resource.data.note is string
         && request.resource.data.note.size() <= 2000
+        && request.resource.data.matchScore is number
+        && request.resource.data.matchScore >= 0
+        && request.resource.data.matchScore <= 1
+        && request.resource.data.matchedVerifiedSkills is list
+        && request.resource.data.matchedVerifiedSkills.size() <= 20
         && request.resource.data.status == 'pending'
         && request.resource.data.createdAt is timestamp
         && request.resource.data.updatedAt is timestamp;
@@ -1694,17 +1702,29 @@ service cloud.firestore {
 
   match /opportunity_application_notifications/{notificationId} {
       allow create: if request.auth != null
-        && request.resource.data.applicantUid == request.auth.uid
         && request.resource.data.recipientUid is string
-        && exists(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId))
-        && get(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId)).data.ownerId == request.resource.data.recipientUid
         && request.resource.data.opportunityId is string
         && request.resource.data.title is string
         && request.resource.data.read == false
         && request.resource.data.createdAt is timestamp
-        && request.resource.data.keys().hasOnly([
-          'recipientUid','applicantUid','opportunityId','title','createdAt','read'
-        ]);
+        && (
+          (
+            request.resource.data.applicantUid == request.auth.uid
+            && get(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId)).data.ownerId == request.resource.data.recipientUid
+            && request.resource.data.keys().hasOnly([
+              'recipientUid','applicantUid','opportunityId','title','createdAt','read'
+            ])
+          )
+          ||
+          (
+            request.resource.data.status in ['accepted','rejected']
+            && get(/databases/$(database)/documents/opportunities/$(request.resource.data.opportunityId)).data.ownerId == request.auth.uid
+            && request.resource.data.recipientUid is string
+            && request.resource.data.keys().hasOnly([
+              'recipientUid','opportunityId','title','status','createdAt','read'
+            ])
+          )
+        );
       allow read: if request.auth != null
         && resource.data.recipientUid == request.auth.uid;
       allow update: if request.auth != null
