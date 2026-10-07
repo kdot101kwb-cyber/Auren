@@ -23,44 +23,231 @@ class AurenLocalizations {
   static AurenLocalizations of(BuildContext context) =>
       Localizations.of<AurenLocalizations>(context, AurenLocalizations)!;
 
-  bool get isArabic => locale.languageCode == 'ar';
-  String get home => isArabic ? 'الرئيسية' : 'Home';
-  String get pulse => isArabic ? 'نبض' : 'Pulse';
-  String get discover => isArabic ? 'اكتشف' : 'Discover';
-  String get messenger => isArabic ? 'الرسائل' : 'Messenger';
-  String get profile => isArabic ? 'الملف الشخصي' : 'Profile';
-  String get incomingVideoCall => isArabic ? 'مكالمة فيديو واردة' : 'Incoming video call';
-  String get incomingAudioCall => isArabic ? 'مكالمة صوتية واردة' : 'Incoming audio call';
-  String get incomingRandomCall => isArabic
-      ? 'مكالمة عشوائية واردة من مستخدم AUREN'
-      : 'Incoming random call from an AUREN user';
-  String get decline => isArabic ? 'رفض' : 'Decline';
-  String get accept => isArabic ? 'قبول' : 'Accept';
-  String get signInRequired => isArabic ? 'يجب تسجيل الدخول' : 'Sign in required';
-  String get profileLoadError => isArabic ? 'تعذر تحميل الملف الشخصي.' : 'Could not load profile.';
-  String get editProfile => isArabic ? 'تعديل الملف الشخصي' : 'Edit profile';
-  String get aiProfile => isArabic ? 'الملف الشخصي بالذكاء الاصطناعي' : 'AI Profile';
-  String get profileModes => isArabic ? 'شخصي • منشئ محتوى • مهني • تجاري' : 'Personal • Creator • Professional • Business';
-  String get socialGraph => isArabic ? 'الرسم الاجتماعي' : 'Social Graph';
-  String get socialGraphDescription => isArabic ? 'المتابعون والمتابَعون والمجتمعات' : 'Followers, following and communities';
-  String get shareProfile => isArabic ? 'مشاركة ملف AUREN' : 'Share my AUREN profile';
-  String get shareProfileDescription => isArabic ? 'انسخ رابط ملفك وشاركه مع الآخرين' : 'Copy your profile link and share it';
-  String get copiedProfileLink => isArabic ? 'تم نسخ رابط الملف.' : 'Profile link copied.';
-  String get followers => isArabic ? 'المتابعون' : 'Followers';
-  String get following => isArabic ? 'المتابَعون' : 'Following';
-  String get displayName => isArabic ? 'اسم العرض' : 'Display name';
-  String get cancel => isArabic ? 'إلغاء' : 'Cancel';
-  String get save => isArabic ? 'حفظ' : 'Save';
+  String _t(Map<String, String> values) =>
+      values[locale.languageCode] ?? values['en']!;
+
+  String get home => _t({
+    'ar': 'الرئيسية', 'en': 'Home', 'fr': 'Accueil', 'es': 'Inicio',
+    'pt': 'Início', 'tr': 'Ana Sayfa', 'zh': '首页', 'hi': 'होम',
+    'ur': 'ہوم', 'id': 'Beranda', 'sw': 'Nyumbani', 'ha': 'Gida', 'de': 'Startseite',
+  });
+
+  String get pulse => _t({
+    'ar': 'نبض', 'en': 'Pulse', 'fr': 'Pulse', 'es': 'Pulso',
+    'pt': 'Pulso', 'tr': 'Akış', 'zh': '动态', 'hi': 'पल्स',
+    'ur': 'پلس', 'id': 'Pulse', 'sw': 'Mtiririko', 'ha': 'Pulse', 'de': 'Pulse',
+  });
+
+  String get discover => _t({
+    'ar': 'اكتشف', 'en': 'Discover', 'fr': 'Découvrir', 'es': 'Descubrir',
+    'pt': 'Descobrir', 'tr': 'Keşfet', 'zh': '发现', 'hi': 'खोजें',
+    'ur': 'دریافت کریں', 'id': 'Temukan', 'sw': 'Gundua', 'ha': 'Gano', 'de': 'Entdecken',
+  });
+
+  String get messenger => _t({
+    'ar': 'الرسائل', 'en': 'Messenger', 'fr': 'Messages', 'es': 'Mensajes',
+    'pt': 'Mensagens', 'tr': 'Mesajlar', 'zh': '消息', 'hi': 'मैसेंजर',
+    'ur': 'پیغامات', 'id': 'Pesan', 'sw': 'Ujumbe', 'ha': 'Saƙonni', 'de': 'Messenger',
+  });
+
+  String get profile => _t({
+    'ar': 'الملف الشخصي', 'en': 'Profile', 'fr': 'Profil', 'es': 'Perfil',
+    'pt': 'Perfil', 'tr': 'Profil', 'zh': '个人资料', 'hi': 'प्रोफ़ाइल',
+    'ur': 'پروفائل', 'id': 'Profil', 'sw': 'Wasifu', 'ha': 'Bayanan martaba', 'de': 'Profil',
+  });
+
+  String get incomingVideoCall => _t({
+    'ar': 'مكالمة فيديو واردة', 'en': 'Incoming video call', 'fr': 'Appel vidéo entrant',
+    'es': 'Videollamada entrante', 'pt': 'Chamada de vídeo recebida', 'tr': 'Gelen görüntülü arama',
+    'zh': '来电视频通话', 'hi': 'आने वाली वीडियो कॉल', 'ur': 'آنے والی ویڈیو کال',
+    'id': 'Panggilan video masuk', 'sw': 'Simu ya video inayoingia', 'ha': 'Kiran bidiyo mai shigowa',
+    'de': 'Eingehender Videoanruf',
+  });
+
+  String get incomingAudioCall => _t({
+    'ar': 'مكالمة صوتية واردة', 'en': 'Incoming audio call', 'fr': 'Appel audio entrant',
+    'es': 'Llamada de audio entrante', 'pt': 'Chamada de áudio recebida', 'tr': 'Gelen sesli arama',
+    'zh': '来电语音通话', 'hi': 'आने वाली ऑडियो कॉल', 'ur': 'آنے والی آڈیو کال',
+    'id': 'Panggilan audio masuk', 'sw': 'Simu ya sauti inayoingia', 'ha': 'Kiran sauti mai shigowa',
+    'de': 'Eingehender Audioanruf',
+  });
+
+  String get incomingRandomCall => _t({
+    'ar': 'مكالمة عشوائية واردة من مستخدم AUREN',
+    'en': 'Incoming random call from an AUREN user',
+    'fr': 'Appel aléatoire entrant d’un utilisateur AUREN',
+    'es': 'Llamada aleatoria entrante de un usuario de AUREN',
+    'pt': 'Chamada aleatória recebida de um usuário AUREN',
+    'tr': 'Bir AUREN kullanıcısından gelen rastgele arama',
+    'zh': '来自 AUREN 用户的随机来电',
+    'hi': 'AUREN उपयोगकर्ता की आने वाली रैंडम कॉल',
+    'ur': 'AUREN صارف کی آنے والی رینڈم کال',
+    'id': 'Panggilan acak masuk dari pengguna AUREN',
+    'sw': 'Simu ya nasibu kutoka kwa mtumiaji wa AUREN',
+    'ha': 'Kiran bazata daga mai amfani da AUREN',
+    'de': 'Eingehender Zufallsanruf von einem AUREN-Nutzer',
+  });
+
+  String get decline => _t({
+    'ar': 'رفض', 'en': 'Decline', 'fr': 'Refuser', 'es': 'Rechazar',
+    'pt': 'Recusar', 'tr': 'Reddet', 'zh': '拒绝', 'hi': 'अस्वीकार',
+    'ur': 'مسترد کریں', 'id': 'Tolak', 'sw': 'Kataa', 'ha': 'Ƙi', 'de': 'Ablehnen',
+  });
+
+  String get accept => _t({
+    'ar': 'قبول', 'en': 'Accept', 'fr': 'Accepter', 'es': 'Aceptar',
+    'pt': 'Aceitar', 'tr': 'Kabul Et', 'zh': '接受', 'hi': 'स्वीकार',
+    'ur': 'قبول کریں', 'id': 'Terima', 'sw': 'Kubali', 'ha': 'Karɓa', 'de': 'Annehmen',
+  });
+
+  String get signInRequired => _t({
+    'ar': 'يجب تسجيل الدخول', 'en': 'Sign in required', 'fr': 'Connexion requise',
+    'es': 'Se requiere iniciar sesión', 'pt': 'É necessário iniciar sessão',
+    'tr': 'Giriş yapmanız gerekiyor', 'zh': '需要登录', 'hi': 'साइन इन आवश्यक है',
+    'ur': 'سائن ان ضروری ہے', 'id': 'Perlu masuk', 'sw': 'Kuingia kunahitajika',
+    'ha': 'Ana buƙatar shiga', 'de': 'Anmeldung erforderlich',
+  });
+
+  String get profileLoadError => _t({
+    'ar': 'تعذر تحميل الملف الشخصي.', 'en': 'Could not load profile.',
+    'fr': 'Impossible de charger le profil.', 'es': 'No se pudo cargar el perfil.',
+    'pt': 'Não foi possível carregar o perfil.', 'tr': 'Profil yüklenemedi.',
+    'zh': '无法加载个人资料。', 'hi': 'प्रोफ़ाइल लोड नहीं हो सकी।',
+    'ur': 'پروفائل لوڈ نہیں ہو سکا۔', 'id': 'Profil tidak dapat dimuat.',
+    'sw': 'Wasifu haukuweza kupakiwa.', 'ha': 'An kasa loda bayanan martaba.',
+    'de': 'Profil konnte nicht geladen werden.',
+  });
+
+  String get editProfile => _t({
+    'ar': 'تعديل الملف الشخصي', 'en': 'Edit profile', 'fr': 'Modifier le profil',
+    'es': 'Editar perfil', 'pt': 'Editar perfil', 'tr': 'Profili düzenle',
+    'zh': '编辑个人资料', 'hi': 'प्रोफ़ाइल संपादित करें', 'ur': 'پروفائل میں ترمیم',
+    'id': 'Edit profil', 'sw': 'Hariri wasifu', 'ha': 'Gyara bayanan martaba',
+    'de': 'Profil bearbeiten',
+  });
+
+  String get aiProfile => _t({
+    'ar': 'الملف الشخصي بالذكاء الاصطناعي', 'en': 'AI Profile',
+    'fr': 'Profil IA', 'es': 'Perfil de IA', 'pt': 'Perfil de IA',
+    'tr': 'Yapay Zekâ Profili', 'zh': 'AI 个人资料', 'hi': 'AI प्रोफ़ाइल',
+    'ur': 'AI پروفائل', 'id': 'Profil AI', 'sw': 'Wasifu wa AI',
+    'ha': 'Bayanan martaba na AI', 'de': 'KI-Profil',
+  });
+
+  String get profileModes => _t({
+    'ar': 'شخصي • منشئ محتوى • مهني • تجاري',
+    'en': 'Personal • Creator • Professional • Business',
+    'fr': 'Personnel • Créateur • Professionnel • Entreprise',
+    'es': 'Personal • Creador • Profesional • Negocio',
+    'pt': 'Pessoal • Criador • Profissional • Negócios',
+    'tr': 'Kişisel • İçerik Üreticisi • Profesyonel • İşletme',
+    'zh': '个人 • 创作者 • 专业 • 商业',
+    'hi': 'व्यक्तिगत • क्रिएटर • पेशेवर • व्यवसाय',
+    'ur': 'ذاتی • کریئیٹر • پیشہ ور • کاروباری',
+    'id': 'Pribadi • Kreator • Profesional • Bisnis',
+    'sw': 'Binafsi • Mtayarishi • Kitaalamu • Biashara',
+    'ha': 'Na sirri • Mahalicci • Kwararre • Kasuwanci',
+    'de': 'Persönlich • Creator • Beruflich • Geschäftlich',
+  });
+
+  String get socialGraph => _t({
+    'ar': 'الرسم الاجتماعي', 'en': 'Social Graph', 'fr': 'Graphe social',
+    'es': 'Grafo social', 'pt': 'Grafo social', 'tr': 'Sosyal Grafik',
+    'zh': '社交关系图', 'hi': 'सोशल ग्राफ', 'ur': 'سوشل گراف',
+    'id': 'Graf Sosial', 'sw': 'Mchoro wa kijamii', 'ha': 'Taswirin zamantakewa',
+    'de': 'Sozialer Graph',
+  });
+
+  String get socialGraphDescription => _t({
+    'ar': 'المتابعون والمتابَعون والمجتمعات',
+    'en': 'Followers, following and communities',
+    'fr': 'Abonnés, abonnements et communautés',
+    'es': 'Seguidores, seguidos y comunidades',
+    'pt': 'Seguidores, seguindo e comunidades',
+    'tr': 'Takipçiler, takip edilenler ve topluluklar',
+    'zh': '关注者、关注对象和社区',
+    'hi': 'फ़ॉलोअर, फ़ॉलोइंग और समुदाय',
+    'ur': 'فالوورز، فالوونگ اور کمیونٹیز',
+    'id': 'Pengikut, mengikuti, dan komunitas',
+    'sw': 'Wafuasi, unaowafuata na jumuiya',
+    'ha': 'Masu bi, waɗanda kake bi da al’ummomi',
+    'de': 'Follower, gefolgte Konten und Communities',
+  });
+
+  String get shareProfile => _t({
+    'ar': 'مشاركة ملف AUREN', 'en': 'Share my AUREN profile',
+    'fr': 'Partager mon profil AUREN', 'es': 'Compartir mi perfil de AUREN',
+    'pt': 'Compartilhar meu perfil AUREN', 'tr': 'AUREN profilimi paylaş',
+    'zh': '分享我的 AUREN 个人资料', 'hi': 'मेरा AUREN प्रोफ़ाइल साझा करें',
+    'ur': 'میرا AUREN پروفائل شیئر کریں', 'id': 'Bagikan profil AUREN saya',
+    'sw': 'Shiriki wasifu wangu wa AUREN', 'ha': 'Raba bayanan martaba na AUREN',
+    'de': 'Mein AUREN-Profil teilen',
+  });
+
+  String get shareProfileDescription => _t({
+    'ar': 'انسخ رابط ملفك وشاركه مع الآخرين', 'en': 'Copy your profile link and share it',
+    'fr': 'Copiez le lien de votre profil et partagez-le', 'es': 'Copia el enlace de tu perfil y compártelo',
+    'pt': 'Copie o link do seu perfil e compartilhe', 'tr': 'Profil bağlantınızı kopyalayıp paylaşın',
+    'zh': '复制个人资料链接并分享', 'hi': 'अपना प्रोफ़ाइल लिंक कॉपी करके साझा करें',
+    'ur': 'اپنے پروفائل کا لنک کاپی کرکے شیئر کریں', 'id': 'Salin tautan profil dan bagikan',
+    'sw': 'Nakili kiungo cha wasifu na ushiriki', 'ha': 'Kwafi hanyar bayanin martaba ka raba',
+    'de': 'Profil-Link kopieren und teilen',
+  });
+
+  String get copiedProfileLink => _t({
+    'ar': 'تم نسخ رابط الملف.', 'en': 'Profile link copied.', 'fr': 'Lien du profil copié.',
+    'es': 'Enlace del perfil copiado.', 'pt': 'Link do perfil copiado.',
+    'tr': 'Profil bağlantısı kopyalandı.', 'zh': '个人资料链接已复制。',
+    'hi': 'प्रोफ़ाइल लिंक कॉपी किया गया।', 'ur': 'پروفائل لنک کاپی ہو گیا۔',
+    'id': 'Tautan profil disalin.', 'sw': 'Kiungo cha wasifu kimenakiliwa.',
+    'ha': 'An kwafi hanyar bayanin martaba.', 'de': 'Profil-Link kopiert.',
+  });
+
+  String get followers => _t({
+    'ar': 'المتابعون', 'en': 'Followers', 'fr': 'Abonnés', 'es': 'Seguidores',
+    'pt': 'Seguidores', 'tr': 'Takipçiler', 'zh': '关注者', 'hi': 'फ़ॉलोअर',
+    'ur': 'فالوورز', 'id': 'Pengikut', 'sw': 'Wafuasi', 'ha': 'Masu bi', 'de': 'Follower',
+  });
+
+  String get following => _t({
+    'ar': 'المتابَعون', 'en': 'Following', 'fr': 'Abonnements', 'es': 'Siguiendo',
+    'pt': 'Seguindo', 'tr': 'Takip', 'zh': '正在关注', 'hi': 'फ़ॉलोइंग',
+    'ur': 'فالوونگ', 'id': 'Mengikuti', 'sw': 'Unaowafuata', 'ha': 'Waɗanda kake bi',
+    'de': 'Gefolgt',
+  });
+
+  String get displayName => _t({
+    'ar': 'اسم العرض', 'en': 'Display name', 'fr': 'Nom affiché', 'es': 'Nombre para mostrar',
+    'pt': 'Nome de exibição', 'tr': 'Görünen ad', 'zh': '显示名称', 'hi': 'प्रदर्शित नाम',
+    'ur': 'ڈسپلے نام', 'id': 'Nama tampilan', 'sw': 'Jina la kuonyesha',
+    'ha': 'Sunan nunawa', 'de': 'Anzeigename',
+  });
+
+  String get cancel => _t({
+    'ar': 'إلغاء', 'en': 'Cancel', 'fr': 'Annuler', 'es': 'Cancelar',
+    'pt': 'Cancelar', 'tr': 'İptal', 'zh': '取消', 'hi': 'रद्द करें',
+    'ur': 'منسوخ کریں', 'id': 'Batal', 'sw': 'Ghairi', 'ha': 'Soke', 'de': 'Abbrechen',
+  });
+
+  String get save => _t({
+    'ar': 'حفظ', 'en': 'Save', 'fr': 'Enregistrer', 'es': 'Guardar',
+    'pt': 'Salvar', 'tr': 'Kaydet', 'zh': '保存', 'hi': 'सहेजें',
+    'ur': 'محفوظ کریں', 'id': 'Simpan', 'sw': 'Hifadhi', 'ha': 'Ajiye', 'de': 'Speichern',
+  });
 }
 
 class _AurenLocalizationsDelegate
     extends LocalizationsDelegate<AurenLocalizations> {
   const _AurenLocalizationsDelegate();
+
   @override
   bool isSupported(Locale locale) => AurenLocalizations.supportedLocales
       .any((supported) => supported.languageCode == locale.languageCode);
+
   @override
-  Future<AurenLocalizations> load(Locale locale) async => AurenLocalizations(locale);
+  Future<AurenLocalizations> load(Locale locale) async =>
+      AurenLocalizations(locale);
+
   @override
   bool shouldReload(_AurenLocalizationsDelegate old) => false;
 }
