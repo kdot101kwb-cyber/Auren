@@ -4296,7 +4296,16 @@ exports.validateTalentClaim = onDocumentCreated(
 
     const talentId = String(data.talentId || '').trim();
     const claimantUid = String(data.claimantUid || '').trim();
-    if (!talentId || !claimantUid) return;
+    const evidence = String(data.evidence || '').trim();
+    if (!talentId || talentId.length > 128 || !claimantUid || claimantUid.length > 128 ||
+        !evidence || evidence.length > 1200) {
+      await snap.ref.update({
+        status: 'rejected',
+        reviewReason: 'invalid_claim_payload',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
 
     const talentSnap = await db.collection('talents').doc(talentId).get();
     if (!talentSnap.exists) {
