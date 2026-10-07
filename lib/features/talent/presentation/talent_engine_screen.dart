@@ -10,7 +10,7 @@ class AurenTalentEngineScreen extends StatefulWidget{
 }
 class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
   final _service=AurenTalentEngineService(); final _query=TextEditingController();
-  bool _loading=false; String? _invitingUid; List<AurenTalentCandidate> _results=[];
+  bool _loading=false; String? _invitingUid; String? _respondingInvitationId; List<AurenTalentCandidate> _results=[];
   @override void dispose(){_query.dispose();super.dispose();}
   Future<void> _scout() async{
     final uid=FirebaseAuth.instance.currentUser?.uid;
@@ -37,9 +37,11 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
     }
   }
   Future<void> _respond(String id,String status) async {
-    final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;
+    final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null||_respondingInvitationId!=null)return;
+    setState(()=>_respondingInvitationId=id);
     try{await _service.respondToInvitation(invitationId:id,talentUid:uid,status:status);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(status=='accepted'?'تم قبول الدعوة.':'تم رفض الدعوة.')));}
     catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تحديث الدعوة: $e')));}
+    finally{if(mounted)setState(()=>_respondingInvitationId=null);}
   }
 
   Future<void> _invite(AurenTalentCandidate candidate) async {
@@ -100,8 +102,8 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
               title:Text(inv['opportunityTitle']?.toString()??'فرصة'),
               subtitle:Text(statusLabel(inv['status'])),
               trailing:inv['status']=='pending'?Wrap(children:[
-                IconButton(tooltip:'قبول',icon:const Icon(Icons.check),onPressed:()=>_respond(inv['id'].toString(),'accepted')),
-                IconButton(tooltip:'رفض',icon:const Icon(Icons.close),onPressed:()=>_respond(inv['id'].toString(),'declined')),
+                IconButton(tooltip:'قبول',icon:_respondingInvitationId==inv['id'].toString()?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.check),onPressed:_respondingInvitationId==null?()=>_respond(inv['id'].toString(),'accepted'):null),
+                IconButton(tooltip:'رفض',icon:const Icon(Icons.close),onPressed:_respondingInvitationId==null?()=>_respond(inv['id'].toString(),'declined'):null),
               ]):null,
             )).toList());
           }),
