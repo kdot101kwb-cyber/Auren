@@ -21,7 +21,7 @@ class _AurenTalentClaimScreenState extends State<AurenTalentClaimScreen> {
   Future<void> _submit() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final evidence = _evidence.text.trim();
-    if (uid == null || evidence.isEmpty) return;
+    if (uid == null || evidence.isEmpty || evidence.length > 1200) return;
     setState(() => _saving = true);
     try {
       await _repo.submit(talentId: widget.talentId, claimantUid: uid, evidence: evidence);
