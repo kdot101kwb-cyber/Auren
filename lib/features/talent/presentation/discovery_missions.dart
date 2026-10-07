@@ -64,6 +64,40 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
     await TalentRepository().saveMissionEvidence(ownerId: uid, mission: _missions[index].title, category: _missions[index].category, result: _notes[index] ?? '', evidence: _evidence[index] ?? '');
   }
 
+  Future<void> _promoteToSkillGraph() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (uid.isEmpty || _done.isEmpty) return;
+    final missions = _done
+        .map((i) => <String, String>{
+              'mission': _missions[i].title,
+              'category': _missions[i].category,
+              'result': _notes[i] ?? '',
+              'evidence': _evidence[i] ?? '',
+            })
+        .toList();
+    try {
+      final skills = await TalentRepository().promoteMissionEvidenceToSkillGraph(
+        ownerId: uid,
+        missions: missions,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            skills.isEmpty
+                ? 'لا توجد مهارات يمكن استخراجها من الأدلة الحالية.'
+                : 'تم تحديث Skill Graph: ${skills.join('، ')}',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تحديث Skill Graph حالياً.')),
+      );
+    }
+  }
+
   void _review() {
     final completed = _done.map((i) => '${_missions[i].title}: ${_notes[i] ?? ''} | الدليل: ${_evidence[i] ?? ''}').join('\n');
     final prompt = completed.isEmpty
@@ -109,6 +143,15 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
+              onPressed: completed == 0 ? null : _promoteToSkillGraph,
+              icon: const Icon(Icons.account_tree_outlined),
+              label: const Text('حوّل الأدلة إلى Skill Graph'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
               onPressed: _review,
               icon: const Icon(Icons.auto_awesome),
               label: Text(completed == 0 ? 'ابدأ مع AUREN AI' : 'حلّل النتائج مع AUREN AI'),
