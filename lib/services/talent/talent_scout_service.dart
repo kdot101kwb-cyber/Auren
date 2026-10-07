@@ -19,10 +19,11 @@ class TalentScoutService {
         .where('verified', isEqualTo: true)
         .limit(50)
         .get();
-    final talentSkills = verifiedSnap.docs
-        .map((d) => _norm((d.data()['skill'] ?? '').toString()))
+    final talentSkillLabels = verifiedSnap.docs
+        .map((d) => (d.data()['skill'] ?? '').toString().trim())
         .where((x) => x.isNotEmpty)
         .toSet();
+    final talentSkills = talentSkillLabels.map(_norm).where((x) => x.isNotEmpty).toSet();
     for(final scout in enabled) {
       if(scout.role=='opportunity') {
         for(final o in opportunities) {
@@ -37,7 +38,7 @@ class TalentScoutService {
       } else {
         final keywords=<String>{...scout.skills.map(_norm),...scout.interests.map(_norm)}..removeWhere((x)=>x.isEmpty);
         final sportSignals=<String>{...talent.sports.map(_norm),_norm(talent.sport),_norm(talent.discipline),_norm(talent.level)}..removeWhere((x)=>x.isEmpty);
-        final hay='${talent.bio} ${talent.category} ${talent.sport} ${talent.sports.join(' ')} ${talent.discipline} ${talent.level} ${talent.city} ${talent.country} ${talent.skills.join(' ')}'.toLowerCase();
+        final hay='${talent.bio} ${talent.category} ${talent.sport} ${talent.sports.join(' ')} ${talent.discipline} ${talent.level} ${talent.city} ${talent.country} ${talentSkillLabels.join(' ')}'.toLowerCase();
         final hits=keywords.where((k)=>hay.contains(k)).toList();
         final signalHits=sportSignals.where((signal)=>hay.contains(signal)).toList();
         final evidence=<String>[if(hits.isNotEmpty) 'كلمات/مهارات متطابقة: ${hits.join('، ')}', if(signalHits.isNotEmpty) 'إشارات رياضية متطابقة: ${signalHits.join('، ')}'];
@@ -47,7 +48,7 @@ class TalentScoutService {
         final text=switch(scout.role){
           'market'=>'إشارات سوق مرتبطة بمهاراتك: ${hits.isEmpty?'راجع اتجاهات السوق والمهارات المطلوبة.':hits.join(' • ')}',
           'talent'=>'فرص لاكتشاف مواهب أو فرق مرتبطة بمجالك: ${talent.category.isEmpty?'مجالك الحالي':talent.category}.',
-          'brand'=>'أفكار لزيادة ظهورك وبناء علامتك الشخصية حول: ${talent.skills.take(5).join(' • ')}.',
+          'brand'=>'أفكار لزيادة ظهورك وبناء علامتك الشخصية حول: ${talentSkillLabels.take(5).join(' • ')}.',
           'learning'=>'مسار تعلم عملي لسد الفجوات حول مهاراتك الحالية: ${talent.skills.take(5).join(' • ')}.',
           'sports'=>'إشارات أداء رياضي لمجالك: ${talent.sport.isEmpty ? talent.category : talent.sport}. راجع التدريب والمهارات والمؤشرات المسجلة قبل أي قرار.',
           _=>'تحليل كشاف المواهب.',
