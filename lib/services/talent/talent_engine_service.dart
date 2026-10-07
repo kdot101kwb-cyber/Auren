@@ -16,8 +16,8 @@ class AurenTalentEngineService {
   Future<List<AurenTalentCandidate>> scout({required String query, String? excludeUid, int limit=20}) async {
     final q=_normalize(query);
     if(q.isEmpty) return const [];
-    final snap=await _db.collectionGroup('profile_modes').where('discoverable',isEqualTo:true).limit(100).get();
-    final verifiedSnap=await _db.collection('talent_skill_graph').where('verified',isEqualTo:true).limit(500).get();
+    final snap=await _db.collectionGroup('profile_modes').where('discoverable',isEqualTo:true).limit(500).get();
+    final verifiedSnap=await _db.collection('talent_skill_graph').where('verified',isEqualTo:true).limit(1000).get();
     final verifiedByOwner=<String,List<String>>{};
     for(final skillDoc in verifiedSnap.docs){
       final data=skillDoc.data();
