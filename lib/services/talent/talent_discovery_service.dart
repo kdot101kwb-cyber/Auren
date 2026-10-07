@@ -24,6 +24,7 @@ class TalentDiscoveryService {
   Future<List<AurenTalentMatch>> matchOpportunities(AurenTalent talent,{int limit=20}) async {
     final ownerId = talent.ownerId.trim();
     if (ownerId.isEmpty) return const [];
+    final safeLimit = limit.clamp(1, 100).toInt();
 
     final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
     const pageSize = 200;
@@ -80,6 +81,6 @@ class TalentDiscoveryService {
       if(score>0) matches.add(AurenTalentMatch(opportunity:o,score:score,matchedSkills:common,missingSkills:missing));
     }
     matches.sort((a,b)=>b.score.compareTo(a.score));
-    return matches.take(limit).toList();
+    return matches.take(safeLimit).toList();
   }
 }
