@@ -142,32 +142,43 @@ class TalentRepository {
     };
 
     final candidates = <String>{};
-    for (final mission in cleanMissions) {
-      final skills = categorySkills[mission['category']] ?? const <String>[];
-      for (final skill in skills) {
+    for (final skillEntry in categorySkills.entries) {
+      final matchingMissions = cleanMissions
+          .where((mission) => skillEntry.value.contains(mission['category']))
+          .toList();
+      if (matchingMissions.isEmpty) continue;
+
+      final uniqueEvidence = <String, Map<String, String>>{};
+      for (final mission in matchingMissions) {
+        final key = [
+          mission['mission']!,
+          mission['result']!,
+          mission['evidence']!,
+        ].join('\\u001f');
+        uniqueEvidence[key] = mission;
+      }
+
+      for (final skill in skillEntry.value) {
         candidates.add(skill);
         final safeSkill = skill.replaceAll(RegExp(r'[^a-zA-Z0-9_ -]'), '_');
         final ref = db.collection('talent_skill_graph').doc('${ownerId}_$safeSkill');
         final existing = await ref.get();
         final data = existing.data();
-        final sameEvidence = existing.exists &&
-            data?['lastMission']?.toString() == mission['mission'] &&
-            data?['lastResult']?.toString() == mission['result'] &&
-            data?['evidence']?.toString() == mission['evidence'];
-        final previousCount = (data?['evidenceCount'] as num?)?.toInt() ?? 0;
-        final evidenceCount = sameEvidence ? previousCount : previousCount + 1;
+        final evidenceCount = uniqueEvidence.length;
         final confidence =
             (0.45 + (evidenceCount - 1) * 0.10).clamp(0.45, 0.85);
+        final latest = matchingMissions.last;
+
         await ref.set({
           'ownerId': ownerId,
           'skill': skill,
           'confidence': confidence,
           'evidenceCount': evidenceCount,
           'source': 'discovery_mission',
-          'lastMission': mission['mission'],
-          'lastResult': mission['result'],
-          'hasEvidence': mission['evidence']!.isNotEmpty,
-          'evidence': mission['evidence'],
+          'lastMission': latest['mission'],
+          'lastResult': latest['result'],
+          'hasEvidence': latest['evidence']!.isNotEmpty,
+          'evidence': latest['evidence'],
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       }
