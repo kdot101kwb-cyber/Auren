@@ -34,7 +34,14 @@ const Text('ابتكارات الموهبة',style:TextStyle(fontSize:18,fontWei
 const SizedBox(height:6),
 const Text('أدوات AI لتحويل الموهبة من ملف ثابت إلى مسار تطوير وفرص.'),
 const SizedBox(height:10),
-Wrap(spacing:6,runSpacing:6,children:[
+ExpansionTile(
+  tilePadding: EdgeInsets.zero,
+  initiallyExpanded: false,
+  leading: const Icon(Icons.auto_awesome),
+  title: const Text('أدوات AI المتقدمة'),
+  subtitle: const Text('افتح الأدوات عند الحاجة بدل عرض عشرات الخيارات دفعة واحدة.'),
+  children: [
+    Wrap(spacing: 6, runSpacing: 6, children: [
 _ActionChip('Talent Passport','أنشئ جواز موهبة احترافي يختصر مهاراتي وإنجازاتي وأهدافي وروابط أعمالي في ملف قابل للمشاركة.'),
 _ActionChip('Skill Graph','حلّل مهاراتي وابنِ خريطة مهارات توضّح نقاط القوة والفجوات والمهارات التالية المقترحة.'),
 _ActionChip('Opportunity Ready','قيّم جاهزيتي لفرصة أو نادٍ أو مشروع، وحدد ما ينقصني قبل التقديم.'),
@@ -119,7 +126,8 @@ _ActionChip('Video Performance Analysis','حلل فيديو أدائي الري�
 _ActionChip('Talent Verification','جهز ملف إثبات للمهارات والإنجازات يعتمد على أدلة يمكنني تقديمها مثل النتائج والشهادات والروابط والمقاطع، مع توضيح أن التحقق النهائي يحتاج جهة موثوقة.'),
 _ActionChip('Achievements & Badges','استخرج إنجازات قابلة للتحويل إلى شارات من ملفي وسجلات أدائي، واقترح شروطاً واضحة لكل شارة بدون اختلاق إنجازات.'),
 _ActionChip('Talent Radar','حدد معايير بحث شخصية للفرص الرياضية المناسبة لي مثل الرياضة والمستوى والموقع ونوع الفرصة، ثم اقترح كيف أتابعها داخل AUREN.')])
-])))),
+  ],
+),)))),
 const SizedBox(height: 12),
 const AurenTalentGeneralAiTools(),
 const SizedBox(height: 12),
