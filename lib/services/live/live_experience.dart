@@ -1,3 +1,8 @@
+enum LiveSessionType {
+  normal,
+  hybrid,
+}
+
 enum LiveVibe {
   hangout,
   music,
