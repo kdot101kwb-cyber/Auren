@@ -22,7 +22,7 @@ class TalentRepository {
           .where((t) => q.isEmpty || ('${t.displayName} ${t.bio} ${t.category} ${t.sport} ${t.discipline} ${t.level} ${t.city} ${t.country} ${t.skills.join(' ')} ${t.sports.join(' ')} ${t.achievements.join(' ')}').toLowerCase().contains(q))
           .where((t) => s.isEmpty || t.skills.any((x) => x.trim().toLowerCase() == s))
           .where((t) => cat.isEmpty || t.category.trim().toLowerCase() == cat)
-          .where((t) => sp.isEmpty || (t.category.trim().toLowerCase() == 'sports' && (t.sport.toLowerCase() == sp || t.sports.any((x) => x.toLowerCase() == sp))))
+          .where((t) => sp.isEmpty || (t.category.trim().toLowerCase() == 'sports' && (t.sport.trim().toLowerCase() == sp || t.sports.any((x) => x.trim().toLowerCase() == sp))))
           .where((t) => !evidenceOnly || t.verificationEvidence.isNotEmpty).toList();
       list.sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
       return list;
