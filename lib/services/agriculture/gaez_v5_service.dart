@@ -9,6 +9,40 @@ class AurenGaezV5Service {
   static const String officialRes05Url =
       'https://gaez-services.fao.org/server/rest/services/res05/ImageServer';
 
+  static const String officialRasterBaseUrl =
+      'https://storage.googleapis.com/fao-gismgr-gaez-v5-data/DATA/GAEZ-V5/MAPSET';
+
+  Uri buildRasterUrl({
+    required String mapset,
+    required String period,
+    required String climate,
+    required String scenario,
+    required String crop,
+    required String input,
+  }) {
+    final fileName =
+        'GAEZ-V5.$mapset.$period.$climate.$scenario.$crop.$input.tif';
+    return Uri.parse(
+      '$officialRasterBaseUrl/$mapset/$fileName',
+    );
+  }
+
+  Map<String, dynamic> historicalCropDataset({
+    required String crop,
+    String input = 'HRLM',
+  }) {
+    return {
+      'source': 'FAO/IIASA GAEZ v5',
+      'resource': 'RES05',
+      'period': 'HP0120',
+      'climate': 'AGERA5',
+      'scenario': 'HIST',
+      'crop': crop,
+      'input': input,
+      'mapset': 'RES05-ETL',
+    };
+  }
+
   Uri buildOfficialQueryUrl({
     String? crop,
     String? waterSupply,
@@ -16,13 +50,13 @@ class AurenGaezV5Service {
   }) {
     final where = <String>[];
     if (crop != null && crop.trim().isNotEmpty) {
-      where.add("crop='\${crop.trim()}'");
+      where.add("crop='${crop.trim()}'");
     }
     if (waterSupply != null && waterSupply.trim().isNotEmpty) {
-      where.add("water_supply='\${waterSupply.trim()}'");
+      where.add("water_supply='${waterSupply.trim()}'");
     }
     if (inputLevel != null && inputLevel.trim().isNotEmpty) {
-      where.add("input_level='\${inputLevel.trim()}'");
+      where.add("input_level='${inputLevel.trim()}'");
     }
     return Uri.parse(officialRes05Url).replace(queryParameters: {
       'f': 'json',
@@ -50,7 +84,7 @@ class AurenGaezV5Service {
       );
       if (response.statusCode != 200) {
         throw http.ClientException(
-          'GAEZ RES05 query failed: \${response.statusCode}',
+          'GAEZ RES05 query failed: ${response.statusCode}',
         );
       }
       return decodeJsonMap(response.body);
