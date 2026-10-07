@@ -610,6 +610,8 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
         ]),
       ),
     );
+      },
+    );
   }
 
   Widget _stat(String value, String label) => Column(
