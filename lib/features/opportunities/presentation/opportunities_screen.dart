@@ -317,10 +317,16 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 const Text('طلباتي', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                ...snapshot.data!.map((a) => ListTile(
-                  title: Text(a.title),
-                  subtitle: Text([a.note.isEmpty ? 'بدون ملاحظة' : a.note, if (a.matchScore > 0) 'مطابقة موثقة: ${(a.matchScore * 100).round()}%', if (a.matchedVerifiedSkills.isNotEmpty) 'مهارات: ${a.matchedVerifiedSkills.join(' • ')}'].join('\n')),
-                  trailing: Text(a.status),
+                ...snapshot.data!.map((a) => Card(
+                  child: ListTile(
+                    title: Text(a.title),
+                    subtitle: Text([
+                      a.note.isEmpty ? 'بدون ملاحظة' : a.note,
+                      if (a.matchScore > 0) 'مطابقة موثقة: ${(a.matchScore * 100).round()}%',
+                      if (a.matchedVerifiedSkills.isNotEmpty) 'مهارات: ${a.matchedVerifiedSkills.join(' • ')}',
+                    ].join('\\n')),
+                    trailing: _applicationStatusChip(a.status),
+                  ),
                 )),
               ],
             );
@@ -328,6 +334,22 @@ class _AurenOpportunitiesScreenState extends State<AurenOpportunitiesScreen> {
         ),
       ),
     );
+  }
+
+  Widget _applicationStatusChip(String status) {
+    final normalized = status.trim().toLowerCase();
+    final label = switch (normalized) {
+      'accepted' => 'تم القبول',
+      'rejected' => 'مرفوض',
+      'pending' => 'قيد المراجعة',
+      _ => status.isEmpty ? 'غير معروف' : status,
+    };
+    final icon = switch (normalized) {
+      'accepted' => Icons.check_circle_outline,
+      'rejected' => Icons.cancel_outlined,
+      _ => Icons.schedule_outlined,
+    };
+    return Chip(avatar: Icon(icon, size: 17), label: Text(label));
   }
 
   void _receivedApplications(BuildContext context, String uid) {
