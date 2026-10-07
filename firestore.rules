@@ -5619,5 +5619,42 @@ match /users/{userId}/kids_activity_progress/{activityId} {
       && request.resource.data.updatedAt is timestamp;
   }
 
+  // Hybrid Live Engine: one session can contain normal and skill-proof segments.
+  match /live_sessions/{sessionId} {
+    allow read: if request.auth != null
+      && resource.data.visibility == 'public'
+      && resource.data.status == 'live';
+    allow create: if request.auth != null
+      && request.resource.data.ownerId == request.auth.uid
+      && request.resource.data.keys().hasOnly([
+        'ownerId','title','type','currentMode','status','currentSkillId',
+        'visibility','createdAt','updatedAt','segments'
+      ])
+      && request.resource.data.title is string
+      && request.resource.data.title.size() <= 160
+      && request.resource.data.type in ['normal','hybrid']
+      && request.resource.data.currentMode == 'normal'
+      && request.resource.data.status == 'live'
+      && request.resource.data.currentSkillId == ''
+      && request.resource.data.visibility in ['public','private']
+      && request.resource.data.createdAt is timestamp
+      && request.resource.data.updatedAt is timestamp
+      && request.resource.data.segments is list
+      && request.resource.data.segments.size() == 0;
+    allow update: if request.auth != null
+      && resource.data.ownerId == request.auth.uid
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'currentMode','currentSkillId','status','endedAt','updatedAt','segments'
+      ])
+      && request.resource.data.currentMode in ['normal','skill']
+      && request.resource.data.currentSkillId is string
+      && request.resource.data.currentSkillId.size() <= 200
+      && request.resource.data.status in ['live','ended','cancelled']
+      && request.resource.data.updatedAt is timestamp
+      && request.resource.data.segments is list
+      && request.resource.data.segments.size() <= 50
+      && (!request.resource.data.keys().hasAny(['endedAt']) || request.resource.data.endedAt is timestamp);
+  }
+
   }
 }
