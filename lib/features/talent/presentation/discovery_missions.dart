@@ -62,7 +62,12 @@ class _AurenDiscoveryMissionsState extends State<AurenDiscoveryMissions> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('حفظ المهمة')),
+          FilledButton(
+            onPressed: controller.text.trim().isEmpty || evidenceController.text.trim().isEmpty
+                ? null
+                : () => Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('حفظ المهمة'),
+          ),
         ],
       ),
     );
