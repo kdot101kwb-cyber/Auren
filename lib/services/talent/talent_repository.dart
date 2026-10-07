@@ -64,8 +64,6 @@ class TalentRepository {
     final existing = await db
         .collection('talent_skill_verification_requests')
         .where('ownerId', isEqualTo: cleanOwnerId)
-        .where('skill', isEqualTo: cleanSkill)
-        .limit(20)
         .get();
     if (existing.docs.any((doc) => doc.data()['status']?.toString() == 'pending')) {
       return;
