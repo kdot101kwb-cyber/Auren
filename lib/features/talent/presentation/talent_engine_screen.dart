@@ -13,12 +13,28 @@ class _AurenTalentEngineScreenState extends State<AurenTalentEngineScreen>{
   bool _loading=false; List<AurenTalentCandidate> _results=[];
   @override void dispose(){_query.dispose();super.dispose();}
   Future<void> _scout() async{
-    final uid=FirebaseAuth.instance.currentUser?.uid; final q=_query.text.trim();
-    if(uid==null||q.isEmpty)return;
+    final uid=FirebaseAuth.instance.currentUser?.uid;
+    final q=_query.text.trim();
+    final inOpportunityMode=widget.opportunityId!=null && widget.opportunitySkills.isNotEmpty;
+    if(uid==null || (!inOpportunityMode && q.isEmpty))return;
     setState(()=>_loading=true);
-    try{final r=await _service.scout(query:q,excludeUid:uid);if(mounted)setState(()=>_results=r);}
-    catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('تعذر تشغيل الكشاف: $e')));}
-    finally{if(mounted)setState(()=>_loading=false);}
+    try{
+      final r=inOpportunityMode
+          ? await _service.matchOpportunity(
+              title:widget.opportunityTitle?.trim()??'',
+              description:widget.opportunityDescription?.trim()??'',
+              skills:widget.opportunitySkills,
+              excludeUid:uid,
+            )
+          : await _service.scout(query:q,excludeUid:uid);
+      if(mounted)setState(()=>_results=r);
+    } catch(e){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text('تعذر تشغيل الكشاف: $e')),
+      );
+    } finally{
+      if(mounted)setState(()=>_loading=false);
+    }
   }
   Future<void> _respond(String id,String status) async {
     final uid=FirebaseAuth.instance.currentUser?.uid;if(uid==null)return;
