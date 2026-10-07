@@ -33,7 +33,11 @@ class TalentRepository {
     final ref = db.collection('talents').doc(talentId);
     final snap = await ref.get();
     if (!snap.exists || snap.data()?['ownerId']?.toString() != ownerId.trim()) throw StateError('Not talent owner');
-    final cleanEvidence = evidence.map((e) => e.trim()).where((e) => e.isNotEmpty && e.length <= 1200).take(10).toList();
+    final cleanEvidence = evidence.map((e) => e.trim()).toList();
+    if (cleanEvidence.length > 10 ||
+        cleanEvidence.any((e) => e.isEmpty || e.length > 1200)) {
+      throw ArgumentError('أدلة التحقق تتجاوز الحد المسموح.');
+    }
     await ref.update({'verificationEvidence': cleanEvidence, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
@@ -249,7 +253,14 @@ class TalentRepository {
 
     final ref = db.collection('talents').doc();
     String clean(String value) => value.trim();
-    List<String> list(Iterable<String> values, int max, int maxLength) => values.map(clean).where((x) => x.isNotEmpty && x.length <= maxLength).take(max).toList();
+    List<String> list(Iterable<String> values, int max, int maxLength, String fieldName) {
+      final cleaned = values.map(clean).toList();
+      if (cleaned.length > max ||
+          cleaned.any((x) => x.isEmpty || x.length > maxLength)) {
+        throw ArgumentError('$fieldName تتجاوز الحد المسموح.');
+      }
+      return cleaned;
+    }
 
     final requestedCategory = clean(category).toLowerCase();
     final canonicalCategory = AurenTalentCategories.contains(requestedCategory)
@@ -269,15 +280,29 @@ class TalentRepository {
       'bio': cleanBio,
       'category': canonicalCategory,
       'sport': isSports ? cleanSport : '',
-      'sports': isSports ? list(sports.isEmpty && cleanSport.isNotEmpty ? [cleanSport] : sports, 10, 80) : <String>[],
+      'sports': isSports
+          ? list(
+              sports.isEmpty && cleanSport.isNotEmpty ? [cleanSport] : sports,
+              10,
+              80,
+              'الرياضات',
+            )
+          : <String>[],
       'discipline': cleanDiscipline,
       'level': cleanLevel,
       'city': cleanCity,
       'country': cleanCountry,
-      'skills': list(skills, 30, 120).map((e) => e.toLowerCase()).toList(),
-      'achievements': list(achievements, 20, 500),
-      'goals': list(goals, 10, 300),
-      'verificationEvidence': list(verificationEvidence, 10, 1200),
+      'skills': list(skills, 30, 120, 'المهارات')
+          .map((e) => e.toLowerCase())
+          .toList(),
+      'achievements': list(achievements, 20, 500, 'الإنجازات'),
+      'goals': list(goals, 10, 300, 'الأهداف'),
+      'verificationEvidence': list(
+        verificationEvidence,
+        10,
+        1200,
+        'أدلة التحقق',
+      ),
       'status': 'active',
       'updatedAt': FieldValue.serverTimestamp(),
     });
