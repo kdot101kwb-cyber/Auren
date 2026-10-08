@@ -45,7 +45,7 @@ void main() {
         countryCode: 'SD',
         currencyCode: 'SDG',
       ),
-      const IntentResult(
+      IntentResult(
         intentId: 'supplier.find',
         confidence: .94,
         candidateActionIds: ['supplier.workflow'],
@@ -71,7 +71,7 @@ void main() {
 
     final plan = await matcher.plan(
       const IntentContext(userId: 'user', input: 'something unclear'),
-      const IntentResult(
+      IntentResult(
         intentId: 'unknown',
         confidence: .2,
         candidateActionIds: [],
