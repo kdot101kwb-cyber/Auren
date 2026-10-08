@@ -50,6 +50,26 @@ jobs:
             cat flutter_test.log
             exit 0
       - run:
+          name: Configure Gradle Maven Central fallback
+          command: |
+            set -e
+            mkdir -p ~/.gradle/init.d
+            cat > ~/.gradle/init.d/auren-repositories.gradle <<'EOF'
+            allprojects {
+              buildscript {
+                repositories {
+                  mavenCentral()
+                  google()
+                  gradlePluginPortal()
+                }
+              }
+              repositories {
+                mavenCentral()
+                google()
+              }
+            }
+            EOF
+      - run:
           name: Android build
           command: |
             set +e
