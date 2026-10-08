@@ -5,7 +5,7 @@ const {onDocumentCreated, onDocumentUpdated, onDocumentWritten} = require('fireb
 const {defineSecret} = require('firebase-functions/params');
 const {initializeApp} = require('firebase-admin/app');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
-const {payloadHash, constantTimeEqual} = require('./action_security');
+const {payloadHash, constantTimeEqual, createIdempotencyKey} = require('./action_security');
 
 initializeApp();
 const db = getFirestore();
@@ -289,6 +289,48 @@ function entertainmentCreationAssets(mode) {
   }
 }
 
+function buildActionAudit(ref, actionId, fromStatus, toStatus, actorId, payloadHashValue, reasonCode, errorClass) {
+  return ref.collection('audit').doc(), {
+    actionId,
+    workflowId: actionId,
+    fromStatus,
+    toStatus,
+    actorId: actorId || null,
+    timestamp: FieldValue.serverTimestamp(),
+    payloadHash: payloadHashValue || null,
+    reasonCode: reasonCode || null,
+    errorClass: errorClass || null,
+  };
+}
+
+async function transitionAction(ref, uid, actionId, expectedStatus, nextStatus, extra = {}) {
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
+    const data = snap.data() || {};
+    if (data.status !== expectedStatus) {
+      throw aurenHttpsError('failed-precondition', 'Action state changed.');
+    }
+    const auditRef = ref.collection('audit').doc();
+    tx.update(ref, {
+      status: nextStatus,
+      updatedAt: FieldValue.serverTimestamp(),
+      ...extra,
+    });
+    tx.set(auditRef, {
+      actionId,
+      workflowId: actionId,
+      fromStatus: expectedStatus,
+      toStatus: nextStatus,
+      actorId: uid,
+      timestamp: FieldValue.serverTimestamp(),
+      payloadHash: payloadHash(data.payload || {}),
+      reasonCode: extra.reasonCode || null,
+      errorClass: extra.errorClass || null,
+    });
+  });
+}
+
 function validateAurenAction(type, payload) {
   const definition = AUREN_ACTION_DEFINITIONS[type];
   if (!definition) throw new Error('Unsupported AUREN action.');
@@ -327,13 +369,27 @@ exports.approveAurenAction = require('firebase-functions/v2/https').onCall(
       // The server is the sole authority for the approval hash. The client
       // supplies only the expected draft version, never a client-computed hash.
       const approvedPayloadHash = payloadHash(data.payload || {});
+      const auditRef = ref.collection('audit').doc();
+      const idempotencyKey = createIdempotencyKey();
       tx.update(ref, {
         status:'approved',
         approvedAt:FieldValue.serverTimestamp(),
         approvedBy:uid,
         approvedActionType:String(data.actionType || ''),
         approvedPayloadHash,
+        idempotencyKey,
         updatedAt:FieldValue.serverTimestamp(),
+      });
+      tx.set(auditRef, {
+        actionId,
+        workflowId: actionId,
+        fromStatus:'pending',
+        toStatus:'approved',
+        actorId:uid,
+        timestamp:FieldValue.serverTimestamp(),
+        payloadHash:approvedPayloadHash,
+        reasonCode:'human_approval',
+        errorClass:null,
       });
     });
     return {status:'approved', actionId};
@@ -401,8 +457,34 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         throw aurenHttpsError('failed-precondition', 'Approved action payload was modified after approval.');
       }
 
-      action = {type:actionType, payload:data.payload || {}, conversationId:String(data.conversationId || '')};
-      tx.update(ref,{status:'executing',executionStartedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      const idempotencyKey = String(data.idempotencyKey || '');
+      if (!idempotencyKey) {
+        throw aurenHttpsError('failed-precondition', 'Execution idempotency key is missing.');
+      }
+
+      const auditRef = ref.collection('audit').doc();
+      action = {
+        type:actionType,
+        payload:data.payload || {},
+        conversationId:String(data.conversationId || ''),
+        idempotencyKey,
+      };
+      tx.update(ref,{
+        status:'executing',
+        executionStartedAt:FieldValue.serverTimestamp(),
+        updatedAt:FieldValue.serverTimestamp(),
+      });
+      tx.set(auditRef,{
+        actionId,
+        workflowId:actionId,
+        fromStatus:'approved',
+        toStatus:'executing',
+        actorId:uid,
+        timestamp:FieldValue.serverTimestamp(),
+        payloadHash:currentPayloadHash,
+        reasonCode:'execution_claimed',
+        errorClass:null,
+      });
     });
 
     let result;
@@ -483,14 +565,60 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         throw aurenHttpsError('failed-precondition', 'Action is not executable.');
       }
 
-      await ref.update({status:'completed',result,completedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
-      await db.collection('users').doc(uid).collection('action_audit').doc().set({
-        actionId,actionType:action.type,status:'completed',createdAt:FieldValue.serverTimestamp(),
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists || snap.data()?.status !== 'executing') {
+          throw new Error('Action execution state changed before completion.');
+        }
+        const auditRef = ref.collection('audit').doc();
+        tx.update(ref,{
+          status:'completed',
+          result,
+          completedAt:FieldValue.serverTimestamp(),
+          updatedAt:FieldValue.serverTimestamp(),
+        });
+        tx.set(auditRef,{
+          actionId,
+          workflowId:actionId,
+          fromStatus:'executing',
+          toStatus:'completed',
+          actorId:uid,
+          timestamp:FieldValue.serverTimestamp(),
+          payloadHash:payloadHash(action.payload || {}),
+          reasonCode:'provider_success',
+          errorClass:null,
+        });
       });
       return {status:'completed',actionId,result};
     } catch(error) {
       const message=String(error?.message||error).slice(0,500);
-      await ref.update({status:'failed',result:{type:'error',message},failedAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+      const errorClass = String(error?.code || '').includes('invalid-argument')
+        ? 'validation'
+        : 'executor_unknown';
+      const nextStatus = errorClass === 'validation' ? 'failed' : 'recovery_required';
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists || snap.data()?.status !== 'executing') return;
+        const auditRef = ref.collection('audit').doc();
+        tx.update(ref,{
+          status:nextStatus,
+          result:{type:'error',message},
+          failedAt:nextStatus === 'failed' ? FieldValue.serverTimestamp() : null,
+          recoveryRequiredAt:nextStatus === 'recovery_required' ? FieldValue.serverTimestamp() : null,
+          updatedAt:FieldValue.serverTimestamp(),
+        });
+        tx.set(auditRef,{
+          actionId,
+          workflowId:actionId,
+          fromStatus:'executing',
+          toStatus:nextStatus,
+          actorId:uid,
+          timestamp:FieldValue.serverTimestamp(),
+          payloadHash:payloadHash(action.payload || {}),
+          reasonCode:nextStatus === 'failed' ? 'executor_validation_failure' : 'executor_result_unknown',
+          errorClass,
+        });
+      });
       throw error;
     }
   }
