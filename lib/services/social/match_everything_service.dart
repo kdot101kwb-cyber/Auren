@@ -197,16 +197,24 @@ class AurenMatchEverythingService {
   ) async {
     if (!signals.wantsSupplier &&
         !signals.wantsManufacturer &&
-        !signals.wantsWholesale) {
+        !signals.wantsWholesale &&
+        !signals.wantsExporter &&
+        !signals.wantsImporter &&
+        !signals.wantsInternationalTrade) {
       return const [];
     }
 
     try {
-      final snapshot = await _db.collection('auren_suppliers')
-          .limit(_candidateLimit(limit))
-          .get();
+      final sourceCollections = <String>['auren_suppliers'];
+      if (signals.wantsExporter || signals.wantsImporter || signals.wantsInternationalTrade) {
+        sourceCollections.add('auren_exporters');
+      }
+      if (signals.wantsManufacturer) sourceCollections.add('auren_manufacturers');
+      final snapshots = await Future.wait(sourceCollections.map(
+        (collection) => _db.collection(collection).limit(_candidateLimit(limit)).get(),
+      ));
       final results = <AurenMatchItem>[];
-      for (final doc in snapshot.docs) {
+      for (final doc in snapshots.expand((snapshot) => snapshot.docs)) {
         final raw = doc.data();
         final status = _string(raw['status'], 'active').toLowerCase();
         final visibility = _string(raw['visibility'], 'public').toLowerCase();
@@ -222,7 +230,11 @@ class AurenMatchEverythingService {
         final normalizedData = <String, dynamic>{
           ...raw,
           'name': name,
-          'businessType': _string(raw['businessType'], 'supplier'),
+          'businessType': _string(raw['businessType'],
+              doc.reference.parent.id == 'auren_exporters' ? 'exporter' :
+              doc.reference.parent.id == 'auren_manufacturers' ? 'manufacturer' : 'supplier'),
+          'tradeRole': doc.reference.parent.id == 'auren_exporters' ? 'exporter' :
+              doc.reference.parent.id == 'auren_manufacturers' ? 'manufacturer' : 'supplier',
           'searchText': [
             raw['searchText'],
             raw['category'],
@@ -234,6 +246,11 @@ class AurenMatchEverythingService {
             raw['city'],
             raw['country'],
             raw['countryCode'],
+            raw['exportMarkets'],
+            raw['marketsServed'],
+            raw['importCountries'],
+            raw['exportProducts'],
+            raw['certifications'],
           ].where((value) => value != null).join(' '),
           'supplierId': doc.id,
           'aurenSupplierId': doc.id,
@@ -342,6 +359,9 @@ class AurenMatchEverythingService {
     if (pair(['رخيص', 'ارخص', 'cheap', 'cheapest'])) boost += 6;
     if (pair(['مصنع', 'مصانع', 'manufacturer', 'factory'])) boost += 10;
     if (pair(['مورد', 'توريد', 'supplier', 'wholesale'])) boost += 10;
+    if (pair(['مصدر', 'تصدير', 'exporter', 'export'])) boost += 12;
+    if (pair(['مستورد', 'استيراد', 'importer', 'import'])) boost += 12;
+    if (pair(['تجارة دولية', 'international trade', 'global trade'])) boost += 8;
     if (pair(['ملابس', 'clothing', 'fashion'])) boost += 6;
     return boost.clamp(0, 30).toInt();
   }
@@ -401,6 +421,9 @@ class AurenIntentSignals {
   final bool wantsSupplier;
   final bool wantsManufacturer;
   final bool wantsWholesale;
+  final bool wantsExporter;
+  final bool wantsImporter;
+  final bool wantsInternationalTrade;
   final bool wantsBulk;
   const AurenIntentSignals({
     this.countries = const {},
@@ -410,6 +433,9 @@ class AurenIntentSignals {
     this.wantsSupplier = false,
     this.wantsManufacturer = false,
     this.wantsWholesale = false,
+    this.wantsExporter = false,
+    this.wantsImporter = false,
+    this.wantsInternationalTrade = false,
     this.wantsBulk = false,
   });
 
@@ -426,7 +452,13 @@ class AurenIntentSignals {
       wantsShipping: ['شحن','shipping','delivery','توصل','التوصيل'].any((w) => n.contains(_normalizeIntent(w))),
       wantsSupplier: ['مورد','توريد','supplier','wholesale'].any((w) => n.contains(_normalizeIntent(w))),
       wantsManufacturer: ['مصنع','مصانع','manufacturer','factory'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsExporter: ['مصدر','مصدرين','مصدّر','مصدّرين','تصدير','exporter','exporters','export'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsImporter: ['مستورد','مستوردين','استيراد','importer','importers','import'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsInternationalTrade: ['تجارة دولية','تجارة خارجية','international trade','global trade','import export'].any((w) => n.contains(_normalizeIntent(w))),
       wantsWholesale: ['جملة','wholesale','bulk'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsExporter: ['مصدر','مصدرين','مصدّر','مصدّرين','تصدير','exporter','exporters','export'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsImporter: ['مستورد','مستوردين','استيراد','importer','importers','import'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsInternationalTrade: ['تجارة دولية','تجارة خارجية','international trade','global trade','import export'].any((w) => n.contains(_normalizeIntent(w))),
       wantsBulk: ['كميات','كمية كبيرة','bulk','minimum order','moq'].any((w) => n.contains(_normalizeIntent(w))),
     );
   }
