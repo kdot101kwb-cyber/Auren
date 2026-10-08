@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../core/intent_engine/models/intent_context.dart';
-import '../../core/intent_engine/models/intent_entity.dart';
-import '../../core/match_everything/match_everything.dart';
-import '../../core/match_everything/models/match_candidate.dart';
-import '../../core/match_everything/models/match_request.dart';
-import '../auren_match_everything_service.dart';
+import '../core/intent_engine/models/intent_context.dart';
+import '../core/intent_engine/models/intent_entity.dart';
+import '../core/match_everything/match_everything.dart';
+import '../core/match_everything/models/match_candidate.dart';
+import '../core/match_everything/models/match_request.dart';
+import 'auren_match_everything_service.dart';
 
 class _RecordingCandidateSource implements MatchCandidateSource {
   MatchRequest? request;
