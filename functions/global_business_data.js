@@ -1,5 +1,6 @@
 'use strict';
 
+const {createHash} = require('node:crypto');
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 
@@ -26,8 +27,10 @@ function normalizeBusinessRecord(input = {}) {
   const sourceUrl = clean(input.sourceUrl, 1000);
   const license = clean(input.license, 300);
   const businessType = clean(input.businessType || input.type, 40).toLowerCase();
+  let parsedSourceUrl;
+  try { parsedSourceUrl = new URL(sourceUrl); } catch (_) { parsedSourceUrl = null; }
   const allowedTypes = new Set(['supplier', 'exporter', 'importer', 'manufacturer']);
-  if (!name || !countryCode || !source || !sourceUrl || !license || !allowedTypes.has(businessType)) {
+  if (!name || !countryCode || !source || !parsedSourceUrl || parsedSourceUrl.protocol !== 'https:' || !license || !allowedTypes.has(businessType)) {
     throw new HttpsError('invalid-argument',
       'Business records require name, countryCode, businessType, source, sourceUrl, and license.');
   }
@@ -118,6 +121,7 @@ exports.ingestGlobalTradeStatistics = onCall({region: 'us-central1', timeoutSeco
   const rejected = [];
   for (let i = 0; i < rows.length; i += 400) {
     const batch = db.batch();
+    let pageImported = 0;
     for (const row of rows.slice(i, i + 400)) {
       const normalized = normalizeTradeObservation(row, {reporterCode, partnerCode, period, flowCode, cmdCode});
       if (!normalized) {
@@ -131,8 +135,9 @@ exports.ingestGlobalTradeStatistics = onCall({region: 'us-central1', timeoutSeco
         importedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
       imported++;
+      pageImported++;
     }
-    if (imported) await batch.commit();
+    if (pageImported) await batch.commit();
   }
   await db.collection('auren_data_ingestion_runs').add({
     source: 'UN Comtrade',
@@ -152,6 +157,56 @@ exports.ingestGlobalTradeStatistics = onCall({region: 'us-central1', timeoutSeco
     rejectedRows: rejected.length,
     collection: 'auren_trade_statistics',
     note: 'These are aggregate trade statistics, not named importer/exporter companies or verified supplier leads.',
+  };
+});
+
+exports.importLicensedBusinessRecords = onCall({region: 'us-central1', timeoutSeconds: 60, memory: '256MiB'}, async (request) => {
+  if (!request.auth || request.auth.token?.admin !== true) {
+    throw new HttpsError('permission-denied', 'Administrator access is required.');
+  }
+  const records = request.data?.records;
+  if (!Array.isArray(records) || records.length === 0 || records.length > 200) {
+    throw new HttpsError('invalid-argument', 'Provide between 1 and 200 licensed business records.');
+  }
+  const db = getFirestore();
+  const batch = db.batch();
+  const collectionByType = {
+    supplier: 'auren_suppliers',
+    exporter: 'auren_exporters',
+    importer: 'auren_importers',
+    manufacturer: 'auren_manufacturers',
+  };
+  let imported = 0;
+  const rejected = [];
+  records.forEach((input, index) => {
+    try {
+      const record = normalizeBusinessRecord(input);
+      const sourceIdentity = record.sourceRecordId ||
+        createHash('sha256').update([record.countryCode, record.normalizedName, record.source].join('|')).digest('hex').slice(0, 40);
+      const ref = db.collection(collectionByType[record.businessType]).doc(sourceIdentity);
+      batch.set(ref, record, {merge: true});
+      imported++;
+    } catch (error) {
+      rejected.push({index, reason: error.code === 'invalid-argument' ? 'invalid_record_or_missing_provenance' : 'normalization_failed'});
+    }
+  });
+  if (imported) await batch.commit();
+  await db.collection('auren_data_ingestion_runs').add({
+    source: 'licensed_business_record_import',
+    dataKind: 'named_business_records',
+    fetchedRows: records.length,
+    importedRows: imported,
+    rejectedRows: rejected.length,
+    status: 'completed',
+    completedAt: FieldValue.serverTimestamp(),
+  });
+  return {
+    importedRows: imported,
+    rejectedRows: rejected.length,
+    rejected,
+    collections: [...new Set(records.filter((row) => collectionByType[clean(row?.businessType || row?.type, 40).toLowerCase()])
+      .map((row) => collectionByType[clean(row?.businessType || row?.type, 40).toLowerCase()]))],
+    note: 'Only records with an explicit HTTPS source and licence/provenance are accepted. Importer/exporter status is not inferred.',
   };
 });
 
