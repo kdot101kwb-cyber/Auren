@@ -628,6 +628,64 @@ exports.recoverStaleAurenActions = onSchedule(
   },
 );
 
+exports.reviewAurenAction = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+
+    const actionId=String(request.data?.actionId||'').trim();
+    const reviewNote=String(request.data?.reviewNote||'').trim().slice(0,2000);
+    if(!actionId || actionId.length > 128) {
+      throw aurenHttpsError('invalid-argument', 'Invalid action id.');
+    }
+    if(!reviewNote) {
+      throw aurenHttpsError('invalid-argument', 'A review note is required.');
+    }
+
+    const ref=db.collection('users').doc(uid).collection('actions').doc(actionId);
+    let reviewed=false;
+    await db.runTransaction(async (tx) => {
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
+
+      const data=snap.data() || {};
+      if(data.status !== 'recovery_required') {
+        throw aurenHttpsError(
+          'failed-precondition',
+          'Only actions requiring recovery can enter manual review.',
+        );
+      }
+
+      const auditRef=ref.collection('audit').doc();
+      tx.update(ref,{
+        status:'manual_review',
+        manualReviewRequiredAt:data.manualReviewRequiredAt || FieldValue.serverTimestamp(),
+        manualReviewedBy:uid,
+        manualReviewedAt:FieldValue.serverTimestamp(),
+        manualReviewNote:reviewNote,
+        recoveryAlertPending:false,
+        updatedAt:FieldValue.serverTimestamp(),
+      });
+      tx.set(auditRef,{
+        actionId,
+        workflowId:actionId,
+        fromStatus:'recovery_required',
+        toStatus:'manual_review',
+        actorId:uid,
+        timestamp:FieldValue.serverTimestamp(),
+        payloadHash:payloadHash(data.payload || {}),
+        reasonCode:'manual_review_opened',
+        errorClass:'executor_timeout_or_unknown',
+        reviewNote,
+      });
+      reviewed=true;
+    });
+
+    return {status:'manual_review', actionId, reviewed};
+  },
+);
+
 exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
