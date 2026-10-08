@@ -76,3 +76,20 @@ test('Action reject and cancel paths write transactional audit records', () => {
   assert.match(index, /reasonCode:\\'action_rejected\\'/);
   assert.match(index, /reasonCode:\\'action_cancelled\\'/);
 });
+
+
+test('Manual review reconciliation closes only with an explicit outcome and evidence reference', () => {
+  assert.match(index, /exports\.resolveAurenManualReview\s*=\s*require\('firebase-functions\/v2\/https'\)\.onCall/);
+  assert.match(index, /data\.status !== 'manual_review'/);
+  assert.match(index, /\['completed','failed'\]\.includes\(outcome\)/);
+  assert.match(index, /reconciliationReference/);
+  assert.match(index, /reasonCode:'manual_review_reconciled'/);
+});
+
+test('Manual review reconciliation never re-executes the external action', () => {
+  const start = index.indexOf('exports.resolveAurenManualReview');
+  const end = index.indexOf('exports.cancelAurenAction', start);
+  const block = index.slice(start, end);
+  assert.doesNotMatch(block, /action\.type ===/);
+  assert.doesNotMatch(block, /executeAurenAction/);
+});
