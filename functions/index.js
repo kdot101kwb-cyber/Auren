@@ -291,48 +291,6 @@ function entertainmentCreationAssets(mode) {
   }
 }
 
-function buildActionAudit(ref, actionId, fromStatus, toStatus, actorId, payloadHashValue, reasonCode, errorClass) {
-  return ref.collection('audit').doc(), {
-    actionId,
-    workflowId: actionId,
-    fromStatus,
-    toStatus,
-    actorId: actorId || null,
-    timestamp: FieldValue.serverTimestamp(),
-    payloadHash: payloadHashValue || null,
-    reasonCode: reasonCode || null,
-    errorClass: errorClass || null,
-  };
-}
-
-async function transitionAction(ref, uid, actionId, expectedStatus, nextStatus, extra = {}) {
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
-    const data = snap.data() || {};
-    if (data.status !== expectedStatus) {
-      throw aurenHttpsError('failed-precondition', 'Action state changed.');
-    }
-    const auditRef = ref.collection('audit').doc();
-    tx.update(ref, {
-      status: nextStatus,
-      updatedAt: FieldValue.serverTimestamp(),
-      ...extra,
-    });
-    tx.set(auditRef, {
-      actionId,
-      workflowId: actionId,
-      fromStatus: expectedStatus,
-      toStatus: nextStatus,
-      actorId: uid,
-      timestamp: FieldValue.serverTimestamp(),
-      payloadHash: payloadHash(data.payload || {}),
-      reasonCode: extra.reasonCode || null,
-      errorClass: extra.errorClass || null,
-    });
-  });
-}
-
 function validateAurenAction(type, payload) {
   const definition = AUREN_ACTION_DEFINITIONS[type];
   if (!definition) throw new Error('Unsupported AUREN action.');
@@ -535,9 +493,10 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       } else if (action.type === 'supplier.workflow') {
         const supplierActions=require('./supplier_actions');
         try {
-          result=await supplierActions.createSupplierWorkflow({uid,operation:String(action.payload.operation||''),payload:action.payload});
+          result=await supplierActions.createSupplierWorkflow({uid,operation:String(action.payload.operation||''),payload:action.payload,idempotencyKey:action.idempotencyKey});
         } catch(e) {
-          throw aurenHttpsError('failed-precondition',String(e.message||e));
+          if (e?.code === 'validation') throw aurenHttpsError('invalid-argument', String(e.message || e));
+          throw e;
         }
       } else if (action.type === 'content.create') {
         const text=String(action.payload.text || '').trim().slice(0,5000);
