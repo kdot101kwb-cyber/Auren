@@ -15,6 +15,7 @@ const {
   setDoc,
   updateDoc,
   deleteDoc,
+  runTransaction,
   Timestamp,
 } = require('firebase/firestore');
 
@@ -160,4 +161,36 @@ test('client cannot create action documents directly', async () => {
     payload: {text: 'hello'}, status: 'pending', draftVersion: 0, requiresApproval: true,
     createdAt: Timestamp.now(), updatedAt: Timestamp.now(),
   }));
+});
+
+
+test('concurrent execution claims allow exactly one winner', async () => {
+  await seedAction('rules-concurrency', 'execution-claim', {
+    status: 'approved',
+    approvedBy: 'rules-concurrency',
+    approvedActionType: 'demo.create_note',
+    approvedPayloadHash: 'server-hash',
+    idempotencyKey: 'server-key',
+  });
+
+  const db = testEnv.authenticatedContext('rules-concurrency').firestore();
+  const ref = doc(db, 'users/rules-concurrency/actions/execution-claim');
+
+  const claim = async () => {
+    try {
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        assert.equal(snap.data().status, 'approved');
+        tx.update(ref, {status: 'executing', updatedAt: Timestamp.now()});
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const results = await Promise.all([claim(), claim()]);
+  assert.equal(results.filter(Boolean).length, 1);
+  const finalSnap = await getDoc(ref);
+  assert.equal(finalSnap.data().status, 'executing');
 });
