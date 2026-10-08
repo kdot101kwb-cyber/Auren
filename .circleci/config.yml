@@ -54,21 +54,20 @@ jobs:
           command: |
             set -e
             mkdir -p ~/.gradle/init.d
-            cat > ~/.gradle/init.d/auren-repositories.gradle \<<'EOF'
-            allprojects {
-              buildscript {
-                repositories {
-                  mavenCentral()
-                  google()
-                  gradlePluginPortal()
-                }
-              }
-              repositories {
-                mavenCentral()
-                google()
-              }
-            }
-            EOF
+            printf '%s\n' \
+              'allprojects {' \
+              '  buildscript {' \
+              '    repositories {' \
+              '      mavenCentral()' \
+              '      google()' \
+              '      gradlePluginPortal()' \
+              '    }' \
+              '  }' \
+              '  repositories {' \
+              '    mavenCentral()' \
+              '    google()' \
+              '  }' \
+              '}' > ~/.gradle/init.d/auren-repositories.gradle
       - run:
           name: Android build
           command: |
