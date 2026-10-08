@@ -54,7 +54,7 @@ jobs:
           command: |
             set -e
             mkdir -p ~/.gradle/init.d
-            cat > ~/.gradle/init.d/auren-repositories.gradle <<'EOF'
+            cat > ~/.gradle/init.d/auren-repositories.gradle \<<'EOF'
             allprojects {
               buildscript {
                 repositories {
