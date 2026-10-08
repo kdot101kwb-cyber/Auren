@@ -113,10 +113,39 @@ class FirestoreMatchCandidateSource implements MatchCandidateSource {
         category.toLowerCase().contains('supplier');
   }
 
-  Set<String> _tokens(String value) => value
-      .split(RegExp(r'[^\p{L}\p{N}]+', unicode: true))
-      .where((token) => token.length > 2)
-      .toSet();
+  Set<String> _tokens(String value) {
+    const ignored = {
+      'عايز', 'اريد', 'أريد', 'من', 'في', 'على', 'the', 'for', 'from',
+      'find', 'search', 'want', 'need', 'supplier', 'wholesaler',
+      'factory', 'manufacturer', 'مورد', 'مصنع', 'جملة', 'شركة', 'توريد',
+      'الصين', 'china', 'السودان', 'sudan', 'مصر', 'egypt', 'تركيا', 'turkey',
+      'كندا', 'canada', 'أمريكا', 'america', 'usa', 'بريطانيا', 'britain',
+    };
+    const synonyms = <String, List<String>>{
+      'ملابس': ['clothing', 'clothes', 'apparel', 'garments', 'textile'],
+      'قماش': ['fabric', 'textile', 'cloth'],
+      'أقمشة': ['fabric', 'textile', 'cloth'],
+      'هواتف': ['phone', 'phones', 'mobile', 'smartphone', 'electronics'],
+      'موبايل': ['phone', 'mobile', 'smartphone'],
+      'إلكترونيات': ['electronics', 'electronic'],
+      'أثاث': ['furniture'],
+      'أحذية': ['shoes', 'footwear'],
+      'غذاء': ['food', 'grocery'],
+      'مواد': ['materials', 'supplies'],
+      'بلاستيك': ['plastic'],
+      'دواجن': ['poultry', 'chicken'],
+      'أسماك': ['fish', 'seafood'],
+    };
+    final result = <String>{};
+    for (final token in value
+        .toLowerCase()
+        .split(RegExp(r'[^\\p{L}\\p{N}]+', unicode: true))) {
+      if (token.length <= 2 || ignored.contains(token)) continue;
+      result.add(token);
+      result.addAll(synonyms[token] ?? const []);
+    }
+    return result;
+  }
 }
 
 extension _NullableLet<T> on T? {
