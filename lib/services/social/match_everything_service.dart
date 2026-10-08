@@ -251,6 +251,8 @@ class AurenMatchEverythingService {
             raw['importCountries'],
             raw['exportProducts'],
             raw['certifications'],
+            doc.reference.parent.id == 'auren_exporters' ? 'exporter export' : '',
+            doc.reference.parent.id == 'auren_manufacturers' ? 'manufacturer factory' : '',
           ].where((value) => value != null).join(' '),
           'supplierId': doc.id,
           'aurenSupplierId': doc.id,
@@ -515,7 +517,7 @@ class AurenIntentActionPlan {
     bool has(List<String> words) => words.any((word) => n.contains(AurenIntentSignals._normalizeIntent(word)));
     return AurenIntentActionPlan(
       normalized: n,
-      commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر']),
+      commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر','مصدر','تصدير','exporter','export','مستورد','استيراد','importer','import','تجارة دولية','international trade']),
       learning: has(['اتعلم','تعلم','كورس','دورة','flutter','learn','course','study']),
       work: has(['وظيفة','شغل','عمل','فرصة','تقديم','توظيف','job','work','career','apply']),
       social: has(['تابع','متابعة','صديق','تواصل','chat','follow','connect','creator','مؤثر']),
@@ -534,7 +536,7 @@ class AurenIntentActionPlan {
     if (commercial) {
       switch (kind) {
         case AurenMatchKind.business:
-          return normalized.contains('مورد') || normalized.contains('supplier') || normalized.contains('توريد') || normalized.contains('wholesale') || normalized.contains('مصنع') || normalized.contains('manufacturer') || normalized.contains('factory') || normalized.contains('quote') || normalized.contains('عرض سعر')
+          return normalized.contains('مورد') || normalized.contains('supplier') || normalized.contains('توريد') || normalized.contains('wholesale') || normalized.contains('مصنع') || normalized.contains('manufacturer') || normalized.contains('factory') || normalized.contains('مصدر') || normalized.contains('تصدير') || normalized.contains('export') || normalized.contains('مستورد') || normalized.contains('استيراد') || normalized.contains('import') || normalized.contains('تجارة دولية') || normalized.contains('international trade') || normalized.contains('quote') || normalized.contains('عرض سعر')
               ? AurenMatchAction.requestQuote : AurenMatchAction.contact;
         case AurenMatchKind.product:
           return normalized.contains('اشتري') || normalized.contains('شراء') || normalized.contains('buy')
