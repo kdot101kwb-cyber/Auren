@@ -85,6 +85,7 @@ class AurenMatchEverythingService {
       _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
       _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
       _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
+      _supplierMatches(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
     ]);
     final results = <AurenMatchItem>[
       for (final group in groups) ...group,
@@ -178,6 +179,83 @@ class AurenMatchEverythingService {
         );
       }).toList();
     } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Supplier records live in `auren_suppliers`, while the general business
+  /// directory lives in `businesses`. Include real supplier records for explicit
+  /// sourcing requests and attach the canonical supplier ID so the result opens
+  /// the approval-gated contact/RFQ draft flow.
+  Future<List<AurenMatchItem>> _supplierMatches(
+    String uid,
+    AurenProfileModeData profile,
+    AurenProfileMode mode,
+    int limit,
+    Set<String> intentTerms,
+    String normalizedIntent,
+    AurenIntentActionPlan plan,
+    AurenIntentSignals signals,
+  ) async {
+    if (!signals.wantsSupplier &&
+        !signals.wantsManufacturer &&
+        !signals.wantsWholesale) {
+      return const [];
+    }
+
+    try {
+      final snapshot = await _db.collection('auren_suppliers')
+          .limit(_candidateLimit(limit))
+          .get();
+      final results = <AurenMatchItem>[];
+      for (final doc in snapshot.docs) {
+        final raw = doc.data();
+        final status = _string(raw['status'], 'active').toLowerCase();
+        final visibility = _string(raw['visibility'], 'public').toLowerCase();
+        if (!const {'active', 'open', 'verified'}.contains(status) ||
+            !const {'public', 'listed'}.contains(visibility)) {
+          continue;
+        }
+
+        final name = _string(
+          raw['name'],
+          _string(raw['companyName'], _string(raw['businessName'], 'Supplier')),
+        );
+        final normalizedData = <String, dynamic>{
+          ...raw,
+          'name': name,
+          'supplierId': doc.id,
+          'aurenSupplierId': doc.id,
+          'status': status,
+          'visibility': visibility,
+        };
+        final text = _documentText(normalizedData);
+        final action = plan.actionFor(AurenMatchKind.business);
+        results.add(AurenMatchItem(
+          id: doc.id,
+          title: name,
+          subtitle: _string(
+            raw['description'],
+            _string(raw['category'], 'مورد متاح للتواصل عبر AUREN'),
+          ),
+          kind: AurenMatchKind.business,
+          score: _score(
+            text, profile, false, intentTerms, normalizedIntent, signals,
+          ),
+          reasons: _reasons(
+            text, profile, false, intentTerms, normalizedIntent,
+          ),
+          data: normalizedData,
+          action: action,
+          actionLabel: plan.labelFor(action),
+          actionReason: plan.reasonFor(action),
+        ));
+      }
+      results.sort((a, b) => b.score.compareTo(a.score));
+      return results.take(limit).toList(growable: false);
+    } catch (_) {
+      // Supplier records are an optional source; other Match Everything
+      // categories remain available if this collection cannot be queried.
       return const [];
     }
   }
