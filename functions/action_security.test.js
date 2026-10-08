@@ -30,3 +30,17 @@ test('server idempotency keys are unique UUIDs', () => {
   assert.match(b, /^[0-9a-f-]{36}$/);
   assert.notEqual(a, b);
 });
+
+
+test('canonicalization rejects unsupported and non-JSON-safe values', () => {
+  assert.throws(() => payloadHash({value: undefined}), /unsupported value/);
+  assert.throws(() => payloadHash({value: NaN}), /non-finite number/);
+  assert.throws(() => payloadHash({value: Infinity}), /non-finite number/);
+  assert.throws(() => payloadHash({value: 1n}), /unsupported value/);
+  assert.throws(() => payloadHash({value: new Date()}), /non-plain object/);
+  assert.throws(() => payloadHash({value: () => 'x'}), /unsupported value/);
+});
+
+test('canonicalization accepts JSON-safe values', () => {
+  assert.equal(typeof payloadHash({ok: true, count: 1, text: 'x', list: [null, 2]}), 'string');
+});
