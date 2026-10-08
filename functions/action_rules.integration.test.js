@@ -5,21 +5,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const {
-  doc,
-  setDoc,
-  updateDoc,
-  getDoc,
-  deleteDoc,
-  runTransaction,
-  Timestamp,
-} = require('firebase/firestore');
+const firebase = require('firebase/compat/app');
+require('firebase/compat/firestore');
 
-const {
-  initializeTestEnvironment,
-  assertSucceeds,
-  assertFails,
-} = require('@firebase/rules-unit-testing');
+const {initializeTestEnvironment, assertSucceeds, assertFails} =
+  require('@firebase/rules-unit-testing');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
 let testEnv;
@@ -37,10 +27,12 @@ test.after(async () => {
   await testEnv.cleanup();
 });
 
+const now = () => firebase.firestore.Timestamp.now();
+
 async function seedAction(userId, actionId, overrides = {}) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();
-    await setDoc(doc(db, `users/${userId}/actions/${actionId}`), {
+    await db.doc(`users/${userId}/actions/${actionId}`).set({
       actionType: 'demo.create_note',
       title: 'Create note',
       description: 'Server-created action draft',
@@ -48,16 +40,16 @@ async function seedAction(userId, actionId, overrides = {}) {
       status: 'pending',
       draftVersion: 0,
       requiresApproval: true,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      createdAt: now(),
+      updatedAt: now(),
       ...overrides,
     });
   });
 }
 
 function actionRef(userId, actionId) {
-  const db = testEnv.authenticatedContext(userId).firestore();
-  return doc(db, `users/${userId}/actions/${actionId}`);
+  return testEnv.authenticatedContext(userId).firestore()
+      .doc(`users/${userId}/actions/${actionId}`);
 }
 
 test('owner can read and edit only the pending draft with version +1', async () => {
@@ -68,59 +60,57 @@ test('owner can read and edit only the pending draft with version +1', async () 
     title: 'Updated title',
     payload: {text: 'updated'},
     draftVersion: 1,
-    updatedAt: Timestamp.now(),
+    updatedAt: now(),
   }));
-  const snap = await getDoc(ref);
+  const snap = await ref.get();
   assert.equal(snap.data().draftVersion, 1);
   assert.deepEqual(snap.data().payload, {text: 'updated'});
 });
 
 test('same draftVersion is rejected', async () => {
   await seedAction('rules-user-2', 'same-version');
-  await assertFails(updateDoc(actionRef('rules-user-2', 'same-version'), {
-    payload: {text: 'tampered'}, draftVersion: 0, updatedAt: Timestamp.now(),
+  await assertFails(actionRef('rules-user-2', 'same-version').update({
+    payload: {text: 'tampered'}, draftVersion: 0, updatedAt: now(),
   }));
 });
 
 test('version jump greater than +1 is rejected', async () => {
   await seedAction('rules-user-3', 'version-jump');
-  await assertFails(updateDoc(actionRef('rules-user-3', 'version-jump'), {
-    payload: {text: 'tampered'}, draftVersion: 2, updatedAt: Timestamp.now(),
+  await assertFails(actionRef('rules-user-3', 'version-jump').update({
+    payload: {text: 'tampered'}, draftVersion: 2, updatedAt: now(),
   }));
 });
 
 test('client cannot change status during draft editing', async () => {
   await seedAction('rules-user-4', 'status-change');
-  await assertFails(updateDoc(actionRef('rules-user-4', 'status-change'), {
-    status: 'approved', draftVersion: 1, updatedAt: Timestamp.now(),
+  await assertFails(actionRef('rules-user-4', 'status-change').update({
+    status: 'approved', draftVersion: 1, updatedAt: now(),
   }));
 });
 
 test('client cannot change actionType', async () => {
   await seedAction('rules-user-5', 'action-type');
-  await assertFails(updateDoc(actionRef('rules-user-5', 'action-type'), {
-    actionType: 'memory.save', draftVersion: 1, updatedAt: Timestamp.now(),
+  await assertFails(actionRef('rules-user-5', 'action-type').update({
+    actionType: 'memory.save', draftVersion: 1, updatedAt: now(),
   }));
 });
 
 test('client cannot change createdAt', async () => {
   await seedAction('rules-user-6', 'created-at');
-  await assertFails(updateDoc(actionRef('rules-user-6', 'created-at'), {
-    createdAt: Timestamp.fromMillis(Date.now() - 1000),
-    draftVersion: 1,
-    updatedAt: Timestamp.now(),
+  await assertFails(actionRef('rules-user-6', 'created-at').update({
+    createdAt: firebase.firestore.Timestamp.fromMillis(Date.now() - 1000),
+    draftVersion: 1, updatedAt: now(),
   }));
 });
 
 test('client cannot write approval fields', async () => {
   await seedAction('rules-user-7', 'approval-fields');
-  await assertFails(updateDoc(actionRef('rules-user-7', 'approval-fields'), {
+  await assertFails(actionRef('rules-user-7', 'approval-fields').update({
     approvedBy: 'rules-user-7',
     approvedPayloadHash: 'forged-hash',
-    approvalExpiresAt: Timestamp.now(),
+    approvalExpiresAt: now(),
     idempotencyKey: 'forged-key',
-    draftVersion: 1,
-    updatedAt: Timestamp.now(),
+    draftVersion: 1, updatedAt: now(),
   }));
 });
 
@@ -129,52 +119,41 @@ test('client cannot update an action after it leaves pending', async () => {
     status: 'approved',
     approvedBy: 'rules-user-8',
     approvedPayloadHash: 'server-hash',
-    approvalExpiresAt: Timestamp.now(),
+    approvalExpiresAt: now(),
     idempotencyKey: 'server-key',
   });
-  await assertFails(updateDoc(actionRef('rules-user-8', 'approved-action'), {
-    payload: {text: 'tampered'},
-    draftVersion: 1,
-    updatedAt: Timestamp.now(),
+  await assertFails(actionRef('rules-user-8', 'approved-action').update({
+    payload: {text: 'tampered'}, draftVersion: 1, updatedAt: now(),
   }));
 });
 
 test('client cannot delete an action', async () => {
   await seedAction('rules-user-9', 'delete-action');
-  await assertFails(deleteDoc(actionRef('rules-user-9', 'delete-action')));
+  await assertFails(actionRef('rules-user-9', 'delete-action').delete());
 });
 
 test('another user cannot read or update the action', async () => {
   await seedAction('rules-owner', 'cross-user');
-  const ref = doc(
-    testEnv.authenticatedContext('rules-other').firestore(),
-    'users/rules-owner/actions/cross-user',
-  );
+  const ref = actionRef('rules-other', 'cross-user');
   await assertFails(ref.get());
   await assertFails(ref.update({
-    payload: {text: 'cross-user tamper'},
-    draftVersion: 1,
-    updatedAt: Timestamp.now(),
+    payload: {text: 'cross-user tamper'}, draftVersion: 1, updatedAt: now(),
   }));
 });
 
 test('unauthenticated client cannot read or update the action', async () => {
   await seedAction('rules-user-10', 'unauth');
-  const ref = doc(
-    testEnv.unauthenticatedContext().firestore(),
-    'users/rules-user-10/actions/unauth',
-  );
+  const ref = testEnv.unauthenticatedContext().firestore()
+      .doc('users/rules-user-10/actions/unauth');
   await assertFails(ref.get());
   await assertFails(ref.update({
-    payload: {text: 'unauth tamper'},
-    draftVersion: 1,
-    updatedAt: Timestamp.now(),
+    payload: {text: 'unauth tamper'}, draftVersion: 1, updatedAt: now(),
   }));
 });
 
 test('client cannot create action documents directly', async () => {
   const db = testEnv.authenticatedContext('rules-user-11').firestore();
-  const ref = doc(db, 'users/rules-user-11/actions/client-create');
+  const ref = db.doc('users/rules-user-11/actions/client-create');
   await assertFails(ref.set({
     actionType: 'demo.create_note',
     title: 'Client-created',
@@ -183,8 +162,8 @@ test('client cannot create action documents directly', async () => {
     status: 'pending',
     draftVersion: 0,
     requiresApproval: true,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: now(),
+    updatedAt: now(),
   }));
 });
 
@@ -199,17 +178,14 @@ test('concurrent execution claims allow exactly one winner', async () => {
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();
-    const ref = doc(db, 'users/rules-concurrency/actions/execution-claim');
+    const ref = db.doc('users/rules-concurrency/actions/execution-claim');
 
     const claim = async () => {
       try {
-        await runTransaction(db, async (tx) => {
+        await db.runTransaction(async (tx) => {
           const snap = await tx.get(ref);
           assert.equal(snap.data().status, 'approved');
-          tx.update(ref, {
-            status: 'executing',
-            updatedAt: Timestamp.now(),
-          });
+          tx.update(ref, {status: 'executing', updatedAt: now()});
         });
         return true;
       } catch (_) {
@@ -219,7 +195,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
 
     const results = await Promise.all([claim(), claim()]);
     assert.equal(results.filter(Boolean).length, 1);
-    const finalSnap = await getDoc(ref);
+    const finalSnap = await ref.get();
     assert.equal(finalSnap.data().status, 'executing');
   });
 });
