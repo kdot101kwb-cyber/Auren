@@ -21,6 +21,34 @@ jobs:
           paths:
             - ~/.pub-cache
       - run:
+          name: Prepare Android NDK
+          command: |
+            set -e
+            SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+            SDKMANAGER="${SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+            NDK_VERSION="28.2.13676358"
+            NDK_DIR="${SDK_ROOT}/ndk/${NDK_VERSION}"
+            if [ ! -d "${NDK_DIR}" ]; then
+              rm -rf "${NDK_DIR}"
+              rm -rf "${SDK_ROOT}/.temp"/* || true
+              for attempt in 1 2 3; do
+                echo "Installing Android NDK ${NDK_VERSION} (attempt ${attempt}/3)"
+                yes | "${SDKMANAGER}" --licenses >/dev/null 2>&1 || true
+                if "${SDKMANAGER}" --install "ndk;${NDK_VERSION}"; then
+                  break
+                fi
+                rm -rf "${NDK_DIR}"
+                rm -rf "${SDK_ROOT}/.temp"/* || true
+                if [ "${attempt}" -eq 3 ]; then
+                  echo "ERROR: Failed to install Android NDK ${NDK_VERSION} after 3 attempts."
+                  exit 1
+                fi
+                sleep 5
+              done
+            fi
+            test -d "${NDK_DIR}"
+            echo "Android NDK ready: ${NDK_DIR}"
+      - run:
           name: Format check
           command: |
             set +e
