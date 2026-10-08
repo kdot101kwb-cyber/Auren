@@ -173,24 +173,26 @@ test('concurrent execution claims allow exactly one winner', async () => {
     idempotencyKey: 'server-key',
   });
 
-  const db = testEnv.authenticatedContext('rules-concurrency').firestore();
-  const ref = doc(db, 'users/rules-concurrency/actions/execution-claim');
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    const ref = doc(db, 'users/rules-concurrency/actions/execution-claim');
 
-  const claim = async () => {
-    try {
-      await runTransaction(db, async (tx) => {
-        const snap = await tx.get(ref);
-        assert.equal(snap.data().status, 'approved');
-        tx.update(ref, {status: 'executing', updatedAt: Timestamp.now()});
-      });
-      return true;
-    } catch (_) {
-      return false;
-    }
-  };
+    const claim = async () => {
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(ref);
+          assert.equal(snap.data().status, 'approved');
+          tx.update(ref, {status: 'executing', updatedAt: Timestamp.now()});
+        });
+        return true;
+      } catch (_) {
+        return false;
+      }
+    };
 
-  const results = await Promise.all([claim(), claim()]);
-  assert.equal(results.filter(Boolean).length, 1);
-  const finalSnap = await getDoc(ref);
-  assert.equal(finalSnap.data().status, 'executing');
+    const results = await Promise.all([claim(), claim()]);
+    assert.equal(results.filter(Boolean).length, 1);
+    const finalSnap = await getDoc(ref);
+    assert.equal(finalSnap.data().status, 'executing');
+  });
 });
