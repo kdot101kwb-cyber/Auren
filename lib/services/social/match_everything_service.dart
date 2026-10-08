@@ -85,7 +85,7 @@ class AurenMatchEverythingService {
       _collectionMatches('businesses', AurenMatchKind.business, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
       _collectionMatches('products', AurenMatchKind.product, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
       _collectionMatches('posts', AurenMatchKind.content, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
-      _supplierMatches(uid, profile, resolved.mode, limit, intentTerms, normalizedIntent, actionPlan, signals),
+      _supplierMatches(profile, limit, intentTerms, normalizedIntent, actionPlan, signals),
     ]);
     final results = <AurenMatchItem>[
       for (final group in groups) ...group,
@@ -188,9 +188,7 @@ class AurenMatchEverythingService {
   /// sourcing requests and attach the canonical supplier ID so the result opens
   /// the approval-gated contact/RFQ draft flow.
   Future<List<AurenMatchItem>> _supplierMatches(
-    String uid,
     AurenProfileModeData profile,
-    AurenProfileMode mode,
     int limit,
     Set<String> intentTerms,
     String normalizedIntent,
@@ -224,6 +222,19 @@ class AurenMatchEverythingService {
         final normalizedData = <String, dynamic>{
           ...raw,
           'name': name,
+          'businessType': _string(raw['businessType'], 'supplier'),
+          'searchText': [
+            raw['searchText'],
+            raw['category'],
+            raw['type'],
+            raw['products'],
+            raw['productCategories'],
+            raw['services'],
+            raw['tags'],
+            raw['city'],
+            raw['country'],
+            raw['countryCode'],
+          ].where((value) => value != null).join(' '),
           'supplierId': doc.id,
           'aurenSupplierId': doc.id,
           'status': status,
