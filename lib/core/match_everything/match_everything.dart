@@ -1,4 +1,5 @@
 import '../intent_engine/models/intent_context.dart';
+import '../intent_engine/models/intent_entity.dart';
 import '../intent_engine/models/intent_result.dart';
 import 'models/match_request.dart';
 import 'models/match_candidate.dart';
@@ -18,17 +19,13 @@ class MatchEverything {
       return MatchPlan(intentId: intent.intentId);
     }
 
+    final entities = intent.entities.whereType<IntentEntity>().toList();
     final request = MatchRequest(
       userId: context.userId,
       query: context.input,
       countryCode: context.countryCode,
       currencyCode: context.currencyCode,
-      entities: intent.entities
-          .whereType<dynamic>()
-          .where((entity) => entity is dynamic)
-          .cast<dynamic>()
-          .toList()
-          .cast(),
+      entities: entities,
     );
 
     final candidates = await source.find(request);
