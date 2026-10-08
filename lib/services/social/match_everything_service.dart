@@ -206,8 +206,11 @@ class AurenMatchEverythingService {
 
     try {
       final sourceCollections = <String>['auren_suppliers'];
-      if (signals.wantsExporter || signals.wantsImporter || signals.wantsInternationalTrade) {
+      if (signals.wantsExporter || signals.wantsInternationalTrade) {
         sourceCollections.add('auren_exporters');
+      }
+      if (signals.wantsImporter || signals.wantsInternationalTrade) {
+        sourceCollections.add('auren_importers');
       }
       if (signals.wantsManufacturer) sourceCollections.add('auren_manufacturers');
       final snapshots = await Future.wait(sourceCollections.map(
@@ -232,9 +235,12 @@ class AurenMatchEverythingService {
           'name': name,
           'businessType': _string(raw['businessType'],
               doc.reference.parent.id == 'auren_exporters' ? 'exporter' :
+              doc.reference.parent.id == 'auren_importers' ? 'importer' :
               doc.reference.parent.id == 'auren_manufacturers' ? 'manufacturer' : 'supplier'),
           'tradeRole': doc.reference.parent.id == 'auren_exporters' ? 'exporter' :
-              doc.reference.parent.id == 'auren_manufacturers' ? 'manufacturer' : 'supplier',
+              doc.reference.parent.id == 'auren_importers' ? 'importer' :
+              doc.reference.parent.id == 'auren_manufacturers' ? 'manufacturer' :
+              _string(raw['tradeRole'], 'supplier'),
           'searchText': [
             raw['searchText'],
             raw['category'],
@@ -252,6 +258,7 @@ class AurenMatchEverythingService {
             raw['exportProducts'],
             raw['certifications'],
             doc.reference.parent.id == 'auren_exporters' ? 'exporter export' : '',
+            doc.reference.parent.id == 'auren_importers' ? 'importer import' : '',
             doc.reference.parent.id == 'auren_manufacturers' ? 'manufacturer factory' : '',
           ].where((value) => value != null).join(' '),
           'supplierId': doc.id,
