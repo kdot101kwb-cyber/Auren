@@ -20,13 +20,15 @@ async function updateMatchFlow(uid, flowId, status, extra = {}) {
   }, {merge:true});
 }
 
-async function createSupplierWorkflow({uid, operation, payload}) {
+async function createSupplierWorkflow({uid, operation, payload, idempotencyKey}) {
   const supplierId = clean(payload?.supplierId, 128);
   const matchFlowId = clean(payload?.matchFlowId, 180);
-  if (!supplierId) throw new Error('Supplier is required.');
+  if (!supplierId) { const error = new Error('Supplier is required.'); error.code = 'validation'; throw error; }
+  const stableKey = clean(idempotencyKey, 128);
+  if (!stableKey) { const error = new Error('Idempotency key is required.'); error.code = 'validation'; throw error; }
 
   const supplierSnap = await db.collection('auren_suppliers').doc(supplierId).get();
-  if (!supplierSnap.exists) throw new Error('Supplier not found.');
+  if (!supplierSnap.exists) { const error = new Error('Supplier not found.'); error.code = 'validation'; throw error; }
   const supplier = supplierSnap.data() || {};
   const supplierName = clean(supplier.name || supplier.companyName || supplierId, 200);
   const common = {
@@ -38,8 +40,9 @@ async function createSupplierWorkflow({uid, operation, payload}) {
 
   if (operation === 'contact') {
     const message = clean(payload?.message, 5000);
-    if (!message) throw new Error('Message is required.');
-    const ref = db.collection('supplier_contact_requests').doc();
+    if (!message) { const error = new Error('Message is required.'); error.code = 'validation'; throw error; }
+    const ref = db.collection('supplier_contact_requests').doc(stableKey);
+    if ((await ref.get()).exists) return {type:'supplier_contact_draft_created', requestId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
     const userRef = db.collection('users').doc(uid).collection('supplier_contact_requests').doc(ref.id);
     const data = {
       ...common, message,
@@ -57,8 +60,9 @@ async function createSupplierWorkflow({uid, operation, payload}) {
   if (operation === 'rfq') {
     const product = clean(payload?.product, 300);
     const quantity = clean(payload?.quantity, 80);
-    if (!product || !quantity) throw new Error('Product and quantity are required.');
-    const ref = db.collection('supplier_rfqs').doc();
+    if (!product || !quantity) { const error = new Error('Product and quantity are required.'); error.code = 'validation'; throw error; }
+    const ref = db.collection('supplier_rfqs').doc(stableKey);
+    if ((await ref.get()).exists) return {type:'supplier_rfq_created', rfqId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
     const userRef = db.collection('users').doc(uid).collection('supplier_rfqs').doc(ref.id);
     const data = {
       ...common, product, quantity,
@@ -73,7 +77,7 @@ async function createSupplierWorkflow({uid, operation, payload}) {
     return {type:'supplier_rfq_created', rfqId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
-  throw new Error('Unsupported supplier operation.');
+  { const error = new Error('Unsupported supplier operation.'); error.code = 'validation'; throw error; }
 }
 
 module.exports = {createSupplierWorkflow};
