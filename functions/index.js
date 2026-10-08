@@ -640,12 +640,24 @@ exports.recoverStaleAurenActions = onSchedule(
         if (!current.exists || current.data()?.status !== 'executing') return;
         const currentData = current.data() || {};
         const auditRef = actionDoc.ref.collection('audit').doc();
+        const alertRef = db.collection('action_recovery_alerts').doc(actionDoc.id);
         tx.update(actionDoc.ref, {
           status:'recovery_required',
           recoveryRequiredAt:FieldValue.serverTimestamp(),
           recoveryAlertPending:true,
           updatedAt:FieldValue.serverTimestamp(),
         });
+        tx.set(alertRef, {
+          actionId:actionDoc.id,
+          workflowId:actionDoc.id,
+          ownerUid:actionDoc.ref.parent.parent?.id || null,
+          status:'pending',
+          type:'action_recovery_required',
+          reasonCode:'execution_timeout',
+          errorClass:'executor_timeout_or_unknown',
+          createdAt:FieldValue.serverTimestamp(),
+          updatedAt:FieldValue.serverTimestamp(),
+        }, {merge:true});
         tx.set(auditRef, {
           actionId:actionDoc.id,
           workflowId:actionDoc.id,
@@ -655,6 +667,18 @@ exports.recoverStaleAurenActions = onSchedule(
           timestamp:FieldValue.serverTimestamp(),
           payloadHash:payloadHash(currentData.payload || {}),
           reasonCode:'execution_timeout',
+          errorClass:'executor_timeout_or_unknown',
+        });
+        const alertAuditRef = actionDoc.ref.collection('audit').doc();
+        tx.set(alertAuditRef, {
+          actionId:actionDoc.id,
+          workflowId:actionDoc.id,
+          fromStatus:'recovery_required',
+          toStatus:'recovery_required',
+          actorId:'system:action-recovery',
+          timestamp:FieldValue.serverTimestamp(),
+          payloadHash:payloadHash(currentData.payload || {}),
+          reasonCode:'recovery_alert_created',
           errorClass:'executor_timeout_or_unknown',
         });
       });
@@ -694,6 +718,7 @@ exports.reviewAurenAction = require('firebase-functions/v2/https').onCall(
       }
 
       const auditRef=ref.collection('audit').doc();
+      const alertRef=db.collection('action_recovery_alerts').doc(actionId);
       tx.update(ref,{
         status:'manual_review',
         manualReviewRequiredAt:data.manualReviewRequiredAt || FieldValue.serverTimestamp(),
@@ -703,6 +728,14 @@ exports.reviewAurenAction = require('firebase-functions/v2/https').onCall(
         recoveryAlertPending:false,
         updatedAt:FieldValue.serverTimestamp(),
       });
+      tx.set(alertRef,{
+        actionId,
+        workflowId:actionId,
+        status:'acknowledged',
+        acknowledgedBy:uid,
+        acknowledgedAt:FieldValue.serverTimestamp(),
+        updatedAt:FieldValue.serverTimestamp(),
+      }, {merge:true});
       tx.set(auditRef,{
         actionId,
         workflowId:actionId,
