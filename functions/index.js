@@ -364,15 +364,50 @@ exports.rejectAurenAction = require('firebase-functions/v2/https').onCall(
     const actionId = String(request.data?.actionId || '').trim();
     if (!actionId || actionId.length > 128) throw aurenHttpsError('invalid-argument', 'Invalid action id.');
     const ref = db.collection('users').doc(uid).collection('actions').doc(actionId);
-    const snap = await ref.get();
-    if (!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
-    const data = snap.data() || {};
-    if (data.status !== 'pending') throw aurenHttpsError('failed-precondition', 'Action is not pending.');
-    if (actionIsExpired(data)) {
-      await ref.update({status:'expired', expiredAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
-      throw aurenHttpsError('deadline-exceeded', 'This action has expired.');
-    }
-    await ref.update({status:'rejected', rejectedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
+      const data = snap.data() || {};
+      if (data.status !== 'pending') throw aurenHttpsError('failed-precondition', 'Action is not pending.');
+      if (actionIsExpired(data)) {
+        const auditRef = ref.collection('audit').doc();
+        tx.update(ref, {
+          status:'expired',
+          expiredAt:FieldValue.serverTimestamp(),
+          updatedAt:FieldValue.serverTimestamp(),
+        });
+        tx.set(auditRef, {
+          actionId,
+          workflowId:actionId,
+          fromStatus:'pending',
+          toStatus:'expired',
+          actorId:uid,
+          timestamp:FieldValue.serverTimestamp(),
+          payloadHash:payloadHash(data.payload || {}),
+          reasonCode:'action_expired',
+          errorClass:null,
+        });
+        throw aurenHttpsError('deadline-exceeded', 'This action has expired.');
+      }
+      const auditRef = ref.collection('audit').doc();
+      tx.update(ref, {
+        status:'rejected',
+        rejectedAt:FieldValue.serverTimestamp(),
+        rejectedBy:uid,
+        updatedAt:FieldValue.serverTimestamp(),
+      });
+      tx.set(auditRef, {
+        actionId,
+        workflowId:actionId,
+        fromStatus:'pending',
+        toStatus:'rejected',
+        actorId:uid,
+        timestamp:FieldValue.serverTimestamp(),
+        payloadHash:payloadHash(data.payload || {}),
+        reasonCode:'human_rejection',
+        errorClass:null,
+      });
+    });
     return {status:'rejected', actionId};
   }
 );
@@ -694,11 +729,32 @@ exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
     const actionId=String(request.data?.actionId||'').trim();
     if(!actionId) throw aurenHttpsError('invalid-argument', 'Invalid action id.');
     const ref=db.collection('users').doc(uid).collection('actions').doc(actionId);
-    const snap=await ref.get();
-    if(!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
-    const data=snap.data() || {};
-    if(!['pending','approved'].includes(data.status)) throw aurenHttpsError('failed-precondition', 'Action cannot be cancelled.');
-    await ref.update({status:'cancelled',cancelledAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+    await db.runTransaction(async (tx) => {
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
+      const data=snap.data() || {};
+      if(!['pending','approved'].includes(data.status)) {
+        throw aurenHttpsError('failed-precondition', 'Action cannot be cancelled.');
+      }
+      const auditRef=ref.collection('audit').doc();
+      tx.update(ref,{
+        status:'cancelled',
+        cancelledAt:FieldValue.serverTimestamp(),
+        cancelledBy:uid,
+        updatedAt:FieldValue.serverTimestamp(),
+      });
+      tx.set(auditRef,{
+        actionId,
+        workflowId:actionId,
+        fromStatus:String(data.status),
+        toStatus:'cancelled',
+        actorId:uid,
+        timestamp:FieldValue.serverTimestamp(),
+        payloadHash:payloadHash(data.payload || {}),
+        reasonCode:'human_cancellation',
+        errorClass:null,
+      });
+    });
     return {status:'cancelled',actionId};
   }
 );
