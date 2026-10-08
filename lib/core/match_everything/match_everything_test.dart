@@ -35,7 +35,7 @@ class _FakeSource implements MatchCandidateSource {
 void main() {
   test('Match Everything passes global country context to candidate source', () async {
     final source = _FakeSource();
-    const matcher = MatchEverything(source);
+    final matcher = MatchEverything(source);
 
     final plan = await matcher.plan(
       const IntentContext(
