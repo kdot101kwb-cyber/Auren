@@ -9,6 +9,10 @@ const {
   assertSucceeds,
   assertFails,
 } = require('@firebase/rules-unit-testing');
+// rules-unit-testing exposes a Firebase app/context backed by the namespaced
+// Firestore API. Load the compat Firestore namespace before calling
+// RulesTestContext.firestore() so the test app has a firestore() method.
+require('firebase/compat/firestore');
 const {
   doc,
   getDoc,
@@ -162,7 +166,6 @@ test('client cannot create action documents directly', async () => {
     createdAt: Timestamp.now(), updatedAt: Timestamp.now(),
   }));
 });
-
 
 test('concurrent execution claims allow exactly one winner', async () => {
   await seedAction('rules-concurrency', 'execution-claim', {
