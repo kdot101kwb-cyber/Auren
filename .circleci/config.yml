@@ -116,13 +116,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - functions-node-v1-
-            - functions-node-v1
+            - functions-node-v2-
+            - functions-node-v2
       - run:
           name: Install Functions dependencies
           command: cd functions && npm install --no-audit --no-fund
       - save_cache:
-          key: functions-node-v1-{{ .Branch }}
+          key: functions-node-v2-{{ .Branch }}
           paths:
             - functions/node_modules
       - run:
