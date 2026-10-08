@@ -4,17 +4,17 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+
+// Load Firebase Compat before rules-unit-testing so its Firestore plugin is
+// registered before RulesTestContext.firestore() creates its app.
+require('firebase/compat/app');
+const firebase = require('firebase/compat/firestore');
+
 const {
   initializeTestEnvironment,
   assertSucceeds,
   assertFails,
 } = require('@firebase/rules-unit-testing');
-
-// RulesTestContext.firestore() returns the compat Firestore namespace.
-// Keep this integration test on the compat API so the Firestore instance
-// returned by rules-unit-testing is used with the SDK it was created for.
-require('firebase/compat/app');
-const firebase = require('firebase/compat/firestore');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
 let testEnv;
