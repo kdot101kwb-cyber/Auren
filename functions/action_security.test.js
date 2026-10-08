@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {payloadHash, constantTimeEqual} = require('./action_security');
+const {payloadHash, constantTimeEqual, createIdempotencyKey} = require('./action_security');
 
 test('payload hash is deterministic for reordered object keys', () => {
   const a = {b: 2, nested: {z: 1, a: true}, a: 'x'};
@@ -21,4 +21,12 @@ test('nested arrays are canonicalized without losing order', () => {
   const b = {items: [{a: 1, b: 2}, {c: 3}]};
   assert.equal(payloadHash(a), payloadHash(b));
   assert.notEqual(payloadHash(a), payloadHash({items: [{a: 1, b: 2}, {c: 4}]}));
+});
+
+test('server idempotency keys are unique UUIDs', () => {
+  const a = createIdempotencyKey();
+  const b = createIdempotencyKey();
+  assert.match(a, /^[0-9a-f-]{36}$/);
+  assert.match(b, /^[0-9a-f-]{36}$/);
+  assert.notEqual(a, b);
 });
