@@ -78,6 +78,14 @@ test('Action reject and cancel paths write transactional audit records', () => {
 });
 
 
+test('Action recovery creates a durable deduplicated alert and manual review acknowledges it', () => {
+  assert.match(index, /db\.collection\('action_recovery_alerts'\)\.doc\(actionDoc\.id\)/);
+  assert.match(index, /type:'action_recovery_required'/);
+  assert.match(index, /reasonCode:'recovery_alert_created'/);
+  assert.match(index, /status:'acknowledged'/);
+  assert.match(index, /acknowledgedBy:uid/);
+});
+
 test('Manual review reconciliation closes only with an explicit outcome and evidence reference', () => {
   assert.match(index, /exports\.resolveAurenManualReview\s*=\s*require\('firebase-functions\/v2\/https'\)\.onCall/);
   assert.match(index, /data\.status !== 'manual_review'/);
