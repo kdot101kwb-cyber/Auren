@@ -86,6 +86,34 @@ test('Action recovery creates a durable deduplicated alert and manual review ack
   assert.match(index, /acknowledgedBy:uid/);
 });
 
+test('Action Engine lifecycle contains the complete approved execution recovery path', () => {
+  assert.match(index, /status:'approved'/);
+  assert.match(index, /fromStatus:'pending',\s*toStatus:'approved'/s);
+  assert.match(index, /status:'executing'/);
+  assert.match(index, /fromStatus:'approved',\s*toStatus:'executing'/s);
+  assert.match(index, /status:'completed'/);
+  assert.match(index, /fromStatus:'executing',\s*toStatus:'completed'/s);
+  assert.match(index, /nextStatus = errorClass === 'validation' \? 'failed' : 'recovery_required'/);
+  assert.match(index, /status:'manual_review'/);
+  assert.match(index, /fromStatus:'manual_review',\s*toStatus:outcome/s);
+});
+
+test('Action Engine execution gate binds identity, action type, payload hash, expiry, and idempotency', () => {
+  assert.match(index, /approvedBy !== uid/);
+  assert.match(index, /approvedActionType !== actionType/);
+  assert.match(index, /constantTimeEqual\(approvedPayloadHash, currentPayloadHash\)/);
+  assert.match(index, /actionIsExpired\(data\)/);
+  assert.match(index, /String\(data\.idempotencyKey \|\| ''\)/);
+});
+
+test('Action Engine never retries an unknown external outcome automatically', () => {
+  const start=index.indexOf("const nextStatus = errorClass === 'validation'");
+  const end=index.indexOf("exports.recoverStaleAurenActions", start);
+  const block=index.slice(start,end);
+  assert.match(block, /'recovery_required'/);
+  assert.doesNotMatch(block, /executeAurenAction\(/);
+});
+
 test('Manual review reconciliation closes only with an explicit outcome and evidence reference', () => {
   assert.match(index, /exports\.resolveAurenManualReview\s*=\s*require\('firebase-functions\/v2\/https'\)\.onCall/);
   assert.match(index, /data\.status !== 'manual_review'/);
