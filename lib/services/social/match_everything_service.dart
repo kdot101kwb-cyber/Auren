@@ -458,9 +458,6 @@ class AurenIntentSignals {
       wantsImporter: ['مستورد','مستوردين','استيراد','importer','importers','import'].any((w) => n.contains(_normalizeIntent(w))),
       wantsInternationalTrade: ['تجارة دولية','تجارة خارجية','international trade','global trade','import export'].any((w) => n.contains(_normalizeIntent(w))),
       wantsWholesale: ['جملة','wholesale','bulk'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsExporter: ['مصدر','مصدرين','مصدّر','مصدّرين','تصدير','exporter','exporters','export'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsImporter: ['مستورد','مستوردين','استيراد','importer','importers','import'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsInternationalTrade: ['تجارة دولية','تجارة خارجية','international trade','global trade','import export'].any((w) => n.contains(_normalizeIntent(w))),
       wantsBulk: ['كميات','كمية كبيرة','bulk','minimum order','moq'].any((w) => n.contains(_normalizeIntent(w))),
     );
   }
