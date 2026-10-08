@@ -63,8 +63,8 @@ function actionRef(userId, actionId) {
 test('owner can read and edit only the pending draft with version +1', async () => {
   await seedAction('rules-user-1', 'draft-allowed');
   const ref = actionRef('rules-user-1', 'draft-allowed');
-  await assertSucceeds(getDoc(ref));
-  await assertSucceeds(updateDoc(ref, {
+  await assertSucceeds(ref.get());
+  await assertSucceeds(ref.update({
     title: 'Updated title',
     payload: {text: 'updated'},
     draftVersion: 1,
@@ -150,8 +150,8 @@ test('another user cannot read or update the action', async () => {
     testEnv.authenticatedContext('rules-other').firestore(),
     'users/rules-owner/actions/cross-user',
   );
-  await assertFails(getDoc(ref));
-  await assertFails(updateDoc(ref, {
+  await assertFails(ref.get());
+  await assertFails(ref.update({
     payload: {text: 'cross-user tamper'},
     draftVersion: 1,
     updatedAt: Timestamp.now(),
@@ -164,8 +164,8 @@ test('unauthenticated client cannot read or update the action', async () => {
     testEnv.unauthenticatedContext().firestore(),
     'users/rules-user-10/actions/unauth',
   );
-  await assertFails(getDoc(ref));
-  await assertFails(updateDoc(ref, {
+  await assertFails(ref.get());
+  await assertFails(ref.update({
     payload: {text: 'unauth tamper'},
     draftVersion: 1,
     updatedAt: Timestamp.now(),
@@ -175,7 +175,7 @@ test('unauthenticated client cannot read or update the action', async () => {
 test('client cannot create action documents directly', async () => {
   const db = testEnv.authenticatedContext('rules-user-11').firestore();
   const ref = doc(db, 'users/rules-user-11/actions/client-create');
-  await assertFails(setDoc(ref, {
+  await assertFails(ref.set({
     actionType: 'demo.create_note',
     title: 'Client-created',
     description: 'Should be server-owned',
