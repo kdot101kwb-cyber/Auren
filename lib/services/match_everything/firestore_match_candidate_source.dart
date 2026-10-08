@@ -139,7 +139,7 @@ class FirestoreMatchCandidateSource implements MatchCandidateSource {
     final result = <String>{};
     for (final token in value
         .toLowerCase()
-        .split(RegExp(r'[^\\p{L}\\p{N}]+', unicode: true))) {
+        .split(RegExp(r'[^\p{L}\p{N}]+', unicode: true))) {
       if (token.length <= 2 || ignored.contains(token)) continue;
       result.add(token);
       result.addAll(synonyms[token] ?? const []);
