@@ -29,4 +29,8 @@ function constantTimeEqual(a, b) {
   return crypto.timingSafeEqual(left, right);
 }
 
-module.exports = { canonicalize, payloadHash, constantTimeEqual };
+function createIdempotencyKey() {
+  return crypto.randomUUID();
+}
+
+module.exports = {canonicalize, payloadHash, constantTimeEqual, createIdempotencyKey};
