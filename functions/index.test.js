@@ -86,6 +86,44 @@ test('Action recovery creates a durable deduplicated alert and manual review ack
   assert.match(index, /acknowledgedBy:uid/);
 });
 
+test('Action Engine final security gate covers every declared action definition', () => {
+  const definitionBlock=index.slice(
+    index.indexOf('const AUREN_ACTION_DEFINITIONS = {'),
+    index.indexOf('const AUREN_ACTION_TTL_MS'),
+  );
+  const actionIds=['demo.echo','demo.create_note','memory.save','goal.create','message.send','content.create','supplier.workflow'];
+  for (const actionId of actionIds) {
+    assert.match(definitionBlock, new RegExp("'" + actionId.replace('.', '\\.') + "':"));
+  }
+  assert.doesNotMatch(definitionBlock, /requiresApproval:\s*false/);
+});
+
+test('Action Engine final security gate keeps execution server-authoritative', () => {
+  assert.match(index, /enforceAppCheck:true/);
+  assert.match(index, /consumeAppCheckToken:true/);
+  assert.match(index, /approvedPayloadHash = payloadHash\(data\.payload \|\| \{\}\)/);
+  assert.match(index, /const idempotencyKey = createIdempotencyKey\(\)/);
+  assert.match(index, /tx\.update\(ref,\{\s*status:'executing'/s);
+  assert.match(index, /actorId:'system:action-recovery'/);
+  assert.match(index, /actorId:uid/);
+});
+
+test('Action Engine final security gate has audit coverage for all terminal outcomes', () => {
+  for (const reason of [
+    'human_approval',
+    'human_rejection',
+    'execution_claimed',
+    'provider_success',
+    'executor_validation_failure',
+    'executor_result_unknown',
+    'execution_timeout',
+    'recovery_alert_created',
+    'manual_review_opened',
+    'manual_review_reconciled',
+    'human_cancellation',
+  ]) assert.match(index, new RegExp("reasonCode:'" + reason + "'"));
+});
+
 test('Action Engine lifecycle contains the complete approved execution recovery path', () => {
   assert.match(index, /status:'approved'/);
   assert.match(index, /fromStatus:'pending',\s*toStatus:'approved'/s);
