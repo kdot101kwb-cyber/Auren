@@ -489,21 +489,21 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       } else if (action.type === 'demo.create_note') {
         const text=String(action.payload.text||'').trim().slice(0,5000);
         if(!text) throw aurenHttpsError('invalid-argument', 'Note text is required.');
-        const noteRef=db.collection('users').doc(uid).collection('notes').doc();
-        await noteRef.set({text,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+        const noteRef=db.collection('users').doc(uid).collection('notes').doc(action.idempotencyKey);
+        await noteRef.set({text,source:'auren_ai',idempotencyKey:action.idempotencyKey,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
         result={type:'note_created',noteId:noteRef.id};
       } else if (action.type === 'memory.save') {
         const key=String(action.payload.key||'').trim().slice(0,120);
         const value=String(action.payload.value||'').trim().slice(0,2000);
         if(!key||!value) throw aurenHttpsError('invalid-argument', 'Memory key and value are required.');
-        const memoryRef=db.collection('users').doc(uid).collection('memory').doc();
-        await memoryRef.set({key,value,enabled:true,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+        const memoryRef=db.collection('users').doc(uid).collection('memory').doc(action.idempotencyKey);
+        await memoryRef.set({key,value,enabled:true,source:'auren_ai',idempotencyKey:action.idempotencyKey,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
         result={type:'memory_saved',memoryId:memoryRef.id};
       } else if (action.type === 'goal.create') {
         const title=String(action.payload.title||'').trim().slice(0,300);
         if(!title) throw aurenHttpsError('invalid-argument', 'Goal title is required.');
-        const goalRef=db.collection('users').doc(uid).collection('goals').doc();
-        await goalRef.set({title,description:'',status:'active',progress:0,source:'auren_ai',createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()});
+        const goalRef=db.collection('users').doc(uid).collection('goals').doc(action.idempotencyKey);
+        await goalRef.set({title,description:'',status:'active',progress:0,source:'auren_ai',idempotencyKey:action.idempotencyKey,createdAt:FieldValue.serverTimestamp(),updatedAt:FieldValue.serverTimestamp()},{merge:true});
         result={type:'goal_created',goalId:goalRef.id};
       } else if (action.type === 'message.send') {
         const conversationId=String(action.payload.conversationId || action.conversationId || '').trim();
@@ -515,15 +515,16 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
         if(!conversationSnap.exists || !Array.isArray(conversation.memberIds) || !conversation.memberIds.includes(uid)) {
           throw aurenHttpsError('permission-denied', 'You do not have access to this conversation.');
         }
-        const messageRef=conversationRef.collection('messages').doc();
+        const messageRef=conversationRef.collection('messages').doc('action_'+action.idempotencyKey);
         await messageRef.set({
           conversationId,
           senderId:uid,
           text,
           isAi:false,
           source:'auren_ai_action',
+          idempotencyKey:action.idempotencyKey,
           createdAt:FieldValue.serverTimestamp(),
-        });
+        },{merge:true});
         result={type:'message_sent',conversationId,messageId:messageRef.id};
       } else if (action.type === 'supplier.workflow') {
         const supplierActions=require('./supplier_actions');
