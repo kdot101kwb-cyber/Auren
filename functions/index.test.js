@@ -56,3 +56,23 @@ test('Action intent logic remains isolated from the Firebase function index', ()
   assert.match(intent, /normalizeAurenActionIntent/);
   assert.match(intent, /assertAurenActionPayload/);
 });
+
+
+test('Action Engine external effects are bound to the server idempotency key', () => {
+  assert.match(index, /users\\/\\$\\{uid\\}\\/notes\\/\\$\\{action\.idempotencyKey\\}/);
+  assert.match(index, /users\\/\\$\\{uid\\}\\/memory\\/\\$\\{action\.idempotencyKey\\}/);
+  assert.match(index, /users\\/\\$\\{uid\\}\\/goals\\/\\$\\{action\.idempotencyKey\\}/);
+  assert.match(index, /conversations\\/\\$\\{conversationId\\}\\/messages\\/\\$\\{\\'action_\\' \\+ action\.idempotencyKey\\}/);
+});
+
+test('Action Engine has server recovery and manual-review lifecycle gates', () => {
+  assert.match(index, /status:\\'recovery_required\\'/);
+  assert.match(index, /status:\\'manual_review\\'/);
+  assert.match(index, /reasonCode:\\'execution_timeout\\'/);
+  assert.match(index, /reasonCode:\\'manual_review_opened\\'/);
+});
+
+test('Action reject and cancel paths write transactional audit records', () => {
+  assert.match(index, /reasonCode:\\'action_rejected\\'/);
+  assert.match(index, /reasonCode:\\'action_cancelled\\'/);
+});
