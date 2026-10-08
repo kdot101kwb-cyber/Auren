@@ -75,7 +75,7 @@ class FirestoreMatchCandidateSource implements MatchCandidateSource {
             ? MatchCandidateType.supplier
             : MatchCandidateType.business,
         title: name.isEmpty ? 'Business' : name,
-        countryCode: request.countryCode,
+        countryCode: request.entities.where((e) => e.type == IntentEntityType.country).firstOrNull?.value,
         score: score,
         metadata: {
           'source': 'firestore.businesses',
@@ -98,7 +98,7 @@ class FirestoreMatchCandidateSource implements MatchCandidateSource {
     final entity = request.entities.where(
       (e) => e.type == IntentEntityType.country,
     ).firstOrNull;
-    final code = entity?.value ?? request.countryCode;
+    final code = entity?.value;
     if (code == null || code.trim().isEmpty) return null;
     return _countryAliases[code.toUpperCase()] ?? code.toLowerCase();
   }
