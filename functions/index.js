@@ -722,6 +722,71 @@ exports.reviewAurenAction = require('firebase-functions/v2/https').onCall(
   },
 );
 
+exports.resolveAurenManualReview = require('firebase-functions/v2/https').onCall(
+  {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid=request.auth?.uid;
+    if(!uid) throw aurenHttpsError('unauthenticated', 'Authentication is required.');
+
+    const actionId=String(request.data?.actionId||'').trim();
+    const outcome=String(request.data?.outcome||'').trim().toLowerCase();
+    const reviewNote=String(request.data?.reviewNote||'').trim().slice(0,2000);
+    const reconciliationReference=String(request.data?.reconciliationReference||'').trim().slice(0,300);
+
+    if(!actionId || actionId.length > 128) {
+      throw aurenHttpsError('invalid-argument', 'Invalid action id.');
+    }
+    if(!['completed','failed'].includes(outcome)) {
+      throw aurenHttpsError('invalid-argument', 'Reconciliation outcome must be completed or failed.');
+    }
+    if(!reviewNote) {
+      throw aurenHttpsError('invalid-argument', 'A reconciliation note is required.');
+    }
+    if(!reconciliationReference) {
+      throw aurenHttpsError('invalid-argument', 'A reconciliation reference is required.');
+    }
+
+    const ref=db.collection('users').doc(uid).collection('actions').doc(actionId);
+    await db.runTransaction(async (tx) => {
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw aurenHttpsError('not-found', 'Action not found.');
+
+      const data=snap.data() || {};
+      if(data.status !== 'manual_review') {
+        throw aurenHttpsError('failed-precondition', 'Only manual-review actions can be reconciled.');
+      }
+
+      const auditRef=ref.collection('audit').doc();
+      const currentPayloadHash=payloadHash(data.payload || {});
+      tx.update(ref,{
+        status:outcome,
+        reconciledBy:uid,
+        reconciledAt:FieldValue.serverTimestamp(),
+        reconciliationOutcome:outcome,
+        reconciliationNote:reviewNote,
+        reconciliationReference,
+        updatedAt:FieldValue.serverTimestamp(),
+      });
+      tx.set(auditRef,{
+        actionId,
+        workflowId:actionId,
+        fromStatus:'manual_review',
+        toStatus:outcome,
+        actorId:uid,
+        timestamp:FieldValue.serverTimestamp(),
+        payloadHash:currentPayloadHash,
+        reasonCode:'manual_review_reconciled',
+        errorClass:'executor_timeout_or_unknown',
+        reconciliationOutcome:outcome,
+        reconciliationReference,
+        reviewNote,
+      });
+    });
+
+    return {status:outcome, actionId, reconciled:true};
+  }
+);
+
 exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
   {region:'us-central1', timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
