@@ -52,15 +52,17 @@ class FirestoreMatchCandidateSource implements MatchCandidateSource {
       final businessType = data['businessType'] as String? ?? '';
       final city = data['city'] as String? ?? '';
       final country = data['country'] as String? ?? '';
-      final searchable = '$name $description $category $businessType $city $country'
-          .toLowerCase();
+      final countryCode = data['countryCode'] as String? ?? '';
+      final searchable =
+          '$name $description $category $businessType $city $country $countryCode'
+              .toLowerCase();
 
       final hits = tokens.where(searchable.contains).length;
-      final countryMatches = requestedCountry == null ||
-          country.toLowerCase().contains(requestedCountry) ||
-          _countryAliases[requestedCountry]?.let((alias) =>
-                  country.toLowerCase().contains(alias)) ==
-              true;
+      final countryMatches = _matchesRequestedCountry(
+        requestedCountry,
+        country: country,
+        countryCode: countryCode,
+      );
       if (hits == 0 || !countryMatches) continue;
 
       final verified = data['verified'] == true;
@@ -75,7 +77,11 @@ class FirestoreMatchCandidateSource implements MatchCandidateSource {
             ? MatchCandidateType.supplier
             : MatchCandidateType.business,
         title: name.isEmpty ? 'Business' : name,
-        countryCode: request.entities.where((e) => e.type == IntentEntityType.country).firstOrNull?.value,
+        countryCode: data['countryCode'] as String? ??
+            request.entities
+                .where((entity) => entity.type == IntentEntityType.country)
+                .firstOrNull
+                ?.value,
         score: score,
         metadata: {
           'source': 'firestore.businesses',
@@ -96,11 +102,27 @@ class FirestoreMatchCandidateSource implements MatchCandidateSource {
 
   String? _requestedCountry(MatchRequest request) {
     final entity = request.entities.where(
-      (e) => e.type == IntentEntityType.country,
+      (entity) => entity.type == IntentEntityType.country,
     ).firstOrNull;
-    final code = entity?.value;
-    if (code == null || code.trim().isEmpty) return null;
-    return _countryAliases[code.toUpperCase()] ?? code.toLowerCase();
+    final code = entity?.value.trim();
+    if (code == null || code.isEmpty) return null;
+    return code.toUpperCase();
+  }
+
+  bool _matchesRequestedCountry(
+    String? requestedCode, {
+    required String country,
+    required String countryCode,
+  }) {
+    if (requestedCode == null) return true;
+
+    final normalizedCountry = country.trim().toLowerCase();
+    final normalizedCode = countryCode.trim().toUpperCase();
+    final alias = _countryAliases[requestedCode];
+
+    return normalizedCode == requestedCode ||
+        normalizedCountry == requestedCode.toLowerCase() ||
+        (alias != null && normalizedCountry.contains(alias));
   }
 
   bool _isSupplierQuery(String query, String type, String category) {
@@ -145,12 +167,5 @@ class FirestoreMatchCandidateSource implements MatchCandidateSource {
       result.addAll(synonyms[token] ?? const []);
     }
     return result;
-  }
-}
-
-extension _NullableLet<T> on T? {
-  R? let<R>(R Function(T value) transform) {
-    final value = this;
-    return value == null ? null : transform(value);
   }
 }
