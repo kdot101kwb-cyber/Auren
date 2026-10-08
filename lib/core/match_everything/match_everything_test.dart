@@ -67,7 +67,7 @@ void main() {
 
   test('ambiguous intent never performs candidate matching', () async {
     final source = _FakeSource();
-    const matcher = MatchEverything(source);
+    final matcher = MatchEverything(source);
 
     final plan = await matcher.plan(
       const IntentContext(userId: 'user', input: 'something unclear'),
