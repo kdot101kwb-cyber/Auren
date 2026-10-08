@@ -94,7 +94,7 @@ exports.ingestGlobalTradeStatistics = onCall({region: 'us-central1', timeoutSeco
   const cmdCode = clean(request.data?.cmdCode || 'TOTAL', 20);
   const partnerCode = clean(request.data?.partnerCode || '0', 3);
   if (!/^\d{1,3}$/.test(reporterCode) || !/^\d{4}$/.test(period) ||
-      !['X', 'M'].includes(flowCode) || !/^\d{1,6}|TOTAL$/.test(cmdCode) ||
+      !/^(?:\\d{1,6}|TOTAL)$/.test(cmdCode) ||
       !/^\d{1,3}$/.test(partnerCode)) {
     throw new HttpsError('invalid-argument', 'Invalid UN Comtrade query parameters.');
   }
