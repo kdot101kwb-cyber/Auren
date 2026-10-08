@@ -1343,7 +1343,6 @@ exports.generateAurenMusicBlueprint = require('firebase-functions/v2/https').onC
 // AUREN Entertainment production orchestrator.
 // It advances durable series-production stages one at a time. Each claim is
 // transactional so overlapping scheduled invocations cannot own the same job.
-const {onSchedule} = require('firebase-functions/v2/scheduler');
 
 function aurenSeriesStagePlan(stage) {
   const stages = [
