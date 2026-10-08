@@ -203,7 +203,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
 
     const claim = async () => {
       try {
-        await db.runTransaction(async (tx) => {
+        await runTransaction(db, async (tx) => {
           const snap = await tx.get(ref);
           assert.equal(snap.data().status, 'approved');
           tx.update(ref, {
