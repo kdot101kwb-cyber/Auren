@@ -2,6 +2,7 @@
 
 const {onCall, onRequest, HttpsError} = require('firebase-functions/v2/https');
 const {onDocumentCreated, onDocumentUpdated, onDocumentWritten} = require('firebase-functions/v2/firestore');
+const {onSchedule} = require('firebase-functions/scheduler');
 const {defineSecret} = require('firebase-functions/params');
 const {initializeApp} = require('firebase-admin/app');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
@@ -231,6 +232,7 @@ const AUREN_ACTION_DEFINITIONS = {
 };
 
 const AUREN_ACTION_TTL_MS = 15 * 60 * 1000;
+const AUREN_ACTION_EXECUTION_TIMEOUT_MS = 2 * 60 * 1000;
 
 function aurenHttpsError(code, message) {
   const {HttpsError} = require('firebase-functions/v2/https');
@@ -622,6 +624,49 @@ exports.executeAurenAction = require('firebase-functions/v2/https').onCall(
       throw error;
     }
   }
+);
+
+exports.recoverStaleAurenActions = onSchedule(
+  {schedule:'every 5 minutes', region:'us-central1'},
+  async () => {
+    const cutoff = Date.now() - AUREN_ACTION_EXECUTION_TIMEOUT_MS;
+    const snap = await db.collectionGroup('actions')
+      .where('status', '==', 'executing')
+      .get();
+
+    let recovered = 0;
+    for (const actionDoc of snap.docs) {
+      const data = actionDoc.data() || {};
+      const startedAtMs = data.executionStartedAt?.toMillis?.() || 0;
+      if (!startedAtMs || startedAtMs > cutoff) continue;
+
+      await db.runTransaction(async (tx) => {
+        const current = await tx.get(actionDoc.ref);
+        if (!current.exists || current.data()?.status !== 'executing') return;
+        const currentData = current.data() || {};
+        const auditRef = actionDoc.ref.collection('audit').doc();
+        tx.update(actionDoc.ref, {
+          status:'recovery_required',
+          recoveryRequiredAt:FieldValue.serverTimestamp(),
+          recoveryAlertPending:true,
+          updatedAt:FieldValue.serverTimestamp(),
+        });
+        tx.set(auditRef, {
+          actionId:actionDoc.id,
+          workflowId:actionDoc.id,
+          fromStatus:'executing',
+          toStatus:'recovery_required',
+          actorId:'system:action-recovery',
+          timestamp:FieldValue.serverTimestamp(),
+          payloadHash:payloadHash(currentData.payload || {}),
+          reasonCode:'execution_timeout',
+          errorClass:'executor_timeout_or_unknown',
+        });
+      });
+      recovered++;
+    }
+    return {recovered};
+  },
 );
 
 exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
