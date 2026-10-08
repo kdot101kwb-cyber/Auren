@@ -1131,29 +1131,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
       allow delete: if isOwner(userId);
     }
 
-
-  }
-}
-)
-        && requestData().priceMinor is int
-        && requestData().priceMinor >= 0
-        && requestData().bedrooms is int
-        && requestData().bedrooms >= 0
-        && requestData().bedrooms <= 100
-        && requestData().bathrooms is int
-        && requestData().bathrooms >= 0
-        && requestData().bathrooms <= 100
-        && requestData().areaSqm is int
-        && requestData().areaSqm >= 0
-        && requestData().areaSqm <= 1000000
-        && requestData().imageUrl is string
-        && requestData().imageUrl.size() <= 2048
-        && (requestData().imageUrl.size() == 0 || requestData().imageUrl.matches('^https:&&requestData().verified==false&&requestData().status=='active'&&requestData().visibility=='public'&&requestData().createdAt is timestamp;allow update:if request.auth!=null&&resource.data.ownerId==request.auth.uid&&changedFields().hasOnly(['title','description','city','country','type','listingType','currency','priceMinor','bedrooms','bathrooms','areaSqm','imageUrl'])&&requestData().ownerId==resource.data.ownerId&&requestData().verified==resource.data.verified&&requestData().status==resource.data.status&&requestData().visibility==resource.data.visibility&&requestData().createdAt==resource.data.createdAt&&requestData().title is string&&requestData().title.size()>0&&requestData().title.size()<=160&&requestData().description is string&&requestData().description.size()<=3000&&requestData().city is string&&requestData().city.size()>0&&requestData().city.size()<=100&&requestData().country is string&&requestData().country.size()>0&&requestData().country.size()<=100&&requestData().listingType in['sale','rent']&&requestData().type in['Apartment','House','Villa','Office','Shop','Land','Warehouse']&&requestData().currency is string&&requestData().currency.matches('^[A-Z]{3}
-      allow delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
-    }
-
-    match /users/{userId}/savedProperties/{propertyId} {
+match /users/{userId}/savedProperties/{propertyId} {
       allow read, create, delete: if isOwner(userId);
       allow update: if false;
     }
