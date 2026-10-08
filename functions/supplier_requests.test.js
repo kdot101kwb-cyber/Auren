@@ -35,6 +35,14 @@ test('supplier workflow creates user-scoped request mirrors and updates Match Fl
   assert.match(source, /updateMatchFlow\(uid,matchFlowId,'waiting_response'/);
 });
 
+test('supplier action lookup supports exporter importer and manufacturer collections', () => {
+  const source = read('supplier_actions.js');
+  assert.match(source, /auren_exporters/);
+  assert.match(source, /auren_importers/);
+  assert.match(source, /auren_manufacturers/);
+  assert.match(source, /for \(const collection of collections\)/);
+});
+
 test('supplier workflow never dispatches externally during draft creation', () => {
   const source = read('supplier_actions.js');
   assert.match(source, /externalDispatch:false/);
