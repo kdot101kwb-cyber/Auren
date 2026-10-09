@@ -1,0 +1,902 @@
+{
+  "schemaVersion": 1,
+  "batch": 4,
+  "purpose": "Fourth batch of country-level official or government-designated sources for AUREN business discovery, company registries, export support, customs/trade, investment and public procurement.",
+  "coveragePolicy": {
+    "defaultScope": "global",
+    "countryFilter": "optional",
+    "integrationStatus": "catalog_only",
+    "important": "Candidate source links only; not live integrations or a complete country directory. Verify official ownership, current availability, access restrictions, freshness, APIs/feeds, licensing and reuse terms before ingestion. Prefer official link-out where automation is restricted. A registry listing does not alone prove active status, licensing, solvency or trustworthiness."
+  },
+  "countrySources": [
+    {
+      "countryCode": "TR",
+      "country": "Türkiye",
+      "sources": [
+        {
+          "name": "Central Registration System (MERSİS) / Ministry of Trade",
+          "url": "https://mersis.ticaret.gov.tr/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "company_registration",
+            "commercial_registry_services"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Ministry of Trade",
+          "url": "https://www.trade.gov.tr/",
+          "sourceType": "official_trade_ministry",
+          "dataKinds": [
+            "trade_policy",
+            "export_import_information"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Turkish Exporters Assembly",
+          "url": "https://tim.org.tr/en",
+          "sourceType": "exporter_association_network",
+          "dataKinds": [
+            "exporters",
+            "export_sectors",
+            "export_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Invest in Türkiye",
+          "url": "https://www.invest.gov.tr/en/Pages/home-page.aspx",
+          "sourceType": "official_investment_promotion",
+          "dataKinds": [
+            "investment_opportunities",
+            "investor_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Electronic Public Procurement Platform (EKAP)",
+          "url": "https://ekap.kik.gov.tr/",
+          "sourceType": "official_procurement",
+          "dataKinds": [
+            "public_tenders",
+            "government_contracts"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "MX",
+      "country": "Mexico",
+      "sources": [
+        {
+          "name": "Public Registry of Commerce (SIGER) / Ministry of Economy",
+          "url": "https://rpc.economia.gob.mx/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "commercial_registry",
+            "company_filings"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Secretariat of Economy",
+          "url": "https://www.gob.mx/se",
+          "sourceType": "official_trade_and_industry_ministry",
+          "dataKinds": [
+            "trade_policy",
+            "industry_support",
+            "business_services"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "National Foreign Trade Information Service (SNICE)",
+          "url": "https://www.snice.gob.mx/",
+          "sourceType": "official_trade_portal",
+          "dataKinds": [
+            "tariffs",
+            "trade_rules",
+            "import_export_requirements"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Invest in Mexico / Ministry of Economy",
+          "url": "https://www.gob.mx/se",
+          "sourceType": "official_investment_information",
+          "dataKinds": [
+            "investment_guidance",
+            "business_setup"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Use the official ministry portal to locate the current investment service; do not infer a separate live directory."
+        },
+        {
+          "name": "Compras MX public procurement",
+          "url": "https://comprasmx.buengobierno.gob.mx/",
+          "sourceType": "official_procurement",
+          "dataKinds": [
+            "public_tenders",
+            "government_contracts"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "AR",
+      "country": "Argentina",
+      "sources": [
+        {
+          "name": "General Inspectorate of Justice (IGJ)",
+          "url": "https://www.argentina.gob.ar/justicia/igj",
+          "sourceType": "official_company_registry_authority",
+          "dataKinds": [
+            "company_registration",
+            "corporate_filings"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "National and provincial registry responsibilities differ; confirm jurisdiction."
+        },
+        {
+          "name": "Argentina Trade and Investment Promotion Agency",
+          "url": "https://www.argentina.gob.ar/produccion",
+          "sourceType": "official_trade_and_industry_portal",
+          "dataKinds": [
+            "export_support",
+            "industry_programmes",
+            "investment_information"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Government ministry portal; locate the current trade and investment agency/service."
+        },
+        {
+          "name": "ARCA Customs and Tax",
+          "url": "https://www.arca.gob.ar/",
+          "sourceType": "official_tax_and_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "tax_services",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Argentina Compra",
+          "url": "https://comprar.gob.ar/",
+          "sourceType": "official_procurement",
+          "dataKinds": [
+            "public_tenders",
+            "government_contracts"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Investment and International Trade Agency",
+          "url": "https://www.inversionycomercio.ar/",
+          "sourceType": "official_investment_and_export_promotion",
+          "dataKinds": [
+            "exporters",
+            "investment_opportunities",
+            "market_access"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "PE",
+      "country": "Peru",
+      "sources": [
+        {
+          "name": "SUNARP Public Registry",
+          "url": "https://www.sunarp.gob.pe/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "company_registration",
+            "legal_entity_records"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "PROMPERÚ",
+          "url": "https://www.promperu.gob.pe/",
+          "sourceType": "official_export_and_investment_promotion",
+          "dataKinds": [
+            "exporters",
+            "export_support",
+            "market_access"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Ministry of Foreign Trade and Tourism",
+          "url": "https://www.gob.pe/mincetur",
+          "sourceType": "official_trade_ministry",
+          "dataKinds": [
+            "trade_policy",
+            "trade_agreements",
+            "export_services"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "SUNAT Customs",
+          "url": "https://www.sunat.gob.pe/",
+          "sourceType": "official_tax_and_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "import_export_rules",
+            "trade_information"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Peru Compras",
+          "url": "https://www.gob.pe/perucompras",
+          "sourceType": "official_procurement",
+          "dataKinds": [
+            "public_procurement",
+            "framework_agreements",
+            "supplier_opportunities"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "KR",
+      "country": "South Korea",
+      "sources": [
+        {
+          "name": "Supreme Court Internet Registry Office",
+          "url": "https://www.iros.go.kr/",
+          "sourceType": "official_company_registry_service",
+          "dataKinds": [
+            "corporate_registration",
+            "registry_certificates"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Access and document issuance may require authentication or fees."
+        },
+        {
+          "name": "Korea Trade-Investment Promotion Agency (KOTRA)",
+          "url": "https://www.kotra.or.kr/english/",
+          "sourceType": "official_trade_and_investment_promotion",
+          "dataKinds": [
+            "exporters",
+            "business_matching",
+            "investment_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Korea Customs Service",
+          "url": "https://www.customs.go.kr/english/main.do",
+          "sourceType": "official_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "tariffs",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Korea ON-line E-Procurement System (KONEPS)",
+          "url": "https://www.g2b.go.kr/",
+          "sourceType": "official_procurement",
+          "dataKinds": [
+            "public_tenders",
+            "supplier_registration",
+            "government_contracts"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Invest Korea",
+          "url": "https://www.investkorea.org/",
+          "sourceType": "official_investment_promotion",
+          "dataKinds": [
+            "investment_opportunities",
+            "investor_support"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "PH",
+      "country": "Philippines",
+      "sources": [
+        {
+          "name": "Securities and Exchange Commission Philippines",
+          "url": "https://www.sec.gov.ph/",
+          "sourceType": "official_company_registry_and_regulator",
+          "dataKinds": [
+            "company_registration",
+            "corporate_filings",
+            "regulated_entities"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Department of Trade and Industry",
+          "url": "https://www.dti.gov.ph/",
+          "sourceType": "official_trade_and_industry_ministry",
+          "dataKinds": [
+            "business_services",
+            "trade_policy",
+            "industry_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Philippine Trade Training Center / Export Marketing Bureau",
+          "url": "https://www.dti.gov.ph/negosyo/export-marketing-bureau/",
+          "sourceType": "official_export_promotion",
+          "dataKinds": [
+            "export_support",
+            "market_access",
+            "export_training"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Bureau of Customs",
+          "url": "https://customs.gov.ph/",
+          "sourceType": "official_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "tariffs",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "PhilGEPS",
+          "url": "https://www.philgeps.gov.ph/",
+          "sourceType": "official_procurement",
+          "dataKinds": [
+            "public_tenders",
+            "supplier_registration",
+            "government_contracts"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "TZ",
+      "country": "Tanzania",
+      "sources": [
+        {
+          "name": "Business Registrations and Licensing Agency (BRELA)",
+          "url": "https://www.brela.go.tz/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "company_registration",
+            "business_names",
+            "licensing"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Tanzania Trade Development Authority (TanTrade)",
+          "url": "https://www.tantrade.go.tz/",
+          "sourceType": "official_trade_promotion",
+          "dataKinds": [
+            "exporters",
+            "trade_fairs",
+            "market_access"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Tanzania Revenue Authority Customs",
+          "url": "https://www.tra.go.tz/",
+          "sourceType": "official_tax_and_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Tanzania Investment Centre",
+          "url": "https://www.tic.go.tz/",
+          "sourceType": "official_investment_agency",
+          "dataKinds": [
+            "investment_opportunities",
+            "investor_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "NeST Electronic Public Procurement System",
+          "url": "https://nest.go.tz/",
+          "sourceType": "official_procurement",
+          "dataKinds": [
+            "public_tenders",
+            "supplier_registration"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "UG",
+      "country": "Uganda",
+      "sources": [
+        {
+          "name": "Uganda Registration Services Bureau",
+          "url": "https://ursb.go.ug/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "company_registration",
+            "business_names",
+            "intellectual_property"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Uganda Export Promotion Board",
+          "url": "https://ugandaexports.go.ug/",
+          "sourceType": "official_export_promotion",
+          "dataKinds": [
+            "exporters",
+            "export_products",
+            "market_access"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Uganda Revenue Authority Customs",
+          "url": "https://www.ura.go.ug/",
+          "sourceType": "official_tax_and_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Uganda Investment Authority",
+          "url": "https://www.ugandainvest.go.ug/",
+          "sourceType": "official_investment_agency",
+          "dataKinds": [
+            "investment_opportunities",
+            "investor_services"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Public Procurement and Disposal of Public Assets Authority",
+          "url": "https://www.ppda.go.ug/",
+          "sourceType": "official_procurement_regulator",
+          "dataKinds": [
+            "public_procurement",
+            "supplier_rules",
+            "tender_information"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "RW",
+      "country": "Rwanda",
+      "sources": [
+        {
+          "name": "Rwanda Development Board - Business Registration",
+          "url": "https://org.rdb.rw/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "business_registration",
+            "business_services"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Rwanda Development Board",
+          "url": "https://rdb.rw/",
+          "sourceType": "official_investment_and_export_promotion",
+          "dataKinds": [
+            "investment_opportunities",
+            "export_support",
+            "investor_services"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Rwanda Revenue Authority Customs",
+          "url": "https://www.rra.gov.rw/",
+          "sourceType": "official_tax_and_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Rwanda Public Procurement Authority",
+          "url": "https://www.rppa.gov.rw/",
+          "sourceType": "official_procurement_regulator",
+          "dataKinds": [
+            "public_tenders",
+            "supplier_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Rwanda Trade Portal",
+          "url": "https://rwandatrade.rw/",
+          "sourceType": "official_trade_portal_candidate",
+          "dataKinds": [
+            "trade_procedures",
+            "import_export_requirements"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Confirm current portal ownership and service availability before ingestion."
+        }
+      ]
+    },
+    {
+      "countryCode": "SN",
+      "country": "Senegal",
+      "sources": [
+        {
+          "name": "APIX Senegal",
+          "url": "https://investinsenegal.sn/",
+          "sourceType": "official_investment_promotion",
+          "dataKinds": [
+            "investment_opportunities",
+            "business_setup",
+            "investor_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Agency for the Development and Promotion of SMEs (ADEPME)",
+          "url": "https://adepme.sn/",
+          "sourceType": "official_sme_support",
+          "dataKinds": [
+            "sme_support",
+            "business_growth",
+            "enterprise_services"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Senegal Customs",
+          "url": "https://www.douanes.sn/",
+          "sourceType": "official_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Senegal Procurement Regulatory Authority (ARCOP)",
+          "url": "https://arcop.sn/",
+          "sourceType": "official_procurement_regulator",
+          "dataKinds": [
+            "public_procurement",
+            "supplier_rules",
+            "tender_information"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Senegal Trade Information Portal",
+          "url": "https://senegaltradeportal.org/",
+          "sourceType": "trade_portal_candidate",
+          "dataKinds": [
+            "trade_procedures",
+            "import_export_requirements"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Verify current government ownership, uptime and reuse terms before ingestion."
+        }
+      ]
+    },
+    {
+      "countryCode": "CI",
+      "country": "Côte d’Ivoire",
+      "sources": [
+        {
+          "name": "CEPICI Business Formalities and Investment",
+          "url": "https://www.cepici.gouv.ci/",
+          "sourceType": "official_company_registration_and_investment",
+          "dataKinds": [
+            "business_registration",
+            "investment_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Ministry of Commerce and Industry",
+          "url": "https://www.commerce.gouv.ci/",
+          "sourceType": "official_trade_ministry",
+          "dataKinds": [
+            "trade_policy",
+            "business_services",
+            "industry_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Côte d’Ivoire Customs",
+          "url": "https://www.douanes.ci/",
+          "sourceType": "official_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "tariffs",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Côte d’Ivoire Export",
+          "url": "https://www.ci-export.ci/",
+          "sourceType": "official_export_promotion_candidate",
+          "dataKinds": [
+            "exporters",
+            "export_support",
+            "market_access"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Confirm current official status and portal availability before ingestion."
+        },
+        {
+          "name": "Public Procurement Directorate",
+          "url": "https://www.marchespublics.ci/",
+          "sourceType": "official_procurement_candidate",
+          "dataKinds": [
+            "public_tenders",
+            "government_contracts"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Verify current endpoint and access rules before ingestion."
+        }
+      ]
+    },
+    {
+      "countryCode": "TN",
+      "country": "Tunisia",
+      "sources": [
+        {
+          "name": "National Business Register (RNE)",
+          "url": "https://www.registre-entreprises.tn/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "company_registration",
+            "business_status"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Export Promotion Centre (CEPEX)",
+          "url": "https://www.cepex.nat.tn/",
+          "sourceType": "official_export_promotion",
+          "dataKinds": [
+            "exporters",
+            "export_support",
+            "trade_events"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Tunisia TradeNet",
+          "url": "https://www.tradenet.com.tn/",
+          "sourceType": "official_trade_facilitation",
+          "dataKinds": [
+            "trade_documents",
+            "import_export_procedures"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Tunisian Customs",
+          "url": "https://www.douane.gov.tn/",
+          "sourceType": "official_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "tariffs",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Tunisian Investment Authority",
+          "url": "https://tia.gov.tn/",
+          "sourceType": "official_investment_agency",
+          "dataKinds": [
+            "investment_opportunities",
+            "investor_services"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "DZ",
+      "country": "Algeria",
+      "sources": [
+        {
+          "name": "National Centre of Trade Register (CNRC)",
+          "url": "https://sidjilcom.cnrc.dz/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "commercial_registration",
+            "business_entities"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Algerian Investment Promotion Agency (AAPI)",
+          "url": "https://aapi.dz/",
+          "sourceType": "official_investment_agency",
+          "dataKinds": [
+            "investment_opportunities",
+            "investor_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Ministry of Foreign Trade and Export Promotion",
+          "url": "https://www.commerce.gov.dz/",
+          "sourceType": "official_trade_ministry_candidate",
+          "dataKinds": [
+            "trade_policy",
+            "export_import_rules"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Confirm current ministry responsibilities and portal route before ingestion."
+        },
+        {
+          "name": "Algerian Customs",
+          "url": "https://www.douane.gov.dz/",
+          "sourceType": "official_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "tariffs",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Algerian Public Procurement Portal",
+          "url": "https://www.marches-publics.gov.dz/",
+          "sourceType": "official_procurement_candidate",
+          "dataKinds": [
+            "public_tenders",
+            "government_contracts"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Verify current portal availability and reuse terms before ingestion."
+        }
+      ]
+    },
+    {
+      "countryCode": "ZM",
+      "country": "Zambia",
+      "sources": [
+        {
+          "name": "Patents and Companies Registration Agency (PACRA)",
+          "url": "https://www.pacra.org.zm/",
+          "sourceType": "official_company_registry",
+          "dataKinds": [
+            "company_registration",
+            "business_names",
+            "intellectual_property"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Zambia Development Agency",
+          "url": "https://www.zda.org.zm/",
+          "sourceType": "official_investment_and_export_promotion",
+          "dataKinds": [
+            "investment_opportunities",
+            "export_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Zambia Revenue Authority Customs",
+          "url": "https://www.zra.org.zm/",
+          "sourceType": "official_tax_and_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Zambia Public Procurement Authority",
+          "url": "https://www.zppa.org.zm/",
+          "sourceType": "official_procurement_regulator",
+          "dataKinds": [
+            "public_procurement",
+            "supplier_rules",
+            "tenders"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Ministry of Commerce, Trade and Industry",
+          "url": "https://www.mcti.gov.zm/",
+          "sourceType": "official_trade_ministry",
+          "dataKinds": [
+            "trade_policy",
+            "industry_support",
+            "business_services"
+          ],
+          "integrationStatus": "catalog_only"
+        }
+      ]
+    },
+    {
+      "countryCode": "ZW",
+      "country": "Zimbabwe",
+      "sources": [
+        {
+          "name": "Zimbabwe Companies Registry / Deeds Registry",
+          "url": "https://www.law.co.zw/",
+          "sourceType": "registry_information_portal_candidate",
+          "dataKinds": [
+            "company_registration",
+            "deeds_registry_information"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "This is a legal information portal, not confirmed as the official registry endpoint; verify with the responsible ministry before using for discovery."
+        },
+        {
+          "name": "Zimbabwe Investment and Development Agency",
+          "url": "https://www.zida.co.zw/",
+          "sourceType": "official_investment_agency",
+          "dataKinds": [
+            "investment_opportunities",
+            "investor_support"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Zimbabwe Revenue Authority Customs",
+          "url": "https://www.zimra.co.zw/",
+          "sourceType": "official_tax_and_customs_authority",
+          "dataKinds": [
+            "customs_procedures",
+            "import_export_rules"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Procurement Regulatory Authority of Zimbabwe",
+          "url": "https://www.praz.org.zw/",
+          "sourceType": "official_procurement_regulator",
+          "dataKinds": [
+            "public_procurement",
+            "supplier_rules",
+            "tender_information"
+          ],
+          "integrationStatus": "catalog_only"
+        },
+        {
+          "name": "Ministry of Foreign Affairs and International Trade",
+          "url": "https://www.zimfa.gov.zw/",
+          "sourceType": "official_trade_and_international_relations",
+          "dataKinds": [
+            "trade_relations",
+            "market_access_information"
+          ],
+          "integrationStatus": "catalog_only",
+          "accessNotes": "Confirm current portal ownership and services before ingestion."
+        }
+      ]
+    }
+  ]
+}
