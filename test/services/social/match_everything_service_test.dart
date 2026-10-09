@@ -295,3 +295,8 @@ void main() {
     final plan = AurenIntentActionPlan.fromIntent('tedarikçi arıyorum');
     expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
   });
+
+  test('routes Swahili supplier request to quote action', () {
+    final plan = AurenIntentActionPlan.fromIntent('nahitaji msambazaji');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
+  });
