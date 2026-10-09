@@ -469,7 +469,7 @@ class AurenIntentSignals {
         .where(n.contains)
         .toSet();
     return AurenIntentSignals(
-      countries: found(['السودان','sudan','مصر','egypt','الصين','china','الإمارات','uae','kenya','نيجيريا','nigeria']),
+      countries: found(['السودان','sudan','مصر','egypt','الصين','china','الإمارات','الامارات','uae','united arab emirates','kenya','كينيا','نيجيريا','nigeria','السعودية','saudi arabia','saudi','تركيا','turkey','türkiye','الهند','india','باكستان','pakistan','بنغلاديش','bangladesh','اثيوبيا','ethiopia','اوغندا','uganda','تنزانيا','tanzania','رواندا','rwanda','غانا','ghana','جنوب افريقيا','south africa','امريكا','usa','united states','بريطانيا','uk','united kingdom','المانيا','germany','فيتنام','vietnam']),
       cities: found(['الخرطوم','khartoum','القاهرة','cairo','دبي','dubai','شنتشن','shenzhen']),
       wantsCheap: ['رخيص','ارخص','cheap','cheapest','low price'].any((w) => n.contains(_normalizeIntent(w))),
       wantsShipping: ['شحن','shipping','delivery','توصل','التوصيل'].any((w) => n.contains(_normalizeIntent(w))),
