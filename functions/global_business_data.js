@@ -51,7 +51,7 @@ function normalizeBusinessRecord(input = {}) {
     sourceUrl,
     sourceLicense: license,
     sourceRecordId: clean(input.sourceRecordId, 200),
-    verificationStatus: input.verificationStatus === 'verified' ? 'verified' : 'unverified',
+    verificationStatus: 'unverified',
     lastCheckedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
