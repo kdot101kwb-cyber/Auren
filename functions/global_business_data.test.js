@@ -113,3 +113,18 @@ test('hashes external source record IDs into safe stable Firestore document IDs'
   assert.equal(first, businessDocumentId(base));
   assert.notEqual(first, businessDocumentId({...base, businessType: 'manufacturer'}));
 });
+
+test('supports official multi-character UN Comtrade trade flow codes', () => {
+  for (const flowCode of ['RX', 'RM', 'MIP', 'XIP', 'MOP', 'XOP', 'DX', 'FM']) {
+    const row = normalizeTradeObservation({
+      reporterCode: '729',
+      partnerCode: '0',
+      cmdCode: 'TOTAL',
+      flowCode,
+      period: '2024',
+      primaryValue: 10,
+    });
+    assert.ok(row, `expected ${flowCode} to be accepted`);
+    assert.equal(row.flowCode, flowCode);
+  }
+});
