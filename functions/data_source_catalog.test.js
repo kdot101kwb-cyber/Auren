@@ -47,3 +47,22 @@ test('latest run wins when runs are newest-first', () => {
   ]);
   assert.equal(results.find((item) => item.id === 'un_comtrade').latestIngestion.status, 'failed');
 });
+
+
+test('World Bank country intelligence is an implemented global source', () => {
+  const source = getDataSourceCatalog().find((item) => item.id === 'world_bank_wdi');
+  assert.ok(source);
+  assert.equal(source.integrationStatus, 'implemented');
+  for (const kind of ['country_registry', 'population', 'gdp', 'imports', 'exports', 'agriculture']) {
+    assert.ok(source.dataKinds.includes(kind));
+  }
+});
+
+test('readiness recognizes source IDs emitted by the global country ingestion job', () => {
+  const results = summarizeReadiness(getDataSourceCatalog(), [
+    {source: 'world_bank_wdi', status: 'completed', importedRows: 200},
+  ]);
+  const worldBank = results.find((item) => item.id === 'world_bank_wdi');
+  assert.equal(worldBank.dataReady, true);
+  assert.equal(worldBank.latestIngestion.importedRows, 200);
+});

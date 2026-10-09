@@ -32,7 +32,20 @@ test('global indicator ingestion uses the canonical core feasibility indicators'
     'SL.UEM.TOTL.ZS',
     'AG.LND.AGRI.ZS',
     'AG.LND.ARBL.ZS',
+    'SP.POP.GROW',
+    'SP.DYN.LE00.IN',
+    'NY.GDP.MKTP.KD.ZG',
+    'FP.CPI.TOTL.ZG',
+    'NE.EXP.GNFS.CD',
+    'NE.IMP.GNFS.CD',
+    'BX.KLT.DINV.CD.WD',
+    'IT.NET.USER.ZS',
+    'EG.ELC.ACCS.ZS',
+    'NV.AGR.TOTL.ZS',
+    'EG.FEC.RNEW.ZS',
   ]) assert.match(source, new RegExp(indicator.replaceAll('.', '\\.'), 'g'));
+  assert.match(source, /INDICATOR_CATEGORIES/);
+  assert.match(source, /category: INDICATOR_CATEGORIES/);
   assert.match(source, /auren_global_data/);
   assert.match(source, /indicatorName/);
   assert.match(source, /year: latest\.date/);
@@ -101,4 +114,17 @@ test('country registry preserves zero coordinates and rejects invalid coordinate
   assert.match(globalRegistry, /latitude: coordinate\(c\.latitude\)/);
   assert.match(globalRegistry, /number >= -180 && number <= 180/);
   assert.match(globalRegistry, /number >= -180 && number <= 180/);
+});
+
+
+test('global indicator ingestion can page through every country deterministically', () => {
+  assert.match(source, /startAfterIso3/);
+  assert.match(source, /orderBy\(admin\.firestore\.FieldPath\.documentId\(\)\)/);
+  assert.match(source, /nextStartAfterIso3/);
+  assert.match(source, /hasMoreCountries/);
+});
+
+test('global indicator ingestion searches history for the newest available value', () => {
+  assert.match(source, /per_page=20/);
+  assert.match(source, /history\.find\(\(entry\) => entry && entry\.value !== null/);
 });

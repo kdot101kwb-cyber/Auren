@@ -7,15 +7,49 @@ if (!admin.apps.length) admin.initializeApp();
 const db = admin.firestore();
 
 const WB = 'https://api.worldbank.org/v2';
+// Broad country profile: demographics, economy, trade, agriculture, digital access,
+// infrastructure, investment and environment. Missing upstream values remain absent.
 const CORE = [
   'SP.POP.TOTL',
+  'SP.POP.GROW',
+  'SP.URB.TOTL.IN.ZS',
+  'SP.DYN.LE00.IN',
   'NY.GDP.MKTP.CD',
   'NY.GDP.PCAP.CD',
-  'SP.URB.TOTL.IN.ZS',
+  'NY.GDP.MKTP.KD.ZG',
+  'FP.CPI.TOTL.ZG',
   'SL.UEM.TOTL.ZS',
+  'NE.EXP.GNFS.CD',
+  'NE.IMP.GNFS.CD',
+  'BX.KLT.DINV.CD.WD',
+  'IT.NET.USER.ZS',
+  'EG.ELC.ACCS.ZS',
+  'NV.AGR.TOTL.ZS',
   'AG.LND.AGRI.ZS',
-  'AG.LND.ARBL.ZS'
+  'AG.LND.ARBL.ZS',
+  'EG.FEC.RNEW.ZS'
 ];
+
+const INDICATOR_CATEGORIES = {
+  'SP.POP.TOTL': 'demographics',
+  'SP.POP.GROW': 'demographics',
+  'SP.URB.TOTL.IN.ZS': 'demographics',
+  'SP.DYN.LE00.IN': 'health',
+  'NY.GDP.MKTP.CD': 'economy',
+  'NY.GDP.PCAP.CD': 'economy',
+  'NY.GDP.MKTP.KD.ZG': 'economy',
+  'FP.CPI.TOTL.ZG': 'economy',
+  'SL.UEM.TOTL.ZS': 'employment',
+  'NE.EXP.GNFS.CD': 'trade',
+  'NE.IMP.GNFS.CD': 'trade',
+  'BX.KLT.DINV.CD.WD': 'investment',
+  'IT.NET.USER.ZS': 'digital_access',
+  'EG.ELC.ACCS.ZS': 'infrastructure',
+  'NV.AGR.TOTL.ZS': 'agriculture',
+  'AG.LND.AGRI.ZS': 'agriculture',
+  'AG.LND.ARBL.ZS': 'agriculture',
+  'EG.FEC.RNEW.ZS': 'environment'
+};
 
 function coordinate(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -94,7 +128,15 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
   requireAdmin(request);
 
   const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 25);
-  const snap = await db.collection('auren_global_countries').limit(limit).get();
+  const startAfterIso3 = typeof request.data?.startAfterIso3 === 'string'
+    ? request.data.startAfterIso3.trim().toUpperCase() : '';
+  if (startAfterIso3 && !/^[A-Z]{3}$/.test(startAfterIso3)) {
+    throw new HttpsError('invalid-argument', 'startAfterIso3 must be a three-letter ISO-3 code.');
+  }
+  let countryQuery = db.collection('auren_global_countries')
+    .orderBy(admin.firestore.FieldPath.documentId());
+  if (startAfterIso3) countryQuery = countryQuery.startAfter(startAfterIso3);
+  const snap = await countryQuery.limit(limit).get();
   let processed = 0;
   let indicatorsStored = 0;
   let failedIndicators = 0;
@@ -109,16 +151,18 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
         try {
           const data = await getJson(
             WB + '/country/' + iso3 + '/indicator/' + indicator +
-            '?format=json&per_page=1'
+            '?format=json&per_page=20'
           );
-          const latest = Array.isArray(data) && Array.isArray(data[1]) ? data[1][0] : null;
-          if (!latest || latest.value == null) return {indicator, value: null};
+          const history = Array.isArray(data) && Array.isArray(data[1]) ? data[1] : [];
+          const latest = history.find((entry) => entry && entry.value !== null &&
+            entry.value !== undefined && Number.isFinite(Number(entry.value)));
+          if (!latest) return {indicator, value: null};
           const value = Number(latest.value);
-          if (!Number.isFinite(value)) return {indicator, value: null};
           return {indicator, value: {
             value,
             year: latest.date,
-            indicatorName: latest.indicator?.value || indicator
+            indicatorName: latest.indicator?.value || indicator,
+            category: INDICATOR_CATEGORIES[indicator] || 'other'
           }};
         } catch (_) {
           return {indicator, value: null, failed: true};
@@ -147,6 +191,9 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
   return {
     status: failedIndicators > 0 || countriesWithNoIndicators > 0 ? 'partial' : 'ok',
     countriesProcessed: processed,
+    startAfterIso3: startAfterIso3 || null,
+    nextStartAfterIso3: snap.docs.length === limit ? snap.docs[snap.docs.length - 1].id : null,
+    hasMoreCountries: snap.docs.length === limit,
     indicatorsConfigured: CORE.length,
     indicatorValuesStored: indicatorsStored,
     failedIndicatorRequests: failedIndicators,

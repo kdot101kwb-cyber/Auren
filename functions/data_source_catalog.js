@@ -5,6 +5,22 @@ const {getFirestore} = require('firebase-admin/firestore');
 
 const DATA_SOURCES = Object.freeze([
   {
+    id: 'world_bank_wdi',
+    name: 'World Bank World Development Indicators',
+    category: 'global_country_intelligence',
+    endpoint: 'https://api.worldbank.org/v2/',
+    access: 'public_api',
+    integrationStatus: 'implemented',
+    dataKinds: [
+      'country_registry', 'population', 'demographics', 'health', 'gdp',
+      'inflation', 'employment', 'imports', 'exports', 'foreign_direct_investment',
+      'internet_access', 'electricity_access', 'agriculture', 'environment'
+    ],
+    requiresCredentials: false,
+    licenseReviewRequired: true,
+    notes: 'Provides country-level indicators where published; availability and reporting years vary by country and indicator. Not a company directory or a guarantee of complete coverage.',
+  },
+  {
     id: 'un_comtrade',
     name: 'UN Comtrade',
     category: 'trade_statistics',
@@ -115,6 +131,7 @@ function sourceIdForRun(run) {
     'faostat': 'faostat',
     'licensed_business_record_import': 'licensed_business_records',
   };
+  if (DATA_SOURCES.some((entry) => entry.id === source)) return source;
   return aliases[source] || '';
 }
 
