@@ -8,7 +8,7 @@ const MAX_RESULTS = 25;
 
 function normalizeProjectSearch(input) {
   const countryCode = String(input?.countryCode || '').trim().toUpperCase();
-  const query = String(input?.query || '').trim().replace(/\\s+/g, ' ').slice(0, 120);
+  const query = String(input?.query || '').trim().replace(/\s+/g, ' ').slice(0, 120);
   const pageValue = Number(input?.page || 1);
   const limitValue = Number(input?.limit || 10);
   const page = Number.isFinite(pageValue) ? Math.max(1, Math.min(1000, Math.floor(pageValue))) : 1;
