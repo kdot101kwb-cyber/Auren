@@ -71,11 +71,11 @@ function normalizeTradeObservation(row = {}, params = {}) {
   const reporterCode = clean(row.reporterCode || params.reporterCode, 3);
   const partnerCode = clean(row.partnerCode || params.partnerCode, 3);
   const cmdCode = clean(row.cmdCode || params.cmdCode || 'TOTAL', 20);
-  const flowCode = clean(row.flowCode || params.flowCode, 1).toUpperCase();
+  const flowCode = clean(row.flowCode || params.flowCode, 3).toUpperCase();
   const period = clean(row.period || params.period, 4);
   const tradeValue = Number(row.primaryValue ?? row.TradeValue ?? row.tradeValue);
   if (!reporterCode || !partnerCode || !/^[0-9]{4}$/.test(period) ||
-      !['X', 'M', ' re-export '.trim()].includes(flowCode) ||
+      !['X', 'M', 'DX', 'FM', 'RX', 'RM', 'MIP', 'XIP', 'MOP', 'XOP'].includes(flowCode) ||
       !Number.isFinite(tradeValue) || tradeValue < 0) return null;
   return {
     reporterCode,
@@ -100,11 +100,12 @@ exports.ingestGlobalTradeStatistics = onCall({region: 'us-central1', timeoutSeco
   }
   const reporterCode = clean(request.data?.reporterCode || '729', 3);
   const period = clean(request.data?.period || String(new Date().getUTCFullYear() - 2), 4);
-  const flowCode = clean(request.data?.flowCode || 'X', 1).toUpperCase();
+  const flowCode = clean(request.data?.flowCode || 'X', 3).toUpperCase();
   const cmdCode = clean(request.data?.cmdCode || 'TOTAL', 20);
   const partnerCode = clean(request.data?.partnerCode || '0', 3);
   if (!/^\d{1,3}$/.test(reporterCode) || !/^\d{4}$/.test(period) ||
       !/^(?:\d{1,6}|TOTAL)$/.test(cmdCode) ||
+      !['X', 'M', 'DX', 'FM', 'RX', 'RM', 'MIP', 'XIP', 'MOP', 'XOP'].includes(flowCode) ||
       !/^\d{1,3}$/.test(partnerCode)) {
     throw new HttpsError('invalid-argument', 'Invalid UN Comtrade query parameters.');
   }
