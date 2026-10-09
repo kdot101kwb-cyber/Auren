@@ -87,35 +87,38 @@ exports.aurenGlobalCountryRegistry = onCall({region: 'us-central1', timeoutSecon
 exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 120, memory: '256MiB'}, async (request) => {
   requireAdmin(request);
 
-  const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 100);
+  const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 25);
   const snap = await db.collection('auren_global_countries').limit(limit).get();
   let processed = 0;
 
-  for (const doc of snap.docs) {
-    const iso3 = doc.id;
-    const values = {};
-    for (const indicator of CORE) {
-      const data = await getJson(
-        WB + '/country/' + iso3 + '/indicator/' + indicator +
-        '?format=json&per_page=1'
-      );
-      const latest = Array.isArray(data) && Array.isArray(data[1]) ? data[1][0] : null;
-      if (latest && latest.value != null) {
-        values[indicator] = {
+  const countryChunkSize = 5;
+  for (let i = 0; i < snap.docs.length; i += countryChunkSize) {
+    const countryChunk = snap.docs.slice(i, i + countryChunkSize);
+    const results = await Promise.all(countryChunk.map(async (doc) => {
+      const iso3 = doc.id;
+      const entries = await Promise.all(CORE.map(async (indicator) => {
+        const data = await getJson(
+          WB + '/country/' + iso3 + '/indicator/' + indicator +
+          '?format=json&per_page=1'
+        );
+        const latest = Array.isArray(data) && Array.isArray(data[1]) ? data[1][0] : null;
+        if (!latest || latest.value == null) return null;
+        return [indicator, {
           value: Number(latest.value),
           year: latest.date,
           indicatorName: latest.indicator?.value || indicator
-        };
-      }
-    }
-
-    await db.collection('auren_global_data').doc(iso3).set({
-      iso3,
-      indicators: values,
-      source: 'world_bank_wdi',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, {merge:true});
-    processed++;
+        }];
+      }));
+      const values = Object.fromEntries(entries.filter(Boolean));
+      await db.collection('auren_global_data').doc(iso3).set({
+        iso3,
+        indicators: values,
+        source: 'world_bank_wdi',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+      return iso3;
+    }));
+    processed += results.length;
   }
 
   return {status:'ok', countriesProcessed:processed, indicators:CORE.length, source:'world_bank_wdi'};
