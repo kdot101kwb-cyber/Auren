@@ -138,6 +138,41 @@ void main() {
     );
   });
 
+  test('recognizes supplier intent across the user\'s language', () {
+    final spanish = AurenIntentSignals.fromIntent(
+      'busco proveedor de algodón orgánico certificado con envío',
+    );
+    expect(spanish.wantsSupplier, isTrue);
+    expect(spanish.wantsOrganic, isTrue);
+    expect(spanish.wantsCertified, isTrue);
+    expect(spanish.wantsShipping, isTrue);
+
+    final french = AurenIntentSignals.fromIntent(
+      'fournisseur certifié biologique avec livraison et échantillons',
+    );
+    expect(french.wantsSupplier, isTrue);
+    expect(french.wantsCertified, isTrue);
+    expect(french.wantsOrganic, isTrue);
+    expect(french.wantsShipping, isTrue);
+    expect(french.wantsSamples, isTrue);
+
+    final turkish = AurenIntentSignals.fromIntent(
+      'Türkiye üretici organik sertifikalı toptan kargo',
+    );
+    expect(turkish.wantsManufacturer, isTrue);
+    expect(turkish.wantsOrganic, isTrue);
+    expect(turkish.wantsCertified, isTrue);
+    expect(turkish.wantsWholesale, isTrue);
+    expect(turkish.wantsShipping, isTrue);
+
+    final chinese = AurenIntentSignals.fromIntent('有机供应商 认证 批发 运输');
+    expect(chinese.wantsSupplier, isTrue);
+    expect(chinese.wantsOrganic, isTrue);
+    expect(chinese.wantsCertified, isTrue);
+    expect(chinese.wantsWholesale, isTrue);
+    expect(chinese.wantsShipping, isTrue);
+  });
+
   test('recognizes supplier terms and constraints in English', () {
     final signals = AurenIntentSignals.fromIntent(
       'manufacturer of organic cotton in Türkiye, certified, bulk MOQ, delivery',
