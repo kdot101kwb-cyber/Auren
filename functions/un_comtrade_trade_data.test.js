@@ -12,6 +12,11 @@ test('validates required global reporter and period inputs', () => {
   });
 });
 
+test('validates supported trade flows and caps requested result size', () => {
+  assert.throws(() => normalizeInput({reporterCode: '156', period: '2023', flowCode: 'bad'}), /flowCode/);
+  assert.equal(normalizeInput({reporterCode: '156', period: '2023', flowCode: 'RX', limit: 999}).limit, 100);
+});
+
 test('normalizes official trade statistics with provenance', () => {
   const row = normalizeTradeRecord({reporterCode: 156, reporterDesc: 'China', partnerCode: 0, partnerDesc: 'World', cmdCode: 'TOTAL', cmdDesc: 'All Commodities', flowCode: 'X', flowDesc: 'Export', period: 2023, primaryValue: 1234});
   assert.equal(row.reporter, 'China');
@@ -28,8 +33,9 @@ test('calls the public preview endpoint with filters and returns normalized rows
       return {ok: true, status: 200, json: async () => ({count: 1, data: [{reporterCode: 156, reporterDesc: 'China', partnerCode: 0, partnerDesc: 'World', cmdCode: 'TOTAL', cmdDesc: 'All Commodities', flowCode: 'X', flowDesc: 'Export', period: 2023, primaryValue: 100}]})};
     },
   });
-  assert.match(requestedUrl, /reporterCode=156/);
+  assert.match(requestedUrl, /reportercode=156/);
   assert.match(requestedUrl, /period=2023/);
+  assert.match(requestedUrl, /includeDesc=true/);
   assert.equal(result.count, 1);
   assert.equal(result.results[0].reporter, 'China');
 });
