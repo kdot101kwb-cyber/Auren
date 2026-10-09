@@ -27,7 +27,16 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
   const stableKey = clean(idempotencyKey, 128);
   if (!stableKey) { const error = new Error('Idempotency key is required.'); error.code = 'validation'; throw error; }
 
-  const collections = ['auren_suppliers', 'auren_exporters', 'auren_importers', 'auren_manufacturers'];
+  const collections = [
+    'auren_suppliers', 'auren_exporters', 'auren_importers', 'auren_manufacturers',
+    'auren_wholesalers', 'auren_distributors', 'auren_retailers', 'auren_farmers',
+    'auren_logistics_providers', 'auren_customs_brokers', 'auren_raw_material_suppliers',
+    'auren_inspection_providers', 'auren_institutional_buyers', 'auren_authorized_dealers',
+    'auren_trade_finance_partners', 'auren_trade_insurers', 'auren_commercial_agents',
+    'auren_sourcing_agents', 'auren_packaging_providers', 'auren_warehouses',
+    'auren_maintenance_providers', 'auren_cooperatives', 'auren_chambers_of_commerce',
+    'auren_recyclers',
+  ];
   let supplier;
   for (const collection of collections) {
     const snapshot = await db.collection(collection).doc(supplierId).get();

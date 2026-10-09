@@ -6,6 +6,7 @@ const {
   normalizeBusinessRecord,
   businessDocumentId,
   normalizeTradeObservation,
+  businessCollectionForType,
 } = require('./global_business_data');
 
 test('normalizes business records with provenance and safe verification defaults', () => {
@@ -181,4 +182,58 @@ test('records source host and provenance metadata separately from verification',
   assert.equal(record.sourceHost, 'directory.example');
   assert.equal(record.provenanceStatus, 'provided');
   assert.equal(record.verificationStatus, 'unverified');
+});
+
+
+test('accepts the expanded global trade actor registry and maps each type to a stable collection', () => {
+  const actors = {
+    supplier: 'auren_suppliers',
+    exporter: 'auren_exporters',
+    importer: 'auren_importers',
+    manufacturer: 'auren_manufacturers',
+    wholesaler: 'auren_wholesalers',
+    distributor: 'auren_distributors',
+    retailer: 'auren_retailers',
+    farmer: 'auren_farmers',
+    logistics_provider: 'auren_logistics_providers',
+    customs_broker: 'auren_customs_brokers',
+    raw_material_supplier: 'auren_raw_material_suppliers',
+    inspection_provider: 'auren_inspection_providers',
+    institutional_buyer: 'auren_institutional_buyers',
+    authorized_dealer: 'auren_authorized_dealers',
+    trade_finance: 'auren_trade_finance_partners',
+    insurer: 'auren_trade_insurers',
+    commercial_agent: 'auren_commercial_agents',
+    sourcing_agent: 'auren_sourcing_agents',
+    packaging_provider: 'auren_packaging_providers',
+    warehouse: 'auren_warehouses',
+    maintenance_provider: 'auren_maintenance_providers',
+    cooperative: 'auren_cooperatives',
+    chamber_of_commerce: 'auren_chambers_of_commerce',
+    recycler: 'auren_recyclers',
+  };
+  for (const [businessType, collection] of Object.entries(actors)) {
+    const record = normalizeBusinessRecord({
+      name: 'Trade Actor',
+      countryCode: 'SD',
+      businessType,
+      source: 'licensed public directory',
+      sourceUrl: 'https://example.com/directory',
+      license: 'terms permit display',
+    });
+    assert.equal(record.businessType, businessType);
+    assert.equal(businessCollectionForType(businessType), collection);
+  }
+  assert.equal(businessCollectionForType('unknown_actor'), null);
+});
+
+test('rejects unsupported actor types instead of silently classifying them', () => {
+  assert.throws(() => normalizeBusinessRecord({
+    name: 'Unknown Actor',
+    countryCode: 'SD',
+    businessType: 'unverified_category',
+    source: 'licensed public directory',
+    sourceUrl: 'https://example.com/directory',
+    license: 'terms permit display',
+  }), /Business records require/);
 });
