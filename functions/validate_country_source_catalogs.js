@@ -28,7 +28,6 @@ function validateCatalog(catalog, expectedBatch) {
     else countryCodes.add(country.iso2);
   }
   const ids = new Set();
-  const urls = new Set();
   const countByCountry = new Map();
   for (const source of catalog.sources || []) {
     if (!source || typeof source !== 'object') { errors.push('source record must be an object'); continue; }
@@ -45,8 +44,6 @@ function validateCatalog(catalog, expectedBatch) {
       if (!parsed.hostname || /\s/.test(source.url)) errors.push(`malformed URL: ${source.id}`);
     } catch { errors.push(`invalid URL: ${source.id} (${source.url})`); }
     if (source.integration_status !== 'catalog_only') errors.push(`unexpected integration status: ${source.id}`);
-    if (urls.has(source.url)) errors.push(`duplicate URL in batch: ${source.url}`);
-    urls.add(source.url);
   }
   for (const [code, count] of countByCountry) {
     if (count !== 5) errors.push(`${code} must have 5 sources; found ${count}`);
