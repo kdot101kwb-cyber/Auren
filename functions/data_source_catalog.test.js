@@ -83,3 +83,20 @@ test('readiness recognizes GLEIF ingestion runs by source ID', () => {
   assert.equal(gleif.dataReady, true);
   assert.equal(gleif.latestIngestion.importedRows, 5);
 });
+
+test('World Bank project search is listed as a live source with funding caveat', () => {
+  const source = getDataSourceCatalog().find((item) => item.id === 'world_bank_projects');
+  assert.ok(source);
+  assert.equal(source.integrationStatus, 'implemented');
+  assert.ok(source.dataKinds.includes('development_projects'));
+  assert.match(source.notes, /not itself an open grant/i);
+});
+
+test('readiness recognizes World Bank project search ingestion runs', () => {
+  const results = summarizeReadiness(getDataSourceCatalog(), [
+    {sourceId: 'world_bank_projects', status: 'completed', importedRows: 7},
+  ]);
+  const projects = results.find((item) => item.id === 'world_bank_projects');
+  assert.equal(projects.dataReady, true);
+  assert.equal(projects.latestIngestion.importedRows, 7);
+});
