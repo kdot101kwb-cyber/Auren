@@ -597,18 +597,18 @@ class AurenIntentSignals {
     return AurenIntentSignals(
       countries: found(['السودان','sudan','مصر','egypt','الصين','china','الإمارات','الامارات','uae','united arab emirates','kenya','كينيا','نيجيريا','nigeria','السعودية','saudi arabia','saudi','تركيا','turkey','türkiye','الهند','india','باكستان','pakistan','بنغلاديش','bangladesh','اثيوبيا','ethiopia','اوغندا','uganda','تنزانيا','tanzania','رواندا','rwanda','غانا','ghana','جنوب افريقيا','south africa','امريكا','usa','united states','بريطانيا','uk','united kingdom','المانيا','germany','فيتنام','vietnam']),
       cities: found(['الخرطوم','khartoum','ام درمان','omdurman','ام درمان','القاهرة','cairo','دبي','dubai','ابوظبي','abu dhabi','الرياض','riyadh','جدة','jeddah','اسطنبول','istanbul','شنغهاي','shanghai','شنتشن','shenzhen','غوانزو','guangzhou','مومباي','mumbai','دلهي','delhi','نيروبي','nairobi','لاغوس','lagos','أديس أبابا','addis ababa','كمبالا','kampala','دار السلام','dar es salaam','جوهانسبرغ','johannesburg','لندن','london','نيويورك','new york']),
-      wantsCheap: ['رخيص','ارخص','cheap','cheapest','low price'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsShipping: ['شحن','shipping','delivery','توصل','التوصيل'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsSupplier: ['مورد','موردين','توريد','توريدات','supplier','suppliers','vendor','vendors','wholesale','تاجر جملة'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsManufacturer: ['مصنع','مصانع','manufacturer','factory'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsExporter: ['مصدر','مصدرين','مصدّر','مصدّرين','تصدير','exporter','exporters','export'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsImporter: ['مستورد','مستوردين','استيراد','importer','importers','import'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsInternationalTrade: ['تجارة دولية','تجارة خارجية','international trade','global trade','import export'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsWholesale: ['جملة','wholesale','bulk'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsBulk: ['كميات','كمية كبيرة','bulk','minimum order','moq'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsCertified: ['شهادة','شهادات','معتمد','معتمدة','certified','certification','iso','haccp'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsOrganic: ['عضوي','عضوية','organic','bio'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsSamples: ['عينة','عينات','sample','samples'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsCheap: ['رخيص','ارخص','cheap','cheapest','low price','barato','barata','bon marché','pas cher','barato','barata','ucuz','nafuu','便宜','सस्ता'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsShipping: ['شحن','shipping','delivery','توصل','التوصيل','envío','envio','livraison','entrega','kargo','usafirishaji','运输','運輸','शिपिंग'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsSupplier: ['مورد','موردين','توريد','توريدات','supplier','suppliers','vendor','vendors','wholesale','تاجر جملة','proveedor','proveedora','fournisseur','fournisseurs','fornecedor','fornecedora','tedarikçi','tedarikci','msambazaji','供应商','供應商','आपूर्तिकर्ता'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsManufacturer: ['مصنع','مصانع','manufacturer','factory','fabricante','fabricant','fabricantes','üretici','uretici','mtengenezaji','制造商','製造商','निर्माता'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsExporter: ['مصدر','مصدرين','مصدّر','مصدّرين','تصدير','exporter','exporters','export','exportador','exportadora','exportateur','ihracatçı','ihracatci','msafirishaji','出口商','निर्यातक'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsImporter: ['مستورد','مستوردين','استيراد','importer','importers','import','importador','importadora','importateur','ithalatçı','ithalatci','muingizaji','进口商','進口商','आयातक'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsInternationalTrade: ['تجارة دولية','تجارة خارجية','international trade','global trade','import export','comercio internacional','commerce international','comércio internacional','uluslararası ticaret','biashara ya kimataifa','国际贸易','國際貿易','अंतरराष्ट्रीय व्यापार'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsWholesale: ['جملة','wholesale','bulk','mayorista','grossiste','atacado','toptan','jumla','批发','批發','थोक'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsBulk: ['كميات','كمية كبيرة','bulk','minimum order','moq','por mayor','en gros','a granel','toptan','kwa wingi','批量','थोक मात्रा'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsCertified: ['شهادة','شهادات','معتمد','معتمدة','certified','certification','iso','haccp','certificado','certificada','certifié','certifiée','sertifikalı','sertifikali','cheti','认证','認證','प्रमाणित'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsOrganic: ['عضوي','عضوية','organic','bio','orgánico','organico','biologique','orgânica','organica','organik','kikaboni','有机','有機','जैविक'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsSamples: ['عينة','عينات','sample','samples','muestra','muestras','échantillon','échantillons','amostra','amostras','numune','sampuli','样品','नमूने'].any((w) => n.contains(_normalizeIntent(w))),
     );
   }
 
@@ -750,12 +750,12 @@ class AurenIntentActionPlan {
     bool has(List<String> words) => words.any((word) => n.contains(AurenIntentSignals._normalizeIntent(word)));
     return AurenIntentActionPlan(
       normalized: n,
-      commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر','مصدر','تصدير','exporter','export','مستورد','استيراد','importer','import','تجارة دولية','international trade']),
+      commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر','مصدر','تصدير','exporter','export','مستورد','استيراد','importer','import','تجارة دولية','international trade','proveedor','fournisseur','fornecedor','tedarikçi','tedarikci','msambazaji','供应商','供應商','fabricante','fabricant','üretici','uretici','manufacturer','exportador','exportateur','ihracatçı','ihracatci','importador','importateur','ithalatçı','ithalatci','comercio internacional','commerce international','comércio internacional','uluslararası ticaret','biashara ya kimataifa','国际贸易','國際貿易']),
       learning: has(['اتعلم','تعلم','كورس','دورة','flutter','learn','course','study']),
       work: has(['وظيفة','شغل','عمل','فرصة','تقديم','توظيف','job','work','career','apply']),
       social: has(['تابع','متابعة','صديق','تواصل','chat','follow','connect','creator','مؤثر']),
       media: has(['فيلم','مسلسل','فيديو','شورت','اغنية','موسيقى','محتوى','شاهد','watch','video','movie','series','music']),
-      wantsAction: has(['عايز','اريد','أريد','ابحث','أبحث','جيب','find','need','want','buy','get','open','contact','apply','learn']),
+      wantsAction: has(['عايز','اريد','أريد','ابحث','أبحث','جيب','find','need','want','buy','get','open','contact','apply','learn','buscar','necesito','quiero','trouver','cherche','besoin','je veux','procurar','preciso','quero','bul','ihtiyacım','nahitaji','tafuta','查找','需要','寻找','खोजें','चाहिए']),
     );
   }
 
