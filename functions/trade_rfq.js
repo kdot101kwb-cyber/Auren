@@ -2,6 +2,7 @@
 
 const admin = require('firebase-admin');
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
+if (!admin.apps.length) admin.initializeApp();
 const db = admin.firestore();
 
 const clean = (value, max = 300) => String(value ?? '').trim().slice(0, max);
