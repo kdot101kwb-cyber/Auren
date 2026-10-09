@@ -498,6 +498,9 @@ class AurenIntentSignals {
       wantsInternationalTrade: ['تجارة دولية','تجارة خارجية','international trade','global trade','import export'].any((w) => n.contains(_normalizeIntent(w))),
       wantsWholesale: ['جملة','wholesale','bulk'].any((w) => n.contains(_normalizeIntent(w))),
       wantsBulk: ['كميات','كمية كبيرة','bulk','minimum order','moq'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsCertified: ['شهادة','شهادات','معتمد','معتمدة','certified','certification','iso','haccp'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsOrganic: ['عضوي','عضوية','organic','bio'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsSamples: ['عينة','عينات','sample','samples'].any((w) => n.contains(_normalizeIntent(w))),
     );
   }
 
@@ -512,6 +515,9 @@ class AurenIntentSignals {
     if (wantsManufacturer && ['مصنع','manufacturer','factory'].any((w) => n.contains(_normalizeIntent(w)))) score += 8;
     if (wantsWholesale && ['جملة','wholesale','bulk'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
     if (wantsBulk && ['كميات','bulk','moq','minimum order'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
+    if (wantsCertified && ['شهادة','certified','certification','iso','haccp'].any((w) => n.contains(_normalizeIntent(w)))) score += 5;
+    if (wantsOrganic && ['عضوي','organic','bio'].any((w) => n.contains(_normalizeIntent(w)))) score += 5;
+    if (wantsSamples && ['عينة','sample','samples'].any((w) => n.contains(_normalizeIntent(w)))) score += 4;
     return score.clamp(0, 35).toInt();
   }
 
