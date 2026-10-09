@@ -4976,3 +4976,7 @@ Object.assign(module.exports, require('./world_bank_financial_indicators'));
 
 // Search source-backed global legal-entity records using GLEIF LEI data.
 Object.assign(module.exports, require('./gleif_global_entity_search'));
+
+
+// Official World Bank project-financing and development-project search.
+Object.assign(module.exports, require('./world_bank_project_funding_search'));
