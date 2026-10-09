@@ -10,10 +10,30 @@ const TIMEOUT_MS = Math.max(1000, Math.min(20000, Number(process.env.AUDIT_TIMEO
 const CONCURRENCY = Math.max(1, Math.min(10, Number(process.env.AUDIT_CONCURRENCY) || 5));
 
 function findCatalogFiles() {
-  return fs.readdirSync(ROOT)
-    .filter(name => /batch.*\.json$/i.test(name) && /global/i.test(name))
-    .sort()
-    .map(name => path.join(ROOT, name));
+  // Include legacy and newer catalogs regardless of whether their filenames
+  // contain "global" or "batch". Exclude generated reports to prevent recursion.
+  const available = fs.readdirSync(ROOT);
+  const requested = (process.env.AUDIT_CATALOG_FILES || '')
+    .split(',')
+    .map(name => name.trim())
+    .filter(Boolean);
+
+  const selected = requested.length
+    ? requested
+    : available.filter(name =>
+        /\.json$/i.test(name) &&
+        /(?:source|sources|catalog|manufacturer|investor|trade|bank|factory)/i.test(name) &&
+        !/(?:audit|link_check|report|schema|fixture|test)/i.test(name)
+      );
+
+  const missing = selected.filter(name =>
+    name !== path.basename(name) || !available.includes(name)
+  );
+  if (missing.length) {
+    throw new Error(`AUDIT_CATALOG_FILES contains missing or unsafe filenames: ${missing.join(', ')}`);
+  }
+
+  return [...new Set(selected)].sort().map(name => path.join(ROOT, name));
 }
 
 function loadCatalog(file) {
