@@ -110,11 +110,13 @@ exports.submitAurenTradeQuote = onCall(
       'auren_sourcing_agents','auren_packaging_providers','auren_warehouses','auren_maintenance_providers',
       'auren_cooperatives','auren_chambers_of_commerce','auren_recyclers'];
     let supplierFound = false;
+    let supplierOwnerUid = '';
     for (const collection of supplierCollections) {
       const snap = await db.collection(collection).doc(supplierId).get();
-      if (snap.exists) { supplierFound = true; break; }
+      if (snap.exists) { const record = snap.data() || {}; supplierOwnerUid = clean(record.ownerUid || record.ownerUserId || record.createdByUid || record.createdBy, 128); supplierFound = true; break; }
     }
     if (!supplierFound) throw new HttpsError('not-found', 'Trade-network actor not found.');
+    if (!supplierOwnerUid || supplierOwnerUid !== uid) throw new HttpsError('permission-denied', 'Supplier ownership must be established before quoting.');
     const quoteRef = rfqRef.collection('quotes').doc();
     const data = {
       supplierId, supplierUid:uid, totalPrice, currency, shippingCost, deliveryDays,
