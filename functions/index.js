@@ -4980,3 +4980,7 @@ Object.assign(module.exports, require('./gleif_global_entity_search'));
 
 // Official World Bank project-financing and development-project search.
 Object.assign(module.exports, require('./world_bank_project_funding_search'));
+
+
+// Official US federal grant-opportunity search via Grants.gov.
+Object.assign(module.exports, require('./grants_gov_opportunity_search'));
