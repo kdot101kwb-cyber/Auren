@@ -26,6 +26,37 @@ void main() {
     expect(AurenIntentSignals.fromIntent('wholesale clothing').wantsWholesale, isTrue);
   });
 
+  test('recognizes more global markets and cities', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'certified sesame supplier in Nairobi, Kenya shipping to Saudi Arabia',
+    );
+    expect(signals.countries, contains('kenya'));
+    expect(signals.countries, contains('saudi arabia'));
+    expect(signals.cities, contains('nairobi'));
+    expect(signals.wantsSupplier, isTrue);
+    expect(signals.wantsCertified, isTrue);
+    expect(signals.wantsShipping, isTrue);
+  });
+
+  test('recognizes organic and sample requirements', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'عايز مورد منتجات عضوية وعينات قبل طلب الجملة',
+    );
+    expect(signals.wantsOrganic, isTrue);
+    expect(signals.wantsSamples, isTrue);
+    expect(signals.wantsWholesale, isTrue);
+  });
+
+  test('supplier intent score includes certification and sample requirements', () {
+    final signals = AurenIntentSignals.fromIntent('certified organic supplier samples');
+    final score = signals.matchScore('certified organic supplier samples');
+    expect(signals.wantsCertified, isTrue);
+    expect(signals.wantsOrganic, isTrue);
+    expect(signals.wantsSamples, isTrue);
+    expect(score, greaterThan(0));
+    expect(score, lessThanOrEqualTo(35));
+  });
+
   group('AurenIntentActionPlan', () {
     test('maps supplier intent to quote request', () {
       final plan = AurenIntentActionPlan.fromIntent('أبحث عن مورد في الصين');
