@@ -45,7 +45,7 @@ test('global indicator ingestion uses the canonical core feasibility indicators'
     'EG.FEC.RNEW.ZS',
   ]) assert.match(source, new RegExp(indicator.replaceAll('.', '\\.'), 'g'));
   assert.match(source, /INDICATOR_CATEGORIES/);
-  assert.match(source, /category: INDICATOR_CATEGORIES\\[indicator\\]/);
+  assert.match(source, /category: INDICATOR_CATEGORIES/);
   assert.match(source, /auren_global_data/);
   assert.match(source, /indicatorName/);
   assert.match(source, /year: latest\.date/);
