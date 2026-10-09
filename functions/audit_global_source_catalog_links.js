@@ -49,18 +49,27 @@ function loadCatalog(file) {
       errors.push(`${label}: record must be an object`);
       return;
     }
-    for (const key of ['id', 'name', 'country', 'url', 'status', 'verification_status', 'api_status']) {
-      if (typeof record[key] !== 'string' || !record[key].trim()) errors.push(`${label}: missing string ${key}`);
+    const id = record.id ?? record.source_id ?? record.record_id;
+    const name = record.name ?? record.source_name ?? record.organization ?? record.title;
+    const country = record.country ?? record.country_name ?? record.jurisdiction;
+    const url = record.url ?? record.website ?? record.source_url;
+    for (const [key, value] of Object.entries({ id, name, country, url })) {
+      if (typeof value !== 'string' || !value.trim()) errors.push(`${label}: missing usable ${key} (aliases supported)`);
     }
-    if (record.id) {
-      if (ids.has(record.id)) errors.push(`${label}: duplicate id ${record.id}`);
-      ids.add(record.id);
+    for (const key of ['status', 'verification_status', 'api_status']) {
+      if (record[key] !== undefined && typeof record[key] !== 'string') {
+        errors.push(`${label}: ${key} must be a string when present`);
+      }
+    }
+    if (typeof id === 'string' && id) {
+      if (ids.has(id)) errors.push(`${label}: duplicate id ${id}`);
+      ids.add(id);
     }
     try {
-      const parsed = new URL(record.url);
+      const parsed = new URL(url);
       if (!['http:', 'https:'].includes(parsed.protocol)) errors.push(`${label}: URL must use HTTP(S)`);
     } catch {
-      errors.push(`${label}: invalid URL ${String(record.url)}`);
+      errors.push(`${label}: invalid URL ${String(url)}`);
     }
   });
   return { file, data, errors };
@@ -124,13 +133,13 @@ async function main() {
   const entries = catalogs.flatMap(c => c.data.records.map(record => ({
     file: path.basename(c.file),
     batch_number: c.data.batch_number ?? null,
-    id: record.id,
-    name: record.name,
-    country: record.country,
-    url: record.url,
-    status: record.status,
-    verification_status: record.verification_status,
-    api_status: record.api_status
+    id: record.id ?? record.source_id ?? record.record_id ?? null,
+    name: record.name ?? record.source_name ?? record.organization ?? record.title ?? null,
+    country: record.country ?? record.country_name ?? record.jurisdiction ?? null,
+    url: record.url ?? record.website ?? record.source_url ?? null,
+    status: record.status ?? record.source_status ?? 'not_specified',
+    verification_status: record.verification_status ?? record.validation_status ?? 'not_specified',
+    api_status: record.api_status ?? record.api_availability ?? 'not_assessed'
   })));
   const ids = new Set();
   for (const item of entries) {
