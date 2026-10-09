@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Initial continental trade-discovery seed for AUREN. Sources are discovery candidates; company examples are public company profiles, not verified supplier offers or endorsements.",
+  "coveragePolicy": {
+    "defaultScope": "global",
+    "continentFilter": "optional",
+    "countryFilter": "optional",
+    "continentsIncluded": ["Africa", "Asia", "Europe", "North America", "South America", "Oceania"],
+    "antarcticaNote": "Antarctica is excluded from commercial company coverage because it has no ordinary permanent commercial economy.",
+    "important": "A source being listed does not mean an API is available or that scraping, storage, or redistribution is permitted. Confirm source terms, API/feed access, freshness, and licences before ingestion. Company profiles do not prove current capacity, certification, solvency, export eligibility, or willingness to supply."
+  },
+  "sourcesByContinent": [
+    {
+      "continent": "Africa",
+      "sources": [
+        {"name":"Africa CDC Local Manufacturing Directory","url":"https://lm.africacdc.org/","scope":"African health-product manufacturers","sourceType":"continental_directory","integrationStatus":"catalog_only"},
+        {"name":"AfriSearch","url":"https://afrisearch.africa/","scope":"Industrial, electrical, automation and renewable-energy suppliers","sourceType":"business_directory","integrationStatus":"catalog_only"},
+        {"name":"Businesses Africa Directory","url":"https://www.businesses.africa/directory","scope":"African businesses across sectors","sourceType":"business_directory","integrationStatus":"catalog_only"},
+        {"name":"Made in Sudan","url":"https://madeinsudan.org/","scope":"Sudanese manufacturers, suppliers and exporters","sourceType":"national_directory","integrationStatus":"catalog_only"},
+        {"name":"Africa Trade / export-promotion networks","url":"https://www.afreximbank.com/","scope":"Pan-African trade, market and export-development pathways","sourceType":"trade_institution","integrationStatus":"catalog_only"}
+      ],
+      "companyExamples": [
+        {"name":"Dangote Industries","country":"NG","website":"https://www.dangote.com/","sectors":["cement","petrochemicals","fertilizer","food"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"OCP Group","country":"MA","website":"https://www.ocpgroup.ma/","sectors":["phosphate","fertilizers"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Sasol","country":"ZA","website":"https://www.sasol.com/","sectors":["chemicals","energy"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Ethiopian Airlines Group","country":"ET","website":"https://www.ethiopianairlines.com/","sectors":["aviation","logistics"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"DAL Group","country":"SD","website":"https://www.dalgroup.com/","sectors":["food","industrial gases","machinery","energy"],"recordType":"company_example","verificationStatus":"official_website_reference_only"}
+      ]
+    },
+    {
+      "continent": "Asia",
+      "sources": [
+        {"name":"Asia Trade Directory","url":"https://www.asiatradedirectory.com/","scope":"Asian manufacturers, suppliers and exporters","sourceType":"business_directory","integrationStatus":"catalog_only"},
+        {"name":"Alibaba.com","url":"https://www.alibaba.com/","scope":"International B2B suppliers and manufacturers","sourceType":"b2b_marketplace","integrationStatus":"catalog_only"},
+        {"name":"Myanmar Trade Exporter Directory","url":"https://myantrade.gov.mm/exporter-directory","scope":"Export-ready suppliers by product sector","sourceType":"national_export_directory","integrationStatus":"catalog_only"},
+        {"name":"Japan External Trade Organization (JETRO)","url":"https://www.jetro.go.jp/en/","scope":"Japanese business and export/investment information","sourceType":"trade_promotion_agency","integrationStatus":"catalog_only"},
+        {"name":"India Trade Portal","url":"https://www.indiantradeportal.in/","scope":"Indian export, market-access and trade information","sourceType":"national_trade_portal","integrationStatus":"catalog_only"}
+      ],
+      "companyExamples": [
+        {"name":"Toyota Motor Corporation","country":"JP","website":"https://global.toyota/en/","sectors":["automotive","manufacturing"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Samsung Electronics","country":"KR","website":"https://www.samsung.com/global/","sectors":["electronics","semiconductors"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Tata Group","country":"IN","website":"https://www.tata.com/","sectors":["manufacturing","technology","materials"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"TSMC","country":"TW","website":"https://www.tsmc.com/","sectors":["semiconductors"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Reliance Industries","country":"IN","website":"https://www.ril.com/","sectors":["energy","materials","retail"],"recordType":"company_example","verificationStatus":"official_website_reference_only"}
+      ]
+    },
+    {
+      "continent": "Europe",
+      "sources": [
+        {"name":"Europages","url":"https://www.europages.co.uk/","scope":"European manufacturers, suppliers and exporters","sourceType":"business_directory","integrationStatus":"catalog_only"},
+        {"name":"Made in Europe","url":"https://www.madeineurope.org/","scope":"European manufacturing discovery","sourceType":"manufacturing_directory","integrationStatus":"catalog_only"},
+        {"name":"Manufacturing EU","url":"https://manufacturingeu.com/","scope":"European manufacturing suppliers","sourceType":"b2b_marketplace","integrationStatus":"catalog_only"},
+        {"name":"Enterprise Europe Network","url":"https://een.ec.europa.eu/","scope":"Cross-border business cooperation and partner search","sourceType":"business_network","integrationStatus":"catalog_only"},
+        {"name":"TED — Tenders Electronic Daily","url":"https://ted.europa.eu/","scope":"European public procurement notices and buyer opportunities","sourceType":"procurement_directory","integrationStatus":"catalog_only"}
+      ],
+      "companyExamples": [
+        {"name":"Airbus","country":"NL","website":"https://www.airbus.com/","sectors":["aerospace","aviation"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Siemens","country":"DE","website":"https://www.siemens.com/","sectors":["industrial technology","automation"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Volkswagen Group","country":"DE","website":"https://www.volkswagen-group.com/","sectors":["automotive","manufacturing"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Nestlé","country":"CH","website":"https://www.nestle.com/","sectors":["food","beverages"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Volvo Group","country":"SE","website":"https://www.volvogroup.com/","sectors":["commercial vehicles","industrial equipment"],"recordType":"company_example","verificationStatus":"official_website_reference_only"}
+      ]
+    },
+    {
+      "continent": "North America",
+      "sources": [
+        {"name":"Made in USA Directory (OTEXA)","url":"https://www.trade.gov/made-usa-directory","scope":"US textile, apparel, footwear and travel-goods supply chain","sourceType":"government_directory","integrationStatus":"catalog_only"},
+        {"name":"Canada — Find a Supplier","url":"https://international.canada.ca/en/services/business/trade/buy-sell/find-supplier","scope":"Canadian suppliers and export-support services","sourceType":"government_trade_portal","integrationStatus":"catalog_only"},
+        {"name":"Thomasnet","url":"https://www.thomasnet.com/","scope":"North American industrial suppliers and manufacturers","sourceType":"industrial_directory","integrationStatus":"catalog_only"},
+        {"name":"ConnectAmericas","url":"https://connectamericas.com/","scope":"Businesses and international trade across the Americas","sourceType":"business_network","integrationStatus":"catalog_only"},
+        {"name":"Mexico Industry","url":"https://mexicoindustry.com/","scope":"Mexican industrial companies and manufacturing sectors","sourceType":"industrial_directory","integrationStatus":"catalog_only"}
+      ],
+      "companyExamples": [
+        {"name":"Caterpillar","country":"US","website":"https://www.caterpillar.com/","sectors":["construction equipment","mining equipment","engines"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Ford Motor Company","country":"US","website":"https://corporate.ford.com/","sectors":["automotive","manufacturing"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Cargill","country":"US","website":"https://www.cargill.com/","sectors":["agriculture","food","ingredients"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Magna International","country":"CA","website":"https://www.magna.com/","sectors":["automotive components"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Grupo Bimbo","country":"MX","website":"https://www.grupobimbo.com/","sectors":["food manufacturing"],"recordType":"company_example","verificationStatus":"official_website_reference_only"}
+      ]
+    },
+    {
+      "continent": "South America",
+      "sources": [
+        {"name":"Argentina Exporter Guide","url":"https://magyp.gob.ar/new/0-0/programas/dma/guia_de_exportadores/guia-exportadores.php","scope":"Argentine agricultural and food exporters","sourceType":"government_export_directory","integrationStatus":"catalog_only"},
+        {"name":"ApexBrasil","url":"https://apexbrasil.com.br/","scope":"Brazilian exporters and trade promotion","sourceType":"national_export_agency","integrationStatus":"catalog_only"},
+        {"name":"ConnectAmericas","url":"https://connectamericas.com/","scope":"Regional business and trade connections across the Americas","sourceType":"business_network","integrationStatus":"catalog_only"},
+        {"name":"ProChile","url":"https://www.prochile.gob.cl/","scope":"Chilean export promotion and supplier discovery","sourceType":"national_export_agency","integrationStatus":"catalog_only"},
+        {"name":"Uruguay XXI","url":"https://www.uruguayxxi.gub.uy/en/","scope":"Uruguayan exporters and investment opportunities","sourceType":"national_export_agency","integrationStatus":"catalog_only"}
+      ],
+      "companyExamples": [
+        {"name":"Embraer","country":"BR","website":"https://www.embraer.com/","sectors":["aerospace","aircraft manufacturing"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Petrobras","country":"BR","website":"https://petrobras.com.br/","sectors":["energy","oil and gas"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Vale","country":"BR","website":"https://vale.com/","sectors":["mining","materials"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"WEG","country":"BR","website":"https://www.weg.net/","sectors":["electric motors","industrial equipment"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Natura","country":"BR","website":"https://www.natura.com.br/","sectors":["cosmetics","personal care"],"recordType":"company_example","verificationStatus":"official_website_reference_only"}
+      ]
+    },
+    {
+      "continent": "Oceania",
+      "sources": [
+        {"name":"Austrade","url":"https://www.austrade.gov.au/","scope":"Australian exporters, trade and market-entry support","sourceType":"national_trade_agency","integrationStatus":"catalog_only"},
+        {"name":"Australian Made","url":"https://australianmade.com.au/","scope":"Australian-made products and participating businesses","sourceType":"national_product_directory","integrationStatus":"catalog_only"},
+        {"name":"New Zealand Trade and Enterprise","url":"https://www.nzte.govt.nz/","scope":"New Zealand exporters and international trade support","sourceType":"national_trade_agency","integrationStatus":"catalog_only"},
+        {"name":"Industry Capability Network (ICN)","url":"https://icn.org.au/","scope":"Australian industrial suppliers and project supply chains","sourceType":"industrial_supplier_network","integrationStatus":"catalog_only"},
+        {"name":"New Zealand Companies Office","url":"https://companies-register.companiesoffice.govt.nz/","scope":"Official New Zealand company registry search","sourceType":"official_company_registry","integrationStatus":"catalog_only"}
+      ],
+      "companyExamples": [
+        {"name":"BHP","country":"AU","website":"https://www.bhp.com/","sectors":["mining","resources"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Fortescue","country":"AU","website":"https://www.fortescue.com/","sectors":["iron ore","energy"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"CSL","country":"AU","website":"https://www.csl.com/","sectors":["biotechnology","healthcare"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Fonterra","country":"NZ","website":"https://www.fonterra.com/","sectors":["dairy","food ingredients"],"recordType":"company_example","verificationStatus":"official_website_reference_only"},
+        {"name":"Fisher & Paykel Healthcare","country":"NZ","website":"https://www.fphcare.com/","sectors":["medical devices","healthcare"],"recordType":"company_example","verificationStatus":"official_website_reference_only"}
+      ]
+    }
+  ]
+}
