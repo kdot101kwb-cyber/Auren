@@ -310,3 +310,8 @@ void main() {
     final plan = AurenIntentActionPlan.fromIntent('आपूर्तिकर्ता');
     expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
   });
+
+  test('keeps generic business discovery on contact rather than RFQ', () {
+    final plan = AurenIntentActionPlan.fromIntent('show me a local business');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.contact);
+  });
