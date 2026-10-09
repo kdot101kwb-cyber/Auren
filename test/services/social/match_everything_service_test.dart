@@ -26,6 +26,32 @@ void main() {
     expect(AurenIntentSignals.fromIntent('wholesale clothing').wantsWholesale, isTrue);
   });
 
+  test('recognizes Arabic exporter, importer and foreign-trade requests', () {
+    final exporter = AurenIntentSignals.fromIntent('عايز مصدر للتجارة الخارجية');
+    expect(exporter.wantsExporter, isTrue);
+    expect(exporter.wantsInternationalTrade, isTrue);
+    expect(
+      AurenIntentActionPlan.fromIntent('عايز مصدر للتجارة الخارجية')
+          .actionFor(AurenMatchKind.business),
+      AurenMatchAction.requestQuote,
+    );
+
+    final importer = AurenIntentSignals.fromIntent('أبحث عن مستورد للتجارة الدولية');
+    expect(importer.wantsImporter, isTrue);
+    expect(importer.wantsInternationalTrade, isTrue);
+    expect(
+      AurenIntentActionPlan.fromIntent('أبحث عن مستورد للتجارة الدولية')
+          .actionFor(AurenMatchKind.business),
+      AurenMatchAction.requestQuote,
+    );
+
+    final foreignTrade = AurenIntentActionPlan.fromIntent('خدمات التجارة الخارجية');
+    expect(
+      foreignTrade.actionFor(AurenMatchKind.business),
+      AurenMatchAction.requestQuote,
+    );
+  });
+
   test('recognizes more global markets and cities', () {
     final signals = AurenIntentSignals.fromIntent(
       'certified sesame supplier in Nairobi, Kenya shipping to Saudi Arabia',
