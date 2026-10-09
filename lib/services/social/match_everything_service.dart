@@ -761,15 +761,29 @@ class AurenIntentActionPlan {
 
   static String _normalizeIntent(String? value) {
     var text = (value ?? '').toLowerCase();
-    text = text.replaceAll(RegExp(r'[\\u064B-\\u065F\\u0670]'), '').replaceAll('أ', 'ا').replaceAll('إ', 'ا').replaceAll('آ', 'ا').replaceAll('ى', 'ي').replaceAll('ة', 'ه').replaceAll('ـ', '');
-    return text.replaceAll(RegExp(r'\\s+'), ' ').trim();
+    text = text.replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '').replaceAll('أ', 'ا').replaceAll('إ', 'ا').replaceAll('آ', 'ا').replaceAll('ى', 'ي').replaceAll('ة', 'ه').replaceAll('ـ', '');
+    return text.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
   AurenMatchAction actionFor(AurenMatchKind kind) {
     if (commercial) {
       switch (kind) {
         case AurenMatchKind.business:
-          return normalized.contains('مورد') || normalized.contains('supplier') || normalized.contains('توريد') || normalized.contains('wholesale') || normalized.contains('مصنع') || normalized.contains('manufacturer') || normalized.contains('factory') || normalized.contains('مصدر') || normalized.contains('تصدير') || normalized.contains('export') || normalized.contains('مستورد') || normalized.contains('استيراد') || normalized.contains('import') || normalized.contains('تجارة دولية') || normalized.contains('international trade') || normalized.contains('quote') || normalized.contains('عرض سعر')
+          final supplierIntent = [
+            'مورد', 'supplier', 'proveedor', 'fournisseur', 'fornecedor',
+            'tedarikçi', 'tedarikci', 'msambazaji', '供应商', '供應商',
+            'توريد', 'wholesale', 'mayoreo', 'gros', 'atacado', 'toptan',
+            'مصنع', 'manufacturer', 'fabricante', 'fabricant', 'üretici',
+            'uretici', '厂商', '工厂', 'مصدر', 'تصدير', 'export', 'exporter',
+            'exportador', 'exportateur', 'ihracatçı', 'ihracatci',
+            'مستورد', 'استيراد', 'import', 'importer', 'importador',
+            'importateur', 'ithalatçı', 'ithalatci', 'تجارة دولية',
+            'international trade', 'comercio internacional',
+            'commerce international', 'comércio internacional',
+            'uluslararası ticaret', 'biashara ya kimataifa', '国际贸易',
+            '國際貿易', 'quote', 'عرض سعر',
+          ].any((term) => normalized.contains(_normalizeIntent(term)));
+          return supplierIntent
               ? AurenMatchAction.requestQuote : AurenMatchAction.contact;
         case AurenMatchKind.product:
           return normalized.contains('اشتري') || normalized.contains('شراء') || normalized.contains('buy')
