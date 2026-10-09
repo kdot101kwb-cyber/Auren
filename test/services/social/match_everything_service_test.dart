@@ -20,6 +20,12 @@ void main() {
     });
   });
 
+  test('detects export, import, and wholesale sourcing intent', () {
+    expect(AurenIntentSignals.fromIntent('exporter for sesame').wantsExporter, isTrue);
+    expect(AurenIntentSignals.fromIntent('importer in Sudan').wantsImporter, isTrue);
+    expect(AurenIntentSignals.fromIntent('wholesale clothing').wantsWholesale, isTrue);
+  });
+
   group('AurenIntentActionPlan', () {
     test('maps supplier intent to quote request', () {
       final plan = AurenIntentActionPlan.fromIntent('أبحث عن مورد في الصين');
