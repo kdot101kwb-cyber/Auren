@@ -54,7 +54,7 @@
       "country_code": "VN",
       "category": "Business registry",
       "name": "National Business Registration Portal",
-      "url": "https://dangkykinhdoanh.gov.vn/en",
+      "url": "https://dangkykinhdoanh.gov.vn/en/Pages/default.aspx",
       "source_type": "official_portal_candidate",
       "integration_status": "catalog_only",
       "api_status": "not_verified",
@@ -138,7 +138,7 @@
       "country_code": "LK",
       "category": "Tax administration",
       "name": "Inland Revenue Department",
-      "url": "https://www.ird.gov.lk/en/",
+      "url": "https://www.ird.gov.lk/en/sitepages/default.aspx",
       "source_type": "official_portal_candidate",
       "integration_status": "catalog_only",
       "api_status": "not_verified",
@@ -600,13 +600,13 @@
       "country_code": "HK",
       "category": "Public procurement",
       "name": "Government tender notices",
-      "url": "https://www.gov.hk/en/theme/business/tenders/",
+      "url": "https://www.fstb.gov.hk/tb/en/business/gov_procurement/tender-notices.htm",
       "source_type": "official_portal_candidate",
       "integration_status": "catalog_only",
       "api_status": "not_verified",
       "access_and_licensing": "Verify the URL, current ownership, access conditions, API availability and reuse terms before automated ingestion.",
       "verification_status": "link_candidate_requires_manual_validation",
-      "notes": "Directory reference only. This entry does not claim a live API, comprehensive national coverage, or verification of the status of any business."
+      "notes": "Official Hong Kong Government tender notices page. Directory reference only; confirm access and reuse terms before automated ingestion."
     },
     {
       "id": "bn_01",
