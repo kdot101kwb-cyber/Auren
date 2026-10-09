@@ -1,0 +1,80 @@
+name: Global Source Catalog Link Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      timeout_ms:
+        description: "Per-URL request timeout in milliseconds"
+        required: false
+        default: "9000"
+      concurrency:
+        description: "Maximum concurrent requests (1-12)"
+        required: false
+        default: "6"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source catalog branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/validate-global-source-catalogs
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate catalog structure
+        working-directory: functions
+        run: node validate_country_source_catalogs.js
+
+      - name: Check public URL responses
+        id: link_audit
+        working-directory: functions
+        continue-on-error: true
+        env:
+          AUDIT_TIMEOUT_MS: ${{ inputs.timeout_ms }}
+          AUDIT_CONCURRENCY: ${{ inputs.concurrency }}
+        run: |
+          node - <<'NODE'
+          const { loadAndValidateAll, checkLinks } = require('./validate_country_source_catalogs');
+          const timeoutMs = Math.max(1000, Math.min(20000, Number(process.env.AUDIT_TIMEOUT_MS) || 9000));
+          const concurrency = Math.max(1, Math.min(12, Number(process.env.AUDIT_CONCURRENCY) || 6));
+          (async () => {
+            const catalogs = loadAndValidateAll();
+            const structuralErrors = catalogs.flatMap(c => c.errors.map(error => `batch ${c.batch}: ${error}`));
+            if (structuralErrors.length) throw new Error(structuralErrors.join('\\n'));
+            const results = await checkLinks(catalogs, { concurrency, timeoutMs });
+            const report = {
+              checked_at: new Date().toISOString(),
+              checked_count: results.length,
+              responded_or_restricted_count: results.filter(r => r.reachable).length,
+              needs_review_count: results.filter(r => !r.reachable).length,
+              interpretation: 'HTTP response is only a reachability signal. It does not prove official ownership, data accuracy, API availability, permission to scrape, or reuse rights.',
+              results
+            };
+            require('node:fs').writeFileSync('country_official_trade_sources_link_check_report.json', JSON.stringify(report, null, 2) + '\\n');
+            console.log(JSON.stringify({ checked_count: report.checked_count, responded_or_restricted_count: report.responded_or_restricted_count, needs_review_count: report.needs_review_count }, null, 2));
+            if (report.needs_review_count) process.exitCode = 1;
+          })().catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
+
+      - name: Upload URL audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-global-source-link-audit
+          path: functions/country_official_trade_sources_link_check_report.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Explain audit outcome
+        if: steps.link_audit.outcome == 'failure'
+        run: |
+          echo "::warning::Some URLs timed out, returned an HTTP error, or blocked automated access. Review the uploaded report manually; this is not proof that a source is invalid."
