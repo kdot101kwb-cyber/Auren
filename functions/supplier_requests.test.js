@@ -54,7 +54,7 @@ test('supplier lifecycle restricts status transitions and keeps terminal states 
   assert.match(source, /draft: new Set\(\['waiting_response', 'failed', 'cancelled'\]\)/);
   assert.match(source, /waiting_response: new Set\(\['replied', 'completed', 'failed', 'cancelled'\]\)/);
   assert.match(source, /replied: new Set\(\['completed', 'cancelled'\]\)/);
-  assert.match(source, /completed: new Set\(\[\]\)/);
+  assert.match(source, /cancelled: new Set\(\[\]\)/);
   assert.match(source, /Invalid supplier request status transition/);
 });
 
