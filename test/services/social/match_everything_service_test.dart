@@ -104,6 +104,34 @@ void main() {
     expect(emptyPlan.actionFor(AurenMatchKind.content), AurenMatchAction.watch);
   });
 
+  test('does not award sourcing relevance to unrelated text', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'certified organic sesame supplier in Sudan with shipping and samples',
+    );
+    expect(signals.matchScore('romantic movie about London'), 0);
+  });
+
+  test('recognizes Sudanese and regional trade wording', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'عايز مصدر صمغ عربي من أم درمان للتصدير مع عينات',
+    );
+    expect(signals.cities, contains('ام درمان'));
+    expect(signals.wantsExporter, isTrue);
+    expect(signals.wantsSamples, isTrue);
+  });
+
+  test('recognizes supplier terms and constraints in English', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'manufacturer of organic cotton in Türkiye, certified, bulk MOQ, delivery',
+    );
+    expect(signals.countries, contains('turkey'));
+    expect(signals.wantsManufacturer, isTrue);
+    expect(signals.wantsOrganic, isTrue);
+    expect(signals.wantsCertified, isTrue);
+    expect(signals.wantsBulk, isTrue);
+    expect(signals.wantsShipping, isTrue);
+  });
+
   test('clamps intent signal scores to 35', () {
     final signals = AurenIntentSignals.fromIntent(
       'السودان مصر الصين الإمارات كينيا نيجيريا الخرطوم القاهرة دبي شنتشن '
