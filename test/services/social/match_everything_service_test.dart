@@ -270,3 +270,8 @@ void main() {
     );
   });
 }
+
+  test('routes Arabic supplier sourcing with quote action', () {
+    final plan = AurenIntentActionPlan.fromIntent('عايز مورد سمسم');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
+  });
