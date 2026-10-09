@@ -165,6 +165,18 @@ const DATA_SOURCES = Object.freeze([
     notes: 'Country-by-country official-source adapters are required. A listed institution must not be called licensed until its regulator record is checked.',
   },
   {
+    id: 'regional_local_bank_directories',
+    name: 'Regional and Local Banking Institutions',
+    category: 'central_bank_directories',
+    endpoint: null,
+    access: 'official_source_ingestion',
+    integrationStatus: 'implemented',
+    dataKinds: ['regional_banks', 'local_commercial_banks', 'microfinance', 'cooperatives', 'islamic_banks', 'regulator_links', 'licence_status'],
+    requiresCredentials: false,
+    licenseReviewRequired: true,
+    notes: 'Search endpoint reads only records ingested with source provenance. Populate country-by-country from official central banks and banking regulators; an empty result is not proof that no bank exists.',
+  },
+  {
     id: 'grants_gov_opportunities',
     name: 'Grants.gov Federal Funding Opportunities',
     category: 'grant_and_prize_programs',
