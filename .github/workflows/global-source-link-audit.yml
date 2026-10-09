@@ -26,7 +26,7 @@ jobs:
       - name: Checkout source catalog branch
         uses: actions/checkout@v4
         with:
-          ref: feat/validate-global-source-catalogs
+          ref: fix/global-source-broken-links
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
