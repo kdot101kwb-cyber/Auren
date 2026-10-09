@@ -1,0 +1,68 @@
+name: Global Source Catalog Audit
+
+on:
+  pull_request:
+    paths:
+      - 'functions/*batch*.json'
+      - 'functions/*source*.json'
+      - 'functions/*sources*.json'
+      - 'functions/*catalog*.json'
+      - 'functions/*manufacturer*.json'
+      - 'functions/*investor*.json'
+      - 'functions/*trade*.json'
+      - 'functions/*bank*.json'
+      - 'functions/*factory*.json'
+      - 'functions/audit_global_source_catalog_links.js'
+      - '.github/workflows/global-source-catalog-audit.yml'
+  workflow_dispatch:
+    inputs:
+      check_links:
+        description: 'Probe candidate URLs (triage only; not proof of official status or reuse rights)'
+        required: false
+        type: boolean
+        default: true
+      timeout_ms:
+        description: 'Per-request timeout in milliseconds (1000-20000)'
+        required: false
+        default: '8000'
+      concurrency:
+        description: 'Concurrent requests (1-10)'
+        required: false
+        default: '5'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate catalog structure and optionally audit URLs
+        working-directory: functions
+        env:
+          AUDIT_TIMEOUT_MS: ${{ inputs.timeout_ms || '8000' }}
+          AUDIT_CONCURRENCY: ${{ inputs.concurrency || '5' }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.check_links }}" = "false" ]; then
+            node audit_global_source_catalog_links.js
+          else
+            node audit_global_source_catalog_links.js --check-links
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-global-source-catalog-audit
+          path: functions/global_source_catalog_link_audit_report.json
+          if-no-files-found: warn
+          retention-days: 14
