@@ -9,15 +9,16 @@
     "Investment promotion agencies are not necessarily investors and may provide facilitation rather than direct capital.",
     "Do not imply any investor is accepting applications or that any investment is guaranteed.",
     "API availability, licensing, data freshness and terms are not assessed.",
-    "HTTP 403, anti-bot responses and timeouts are not by themselves evidence that a URL is broken."
+    "HTTP 403, anti-bot responses and timeouts are not by themselves evidence that a URL is broken.",
+    "Batch 36 link-review follow-up: the Sudan business-network, Vietnam Foreign Investment Agency and Korea Venture Capital Association URLs were updated after checking current official-site search results. Other timeout, DNS, TLS, and restricted responses remain review-needed and were not assumed broken."
   ],
   "records": [
     {
       "id": "b36_01_sudan",
-      "name": "Sudan Businessmen and Employers Federation",
+      "name": "Union of Sudanese Chambers of Commerce",
       "country": "Sudan",
       "category": "business_network",
-      "url": "https://sbe.org.sd/",
+      "url": "https://ucc.org.sd/",
       "authority": "investment_promotion_or_investor_network_source_candidate",
       "purpose": "Potential source for investor discovery, investment promotion, venture-capital or private-equity ecosystem information; specific directories and access terms require validation.",
       "status": "catalog_only",
@@ -533,7 +534,7 @@
       "name": "Foreign Investment Agency",
       "country": "Vietnam",
       "category": "investment_promotion",
-      "url": "https://fia.mpi.gov.vn/",
+      "url": "https://fia.mof.gov.vn/en/",
       "authority": "investment_promotion_or_investor_network_source_candidate",
       "purpose": "Potential source for investor discovery, investment promotion, venture-capital or private-equity ecosystem information; specific directories and access terms require validation.",
       "status": "catalog_only",
@@ -557,7 +558,7 @@
       "name": "Korea Venture Capital Association",
       "country": "South Korea",
       "category": "venture_capital",
-      "url": "https://www.kvca.or.kr/eng/",
+      "url": "https://www.kvca.or.kr/en/",
       "authority": "investment_promotion_or_investor_network_source_candidate",
       "purpose": "Potential source for investor discovery, investment promotion, venture-capital or private-equity ecosystem information; specific directories and access terms require validation.",
       "status": "catalog_only",
