@@ -12,7 +12,7 @@ const TIMEOUT_MS = Math.max(1500, Math.min(15000, Number(process.env.API_AUDIT_T
 const CONCURRENCY = Math.max(1, Math.min(6, Number(process.env.API_AUDIT_CONCURRENCY) || 4));
 const USER_AGENT = 'AUREN-ReadOnly-API-Discovery/1.0 (+https://github.com/kdot101kwb-cyber/Auren)';
 const API_FIELDS = ['api_url', 'api_base_url', 'api_endpoint', 'endpoint_url', 'openapi_url', 'swagger_url', 'api_docs_url', 'documentation_url', 'developer_url'];
-const API_LINK_HINT = /(?:api|developer|developers|openapi|swagger|redoc|graphql|data[-_/ ]?portal|webservice|web[-_/ ]?service|documentation|docs)/i;
+const API_LINK_HINT = /(?:\\bapi\\b|\\/api(?:\\/|$|[?#])|developer(?:s)?|openapi|swagger|redoc|graphql|data[-_/ ]?portal|webservice|web[-_/ ]?service|api[-_ ]?documentation|\\/docs(?:\\/|$|[?#]))/i;
 
 function catalogFiles() {
   const requested = (process.env.API_AUDIT_CATALOG_FILES || '').split(',').map(x => x.trim()).filter(Boolean);
@@ -122,7 +122,7 @@ function classify(record, homepage, declared, discovered) {
     if (declared.some(r => r?.http_status === 404 || r?.http_status === 410)) return 'declared_api_endpoint_not_found_review';
     return 'declared_api_endpoint_unconfirmed';
   }
-  if (discovered.length) return 'api_or_developer_documentation_link_discovered';
+  if (discovered.length) return 'api_or_developer_documentation_candidate_discovered';
   if (good(homepage)) return 'homepage_responded_api_not_identified';
   if (auth(homepage)) return 'homepage_access_restricted_api_not_identified';
   return 'homepage_unreachable_or_unconfirmed_api_not_identified';
