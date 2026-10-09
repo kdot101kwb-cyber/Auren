@@ -840,7 +840,7 @@ class AurenIntentActionPlan {
   };
 
   String reasonFor(AurenMatchAction action) => switch (action) {
-    AurenMatchAction.requestQuote => 'فهمت أنك تبحث عن مورد؛ الخطوة التالية هي التواصل وطلب عرض سعر.',
+    AurenMatchAction.requestQuote => 'فهمت أنك تبحث عن مورد؛ ستُنشأ مسودة طلب عرض سعر لمراجعتها وتعديلها، ولن يُرسل أي تواصل خارجي قبل موافقتك الصريحة.',
     AurenMatchAction.contact => 'فهمت أنك تريد الوصول للجهة المناسبة؛ الخطوة التالية هي التواصل معها.',
     AurenMatchAction.apply => 'فهمت أنك تبحث عن فرصة عمل؛ الخطوة التالية هي فتح الفرصة ثم التقديم عندما يكون نموذج التقديم متاحاً.',
     AurenMatchAction.addToCart => 'فهمت أنك تريد الشراء؛ الخطوة التالية هي فتح المنتج ثم إضافته للسلة.',
