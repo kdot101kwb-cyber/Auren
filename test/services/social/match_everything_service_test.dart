@@ -269,7 +269,6 @@ void main() {
       lessThanOrEqualTo(35),
     );
   });
-}
 
   test('routes Arabic supplier sourcing with quote action', () {
     final plan = AurenIntentActionPlan.fromIntent('عايز مورد سمسم');
@@ -323,3 +322,4 @@ void main() {
     expect(plan.labelFor(action), 'طلب عرض سعر');
     expect(plan.reasonFor(action), contains('طلب عرض سعر'));
   });
+}
