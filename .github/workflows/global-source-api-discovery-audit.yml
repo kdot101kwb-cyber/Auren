@@ -1,0 +1,65 @@
+name: Global Source API Discovery Audit
+
+on:
+  pull_request:
+    paths:
+      - 'functions/*batch*.json'
+      - 'functions/*source*.json'
+      - 'functions/*sources*.json'
+      - 'functions/*catalog*.json'
+      - 'functions/*manufacturer*.json'
+      - 'functions/*investor*.json'
+      - 'functions/*trade*.json'
+      - 'functions/*bank*.json'
+      - 'functions/*factory*.json'
+      - 'functions/audit_global_source_apis.js'
+      - '.github/workflows/global-source-api-discovery-audit.yml'
+  workflow_dispatch:
+    inputs:
+      probe:
+        description: 'Make bounded, read-only GET requests to source homepages and explicitly declared API URLs'
+        required: false
+        type: boolean
+        default: true
+      timeout_ms:
+        description: 'Per-request timeout in milliseconds (1500-15000)'
+        required: false
+        default: '7000'
+      concurrency:
+        description: 'Concurrent homepage requests (1-6)'
+        required: false
+        default: '4'
+
+permissions:
+  contents: read
+
+jobs:
+  api-discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Discover API documentation and assess declared endpoints
+        working-directory: functions
+        env:
+          API_AUDIT_TIMEOUT_MS: ${{ inputs.timeout_ms || '7000' }}
+          API_AUDIT_CONCURRENCY: ${{ inputs.concurrency || '4' }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.probe }}" = "true" ]; then
+            node audit_global_source_apis.js --probe
+          else
+            node audit_global_source_apis.js
+          fi
+      - name: Upload API discovery report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-global-source-api-discovery
+          path: functions/global_source_api_discovery_report.json
+          if-no-files-found: warn
+          retention-days: 14
