@@ -1,6 +1,6 @@
 'use strict';
 
-const {onCall} = require('firebase-functions/v2/https');
+const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
 if (!admin.apps.length) admin.initializeApp();
@@ -18,13 +18,31 @@ const CORE = [
 ];
 
 async function getJson(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Upstream request failed: ' + res.status);
-  return res.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {'user-agent': 'AUREN-Global-Data/1.0'}
+    });
+    if (!res.ok) throw new HttpsError('unavailable', 'World Bank data source returned HTTP ' + res.status + '.');
+    return await res.json();
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError('unavailable', 'World Bank data request failed or timed out.');
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-exports.aurenGlobalCountryRegistry = onCall(async (request) => {
-  if (!request.auth?.uid) throw new Error('Authentication is required.');
+function requireAdmin(request) {
+  if (!request.auth || request.auth.token?.admin !== true) {
+    throw new HttpsError('permission-denied', 'Administrator access is required.');
+  }
+}
+
+exports.aurenGlobalCountryRegistry = onCall({region: 'us-central1', timeoutSeconds: 120, memory: '256MiB'}, async (request) => {
+  requireAdmin(request);
 
   const rows = [];
   for (let page = 1; page <= 6; page++) {
@@ -50,6 +68,10 @@ exports.aurenGlobalCountryRegistry = onCall(async (request) => {
     }
   }
 
+  if (rows.length === 0) {
+    throw new HttpsError('unavailable', 'World Bank country registry returned no usable countries.');
+  }
+
   const batchSize = 400;
   for (let i = 0; i < rows.length; i += batchSize) {
     const batch = db.batch();
@@ -62,10 +84,10 @@ exports.aurenGlobalCountryRegistry = onCall(async (request) => {
   return {status:'ok', countriesProcessed:rows.length, source:'world_bank_wdi'};
 });
 
-exports.aurenGlobalDataIngest = onCall(async (request) => {
-  if (!request.auth?.uid) throw new Error('Authentication is required.');
+exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 120, memory: '256MiB'}, async (request) => {
+  requireAdmin(request);
 
-  const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 250);
+  const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 100);
   const snap = await db.collection('auren_global_countries').limit(limit).get();
   let processed = 0;
 
