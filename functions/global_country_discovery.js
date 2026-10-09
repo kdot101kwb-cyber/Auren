@@ -5,7 +5,7 @@ const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const WB_COUNTRY_API = 'https://api.worldbank.org/v2/country';
 const MAX_PAGES = 10;
 const PAGE_SIZE = 100;
-const MAX_RESULTS = 250;
+const MAX_RESULTS = 350;
 
 function normalizeText(value, field, maxLength = 100) {
   if (value === undefined || value === null || value === '') return '';
