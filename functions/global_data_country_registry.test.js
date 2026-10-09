@@ -32,7 +32,20 @@ test('global indicator ingestion uses the canonical core feasibility indicators'
     'SL.UEM.TOTL.ZS',
     'AG.LND.AGRI.ZS',
     'AG.LND.ARBL.ZS',
+    'SP.POP.GROW',
+    'SP.DYN.LE00.IN',
+    'NY.GDP.MKTP.KD.ZG',
+    'FP.CPI.TOTL.ZG',
+    'NE.EXP.GNFS.CD',
+    'NE.IMP.GNFS.CD',
+    'BX.KLT.DINV.CD.WD',
+    'IT.NET.USER.ZS',
+    'EG.ELC.ACCS.ZS',
+    'NV.AGR.TOTL.ZS',
+    'EG.FEC.RNEW.ZS',
   ]) assert.match(source, new RegExp(indicator.replaceAll('.', '\\.'), 'g'));
+  assert.match(source, /INDICATOR_CATEGORIES/);
+  assert.match(source, /category: INDICATOR_CATEGORIES\\[indicator\\]/);
   assert.match(source, /auren_global_data/);
   assert.match(source, /indicatorName/);
   assert.match(source, /year: latest\.date/);
