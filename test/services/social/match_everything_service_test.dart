@@ -315,3 +315,11 @@ void main() {
     final plan = AurenIntentActionPlan.fromIntent('show me a local business');
     expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.contact);
   });
+
+  test('supplier quote action has an approval-oriented label and reason', () {
+    final plan = AurenIntentActionPlan.fromIntent('find supplier');
+    final action = plan.actionFor(AurenMatchKind.business);
+    expect(action, AurenMatchAction.requestQuote);
+    expect(plan.labelFor(action), 'طلب عرض سعر');
+    expect(plan.reasonFor(action), contains('طلب عرض سعر'));
+  });
