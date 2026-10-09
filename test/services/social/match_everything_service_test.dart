@@ -63,6 +63,23 @@ void main() {
       expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
     });
 
+    test('routes multilingual supplier intent to quote request', () {
+      for (final intent in [
+        'busco proveedor de algodón orgánico certificado',
+        'fournisseur certifié biologique avec livraison',
+        'Türkiye üretici organik sertifikalı toptan',
+        '有机供应商 认证 批发 运输',
+        'I need a certified organic supplier',
+      ]) {
+        final plan = AurenIntentActionPlan.fromIntent(intent);
+        expect(
+          plan.actionFor(AurenMatchKind.business),
+          AurenMatchAction.requestQuote,
+          reason: intent,
+        );
+      }
+    });
+
     test('maps purchase intent to cart', () {
       final plan = AurenIntentActionPlan.fromIntent('أريد شراء منتج');
       expect(plan.actionFor(AurenMatchKind.product), AurenMatchAction.addToCart);
