@@ -325,6 +325,12 @@ class AurenMatchEverythingService {
         d['mode'], d['searchText'], _list(d['tags']).join(' '),
         _list(d['skills']).join(' '), _list(d['interests']).join(' '),
         _list(d['goals']).join(' '), _list(d['services']).join(' '),
+        d['businessType'], d['tradeRole'], d['country'], d['countryCode'],
+        d['city'], d['source'], d['sourceHost'],
+        _list(d['products']).join(' '), _list(d['productCategories']).join(' '),
+        _list(d['exportMarkets']).join(' '), _list(d['marketsServed']).join(' '),
+        _list(d['importCountries']).join(' '), _list(d['exportProducts']).join(' '),
+        _list(d['certifications']).join(' '), _list(d['searchKeywords']).join(' '),
       ].whereType<String>().join(' ').toLowerCase();
 
   int _score(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms, String normalizedIntent, AurenIntentSignals signals) {
