@@ -269,4 +269,45 @@ void main() {
       lessThanOrEqualTo(35),
     );
   });
+
+  test('routes exporter, importer and international trade requests to RFQ', () {
+    for (final intent in [
+      'find an exporter for sesame',
+      'need an importer in Sudan',
+      'international trade partner for cotton',
+      'عايز مصدر سمسم للتصدير',
+      'أبحث عن مستورد في السودان',
+    ]) {
+      final plan = AurenIntentActionPlan.fromIntent(intent);
+      expect(
+        plan.actionFor(AurenMatchKind.business),
+        AurenMatchAction.requestQuote,
+        reason: intent,
+      );
+    }
+  });
+
+  test('keeps ordinary business contact separate from supplier RFQ', () {
+    final plan = AurenIntentActionPlan.fromIntent('I need a restaurant in Khartoum');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.contact);
+    expect(
+      plan.reasonFor(AurenMatchAction.contact),
+      contains('التواصل'),
+    );
+  });
+
+  test('RFQ action has an explicit review-before-contact explanation', () {
+    final plan = AurenIntentActionPlan.fromIntent('عايز مورد ملابس في الصين');
+    final action = plan.actionFor(AurenMatchKind.business);
+    expect(action, AurenMatchAction.requestQuote);
+    expect(plan.labelFor(action), 'طلب عرض سعر');
+    expect(plan.reasonFor(action), contains('طلب عرض سعر'));
+  });
+
+  test('supplier intent does not change unrelated product action into purchase', () {
+    final plan = AurenIntentActionPlan.fromIntent('find a certified supplier');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
+    expect(plan.actionFor(AurenMatchKind.product), AurenMatchAction.contact);
+  });
+
 }
