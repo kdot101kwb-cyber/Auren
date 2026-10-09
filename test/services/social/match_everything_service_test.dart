@@ -80,6 +80,22 @@ void main() {
       }
     });
 
+    test('maps common non-English work, learning, media and purchase intents', () {
+      final work = AurenIntentActionPlan.fromIntent('busco empleo en tecnología');
+      expect(work.work, isTrue);
+      expect(work.actionFor(AurenMatchKind.opportunity), AurenMatchAction.apply);
+
+      final learning = AurenIntentActionPlan.fromIntent('quiero aprender Flutter con un curso');
+      expect(learning.learning, isTrue);
+
+      final media = AurenIntentActionPlan.fromIntent('quiero ver una película');
+      expect(media.media, isTrue);
+      expect(media.actionFor(AurenMatchKind.content), AurenMatchAction.watch);
+
+      final purchase = AurenIntentActionPlan.fromIntent('ürün satın al');
+      expect(purchase.actionFor(AurenMatchKind.product), AurenMatchAction.addToCart);
+    });
+
     test('maps purchase intent to cart', () {
       final plan = AurenIntentActionPlan.fromIntent('أريد شراء منتج');
       expect(plan.actionFor(AurenMatchKind.product), AurenMatchAction.addToCart);
