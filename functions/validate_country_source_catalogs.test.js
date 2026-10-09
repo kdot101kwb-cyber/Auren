@@ -27,3 +27,16 @@ test('rejects non-HTTPS and duplicate source identifiers', () => {
   assert.ok(errors.some(e => e.includes('non-HTTPS URL')));
   assert.ok(errors.some(e => e.includes('duplicate source id')));
 });
+
+test('allows different source records to share the same official portal URL', () => {
+  const catalog = {
+    batch: 8, country_count: 10, source_count: 50,
+    countries: Array.from({ length: 10 }, (_, i) => ({ name: `Country ${i}`, iso2: String.fromCharCode(65+i, 65+i) })),
+    sources: Array.from({ length: 50 }, (_, i) => ({
+      id: `id${i}`, country: 'Country 0', country_code: 'AA',
+      category: 'registry', name: `Source ${i}`, url: i < 2 ? 'https://example.com/official-portal' : `https://example${i}.com`,
+      integration_status: 'catalog_only'
+    }))
+  };
+  assert.deepEqual(validateCatalog(catalog, 8), []);
+});
