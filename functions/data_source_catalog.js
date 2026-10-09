@@ -165,6 +165,18 @@ const DATA_SOURCES = Object.freeze([
     notes: 'Country-by-country official-source adapters are required. A listed institution must not be called licensed until its regulator record is checked.',
   },
   {
+    id: 'world_bank_projects',
+    name: 'World Bank Projects & Operations',
+    category: 'development_finance',
+    endpoint: 'https://api.worldbank.org/v2/country/{countryCode}/projects',
+    access: 'public_api',
+    integrationStatus: 'implemented',
+    dataKinds: ['development_projects', 'project_financing', 'country_project_status', 'approval_and_closing_dates'],
+    requiresCredentials: false,
+    licenseReviewRequired: true,
+    notes: 'Live country-specific project search. Project financing is not itself an open grant, private investment offer, or complete list of funding opportunities.',
+  },
+  {
     id: 'gleif_lei_records',
     name: 'GLEIF Global Legal Entity Identifier records',
     category: 'global_entity_directory',
