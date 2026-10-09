@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 1,
+  "id": "global_legal_compliance_catalog",
+  "title": "AUREN Global Laws, Regulations and Procedures Catalog",
+  "status": "catalog_only",
+  "purpose": "Country-aware discovery of official laws, regulations, regulator guidance and procedural checklists for business formation, trade, finance and operations.",
+  "importantLimitations": [
+    "This is a discovery catalog, not legal advice and not a complete collection of every law.",
+    "Do not describe a law as current unless its official source, effective date and amendment status have been checked.",
+    "Jurisdiction and activity determine obligations; federal, state/provincial, municipal and sector rules may all apply.",
+    "Procedural checklists are guidance only; confirm exact forms, fees, deadlines and eligibility with the competent authority.",
+    "Store official source URL, jurisdiction, language, publication/effective dates, lastVerifiedAt, retrieval method and content hash for every ingested document.",
+    "Never scrape or redistribute content where source terms prohibit it; link users to the official page instead.",
+    "Flag machine translations and AI summaries as non-authoritative; preserve the original legal text."
+  ],
+  "defaultScope": {
+    "scope": "global",
+    "country": null,
+    "region": null,
+    "rule": "Search all connected jurisdictions and sources by default; country and region are optional filters."
+  },
+  "legalDomains": [
+    {
+      "id": "entity_formation",
+      "label": "Company formation and legal entities",
+      "topics": [
+        "business names",
+        "incorporation",
+        "partnerships",
+        "beneficial ownership",
+        "directors and shareholders",
+        "annual returns",
+        "registered office",
+        "changes of ownership",
+        "insolvency",
+        "dissolution"
+      ],
+      "procedureChecklist": [
+        "Choose legal form and confirm eligibility",
+        "Check and reserve business name",
+        "Prepare constitutional documents and owner/director information",
+        "Register with company registry",
+        "Obtain tax identifiers and sector licences",
+        "Set annual filing and renewal reminders"
+      ],
+      "officialStartingPoints": [
+        {
+          "name": "ICAEW company information by jurisdiction",
+          "url": "https://www.icaew.com/library/research-guides/company-information/sources-by-jurisdiction",
+          "kind": "jurisdiction_directory"
+        }
+      ]
+    },
+    {
+      "id": "tax",
+      "label": "Tax registration and compliance",
+      "topics": [
+        "tax identification",
+        "income tax",
+        "corporate tax",
+        "VAT/GST/sales tax",
+        "withholding",
+        "payroll taxes",
+        "returns",
+        "invoices",
+        "record retention",
+        "audits",
+        "appeals"
+      ],
+      "procedureChecklist": [
+        "Identify tax residence and taxable activities",
+        "Check registration thresholds and deadlines",
+        "Register for applicable tax types",
+        "Configure compliant invoices and bookkeeping",
+        "Calendar returns, payments and record retention",
+        "Confirm exemptions and appeal routes"
+      ],
+      "officialStartingPoints": [
+        {
+          "name": "Sudan Taxation Chamber — procedures",
+          "url": "https://tax.gov.sd/en/tax-procedures/",
+          "kind": "official_national_source",
+          "jurisdiction": "SD"
+        },
+        {
+          "name": "Sudan Taxation Chamber — VAT",
+          "url": "https://tax.gov.sd/en/value-added-tax-vat/",
+          "kind": "official_national_source",
+          "jurisdiction": "SD"
+        }
+      ]
+    },
+    {
+      "id": "import_export_customs",
+      "label": "Import, export, customs and trade controls",
+      "topics": [
+        "customs tariff",
+        "HS classification",
+        "rules of origin",
+        "import/export permits",
+        "restricted goods",
+        "sanctions",
+        "export controls",
+        "customs valuation",
+        "declarations",
+        "trade remedies"
+      ],
+      "procedureChecklist": [
+        "Classify goods and verify HS code",
+        "Check destination/origin rules and restricted-party requirements",
+        "Confirm permits, standards and product certificates",
+        "Prepare invoice, packing list, transport document and origin evidence",
+        "File customs declaration and pay applicable duties/taxes",
+        "Retain transaction records and check post-clearance obligations"
+      ],
+      "officialStartingPoints": [
+        {
+          "name": "Sudan Customs — legislation",
+          "url": "https://web.prog.customs.gov.sd/التشريعات/اللوائح-والقوانين/",
+          "kind": "official_national_source",
+          "jurisdiction": "SD"
+        },
+        {
+          "name": "Sudan Customs — import procedures",
+          "url": "https://web.prog.customs.gov.sd/الاستيراد-والتصدير/إجراءات-الوارد/",
+          "kind": "official_national_source",
+          "jurisdiction": "SD"
+        },
+        {
+          "name": "World Trade Organization",
+          "url": "https://www.wto.org/",
+          "kind": "international_reference"
+        }
+      ]
+    },
+    {
+      "id": "employment",
+      "label": "Employment and workplace compliance",
+      "topics": [
+        "employment contracts",
+        "minimum wages",
+        "working hours",
+        "leave",
+        "social insurance",
+        "work permits",
+        "occupational safety",
+        "termination",
+        "anti-discrimination",
+        "payroll records"
+      ],
+      "procedureChecklist": [
+        "Identify governing labour jurisdiction and worker status",
+        "Check contract language and mandatory clauses",
+        "Verify work authorisation where applicable",
+        "Register employer and workers with relevant agencies",
+        "Implement payroll, leave, safety and grievance processes",
+        "Check dismissal, consultation and record-retention rules"
+      ],
+      "officialStartingPoints": [
+        {
+          "name": "International Labour Organization — labour standards",
+          "url": "https://www.ilo.org/international-labour-standards",
+          "kind": "international_reference"
+        }
+      ]
+    },
+    {
+      "id": "privacy_cybersecurity",
+      "label": "Privacy, data protection and cybersecurity",
+      "topics": [
+        "lawful basis",
+        "privacy notices",
+        "consent",
+        "data subject rights",
+        "cross-border transfers",
+        "breach notification",
+        "children's data",
+        "retention",
+        "security controls",
+        "cookies and marketing"
+      ],
+      "procedureChecklist": [
+        "Map personal data and processing purposes",
+        "Identify applicable laws and regulator",
+        "Publish notices and manage consent/rights",
+        "Set retention, access and deletion controls",
+        "Assess international transfers and vendor contracts",
+        "Create incident response and breach-notification workflow"
+      ],
+      "officialStartingPoints": [
+        {
+          "name": "UNCTAD — data protection and privacy legislation worldwide",
+          "url": "https://unctad.org/page/data-protection-and-privacy-legislation-worldwide",
+          "kind": "international_reference"
+        }
+      ]
+    },
+    {
+      "id": "financial_services",
+      "label": "Banking, payments, investment and financial services",
+      "topics": [
+        "bank licensing",
+        "payment services",
+        "foreign exchange",
+        "AML/CFT",
+        "customer due diligence",
+        "securities",
+        "investment advice",
+        "consumer finance",
+        "deposit protection",
+        "reporting"
+      ],
+      "procedureChecklist": [
+        "Determine whether the activity is regulated",
+        "Identify competent central bank or securities regulator",
+        "Confirm licence/registration and capital requirements",
+        "Implement KYC/AML, sanctions screening and reporting as required",
+        "Check client-money, disclosure and complaint rules",
+        "Verify cross-border and foreign-exchange restrictions"
+      ],
+      "officialStartingPoints": [
+        {
+          "name": "International Monetary Fund",
+          "url": "https://www.imf.org/en/Data",
+          "kind": "international_reference"
+        },
+        {
+          "name": "Bank for International Settlements",
+          "url": "https://www.bis.org/statistics/",
+          "kind": "international_reference"
+        }
+      ]
+    },
+    {
+      "id": "product_safety_standards",
+      "label": "Product standards, safety and certifications",
+      "topics": [
+        "technical regulations",
+        "conformity assessment",
+        "labelling",
+        "food safety",
+        "pharmaceuticals",
+        "electronics",
+        "environmental requirements",
+        "recalls",
+        "warranties"
+      ],
+      "procedureChecklist": [
+        "Identify product category and destination-market rules",
+        "Check mandatory standards and accredited test requirements",
+        "Obtain import/product approvals before shipment",
+        "Prepare labels, safety documentation and certificates",
+        "Track batch/lot traceability and complaint handling",
+        "Document recalls and corrective actions"
+      ],
+      "officialStartingPoints": [
+        {
+          "name": "International Organization for Standardization",
+          "url": "https://www.iso.org/standards.html",
+          "kind": "standards_reference"
+        }
+      ]
+    },
+    {
+      "id": "intellectual_property",
+      "label": "Intellectual property",
+      "topics": [
+        "trademarks",
+        "patents",
+        "copyright",
+        "industrial designs",
+        "licensing",
+        "ownership assignments",
+        "counterfeits",
+        "renewals"
+      ],
+      "procedureChecklist": [
+        "Identify protectable assets and target countries",
+        "Search existing marks/patents where appropriate",
+        "File with the relevant national or regional office",
+        "Record ownership, assignments and licence terms",
+        "Track renewals and enforcement deadlines"
+      ],
+      "officialStartingPoints": [
+        {
+          "name": "World Intellectual Property Organization",
+          "url": "https://www.wipo.int/",
+          "kind": "international_reference"
+        }
+      ]
+    },
+    {
+      "id": "environment_land_sector",
+      "label": "Environment, land and sector-specific permits",
+      "topics": [
+        "environmental assessment",
+        "land use",
+        "construction",
+        "water",
+        "mining",
+        "agriculture",
+        "livestock",
+        "energy",
+        "waste",
+        "protected areas"
+      ],
+      "procedureChecklist": [
+        "Identify location and regulated sector",
+        "Check zoning, land rights and environmental screening",
+        "Obtain permits before construction or operation",
+        "Confirm inspections, monitoring and reporting duties",
+        "Track permit conditions, renewals and restoration obligations"
+      ],
+      "officialStartingPoints": []
+    },
+    {
+      "id": "consumer_ecommerce",
+      "label": "Consumer protection and e-commerce",
+      "topics": [
+        "online sales",
+        "distance contracts",
+        "refunds",
+        "pricing",
+        "advertising",
+        "digital services",
+        "product claims",
+        "marketplaces",
+        "complaints",
+        "competition"
+      ],
+      "procedureChecklist": [
+        "Show legal seller identity and contact details",
+        "Provide clear prices, taxes, delivery and cancellation terms",
+        "Check mandatory warranties and refund rules",
+        "Review marketing, reviews and product claims",
+        "Create complaint, dispute and recall processes",
+        "Check marketplace, competition and platform-specific obligations"
+      ],
+      "officialStartingPoints": []
+    },
+    {
+      "id": "public_procurement",
+      "label": "Public procurement and tendering",
+      "topics": [
+        "supplier registration",
+        "tender eligibility",
+        "bid security",
+        "conflicts of interest",
+        "anti-bribery",
+        "beneficial ownership",
+        "contract performance",
+        "debarment"
+      ],
+      "procedureChecklist": [
+        "Register on the relevant official procurement portal",
+        "Check eligibility, deadlines and mandatory documents",
+        "Review bid security, tax clearance and local-content rules",
+        "Declare conflicts and ownership as required",
+        "Submit through the official channel and retain receipt",
+        "Track clarifications, award notices and appeal windows"
+      ],
+      "officialStartingPoints": []
+    },
+    {
+      "id": "immigration_crossborder",
+      "label": "Immigration, visas and cross-border business",
+      "topics": [
+        "business visas",
+        "work permits",
+        "residence",
+        "foreign ownership",
+        "local representatives",
+        "branch registration",
+        "currency controls"
+      ],
+      "procedureChecklist": [
+        "Identify each country of residence, work and operation",
+        "Check visa/work authorisation before travel or employment",
+        "Review foreign ownership and local-presence requirements",
+        "Register branches and local tax obligations if required",
+        "Confirm foreign-exchange and repatriation rules"
+      ],
+      "officialStartingPoints": []
+    }
+  ],
+  "sourceRecordRequiredFields": [
+    "jurisdictionCountryCode",
+    "subnationalJurisdiction",
+    "authorityName",
+    "officialUrl",
+    "documentTitle",
+    "documentType",
+    "language",
+    "publishedAt",
+    "effectiveFrom",
+    "effectiveTo",
+    "amendmentStatus",
+    "lastVerifiedAt",
+    "accessTerms",
+    "verificationStatus",
+    "contentHash"
+  ],
+  "verificationStatuses": [
+    "official_current_verified",
+    "official_status_uncertain",
+    "official_historical",
+    "secondary_reference",
+    "catalog_only"
+  ],
+  "suggestedDataModel": {
+    "collection": "auren_legal_sources",
+    "documentCollection": "auren_legal_documents",
+    "procedureCollection": "auren_compliance_procedures",
+    "reminderCollection": "auren_compliance_reminders",
+    "minimumControls": [
+      "jurisdiction-aware search",
+      "effective-date and amendment tracking",
+      "source provenance",
+      "review/expiry reminders",
+      "official-source deep links",
+      "AI summary disclaimer",
+      "lawyer escalation for high-impact questions"
+    ]
+  }
+}
