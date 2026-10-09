@@ -81,3 +81,14 @@ test('global indicator ingestion processes small country chunks with parallel in
   assert.match(source, /Promise\.all\(CORE\.map/);
   assert.match(source, /1\), 25\)/);
 });
+
+
+test('global indicator ingestion tolerates upstream failures and reports partial results', () => {
+  const globalDataSource = fs.readFileSync(require.resolve('./global_data_country_registry.js'), 'utf8');
+  assert.match(globalDataSource, /catch \(_\) \{/);
+  assert.match(globalDataSource, /Number\.isFinite\(value\)/);
+  assert.match(globalDataSource, /failedIndicators/);
+  assert.match(globalDataSource, /indicatorValuesStored/);
+  assert.match(globalDataSource, /countriesWithNoIndicators/);
+  assert.match(globalDataSource, /status: failedIndicators > 0 \|\| countriesWithNoIndicators > 0 \? 'partial' : 'ok'/);
+});
