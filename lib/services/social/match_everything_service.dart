@@ -279,9 +279,17 @@ class AurenMatchEverythingService {
           score: _score(
             text, profile, false, intentTerms, normalizedIntent, signals,
           ),
-          reasons: _reasons(
-            text, profile, false, intentTerms, normalizedIntent,
-          ),
+          reasons: [
+            ..._reasons(text, profile, false, intentTerms, normalizedIntent),
+            if (_string(raw['source'], '').isNotEmpty)
+              'المصدر: ${_string(raw['source'], '')}',
+            if (_string(raw['verificationStatus'], 'unverified').toLowerCase() == 'verified')
+              'حالة التحقق: موثّق'
+            else
+              'حالة التحقق: غير متحقق',
+            if (_string(raw['provenanceStatus'], '').toLowerCase() == 'provided')
+              'بيانات مصدر السجل متاحة',
+          ],
           data: normalizedData,
           action: action,
           actionLabel: plan.labelFor(action),
