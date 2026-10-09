@@ -4992,3 +4992,7 @@ Object.assign(module.exports, require('./regional_local_bank_directory'));
 
 // Global bank-name search backed by GLEIF legal-entity reference records.
 Object.assign(module.exports, require('./global_bank_entity_search'));
+
+
+// Global-by-default geography policy for all AUREN discovery domains.
+Object.assign(module.exports, require('./global_coverage_policy'));
