@@ -80,7 +80,7 @@ test('supplier status updates recheck state inside transaction to prevent stale 
 
 test('cancel and retry keep Match Flow status consistent without dispatching messages', () => {
   const source = read('supplier_requests.js');
-  assert.match(source, /updateMatchFlow\(uid,data\.matchFlowId,'cancelled'/);
+  assert.match(source, /updateMatchFlow\(uid,cancelled\.matchFlowId,'cancelled'/);
   assert.match(source, /updateMatchFlow\(uid,retry\.matchFlowId,'active'/);
   assert.match(source, /status:'draft', retryCount, externalDispatch:false/);
   assert.match(source, /Only failed or cancelled requests can be retried/);
