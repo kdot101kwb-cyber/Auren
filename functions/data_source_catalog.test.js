@@ -125,3 +125,11 @@ test('regional and local bank directory is registered with provenance requiremen
   assert.equal(source.access, 'official_source_ingestion');
   assert.match(source.notes, /official central banks and banking regulators/i);
 });
+
+test('global bank entity search is registered as a live global source', () => {
+  const source = getDataSourceCatalog().find((item) => item.id === 'global_bank_entity_search');
+  assert.ok(source);
+  assert.equal(source.integrationStatus, 'implemented');
+  assert.equal(source.access, 'public_api');
+  assert.match(source.notes, /not proof of a banking licence/i);
+});
