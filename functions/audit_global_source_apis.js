@@ -89,7 +89,7 @@ async function request(url, method = 'GET') {
 
 function discoverLinks(html, baseUrl) {
   const links = new Set();
-  const pattern = /<a\\b[^>]*href\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))[^>]*>([\\s\\S]*?)<\\/a\\s*>/gi;
+  const pattern = /<a\b[^>]*href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))[^>]*>([\s\S]*?)<\/a\s*>/gi;
   let match;
   while ((match = pattern.exec(html)) !== null) {
     const raw = match[1] ?? match[2] ?? match[3] ?? '';
@@ -101,7 +101,7 @@ function discoverLinks(html, baseUrl) {
     if (API_LINK_HINT.test(resolved.href) || API_LINK_HINT.test(label)) links.add(resolved.href);
   }
   // Also recognize machine-readable API descriptions explicitly linked in HTML.
-  const machineHints = /(?:href|content)\\s*=\\s*["']([^"']*(?:openapi|swagger|api-docs)[^"']*)["']/gi;
+  const machineHints = /(?:href|content)\s*=\s*["']([^"']*(?:openapi|swagger|api-docs)[^"']*)["']/gi;
   while ((match = machineHints.exec(html)) !== null) {
     try {
       const resolved = new URL(match[1], baseUrl);
