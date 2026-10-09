@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   normalizeBusinessRecord,
+  businessDocumentId,
   normalizeTradeObservation,
 } = require('./global_business_data');
 
@@ -95,4 +96,20 @@ test('preserves zero as a valid aggregate trade value', () => {
   });
   assert.ok(row);
   assert.equal(row.tradeValue, 0);
+});
+
+test('hashes external source record IDs into safe stable Firestore document IDs', () => {
+  const base = normalizeBusinessRecord({
+    name: 'Sample Supplier',
+    countryCode: 'SD',
+    businessType: 'supplier',
+    source: 'licensed directory',
+    sourceUrl: 'https://example.com/suppliers',
+    license: 'terms permit display',
+    sourceRecordId: '../../unsafe/id',
+  });
+  const first = businessDocumentId(base);
+  assert.match(first, /^[a-f0-9]{40}$/);
+  assert.equal(first, businessDocumentId(base));
+  assert.notEqual(first, businessDocumentId({...base, businessType: 'manufacturer'}));
 });
