@@ -120,6 +120,24 @@ void main() {
     expect(signals.wantsSamples, isTrue);
   });
 
+  test('matches equivalent country and city spellings in supplier data', () {
+    final countrySignals =
+        AurenIntentSignals.fromIntent('manufacturer in Türkiye');
+    expect(countrySignals.countries, contains('türkiye'));
+    expect(countrySignals.matchingCountries('manufacturer country: Turkey'),
+        contains('türkiye'));
+
+    final citySignals =
+        AurenIntentSignals.fromIntent('supplier in أم درمان');
+    expect(citySignals.matchingCities('city: Omdurman'), contains('ام درمان'));
+
+    final uaeSignals = AurenIntentSignals.fromIntent('supplier in UAE');
+    expect(
+      uaeSignals.matchingCountries('country: United Arab Emirates'),
+      contains('uae'),
+    );
+  });
+
   test('recognizes supplier terms and constraints in English', () {
     final signals = AurenIntentSignals.fromIntent(
       'manufacturer of organic cotton in Türkiye, certified, bulk MOQ, delivery',
