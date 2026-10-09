@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "title": "AUREN Global Factory and Bank Discovery Sources",
+  "scope": "Global discovery of manufacturers, factories, industrial suppliers, and banks/regulated financial institutions.",
+  "critical_notes": [
+    "Catalog entries are discovery sources only, not live API integrations.",
+    "Manufacturer directory listings do not prove that a company owns a factory or is currently operating; verify registration, address, certifications, production capability, and export records.",
+    "Bank directory listings do not prove solvency, deposit protection, or suitability for payments. Prefer the relevant official regulator for licensing checks.",
+    "No entry should be marked verified until the URL and the intended register/directory are manually checked."
+  ],
+  "records": [
+    {
+      "id": "bank_us_fdic",
+      "name": "FDIC BankFind Suite",
+      "country": "United States",
+      "category": "bank_regulator_directory",
+      "url": "https://banks.data.fdic.gov/bankfind-suite/",
+      "authority": "official_regulator",
+      "purpose": "Search insured banks and bank profiles",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "bank_eu_ecb",
+      "name": "ECB supervised entities list",
+      "country": "European Union",
+      "category": "bank_regulator_directory",
+      "url": "https://www.bankingsupervision.europa.eu/banking/list/html/index.en.html",
+      "authority": "official_regulator",
+      "purpose": "Identify banks directly supervised by the ECB",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "bank_uk_fca",
+      "name": "FCA Financial Services Register",
+      "country": "United Kingdom",
+      "category": "financial_institution_register",
+      "url": "https://register.fca.org.uk/",
+      "authority": "official_regulator",
+      "purpose": "Check authorised and registered financial firms",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "bank_sg_mas",
+      "name": "MAS Financial Institutions Directory",
+      "country": "Singapore",
+      "category": "bank_regulator_directory",
+      "url": "https://eservices.mas.gov.sg/fid",
+      "authority": "official_regulator",
+      "purpose": "Find licensed banks and financial institutions",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "bank_hk_hkma",
+      "name": "HKMA Register of Authorized Institutions",
+      "country": "Hong Kong",
+      "category": "bank_regulator_directory",
+      "url": "https://vpr.hkma.gov.hk/",
+      "authority": "official_regulator",
+      "purpose": "Verify authorized banking institutions",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "bank_au_apra",
+      "name": "APRA Register of Authorised Deposit-taking Institutions",
+      "country": "Australia",
+      "category": "bank_regulator_directory",
+      "url": "https://www.apra.gov.au/register-of-authorised-deposit-taking-institutions",
+      "authority": "official_regulator",
+      "purpose": "Check authorised deposit-taking institutions",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "bank_ca_osfi",
+      "name": "OSFI federally regulated financial institutions",
+      "country": "Canada",
+      "category": "bank_regulator_directory",
+      "url": "https://www.osfi-bsif.gc.ca/en/supervision/financial-institutions",
+      "authority": "official_regulator",
+      "purpose": "Find federally regulated financial institutions",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "bank_ng_cbn",
+      "name": "Central Bank of Nigeria licensed institutions",
+      "country": "Nigeria",
+      "category": "bank_regulator_directory",
+      "url": "https://www.cbn.gov.ng/",
+      "authority": "official_regulator",
+      "purpose": "Official starting point for licensed Nigerian banks; exact register page needs validation",
+      "status": "catalog_only",
+      "verification_status": "official_homepage_register_path_to_confirm"
+    },
+    {
+      "id": "bank_gh_bog",
+      "name": "Bank of Ghana licensed institutions",
+      "country": "Ghana",
+      "category": "bank_regulator_directory",
+      "url": "https://www.bog.gov.gh/supervision-regulation/",
+      "authority": "official_regulator",
+      "purpose": "Official supervision and licensed-institution resources",
+      "status": "catalog_only",
+      "verification_status": "official_section_register_path_to_confirm"
+    },
+    {
+      "id": "bank_in_rbi",
+      "name": "Reserve Bank of India",
+      "country": "India",
+      "category": "bank_regulator_directory",
+      "url": "https://www.rbi.org.in/",
+      "authority": "official_regulator",
+      "purpose": "Official banking regulator and bank information source",
+      "status": "catalog_only",
+      "verification_status": "official_homepage_register_path_to_confirm"
+    },
+    {
+      "id": "bank_sa_sarb",
+      "name": "South African Reserve Bank Prudential Authority",
+      "country": "South Africa",
+      "category": "bank_regulator_directory",
+      "url": "https://www.resbank.co.za/en/home/what-we-do/Prudentialregulation",
+      "authority": "official_regulator",
+      "purpose": "Bank supervision and regulated institution information",
+      "status": "catalog_only",
+      "verification_status": "official_section_register_path_to_confirm"
+    },
+    {
+      "id": "bank_sa_sama",
+      "name": "Saudi Central Bank licensed banks",
+      "country": "Saudi Arabia",
+      "category": "bank_regulator_directory",
+      "url": "https://www.sama.gov.sa/en-US/LicenseEntities/Pages/Banking.aspx",
+      "authority": "official_regulator",
+      "purpose": "Check licensed banks in Saudi Arabia",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_us_thomasnet",
+      "name": "Thomasnet Supplier Discovery",
+      "country": "United States",
+      "category": "manufacturer_directory",
+      "url": "https://www.thomasnet.com/",
+      "authority": "commercial_industry_directory",
+      "purpose": "Discover manufacturers, custom manufacturers, and industrial suppliers",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_global_kompass",
+      "name": "Kompass company directory",
+      "country": "Global",
+      "category": "manufacturer_directory",
+      "url": "https://www.kompass.com/",
+      "authority": "commercial_business_directory",
+      "purpose": "Search manufacturers by product, sector, and country",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_global_europages",
+      "name": "Europages B2B directory",
+      "country": "Europe / Global",
+      "category": "manufacturer_directory",
+      "url": "https://www.europages.com/",
+      "authority": "commercial_b2b_directory",
+      "purpose": "Discover European manufacturers and suppliers",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_global_industrystock",
+      "name": "IndustryStock",
+      "country": "Global",
+      "category": "manufacturer_directory",
+      "url": "https://www.industrystock.com/",
+      "authority": "commercial_industry_directory",
+      "purpose": "Find industrial companies and product suppliers",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_cn_madeinchina",
+      "name": "Made-in-China.com supplier directory",
+      "country": "China",
+      "category": "manufacturer_directory",
+      "url": "https://www.made-in-china.com/",
+      "authority": "commercial_b2b_directory",
+      "purpose": "Discover Chinese manufacturers and export suppliers",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_cn_gsxt",
+      "name": "China National Enterprise Credit Information Publicity System",
+      "country": "China",
+      "category": "official_company_registry",
+      "url": "https://www.gsxt.gov.cn/",
+      "authority": "official_registry",
+      "purpose": "Official enterprise registration and status lookup; usability may vary by region",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_in_indiamart",
+      "name": "IndiaMART supplier directory",
+      "country": "India",
+      "category": "manufacturer_directory",
+      "url": "https://www.indiamart.com/",
+      "authority": "commercial_b2b_directory",
+      "purpose": "Discover Indian manufacturers and wholesalers",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_tw_taiwantrade",
+      "name": "Taiwantrade supplier directory",
+      "country": "Taiwan",
+      "category": "manufacturer_directory",
+      "url": "https://www.taiwantrade.com/",
+      "authority": "trade_promotion_directory",
+      "purpose": "Discover Taiwanese manufacturers and export-ready suppliers",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_kr_buykorea",
+      "name": "buyKOREA",
+      "country": "South Korea",
+      "category": "manufacturer_directory",
+      "url": "https://www.buykorea.org/",
+      "authority": "trade_promotion_directory",
+      "purpose": "Find Korean suppliers and export products",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_jp_jetro",
+      "name": "JETRO",
+      "country": "Japan",
+      "category": "trade_promotion_directory",
+      "url": "https://www.jetro.go.jp/en/",
+      "authority": "official_trade_promotion",
+      "purpose": "Japanese company and export-supplier discovery resources",
+      "status": "catalog_only",
+      "verification_status": "official_portal_specific_directory_to_confirm"
+    },
+    {
+      "id": "factory_de_wlw",
+      "name": "Wer liefert was (wlw)",
+      "country": "Germany / DACH",
+      "category": "manufacturer_directory",
+      "url": "https://www.wlw.de/",
+      "authority": "commercial_b2b_directory",
+      "purpose": "Discover industrial manufacturers and B2B suppliers",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    },
+    {
+      "id": "factory_uk_makeuk",
+      "name": "Make UK",
+      "country": "United Kingdom",
+      "category": "manufacturing_association",
+      "url": "https://www.makeuk.org/",
+      "authority": "industry_association",
+      "purpose": "UK manufacturing sector information and member resources",
+      "status": "catalog_only",
+      "verification_status": "official_portal_member_directory_to_confirm"
+    },
+    {
+      "id": "factory_global_tradeindia",
+      "name": "TradeIndia",
+      "country": "India / Global",
+      "category": "manufacturer_directory",
+      "url": "https://www.tradeindia.com/",
+      "authority": "commercial_b2b_directory",
+      "purpose": "Discover manufacturers, exporters, and industrial suppliers",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation"
+    }
+  ]
+}
