@@ -133,3 +133,17 @@ test('global bank entity search is registered as a live global source', () => {
   assert.equal(source.access, 'public_api');
   assert.match(source.notes, /not proof of a banking licence/i);
 });
+
+test('WTO and ITC trade sources are catalogued without claiming live adapters', () => {
+  const catalog = getDataSourceCatalog();
+  const wto = catalog.find((item) => item.id === 'wto_stats');
+  const itc = catalog.find((item) => item.id === 'itc_market_access');
+  assert.ok(wto);
+  assert.ok(itc);
+  assert.equal(wto.integrationStatus, 'catalog_only');
+  assert.equal(wto.requiresCredentials, true);
+  assert.ok(wto.dataKinds.includes('services_trade_statistics'));
+  assert.equal(itc.integrationStatus, 'catalog_only');
+  assert.ok(itc.dataKinds.includes('market_access_conditions'));
+  assert.match(itc.notes, /licensing/i);
+});

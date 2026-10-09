@@ -5002,3 +5002,10 @@ Object.assign(module.exports, require('./global_country_discovery'));
 
 // Search licensed/provenance-backed business records across AUREN's global directory.
 Object.assign(module.exports, require('./global_business_directory_search'));
+
+
+// Global company search through OpenCorporates, when its API secret is configured.
+Object.assign(module.exports, require('./opencorporates_global_company_search'));
+
+// Official global trade statistics from the UN Comtrade preview API.
+Object.assign(module.exports, require('./un_comtrade_trade_data'));
