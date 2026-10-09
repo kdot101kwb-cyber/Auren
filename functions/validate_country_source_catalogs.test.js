@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { validateCatalog, loadAndValidateAll } = require('./validate_country_source_catalogs');
+const { validateCatalog, loadAndValidateAll, checkLinks } = require('./validate_country_source_catalogs');
 
 test('batches 8–12 have valid structure and expected record counts', () => {
   const results = loadAndValidateAll();
@@ -39,4 +39,25 @@ test('allows different source records to share the same official portal URL', ()
     }))
   };
   assert.deepEqual(validateCatalog(catalog, 8), []);
+});
+
+test('retries a HEAD 404 with GET before marking an official portal unreachable', async () => {
+  const originalFetch = global.fetch;
+  const methods = [];
+  global.fetch = async (_url, options) => {
+    methods.push(options.method);
+    if (options.method === 'HEAD') return new Response('', { status: 404 });
+    return new Response('ok', { status: 200 });
+  };
+  try {
+    const results = await checkLinks([{
+      batch: 8,
+      catalog: { sources: [{ id: 'test_01', country: 'Testland', url: 'https://example.com/portal' }] }
+    }], { concurrency: 1, timeoutMs: 1000 });
+    assert.deepEqual(methods, ['HEAD', 'GET']);
+    assert.equal(results[0].status, 200);
+    assert.equal(results[0].reachable, true);
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
