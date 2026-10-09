@@ -473,7 +473,7 @@ class AurenIntentSignals {
       cities: found(['الخرطوم','khartoum','ام درمان','omdurman','ام درمان','القاهرة','cairo','دبي','dubai','ابوظبي','abu dhabi','الرياض','riyadh','جدة','jeddah','اسطنبول','istanbul','شنغهاي','shanghai','شنتشن','shenzhen','غوانزو','guangzhou','مومباي','mumbai','دلهي','delhi','نيروبي','nairobi','لاغوس','lagos','أديس أبابا','addis ababa','كمبالا','kampala','دار السلام','dar es salaam','جوهانسبرغ','johannesburg','لندن','london','نيويورك','new york']),
       wantsCheap: ['رخيص','ارخص','cheap','cheapest','low price'].any((w) => n.contains(_normalizeIntent(w))),
       wantsShipping: ['شحن','shipping','delivery','توصل','التوصيل'].any((w) => n.contains(_normalizeIntent(w))),
-      wantsSupplier: ['مورد','توريد','supplier','wholesale'].any((w) => n.contains(_normalizeIntent(w))),
+      wantsSupplier: ['مورد','موردين','توريد','توريدات','supplier','suppliers','vendor','vendors','wholesale','تاجر جملة'].any((w) => n.contains(_normalizeIntent(w))),
       wantsManufacturer: ['مصنع','مصانع','manufacturer','factory'].any((w) => n.contains(_normalizeIntent(w))),
       wantsExporter: ['مصدر','مصدرين','مصدّر','مصدّرين','تصدير','exporter','exporters','export'].any((w) => n.contains(_normalizeIntent(w))),
       wantsImporter: ['مستورد','مستوردين','استيراد','importer','importers','import'].any((w) => n.contains(_normalizeIntent(w))),
