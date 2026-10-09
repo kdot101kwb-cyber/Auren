@@ -92,3 +92,13 @@ test('global indicator ingestion tolerates upstream failures and reports partial
   assert.match(globalDataSource, /countriesWithNoIndicators/);
   assert.match(globalDataSource, /status: failedIndicators > 0 \|\| countriesWithNoIndicators > 0 \? 'partial' : 'ok'/);
 });
+
+
+test('country registry preserves zero coordinates and rejects invalid coordinate values', () => {
+  const globalRegistry = fs.readFileSync(require.resolve('./global_data_country_registry.js'), 'utf8');
+  assert.match(globalRegistry, /function coordinate\(value\)/);
+  assert.match(globalRegistry, /longitude: coordinate\(c\.longitude\)/);
+  assert.match(globalRegistry, /latitude: coordinate\(c\.latitude\)/);
+  assert.match(globalRegistry, /number >= -180 && number <= 180/);
+  assert.match(globalRegistry, /number >= -180 && number <= 180/);
+});
