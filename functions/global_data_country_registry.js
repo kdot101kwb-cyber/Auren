@@ -17,6 +17,12 @@ const CORE = [
   'AG.LND.ARBL.ZS'
 ];
 
+function coordinate(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= -180 && number <= 180 ? number : null;
+}
+
 async function getJson(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
@@ -60,8 +66,8 @@ exports.aurenGlobalCountryRegistry = onCall({region: 'us-central1', timeoutSecon
         incomeLevel: c.incomeLevel?.value || null,
         lendingType: c.lendingType?.value || null,
         capitalCity: c.capitalCity || null,
-        longitude: c.longitude ? Number(c.longitude) : null,
-        latitude: c.latitude ? Number(c.latitude) : null,
+        longitude: coordinate(c.longitude),
+        latitude: coordinate(c.latitude),
         source: 'world_bank_wdi',
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
