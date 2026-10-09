@@ -181,8 +181,14 @@ exports.importLicensedBusinessRecords = onCall({region: 'us-central1', timeoutSe
   records.forEach((input, index) => {
     try {
       const record = normalizeBusinessRecord(input);
-      const sourceIdentity = record.sourceRecordId ||
-        createHash('sha256').update([record.countryCode, record.normalizedName, record.source].join('|')).digest('hex').slice(0, 40);
+      // Never use externally supplied identifiers directly as Firestore document IDs:
+      // they may contain slashes, be unexpectedly long, or collide across source/type scopes.
+      const sourceIdentity = createHash('sha256').update([
+        record.countryCode,
+        record.businessType,
+        record.source.toLocaleLowerCase(),
+        record.sourceRecordId || record.normalizedName,
+      ].join('|')).digest('hex').slice(0, 40);
       const ref = db.collection(collectionByType[record.businessType]).doc(sourceIdentity);
       batch.set(ref, record, {merge: true});
       imported++;
