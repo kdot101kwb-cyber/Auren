@@ -73,3 +73,15 @@ test('cancel and retry keep Match Flow status consistent without dispatching mes
   assert.match(source, /Only failed or cancelled requests can be retried/);
   assert.match(source, /Retry limit reached/);
 });
+
+test('supplier retry rechecks eligibility and retry count inside its transaction', () => {
+  const source = read('supplier_requests.js');
+  const retrySource = source.slice(source.indexOf('exports.retryAurenSupplierRequest'));
+  assert.match(retrySource, /const fresh = await tx\.get\(ref\)/);
+  assert.match(retrySource, /const currentStatus = String\(data\.status \|\| ''\)\.toLowerCase\(\)/);
+  assert.match(retrySource, /Only failed or cancelled requests can be retried/);
+  assert.match(retrySource, /const retryCount = Number\(data\.retryCount \|\| 0\) \+ 1/);
+  assert.match(retrySource, /Retry limit reached/);
+  assert.match(retrySource, /tx\.set\(ref, update, \{merge:true\}\)/);
+  assert.match(retrySource, /tx\.set\(globalRef, update, \{merge:true\}\)/);
+});
