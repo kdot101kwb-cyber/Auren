@@ -475,6 +475,9 @@ class AurenIntentSignals {
     this.wantsImporter = false,
     this.wantsInternationalTrade = false,
     this.wantsBulk = false,
+    this.wantsCertified = false,
+    this.wantsOrganic = false,
+    this.wantsSamples = false,
   });
 
   factory AurenIntentSignals.fromIntent(String? intent) {
