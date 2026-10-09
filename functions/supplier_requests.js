@@ -85,7 +85,7 @@ exports.cancelAurenSupplierRequest = onCall(
       tx.set(ref, update, {merge:true});
       tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
     });
-    await updateMatchFlow(uid,data.matchFlowId,'completed',{completionReason:'cancelled'});
+    await updateMatchFlow(uid,data.matchFlowId,'cancelled',{completionReason:'cancelled'});
     return {ok:true,id:requestId,type,status:'cancelled'};
   }
 );
@@ -106,6 +106,18 @@ exports.updateAurenSupplierRequestStatus = onCall(
     const snap = await ref.get();
     if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
     const data = snap.data() || {};
+    const currentStatus = String(data.status || 'draft').toLowerCase();
+    const transitions = {
+      draft: new Set(['waiting_response', 'failed', 'cancelled']),
+      waiting_response: new Set(['replied', 'completed', 'failed', 'cancelled']),
+      replied: new Set(['completed', 'cancelled']),
+      failed: new Set(['cancelled']),
+      cancelled: new Set(),
+      completed: new Set(),
+    };
+    if (nextStatus !== currentStatus && !transitions[currentStatus]?.has(nextStatus)) {
+      throw new HttpsError('failed-precondition', 'Invalid supplier request status transition.');
+    }
     if (nextStatus === 'replied' && data.externalDispatch !== true) {
       throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as replied.');
     }
@@ -116,6 +128,19 @@ exports.updateAurenSupplierRequestStatus = onCall(
       ...(nextStatus === 'completed' ? {completedAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
     };
     await db.runTransaction(async tx => {
+      const fresh = await tx.get(ref);
+      if (!fresh.exists) throw new HttpsError('not-found','Supplier request not found.');
+      const freshData = fresh.data() || {};
+      const freshStatus = String(freshData.status || 'draft').toLowerCase();
+      if (freshStatus !== currentStatus) {
+        throw new HttpsError('aborted','Supplier request changed; refresh and try again.');
+      }
+      if (nextStatus !== freshStatus && !transitions[freshStatus]?.has(nextStatus)) {
+        throw new HttpsError('failed-precondition','Invalid supplier request status transition.');
+      }
+      if (nextStatus === 'replied' && freshData.externalDispatch !== true) {
+        throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as replied.');
+      }
       tx.set(ref, update, {merge:true});
       tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
     });
@@ -149,7 +174,7 @@ exports.retryAurenSupplierRequest = onCall(
       tx.set(ref, update, {merge:true});
       tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
     });
-    await updateMatchFlow(uid,data.matchFlowId,'waiting_response',{retryCount});
+    await updateMatchFlow(uid,data.matchFlowId,'active',{retryCount});
     return {ok:true,id:requestId,type,status:'draft',retryCount};
   }
 );
