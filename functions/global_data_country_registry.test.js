@@ -5,8 +5,11 @@ const fs = require('node:fs');
 const source = fs.readFileSync(require.resolve('./global_data_country_registry.js'), 'utf8');
 const index = fs.readFileSync(require.resolve('./index.js'), 'utf8');
 
-test('global country registry requires auth and excludes aggregate regions', () => {
-  assert.match(source, /request\.auth\?\.uid/);
+test('global data ingestion requires admin claims and excludes aggregate regions', () => {
+  assert.match(source, /request\.auth\.token\?\.admin !== true/);
+  assert.match(source, /permission-denied/);
+  assert.match(source, /AbortController/);
+  assert.match(source, /timeoutSeconds: 120/);
   assert.match(source, /c\.region\?\.value === 'Aggregates'/);
   assert.match(source, /auren_global_countries/);
   assert.match(source, /source: 'world_bank_wdi'/);
