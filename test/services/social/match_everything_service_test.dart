@@ -280,3 +280,8 @@ void main() {
     final plan = AurenIntentActionPlan.fromIntent('busco proveedor');
     expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
   });
+
+  test('routes French supplier request to quote action', () {
+    final plan = AurenIntentActionPlan.fromIntent('je cherche un fournisseur');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
+  });
