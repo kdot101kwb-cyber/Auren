@@ -7,15 +7,49 @@ if (!admin.apps.length) admin.initializeApp();
 const db = admin.firestore();
 
 const WB = 'https://api.worldbank.org/v2';
+// Broad country profile: demographics, economy, trade, agriculture, digital access,
+// infrastructure, investment and environment. Missing upstream values remain absent.
 const CORE = [
   'SP.POP.TOTL',
+  'SP.POP.GROW',
+  'SP.URB.TOTL.IN.ZS',
+  'SP.DYN.LE00.IN',
   'NY.GDP.MKTP.CD',
   'NY.GDP.PCAP.CD',
-  'SP.URB.TOTL.IN.ZS',
+  'NY.GDP.MKTP.KD.ZG',
+  'FP.CPI.TOTL.ZG',
   'SL.UEM.TOTL.ZS',
+  'NE.EXP.GNFS.CD',
+  'NE.IMP.GNFS.CD',
+  'BX.KLT.DINV.CD.WD',
+  'IT.NET.USER.ZS',
+  'EG.ELC.ACCS.ZS',
+  'NV.AGR.TOTL.ZS',
   'AG.LND.AGRI.ZS',
-  'AG.LND.ARBL.ZS'
+  'AG.LND.ARBL.ZS',
+  'EG.FEC.RNEW.ZS'
 ];
+
+const INDICATOR_CATEGORIES = {
+  'SP.POP.TOTL': 'demographics',
+  'SP.POP.GROW': 'demographics',
+  'SP.URB.TOTL.IN.ZS': 'demographics',
+  'SP.DYN.LE00.IN': 'health',
+  'NY.GDP.MKTP.CD': 'economy',
+  'NY.GDP.PCAP.CD': 'economy',
+  'NY.GDP.MKTP.KD.ZG': 'economy',
+  'FP.CPI.TOTL.ZG': 'economy',
+  'SL.UEM.TOTL.ZS': 'employment',
+  'NE.EXP.GNFS.CD': 'trade',
+  'NE.IMP.GNFS.CD': 'trade',
+  'BX.KLT.DINV.CD.WD': 'investment',
+  'IT.NET.USER.ZS': 'digital_access',
+  'EG.ELC.ACCS.ZS': 'infrastructure',
+  'NV.AGR.TOTL.ZS': 'agriculture',
+  'AG.LND.AGRI.ZS': 'agriculture',
+  'AG.LND.ARBL.ZS': 'agriculture',
+  'EG.FEC.RNEW.ZS': 'environment'
+};
 
 function coordinate(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -118,7 +152,8 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
           return {indicator, value: {
             value,
             year: latest.date,
-            indicatorName: latest.indicator?.value || indicator
+            indicatorName: latest.indicator?.value || indicator,
+            category: INDICATOR_CATEGORIES[indicator] || 'other'
           }};
         } catch (_) {
           return {indicator, value: null, failed: true};
