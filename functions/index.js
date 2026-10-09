@@ -4973,3 +4973,6 @@ Object.assign(module.exports, require('./data_source_catalog'));
 
 // Public World Bank financial-sector indicators for global country profiles.
 Object.assign(module.exports, require('./world_bank_financial_indicators'));
+
+// Search source-backed global legal-entity records using GLEIF LEI data.
+Object.assign(module.exports, require('./gleif_global_entity_search'));
