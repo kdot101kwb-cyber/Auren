@@ -165,6 +165,18 @@ const DATA_SOURCES = Object.freeze([
     notes: 'Country-by-country official-source adapters are required. A listed institution must not be called licensed until its regulator record is checked.',
   },
   {
+    id: 'global_bank_entity_search',
+    name: 'Global Bank Legal-Entity Search (GLEIF)',
+    category: 'central_bank_directories',
+    endpoint: 'https://api.gleif.org/api/v1/lei-records',
+    access: 'public_api',
+    integrationStatus: 'implemented',
+    dataKinds: ['global_lei_entities', 'bank_name_matches', 'legal_entity_status', 'country_codes'],
+    requiresCredentials: false,
+    licenseReviewRequired: true,
+    notes: 'Live global search for LEI-recorded legal entities with bank-related name matches. Not a complete bank list and not proof of a banking licence; confirm with national regulators.',
+  },
+  {
     id: 'regional_local_bank_directories',
     name: 'Regional and Local Banking Institutions',
     category: 'central_bank_directories',
