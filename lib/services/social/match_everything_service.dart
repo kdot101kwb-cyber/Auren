@@ -354,9 +354,14 @@ class AurenMatchEverythingService {
         _list(d['exportMarkets']).join(' '), _list(d['marketsServed']).join(' '),
         _list(d['importCountries']).join(' '), _list(d['exportProducts']).join(' '),
         _list(d['certifications']).join(' '), _list(d['searchKeywords']).join(' '),
-        _valueText(d['price']), d['priceRange'], d['currency'],
+        _valueText(d['price']), _valueText(d['unitPrice']),
+        _valueText(d['wholesalePrice']), _valueText(d['priceMin']),
+        _valueText(d['priceMax']), _valueText(d['shippingCost']),
+        d['priceRange'], d['currency'], d['pricingNotes'],
         _valueText(d['minimumOrderQuantity']), _valueText(d['moq']),
-        d['shippingTerms'], d['incoterms'], d['industry'],
+        d['shippingTerms'], d['incoterms'], d['shippingRegions'],
+        d['sampleAvailability'], d['samplePolicy'], d['leadTime'],
+        d['verificationStatus'], d['provenanceStatus'], d['industry'],
         _list(d['industries']).join(' '), _list(d['languages']).join(' '),
         _list(d['paymentTerms']).join(' '), _list(d['certificationNames']).join(' '),
       ].whereType<String>().join(' ').toLowerCase();
@@ -382,18 +387,35 @@ class AurenMatchEverythingService {
       score -= 12;
     }
     if (signals.wantsCertified &&
-        !['certified', 'certification', 'iso', 'haccp', 'شهادة', 'معتمد']
-            .any(normalizedText.contains)) {
+        ![
+          'certified', 'certification', 'iso', 'haccp', 'شهادة', 'معتمد',
+          'certificado', 'certificada', 'certifié', 'certifiée',
+          'sertifikalı', 'sertifikali', 'cheti', '认证', '認證', 'प्रमाणित',
+        ].any(normalizedText.contains)) {
       score -= 5;
     }
     if (signals.wantsOrganic &&
-        !['organic', 'bio', 'عضوي'].any(normalizedText.contains)) {
+        ![
+          'organic', 'bio', 'عضوي', 'orgánico', 'organico', 'biologique',
+          'orgânica', 'organica', 'organik', 'kikaboni', '有机', '有機', 'जैविक',
+        ].any(normalizedText.contains)) {
       score -= 5;
     }
     if (signals.wantsShipping &&
-        !['شحن', 'shipping', 'delivery', 'incoterms']
-            .any(normalizedText.contains)) {
+        ![
+          'شحن', 'shipping', 'delivery', 'incoterms', 'envío', 'envio',
+          'livraison', 'entrega', 'kargo', 'usafirishaji', '运输', '運輸',
+          'शिपिंग',
+        ].any(normalizedText.contains)) {
       score -= 3;
+    }
+    if (signals.wantsSamples &&
+        ![
+          'sample', 'samples', 'عينة', 'عينات', 'muestra', 'muestras',
+          'échantillon', 'échantillons', 'amostra', 'amostras', 'numune',
+          'sampuli', '样品', 'नमूने',
+        ].any(normalizedText.contains)) {
+      score -= 4;
     }
     return score.clamp(0, 100).toInt();
   }
