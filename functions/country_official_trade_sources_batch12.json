@@ -278,7 +278,7 @@
       "country_code": "OM",
       "category": "Tax administration",
       "name": "Tax Authority",
-      "url": "https://taxoman.gov.om/portal/",
+      "url": "https://tms.taxoman.gov.om/portal/en/home",
       "source_type": "official_portal_candidate",
       "integration_status": "catalog_only",
       "api_status": "not_verified",
