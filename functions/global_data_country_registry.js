@@ -90,6 +90,9 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
   const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 25);
   const snap = await db.collection('auren_global_countries').limit(limit).get();
   let processed = 0;
+  let indicatorsStored = 0;
+  let failedIndicators = 0;
+  let countriesWithNoIndicators = 0;
 
   const countryChunkSize = 5;
   for (let i = 0; i < snap.docs.length; i += countryChunkSize) {
@@ -97,29 +100,51 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
     const results = await Promise.all(countryChunk.map(async (doc) => {
       const iso3 = doc.id;
       const entries = await Promise.all(CORE.map(async (indicator) => {
-        const data = await getJson(
-          WB + '/country/' + iso3 + '/indicator/' + indicator +
-          '?format=json&per_page=1'
-        );
-        const latest = Array.isArray(data) && Array.isArray(data[1]) ? data[1][0] : null;
-        if (!latest || latest.value == null) return null;
-        return [indicator, {
-          value: Number(latest.value),
-          year: latest.date,
-          indicatorName: latest.indicator?.value || indicator
-        }];
+        try {
+          const data = await getJson(
+            WB + '/country/' + iso3 + '/indicator/' + indicator +
+            '?format=json&per_page=1'
+          );
+          const latest = Array.isArray(data) && Array.isArray(data[1]) ? data[1][0] : null;
+          if (!latest || latest.value == null) return {indicator, value: null};
+          const value = Number(latest.value);
+          if (!Number.isFinite(value)) return {indicator, value: null};
+          return {indicator, value: {
+            value,
+            year: latest.date,
+            indicatorName: latest.indicator?.value || indicator
+          }};
+        } catch (_) {
+          return {indicator, value: null, failed: true};
+        }
       }));
-      const values = Object.fromEntries(entries.filter(Boolean));
+      const values = Object.fromEntries(entries.filter((entry) => entry.value).map((entry) => [entry.indicator, entry.value]));
+      const failedIndicators = entries.filter((entry) => entry.failed).length;
       await db.collection('auren_global_data').doc(iso3).set({
         iso3,
         indicators: values,
+        indicatorCount: Object.keys(values).length,
+        failedIndicators,
         source: 'world_bank_wdi',
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       }, {merge:true});
-      return iso3;
+      return {iso3, indicatorCount: Object.keys(values).length, failedIndicators};
     }));
     processed += results.length;
+    for (const result of results) {
+      indicatorsStored += result.indicatorCount;
+      failedIndicators += result.failedIndicators;
+      if (result.indicatorCount === 0) countriesWithNoIndicators++;
+    }
   }
 
-  return {status:'ok', countriesProcessed:processed, indicators:CORE.length, source:'world_bank_wdi'};
+  return {
+    status: failedIndicators > 0 || countriesWithNoIndicators > 0 ? 'partial' : 'ok',
+    countriesProcessed: processed,
+    indicatorsConfigured: CORE.length,
+    indicatorValuesStored: indicatorsStored,
+    failedIndicatorRequests: failedIndicators,
+    countriesWithNoIndicators,
+    source: 'world_bank_wdi'
+  };
 });
