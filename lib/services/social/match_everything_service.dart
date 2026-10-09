@@ -751,10 +751,10 @@ class AurenIntentActionPlan {
     return AurenIntentActionPlan(
       normalized: n,
       commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر','مصدر','تصدير','exporter','export','مستورد','استيراد','importer','import','تجارة دولية','international trade','proveedor','fournisseur','fornecedor','tedarikçi','tedarikci','msambazaji','供应商','供應商','fabricante','fabricant','üretici','uretici','manufacturer','exportador','exportateur','ihracatçı','ihracatci','importador','importateur','ithalatçı','ithalatci','comercio internacional','commerce international','comércio internacional','uluslararası ticaret','biashara ya kimataifa','国际贸易','國際貿易']),
-      learning: has(['اتعلم','تعلم','كورس','دورة','flutter','learn','course','study']),
-      work: has(['وظيفة','شغل','عمل','فرصة','تقديم','توظيف','job','work','career','apply']),
-      social: has(['تابع','متابعة','صديق','تواصل','chat','follow','connect','creator','مؤثر']),
-      media: has(['فيلم','مسلسل','فيديو','شورت','اغنية','موسيقى','محتوى','شاهد','watch','video','movie','series','music']),
+      learning: has(['اتعلم','تعلم','كورس','دورة','flutter','learn','course','study','aprender','curso','apprendre','cours','apprendre','aprender','öğren','ogren','kujifunza','学习','課程','课程','सीखें','पढ़ाई']),
+      work: has(['وظيفة','شغل','عمل','فرصة','تقديم','توظيف','job','work','career','apply','empleo','trabajo','trabajar','emploi','travail','emprego','trabalho','iş','is ilanı','kariyer','kazi','ajira','工作','职位','職位','नौकरी','काम']),
+      social: has(['تابع','متابعة','صديق','تواصل','chat','follow','connect','creator','مؤثر','seguir','conectar','suivre','contacter','seguir','conectar','takip','bağlan','baglan','fuata','unganisha','关注','联系','关注','जुड़ें','अनुसरण']),
+      media: has(['فيلم','مسلسل','فيديو','شورت','اغنية','موسيقى','محتوى','شاهد','watch','video','movie','series','music','película','pelicula','serie','vídeo','video','música','musica','film','vidéo','video','musique','film','dizi','izle','filamu','muziki','视频','电影','电视剧','音乐','वीडियो','फ़िल्म','फिल्म','संगीत']),
       wantsAction: has(['عايز','اريد','أريد','ابحث','أبحث','جيب','find','need','want','buy','get','open','contact','apply','learn','buscar','necesito','quiero','trouver','cherche','besoin','je veux','procurar','preciso','quero','bul','ihtiyacım','nahitaji','tafuta','查找','需要','寻找','खोजें','चाहिए']),
     );
   }
@@ -786,7 +786,8 @@ class AurenIntentActionPlan {
           return supplierIntent
               ? AurenMatchAction.requestQuote : AurenMatchAction.contact;
         case AurenMatchKind.product:
-          return normalized.contains('اشتري') || normalized.contains('شراء') || normalized.contains('buy')
+          return ['اشتري', 'شراء', 'buy', 'comprar', 'compra', 'acheter', 'achète', 'comprar', 'quero comprar', 'satın al', 'satin al', 'nunua', '购买', '买', 'खरीदें']
+                  .any((term) => normalized.contains(_normalizeIntent(term)))
               ? AurenMatchAction.addToCart : AurenMatchAction.contact;
         default:
           break;
