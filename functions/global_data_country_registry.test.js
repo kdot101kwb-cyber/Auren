@@ -39,7 +39,7 @@ test('global indicator ingestion uses the canonical core feasibility indicators'
 });
 
 test('global data ingestion is bounded and stores provenance', () => {
-  assert.match(source, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 25, 1\), 100\)/);
+  assert.match(source, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 25, 1\), 25\)/);
   assert.match(source, /source:'world_bank_wdi'/);
   assert.match(source, /updatedAt: admin\.firestore\.FieldValue\.serverTimestamp\(\)/);
 });
@@ -72,5 +72,12 @@ test('global registry fails closed when the upstream returns no usable countries
 });
 
 test('global indicator ingestion caps work per invocation', () => {
-  assert.match(source, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 25, 1\), 100\)/);
+  assert.match(source, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 25, 1\), 25\)/);
+});
+
+test('global indicator ingestion processes small country chunks with parallel indicators', () => {
+  assert.match(source, /const countryChunkSize = 5/);
+  assert.match(source, /Promise\.all\(countryChunk\.map/);
+  assert.match(source, /Promise\.all\(CORE\.map/);
+  assert.match(source, /1\), 25\)/);
 });
