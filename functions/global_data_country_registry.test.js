@@ -39,7 +39,7 @@ test('global indicator ingestion uses the canonical core feasibility indicators'
 });
 
 test('global data ingestion is bounded and stores provenance', () => {
-  assert.match(source, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 25, 1\), 250\)/);
+  assert.match(source, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 25, 1\), 100\)/);
   assert.match(source, /source:'world_bank_wdi'/);
   assert.match(source, /updatedAt: admin\.firestore\.FieldValue\.serverTimestamp\(\)/);
 });
@@ -64,4 +64,13 @@ test('opportunity country scan returns transparent data signals and deterministi
   assert.match(globalData, /gdpPerCapita/);
   assert.match(globalData, /agriculturalLand/);
   assert.match(globalData, /candidates\.sort\(/);
+});
+
+test('global registry fails closed when the upstream returns no usable countries', () => {
+  assert.match(source, /rows\.length === 0/);
+  assert.match(source, /World Bank country registry returned no usable countries/);
+});
+
+test('global indicator ingestion caps work per invocation', () => {
+  assert.match(source, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 25, 1\), 100\)/);
 });
