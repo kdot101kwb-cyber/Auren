@@ -600,13 +600,13 @@
       "country_code": "KG",
       "category": "Public procurement",
       "name": "Public procurement portal",
-      "url": "https:// zakupki.gov.kg/",
+      "url": "https://zakupki.gov.kg/",
       "source_type": "official_portal_candidate",
       "integration_status": "catalog_only",
       "api_status": "not_verified",
       "access_and_licensing": "Verify the URL, current ownership, access conditions, API availability and reuse terms before automated ingestion.",
       "verification_status": "link_candidate_requires_manual_validation",
-      "notes": "Directory reference only. This entry does not claim a live API, comprehensive national coverage, or verification of the status of any business."
+      "notes": "Whitespace corrected; official ownership and current availability still require manual validation."
     },
     {
       "id": "tj_01",
