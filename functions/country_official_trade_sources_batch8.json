@@ -712,7 +712,7 @@
       "country_code": "XK",
       "category": "Customs",
       "name": "Kosovo Customs",
-      "url": "https://dogana.rks-gov.net/en/",
+      "url": "https://dogana.rks-gov.net/",
       "source_type": "official_portal_candidate",
       "integration_status": "catalog_only",
       "api_status": "not_verified",
