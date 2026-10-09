@@ -124,7 +124,7 @@ void main() {
     final signals = AurenIntentSignals.fromIntent(
       'manufacturer of organic cotton in Türkiye, certified, bulk MOQ, delivery',
     );
-    expect(signals.countries, contains('turkey'));
+    expect(signals.countries, contains('türkiye'));
     expect(signals.wantsManufacturer, isTrue);
     expect(signals.wantsOrganic, isTrue);
     expect(signals.wantsCertified, isTrue);
