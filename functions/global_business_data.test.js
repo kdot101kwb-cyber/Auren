@@ -128,3 +128,16 @@ test('supports official multi-character UN Comtrade trade flow codes', () => {
     assert.equal(row.flowCode, flowCode);
   }
 });
+
+test('does not allow imported source payloads to self-assert verified status', () => {
+  const record = normalizeBusinessRecord({
+    name: 'Claimed Verified Supplier',
+    countryCode: 'SD',
+    businessType: 'supplier',
+    source: 'public directory',
+    sourceUrl: 'https://example.com/suppliers',
+    license: 'terms permit display',
+    verificationStatus: 'verified',
+  });
+  assert.equal(record.verificationStatus, 'unverified');
+});
