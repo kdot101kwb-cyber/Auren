@@ -124,7 +124,7 @@ class AurenMatchEverythingService {
           subtitle: _string(d['bio'], candidateMode?.label ?? 'Person'),
           kind: AurenMatchKind.person,
           score: _score(text, profile, candidateMode == mode, intentTerms, normalizedIntent, signals),
-          reasons: _reasons(text, profile, candidateMode == mode, intentTerms, normalizedIntent),
+          reasons: _reasons(text, profile, candidateMode == mode, intentTerms, normalizedIntent, signals),
           data: d,
           action: action,
           actionLabel: plan.labelFor(action),
@@ -171,7 +171,7 @@ class AurenMatchEverythingService {
           subtitle: _subtitleFor(kind, d),
           kind: kind,
           score: _score(text, profile, modeMatch, intentTerms, normalizedIntent, signals),
-          reasons: _reasons(text, profile, modeMatch, intentTerms, normalizedIntent),
+          reasons: _reasons(text, profile, modeMatch, intentTerms, normalizedIntent, signals),
           data: d,
           action: action,
           actionLabel: plan.labelFor(action),
@@ -280,7 +280,7 @@ class AurenMatchEverythingService {
             text, profile, false, intentTerms, normalizedIntent, signals,
           ),
           reasons: [
-            ..._reasons(text, profile, false, intentTerms, normalizedIntent),
+            ..._reasons(text, profile, false, intentTerms, normalizedIntent, signals),
             if (_string(raw['source'], '').isNotEmpty)
               'المصدر: ${_string(raw['source'], '')}',
             if (_string(raw['verificationStatus'], 'unverified').toLowerCase() == 'verified')
@@ -373,9 +373,17 @@ class AurenMatchEverythingService {
     return score.clamp(0, 100).toInt();
   }
 
-  List<String> _reasons(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms, String normalizedIntent) {
+  List<String> _reasons(
+    String text,
+    AurenProfileModeData profile,
+    bool modeMatch,
+    Set<String> intentTerms,
+    String normalizedIntent,
+    AurenIntentSignals signals,
+  ) {
     final reasons = <String>[];
     final tokens = _tokens(text);
+    final normalizedText = _normalize(text);
     final common = <String>[];
     for (final value in [...profile.skills, ...profile.interests, ...profile.goals, ...profile.services]) {
       final normalized = value.trim().toLowerCase();
@@ -386,8 +394,42 @@ class AurenMatchEverythingService {
     final intentCommon = intentTerms.intersection(tokens).take(3).toList();
     if (normalizedIntent.length >= 6 && _normalize(text).contains(normalizedIntent)) reasons.add('تطابق مباشر مع طلبك');
     if (intentCommon.isNotEmpty) reasons.add('مرتبط بطلبك: ' + intentCommon.join('، '));
+    final matchedCountries = signals.countries
+        .where((country) => normalizedText.contains(country))
+        .take(2)
+        .toList();
+    if (matchedCountries.isNotEmpty) {
+      reasons.add('الدولة المطابقة: ${matchedCountries.join('، ')}');
+    }
+    final matchedCities = signals.cities
+        .where((city) => normalizedText.contains(city))
+        .take(2)
+        .toList();
+    if (matchedCities.isNotEmpty) {
+      reasons.add('المدينة المطابقة: ${matchedCities.join('، ')}');
+    }
+    if (signals.wantsCheap &&
+        ['رخيص', 'cheap', 'affordable', 'low price', 'price'].any(normalizedText.contains)) {
+      reasons.add('يتضمن مؤشرات سعر أو تكلفة');
+    }
+    if (signals.wantsShipping &&
+        ['شحن', 'shipping', 'delivery', 'incoterms'].any(normalizedText.contains)) {
+      reasons.add('توجد معلومات مرتبطة بالشحن');
+    }
+    if (signals.wantsCertified &&
+        ['certified', 'certification', 'iso', 'haccp', 'شهادة', 'معتمد'].any(normalizedText.contains)) {
+      reasons.add('توجد إشارة إلى الشهادات المطلوبة');
+    }
+    if (signals.wantsOrganic &&
+        ['organic', 'bio', 'عضوي'].any(normalizedText.contains)) {
+      reasons.add('توجد إشارة إلى المنتجات العضوية');
+    }
+    if (signals.wantsSamples &&
+        ['sample', 'samples', 'عينة', 'عينات'].any(normalizedText.contains)) {
+      reasons.add('توجد إشارة إلى إمكانية توفير عينات');
+    }
     if (modeMatch) reasons.add('متوافق مع نمط ملفك الحالي');
-    if (reasons.isEmpty) reasons.add('مرتبط بسياقك الحالي');
+    if (reasons.isEmpty) reasons.add('ارتباط محدود؛ راجع تفاصيل النتيجة قبل اتخاذ إجراء');
     return reasons;
   }
 
