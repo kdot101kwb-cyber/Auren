@@ -66,3 +66,20 @@ test('readiness recognizes source IDs emitted by the global country ingestion jo
   assert.equal(worldBank.dataReady, true);
   assert.equal(worldBank.latestIngestion.importedRows, 200);
 });
+
+test('GLEIF entity search is listed as a live source without overstating verification', () => {
+  const source = getDataSourceCatalog().find((item) => item.id === 'gleif_lei_records');
+  assert.ok(source);
+  assert.equal(source.integrationStatus, 'implemented');
+  assert.equal(source.requiresCredentials, false);
+  assert.match(source.notes, /does not prove a bank licence/i);
+});
+
+test('readiness recognizes GLEIF ingestion runs by source ID', () => {
+  const results = summarizeReadiness(getDataSourceCatalog(), [
+    {sourceId: 'gleif_lei_records', status: 'completed', importedRows: 5},
+  ]);
+  const gleif = results.find((item) => item.id === 'gleif_lei_records');
+  assert.equal(gleif.dataReady, true);
+  assert.equal(gleif.latestIngestion.importedRows, 5);
+});
