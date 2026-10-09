@@ -460,6 +460,9 @@ class AurenIntentSignals {
   final bool wantsImporter;
   final bool wantsInternationalTrade;
   final bool wantsBulk;
+  final bool wantsCertified;
+  final bool wantsOrganic;
+  final bool wantsSamples;
   const AurenIntentSignals({
     this.countries = const {},
     this.cities = const {},
