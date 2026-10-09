@@ -32,7 +32,7 @@ class _AurenSupplierRequestsScreenState extends State<AurenSupplierRequestsScree
     trailing:PopupMenuButton<String>(onSelected:(a)=>_action(a,r),itemBuilder:(_)=>[
       const PopupMenuItem(value:'details',child:Text('التفاصيل')),
       if(r.status!='completed'&&r.status!='cancelled')const PopupMenuItem(value:'cancel',child:Text('إلغاء')),
-      if(r.status=='failed'||r.status=='cancelled')const PopupMenuItem(value:'retry',child:Text('إعادة المحاولة')),
+      if((r.status=='failed'||r.status=='cancelled')&&r.retryCount<5)const PopupMenuItem(value:'retry',child:Text('إعادة المحاولة')),
       if(r.status=='draft'||r.status=='waiting_response')const PopupMenuItem(value:'failed',child:Text('تسجيل فشل')),
       if(r.externalDispatch&&r.status=='waiting_response')const PopupMenuItem(value:'replied',child:Text('تسجيل الرد')),
       if(r.status=='replied')const PopupMenuItem(value:'completed',child:Text('إكمال الطلب')),
@@ -73,7 +73,8 @@ class _AurenSupplierRequestsScreenState extends State<AurenSupplierRequestsScree
       const SizedBox(height:12),_row('النوع',r.type=='rfq'?'طلب عرض سعر':'تواصل'),_row('الحالة',_status(r.status)),
       if(r.product.isNotEmpty)_row('المنتج',r.product),if(r.quantity.isNotEmpty)_row('الكمية',r.quantity),if(r.currency.isNotEmpty)_row('العملة',r.currency),if(r.message.isNotEmpty)_row('الرسالة',r.message),
       _row('الإرسال الخارجي',r.externalDispatch?'تم الإرسال':'غير مُرسل'),if(r.retryCount>0)_row('المحاولات',r.retryCount.toString()),if(r.matchFlowId.isNotEmpty)_row('Match Flow',r.matchFlowId),
-      if(r.status=='failed')const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('حدث فشل في الطلب. يمكنك استخدام «إعادة المحاولة».'))),
+      if(r.status=='failed')Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(r.lastError.isNotEmpty?'سبب الفشل: ${r.lastError}${r.retryCount>=5?'\nتم بلوغ الحد الأقصى لإعادة المحاولة (5).':'\nيمكنك استخدام «إعادة المحاولة».'}':'حدث فشل في الطلب.${r.retryCount>=5?' تم بلوغ الحد الأقصى لإعادة المحاولة (5).':' يمكنك استخدام «إعادة المحاولة».'}'))),
+      if(r.retryCount>=5)_row('حد المحاولات','اكتملت 5 محاولات؛ لا يمكن إعادة المحاولة مرة أخرى.'),
       if(r.status=='waiting_response'&&!r.externalDispatch)const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('الحالة «بانتظار الرد» تعني أن Match Flow ينتظر الخطوة التالية؛ الطلب محفوظ داخل AUREN ولم يتم إرسال رسالة خارجية بعد.'))),
     ]))));
   Widget _row(String a,String b)=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[SizedBox(width:110,child:Text(a,style:const TextStyle(fontWeight:FontWeight.bold))),Expanded(child:Text(b))]));
