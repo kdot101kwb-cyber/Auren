@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "title": "AUREN Official Country Company and Bank Sources — Batch 2",
+  "scope": "Official country-level starting points for company registration, industrial/export company discovery, and regulated-bank checks in Sudan, Egypt, the United Arab Emirates, Saudi Arabia, and China.",
+  "source_policy": [
+    "These records are discovery references only; they are not live API integrations.",
+    "A company registry or export-control register does not by itself prove that a business currently operates a factory or has available stock.",
+    "A bank regulator listing does not prove solvency, cross-border transfer availability, or that a service can onboard AUREN users.",
+    "All URLs and exact register paths remain subject to manual validation before being marked verified or integrated."
+  ],
+  "records": [
+    {
+      "id": "sd_cbos_operating_banks",
+      "name": "Central Bank of Sudan — Operating Banks",
+      "country": "Sudan",
+      "category": "bank_regulator_directory",
+      "url": "https://cbos.gov.sd/en/content/operating-banks-sudan",
+      "authority": "official_regulator",
+      "purpose": "Starting point for identifying banks reported as operating in Sudan; confirm current status and licensing directly with the Central Bank.",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation",
+      "api_status": "not_assessed"
+    },
+    {
+      "id": "eg_itda_registry_inquiry",
+      "name": "Egypt ITDA — Unified Commercial Registry Inquiry",
+      "country": "Egypt",
+      "category": "official_company_registry",
+      "url": "https://www.itda.gov.eg/en/registry-inquiry-en.html",
+      "authority": "official_government_registry",
+      "purpose": "Check whether a commercial entity exists in the Unified Commercial Registry and whether its record is active or canceled.",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation",
+      "api_status": "not_assessed"
+    },
+    {
+      "id": "eg_goeic_company_register",
+      "name": "Egypt GOEIC — Company Register",
+      "country": "Egypt",
+      "category": "official_export_import_register",
+      "url": "https://www.goeic.gov.eg/en/company-register",
+      "authority": "official_government_trade_authority",
+      "purpose": "Company registration and trade-related records, including industrial/importer/exporter-related documentation where applicable.",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation",
+      "api_status": "not_assessed"
+    },
+    {
+      "id": "eg_bsic_public_business_sector",
+      "name": "Egypt Business Sector Information Center",
+      "country": "Egypt",
+      "category": "official_industry_company_information",
+      "url": "https://www.bsic.gov.eg/",
+      "authority": "official_government_information_center",
+      "purpose": "Starting point for public business-sector and state-owned industrial company information; not a complete private factory directory.",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation",
+      "api_status": "not_assessed"
+    },
+    {
+      "id": "ae_ner_business_registry",
+      "name": "UAE National Economic Register",
+      "country": "United Arab Emirates",
+      "category": "official_company_registry",
+      "url": "https://u.ae/en/information-and-services/business/important-digital-services/national-economic-register",
+      "authority": "official_government_portal",
+      "purpose": "Official portal describing how to look up economic licences, business activities, and registered companies across UAE licensing authorities.",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation",
+      "api_status": "not_assessed"
+    },
+    {
+      "id": "ae_cbuae_licensed_institutions",
+      "name": "Central Bank of the UAE — Licensing and Financial Institutions Register",
+      "country": "United Arab Emirates",
+      "category": "bank_regulator_directory",
+      "url": "https://centralbank.ae/en/licensing",
+      "authority": "official_regulator",
+      "purpose": "Search financial institutions and review licence-related information, including banks.",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation",
+      "api_status": "not_assessed"
+    },
+    {
+      "id": "sa_sama_licensed_banks",
+      "name": "Saudi Central Bank — Licensed Banks",
+      "country": "Saudi Arabia",
+      "category": "bank_regulator_directory",
+      "url": "https://www.sama.gov.sa/en-us/supervision/licenseentities/pages/licensedbanks.aspx",
+      "authority": "official_regulator",
+      "purpose": "Check local banks and foreign-bank branches listed by the Saudi Central Bank; confirm licence and operating status at lookup time.",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation",
+      "api_status": "not_assessed"
+    },
+    {
+      "id": "cn_gsxt_enterprise_registry",
+      "name": "China National Enterprise Credit Information Publicity System",
+      "country": "China",
+      "category": "official_company_registry",
+      "url": "https://www.gsxt.gov.cn/",
+      "authority": "official_government_registry",
+      "purpose": "Official starting point for Chinese enterprise registration and public credit information; accessibility and search behavior may vary.",
+      "status": "catalog_only",
+      "verification_status": "link_candidate_requires_manual_validation",
+      "api_status": "not_assessed"
+    },
+    {
+      "id": "cn_nfra_financial_regulator",
+      "name": "National Financial Regulatory Administration of China",
+      "country": "China",
+      "category": "bank_regulator_directory",
+      "url": "https://www.nfra.gov.cn/",
+      "authority": "official_regulator",
+      "purpose": "Official financial regulator portal and starting point for banking-sector supervision information; exact institution-list endpoint needs validation.",
+      "status": "catalog_only",
+      "verification_status": "official_portal_specific_register_path_to_confirm",
+      "api_status": "not_assessed"
+    }
+  ]
+}
