@@ -4,6 +4,14 @@ on:
   pull_request:
     paths:
       - 'functions/*batch*.json'
+      - 'functions/*source*.json'
+      - 'functions/*sources*.json'
+      - 'functions/*catalog*.json'
+      - 'functions/*manufacturer*.json'
+      - 'functions/*investor*.json'
+      - 'functions/*trade*.json'
+      - 'functions/*bank*.json'
+      - 'functions/*factory*.json'
       - 'functions/audit_global_source_catalog_links.js'
       - '.github/workflows/global-source-catalog-audit.yml'
   workflow_dispatch:
