@@ -41,7 +41,7 @@ function validateCatalog(catalog, expectedBatch) {
     try {
       const parsed = new URL(source.url);
       if (parsed.protocol !== 'https:') errors.push(`non-HTTPS URL: ${source.id}`);
-      if (!parsed.hostname || /\s/.test(source.url)) errors.push(`malformed URL: ${source.id}`);
+      if (!parsed.hostname || /\\s/.test(source.url)) errors.push(`malformed URL: ${source.id}`);
     } catch { errors.push(`invalid URL: ${source.id} (${source.url})`); }
     if (source.integration_status !== 'catalog_only') errors.push(`unexpected integration status: ${source.id}`);
   }
@@ -92,9 +92,20 @@ async function checkLinks(catalogs, { concurrency = 8, timeoutMs = 9000 } = {}) 
       let reachable = false;
       let note = '';
       try {
-        let response = await fetch(source.url, { method: 'HEAD', redirect: 'follow', signal: controller.signal, headers: { 'user-agent': 'AUREN-SourceCatalog-Validator/1.0' } });
-        if ([403, 405, 501].includes(response.status)) {
-          response = await fetch(source.url, { method: 'GET', redirect: 'follow', signal: controller.signal, headers: { 'user-agent': 'AUREN-SourceCatalog-Validator/1.0', range: 'bytes=0-0' } });
+        const requestOptions = {
+          redirect: 'follow',
+          signal: controller.signal,
+          headers: { 'user-agent': 'AUREN-SourceCatalog-Validator/1.0' }
+        };
+        let response = await fetch(source.url, { ...requestOptions, method: 'HEAD' });
+        // Some official SharePoint/legacy portals answer HEAD with 404 while GET serves the page.
+        // Retry GET for 404 as well as methods/auth restrictions before labeling a URL broken.
+        if ([403, 404, 405, 501].includes(response.status)) {
+          response = await fetch(source.url, {
+            ...requestOptions,
+            method: 'GET',
+            headers: { ...requestOptions.headers, range: 'bytes=0-0' }
+          });
         }
         status = response.status;
         reachable = response.ok || [401, 403, 405, 429].includes(status);
@@ -134,7 +145,7 @@ if (require.main === module) {
         note: 'HTTP reachability is not proof of official ownership, legal reuse rights, current registry data, or API availability.',
         results
       };
-      fs.writeFileSync(reportPath, JSON.stringify(summary, null, 2) + '\\n');
+      fs.writeFileSync(reportPath, JSON.stringify(summary, null, 2) + '\n');
       console.log(`Link check: ${summary.reachable_count}/${summary.checked_count} responded or restricted automated access; report: ${reportPath}`);
       if (failed || summary.needs_review_count) process.exitCode = 1;
     }).catch(error => { console.error(error); process.exitCode = 1; });
