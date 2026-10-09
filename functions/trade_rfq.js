@@ -94,8 +94,7 @@ exports.listAurenOpenTradeRFQs = onCall(
       throw new HttpsError('invalid-argument', 'destinationCountry must be a valid 2-3 letter code.');
     }
     const limit = Math.min(Math.max(Number(request.data?.limit) || 30, 1), 50);
-    const snap = await db.collection('auren_trade_rfqs').where('status', '==', 'open')
-      .orderBy('createdAt', 'desc').limit(100).get();
+    const snap = await db.collection('auren_trade_rfqs').where('status', '==', 'open').limit(100).get();
     const items = snap.docs.map(doc => {
       const d = doc.data() || {};
       return {
@@ -105,6 +104,7 @@ exports.listAurenOpenTradeRFQs = onCall(
         notes:clean(d.notes,1000), quoteCount:Number(d.quoteCount || 0), createdAt:d.createdAt || null,
       };
     }).filter(item => !destinationCountry || item.destinationCountry === destinationCountry)
+      .sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0))
       .slice(0, limit);
     return {items, count:items.length};
   }
