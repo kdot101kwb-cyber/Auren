@@ -74,7 +74,8 @@ function normalizeTradeObservation(row = {}, params = {}) {
   const flowCode = clean(row.flowCode || params.flowCode, 3).toUpperCase();
   const period = clean(row.period || params.period, 4);
   const tradeValue = Number(row.primaryValue ?? row.TradeValue ?? row.tradeValue);
-  if (!reporterCode || !partnerCode || !/^[0-9]{4}$/.test(period) ||
+  if (!/^\\d{1,3}$/.test(reporterCode) || !/^\\d{1,3}$/.test(partnerCode) ||
+      !/^[0-9]{4}$/.test(period) || !/^(?:\\d{1,6}|TOTAL)$/.test(cmdCode) ||
       !['X', 'M', 'DX', 'FM', 'RX', 'RM', 'MIP', 'XIP', 'MOP', 'XOP'].includes(flowCode) ||
       !Number.isFinite(tradeValue) || tradeValue < 0) return null;
   return {
