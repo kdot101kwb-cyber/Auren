@@ -4996,3 +4996,6 @@ Object.assign(module.exports, require('./global_bank_entity_search'));
 
 // Global-by-default geography policy for all AUREN discovery domains.
 Object.assign(module.exports, require('./global_coverage_policy'));
+
+// Live global country directory from the World Bank Country API.
+Object.assign(module.exports, require('./global_country_discovery'));
