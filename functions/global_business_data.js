@@ -48,9 +48,11 @@ function normalizeBusinessRecord(input = {}) {
     publicEmail: clean(input.publicEmail || input.email, 254),
     publicPhone: clean(input.publicPhone || input.phone, 60),
     source,
-    sourceUrl,
+    sourceUrl: parsedSourceUrl.toString(),
+    sourceHost: parsedSourceUrl.hostname.toLowerCase(),
     sourceLicense: license,
     sourceRecordId: clean(input.sourceRecordId, 200),
+    provenanceStatus: 'provided',
     verificationStatus: 'unverified',
     lastCheckedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
@@ -215,7 +217,7 @@ exports.importLicensedBusinessRecords = onCall({region: 'us-central1', timeoutSe
     fetchedRows: records.length,
     importedRows: imported,
     rejectedRows: rejected.length,
-    status: 'completed',
+    status: rejected.length === 0 ? 'completed' : (imported > 0 ? 'partial' : 'failed'),
     completedAt: FieldValue.serverTimestamp(),
   });
   return {
