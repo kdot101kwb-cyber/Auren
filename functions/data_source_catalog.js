@@ -106,10 +106,22 @@ function getDataSourceCatalog() {
   return DATA_SOURCES.map((source) => ({...source}));
 }
 
+function sourceIdForRun(run) {
+  const explicit = String(run.sourceId || run.sourceKey || '').trim();
+  if (explicit) return explicit;
+  const source = String(run.source || '').trim().toLowerCase();
+  const aliases = {
+    'un comtrade': 'un_comtrade',
+    'faostat': 'faostat',
+    'licensed_business_record_import': 'licensed_business_records',
+  };
+  return aliases[source] || '';
+}
+
 function summarizeReadiness(catalog, runs) {
   const latestBySource = new Map();
   for (const run of runs) {
-    const key = String(run.sourceId || run.sourceKey || '');
+    const key = sourceIdForRun(run);
     if (!key || latestBySource.has(key)) continue;
     latestBySource.set(key, {
       status: String(run.status || 'unknown'),
@@ -121,7 +133,8 @@ function summarizeReadiness(catalog, runs) {
   return catalog.map((source) => ({
     ...source,
     latestIngestion: latestBySource.get(source.id) || null,
-    dataReady: source.integrationStatus === 'implemented' && latestBySource.has(source.id),
+    dataReady: source.integrationStatus === 'implemented' &&
+      latestBySource.get(source.id)?.status === 'completed',
   }));
 }
 
