@@ -300,3 +300,8 @@ void main() {
     final plan = AurenIntentActionPlan.fromIntent('nahitaji msambazaji');
     expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
   });
+
+  test('routes Chinese supplier request to quote action', () {
+    final plan = AurenIntentActionPlan.fromIntent('寻找供应商');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
+  });
