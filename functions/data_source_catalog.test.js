@@ -100,3 +100,20 @@ test('readiness recognizes World Bank project search ingestion runs', () => {
   assert.equal(projects.dataReady, true);
   assert.equal(projects.latestIngestion.importedRows, 7);
 });
+
+test('Grants.gov is listed as a live funding-opportunity source with geographic scope', () => {
+  const source = getDataSourceCatalog().find((item) => item.id === 'grants_gov_opportunities');
+  assert.ok(source);
+  assert.equal(source.integrationStatus, 'implemented');
+  assert.ok(source.dataKinds.includes('us_federal_grants'));
+  assert.match(source.notes, /US federal opportunities only/i);
+});
+
+test('readiness recognizes Grants.gov ingestion runs', () => {
+  const results = summarizeReadiness(getDataSourceCatalog(), [
+    {sourceId: 'grants_gov_opportunities', status: 'completed', importedRows: 4},
+  ]);
+  const grants = results.find((item) => item.id === 'grants_gov_opportunities');
+  assert.equal(grants.dataReady, true);
+  assert.equal(grants.latestIngestion.importedRows, 4);
+});
