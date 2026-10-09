@@ -318,7 +318,7 @@ void main() {
     );
     expect(signals.matchingCountries('country: Uganda'), isEmpty);
     expect(signals.matchingCities('city: Kampala'), isEmpty);
-    expect(signals.matchingCountries('country: Republic of Kenya'), contains('kenya'));
+    expect(signals.matchingCountries('country: Kenya'), contains('kenya'));
     expect(signals.matchingCities('city: Nairobi'), contains('nairobi'));
   });
 
