@@ -76,16 +76,25 @@ exports.cancelAurenSupplierRequest = onCall(
     const type = clean(request.data?.type, 20).toLowerCase();
     if (!requestId || !['contact','rfq'].includes(type)) throw new HttpsError('invalid-argument','requestId and type are required.');
     const ref = db.collection('users').doc(uid).collection(collectionFor(type)).doc(requestId);
-    const snap = await ref.get();
-    if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
-    const data = snap.data() || {};
-    if (['completed','cancelled'].includes(String(data.status||''))) throw new HttpsError('failed-precondition','Request cannot be cancelled in its current state.');
-    const update = {status:'cancelled',cancelledAt:admin.firestore.FieldValue.serverTimestamp(),updatedAt:admin.firestore.FieldValue.serverTimestamp()};
-    await db.runTransaction(async tx => {
+    const globalRef = db.collection(collectionFor(type)).doc(requestId);
+    const cancelled = await db.runTransaction(async tx => {
+      const fresh = await tx.get(ref);
+      if (!fresh.exists) throw new HttpsError('not-found','Supplier request not found.');
+      const data = fresh.data() || {};
+      const currentStatus = String(data.status || 'draft').toLowerCase();
+      if (['completed','cancelled'].includes(currentStatus)) {
+        throw new HttpsError('failed-precondition','Request cannot be cancelled in its current state.');
+      }
+      const update = {
+        status:'cancelled',
+        cancelledAt:admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+      };
       tx.set(ref, update, {merge:true});
-      tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
+      tx.set(globalRef, update, {merge:true});
+      return {matchFlowId:data.matchFlowId || ''};
     });
-    await updateMatchFlow(uid,data.matchFlowId,'completed',{completionReason:'cancelled'});
+    await updateMatchFlow(uid,cancelled.matchFlowId,'cancelled',{completionReason:'cancelled'});
     return {ok:true,id:requestId,type,status:'cancelled'};
   }
 );
@@ -106,6 +115,18 @@ exports.updateAurenSupplierRequestStatus = onCall(
     const snap = await ref.get();
     if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
     const data = snap.data() || {};
+    const currentStatus = String(data.status || 'draft').toLowerCase();
+    const transitions = {
+      draft: new Set(['waiting_response', 'failed', 'cancelled']),
+      waiting_response: new Set(['replied', 'completed', 'failed', 'cancelled']),
+      replied: new Set(['completed', 'cancelled']),
+      failed: new Set(['cancelled']),
+      cancelled: new Set(),
+      completed: new Set(),
+    };
+    if (nextStatus !== currentStatus && !transitions[currentStatus]?.has(nextStatus)) {
+      throw new HttpsError('failed-precondition', 'Invalid supplier request status transition.');
+    }
     if (nextStatus === 'replied' && data.externalDispatch !== true) {
       throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as replied.');
     }
@@ -116,6 +137,19 @@ exports.updateAurenSupplierRequestStatus = onCall(
       ...(nextStatus === 'completed' ? {completedAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
     };
     await db.runTransaction(async tx => {
+      const fresh = await tx.get(ref);
+      if (!fresh.exists) throw new HttpsError('not-found','Supplier request not found.');
+      const freshData = fresh.data() || {};
+      const freshStatus = String(freshData.status || 'draft').toLowerCase();
+      if (freshStatus !== currentStatus) {
+        throw new HttpsError('aborted','Supplier request changed; refresh and try again.');
+      }
+      if (nextStatus !== freshStatus && !transitions[freshStatus]?.has(nextStatus)) {
+        throw new HttpsError('failed-precondition','Invalid supplier request status transition.');
+      }
+      if (nextStatus === 'replied' && freshData.externalDispatch !== true) {
+        throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as replied.');
+      }
       tx.set(ref, update, {merge:true});
       tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
     });
@@ -135,21 +169,26 @@ exports.retryAurenSupplierRequest = onCall(
     const type = clean(request.data?.type, 20).toLowerCase();
     if (!requestId || !['contact','rfq'].includes(type)) throw new HttpsError('invalid-argument','requestId and type are required.');
     const ref = db.collection('users').doc(uid).collection(collectionFor(type)).doc(requestId);
-    const snap = await ref.get();
-    if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
-    const data = snap.data() || {};
-    if (!['failed','cancelled'].includes(String(data.status||''))) throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
-    const retryCount = Number(data.retryCount||0)+1;
-    if (retryCount > 5) throw new HttpsError('resource-exhausted','Retry limit reached.');
-    const update = {
-      status:'draft', retryCount, externalDispatch:false,
-      lastError:'', retriedAt:admin.firestore.FieldValue.serverTimestamp(), updatedAt:admin.firestore.FieldValue.serverTimestamp(),
-    };
-    await db.runTransaction(async tx => {
+    const globalRef = db.collection(collectionFor(type)).doc(requestId);
+    const retry = await db.runTransaction(async tx => {
+      const fresh = await tx.get(ref);
+      if (!fresh.exists) throw new HttpsError('not-found','Supplier request not found.');
+      const data = fresh.data() || {};
+      const currentStatus = String(data.status || '').toLowerCase();
+      if (!['failed','cancelled'].includes(currentStatus)) {
+        throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
+      }
+      const retryCount = Number(data.retryCount || 0) + 1;
+      if (retryCount > 5) throw new HttpsError('resource-exhausted','Retry limit reached.');
+      const update = {
+        status:'draft', retryCount, externalDispatch:false,
+        lastError:'', retriedAt:admin.firestore.FieldValue.serverTimestamp(), updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+      };
       tx.set(ref, update, {merge:true});
-      tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
+      tx.set(globalRef, update, {merge:true});
+      return {retryCount, matchFlowId:data.matchFlowId || ''};
     });
-    await updateMatchFlow(uid,data.matchFlowId,'waiting_response',{retryCount});
-    return {ok:true,id:requestId,type,status:'draft',retryCount};
+    await updateMatchFlow(uid,retry.matchFlowId,'active',{retryCount:retry.retryCount});
+    return {ok:true,id:requestId,type,status:'draft',retryCount:retry.retryCount};
   }
 );

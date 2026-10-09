@@ -1,6 +1,6 @@
 'use strict';
 
-const {onCall} = require('firebase-functions/v2/https');
+const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 
 if (!admin.apps.length) admin.initializeApp();
@@ -17,14 +17,38 @@ const CORE = [
   'AG.LND.ARBL.ZS'
 ];
 
-async function getJson(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Upstream request failed: ' + res.status);
-  return res.json();
+function coordinate(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= -180 && number <= 180 ? number : null;
 }
 
-exports.aurenGlobalCountryRegistry = onCall(async (request) => {
-  if (!request.auth?.uid) throw new Error('Authentication is required.');
+async function getJson(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {'user-agent': 'AUREN-Global-Data/1.0'}
+    });
+    if (!res.ok) throw new HttpsError('unavailable', 'World Bank data source returned HTTP ' + res.status + '.');
+    return await res.json();
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError('unavailable', 'World Bank data request failed or timed out.');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function requireAdmin(request) {
+  if (!request.auth || request.auth.token?.admin !== true) {
+    throw new HttpsError('permission-denied', 'Administrator access is required.');
+  }
+}
+
+exports.aurenGlobalCountryRegistry = onCall({region: 'us-central1', timeoutSeconds: 120, memory: '256MiB'}, async (request) => {
+  requireAdmin(request);
 
   const rows = [];
   for (let page = 1; page <= 6; page++) {
@@ -42,12 +66,16 @@ exports.aurenGlobalCountryRegistry = onCall(async (request) => {
         incomeLevel: c.incomeLevel?.value || null,
         lendingType: c.lendingType?.value || null,
         capitalCity: c.capitalCity || null,
-        longitude: c.longitude ? Number(c.longitude) : null,
-        latitude: c.latitude ? Number(c.latitude) : null,
+        longitude: coordinate(c.longitude),
+        latitude: coordinate(c.latitude),
         source: 'world_bank_wdi',
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
     }
+  }
+
+  if (rows.length === 0) {
+    throw new HttpsError('unavailable', 'World Bank country registry returned no usable countries.');
   }
 
   const batchSize = 400;
@@ -62,39 +90,67 @@ exports.aurenGlobalCountryRegistry = onCall(async (request) => {
   return {status:'ok', countriesProcessed:rows.length, source:'world_bank_wdi'};
 });
 
-exports.aurenGlobalDataIngest = onCall(async (request) => {
-  if (!request.auth?.uid) throw new Error('Authentication is required.');
+exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 120, memory: '256MiB'}, async (request) => {
+  requireAdmin(request);
 
-  const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 250);
+  const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 25);
   const snap = await db.collection('auren_global_countries').limit(limit).get();
   let processed = 0;
+  let indicatorsStored = 0;
+  let failedIndicators = 0;
+  let countriesWithNoIndicators = 0;
 
-  for (const doc of snap.docs) {
-    const iso3 = doc.id;
-    const values = {};
-    for (const indicator of CORE) {
-      const data = await getJson(
-        WB + '/country/' + iso3 + '/indicator/' + indicator +
-        '?format=json&per_page=1'
-      );
-      const latest = Array.isArray(data) && Array.isArray(data[1]) ? data[1][0] : null;
-      if (latest && latest.value != null) {
-        values[indicator] = {
-          value: Number(latest.value),
-          year: latest.date,
-          indicatorName: latest.indicator?.value || indicator
-        };
-      }
+  const countryChunkSize = 5;
+  for (let i = 0; i < snap.docs.length; i += countryChunkSize) {
+    const countryChunk = snap.docs.slice(i, i + countryChunkSize);
+    const results = await Promise.all(countryChunk.map(async (doc) => {
+      const iso3 = doc.id;
+      const entries = await Promise.all(CORE.map(async (indicator) => {
+        try {
+          const data = await getJson(
+            WB + '/country/' + iso3 + '/indicator/' + indicator +
+            '?format=json&per_page=1'
+          );
+          const latest = Array.isArray(data) && Array.isArray(data[1]) ? data[1][0] : null;
+          if (!latest || latest.value == null) return {indicator, value: null};
+          const value = Number(latest.value);
+          if (!Number.isFinite(value)) return {indicator, value: null};
+          return {indicator, value: {
+            value,
+            year: latest.date,
+            indicatorName: latest.indicator?.value || indicator
+          }};
+        } catch (_) {
+          return {indicator, value: null, failed: true};
+        }
+      }));
+      const values = Object.fromEntries(entries.filter((entry) => entry.value).map((entry) => [entry.indicator, entry.value]));
+      const failedIndicators = entries.filter((entry) => entry.failed).length;
+      await db.collection('auren_global_data').doc(iso3).set({
+        iso3,
+        indicators: values,
+        indicatorCount: Object.keys(values).length,
+        failedIndicators,
+        source: 'world_bank_wdi',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, {merge:true});
+      return {iso3, indicatorCount: Object.keys(values).length, failedIndicators};
+    }));
+    processed += results.length;
+    for (const result of results) {
+      indicatorsStored += result.indicatorCount;
+      failedIndicators += result.failedIndicators;
+      if (result.indicatorCount === 0) countriesWithNoIndicators++;
     }
-
-    await db.collection('auren_global_data').doc(iso3).set({
-      iso3,
-      indicators: values,
-      source: 'world_bank_wdi',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, {merge:true});
-    processed++;
   }
 
-  return {status:'ok', countriesProcessed:processed, indicators:CORE.length, source:'world_bank_wdi'};
+  return {
+    status: failedIndicators > 0 || countriesWithNoIndicators > 0 ? 'partial' : 'ok',
+    countriesProcessed: processed,
+    indicatorsConfigured: CORE.length,
+    indicatorValuesStored: indicatorsStored,
+    failedIndicatorRequests: failedIndicators,
+    countriesWithNoIndicators,
+    source: 'world_bank_wdi'
+  };
 });

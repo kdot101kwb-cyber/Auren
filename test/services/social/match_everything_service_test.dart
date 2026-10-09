@@ -20,10 +20,106 @@ void main() {
     });
   });
 
+  test('detects export, import, and wholesale sourcing intent', () {
+    expect(AurenIntentSignals.fromIntent('exporter for sesame').wantsExporter, isTrue);
+    expect(AurenIntentSignals.fromIntent('importer in Sudan').wantsImporter, isTrue);
+    expect(AurenIntentSignals.fromIntent('wholesale clothing').wantsWholesale, isTrue);
+  });
+
+  test('recognizes Arabic exporter, importer and foreign-trade requests', () {
+    final exporter = AurenIntentSignals.fromIntent('عايز مصدر للتجارة الخارجية');
+    expect(exporter.wantsExporter, isTrue);
+    expect(exporter.wantsInternationalTrade, isTrue);
+    expect(
+      AurenIntentActionPlan.fromIntent('عايز مصدر للتجارة الخارجية')
+          .actionFor(AurenMatchKind.business),
+      AurenMatchAction.requestQuote,
+    );
+
+    final importer = AurenIntentSignals.fromIntent('أبحث عن مستورد للتجارة الدولية');
+    expect(importer.wantsImporter, isTrue);
+    expect(importer.wantsInternationalTrade, isTrue);
+    expect(
+      AurenIntentActionPlan.fromIntent('أبحث عن مستورد للتجارة الدولية')
+          .actionFor(AurenMatchKind.business),
+      AurenMatchAction.requestQuote,
+    );
+
+    final foreignTrade = AurenIntentActionPlan.fromIntent('خدمات التجارة الخارجية');
+    expect(
+      foreignTrade.actionFor(AurenMatchKind.business),
+      AurenMatchAction.requestQuote,
+    );
+  });
+
+  test('recognizes more global markets and cities', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'certified sesame supplier in Nairobi, Kenya shipping to Saudi Arabia',
+    );
+    expect(signals.countries, contains('kenya'));
+    expect(signals.countries, contains('saudi arabia'));
+    expect(signals.cities, contains('nairobi'));
+    expect(signals.wantsSupplier, isTrue);
+    expect(signals.wantsCertified, isTrue);
+    expect(signals.wantsShipping, isTrue);
+  });
+
+  test('recognizes organic and sample requirements', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'عايز مورد منتجات عضوية وعينات قبل طلب الجملة',
+    );
+    expect(signals.wantsOrganic, isTrue);
+    expect(signals.wantsSamples, isTrue);
+    expect(signals.wantsWholesale, isTrue);
+  });
+
+  test('supplier intent score includes certification and sample requirements', () {
+    final signals = AurenIntentSignals.fromIntent('certified organic supplier samples');
+    final score = signals.matchScore('certified organic supplier samples');
+    expect(signals.wantsCertified, isTrue);
+    expect(signals.wantsOrganic, isTrue);
+    expect(signals.wantsSamples, isTrue);
+    expect(score, greaterThan(0));
+    expect(score, lessThanOrEqualTo(35));
+  });
+
   group('AurenIntentActionPlan', () {
     test('maps supplier intent to quote request', () {
       final plan = AurenIntentActionPlan.fromIntent('أبحث عن مورد في الصين');
       expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
+    });
+
+    test('routes multilingual supplier intent to quote request', () {
+      for (final intent in [
+        'busco proveedor de algodón orgánico certificado',
+        'fournisseur certifié biologique avec livraison',
+        'Türkiye üretici organik sertifikalı toptan',
+        '有机供应商 认证 批发 运输',
+        'I need a certified organic supplier',
+      ]) {
+        final plan = AurenIntentActionPlan.fromIntent(intent);
+        expect(
+          plan.actionFor(AurenMatchKind.business),
+          AurenMatchAction.requestQuote,
+          reason: intent,
+        );
+      }
+    });
+
+    test('maps common non-English work, learning, media and purchase intents', () {
+      final work = AurenIntentActionPlan.fromIntent('busco empleo en tecnología');
+      expect(work.work, isTrue);
+      expect(work.actionFor(AurenMatchKind.opportunity), AurenMatchAction.apply);
+
+      final learning = AurenIntentActionPlan.fromIntent('quiero aprender Flutter con un curso');
+      expect(learning.learning, isTrue);
+
+      final media = AurenIntentActionPlan.fromIntent('quiero ver una película');
+      expect(media.media, isTrue);
+      expect(media.actionFor(AurenMatchKind.content), AurenMatchAction.watch);
+
+      final purchase = AurenIntentActionPlan.fromIntent('ürün satın al');
+      expect(purchase.actionFor(AurenMatchKind.product), AurenMatchAction.addToCart);
     });
 
     test('maps purchase intent to cart', () {
@@ -67,6 +163,125 @@ void main() {
     expect(emptyPlan.actionFor(AurenMatchKind.content), AurenMatchAction.watch);
   });
 
+  test('does not award sourcing relevance to unrelated text', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'certified organic sesame supplier in Sudan with shipping and samples',
+    );
+    expect(signals.matchScore('romantic movie about London'), 0);
+  });
+
+  test('recognizes Sudanese and regional trade wording', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'عايز مصدر صمغ عربي من أم درمان للتصدير مع عينات',
+    );
+    expect(signals.cities, contains('ام درمان'));
+    expect(signals.wantsExporter, isTrue);
+    expect(signals.wantsSamples, isTrue);
+  });
+
+  test('matches equivalent country and city spellings in supplier data', () {
+    final countrySignals =
+        AurenIntentSignals.fromIntent('manufacturer in Türkiye');
+    expect(countrySignals.countries, contains('türkiye'));
+    expect(countrySignals.matchingCountries('manufacturer country: Turkey'),
+        contains('türkiye'));
+
+    final citySignals =
+        AurenIntentSignals.fromIntent('supplier in أم درمان');
+    expect(citySignals.matchingCities('city: Omdurman'), contains('ام درمان'));
+
+    final uaeSignals = AurenIntentSignals.fromIntent('supplier in UAE');
+    expect(
+      uaeSignals.matchingCountries('country: United Arab Emirates'),
+      contains('uae'),
+    );
+  });
+
+  test('recognizes supplier intent across the user\'s language', () {
+    final spanish = AurenIntentSignals.fromIntent(
+      'busco proveedor de algodón orgánico certificado con envío',
+    );
+    expect(spanish.wantsSupplier, isTrue);
+    expect(spanish.wantsOrganic, isTrue);
+    expect(spanish.wantsCertified, isTrue);
+    expect(spanish.wantsShipping, isTrue);
+
+    final french = AurenIntentSignals.fromIntent(
+      'fournisseur certifié biologique avec livraison et échantillons',
+    );
+    expect(french.wantsSupplier, isTrue);
+    expect(french.wantsCertified, isTrue);
+    expect(french.wantsOrganic, isTrue);
+    expect(french.wantsShipping, isTrue);
+    expect(french.wantsSamples, isTrue);
+
+    final turkish = AurenIntentSignals.fromIntent(
+      'Türkiye üretici organik sertifikalı toptan kargo',
+    );
+    expect(turkish.wantsManufacturer, isTrue);
+    expect(turkish.wantsOrganic, isTrue);
+    expect(turkish.wantsCertified, isTrue);
+    expect(turkish.wantsWholesale, isTrue);
+    expect(turkish.wantsShipping, isTrue);
+
+    final chinese = AurenIntentSignals.fromIntent('有机供应商 认证 批发 运输');
+    expect(chinese.wantsSupplier, isTrue);
+    expect(chinese.wantsOrganic, isTrue);
+    expect(chinese.wantsCertified, isTrue);
+    expect(chinese.wantsWholesale, isTrue);
+    expect(chinese.wantsShipping, isTrue);
+  });
+
+  test('recognizes supplier terms and constraints in English', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'manufacturer of organic cotton in Türkiye, certified, bulk MOQ, delivery',
+    );
+    expect(signals.countries, contains('türkiye'));
+    expect(signals.wantsManufacturer, isTrue);
+    expect(signals.wantsOrganic, isTrue);
+    expect(signals.wantsCertified, isTrue);
+    expect(signals.wantsBulk, isTrue);
+    expect(signals.wantsShipping, isTrue);
+  });
+
+  test('routes multilingual purchase phrases to the cart action', () {
+    for (final intent in [
+      'quiero comprar',
+      'je veux acheter',
+      'quero comprar',
+      'ürün satın al',
+      'nunua',
+      '购买',
+      'खरीदें',
+    ]) {
+      final plan = AurenIntentActionPlan.fromIntent(intent);
+      expect(
+        plan.actionFor(AurenMatchKind.product),
+        AurenMatchAction.addToCart,
+        reason: intent,
+      );
+    }
+  });
+
+  test('routes multilingual supplier requests to quote drafts', () {
+    for (final intent in [
+      'busco proveedor',
+      'je cherche un fournisseur',
+      'quero fornecedor',
+      'tedarikçi arıyorum',
+      'msambazaji',
+      '寻找供应商',
+      'आपूर्तिकर्ता',
+    ]) {
+      final plan = AurenIntentActionPlan.fromIntent(intent);
+      expect(
+        plan.actionFor(AurenMatchKind.business),
+        AurenMatchAction.requestQuote,
+        reason: intent,
+      );
+    }
+  });
+
   test('clamps intent signal scores to 35', () {
     final signals = AurenIntentSignals.fromIntent(
       'السودان مصر الصين الإمارات كينيا نيجيريا الخرطوم القاهرة دبي شنتشن '
@@ -80,4 +295,85 @@ void main() {
       lessThanOrEqualTo(35),
     );
   });
+
+  test('routes exporter, importer and international trade requests to RFQ', () {
+    for (final intent in [
+      'find an exporter for sesame',
+      'need an importer in Sudan',
+      'international trade partner for cotton',
+      'عايز مصدر سمسم للتصدير',
+      'أبحث عن مستورد في السودان',
+    ]) {
+      final plan = AurenIntentActionPlan.fromIntent(intent);
+      expect(
+        plan.actionFor(AurenMatchKind.business),
+        AurenMatchAction.requestQuote,
+        reason: intent,
+      );
+    }
+  });
+
+  test('keeps ordinary business contact separate from supplier RFQ', () {
+    final plan = AurenIntentActionPlan.fromIntent('I need a restaurant in Khartoum');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.contact);
+    expect(
+      plan.reasonFor(AurenMatchAction.contact),
+      contains('التواصل'),
+    );
+  });
+
+  test('RFQ guidance requires review and explicit approval before external contact', () {
+    final plan = AurenIntentActionPlan.fromIntent('عايز مورد ملابس في الصين');
+    final action = plan.actionFor(AurenMatchKind.business);
+    expect(action, AurenMatchAction.requestQuote);
+    expect(plan.labelFor(action), 'طلب عرض سعر');
+    expect(plan.reasonFor(action), contains('مراجعتها وتعديلها'));
+    expect(plan.reasonFor(action), contains('موافقتك الصريحة'));
+  });
+
+  test('supplier intent does not change unrelated product action into purchase', () {
+    final plan = AurenIntentActionPlan.fromIntent('find a certified supplier');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
+    expect(plan.actionFor(AurenMatchKind.product), AurenMatchAction.contact);
+  });
+
+
+  test('rejects unconfirmed country and city aliases for sourcing matches', () {
+    final signals = AurenIntentSignals.fromIntent(
+      'certified sesame supplier in Nairobi, Kenya',
+    );
+    expect(signals.matchingCountries('country: Uganda'), isEmpty);
+    expect(signals.matchingCities('city: Kampala'), isEmpty);
+    expect(signals.matchingCountries('country: Kenya'), contains('kenya'));
+    expect(signals.matchingCities('city: Nairobi'), contains('nairobi'));
+  });
+
+  test('recognizes Arabic exporter, importer and foreign-trade requests', () {
+    final exporter = AurenIntentSignals.fromIntent('عايز مصدر سمسم للتصدير');
+    expect(exporter.wantsExporter, isTrue);
+
+    final importer = AurenIntentSignals.fromIntent('أبحث عن مستورد في السودان');
+    expect(importer.wantsImporter, isTrue);
+    expect(importer.countries, contains('السودان'));
+
+    final trade = AurenIntentSignals.fromIntent('شريك للتجارة الخارجية');
+    expect(trade.wantsInternationalTrade, isTrue);
+  });
+
+  test('supplier RFQ guidance never implies automatic message sending', () {
+    final plan = AurenIntentActionPlan.fromIntent('find a supplier for cotton');
+    final action = plan.actionFor(AurenMatchKind.business);
+    final guidance = plan.reasonFor(action).toLowerCase();
+
+    expect(action, AurenMatchAction.requestQuote);
+    expect(guidance, contains('مسودة'));
+    expect(guidance, contains('موافقتك الصريحة'));
+    expect(guidance, contains('لن يُرسل أي تواصل خارجي'));
+  });
+
+  test('does not route a normal restaurant request to supplier RFQ', () {
+    final plan = AurenIntentActionPlan.fromIntent('I need a restaurant in Khartoum');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.contact);
+  });
+
 }

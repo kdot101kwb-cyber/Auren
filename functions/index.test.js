@@ -59,10 +59,10 @@ test('Action intent logic remains isolated from the Firebase function index', ()
 
 
 test('Action Engine external effects are bound to the server idempotency key', () => {
-  assert.match(index, /users\\/\\$\\{uid\\}\\/notes\\/\\$\\{action\.idempotencyKey\\}/);
-  assert.match(index, /users\\/\\$\\{uid\\}\\/memory\\/\\$\\{action\.idempotencyKey\\}/);
-  assert.match(index, /users\\/\\$\\{uid\\}\\/goals\\/\\$\\{action\.idempotencyKey\\}/);
-  assert.match(index, /conversations\\/\\$\\{conversationId\\}\\/messages\\/\\$\\{\\'action_\\' \\+ action\.idempotencyKey\\}/);
+  assert.ok(index.includes('users/${uid}/notes/${action.idempotencyKey}'));
+  assert.ok(index.includes('users/${uid}/memory/${action.idempotencyKey}'));
+  assert.ok(index.includes('users/${uid}/goals/${action.idempotencyKey}'));
+  assert.ok(index.includes("conversations/${conversationId}/messages/${'action_' + action.idempotencyKey}"));
 });
 
 test('Action Engine has server recovery and manual-review lifecycle gates', () => {

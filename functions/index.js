@@ -4964,3 +4964,6 @@ Object.assign(module.exports, require('./podcast_personalization'));
 
 // Personal AI / Life Engine — goals, daily plans, and user memory.
 Object.assign(module.exports, require('./personal_ai_life_engine'));
+
+// Global business data ingestion and source-provenance normalization.
+Object.assign(module.exports, require('./global_business_data'));

@@ -27,9 +27,13 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
   const stableKey = clean(idempotencyKey, 128);
   if (!stableKey) { const error = new Error('Idempotency key is required.'); error.code = 'validation'; throw error; }
 
-  const supplierSnap = await db.collection('auren_suppliers').doc(supplierId).get();
-  if (!supplierSnap.exists) { const error = new Error('Supplier not found.'); error.code = 'validation'; throw error; }
-  const supplier = supplierSnap.data() || {};
+  const collections = ['auren_suppliers', 'auren_exporters', 'auren_importers', 'auren_manufacturers'];
+  let supplier;
+  for (const collection of collections) {
+    const snapshot = await db.collection(collection).doc(supplierId).get();
+    if (snapshot.exists) { supplier = snapshot.data() || {}; break; }
+  }
+  if (!supplier) { const error = new Error('Supplier not found.'); error.code = 'validation'; throw error; }
   const supplierName = clean(supplier.name || supplier.companyName || supplierId, 200);
   const common = {
     supplierId, supplierName, requesterUid: uid, matchFlowId,
