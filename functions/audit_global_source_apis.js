@@ -12,7 +12,7 @@ const TIMEOUT_MS = Math.max(1500, Math.min(15000, Number(process.env.API_AUDIT_T
 const CONCURRENCY = Math.max(1, Math.min(6, Number(process.env.API_AUDIT_CONCURRENCY) || 4));
 const USER_AGENT = 'AUREN-ReadOnly-API-Discovery/1.0 (+https://github.com/kdot101kwb-cyber/Auren)';
 const API_FIELDS = ['api_url', 'api_base_url', 'api_endpoint', 'endpoint_url', 'openapi_url', 'swagger_url', 'api_docs_url', 'documentation_url', 'developer_url'];
-const API_LINK_HINT = /(?:\\bapi\\b|\\/api(?:\\/|$|[?#])|developer(?:s)?|openapi|swagger|redoc|graphql|data[-_/ ]?portal|webservice|web[-_/ ]?service|api[-_ ]?documentation|\\/docs(?:\\/|$|[?#]))/i;
+const API_LINK_HINT = /(?:\bapi\b|\/api(?:\/|$|[?#])|developer(?:s)?|openapi|swagger|redoc|graphql|data[-_/ ]?portal|webservice|web[-_/ ]?service|api[-_ ]?documentation|\/docs(?:\/|$|[?#]))/i;
 
 function catalogFiles() {
   const requested = (process.env.API_AUDIT_CATALOG_FILES || '').split(',').map(x => x.trim()).filter(Boolean);
