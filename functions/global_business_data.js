@@ -57,6 +57,16 @@ function normalizeBusinessRecord(input = {}) {
   };
 }
 
+function businessDocumentId(record) {
+  // Hash externally supplied identifiers so they cannot create unsafe Firestore paths.
+  return createHash('sha256').update([
+    record.countryCode,
+    record.businessType,
+    record.source.toLocaleLowerCase(),
+    record.sourceRecordId || record.normalizedName,
+  ].join('|')).digest('hex').slice(0, 40);
+}
+
 function normalizeTradeObservation(row = {}, params = {}) {
   const reporterCode = clean(row.reporterCode || params.reporterCode, 3);
   const partnerCode = clean(row.partnerCode || params.partnerCode, 3);
@@ -181,15 +191,7 @@ exports.importLicensedBusinessRecords = onCall({region: 'us-central1', timeoutSe
   records.forEach((input, index) => {
     try {
       const record = normalizeBusinessRecord(input);
-      // Never use externally supplied identifiers directly as Firestore document IDs:
-      // they may contain slashes, be unexpectedly long, or collide across source/type scopes.
-      const sourceIdentity = createHash('sha256').update([
-        record.countryCode,
-        record.businessType,
-        record.source.toLocaleLowerCase(),
-        record.sourceRecordId || record.normalizedName,
-      ].join('|')).digest('hex').slice(0, 40);
-      const ref = db.collection(collectionByType[record.businessType]).doc(sourceIdentity);
+      const ref = db.collection(collectionByType[record.businessType]).doc(businessDocumentId(record));
       batch.set(ref, record, {merge: true});
       imported++;
     } catch (error) {
@@ -217,4 +219,5 @@ exports.importLicensedBusinessRecords = onCall({region: 'us-central1', timeoutSe
 });
 
 module.exports.normalizeBusinessRecord = normalizeBusinessRecord;
+module.exports.businessDocumentId = businessDocumentId;
 module.exports.normalizeTradeObservation = normalizeTradeObservation;
