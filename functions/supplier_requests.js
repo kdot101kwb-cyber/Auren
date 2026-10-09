@@ -160,21 +160,26 @@ exports.retryAurenSupplierRequest = onCall(
     const type = clean(request.data?.type, 20).toLowerCase();
     if (!requestId || !['contact','rfq'].includes(type)) throw new HttpsError('invalid-argument','requestId and type are required.');
     const ref = db.collection('users').doc(uid).collection(collectionFor(type)).doc(requestId);
-    const snap = await ref.get();
-    if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
-    const data = snap.data() || {};
-    if (!['failed','cancelled'].includes(String(data.status||''))) throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
-    const retryCount = Number(data.retryCount||0)+1;
-    if (retryCount > 5) throw new HttpsError('resource-exhausted','Retry limit reached.');
-    const update = {
-      status:'draft', retryCount, externalDispatch:false,
-      lastError:'', retriedAt:admin.firestore.FieldValue.serverTimestamp(), updatedAt:admin.firestore.FieldValue.serverTimestamp(),
-    };
-    await db.runTransaction(async tx => {
+    const globalRef = db.collection(collectionFor(type)).doc(requestId);
+    const retry = await db.runTransaction(async tx => {
+      const fresh = await tx.get(ref);
+      if (!fresh.exists) throw new HttpsError('not-found','Supplier request not found.');
+      const data = fresh.data() || {};
+      const currentStatus = String(data.status || '').toLowerCase();
+      if (!['failed','cancelled'].includes(currentStatus)) {
+        throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
+      }
+      const retryCount = Number(data.retryCount || 0) + 1;
+      if (retryCount > 5) throw new HttpsError('resource-exhausted','Retry limit reached.');
+      const update = {
+        status:'draft', retryCount, externalDispatch:false,
+        lastError:'', retriedAt:admin.firestore.FieldValue.serverTimestamp(), updatedAt:admin.firestore.FieldValue.serverTimestamp(),
+      };
       tx.set(ref, update, {merge:true});
-      tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
+      tx.set(globalRef, update, {merge:true});
+      return {retryCount, matchFlowId:data.matchFlowId || ''};
     });
-    await updateMatchFlow(uid,data.matchFlowId,'active',{retryCount});
-    return {ok:true,id:requestId,type,status:'draft',retryCount};
+    await updateMatchFlow(uid,retry.matchFlowId,'active',{retryCount:retry.retryCount});
+    return {ok:true,id:requestId,type,status:'draft',retryCount:retry.retryCount};
   }
 );
