@@ -4970,3 +4970,6 @@ Object.assign(module.exports, require('./global_business_data'));
 
 // AUREN public data-source catalog and ingestion readiness.
 Object.assign(module.exports, require('./data_source_catalog'));
+
+// Public World Bank financial-sector indicators for global country profiles.
+Object.assign(module.exports, require('./world_bank_financial_indicators'));
