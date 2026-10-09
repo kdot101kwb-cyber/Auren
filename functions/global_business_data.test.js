@@ -141,3 +141,17 @@ test('does not allow imported source payloads to self-assert verified status', (
   });
   assert.equal(record.verificationStatus, 'unverified');
 });
+
+test('rejects malformed reporter, partner, and commodity codes', () => {
+  const base = {
+    reporterCode: '729',
+    partnerCode: '0',
+    cmdCode: 'TOTAL',
+    flowCode: 'X',
+    period: '2024',
+    primaryValue: 1,
+  };
+  assert.equal(normalizeTradeObservation({...base, reporterCode: 'SD'}), null);
+  assert.equal(normalizeTradeObservation({...base, partnerCode: 'WORLD'}), null);
+  assert.equal(normalizeTradeObservation({...base, cmdCode: 'NOT-A-CODE'}), null);
+});
