@@ -58,6 +58,19 @@ test('supplier lifecycle restricts status transitions and keeps terminal states 
   assert.match(source, /Invalid supplier request status transition/);
 });
 
+test('supplier cancellation rechecks terminal state inside transaction', () => {
+  const source = read('supplier_requests.js');
+  const cancelSource = source.slice(
+    source.indexOf('exports.cancelAurenSupplierRequest'),
+    source.indexOf('exports.updateAurenSupplierRequestStatus'),
+  );
+  assert.match(cancelSource, /await db\.runTransaction\(async tx =>/);
+  assert.match(cancelSource, /const fresh = await tx\.get\(ref\)/);
+  assert.match(cancelSource, /\['completed','cancelled'\]\.includes\(currentStatus\)/);
+  assert.match(cancelSource, /tx\.set\(globalRef, update, \{merge:true\}\)/);
+  assert.match(cancelSource, /updateMatchFlow\(uid,cancelled\.matchFlowId,'cancelled'/);
+});
+
 test('supplier status updates recheck state inside transaction to prevent stale writes', () => {
   const source = read('supplier_requests.js');
   assert.match(source, /const fresh = await tx\.get\(ref\)/);
