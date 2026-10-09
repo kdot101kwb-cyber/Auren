@@ -85,6 +85,31 @@ exports.publishAurenTradeRFQ = onCall(
   }
 );
 
+exports.listAurenOpenTradeRFQs = onCall(
+  {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async request => {
+    requireTradeAuth(request);
+    const destinationCountry = clean(request.data?.destinationCountry, 3).toUpperCase();
+    if (destinationCountry && !validCountry(destinationCountry)) {
+      throw new HttpsError('invalid-argument', 'destinationCountry must be a valid 2-3 letter code.');
+    }
+    const limit = Math.min(Math.max(Number(request.data?.limit) || 30, 1), 50);
+    const snap = await db.collection('auren_trade_rfqs').where('status', '==', 'open')
+      .orderBy('createdAt', 'desc').limit(100).get();
+    const items = snap.docs.map(doc => {
+      const d = doc.data() || {};
+      return {
+        id:doc.id, product:clean(d.product,300), quantity:d.quantity, unit:clean(d.unit,40),
+        currency:clean(d.currency,3), destinationCountry:clean(d.destinationCountry,3),
+        destinationCity:clean(d.destinationCity,120), targetDate:clean(d.targetDate,30),
+        notes:clean(d.notes,1000), quoteCount:Number(d.quoteCount || 0), createdAt:d.createdAt || null,
+      };
+    }).filter(item => !destinationCountry || item.destinationCountry === destinationCountry)
+      .slice(0, limit);
+    return {items, count:items.length};
+  }
+);
+
 exports.submitAurenTradeQuote = onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async request => {
