@@ -48,3 +48,28 @@ test('supplier workflow never dispatches externally during draft creation', () =
   assert.match(source, /externalDispatch:false/);
   assert.doesNotMatch(source, /sendEmail|sendSMS|sendMessage|externalDispatch:true/);
 });
+
+test('supplier lifecycle restricts status transitions and keeps terminal states terminal', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /draft: new Set\(\['waiting_response', 'failed', 'cancelled'\]\)/);
+  assert.match(source, /waiting_response: new Set\(\['replied', 'completed', 'failed', 'cancelled'\]\)/);
+  assert.match(source, /replied: new Set\(\['completed', 'cancelled'\]\)/);
+  assert.match(source, /completed: new Set\(\[\]\)/);
+  assert.match(source, /Invalid supplier request status transition/);
+});
+
+test('supplier status updates recheck state inside transaction to prevent stale writes', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /const fresh = await tx\.get\(ref\)/);
+  assert.match(source, /freshStatus !== currentStatus/);
+  assert.match(source, /Supplier request changed; refresh and try again/);
+});
+
+test('cancel and retry keep Match Flow status consistent without dispatching messages', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /updateMatchFlow\(uid,data\.matchFlowId,'cancelled'/);
+  assert.match(source, /updateMatchFlow\(uid,data\.matchFlowId,'active'/);
+  assert.match(source, /status:'draft', retryCount, externalDispatch:false/);
+  assert.match(source, /Only failed or cancelled requests can be retried/);
+  assert.match(source, /Retry limit reached/);
+});
