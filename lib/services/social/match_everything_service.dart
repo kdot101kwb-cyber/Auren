@@ -374,11 +374,11 @@ class AurenMatchEverythingService {
     // Penalize explicit location mismatches instead of ranking an unrelated
     // country/city as highly as a result that satisfies the user's constraint.
     if (signals.countries.isNotEmpty &&
-        !signals.countries.any((country) => normalizedText.contains(country))) {
+        signals.matchingCountries(normalizedText).isEmpty) {
       score -= 18;
     }
     if (signals.cities.isNotEmpty &&
-        !signals.cities.any((city) => normalizedText.contains(city))) {
+        signals.matchingCities(normalizedText).isEmpty) {
       score -= 12;
     }
     if (signals.wantsCertified &&
@@ -419,15 +419,13 @@ class AurenMatchEverythingService {
     final intentCommon = intentTerms.intersection(tokens).take(3).toList();
     if (normalizedIntent.length >= 6 && _normalize(text).contains(normalizedIntent)) reasons.add('تطابق مباشر مع طلبك');
     if (intentCommon.isNotEmpty) reasons.add('مرتبط بطلبك: ' + intentCommon.join('، '));
-    final matchedCountries = signals.countries
-        .where((country) => normalizedText.contains(country))
+    final matchedCountries = signals.matchingCountries(normalizedText)
         .take(2)
         .toList();
     if (matchedCountries.isNotEmpty) {
       reasons.add('الدولة المطابقة: ${matchedCountries.join('، ')}');
     }
-    final matchedCities = signals.cities
-        .where((city) => normalizedText.contains(city))
+    final matchedCities = signals.matchingCities(normalizedText)
         .take(2)
         .toList();
     if (matchedCities.isNotEmpty) {
@@ -612,6 +610,89 @@ class AurenIntentSignals {
       wantsOrganic: ['عضوي','عضوية','organic','bio'].any((w) => n.contains(_normalizeIntent(w))),
       wantsSamples: ['عينة','عينات','sample','samples'].any((w) => n.contains(_normalizeIntent(w))),
     );
+  }
+
+  /// Match country aliases so "Türkiye" can match a record stored as
+  /// "Turkey", and "UAE" can match "United Arab Emirates".
+  List<String> matchingCountries(String text) {
+    final n = _normalizeIntent(text);
+    return countries.where((requested) {
+      final group = _countryAliasGroup(requested);
+      return group.any((alias) => n.contains(_normalizeIntent(alias)));
+    }).toList(growable: false);
+  }
+
+  /// Match common city spellings and transliterations across English/Arabic.
+  List<String> matchingCities(String text) {
+    final n = _normalizeIntent(text);
+    return cities.where((requested) {
+      final group = _cityAliasGroup(requested);
+      return group.any((alias) => n.contains(_normalizeIntent(alias)));
+    }).toList(growable: false);
+  }
+
+  static List<String> _countryAliasGroup(String value) {
+    const groups = <List<String>>[
+      ['turkey', 'türkiye', 'تركيا'],
+      ['uae', 'united arab emirates', 'الإمارات', 'الامارات'],
+      ['usa', 'united states', 'america', 'امريكا', 'الولايات المتحدة'],
+      ['uk', 'united kingdom', 'britain', 'بريطانيا', 'المملكة المتحدة'],
+      ['saudi arabia', 'saudi', 'السعودية', 'المملكة العربية السعودية'],
+      ['south africa', 'جنوب افريقيا', 'جنوب أفريقيا'],
+      ['sudan', 'السودان'],
+      ['egypt', 'مصر'],
+      ['china', 'الصين'],
+      ['kenya', 'كينيا'],
+      ['nigeria', 'نيجيريا'],
+      ['india', 'الهند'],
+      ['pakistan', 'باكستان'],
+      ['bangladesh', 'بنغلاديش', 'بنجلاديش'],
+      ['ethiopia', 'اثيوبيا', 'إثيوبيا'],
+      ['uganda', 'اوغندا', 'أوغندا'],
+      ['tanzania', 'تنزانيا'],
+      ['rwanda', 'رواندا'],
+      ['ghana', 'غانا'],
+      ['germany', 'المانيا', 'ألمانيا'],
+      ['vietnam', 'فيتنام'],
+    ];
+    for (final group in groups) {
+      if (group.any((alias) => _normalizeIntent(alias) == _normalizeIntent(value))) {
+        return group;
+      }
+    }
+    return [value];
+  }
+
+  static List<String> _cityAliasGroup(String value) {
+    const groups = <List<String>>[
+      ['khartoum', 'الخرطوم'],
+      ['omdurman', 'om durman', 'umm durman', 'ام درمان', 'أم درمان'],
+      ['cairo', 'القاهرة'],
+      ['dubai', 'دبي'],
+      ['abu dhabi', 'ابوظبي', 'أبوظبي'],
+      ['riyadh', 'الرياض'],
+      ['jeddah', 'جدة'],
+      ['istanbul', 'اسطنبول', 'إسطنبول'],
+      ['shanghai', 'شنغهاي'],
+      ['shenzhen', 'شنتشن'],
+      ['guangzhou', 'غوانزو'],
+      ['mumbai', 'مومباي'],
+      ['delhi', 'دلهي'],
+      ['nairobi', 'نيروبي'],
+      ['lagos', 'لاغوس'],
+      ['addis ababa', 'أديس أبابا', 'اديس ابابا'],
+      ['kampala', 'كمبالا'],
+      ['dar es salaam', 'دار السلام'],
+      ['johannesburg', 'جوهانسبرغ'],
+      ['london', 'لندن'],
+      ['new york', 'نيويورك'],
+    ];
+    for (final group in groups) {
+      if (group.any((alias) => _normalizeIntent(alias) == _normalizeIntent(value))) {
+        return group;
+      }
+    }
+    return [value];
   }
 
   int matchScore(String text) {
