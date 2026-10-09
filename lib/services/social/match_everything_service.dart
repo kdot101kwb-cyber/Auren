@@ -354,8 +354,9 @@ class AurenMatchEverythingService {
         _list(d['exportMarkets']).join(' '), _list(d['marketsServed']).join(' '),
         _list(d['importCountries']).join(' '), _list(d['exportProducts']).join(' '),
         _list(d['certifications']).join(' '), _list(d['searchKeywords']).join(' '),
-        d['price'], d['priceRange'], d['currency'], d['minimumOrderQuantity'],
-        d['moq'], d['shippingTerms'], d['incoterms'], d['industry'],
+        _valueText(d['price']), d['priceRange'], d['currency'],
+        _valueText(d['minimumOrderQuantity']), _valueText(d['moq']),
+        d['shippingTerms'], d['incoterms'], d['industry'],
         _list(d['industries']).join(' '), _list(d['languages']).join(' '),
         _list(d['paymentTerms']).join(' '), _list(d['certificationNames']).join(' '),
       ].whereType<String>().join(' ').toLowerCase();
@@ -418,16 +419,37 @@ class AurenMatchEverythingService {
 
   int _overlapScore(String a, String b) {
     final aa = _tokens(a), bb = _tokens(b);
-    if (aa.isEmpty || bb.isEmpty) return 20;
-    return (20 + aa.intersection(bb).length * 12).clamp(20, 80).toInt();
+    if (aa.isEmpty || bb.isEmpty) return 0;
+    final overlap = aa.intersection(bb).length;
+    if (overlap == 0) return 0;
+    return (10 + overlap * 12).clamp(10, 80).toInt();
   }
 
   Set<String> _tokens(String value) => _normalize(value)
       .split(RegExp(r'[^a-z0-9\u0600-\u06ff]+'))
       .where((v) => v.length >= 3).toSet();
 
-  List<String> _list(dynamic value) =>
-      value is List ? value.whereType<String>().map((v) => v.trim()).toList() : const [];
+  List<String> _list(dynamic value) => value is List
+      ? value.map(_valueText).where((v) => v.isNotEmpty).toList()
+      : const [];
+
+  /// Convert common Firestore scalar/list/map values into searchable text.
+  /// Numeric price and MOQ fields were previously discarded by whereType<String>().
+  String _valueText(dynamic value) {
+    if (value == null) return '';
+    if (value is String) return value.trim();
+    if (value is num || value is bool) return value.toString();
+    if (value is List) {
+      return value.map(_valueText).where((v) => v.isNotEmpty).join(' ');
+    }
+    if (value is Map) {
+      return value.entries
+          .map((entry) => '${entry.key} ${_valueText(entry.value)}')
+          .where((v) => v.trim().isNotEmpty)
+          .join(' ');
+    }
+    return '';
+  }
 
   String _string(dynamic value, String fallback) =>
       value is String && value.trim().isNotEmpty ? value.trim() : fallback;
@@ -532,7 +554,7 @@ class AurenIntentSignals {
     if (wantsBulk && ['كميات','bulk','moq','minimum order'].any((w) => n.contains(_normalizeIntent(w)))) score += 6;
     if (wantsCertified && ['شهادة','certified','certification','iso','haccp'].any((w) => n.contains(_normalizeIntent(w)))) score += 5;
     if (wantsOrganic && ['عضوي','organic','bio'].any((w) => n.contains(_normalizeIntent(w)))) score += 5;
-    if (wantsSamples && ['عينة','sample','samples'].any((w) => n.contains(_normalizeIntent(w)))) score += 4;
+    if (wantsSamples && ['عينة','عينات','sample','samples'].any((w) => n.contains(_normalizeIntent(w)))) score += 4;
     return score.clamp(0, 35).toInt();
   }
 
