@@ -19,8 +19,8 @@ test('global country registry preserves ISO identity and geographic metadata', (
   assert.match(source, /iso2: c\.iso2Code/);
   assert.match(source, /iso3: c\.iso3Code/);
   assert.match(source, /capitalCity: c\.capitalCity/);
-  assert.match(source, /longitude: c\.longitude/);
-  assert.match(source, /latitude: c\.latitude/);
+  assert.match(source, /longitude: coordinate\(c\.longitude\)/);
+  assert.match(source, /latitude: coordinate\(c\.latitude\)/);
 });
 
 test('global indicator ingestion uses the canonical core feasibility indicators', () => {
