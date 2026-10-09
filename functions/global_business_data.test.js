@@ -52,3 +52,47 @@ test('normalizes aggregate trade statistics without mislabeling them as company 
 test('rejects malformed aggregate trade rows', () => {
   assert.equal(normalizeTradeObservation({reporterCode: '729', flowCode: 'X', period: '20', primaryValue: 3}), null);
 });
+
+
+test('rejects business records with non-HTTPS source URLs', () => {
+  assert.throws(() => normalizeBusinessRecord({
+    name: 'Sample Supplier',
+    countryCode: 'SD',
+    businessType: 'supplier',
+    source: 'public directory',
+    sourceUrl: 'http://example.com/list',
+    license: 'terms permit display',
+  }), /Business records require/);
+});
+
+test('rejects negative trade values and unsupported flow codes', () => {
+  assert.equal(normalizeTradeObservation({
+    reporterCode: '729',
+    partnerCode: '0',
+    cmdCode: 'TOTAL',
+    flowCode: 'X',
+    period: '2024',
+    primaryValue: -1,
+  }), null);
+  assert.equal(normalizeTradeObservation({
+    reporterCode: '729',
+    partnerCode: '0',
+    cmdCode: 'TOTAL',
+    flowCode: 'Z',
+    period: '2024',
+    primaryValue: 1,
+  }), null);
+});
+
+test('preserves zero as a valid aggregate trade value', () => {
+  const row = normalizeTradeObservation({
+    reporterCode: '729',
+    partnerCode: '0',
+    cmdCode: 'TOTAL',
+    flowCode: 'M',
+    period: '2024',
+    primaryValue: 0,
+  });
+  assert.ok(row);
+  assert.equal(row.tradeValue, 0);
+});
