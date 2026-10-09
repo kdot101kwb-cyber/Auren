@@ -13,6 +13,7 @@ on:
       - 'functions/*bank*.json'
       - 'functions/*factory*.json'
       - 'functions/audit_global_source_catalog_links.js'
+      - 'functions/audit_global_source_apis.js'
       - '.github/workflows/global-source-catalog-audit.yml'
   workflow_dispatch:
     inputs:
@@ -45,6 +46,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Syntax-check API discovery auditor
+        working-directory: functions
+        run: node --check audit_global_source_apis.js
 
       - name: Validate catalog structure and optionally audit URLs
         working-directory: functions
