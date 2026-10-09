@@ -155,3 +155,11 @@ test('rejects malformed reporter, partner, and commodity codes', () => {
   assert.equal(normalizeTradeObservation({...base, partnerCode: 'WORLD'}), null);
   assert.equal(normalizeTradeObservation({...base, cmdCode: 'NOT-A-CODE'}), null);
 });
+
+
+test('trade ingestion fails closed when the upstream response has no data array', () => {
+  const source = require('node:fs').readFileSync(require.resolve('./global_business_data.js'), 'utf8');
+  assert.match(source, /UN Comtrade returned an unreadable JSON response/);
+  assert.match(source, /UN Comtrade response did not contain a valid data array/);
+  assert.match(source, /if \(!body \|\| !Array\.isArray\(body\.data\)\)/);
+});
