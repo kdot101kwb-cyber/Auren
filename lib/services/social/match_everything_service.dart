@@ -296,8 +296,23 @@ class AurenMatchEverythingService {
           actionReason: plan.reasonFor(action),
         ));
       }
-      results.sort((a, b) => b.score.compareTo(a.score));
-      return results.take(limit).toList(growable: false);
+      // The same licensed company may be present in more than one trade-role
+      // collection. Keep the highest-scoring copy so users do not see duplicates.
+      final unique = <String, AurenMatchItem>{};
+      for (final item in results) {
+        final country = _normalize(_string(
+          item.data['countryCode'],
+          _string(item.data['country'], ''),
+        ));
+        final key = '${_normalize(item.title)}|$country';
+        final existing = unique[key];
+        if (existing == null || item.score > existing.score) {
+          unique[key] = item;
+        }
+      }
+      final deduplicated = unique.values.toList();
+      deduplicated.sort((a, b) => b.score.compareTo(a.score));
+      return deduplicated.take(limit).toList(growable: false);
     } catch (_) {
       // Supplier records are an optional source; other Match Everything
       // categories remain available if this collection cannot be queried.
