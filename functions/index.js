@@ -4988,3 +4988,7 @@ Object.assign(module.exports, require('./grants_gov_opportunity_search'));
 
 // Search bank records ingested from official national and regional sources.
 Object.assign(module.exports, require('./regional_local_bank_directory'));
+
+
+// Global bank-name search backed by GLEIF legal-entity reference records.
+Object.assign(module.exports, require('./global_bank_entity_search'));
