@@ -24,6 +24,9 @@ test('normalizes business records with provenance and safe verification defaults
   assert.equal(record.verificationStatus, 'unverified');
   assert.deepEqual(record.products, ['sesame', 'gum arabic']);
   assert.equal(record.source, 'official trade directory');
+  assert.equal(record.sourceHost, 'example.gov.sd');
+  assert.equal(record.provenanceStatus, 'provided');
+  assert.equal(record.sourceUrl, 'https://example.gov.sd/exporters');
   assert.ok(record.lastCheckedAt);
 });
 
@@ -162,4 +165,20 @@ test('trade ingestion fails closed when the upstream response has no data array'
   assert.match(source, /UN Comtrade returned an unreadable JSON response/);
   assert.match(source, /UN Comtrade response did not contain a valid data array/);
   assert.match(source, /if \(!body \|\| !Array\.isArray\(body\.data\)\)/);
+});
+
+
+test('records source host and provenance metadata separately from verification', () => {
+  const record = normalizeBusinessRecord({
+    name: 'Metadata Supplier',
+    countryCode: 'SD',
+    businessType: 'supplier',
+    source: 'licensed directory',
+    sourceUrl: 'https://Directory.Example/suppliers',
+    license: 'terms permit display',
+    verificationStatus: 'verified',
+  });
+  assert.equal(record.sourceHost, 'directory.example');
+  assert.equal(record.provenanceStatus, 'provided');
+  assert.equal(record.verificationStatus, 'unverified');
 });
