@@ -305,3 +305,8 @@ void main() {
     final plan = AurenIntentActionPlan.fromIntent('寻找供应商');
     expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
   });
+
+  test('routes Hindi supplier request to quote action', () {
+    final plan = AurenIntentActionPlan.fromIntent('आपूर्तिकर्ता');
+    expect(plan.actionFor(AurenMatchKind.business), AurenMatchAction.requestQuote);
+  });
