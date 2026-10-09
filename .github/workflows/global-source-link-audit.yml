@@ -1,6 +1,9 @@
 name: Global Source Catalog Link Audit
 
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/global-source-link-audit.yml'
   workflow_dispatch:
     inputs:
       timeout_ms:
