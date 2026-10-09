@@ -1,14 +1,14 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
 class AurenSupplierRequest {
-  final String id,type,status,supplierName,supplierId,product,quantity,message,currency,matchFlowId;
+  final String id,type,status,supplierName,supplierId,product,quantity,message,currency,matchFlowId,lastError;
   final bool externalDispatch; final int retryCount;
-  const AurenSupplierRequest({required this.id,required this.type,required this.status,required this.supplierName,required this.supplierId,required this.product,required this.quantity,required this.message,required this.currency,required this.matchFlowId,required this.externalDispatch,required this.retryCount});
+  const AurenSupplierRequest({required this.id,required this.type,required this.status,required this.supplierName,required this.supplierId,required this.product,required this.quantity,required this.message,required this.currency,required this.matchFlowId,required this.lastError,required this.externalDispatch,required this.retryCount});
   factory AurenSupplierRequest.fromMap(Map<String,dynamic> d)=>AurenSupplierRequest(
     id:d['id']?.toString()??'',type:d['type']?.toString()??'contact',status:d['status']?.toString()??'draft',
     supplierName:(d['supplierName']??d['supplierId']??'').toString(),supplierId:d['supplierId']?.toString()??'',
     product:d['product']?.toString()??'',quantity:d['quantity']?.toString()??'',message:d['message']?.toString()??'',
-    currency:d['currency']?.toString()??'',matchFlowId:d['matchFlowId']?.toString()??'',
+    currency:d['currency']?.toString()??'',matchFlowId:d['matchFlowId']?.toString()??'',lastError:d['lastError']?.toString()??'',
     externalDispatch:d['externalDispatch']==true,retryCount:int.tryParse(d['retryCount']?.toString()??'0')??0);
   String get title=>type=='rfq'?(product.isEmpty?'طلب عرض سعر':product):'طلب تواصل';
 }
