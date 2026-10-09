@@ -19,7 +19,7 @@ function normalizeInput(input = {}) {
   if (!/^\d{4}$/.test(period) || Number(period) < 1962 || Number(period) > new Date().getUTCFullYear()) {
     throw new HttpsError('invalid-argument', 'period must be a valid four-digit year.');
   }
-  if (!['X', 'M', ' re-export'].includes(flowCode) && !['X', 'M', 'RX'].includes(flowCode)) {
+  if (!['X', 'M', 'RX'].includes(flowCode)) {
     throw new HttpsError('invalid-argument', 'flowCode must be X (exports), M (imports), or RX (re-exports).');
   }
   if (!/^\d{1,3}$/.test(partnerCode)) {
@@ -57,12 +57,13 @@ async function searchUNComtrade(input, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const url = new URL(API_BASE);
   for (const [key, value] of Object.entries({
-    reporterCode: filters.reporterCode,
+    reportercode: filters.reporterCode,
     period: filters.period,
     flowCode: filters.flowCode,
     partnerCode: filters.partnerCode,
     cmdCode: filters.cmdCode,
     maxRecords: String(filters.limit),
+    includeDesc: 'true',
   })) url.searchParams.set(key, value);
 
   const controller = new AbortController();
