@@ -128,7 +128,15 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
   requireAdmin(request);
 
   const limit = Math.min(Math.max(Number(request.data?.limit) || 25, 1), 25);
-  const snap = await db.collection('auren_global_countries').limit(limit).get();
+  const startAfterIso3 = typeof request.data?.startAfterIso3 === 'string'
+    ? request.data.startAfterIso3.trim().toUpperCase() : '';
+  if (startAfterIso3 && !/^[A-Z]{3}$/.test(startAfterIso3)) {
+    throw new HttpsError('invalid-argument', 'startAfterIso3 must be a three-letter ISO-3 code.');
+  }
+  let countryQuery = db.collection('auren_global_countries')
+    .orderBy(admin.firestore.FieldPath.documentId());
+  if (startAfterIso3) countryQuery = countryQuery.startAfter(startAfterIso3);
+  const snap = await countryQuery.limit(limit).get();
   let processed = 0;
   let indicatorsStored = 0;
   let failedIndicators = 0;
@@ -143,12 +151,13 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
         try {
           const data = await getJson(
             WB + '/country/' + iso3 + '/indicator/' + indicator +
-            '?format=json&per_page=1'
+            '?format=json&per_page=20'
           );
-          const latest = Array.isArray(data) && Array.isArray(data[1]) ? data[1][0] : null;
-          if (!latest || latest.value == null) return {indicator, value: null};
+          const history = Array.isArray(data) && Array.isArray(data[1]) ? data[1] : [];
+          const latest = history.find((entry) => entry && entry.value !== null &&
+            entry.value !== undefined && Number.isFinite(Number(entry.value)));
+          if (!latest) return {indicator, value: null};
           const value = Number(latest.value);
-          if (!Number.isFinite(value)) return {indicator, value: null};
           return {indicator, value: {
             value,
             year: latest.date,
@@ -182,6 +191,9 @@ exports.aurenGlobalDataIngest = onCall({region: 'us-central1', timeoutSeconds: 1
   return {
     status: failedIndicators > 0 || countriesWithNoIndicators > 0 ? 'partial' : 'ok',
     countriesProcessed: processed,
+    startAfterIso3: startAfterIso3 || null,
+    nextStartAfterIso3: snap.docs.length === limit ? snap.docs[snap.docs.length - 1].id : null,
+    hasMoreCountries: snap.docs.length === limit,
     indicatorsConfigured: CORE.length,
     indicatorValuesStored: indicatorsStored,
     failedIndicatorRequests: failedIndicators,
