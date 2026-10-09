@@ -218,6 +218,44 @@ void main() {
     expect(signals.wantsShipping, isTrue);
   });
 
+  test('routes multilingual purchase phrases to the cart action', () {
+    for (final intent in [
+      'quiero comprar',
+      'je veux acheter',
+      'quero comprar',
+      'ürün satın al',
+      'nunua',
+      '购买',
+      'खरीदें',
+    ]) {
+      final plan = AurenIntentActionPlan.fromIntent(intent);
+      expect(
+        plan.actionFor(AurenMatchKind.product),
+        AurenMatchAction.addToCart,
+        reason: intent,
+      );
+    }
+  });
+
+  test('routes multilingual supplier requests to quote drafts', () {
+    for (final intent in [
+      'busco proveedor',
+      'je cherche un fournisseur',
+      'quero fornecedor',
+      'tedarikçi arıyorum',
+      'msambazaji',
+      '寻找供应商',
+      'आपूर्तिकर्ता',
+    ]) {
+      final plan = AurenIntentActionPlan.fromIntent(intent);
+      expect(
+        plan.actionFor(AurenMatchKind.business),
+        AurenMatchAction.requestQuote,
+        reason: intent,
+      );
+    }
+  });
+
   test('clamps intent signal scores to 35', () {
     final signals = AurenIntentSignals.fromIntent(
       'السودان مصر الصين الإمارات كينيا نيجيريا الخرطوم القاهرة دبي شنتشن '
