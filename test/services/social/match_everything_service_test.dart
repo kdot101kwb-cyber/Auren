@@ -296,12 +296,13 @@ void main() {
     );
   });
 
-  test('RFQ action has an explicit review-before-contact explanation', () {
+  test('RFQ guidance requires review and explicit approval before external contact', () {
     final plan = AurenIntentActionPlan.fromIntent('عايز مورد ملابس في الصين');
     final action = plan.actionFor(AurenMatchKind.business);
     expect(action, AurenMatchAction.requestQuote);
     expect(plan.labelFor(action), 'طلب عرض سعر');
-    expect(plan.reasonFor(action), contains('طلب عرض سعر'));
+    expect(plan.reasonFor(action), contains('مراجعتها وتعديلها'));
+    expect(plan.reasonFor(action), contains('موافقتك الصريحة'));
   });
 
   test('supplier intent does not change unrelated product action into purchase', () {
