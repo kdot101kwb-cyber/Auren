@@ -370,6 +370,31 @@ class AurenMatchEverythingService {
     if (normalizedIntent.length >= 6 && normalizedText.contains(normalizedIntent)) score += 15;
     score += _intentSemanticBoost(normalizedText, normalizedIntent);
     score += signals.matchScore(normalizedText);
+
+    // Penalize explicit location mismatches instead of ranking an unrelated
+    // country/city as highly as a result that satisfies the user's constraint.
+    if (signals.countries.isNotEmpty &&
+        !signals.countries.any((country) => normalizedText.contains(country))) {
+      score -= 18;
+    }
+    if (signals.cities.isNotEmpty &&
+        !signals.cities.any((city) => normalizedText.contains(city))) {
+      score -= 12;
+    }
+    if (signals.wantsCertified &&
+        !['certified', 'certification', 'iso', 'haccp', 'شهادة', 'معتمد']
+            .any(normalizedText.contains)) {
+      score -= 5;
+    }
+    if (signals.wantsOrganic &&
+        !['organic', 'bio', 'عضوي'].any(normalizedText.contains)) {
+      score -= 5;
+    }
+    if (signals.wantsShipping &&
+        !['شحن', 'shipping', 'delivery', 'incoterms']
+            .any(normalizedText.contains)) {
+      score -= 3;
+    }
     return score.clamp(0, 100).toInt();
   }
 
@@ -407,6 +432,12 @@ class AurenMatchEverythingService {
         .toList();
     if (matchedCities.isNotEmpty) {
       reasons.add('المدينة المطابقة: ${matchedCities.join('، ')}');
+    }
+    if (signals.countries.isNotEmpty && matchedCountries.isEmpty) {
+      reasons.add('الدولة المطلوبة غير مؤكدة في بيانات هذه النتيجة');
+    }
+    if (signals.cities.isNotEmpty && matchedCities.isEmpty) {
+      reasons.add('المدينة المطلوبة غير مؤكدة في بيانات هذه النتيجة');
     }
     if (signals.wantsCheap &&
         ['رخيص', 'cheap', 'affordable', 'low price', 'price'].any(normalizedText.contains)) {
