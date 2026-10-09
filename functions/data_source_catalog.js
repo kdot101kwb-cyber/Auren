@@ -131,6 +131,7 @@ function sourceIdForRun(run) {
     'faostat': 'faostat',
     'licensed_business_record_import': 'licensed_business_records',
   };
+  if (DATA_SOURCES.some((entry) => entry.id === source)) return source;
   return aliases[source] || '';
 }
 
