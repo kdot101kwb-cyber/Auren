@@ -233,3 +233,6 @@ exports.importLicensedBusinessRecords = onCall({region: 'us-central1', timeoutSe
 module.exports.normalizeBusinessRecord = normalizeBusinessRecord;
 module.exports.businessDocumentId = businessDocumentId;
 module.exports.normalizeTradeObservation = normalizeTradeObservation;
+
+// Export callable Global Trade Network RFQ and quote-comparison workflows.
+Object.assign(module.exports, require('./trade_rfq'));
