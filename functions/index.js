@@ -4999,3 +4999,6 @@ Object.assign(module.exports, require('./global_coverage_policy'));
 
 // Live global country directory from the World Bank Country API.
 Object.assign(module.exports, require('./global_country_discovery'));
+
+// Search licensed/provenance-backed business records across AUREN's global directory.
+Object.assign(module.exports, require('./global_business_directory_search'));
