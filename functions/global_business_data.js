@@ -126,8 +126,16 @@ exports.ingestGlobalTradeStatistics = onCall({region: 'us-central1', timeoutSeco
     clearTimeout(timer);
   }
   if (!response.ok) throw new HttpsError('unavailable', 'UN Comtrade returned HTTP ' + response.status + '.');
-  const body = await response.json();
-  const rows = Array.isArray(body.data) ? body.data : [];
+  let body;
+  try {
+    body = await response.json();
+  } catch (_) {
+    throw new HttpsError('unavailable', 'UN Comtrade returned an unreadable JSON response.');
+  }
+  if (!body || !Array.isArray(body.data)) {
+    throw new HttpsError('unavailable', 'UN Comtrade response did not contain a valid data array.');
+  }
+  const rows = body.data;
   const db = getFirestore();
   let imported = 0;
   const rejected = [];
