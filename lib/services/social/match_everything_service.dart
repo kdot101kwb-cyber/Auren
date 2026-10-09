@@ -772,7 +772,7 @@ class AurenIntentActionPlan {
     bool has(List<String> words) => words.any((word) => n.contains(AurenIntentSignals._normalizeIntent(word)));
     return AurenIntentActionPlan(
       normalized: n,
-      commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر','مصدر','تصدير','exporter','export','مستورد','استيراد','importer','import','تجارة دولية','international trade','proveedor','fournisseur','fornecedor','tedarikçi','tedarikci','msambazaji','供应商','供應商','आपूर्तिकर्ता','fabricante','fabricant','üretici','uretici','manufacturer','exportador','exportateur','ihracatçı','ihracatci','importador','importateur','ithalatçı','ithalatci','comercio internacional','commerce international','comércio internacional','uluslararası ticaret','biashara ya kimataifa','国际贸易','國際貿易','ürün','urun','satın al','satin al','comprar','compra','acheter','achète','quero comprar','nunua','购买','买','खरीदें']),
+      commercial: has(['مورد','توريد','supplier','wholesale','مصنع','manufacturer','factory','شراء','اشتري','سعر','منتج','بضاعة','ملابس','خدمة','مطعم','store','business','quote','عرض سعر','مصدر','تصدير','exporter','export','مستورد','استيراد','importer','import','تجارة دولية','تجارة خارجية','التجارة الخارجية','للتجارة الخارجية','للتجارة الدولية','international trade','proveedor','fournisseur','fornecedor','tedarikçi','tedarikci','msambazaji','供应商','供應商','आपूर्तिकर्ता','fabricante','fabricant','üretici','uretici','manufacturer','exportador','exportateur','ihracatçı','ihracatci','importador','importateur','ithalatçı','ithalatci','comercio internacional','commerce international','comércio internacional','uluslararası ticaret','biashara ya kimataifa','国际贸易','國際貿易','ürün','urun','satın al','satin al','comprar','compra','acheter','achète','quero comprar','nunua','购买','买','खरीदें']),
       learning: has(['اتعلم','تعلم','كورس','دورة','flutter','learn','course','study','aprender','curso','apprendre','cours','apprendre','aprender','öğren','ogren','kujifunza','学习','課程','课程','सीखें','पढ़ाई']),
       work: has(['وظيفة','شغل','عمل','فرصة','تقديم','توظيف','job','work','career','apply','empleo','trabajo','trabajar','emploi','travail','emprego','trabalho','iş','is ilanı','kariyer','kazi','ajira','工作','职位','職位','नौकरी','काम']),
       social: has(['تابع','متابعة','صديق','تواصل','chat','follow','connect','creator','مؤثر','seguir','conectar','suivre','contacter','seguir','conectar','takip','bağlan','baglan','fuata','unganisha','关注','联系','关注','जुड़ें','अनुसरण']),
@@ -799,7 +799,8 @@ class AurenIntentActionPlan {
             'uretici', '厂商', '工厂', 'مصدر', 'تصدير', 'export', 'exporter',
             'exportador', 'exportateur', 'ihracatçı', 'ihracatci',
             'مستورد', 'استيراد', 'import', 'importer', 'importador',
-            'importateur', 'ithalatçı', 'ithalatci', 'تجارة دولية',
+            'importateur', 'ithalatçı', 'ithalatci', 'تجارة دولية', 'تجارة خارجية',
+            'التجارة الخارجية', 'للتجارة الخارجية', 'للتجارة الدولية',
             'international trade', 'comercio internacional',
             'commerce international', 'comércio internacional',
             'uluslararası ticaret', 'biashara ya kimataifa', '国际贸易',
