@@ -136,6 +136,11 @@ async function main() {
       counts[result.classification] = (counts[result.classification] || 0) + 1;
       return counts;
     }, {}),
+    flagged_links: linkResults
+      .filter(result => result.classification !== 'responded')
+      .map(({ file, id, name, country, url, method, http_status, classification, error, final_url }) => ({
+        file, id, name, country, url, method, http_status, classification, error, final_url
+      })),
     interpretation: 'Automated HTTP checks are triage only. A response does not establish official ownership, accuracy, API availability, licensing, scraping permission, or reuse rights. HTTP 403/429, timeouts, and network errors are not automatically proof that a source is broken.',
     link_results: linkResults
   };
