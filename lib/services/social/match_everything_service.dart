@@ -339,6 +339,10 @@ class AurenMatchEverythingService {
         _list(d['exportMarkets']).join(' '), _list(d['marketsServed']).join(' '),
         _list(d['importCountries']).join(' '), _list(d['exportProducts']).join(' '),
         _list(d['certifications']).join(' '), _list(d['searchKeywords']).join(' '),
+        d['price'], d['priceRange'], d['currency'], d['minimumOrderQuantity'],
+        d['moq'], d['shippingTerms'], d['incoterms'], d['industry'],
+        _list(d['industries']).join(' '), _list(d['languages']).join(' '),
+        _list(d['paymentTerms']).join(' '), _list(d['certificationNames']).join(' '),
       ].whereType<String>().join(' ').toLowerCase();
 
   int _score(String text, AurenProfileModeData profile, bool modeMatch, Set<String> intentTerms, String normalizedIntent, AurenIntentSignals signals) {
