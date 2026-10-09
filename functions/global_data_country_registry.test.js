@@ -115,3 +115,16 @@ test('country registry preserves zero coordinates and rejects invalid coordinate
   assert.match(globalRegistry, /number >= -180 && number <= 180/);
   assert.match(globalRegistry, /number >= -180 && number <= 180/);
 });
+
+
+test('global indicator ingestion can page through every country deterministically', () => {
+  assert.match(source, /startAfterIso3/);
+  assert.match(source, /orderBy\(admin\.firestore\.FieldPath\.documentId\(\)\)/);
+  assert.match(source, /nextStartAfterIso3/);
+  assert.match(source, /hasMoreCountries/);
+});
+
+test('global indicator ingestion searches history for the newest available value', () => {
+  assert.match(source, /per_page=20/);
+  assert.match(source, /history\.find\(\(entry\) => entry && entry\.value !== null/);
+});
