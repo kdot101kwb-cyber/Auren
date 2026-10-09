@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "batch": 2,
+  "purpose": "Second batch of country-level official sources for AUREN. Sources are candidate official portals for company registration, exports, customs/trade, investment and procurement.",
+  "coveragePolicy": {
+    "defaultScope": "global",
+    "countryFilter": "optional",
+    "integrationStatus": "catalog_only",
+    "important": "These are source links, not live integrations. Confirm portal identity, access, freshness, API/feed availability, licensing, and reuse terms before ingestion. Never mark a company verified solely because it appears in a register."
+  },
+  "countrySources": [
+    {
+      "countryCode": "KE",
+      "country": "Kenya",
+      "sources": [
+        {"name":"Business Registration Service","url":"https://brs.go.ke/","sourceType":"official_company_registry","dataKinds":["company_registration","business_names"],"integrationStatus":"catalog_only"},
+        {"name":"Kenya Trade Portal","url":"https://kenyatradeportal.go.ke/","sourceType":"official_trade_portal","dataKinds":["trade_procedures","import_export_requirements"],"integrationStatus":"catalog_only"},
+        {"name":"Kenya Export Promotion and Branding Agency","url":"https://makeitkenya.go.ke/","sourceType":"official_export_promotion","dataKinds":["exporters","export_products","market_access"],"integrationStatus":"catalog_only"},
+        {"name":"Kenya Investment Authority","url":"https://www.invest.go.ke/","sourceType":"official_investment_agency","dataKinds":["investment_projects","investment_support"],"integrationStatus":"catalog_only"},
+        {"name":"Kenya Public Procurement Information Portal","url":"https://tenders.go.ke/","sourceType":"official_procurement","dataKinds":["public_tenders","supplier_opportunities"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "ZA",
+      "country": "South Africa",
+      "sources": [
+        {"name":"Companies and Intellectual Property Commission","url":"https://www.cipc.co.za/","sourceType":"official_company_registry","dataKinds":["company_registration","company_status"],"integrationStatus":"catalog_only"},
+        {"name":"Department of Trade, Industry and Competition","url":"https://www.thedtic.gov.za/","sourceType":"official_trade_ministry","dataKinds":["trade_policy","industrial_support","export_programmes"],"integrationStatus":"catalog_only"},
+        {"name":"South African Revenue Service Customs","url":"https://www.sars.gov.za/customs-and-excise/","sourceType":"official_customs_authority","dataKinds":["customs_procedures","import_export_rules"],"integrationStatus":"catalog_only"},
+        {"name":"South African Government eTenders","url":"https://www.etenders.gov.za/","sourceType":"official_procurement","dataKinds":["public_tenders","supplier_opportunities"],"integrationStatus":"catalog_only"},
+        {"name":"Export Credit Insurance Corporation of South Africa","url":"https://www.ecic.co.za/","sourceType":"official_export_finance","dataKinds":["export_credit_insurance","trade_finance"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "GH",
+      "country": "Ghana",
+      "sources": [
+        {"name":"Office of the Registrar of Companies","url":"https://orc.gov.gh/","sourceType":"official_company_registry","dataKinds":["company_registration","company_status"],"integrationStatus":"catalog_only"},
+        {"name":"Ghana Export Promotion Authority","url":"https://www.gepaghana.org/","sourceType":"official_export_promotion","dataKinds":["exporters","export_products","export_support"],"integrationStatus":"catalog_only"},
+        {"name":"Ghana Investment Promotion Centre","url":"https://gipc.gov.gh/","sourceType":"official_investment_agency","dataKinds":["investment_projects","investment_support"],"integrationStatus":"catalog_only"},
+        {"name":"Ghana Electronic Procurement System","url":"https://www.ghaneps.gov.gh/","sourceType":"official_procurement","dataKinds":["public_tenders","supplier_registration"],"integrationStatus":"catalog_only"},
+        {"name":"Ghana Trade Portal","url":"https://ghana.tradeportal.org/","sourceType":"official_trade_portal","dataKinds":["trade_procedures","import_export_requirements"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "ET",
+      "country": "Ethiopia",
+      "sources": [
+        {"name":"Ethiopian Investment Commission","url":"https://investethiopia.gov.et/","sourceType":"official_investment_agency","dataKinds":["investment_opportunities","investment_services"],"integrationStatus":"catalog_only"},
+        {"name":"Ministry of Trade and Regional Integration","url":"https://motri.gov.et/","sourceType":"official_trade_ministry","dataKinds":["trade_policy","trade_services"],"integrationStatus":"catalog_only"},
+        {"name":"Ethiopian Customs Commission","url":"https://ecc.gov.et/","sourceType":"official_customs_authority","dataKinds":["customs_procedures","import_export_requirements"],"integrationStatus":"catalog_only"},
+        {"name":"Ethiopian Public Procurement and Property Authority","url":"https://ppa.gov.et/","sourceType":"official_procurement_authority","dataKinds":["public_procurement","supplier_rules"],"integrationStatus":"catalog_only"},
+        {"name":"Ethiopian Chamber of Commerce and Sectoral Associations","url":"https://ethiopianchamber.com/","sourceType":"chamber_of_commerce","dataKinds":["business_members","business_network"],"integrationStatus":"catalog_only","accessNotes":"Membership directory access and reuse terms need confirmation."}
+      ]
+    },
+    {
+      "countryCode": "CN",
+      "country": "China",
+      "sources": [
+        {"name":"National Enterprise Credit Information Publicity System","url":"https://www.gsxt.gov.cn/","sourceType":"official_company_registry","dataKinds":["company_registration","business_status","credit_disclosures"],"integrationStatus":"catalog_only","accessNotes":"Use official portal; confirm access, language, and automation restrictions before any integration."},
+        {"name":"Ministry of Commerce of the People's Republic of China","url":"https://www.mofcom.gov.cn/","sourceType":"official_trade_ministry","dataKinds":["trade_policy","export_import_information"],"integrationStatus":"catalog_only"},
+        {"name":"General Administration of Customs of China","url":"http://english.customs.gov.cn/","sourceType":"official_customs_authority","dataKinds":["customs_rules","trade_statistics","customs_services"],"integrationStatus":"catalog_only"},
+        {"name":"China Council for the Promotion of International Trade","url":"https://en.ccpit.org/","sourceType":"official_trade_promotion_network","dataKinds":["trade_services","business_matching","international_trade"],"integrationStatus":"catalog_only"},
+        {"name":"China International Import Expo","url":"https://www.ciie.org/","sourceType":"official_trade_event","dataKinds":["exhibitors","buyers","trade_event_opportunities"],"integrationStatus":"catalog_only","accessNotes":"Exhibitor data access and reuse rights require confirmation."}
+      ]
+    },
+    {
+      "countryCode": "JP",
+      "country": "Japan",
+      "sources": [
+        {"name":"National Tax Agency Corporate Number Publication Site","url":"https://www.houjin-bangou.nta.go.jp/en/","sourceType":"official_company_registry","dataKinds":["corporate_numbers","registered_names","registered_addresses"],"integrationStatus":"catalog_only"},
+        {"name":"Japan External Trade Organization","url":"https://www.jetro.go.jp/en/","sourceType":"official_trade_promotion","dataKinds":["exporters","market_research","business_matching"],"integrationStatus":"catalog_only"},
+        {"name":"Japan Customs","url":"https://www.customs.go.jp/english/","sourceType":"official_customs_authority","dataKinds":["customs_procedures","tariffs","import_export_rules"],"integrationStatus":"catalog_only"},
+        {"name":"Japan External Trade Organization Invest Japan","url":"https://www.jetro.go.jp/en/invest/","sourceType":"official_investment_agency","dataKinds":["investment_support","business_setup"],"integrationStatus":"catalog_only"},
+        {"name":"Japan Electronic Procurement System","url":"https://www.p-portal.go.jp/","sourceType":"official_procurement_portal","dataKinds":["public_procurement","tenders"],"integrationStatus":"catalog_only","accessNotes":"Confirm current portal coverage and data reuse terms."}
+      ]
+    },
+    {
+      "countryCode": "GB",
+      "country": "United Kingdom",
+      "sources": [
+        {"name":"Companies House Find and Update Company Information","url":"https://find-and-update.company-information.service.gov.uk/","sourceType":"official_company_registry","dataKinds":["company_registration","filings","company_status"],"integrationStatus":"catalog_only"},
+        {"name":"UK Find a Tender","url":"https://www.find-tender.service.gov.uk/","sourceType":"official_procurement","dataKinds":["public_contract_notices","tenders"],"integrationStatus":"catalog_only"},
+        {"name":"GREAT.gov.uk","url":"https://www.great.gov.uk/","sourceType":"official_export_support","dataKinds":["export_support","international_market_opportunities"],"integrationStatus":"catalog_only"},
+        {"name":"UK Export Finance","url":"https://www.ukexportfinance.gov.uk/","sourceType":"official_export_finance","dataKinds":["export_credit","trade_finance","insurance"],"integrationStatus":"catalog_only"},
+        {"name":"UK Trade Tariff","url":"https://www.gov.uk/trade-tariff","sourceType":"official_trade_portal","dataKinds":["tariffs","commodity_codes","import_export_rules"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "DE",
+      "country": "Germany",
+      "sources": [
+        {"name":"German Commercial Register","url":"https://www.handelsregister.de/","sourceType":"official_company_registry","dataKinds":["company_registration","company_filings"],"integrationStatus":"catalog_only"},
+        {"name":"Unternehmensregister","url":"https://www.unternehmensregister.de/","sourceType":"official_company_information","dataKinds":["company_disclosures","financial_filings"],"integrationStatus":"catalog_only"},
+        {"name":"Germany Trade and Invest","url":"https://www.gtai.de/en","sourceType":"official_trade_investment_agency","dataKinds":["export_market_research","investment_opportunities"],"integrationStatus":"catalog_only"},
+        {"name":"German Customs","url":"https://www.zoll.de/EN/Home/home_node.html","sourceType":"official_customs_authority","dataKinds":["customs_rules","import_export_procedures"],"integrationStatus":"catalog_only"},
+        {"name":"e-Vergabe public procurement","url":"https://www.evergabe-online.de/","sourceType":"official_procurement_portal","dataKinds":["public_tenders","procurement_notices"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "BR",
+      "country": "Brazil",
+      "sources": [
+        {"name":"Brazilian Federal Government Business and Companies Portal","url":"https://www.gov.br/empresas-e-negocios/pt-br","sourceType":"official_business_portal","dataKinds":["business_registration","business_services"],"integrationStatus":"catalog_only"},
+        {"name":"Ministry of Development, Industry, Trade and Services","url":"https://www.gov.br/mdic/pt-br","sourceType":"official_trade_ministry","dataKinds":["industrial_policy","foreign_trade","export_programmes"],"integrationStatus":"catalog_only"},
+        {"name":"ApexBrasil","url":"https://apexbrasil.com.br/","sourceType":"official_export_promotion","dataKinds":["exporters","export_support","international_buyer_matching"],"integrationStatus":"catalog_only"},
+        {"name":"Siscomex","url":"https://www.gov.br/siscomex/pt-br","sourceType":"official_trade_portal","dataKinds":["export_import_processes","trade_compliance"],"integrationStatus":"catalog_only"},
+        {"name":"Compras.gov.br","url":"https://www.gov.br/compras/pt-br","sourceType":"official_procurement","dataKinds":["public_tenders","supplier_opportunities"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "AU",
+      "country": "Australia",
+      "sources": [
+        {"name":"Australian Business Register ABN Lookup","url":"https://abr.business.gov.au/","sourceType":"official_business_registry","dataKinds":["business_names","ABN_status","business_details"],"integrationStatus":"catalog_only"},
+        {"name":"Australian Securities and Investments Commission registers","url":"https://asic.gov.au/online-services/search-asic-registers/","sourceType":"official_company_registry","dataKinds":["company_registration","business_names","licensed_entities"],"integrationStatus":"catalog_only"},
+        {"name":"Austrade","url":"https://www.austrade.gov.au/","sourceType":"official_trade_promotion","dataKinds":["export_support","market_opportunities","international_trade"],"integrationStatus":"catalog_only"},
+        {"name":"Australian Government procurement","url":"https://www.tenders.gov.au/","sourceType":"official_procurement","dataKinds":["government_tenders","supplier_opportunities"],"integrationStatus":"catalog_only"},
+        {"name":"Australian Border Force — importing and exporting","url":"https://www.abf.gov.au/importing-exporting-and-manufacturing","sourceType":"official_customs_authority","dataKinds":["customs_procedures","import_export_rules"],"integrationStatus":"catalog_only"}
+      ]
+    }
+  ],
+  "implementationRules": [
+    "Preserve official source URL, country code, source type, retrieval timestamp, licence status, and verification status for each record.",
+    "Do not scrape portals that prohibit automated access; link out or use an approved API/feed.",
+    "A company registry confirms a registration record only; it does not prove current operational activity, solvency, certifications, or supplier capability.",
+    "This batch expands coverage but does not claim to cover every country. Continue by region and country, using official source directories to discover authoritative portals."
+  ]
+}
