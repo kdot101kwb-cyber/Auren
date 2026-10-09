@@ -390,6 +390,14 @@ class AurenMatchEverythingService {
     if (pair(['مستورد', 'استيراد', 'importer', 'import'])) boost += 12;
     if (pair(['تجارة دولية', 'international trade', 'global trade'])) boost += 8;
     if (pair(['ملابس', 'clothing', 'fashion'])) boost += 6;
+    if (pair(['سمسم', 'sesame'])) boost += 8;
+    if (pair(['صمغ عربي', 'gum arabic'])) boost += 8;
+    if (pair(['قطن', 'cotton'])) boost += 7;
+    if (pair(['حبوب', 'grain', 'cereals'])) boost += 6;
+    if (pair(['اغذية', 'food', 'foodstuff'])) boost += 5;
+    if (pair(['مواد بناء', 'construction materials'])) boost += 5;
+    if (pair(['الكترونيات', 'electronics'])) boost += 5;
+    if (pair(['زراعي', 'agriculture', 'agricultural'])) boost += 5;
     return boost.clamp(0, 30).toInt();
   }
 
