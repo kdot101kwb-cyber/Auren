@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Country-level official-source seed for AUREN discovery. Prioritizes each country's own registry, export agency, sector exporter directories, and official trade gateway.",
+  "coveragePolicy": {
+    "defaultScope": "global",
+    "countryFilter": "optional",
+    "sourceStatus": "catalog_only_until_terms_and_access_are_checked",
+    "registryIndexSources": [
+      {
+        "name": "World Bank Entrepreneurship country sources",
+        "url": "https://www.worldbank.org/en/programs/entrepreneurship/sources",
+        "scope": "Country-by-country company-registration source starting points, including many national registries",
+        "sourceType": "country_registry_index",
+        "integrationStatus": "catalog_only",
+        "notes": "Use to discover a country's own authority; confirm current link, data access and reuse terms for each jurisdiction."
+      },
+      {
+        "name": "ICAEW Company information sources by jurisdiction",
+        "url": "https://www.icaew.com/library/research-guides/company-information/sources-by-jurisdiction",
+        "scope": "Jurisdiction-by-jurisdiction official company information sources",
+        "sourceType": "country_registry_index",
+        "integrationStatus": "catalog_only",
+        "notes": "Secondary research guide pointing to official sources; not itself a government registry."
+      },
+      {
+        "name": "UK Government overseas company registries",
+        "url": "https://www.gov.uk/government/publications/overseas-registries",
+        "scope": "Selected overseas company registry links by region",
+        "sourceType": "country_registry_index",
+        "integrationStatus": "catalog_only",
+        "notes": "Useful starting point but explicitly not comprehensive."
+      },
+      {
+        "name": "Worldwide Registers — European Business Registry Association",
+        "url": "https://ebra.be/worldwide-registers/",
+        "scope": "Business registry links by country",
+        "sourceType": "country_registry_index",
+        "integrationStatus": "catalog_only",
+        "notes": "Registry directory only; check the linked national authority for authoritative records."
+      },
+      {
+        "name": "Global official registry source directory",
+        "url": "https://www.companyinformation.com/company-registry-directory",
+        "scope": "Country/jurisdiction source discovery",
+        "sourceType": "registry_reference_directory",
+        "integrationStatus": "catalog_only",
+        "notes": "Third-party index; use it only to locate official authorities, not as the authority of record."
+      }
+    ]
+  },
+  "countrySources": [
+    {
+      "countryCode": "SD",
+      "country": "Sudan",
+      "sources": [
+        {"name":"Commercial Registration Department / Ministry of Justice portal","url":"https://www.menu.sd/crg/","sourceType":"official_company_registry","dataKinds":["company_registration","company_status"],"integrationStatus":"catalog_only","accessNotes":"Confirm current official status, terms and available search/export access before automation."},
+        {"name":"Ministry of Justice","url":"https://moj.gov.sd/","sourceType":"government_authority","dataKinds":["commercial_law","registry_authority"],"integrationStatus":"catalog_only"},
+        {"name":"Ministry of Trade and Supply","url":"https://mot.gov.sd/","sourceType":"trade_ministry","dataKinds":["trade_policy","trade_services"],"integrationStatus":"catalog_only","accessNotes":"Confirm current portal and available datasets."},
+        {"name":"Sudan Customs","url":"https://customs.gov.sd/","sourceType":"customs_authority","dataKinds":["customs_procedures","import_export_requirements"],"integrationStatus":"catalog_only","accessNotes":"Confirm current endpoint and terms."},
+        {"name":"Sudan Chamber of Commerce","url":"https://sudanchamber.org/","sourceType":"chamber_of_commerce","dataKinds":["business_members","business_network"],"integrationStatus":"catalog_only","accessNotes":"Directory/member data access and freshness require confirmation."}
+      ]
+    },
+    {
+      "countryCode": "NG",
+      "country": "Nigeria",
+      "sources": [
+        {"name":"Corporate Affairs Commission","url":"https://www.cac.gov.ng/","sourceType":"official_company_registry","dataKinds":["company_registration","company_status"],"integrationStatus":"catalog_only"},
+        {"name":"Nigerian Export Promotion Council exporter verification","url":"https://nepc.gov.ng/verify-exporter/","sourceType":"official_exporter_registry","dataKinds":["exporter_directory","exporter_certificate_verification"],"integrationStatus":"catalog_only"},
+        {"name":"Nigeria Single Window Trade Portal","url":"https://trade.gov.ng/","sourceType":"official_trade_portal","dataKinds":["trade_procedures","import_export_services"],"integrationStatus":"catalog_only","accessNotes":"Confirm current portal and data access."},
+        {"name":"Nigerian Investment Promotion Commission","url":"https://www.nipc.gov.ng/","sourceType":"investment_agency","dataKinds":["investment_opportunities","investment_support"],"integrationStatus":"catalog_only"},
+        {"name":"Nigeria Tenders / Bureau of Public Procurement","url":"https://www.bpp.gov.ng/","sourceType":"public_procurement","dataKinds":["public_tenders","procurement_notices"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "EG",
+      "country": "Egypt",
+      "sources": [
+        {"name":"Egyptian Exporters directory — Egypt Exports Portal","url":"https://www.expoegypt.gov.eg/exporters","sourceType":"official_exporter_directory","dataKinds":["exporters","sectors","company_profiles"],"integrationStatus":"catalog_only"},
+        {"name":"General Organization for Export and Import Control (GOEIC)","url":"https://www.goeic.gov.eg/en/company-register","sourceType":"official_trade_control_registry","dataKinds":["company_register","importer_register","industrial_register"],"integrationStatus":"catalog_only","accessNotes":"Some services require account creation and commercial verification."},
+        {"name":"General Authority for Investment and Free Zones (GAFI)","url":"https://www.gafi.gov.eg/","sourceType":"investment_agency","dataKinds":["investment_services","company_establishment"],"integrationStatus":"catalog_only"},
+        {"name":"Egyptian Tax Authority","url":"https://www.eta.gov.eg/","sourceType":"tax_authority","dataKinds":["tax_services","taxpayer_services"],"integrationStatus":"catalog_only"},
+        {"name":"Egyptian General Authority for Government Services / procurement starting point","url":"https://etenders.gov.eg/","sourceType":"public_procurement","dataKinds":["government_tenders","procurement_notices"],"integrationStatus":"catalog_only","accessNotes":"Verify current official portal and terms before ingestion."}
+      ]
+    },
+    {
+      "countryCode": "IN",
+      "country": "India",
+      "sources": [
+        {"name":"Ministry of Corporate Affairs company/LLP services","url":"https://www.mca.gov.in/","sourceType":"official_company_registry","dataKinds":["company_registry","company_status"],"integrationStatus":"catalog_only"},
+        {"name":"APEDA Exporter Directory","url":"https://apeda.gov.in/exporter-directory","sourceType":"official_sector_exporter_directory","dataKinds":["agri_food_exporters","exporter_status"],"integrationStatus":"catalog_only"},
+        {"name":"APEDA Agri Exchange registered exporters","url":"https://agriexchange.apeda.gov.in/AgriDirectory/Exporter/Exporters","sourceType":"official_sector_exporter_directory","dataKinds":["agricultural_exporters","products","states"],"integrationStatus":"catalog_only"},
+        {"name":"Directorate General of Foreign Trade","url":"https://www.dgft.gov.in/","sourceType":"trade_authority","dataKinds":["export_import_codes","trade_notices","export_import_policy"],"integrationStatus":"catalog_only"},
+        {"name":"Government e-Marketplace","url":"https://gem.gov.in/","sourceType":"public_procurement_marketplace","dataKinds":["government_buyers","supplier_registration","procurement"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "ID",
+      "country": "Indonesia",
+      "sources": [
+        {"name":"INAexport — Ministry of Trade","url":"https://inaexport.id/","sourceType":"official_exporter_b2b_directory","dataKinds":["exporters","products","supplier_profiles"],"integrationStatus":"catalog_only","accessNotes":"Official B2B portal; confirm access, sign-in and reuse terms."},
+        {"name":"Indonesia Ministry of Trade Trade Information System","url":"https://sip.kemendag.go.id/","sourceType":"trade_ministry_portal","dataKinds":["foreign_trade","domestic_trade","export_services"],"integrationStatus":"catalog_only"},
+        {"name":"Indonesia Online Single Submission","url":"https://oss.go.id/","sourceType":"official_business_licensing","dataKinds":["business_licensing","business_identity"],"integrationStatus":"catalog_only"},
+        {"name":"Indonesia Investment Coordinating Board (BKPM)","url":"https://www.bkpm.go.id/","sourceType":"investment_agency","dataKinds":["investment_projects","investment_services"],"integrationStatus":"catalog_only"},
+        {"name":"Indonesia National Public Procurement Agency (LKPP)","url":"https://www.lkpp.go.id/","sourceType":"public_procurement","dataKinds":["public_tenders","procurement"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "US",
+      "country": "United States",
+      "sources": [
+        {"name":"SEC EDGAR company search","url":"https://www.edgarcompany.sec.gov/servlet/CompanyDBSearch?page=main","sourceType":"official_public_company_registry","dataKinds":["public_company_filings","issuer_records"],"integrationStatus":"catalog_only","accessNotes":"Covers SEC filing entities, not all US businesses."},
+        {"name":"US Census Exporter Database","url":"https://www.census.gov/econ/overview/mt0300.html","sourceType":"official_trade_statistics","dataKinds":["exporter_importer_statistics"],"integrationStatus":"catalog_only","accessNotes":"Statistical dataset, not a public list of individual exporter identities."},
+        {"name":"US Small Business Administration","url":"https://www.sba.gov/","sourceType":"small_business_agency","dataKinds":["small_business_support","contracting_support"],"integrationStatus":"catalog_only"},
+        {"name":"SAM.gov Contract Opportunities","url":"https://sam.gov/content/opportunities","sourceType":"official_public_procurement","dataKinds":["federal_contract_opportunities","tenders"],"integrationStatus":"catalog_only"},
+        {"name":"US International Trade Administration","url":"https://www.trade.gov/","sourceType":"trade_promotion_agency","dataKinds":["export_assistance","market_research","trade_programs"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "CA",
+      "country": "Canada",
+      "sources": [
+        {"name":"Canada's Business Registries","url":"https://ised-isde.canada.ca/cbr-rec/en/","sourceType":"official_company_registry_index","dataKinds":["business_registry_search"],"integrationStatus":"catalog_only","accessNotes":"Official portal explicitly prohibits automated copying/searching/scraping; link users to the portal instead of scraping."},
+        {"name":"Corporations Canada","url":"https://ised-isde.canada.ca/site/corporations-canada/en","sourceType":"official_federal_company_registry","dataKinds":["federal_corporations"],"integrationStatus":"catalog_only"},
+        {"name":"Canadian Trade Commissioner Service","url":"https://www.tradecommissioner.gc.ca/","sourceType":"trade_promotion_agency","dataKinds":["export_support","market_opportunities"],"integrationStatus":"catalog_only"},
+        {"name":"Canadian Importers Database","url":"https://ised-isde.canada.ca/site/canadian-importers-database/en","sourceType":"official_trade_directory","dataKinds":["importer_directory","import_statistics"],"integrationStatus":"catalog_only","accessNotes":"Check methodology, update frequency and permitted reuse."},
+        {"name":"CanadaBuys procurement","url":"https://canadabuys.canada.ca/","sourceType":"official_public_procurement","dataKinds":["federal_tenders","supplier_opportunities"],"integrationStatus":"catalog_only"}
+      ]
+    },
+    {
+      "countryCode": "BD",
+      "country": "Bangladesh",
+      "sources": [
+        {"name":"Export Promotion Bureau exporter database","url":"https://edb.epb.gov.bd/","sourceType":"official_exporter_directory","dataKinds":["exporters","exporter_sectors","districts"],"integrationStatus":"catalog_only"},
+        {"name":"Office of the Registrar of Joint Stock Companies and Firms","url":"https://roc.gov.bd/","sourceType":"official_company_registry","dataKinds":["company_registration","company_status"],"integrationStatus":"catalog_only","accessNotes":"Confirm current online search and data reuse terms."},
+        {"name":"Bangladesh Investment Development Authority","url":"https://bida.gov.bd/","sourceType":"investment_agency","dataKinds":["investment_services","investment_projects"],"integrationStatus":"catalog_only"},
+        {"name":"Bangladesh Trade Portal","url":"https://www.bangladeshtradeportal.gov.bd/","sourceType":"official_trade_portal","dataKinds":["trade_procedures","import_export_requirements"],"integrationStatus":"catalog_only"},
+        {"name":"Central Procurement Technical Unit","url":"https://cptu.gov.bd/","sourceType":"public_procurement","dataKinds":["government_tenders","procurement_notices"],"integrationStatus":"catalog_only"}
+      ]
+    }
+  ],
+  "implementationRules": [
+    "Do not mark a company as verified solely because it appears in a directory.",
+    "Store source URL, source country, retrieval time, licence/terms status, and verification status with every imported record.",
+    "Prefer official APIs, downloadable open data, or explicitly licensed feeds. Do not scrape portals that prohibit automation.",
+    "Where a country has no usable public registry/API, expose the official portal link and record access limitations instead of fabricating records.",
+    "This is an initial seed, not full coverage of every country. Use the registry index sources to expand country-by-country and track each country's source coverage explicitly."
+  ]
+}
