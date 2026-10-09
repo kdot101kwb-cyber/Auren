@@ -49,7 +49,7 @@ jobs:
           (async () => {
             const catalogs = loadAndValidateAll();
             const structuralErrors = catalogs.flatMap(c => c.errors.map(error => `batch ${c.batch}: ${error}`));
-            if (structuralErrors.length) throw new Error(structuralErrors.join('\\n'));
+            if (structuralErrors.length) throw new Error(structuralErrors.join('\n'));
             const results = await checkLinks(catalogs, { concurrency, timeoutMs });
             const report = {
               checked_at: new Date().toISOString(),
@@ -59,7 +59,7 @@ jobs:
               interpretation: 'HTTP response is only a reachability signal. It does not prove official ownership, data accuracy, API availability, permission to scrape, or reuse rights.',
               results
             };
-            require('node:fs').writeFileSync('country_official_trade_sources_link_check_report.json', JSON.stringify(report, null, 2) + '\\n');
+            require('node:fs').writeFileSync('country_official_trade_sources_link_check_report.json', JSON.stringify(report, null, 2) + '\n');
             console.log(JSON.stringify({ checked_count: report.checked_count, responded_or_restricted_count: report.responded_or_restricted_count, needs_review_count: report.needs_review_count }, null, 2));
             if (report.needs_review_count) process.exitCode = 1;
           })().catch(error => { console.error(error); process.exitCode = 1; });
