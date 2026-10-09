@@ -4984,3 +4984,7 @@ Object.assign(module.exports, require('./world_bank_project_funding_search'));
 
 // Official US federal grant-opportunity search via Grants.gov.
 Object.assign(module.exports, require('./grants_gov_opportunity_search'));
+
+
+// Search bank records ingested from official national and regional sources.
+Object.assign(module.exports, require('./regional_local_bank_directory'));

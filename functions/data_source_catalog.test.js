@@ -117,3 +117,11 @@ test('readiness recognizes Grants.gov ingestion runs', () => {
   assert.equal(grants.dataReady, true);
   assert.equal(grants.latestIngestion.importedRows, 4);
 });
+
+test('regional and local bank directory is registered with provenance requirements', () => {
+  const source = getDataSourceCatalog().find((item) => item.id === 'regional_local_bank_directories');
+  assert.ok(source);
+  assert.equal(source.integrationStatus, 'implemented');
+  assert.equal(source.access, 'official_source_ingestion');
+  assert.match(source.notes, /official central banks and banking regulators/i);
+});
