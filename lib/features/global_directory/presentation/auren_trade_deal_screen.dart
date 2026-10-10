@@ -50,15 +50,19 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   }
 
   Future<void> _loadDraft() async {
+    // Bind this load to the identity present when it starts. If auth changes
+    // while Firestore is responding, never apply the previous user's draft.
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid;
+    final localStorageKey = 'auren_trade_deal_v1_${userId ?? 'guest'}';
     try {
       final prefs = await SharedPreferences.getInstance();
-      final values = prefs.getStringList(_storageKey);
-      if (!mounted) return;
+      final values = prefs.getStringList(localStorageKey);
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
       if (values != null && values.length >= 8) {
         _applyValues(values);
       }
 
-      final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         try {
           final snapshot = await FirebaseFirestore.instance
@@ -67,7 +71,8 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
               .collection('trade_deals')
               .doc('active_draft')
               .get();
-          if (snapshot.exists && mounted) {
+          if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+          if (snapshot.exists) {
             final data = snapshot.data()!;
             _product.text = data['product'] as String? ?? '';
             _counterparty.text = data['counterparty'] as String? ?? '';
@@ -86,7 +91,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
               _loaded = true;
               _status = 'تم تحميل مسودة الصفقة من حسابك.';
             });
-            await _persistLocalSilently();
+            await _persistLocalSilently(storageKey: localStorageKey);
             return;
           }
         } catch (_) {
@@ -94,6 +99,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         }
       }
 
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
       setState(() {
         _loaded = true;
         _status = values == null
