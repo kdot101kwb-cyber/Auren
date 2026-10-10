@@ -547,6 +547,7 @@ class _OfferDialogState extends State<_OfferDialog> {
   String? _amount(String? value, {bool optional = false}) {
     final raw = value?.trim() ?? '';
     if (optional && raw.isEmpty) return null;
+    if (raw.length > 50) return 'الرقم أطول من الحد المسموح';
     final number = double.tryParse(raw.replaceAll(',', '').replaceAll(' ', ''));
     return number == null || !number.isFinite || number < 0 ? 'أدخل رقماً صفرياً أو موجباً' : null;
   }
@@ -558,9 +559,9 @@ class _OfferDialogState extends State<_OfferDialog> {
       key: _form,
       child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         TextFormField(controller: _supplier, maxLength: 200, decoration: const InputDecoration(labelText: 'اسم المورد *'), validator: (v) => v == null || v.trim().isEmpty ? 'اسم المورد مطلوب' : null),
-        TextFormField(controller: _price, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'السعر *'), validator: _amount),
+        TextFormField(controller: _price, maxLength: 50, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'السعر *'), validator: _amount),
         DropdownButtonFormField<String>(value: _currency, decoration: const InputDecoration(labelText: 'العملة'), items: _Offer._currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(), onChanged: (v) { if (v != null) setState(() => _currency = v); }),
-        TextFormField(controller: _shipping, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الشحن والرسوم (اختياري)'), validator: (v) => _amount(v, optional: true)),
+        TextFormField(controller: _shipping, maxLength: 50, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الشحن والرسوم (اختياري)'), validator: (v) => _amount(v, optional: true)),
         TextFormField(controller: _moq, maxLength: 100, decoration: const InputDecoration(labelText: 'الحد الأدنى للطلب')),
         TextFormField(controller: _lead, maxLength: 100, decoration: const InputDecoration(labelText: 'مدة التجهيز/التسليم')),
         TextFormField(controller: _payment, maxLength: 300, decoration: const InputDecoration(labelText: 'شروط الدفع')),
