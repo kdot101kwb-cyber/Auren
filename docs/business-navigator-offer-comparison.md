@@ -32,3 +32,12 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - Add structured verification evidence and quote attachments.
 - Add delivered-quantity / tax / duty / insurance comparisons and explicit FX rates with timestamps.
 - Add automated widget tests for sorting, status filtering, and account switching.
+
+## Supplier request lifecycle screen
+
+- The trade-deal screen links to **Supplier Requests**, which lists the signed-in user's contact and RFQ drafts and supports filtering by status.
+- Callable endpoints provide list/detail/cancel/retry/status updates. Document IDs and request types returned to the client are taken from Firestore document identity, not mutable payload fields.
+- Retry is limited to five attempts and resets the request to a draft for review. It does not resend the request.
+- The UI only offers response-related transitions when the request records `externalDispatch: true`; the backend independently enforces this precondition and validates every transition.
+- A draft, cancellation, or retry is local workflow bookkeeping. The current integration does not send email, SMS, chat messages, purchase orders, or RFQs to suppliers.
+- Status and list data are loaded from the authenticated user's own request subcollections through callable functions; the server checks ownership before changing any shared mirror document.
