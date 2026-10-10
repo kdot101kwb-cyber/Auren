@@ -101,9 +101,31 @@ class _AurenSupplierOfferComparisonScreenState
     }
   }
 
+  String? _cloudValidationError() {
+    if (_offers.length > 10) return 'لا يمكن حفظ أكثر من 10 عروض.';
+    const currencies = {'USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN'};
+    const statuses = {'received', 'verify', 'shortlist', 'accepted', 'rejected'};
+    for (var i = 0; i < _offers.length; i++) {
+      final offer = _offers[i];
+      if (offer.id.isEmpty || offer.id.length > 40 ||
+          offer.supplier.trim().isEmpty || offer.supplier.length > 200 ||
+          offer.price.isEmpty || offer.price.length > 50 ||
+          !currencies.contains(offer.currency) ||
+          offer.shipping.length > 50 || offer.moq.length > 100 ||
+          offer.leadTime.length > 100 || offer.payment.length > 300 ||
+          offer.validity.length > 100 || offer.notes.length > 500 ||
+          !statuses.contains(offer.status) || offer.receivedAt.length > 40) {
+        return 'العرض رقم ${i + 1} يحتوي بيانات غير صالحة للحفظ السحابي. افتح العرض وعدّل بياناته ثم حاول مجدداً.';
+      }
+    }
+    return null;
+  }
+
   Future<void> _saveToAccount() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) { _snack('سجّل الدخول أولاً لحفظ العروض في حسابك.'); return; }
+    final validationError = _cloudValidationError();
+    if (validationError != null) { _snack(validationError); return; }
     if (_cloudBusy) return;
     setState(() { _cloudBusy = true; _message = 'جارٍ حفظ العروض في حسابك…'; });
     try {
