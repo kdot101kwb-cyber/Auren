@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../personal_ai/presentation/supplier_finder_screen.dart';
+import 'auren_business_procedures_screen.dart';
 
 class AurenStartBusinessScreen extends StatefulWidget {
   const AurenStartBusinessScreen({super.key});
@@ -129,6 +130,11 @@ class _AurenStartBusinessScreenState extends State<AurenStartBusinessScreen> {
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSupplierFinderScreen())),
               icon: const Icon(Icons.local_shipping_outlined),
               label: const Text('افتح أداة البحث عن الموردين'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBusinessProceduresScreen())),
+              icon: const Icon(Icons.policy_outlined),
+              label: const Text('راجع إجراءات التأسيس من المصادر الحكومية'),
             ),
             const SizedBox(height: 8),
             Text('الخطوة التالية: تحقق من الإجراءات الحكومية والمصادر المالية الرسمية في الدولة المختارة. لا تدفع رسوم تقديم عبر روابط غير رسمية.', style: theme.textTheme.bodySmall),
