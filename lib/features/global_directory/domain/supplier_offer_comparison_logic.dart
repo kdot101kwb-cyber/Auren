@@ -6,7 +6,7 @@ class SupplierOfferComparisonLogic {
     final raw = value.trim();
     // Accept plain digits or correctly grouped thousands separators only.
     // Removing every comma first would incorrectly accept values like "1,,2".
-    final validNumber = RegExp(r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$');
+    final validNumber = RegExp(r'^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:[.][0-9]+)?$');
     if (!validNumber.hasMatch(raw)) return null;
     final parsed = double.tryParse(raw.replaceAll(',', ''));
     return parsed != null && parsed.isFinite && parsed >= 0 ? parsed : null;
@@ -24,46 +24,10 @@ class SupplierOfferComparisonLogic {
   /// Free-form validity notes intentionally return null rather than being guessed.
   static DateTime? parseIsoValidityDate(String value) {
     final raw = value.trim();
-    if (!RegExp(r'^\\d{4}-\\d{2}-\\d{2}
-    required String currency,
-    required String price,
-    required String shipping,
-    required Iterable<Map<String, String>> offers,
-  }) {
-    final candidateTotal = total(price, shipping);
-    if (candidateTotal == null) return false;
-    final comparable = offers
-        .where((offer) => offer['currency'] == currency)
-        .map((offer) => total(offer['price'] ?? '', offer['shipping'] ?? ''))
-        .whereType<double>();
-    if (comparable.isEmpty) return false;
-    return candidateTotal == comparable.reduce((a, b) => a < b ? a : b);
-  }
-
-  static int compare({
-    required String aCurrency,
-    required String aSupplier,
-    required String aPrice,
-    required String aShipping,
-    required String bCurrency,
-    required String bSupplier,
-    required String bPrice,
-    required String bShipping,
-  }) {
-    // Currency groups are alphabetical; numeric totals are only compared
-    // inside the same currency, never across currencies.
-    if (aCurrency != bCurrency) return aCurrency.compareTo(bCurrency);
-    final aTotal = total(aPrice, aShipping);
-    final bTotal = total(bPrice, bShipping);
-    if (aTotal == null && bTotal == null) return aSupplier.compareTo(bSupplier);
-    if (aTotal == null) return 1;
-    if (bTotal == null) return -1;
-    final totalOrder = aTotal.compareTo(bTotal);
-    // Keep equal-price offers in a deterministic order across rebuilds.
-    return totalOrder != 0 ? totalOrder : aSupplier.compareTo(bSupplier);
-  }
-}
-).hasMatch(raw)) return null;
+    if (raw.length != 10 ||
+        !RegExp(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}').hasMatch(raw)) {
+      return null;
+    }
     final parts = raw.split('-').map(int.parse).toList(growable: false);
     final date = DateTime.utc(parts[0], parts[1], parts[2]);
     if (date.year != parts[0] || date.month != parts[1] || date.day != parts[2]) {
