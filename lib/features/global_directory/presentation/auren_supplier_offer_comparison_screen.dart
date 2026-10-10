@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Local, account-scoped-on-device comparison of supplier quotes.
@@ -139,6 +140,28 @@ class _AurenSupplierOfferComparisonScreenState
     await _persist();
   }
 
+  Future<void> _copySummary() async {
+    final lines = <String>[
+      'ملخص مقارنة عروض الموردين',
+      'ملاحظة: بيانات مدخلة يدوياً ولم يتم التحقق من الموردين.',
+      ..._sorted.map((offer) {
+        final total = _total(offer);
+        return [
+          'المورد: ${offer.supplier}',
+          'السعر: ${offer.price} ${offer.currency}',
+          'الشحن والرسوم: ${offer.shipping} ${offer.currency}',
+          'الإجمالي التقديري: ${total == null ? 'غير مكتمل' : '${total.toStringAsFixed(2)} ${offer.currency}'}',
+          'الحالة: ${_statuses[offer.status] ?? offer.status}',
+          'شروط الدفع: ${offer.payment.isEmpty ? 'غير محددة' : offer.payment}',
+          'ملاحظات: ${offer.notes.isEmpty ? 'لا توجد' : offer.notes}',
+          '',
+        ].join('\\n');
+      }),
+    ];
+    await Clipboard.setData(ClipboardData(text: lines.join('\\n')));
+    if (mounted) _snack('تم نسخ ملخص العروض إلى الحافظة.');
+  }
+
   void _snack(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   double? _total(_Offer offer) {
@@ -230,6 +253,12 @@ class _AurenSupplierOfferComparisonScreenState
                     ),
                     if (currencies.length > 1)
                       const Text('توجد عملات مختلفة؛ لا تقارن أسعارها مباشرة.', style: TextStyle(color: Colors.deepOrange)),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _offers.isEmpty ? null : _copySummary,
+                      icon: const Icon(Icons.copy_all_outlined),
+                      label: const Text('نسخ ملخص العروض'),
+                    ),
                   ]),
                 )),
                 if (_offers.isEmpty)
