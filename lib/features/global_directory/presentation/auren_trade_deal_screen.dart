@@ -114,7 +114,13 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
               _loaded = true;
               _status = 'تم تحميل مسودة الصفقة من حسابك.';
             });
-            await _persistLocalSilently(storageKey: localStorageKey);
+            // Cloud data is already loaded; a failed local mirror must not
+            // turn a successful load into a misleading load failure.
+            try {
+              await _persistLocalSilently(storageKey: localStorageKey);
+            } catch (_) {
+              // Keep the cloud-backed draft usable for this session.
+            }
             return;
           }
         } catch (_) {
@@ -247,9 +253,19 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         'stage': int.tryParse(draftValues[6]) ?? 0,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      await _persistLocalSilently(storageKey: localStorageKey, draftValues: draftValues);
+      var localMirrorSaved = true;
+      try {
+        await _persistLocalSilently(
+          storageKey: localStorageKey,
+          draftValues: draftValues,
+        );
+      } catch (_) {
+        localMirrorSaved = false;
+      }
       if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) {
-        setState(() => _status = 'تم حفظ مسودة الصفقة في حسابك وعلى هذا الجهاز.');
+        setState(() => _status = localMirrorSaved
+            ? 'تم حفظ مسودة الصفقة في حسابك وعلى هذا الجهاز.'
+            : 'تم حفظ الصفقة في حسابك، لكن تعذرت مزامنة نسخة الجهاز.');
       }
     } on FirebaseException catch (error) {
       if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) {
