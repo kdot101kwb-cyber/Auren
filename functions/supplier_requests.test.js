@@ -143,3 +143,17 @@ test('supplier response lifecycle requires evidence of external dispatch', () =>
   assert.equal((source.match(/\['waiting_response','replied'\]\.includes\(nextStatus\) && (?:data|freshData)\.externalDispatch !== true/g) || []).length, 2);
   assert.match(source, /cannot be marked as awaiting or receiving a supplier response/);
 });
+
+test('supplier request API keeps document identity authoritative over stored payload fields', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /return \{\.\.\.snap\.data\(\), id:snap\.id, type\};/);
+  assert.match(source, /contacts\.docs\.map\(d=>\(\{\.\.\.d\.data\(\),id:d\.id,type:'contact'\}\)\)/);
+  assert.match(source, /rfqs\.docs\.map\(d=>\(\{\.\.\.d\.data\(\),id:d\.id,type:'rfq'\}\)\)/);
+});
+
+test('supplier request listing clamps limits to integer values within 1–100', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /Number\.isFinite\(requestedLimit\)/);
+  assert.match(source, /Math\.floor\(requestedLimit\)/);
+  assert.match(source, /Math\.min\(Math\.max\(Math\.floor\(requestedLimit\), 1\), 100\)/);
+});
