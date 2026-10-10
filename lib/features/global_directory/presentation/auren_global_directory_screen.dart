@@ -6,6 +6,7 @@ import '../../business/presentation/business_screen.dart';
 import 'auren_start_business_screen.dart';
 import 'auren_finance_opportunities_screen.dart';
 import 'auren_global_banks_screen.dart';
+import 'auren_business_procedures_screen.dart';
 
 class AurenGlobalDirectoryScreen extends StatefulWidget {
   const AurenGlobalDirectoryScreen({super.key});
@@ -97,7 +98,9 @@ class _AurenGlobalDirectoryScreenState extends State<AurenGlobalDirectoryScreen>
           onTap: () => Navigator.push(context, MaterialPageRoute(
             builder: (_) => category.title == 'الشركات والمصانع'
                 ? const AurenBusinessScreen()
-                : _DirectoryCategoryPage(category: category),
+                : category.title == 'الحكومة والإجراءات'
+                    ? const AurenBusinessProceduresScreen()
+                    : _DirectoryCategoryPage(category: category),
           )),
         ))),
         const SizedBox(height: 20),
