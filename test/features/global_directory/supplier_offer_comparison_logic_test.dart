@@ -36,7 +36,7 @@ void main() {
     test('rejects values that overflow a finite double', () {
       expect(
         SupplierOfferComparisonLogic.parseNonNegativeAmount(
-          '999999999999999999999999999999999999999999999999999999999999999999',
+          '1' + List.filled(309, '0').join(),
         ),
         isNull,
       );
@@ -54,8 +54,8 @@ void main() {
     test('rejects a non-finite sum', () {
       expect(
         SupplierOfferComparisonLogic.total(
-          '999999999999999999999999999999999999999999999999999999999999999999',
-          '1',
+          '170' + List.filled(306, '0').join(),
+          '170' + List.filled(306, '0').join(),
         ),
         isNull,
       );
