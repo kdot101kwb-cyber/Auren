@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'auren_supplier_rfq_draft_screen.dart';
+
 /// Curated starting points for supplier discovery. Listings are not endorsements
 /// and supplier identity, quality, stock, and payment terms must be checked.
 class AurenSupplierDiscoveryScreen extends StatefulWidget {
@@ -31,8 +33,31 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
 
   Future<void> _open(String value) async {
     final uri = Uri.tryParse(value);
-    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      _showOpenError();
+      return;
+    }
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) _showOpenError();
+    } catch (_) {
+      _showOpenError();
+    }
+  }
+
+  void _showOpenError() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تعذر فتح الموقع؛ تحقق من الاتصال أو افتحه من المتصفح.')),
+    );
+  }
+
+  Future<void> _prepareRfq(String sourceName) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AurenSupplierRfqDraftScreen(initialSupplier: sourceName),
+      ),
+    );
   }
 
   @override
@@ -78,12 +103,27 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
           const SizedBox(height: 8),
           if (rows.isEmpty) const Text('لا توجد نتائج. جرّب كلمة بحث أخرى.'),
           ...rows.map((item) => Card(
-            child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
-              title: Text(item['name']!),
-              subtitle: Text('${item['type']} • ${item['focus']}'),
-              trailing: const Icon(Icons.open_in_new),
-              onTap: () => _open(item['url']!),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.inventory_2_outlined)),
+                  title: Text(item['name']!),
+                  subtitle: Text('${item['type']} • ${item['focus']}'),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () => _open(item['url']!),
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _prepareRfq(item['name']!),
+                      icon: const Icon(Icons.request_quote_outlined),
+                      label: const Text('جهّز طلب عرض سعر'),
+                    ),
+                  ),
+                ),
+              ],
             ),
           )),
           const SizedBox(height: 12),
