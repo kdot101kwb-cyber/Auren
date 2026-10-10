@@ -252,13 +252,15 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         setState(() => _status = 'تم حفظ مسودة الصفقة في حسابك وعلى هذا الجهاز.');
       }
     } on FirebaseException catch (error) {
-      if (mounted) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) {
         setState(() => _status = error.code == 'permission-denied'
             ? 'رفضت قواعد Firestore الحفظ؛ تأكد من نشر قواعد الأمان الجديدة.'
             : 'تعذر الحفظ السحابي (${error.code})؛ بيانات الجهاز لم تُحذف.');
       }
     } catch (_) {
-      if (mounted) setState(() => _status = 'تعذر الحفظ السحابي؛ بيانات الجهاز لم تُحذف.');
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) {
+        setState(() => _status = 'تعذر الحفظ السحابي؛ بيانات الجهاز لم تُحذف.');
+      }
     }
   }
 
