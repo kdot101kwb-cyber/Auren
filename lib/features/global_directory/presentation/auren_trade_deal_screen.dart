@@ -261,7 +261,10 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
 
   Future<void> _clearDraft() async {
     _saveTimer?.cancel();
-    final localStorageKey = _storageKey;
+    // Keep the delete bound to the identity that initiated the action.
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid;
+    final localStorageKey = 'auren_trade_deal_v1_${userId ?? 'guest'}';
     try {
       // Wait for any in-flight autosave before removing the key, otherwise
       // an earlier write could recreate the draft immediately after clearing.
@@ -273,7 +276,6 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
       await clearLocal;
 
       var cloudDraftCleared = true;
-      final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         try {
           await FirebaseFirestore.instance
@@ -288,7 +290,8 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         }
       }
 
-      if (!mounted) return;
+      // A slow clear from account A must not erase account B's visible form.
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
       _product.clear();
       _counterparty.clear();
       _quantity.clear();
@@ -302,7 +305,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
             : 'تم مسح المسودة من الجهاز، لكن تعذر حذف النسخة السحابية. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.';
       });
     } catch (_) {
-      if (mounted) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == userId) {
         setState(() => _status = 'تعذر مسح المسودة المحلية بالكامل.');
       }
     }
