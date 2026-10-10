@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0.0",
+  "purpose": "Curated registry of officially documented APIs suitable for AUREN discovery and future integration assessment.",
+  "policy": {
+    "only_official_documentation": true,
+    "no_credentials_stored": true,
+    "no_undocumented_endpoint_guessing": true,
+    "status_meaning": "documented_officially_not_yet_integrated",
+    "production_integration_requires": "verify current terms, rate limits, permitted use, data freshness, and secret handling before enabling"
+  },
+  "apis": [
+    {
+      "id": "world_bank_indicators_v2",
+      "name": "World Bank Indicators API v2",
+      "provider": "World Bank",
+      "domains": [
+        "economic_indicators",
+        "country_profiles",
+        "development_data"
+      ],
+      "base_url": "https://api.worldbank.org/v2",
+      "documentation_url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392",
+      "example_endpoint": "https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json",
+      "authentication": "none_for_public_indicators",
+      "access_tier": "public",
+      "officially_documented": true,
+      "verification_status": "official_docs_verified",
+      "integration_status": "catalog_only",
+      "notes": "Supports many economic and development indicator series; confirm relevant dataset coverage and usage terms."
+    },
+    {
+      "id": "un_comtrade_preview",
+      "name": "UN Comtrade Preview API",
+      "provider": "United Nations Statistics Division / UN Comtrade",
+      "domains": [
+        "trade_statistics",
+        "imports_exports",
+        "market_intelligence"
+      ],
+      "base_url": "https://comtradeapi.un.org/public/v1/preview",
+      "documentation_url": "https://uncomtrade.org/docs/un-comtrade-api/",
+      "developer_portal_url": "https://comtradedeveloper.un.org/",
+      "example_endpoint": "https://comtradeapi.un.org/public/v1/preview/C/A/HS?flowCode=X&reporterCode=156&period=2023",
+      "authentication": "no_key_for_limited_preview",
+      "access_tier": "limited_free_preview",
+      "officially_documented": true,
+      "verification_status": "official_docs_verified",
+      "integration_status": "catalog_only",
+      "notes": "Preview is limited by records and rate limits; broader access requires account/subscription key and applicable terms."
+    },
+    {
+      "id": "companies_house_public_data",
+      "name": "UK Companies House Public Data API",
+      "provider": "UK Companies House",
+      "domains": [
+        "company_registry",
+        "business_verification",
+        "company_search"
+      ],
+      "base_url": "https://api.company-information.service.gov.uk",
+      "documentation_url": "https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/reference",
+      "getting_started_url": "https://developer-specs.company-information.service.gov.uk/guides/gettingStarted",
+      "authentication": "API_key_required",
+      "access_tier": "public_data_with_registered_key",
+      "officially_documented": true,
+      "verification_status": "official_docs_verified",
+      "integration_status": "catalog_only",
+      "notes": "Register an application and store the API key server-side; check rate limits and data reuse terms."
+    },
+    {
+      "id": "sec_edgar_data_api",
+      "name": "SEC EDGAR Data APIs",
+      "provider": "U.S. Securities and Exchange Commission",
+      "domains": [
+        "public_company_filings",
+        "financial_disclosures",
+        "company_facts"
+      ],
+      "base_url": "https://data.sec.gov",
+      "documentation_url": "https://www.sec.gov/file/api-overview",
+      "authentication": "no_api_key_for_public_data_subject_to_sec_access_policies",
+      "access_tier": "public",
+      "officially_documented": true,
+      "verification_status": "official_docs_verified",
+      "integration_status": "catalog_only",
+      "notes": "Follow SEC fair-access rules and required identifying User-Agent; distinguish public data APIs from authenticated filing submission APIs."
+    },
+    {
+      "id": "gleif_api_v1",
+      "name": "GLEIF API v1",
+      "provider": "Global Legal Entity Identifier Foundation",
+      "domains": [
+        "legal_entity_identity",
+        "lei_lookup",
+        "corporate_relationships"
+      ],
+      "base_url": "https://api.gleif.org/api/v1",
+      "documentation_url": "https://www.gleif.org/en/lei-data/gleif-api",
+      "authentication": "verify_current_access_requirements",
+      "access_tier": "public_documentation_access",
+      "officially_documented": true,
+      "verification_status": "official_docs_verified",
+      "integration_status": "catalog_only",
+      "notes": "Use for legal entity identifier lookup and related entity reference data; verify endpoint specifications, terms, and operational limits before integration."
+    }
+  ]
+}
