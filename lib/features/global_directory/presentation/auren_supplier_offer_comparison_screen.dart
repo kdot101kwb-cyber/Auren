@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/supplier_offer_comparison_logic.dart';
+
 /// Local, account-scoped-on-device comparison of supplier quotes.
 /// It does not verify suppliers or send external messages.
 class AurenSupplierOfferComparisonScreen extends StatefulWidget {
@@ -129,15 +131,8 @@ class _AurenSupplierOfferComparisonScreenState
     }
   }
 
-  double? _parseNonNegativeAmount(String value) {
-    final raw = value.trim();
-    // Accept plain digits or correctly grouped thousands separators only.
-    // Removing every comma first would incorrectly accept values like "1,,2".
-    final validNumber = RegExp(r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$');
-    if (!validNumber.hasMatch(raw)) return null;
-    final parsed = double.tryParse(raw.replaceAll(',', ''));
-    return parsed != null && parsed.isFinite && parsed >= 0 ? parsed : null;
-  }
+  double? _parseNonNegativeAmount(String value) =>
+      SupplierOfferComparisonLogic.parseNonNegativeAmount(value);
 
   String? _cloudValidationError([List<_Offer>? candidates]) {
     final offers = candidates ?? _offers;
@@ -327,37 +322,32 @@ class _AurenSupplierOfferComparisonScreenState
 
   void _snack(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
-  double? _total(_Offer offer) {
-    final price = _parseNonNegativeAmount(offer.price);
-    final shipping = _parseNonNegativeAmount(offer.shipping);
-    if (price == null || shipping == null) return null;
-    final total = price + shipping;
-    return total.isFinite ? total : null;
-  }
+  double? _total(_Offer offer) =>
+      SupplierOfferComparisonLogic.total(offer.price, offer.shipping);
 
-  bool _isLowest(_Offer candidate) {
-    final candidateTotal = _total(candidate);
-    if (candidateTotal == null) return false;
-    final comparable = _offers
-        .where((o) => o.currency == candidate.currency)
-        .map(_total)
-        .whereType<double>();
-    if (comparable.isEmpty) return false;
-    return candidateTotal == comparable.reduce((a, b) => a < b ? a : b);
-  }
+  bool _isLowest(_Offer candidate) => SupplierOfferComparisonLogic.isLowest(
+        currency: candidate.currency,
+        price: candidate.price,
+        shipping: candidate.shipping,
+        offers: _offers.map((offer) => <String, String>{
+          'currency': offer.currency,
+          'price': offer.price,
+          'shipping': offer.shipping,
+        }),
+      );
 
   List<_Offer> get _sorted {
     final result = List<_Offer>.from(_offers);
-    result.sort((a, b) {
-      // Group currencies first: numeric comparisons are meaningful only
-      // inside the same currency; never imply an FX conversion.
-      if (a.currency != b.currency) return a.currency.compareTo(b.currency);
-      final x = _total(a), y = _total(b);
-      if (x == null && y == null) return a.supplier.compareTo(b.supplier);
-      if (x == null) return 1;
-      if (y == null) return -1;
-      return x.compareTo(y);
-    });
+    result.sort((a, b) => SupplierOfferComparisonLogic.compare(
+          aCurrency: a.currency,
+          aSupplier: a.supplier,
+          aPrice: a.price,
+          aShipping: a.shipping,
+          bCurrency: b.currency,
+          bSupplier: b.supplier,
+          bPrice: b.price,
+          bShipping: b.shipping,
+        ));
     return result;
   }
 
