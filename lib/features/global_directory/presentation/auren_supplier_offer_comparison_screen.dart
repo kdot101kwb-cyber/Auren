@@ -101,6 +101,12 @@ class _AurenSupplierOfferComparisonScreenState
     }
   }
 
+  double? _parseNonNegativeAmount(String value) {
+    final parsed = double.tryParse(value.replaceAll(',', '').replaceAll(' ', ''));
+    if (parsed == null || !parsed.isFinite || parsed < 0) return null;
+    return parsed;
+  }
+
   String? _cloudValidationError([List<_Offer>? candidates]) {
     final offers = candidates ?? _offers;
     if (offers.length > 10) return 'لا يمكن حفظ أكثر من 10 عروض.';
@@ -111,12 +117,16 @@ class _AurenSupplierOfferComparisonScreenState
       if (offer.id.isEmpty || offer.id.length > 40 ||
           offer.supplier.trim().isEmpty || offer.supplier.length > 200 ||
           offer.price.isEmpty || offer.price.length > 50 ||
+          _parseNonNegativeAmount(offer.price) == null ||
+          offer.shipping.length > 50 ||
+          _parseNonNegativeAmount(offer.shipping) == null ||
+          offer.moq.length > 100 || offer.leadTime.length > 100 ||
+          offer.payment.length > 300 || offer.validity.length > 100 ||
+          offer.notes.length > 500 ||
           !currencies.contains(offer.currency) ||
-          offer.shipping.length > 50 || offer.moq.length > 100 ||
-          offer.leadTime.length > 100 || offer.payment.length > 300 ||
-          offer.validity.length > 100 || offer.notes.length > 500 ||
-          !statuses.contains(offer.status) || offer.receivedAt.length > 40) {
-        return 'العرض رقم ${i + 1} يحتوي بيانات غير صالحة للحفظ السحابي. افتح العرض وعدّل بياناته ثم حاول مجدداً.';
+          !statuses.contains(offer.status) || offer.receivedAt.isEmpty ||
+          offer.receivedAt.length > 40) {
+        return 'العرض رقم ${i + 1} يحتوي بيانات غير صالحة. تأكد من السعر والشحن والعملة والحقول المطلوبة.';
       }
     }
     return null;
@@ -170,8 +180,27 @@ class _AurenSupplierOfferComparisonScreenState
         setState(() => _message = 'نسخة الحساب تتجاوز الحد المسموح؛ لم يتم استبدال عروضك المحلية.');
         return;
       }
-      final restored = rawOffers.whereType<Map>()
-          .map((item) => _Offer.fromJson(Map<String, dynamic>.from(item))).toList();
+      if (rawOffers.any((item) => item is! Map)) {
+        setState(() => _message = 'نسخة الحساب تحتوي سجلات تالفة؛ احتفظنا بالعروض المحلية.');
+        _snack('تعذر استعادة النسخة لأن بعض سجلات العروض غير صالحة.');
+        return;
+      }
+      const cloudOfferKeys = {
+        'id', 'supplier', 'price', 'currency', 'shipping', 'moq',
+        'leadTime', 'payment', 'validity', 'notes', 'status', 'receivedAt',
+      };
+      for (final item in rawOffers) {
+        final map = Map<String, dynamic>.from(item as Map);
+        if (map.keys.toSet().difference(cloudOfferKeys).isNotEmpty ||
+            !map.keys.toSet().containsAll(cloudOfferKeys) ||
+            map.values.any((value) => value is! String)) {
+          setState(() => _message = 'نسخة الحساب تحتوي حقولاً غير صالحة؛ احتفظنا بالعروض المحلية.');
+          _snack('تعذر استعادة النسخة لأن بنية أحد العروض غير صالحة.');
+          return;
+        }
+      }
+      final restored = rawOffers
+          .map((item) => _Offer.fromJson(Map<String, dynamic>.from(item as Map))).toList();
       final validationError = _cloudValidationError(restored);
       if (validationError != null) {
         setState(() => _message = 'تعذر استعادة النسخة: تحتوي بيانات غير صالحة.');
