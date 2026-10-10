@@ -100,9 +100,19 @@ class _AurenSupplierOfferComparisonScreenState
       _snack('الحد الأقصى 10 عروض في هذه المسودة.');
       return;
     }
-    final offer = await showDialog<_Offer>(context: context, builder: (_) => const _OfferDialog());
+    final offer = await showDialog<_Offer>(context: context, builder: (_) => _OfferDialog());
     if (offer == null || !mounted) return;
     setState(() => _offers = [..._offers, offer]);
+    await _persist();
+  }
+
+  Future<void> _edit(_Offer offer) async {
+    final updated = await showDialog<_Offer>(
+      context: context,
+      builder: (_) => _OfferDialog(initialOffer: offer),
+    );
+    if (updated == null || !mounted) return;
+    setState(() => _offers = _offers.map((item) => item.id == offer.id ? updated : item).toList());
     await _persist();
   }
 
@@ -258,6 +268,7 @@ class _AurenSupplierOfferComparisonScreenState
               if (isLowest)
                 Text('الأقل تكلفة ضمن ${offer.currency}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
             ])),
+            IconButton(tooltip: 'تعديل العرض', onPressed: () => _edit(offer), icon: const Icon(Icons.edit_outlined)),
             IconButton(tooltip: 'حذف العرض', onPressed: () => _delete(offer), icon: const Icon(Icons.delete_outline)),
           ]),
           const Divider(),
@@ -302,7 +313,8 @@ class _Offer {
 }
 
 class _OfferDialog extends StatefulWidget {
-  const _OfferDialog();
+  const _OfferDialog({this.initialOffer});
+  final _Offer? initialOffer;
   @override
   State<_OfferDialog> createState() => _OfferDialogState();
 }
@@ -312,6 +324,22 @@ class _OfferDialogState extends State<_OfferDialog> {
   final _supplier = TextEditingController(), _price = TextEditingController(), _shipping = TextEditingController(text: '0');
   final _moq = TextEditingController(), _lead = TextEditingController(), _payment = TextEditingController(), _validity = TextEditingController(), _notes = TextEditingController();
   String _currency = 'USD';
+
+  @override
+  void initState() {
+    super.initState();
+    final offer = widget.initialOffer;
+    if (offer == null) return;
+    _supplier.text = offer.supplier;
+    _price.text = offer.price;
+    _shipping.text = offer.shipping;
+    _moq.text = offer.moq;
+    _lead.text = offer.leadTime;
+    _payment.text = offer.payment;
+    _validity.text = offer.validity;
+    _notes.text = offer.notes;
+    _currency = offer.currency;
+  }
 
   @override
   void dispose() {
@@ -348,10 +376,10 @@ class _OfferDialogState extends State<_OfferDialog> {
       FilledButton(onPressed: () {
         if (!_form.currentState!.validate()) return;
         Navigator.pop(context, _Offer(
-          id: DateTime.now().microsecondsSinceEpoch.toString(), supplier: _supplier.text.trim(),
+          id: widget.initialOffer?.id ?? DateTime.now().microsecondsSinceEpoch.toString(), supplier: _supplier.text.trim(),
           price: _price.text.trim(), currency: _currency, shipping: _shipping.text.trim().isEmpty ? '0' : _shipping.text.trim(),
           moq: _moq.text.trim(), leadTime: _lead.text.trim(), payment: _payment.text.trim(),
-          validity: _validity.text.trim(), notes: _notes.text.trim(), status: 'received',
+          validity: _validity.text.trim(), notes: _notes.text.trim(), status: widget.initialOffer?.status ?? 'received',
         ));
       }, child: const Text('حفظ العرض')),
     ],
