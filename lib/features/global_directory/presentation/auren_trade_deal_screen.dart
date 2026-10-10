@@ -35,6 +35,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   String _currency = 'USD';
   bool _loaded = false;
   Timer? _saveTimer;
+  Future<void> _localWriteQueue = Future<void>.value();
   String _status = 'جارٍ تحميل بيانات الصفقة…';
 
   String get _storageKey {
@@ -167,8 +168,14 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
       DateTime.now().toIso8601String(),
     ];
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(storageKey, values);
+      // Serialize writes: a slower earlier platform write must not finish
+      // after and overwrite a newer snapshot.
+      final write = _localWriteQueue.then((_) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList(storageKey, values);
+      });
+      _localWriteQueue = write.catchError((Object _) {});
+      await write;
       if (mounted) setState(() => _status = 'تم حفظ المسودة على هذا الجهاز.');
     } catch (_) {
       if (mounted) {
