@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'auren_supplier_rfq_draft_screen.dart';
 import 'auren_supplier_discovery_screen.dart';
 import 'auren_investor_discovery_screen.dart';
+import 'auren_business_resource_screen.dart';
 
 /// First usable step of AUREN Business Navigator.
 /// This screen creates an informational plan only; it does not submit registrations,
@@ -333,6 +334,54 @@ class _AurenBusinessNavigatorScreenState
               ),
               icon: const Icon(Icons.handshake_outlined),
               label: const Text('اكتشف المستثمرين والتمويل'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenBusinessResourceScreen(
+                    type: AurenBusinessResourceType.factories,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.factory_outlined),
+              label: const Text('اكتشف المصانع والمصنّعين'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenBusinessResourceScreen(
+                    type: AurenBusinessResourceType.companies,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.business_outlined),
+              label: const Text('دليل الشركات والشركاء'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenBusinessResourceScreen(
+                    type: AurenBusinessResourceType.banks,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.account_balance_outlined),
+              label: const Text('البنوك وتمويل التجارة'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenBusinessResourceScreen(
+                    type: AurenBusinessResourceType.exportImport,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.local_shipping_outlined),
+              label: const Text('التصدير والاستيراد والأسواق'),
             ),
             const SizedBox(height: 18),
             Text('مصادر رسمية للبدء', style: theme.textTheme.titleLarge),
