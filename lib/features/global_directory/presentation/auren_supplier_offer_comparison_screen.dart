@@ -137,6 +137,17 @@ class _AurenSupplierOfferComparisonScreenState
     return price + shipping;
   }
 
+  bool _isLowest(_Offer candidate) {
+    final candidateTotal = _total(candidate);
+    if (candidateTotal == null) return false;
+    final comparable = _offers
+        .where((o) => o.currency == candidate.currency)
+        .map(_total)
+        .whereType<double>();
+    if (comparable.isEmpty) return false;
+    return candidateTotal == comparable.reduce((a, b) => a < b ? a : b);
+  }
+
   List<_Offer> get _sorted {
     final result = List<_Offer>.from(_offers);
     result.sort((a, b) {
@@ -194,7 +205,7 @@ class _AurenSupplierOfferComparisonScreenState
                 if (_offers.isEmpty)
                   const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد عروض بعد. اضغط «إضافة عرض» لتسجيل أول عرض.')))
                 else
-                  ..._sorted.map(_card),
+                  ..._sorted.map((offer) => _card(offer, isLowest: _isLowest(offer))),
                 const SizedBox(height: 12),
                 const Text('قبل الدفع: تحقق مستقلاً من تسجيل الشركة، وعينة المنتج، والمراجع التجارية، وشروط الدفع والشحن والتأمين والمستندات.', style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
@@ -202,7 +213,7 @@ class _AurenSupplierOfferComparisonScreenState
     );
   }
 
-  Widget _card(_Offer offer) {
+  Widget _card(_Offer offer, {required bool isLowest}) {
     final total = _total(offer);
     Widget detail(String label, String value) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -222,6 +233,8 @@ class _AurenSupplierOfferComparisonScreenState
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(offer.supplier, style: Theme.of(context).textTheme.titleMedium),
               Text(total == null ? 'التكلفة غير مكتملة' : 'الإجمالي التقديري: ${total.toStringAsFixed(2)} ${offer.currency}'),
+              if (isLowest)
+                Text('الأقل تكلفة ضمن ${offer.currency}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
             ])),
             IconButton(tooltip: 'حذف العرض', onPressed: () => _delete(offer), icon: const Icon(Icons.delete_outline)),
           ]),
