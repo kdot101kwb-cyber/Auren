@@ -16,6 +16,7 @@ class _AurenStartBusinessScreenState extends State<AurenStartBusinessScreen> {
   String _kind = 'تجارة وبيع';
   String _stage = 'فكرة فقط';
   bool _showPlan = false;
+  final Set<int> _completedSteps = <int>{};
 
   static const _kinds = [
     'تجارة وبيع', 'مصنع وإنتاج', 'زراعة وثروة حيوانية',
@@ -106,8 +107,14 @@ class _AurenStartBusinessScreenState extends State<AurenStartBusinessScreen> {
             if (_budget.text.trim().isNotEmpty) ListTile(leading: const Icon(Icons.account_balance_wallet_outlined), title: const Text('الميزانية المبدئية'), subtitle: Text(_budget.text.trim())),
             ..._buildPlan().asMap().entries.map((entry) => Card(
               child: CheckboxListTile(
-                value: false,
-                onChanged: (_) => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تحديد المهام وحفظ تقدمها في Action Center سيُضاف في خطوة لاحقة.'))),
+                value: _completedSteps.contains(entry.key),
+                onChanged: (checked) => setState(() {
+                  if (checked == true) {
+                    _completedSteps.add(entry.key);
+                  } else {
+                    _completedSteps.remove(entry.key);
+                  }
+                }),
                 title: Text(entry.value),
                 controlAffinity: ListTileControlAffinity.leading,
               ),
