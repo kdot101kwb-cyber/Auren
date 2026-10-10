@@ -226,12 +226,14 @@ class _AurenSupplierOfferComparisonScreenState
   List<Map<String, dynamic>> get _sortedOffers {
     final list = List<Map<String, dynamic>>.from(_offers);
     list.sort((a, b) {
-      if (a['currency'] != b['currency']) {
-        return (a['supplier'] as String).compareTo(b['supplier'] as String);
-      }
+      final currencyOrder = _currencies.indexOf(a['currency'] as String)
+          .compareTo(_currencies.indexOf(b['currency'] as String));
+      if (currencyOrder != 0) return currencyOrder;
       final totalA = (a['price'] as num).toDouble() + (a['shipping'] as num).toDouble();
       final totalB = (b['price'] as num).toDouble() + (b['shipping'] as num).toDouble();
-      return totalA.compareTo(totalB);
+      final totalOrder = totalA.compareTo(totalB);
+      if (totalOrder != 0) return totalOrder;
+      return (a['supplier'] as String).toLowerCase().compareTo((b['supplier'] as String).toLowerCase());
     });
     return list;
   }
