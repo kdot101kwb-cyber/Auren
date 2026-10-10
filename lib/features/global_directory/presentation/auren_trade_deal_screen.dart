@@ -194,16 +194,23 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_storageKey);
+
+      var cloudDraftCleared = true;
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('trade_deals')
-            .doc('active_draft')
-            .delete()
-            .catchError((_) {});
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('trade_deals')
+              .doc('active_draft')
+              .delete();
+        } catch (_) {
+          // Keep the local clear, but never claim the cloud copy was removed.
+          cloudDraftCleared = false;
+        }
       }
+
       if (!mounted) return;
       _product.clear();
       _counterparty.clear();
@@ -213,11 +220,13 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
       setState(() {
         _stage = 0;
         _currency = 'USD';
-        _status = 'تم مسح المسودة المحفوظة لهذا الحساب وهذا الجهاز.';
+        _status = cloudDraftCleared
+            ? 'تم مسح المسودة من هذا الجهاز${user == null ? '.' : ' وحسابك.'}'
+            : 'تم مسح المسودة من الجهاز، لكن تعذر حذف النسخة السحابية. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.';
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _status = 'تعذر مسح المسودة بالكامل.');
+        setState(() => _status = 'تعذر مسح المسودة المحلية بالكامل.');
       }
     }
   }
