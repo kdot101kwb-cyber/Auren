@@ -142,7 +142,7 @@ class _AurenSupplierRfqDraftScreenState
           _draft = initialTarget != null && initialTarget.isNotEmpty &&
                   initialTarget != savedTarget
               ? null
-              : (savedDraft is String ? savedDraft : null);
+              : (savedDraft is String && savedDraft.isNotEmpty ? savedDraft : null);
         }
       }
     } catch (_) {
