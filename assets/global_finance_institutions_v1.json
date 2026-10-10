@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "catalog_status": "curated_seed_catalog",
+  "last_reviewed": "2026-10-10",
+  "disclaimer": "This is a starter directory of official institutional entry points, not a list of currently open offers. Verify country eligibility, terms, deadlines, licensing, and availability on each official website before acting.",
+  "institutions": [
+    {
+      "id": "world-bank-private-sector",
+      "name": "World Bank Group - Private Sector",
+      "kind": "development_finance",
+      "region": "global",
+      "description": "Official entry point for private-sector investment and development finance information. Not a direct retail loan application.",
+      "website": "https://www.ifc.org/",
+      "source_label": "International Finance Corporation (IFC)",
+      "source_type": "official_institution",
+      "offer_status": "institution_information_only",
+      "eligibility_note": "Products and eligibility depend on country, project size, sector, and instrument. Review official criteria."
+    },
+    {
+      "id": "world-bank-business",
+      "name": "World Bank - Business and Enterprise Resources",
+      "kind": "business_support",
+      "region": "global",
+      "description": "Official World Bank entry point for business-environment and country-level development information.",
+      "website": "https://www.worldbank.org/",
+      "source_label": "World Bank",
+      "source_type": "official_institution",
+      "offer_status": "information_only",
+      "eligibility_note": "Not a grant offer or guarantee of financing."
+    },
+    {
+      "id": "afdb-private-sector",
+      "name": "African Development Bank - Private Sector",
+      "kind": "development_finance",
+      "region": "africa",
+      "description": "Official entry point for African Development Bank private-sector operations and investment information.",
+      "website": "https://www.afdb.org/en/topics-and-sectors/sectors/private-sector",
+      "source_label": "African Development Bank",
+      "source_type": "official_institution",
+      "offer_status": "institution_information_only",
+      "eligibility_note": "Financing is subject to program criteria and may target institutions or projects rather than individual startups."
+    },
+    {
+      "id": "afdb-procurement",
+      "name": "African Development Bank - Procurement",
+      "kind": "tenders",
+      "region": "africa",
+      "description": "Official entry point to procurement opportunities and notices associated with AfDB-financed activities.",
+      "website": "https://www.afdb.org/en/projects-and-operations/procurement",
+      "source_label": "African Development Bank",
+      "source_type": "official_institution",
+      "offer_status": "opportunity_search_entry_point",
+      "eligibility_note": "Tender-specific eligibility, deadlines, and documents apply. This is not a grant listing."
+    },
+    {
+      "id": "us-sba-funding",
+      "name": "U.S. Small Business Administration - Funding Programs",
+      "kind": "loans_and_guarantees",
+      "region": "united_states",
+      "description": "Official overview of U.S. small-business funding programs, including loans and guarantees.",
+      "website": "https://www.sba.gov/funding-programs",
+      "source_label": "U.S. Small Business Administration",
+      "source_type": "government",
+      "offer_status": "country_specific_program_information",
+      "eligibility_note": "Primarily U.S.-specific; check current citizenship, business, lender, and program requirements."
+    },
+    {
+      "id": "uk-british-business-bank",
+      "name": "British Business Bank",
+      "kind": "loans_and_investment",
+      "region": "united_kingdom",
+      "description": "Official UK entry point for business finance information and supported finance programs.",
+      "website": "https://www.british-business-bank.co.uk/",
+      "source_label": "British Business Bank",
+      "source_type": "government_owned_finance_institution",
+      "offer_status": "country_specific_program_information",
+      "eligibility_note": "UK-focused; program availability and eligibility vary."
+    },
+    {
+      "id": "eu-funding-tenders",
+      "name": "European Commission - Funding & Tenders Portal",
+      "kind": "grants_and_tenders",
+      "region": "european_union",
+      "description": "Official portal for EU funding calls, tenders, and program documentation.",
+      "website": "https://ec.europa.eu/info/funding-tenders/opportunities/portal/",
+      "source_label": "European Commission",
+      "source_type": "government",
+      "offer_status": "opportunity_search_entry_point",
+      "eligibility_note": "Each call defines eligible countries, organizations, costs, deadlines, and submission rules."
+    },
+    {
+      "id": "un-global-marketplace",
+      "name": "UN Global Marketplace",
+      "kind": "procurement",
+      "region": "global",
+      "description": "Official United Nations procurement portal where eligible vendors can review registration and tender opportunities.",
+      "website": "https://www.ungm.org/",
+      "source_label": "United Nations Global Marketplace",
+      "source_type": "international_organization",
+      "offer_status": "opportunity_search_entry_point",
+      "eligibility_note": "Supplier registration and each tender's qualification rules apply; not a grant program."
+    },
+    {
+      "id": "african-union",
+      "name": "African Union",
+      "kind": "regional_programs",
+      "region": "africa",
+      "description": "Official regional institution entry point; users should confirm specific current programs and calls from official notices.",
+      "website": "https://au.int/",
+      "source_label": "African Union",
+      "source_type": "international_organization",
+      "offer_status": "information_only",
+      "eligibility_note": "No currently open grant is asserted by this directory entry."
+    }
+  ]
+}
