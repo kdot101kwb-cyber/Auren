@@ -34,6 +34,7 @@ class _AurenSupplierOfferComparisonScreenState
   StreamSubscription<User?>? _authSubscription;
   String? _observedUid;
   int _loadGeneration = 0;
+  Future<void> _writeQueue = Future<void>.value();
 
   String get _key => 'auren_supplier_offers_v1_${FirebaseAuth.instance.currentUser?.uid ?? 'guest'}';
 
@@ -85,7 +86,12 @@ class _AurenSupplierOfferComparisonScreenState
     try {
       final prefs = await SharedPreferences.getInstance();
       if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-      await prefs.setString(key, snapshot);
+      final write = _writeQueue.then((_) async {
+        if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+        await prefs.setString(key, snapshot);
+      });
+      _writeQueue = write.catchError((Object _) {});
+      await write;
       if (mounted && FirebaseAuth.instance.currentUser?.uid == uid) {
         setState(() => _message = 'تم حفظ العروض على هذا الجهاز.');
       }
@@ -387,7 +393,7 @@ class _OfferDialogState extends State<_OfferDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('تسجيل عرض مورد'),
+    title: Text(widget.initialOffer == null ? 'تسجيل عرض مورد' : 'تعديل عرض المورد'),
     content: SizedBox(width: 460, child: Form(
       key: _form,
       child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
