@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,28 +29,50 @@ class _AurenSupplierOfferComparisonScreenState
   List<_Offer> _offers = [];
   bool _loading = true;
   String _message = 'جارٍ تحميل العروض…';
+  StreamSubscription<User?>? _authSubscription;
+  String? _observedUid;
+  int _loadGeneration = 0;
+
   String get _key => 'auren_supplier_offers_v1_${FirebaseAuth.instance.currentUser?.uid ?? 'guest'}';
 
   @override
   void initState() {
     super.initState();
+    _observedUid = FirebaseAuth.instance.currentUser?.uid;
     _load();
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (!mounted || user?.uid == _observedUid) return;
+      _observedUid = user?.uid;
+      ++_loadGeneration;
+      setState(() {
+        _offers = [];
+        _loading = true;
+        _message = 'تغير الحساب؛ جارٍ تحميل عروضه المحلية…';
+      });
+      _load();
+    });
   }
 
   Future<void> _load() async {
+    final generation = ++_loadGeneration;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final key = 'auren_supplier_offers_v1_${uid ?? 'guest'}';
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key);
+      if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != uid) return;
+      final raw = prefs.getString(key);
       final list = raw == null ? <dynamic>[] : jsonDecode(raw) as List<dynamic>;
       final items = list.whereType<Map<String, dynamic>>().map(_Offer.fromJson).take(10).toList();
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != uid) return;
       setState(() {
         _offers = items;
         _loading = false;
         _message = items.isEmpty ? 'أضف عروضاً استلمتها فعلياً لمقارنتها.' : 'تم تحميل ${items.length} عروض من هذا الجهاز.';
       });
     } catch (_) {
-      if (mounted) setState(() { _loading = false; _message = 'تعذر قراءة المسودة المحلية؛ يمكنك إضافة عروض جديدة.'; });
+      if (mounted && generation == _loadGeneration && FirebaseAuth.instance.currentUser?.uid == uid) {
+        setState(() { _loading = false; _message = 'تعذر قراءة المسودة المحلية؛ يمكنك إضافة عروض جديدة.'; });
+      }
     }
   }
 
@@ -125,6 +148,13 @@ class _AurenSupplierOfferComparisonScreenState
       return x.compareTo(y);
     });
     return result;
+  }
+
+  @override
+  void dispose() {
+    _loadGeneration++;
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   @override
