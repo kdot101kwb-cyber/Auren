@@ -68,7 +68,7 @@ class _AurenSupplierOfferComparisonScreenState
   Future<void> _load() async {
     final generation = ++_loadGeneration;
     final userId = FirebaseAuth.instance.currentUser?.uid;
-    final storageKey = 'auren_supplier_offers_v1_\u0024{userId ?? 'guest'}';
+    final storageKey = 'auren_supplier_offers_v1_' + (userId ?? 'guest');
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(storageKey);
