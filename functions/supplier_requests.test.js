@@ -101,7 +101,7 @@ test('supplier retry rechecks eligibility and retry count inside its transaction
   assert.match(retrySource, /const retryCount = previousRetryCount \+ 1/);
   assert.match(retrySource, /Retry limit reached/);
   assert.match(retrySource, /tx\.set\(ref, update, \{merge:true\}\)/);
-  assert.match(retrySource, /tx\.set\(globalRef, update, \{merge:true\}\)/);
+  assert.match(retrySource, /if \(globalFresh\.exists\) tx\.set\(globalRef, update, \{merge:true\}\)/);
 });
 
 test('supplier request idempotency cannot disclose or reuse another account request', () => {
