@@ -44,7 +44,7 @@ exports.getAurenSupplierRequest = onCall(
     if (!requestId || !['contact','rfq'].includes(type)) throw new HttpsError('invalid-argument','requestId and type are required.');
     const snap = await db.collection('users').doc(uid).collection(collectionFor(type)).doc(requestId).get();
     if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
-    return {id:snap.id, type, ...snap.data()};
+    return {...snap.data(), id:snap.id, type};
   }
 );
 
@@ -53,14 +53,17 @@ exports.listAurenSupplierRequests = onCall(
   async (request) => {
     const uid = requireAuth(request);
     const status = clean(request.data?.status, 40).toLowerCase();
-    const limit = Math.min(Math.max(Number(request.data?.limit) || 30, 1), 100);
+    const requestedLimit = Number(request.data?.limit);
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.min(Math.max(Math.floor(requestedLimit), 1), 100)
+      : 30;
     const [contacts, rfqs] = await Promise.all([
       db.collection('users').doc(uid).collection('supplier_contact_requests').orderBy('createdAt','desc').limit(limit).get(),
       db.collection('users').doc(uid).collection('supplier_rfqs').orderBy('createdAt','desc').limit(limit).get(),
     ]);
     const items = [
-      ...contacts.docs.map(d=>({id:d.id,type:'contact',...d.data()})),
-      ...rfqs.docs.map(d=>({id:d.id,type:'rfq',...d.data()})),
+      ...contacts.docs.map(d=>({...d.data(),id:d.id,type:'contact'})),
+      ...rfqs.docs.map(d=>({...d.data(),id:d.id,type:'rfq'})),
     ].filter(x=>!status || String(x.status||'').toLowerCase()===status)
       .sort((a,b)=>((b.createdAt?.toMillis?.()||0)-(a.createdAt?.toMillis?.()||0)))
       .slice(0,limit);
