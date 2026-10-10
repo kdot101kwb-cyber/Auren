@@ -19,6 +19,7 @@ class _AurenBusinessNavigatorScreenState
   String _country = 'السودان';
   String _activity = 'تجارة';
   bool _planCreated = false;
+  final Set<String> _completedSteps = <String>{};
 
   static const Map<String, Map<String, String>> _officialStartingPoints = {
     'السودان': {
@@ -181,6 +182,7 @@ class _AurenBusinessNavigatorScreenState
                 setState(() {
                   _country = value;
                   _planCreated = false;
+                  _completedSteps.clear();
                 });
               }
             },
@@ -205,6 +207,7 @@ class _AurenBusinessNavigatorScreenState
                 setState(() {
                   _activity = value;
                   _planCreated = false;
+                  _completedSteps.clear();
                 });
               }
             },
@@ -228,18 +231,76 @@ class _AurenBusinessNavigatorScreenState
           if (_planCreated) ...[
             const SizedBox(height: 24),
             Text('خطة البداية المقترحة', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Builder(builder: (context) {
+              final total = _steps.length;
+              final done = _steps.where(_completedSteps.contains).length;
+              final progress = total == 0 ? 0.0 : done / total;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text('إنجاز الخطة: \$done من \$total خطوات'),
+                      ),
+                      Text('\${(progress * 100).round()}%'),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(value: progress),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: TextButton.icon(
+                      onPressed: done == 0
+                          ? null
+                          : () => setState(_completedSteps.clear),
+                      icon: const Icon(Icons.restart_alt_rounded),
+                      label: const Text('إعادة التعيين'),
+                    ),
+                  ),
+                ],
+              );
+            }),
             if (_budgetController.text.trim().isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6, bottom: 8),
                 child: Text('الميزانية التي أدخلتها: ${_budgetController.text.trim()}'),
               ),
             const SizedBox(height: 8),
-            ..._steps.asMap().entries.map((entry) => Card(
-                  child: ListTile(
-                    leading: CircleAvatar(child: Text('${entry.key + 1}')),
-                    title: Text(entry.value),
+            ..._steps.asMap().entries.map((entry) {
+              final step = entry.value;
+              final isDone = _completedSteps.contains(step);
+              return Card(
+                child: CheckboxListTile(
+                  value: isDone,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  secondary: CircleAvatar(
+                    child: isDone
+                        ? const Icon(Icons.check_rounded)
+                        : Text('${entry.key + 1}'),
                   ),
-                )),
+                  title: Text(
+                    step,
+                    style: TextStyle(
+                      decoration: isDone ? TextDecoration.lineThrough : null,
+                      color: isDone
+                          ? theme.colorScheme.onSurfaceVariant
+                          : null,
+                    ),
+                  ),
+                  onChanged: (checked) {
+                    setState(() {
+                      if (checked == true) {
+                        _completedSteps.add(step);
+                      } else {
+                        _completedSteps.remove(step);
+                      }
+                    });
+                  },
+                ),
+              );
+            }),
             const SizedBox(height: 18),
             Text('مصادر رسمية للبدء', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
