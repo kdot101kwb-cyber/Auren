@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auren_supplier_rfq_draft_screen.dart';
+import 'auren_supplier_offer_comparison_screen.dart';
 
 /// Local draft tracker for organizing a trade opportunity.
 /// It persists on this device only and never contacts external parties.
@@ -580,6 +581,18 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
             },
             icon: const Icon(Icons.request_quote_outlined),
             label: const Text('إنشاء طلب عرض سعر من بيانات الصفقة'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenSupplierOfferComparisonScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.compare_arrows_outlined),
+            label: const Text('مقارنة عروض الموردين'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
