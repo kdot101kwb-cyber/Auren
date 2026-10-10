@@ -36,6 +36,8 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   bool _loaded = false;
   Timer? _saveTimer;
   Future<void> _localWriteQueue = Future<void>.value();
+  StreamSubscription<User?>? _authSubscription;
+  int _loadGeneration = 0;
   String _status = 'جارٍ تحميل بيانات الصفقة…';
 
   String get _storageKey {
@@ -47,9 +49,27 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   void initState() {
     super.initState();
     _loadDraft();
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (!mounted) return;
+      _saveTimer?.cancel();
+      // Remove the previous account's values before loading the new identity.
+      _product.clear();
+      _counterparty.clear();
+      _quantity.clear();
+      _value.clear();
+      _notes.clear();
+      setState(() {
+        _loaded = false;
+        _stage = 0;
+        _currency = 'USD';
+        _status = 'تم تغيير الحساب؛ جارٍ تحميل مسودته…';
+      });
+      _loadDraft();
+    });
   }
 
   Future<void> _loadDraft() async {
+    final loadGeneration = ++_loadGeneration;
     // Bind this load to the identity present when it starts. If auth changes
     // while Firestore is responding, never apply the previous user's draft.
     final user = FirebaseAuth.instance.currentUser;
@@ -58,7 +78,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final values = prefs.getStringList(localStorageKey);
-      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+      if (!mounted || loadGeneration != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != userId) return;
       if (values != null && values.length >= 8) {
         _applyValues(values);
       }
@@ -71,7 +91,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
               .collection('trade_deals')
               .doc('active_draft')
               .get();
-          if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+          if (!mounted || loadGeneration != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != userId) return;
           if (snapshot.exists) {
             final data = snapshot.data()!;
             _product.text = data['product'] as String? ?? '';
@@ -99,7 +119,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         }
       }
 
-      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+      if (!mounted || loadGeneration != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != userId) return;
       setState(() {
         _loaded = true;
         _status = values == null
@@ -134,22 +154,30 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         .toInt();
   }
 
-  Future<void> _persistLocalSilently({String? storageKey}) async {
-    // Capture the account key before awaiting so an account switch cannot
-    // redirect this write into a different user's local draft.
+  List<String> _draftValues() => <String>[
+        _product.text,
+        _counterparty.text,
+        _quantity.text,
+        _value.text,
+        _notes.text,
+        _currency,
+        '$_stage',
+        DateTime.now().toIso8601String(),
+      ];
+
+  Future<void> _persistLocalSilently({
+    String? storageKey,
+    List<String>? draftValues,
+  }) async {
+    // Capture both the account key and immutable snapshot before queuing.
     final key = storageKey ?? _storageKey;
-    final values = <String>[
-      _product.text,
-      _counterparty.text,
-      _quantity.text,
-      _value.text,
-      _notes.text,
-      _currency,
-      '$_stage',
-      DateTime.now().toIso8601String(),
-    ];
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(key, values);
+    final values = List<String>.from(draftValues ?? _draftValues());
+    final write = _localWriteQueue.then((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(key, values);
+    });
+    _localWriteQueue = write.catchError((Object _) {});
+    await write;
   }
 
   void _saveDraft() {
@@ -163,16 +191,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   Future<void> _writeDraft() async {
     if (!_loaded) return;
     final storageKey = _storageKey;
-    final values = <String>[
-      _product.text,
-      _counterparty.text,
-      _quantity.text,
-      _value.text,
-      _notes.text,
-      _currency,
-      '$_stage',
-      DateTime.now().toIso8601String(),
-    ];
+    final values = _draftValues();
     try {
       // Serialize writes: a slower earlier platform write must not finish
       // after and overwrite a newer snapshot.
@@ -194,6 +213,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
     _saveTimer?.cancel();
     final user = FirebaseAuth.instance.currentUser;
     final localStorageKey = _storageKey;
+    final draftValues = _draftValues();
     if (user == null) {
       setState(() => _status = 'سجّل الدخول أولاً لحفظ الصفقة في حسابك. المسودة المحلية ما زالت متاحة.');
       return;
@@ -210,17 +230,19 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
           .doc('active_draft')
           .set(<String, dynamic>{
         'ownerId': user.uid,
-        'product': _product.text.trim(),
-        'counterparty': _counterparty.text.trim(),
-        'quantity': _quantity.text.trim(),
-        'estimatedValue': _value.text.trim(),
-        'currency': _currency,
-        'notes': _notes.text.trim(),
-        'stage': _stage,
+        'product': draftValues[0].trim(),
+        'counterparty': draftValues[1].trim(),
+        'quantity': draftValues[2].trim(),
+        'estimatedValue': draftValues[3].trim(),
+        'currency': draftValues[5],
+        'notes': draftValues[4].trim(),
+        'stage': int.tryParse(draftValues[6]) ?? 0,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      await _persistLocalSilently(storageKey: localStorageKey);
-      if (mounted) setState(() => _status = 'تم حفظ مسودة الصفقة في حسابك وعلى هذا الجهاز.');
+      await _persistLocalSilently(storageKey: localStorageKey, draftValues: draftValues);
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) {
+        setState(() => _status = 'تم حفظ مسودة الصفقة في حسابك وعلى هذا الجهاز.');
+      }
     } on FirebaseException catch (error) {
       if (mounted) {
         setState(() => _status = error.code == 'permission-denied'
@@ -283,6 +305,8 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
+    _loadGeneration++;
     _saveTimer?.cancel();
     _product.dispose();
     _counterparty.dispose();
