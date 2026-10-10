@@ -140,6 +140,58 @@ void main() {
     });
   });
 
+  group('SupplierOfferComparisonLogic quote validity dates', () {
+    test('parses only real ISO calendar dates', () {
+      expect(
+        SupplierOfferComparisonLogic.parseIsoValidityDate('2028-02-29'),
+        DateTime.utc(2028, 2, 29),
+      );
+      expect(
+        SupplierOfferComparisonLogic.parseIsoValidityDate(' 2026-10-11 '),
+        DateTime.utc(2026, 10, 11),
+      );
+      for (final value in [
+        '',
+        'valid for 30 days',
+        '11/10/2026',
+        '2026-2-03',
+        '2026-02-30',
+        '2025-02-29',
+        '2026-13-01',
+      ]) {
+        expect(
+          SupplierOfferComparisonLogic.parseIsoValidityDate(value),
+          isNull,
+          reason: 'Expected "$value" to be treated as unparsed validity text',
+        );
+      }
+    });
+
+    test('calculates calendar days to expiry without using elapsed hours', () {
+      final today = DateTime(2026, 10, 11, 23, 45);
+      expect(
+        SupplierOfferComparisonLogic.daysUntilValidity('2026-10-10', today: today),
+        -1,
+      );
+      expect(
+        SupplierOfferComparisonLogic.daysUntilValidity('2026-10-11', today: today),
+        0,
+      );
+      expect(
+        SupplierOfferComparisonLogic.daysUntilValidity('2026-10-18', today: today),
+        7,
+      );
+      expect(
+        SupplierOfferComparisonLogic.daysUntilValidity('2026-10-19', today: today),
+        8,
+      );
+      expect(
+        SupplierOfferComparisonLogic.daysUntilValidity('valid for 30 days', today: today),
+        isNull,
+      );
+    });
+  });
+
   group('SupplierOfferComparisonLogic.compare', () {
     int compare({
       required String aCurrency,
