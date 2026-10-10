@@ -161,10 +161,10 @@ class _AurenSupplierOfferComparisonScreenState
           'شروط الدفع: ${offer.payment.isEmpty ? 'غير محددة' : offer.payment}',
           'ملاحظات: ${offer.notes.isEmpty ? 'لا توجد' : offer.notes}',
           '',
-        ].join('\\n');
+        ].join('\n');
       }),
     ];
-    await Clipboard.setData(ClipboardData(text: lines.join('\\n')));
+    await Clipboard.setData(ClipboardData(text: lines.join('\n')));
     if (mounted) _snack('تم نسخ ملخص العروض إلى الحافظة.');
   }
 
