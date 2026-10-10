@@ -6,7 +6,7 @@ class SupplierOfferComparisonLogic {
     final raw = value.trim();
     // Accept plain digits or correctly grouped thousands separators only.
     // Removing every comma first would incorrectly accept values like "1,,2".
-    final validNumber = RegExp(r'^(?:\\d+|\\d{1,3}(?:,\\d{3})+)(?:\\.\\d+)?$');
+    final validNumber = RegExp(r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$');
     if (!validNumber.hasMatch(raw)) return null;
     final parsed = double.tryParse(raw.replaceAll(',', ''));
     return parsed != null && parsed.isFinite && parsed >= 0 ? parsed : null;
