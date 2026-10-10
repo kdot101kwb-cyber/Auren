@@ -360,6 +360,9 @@ class _AurenSupplierOfferComparisonScreenState
   @override
   Widget build(BuildContext context) {
     final currencies = _offers.map((o) => o.currency).toSet();
+    final filteredOffers = _sorted
+        .where((offer) => _filterStatus == 'all' || offer.status == _filterStatus)
+        .toList(growable: false);
     return Scaffold(
       appBar: AppBar(title: const Text('مقارنة عروض الموردين')),
       floatingActionButton: FloatingActionButton.extended(
@@ -429,10 +432,10 @@ class _AurenSupplierOfferComparisonScreenState
                 )),
                 if (_offers.isEmpty)
                   const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد عروض بعد. اضغط «إضافة عرض» لتسجيل أول عرض.')))
+                else if (filteredOffers.isEmpty)
+                  const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد عروض بالحالة المحددة. غيّر التصفية لعرض عروض أخرى.')))
                 else
-                  ..._sorted
-                      .where((offer) => _filterStatus == 'all' || offer.status == _filterStatus)
-                      .map((offer) => _card(offer, isLowest: _isLowest(offer))),
+                  ...filteredOffers.map((offer) => _card(offer, isLowest: _isLowest(offer))),
                 const SizedBox(height: 12),
                 const Text('قبل الدفع: تحقق مستقلاً من تسجيل الشركة، وعينة المنتج، والمراجع التجارية، وشروط الدفع والشحن والتأمين والمستندات.', style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
