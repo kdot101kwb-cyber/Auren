@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -39,6 +40,9 @@ class _AurenSupplierOfferComparisonScreenState
   List<Map<String, dynamic>> _offers = [];
   bool _loading = true;
   String _message = 'جارٍ تحميل العروض…';
+  StreamSubscription<User?>? _authSubscription;
+  String? _observedUserId;
+  int _loadGeneration = 0;
 
   String get _key =>
       'auren_supplier_offers_v1_${FirebaseAuth.instance.currentUser?.uid ?? 'guest'}';
@@ -46,15 +50,30 @@ class _AurenSupplierOfferComparisonScreenState
   @override
   void initState() {
     super.initState();
+    _observedUserId = FirebaseAuth.instance.currentUser?.uid;
     _load();
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (!mounted || user?.uid == _observedUserId) return;
+      _observedUserId = user?.uid;
+      _loadGeneration++;
+      setState(() {
+        _offers = [];
+        _loading = true;
+        _message = 'تغيّر الحساب؛ جارٍ تحميل عروضه المحفوظة…';
+      });
+      _load();
+    });
   }
 
   Future<void> _load() async {
+    final generation = ++_loadGeneration;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final storageKey = 'auren_supplier_offers_v1_\u0024{userId ?? 'guest'}';
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key);
+      final raw = prefs.getString(storageKey);
       final decoded = raw == null ? <dynamic>[] : jsonDecode(raw) as List<dynamic>;
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != userId) return;
       setState(() {
         _offers = decoded
             .whereType<Map>()
@@ -67,7 +86,7 @@ class _AurenSupplierOfferComparisonScreenState
             : 'تم تحميل ${_offers.length} عرض محفوظ على هذا الجهاز.';
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != userId) return;
       setState(() {
         _loading = false;
         _message = 'تعذر قراءة العروض المحفوظة؛ يمكنك إضافة عرض جديد.';
@@ -200,6 +219,8 @@ class _AurenSupplierOfferComparisonScreenState
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
+    _loadGeneration++;
     _supplier.dispose();
     _price.dispose();
     _shipping.dispose();
