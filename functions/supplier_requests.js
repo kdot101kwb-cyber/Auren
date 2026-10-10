@@ -178,7 +178,11 @@ exports.retryAurenSupplierRequest = onCall(
       if (!['failed','cancelled'].includes(currentStatus)) {
         throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
       }
-      const retryCount = Number(data.retryCount || 0) + 1;
+      const previousRetryCount = data.retryCount == null ? 0 : Number(data.retryCount);
+      if (!Number.isSafeInteger(previousRetryCount) || previousRetryCount < 0) {
+        throw new HttpsError('failed-precondition','Stored retry count is invalid.');
+      }
+      const retryCount = previousRetryCount + 1;
       if (retryCount > 5) throw new HttpsError('resource-exhausted','Retry limit reached.');
       const update = {
         status:'draft', retryCount, externalDispatch:false,
