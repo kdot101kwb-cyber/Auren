@@ -43,6 +43,7 @@ class _AurenSupplierOfferComparisonScreenState
   StreamSubscription<User?>? _authSubscription;
   String? _observedUserId;
   int _loadGeneration = 0;
+  Future<void> _writeQueue = Future<void>.value();
 
   String get _key =>
       'auren_supplier_offers_v1_${FirebaseAuth.instance.currentUser?.uid ?? 'guest'}';
@@ -110,12 +111,20 @@ class _AurenSupplierOfferComparisonScreenState
   }
 
   Future<void> _persist() async {
-    final snapshot = jsonEncode(_offers);
-    try {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final storageKey = 'auren_supplier_offers_v1_' + (userId ?? 'guest');
+    final snapshot = jsonEncode(_offers.map((offer) => Map<String, dynamic>.from(offer)).toList());
+    final write = _writeQueue.catchError((Object _) {}).then((_) async {
+      if (FirebaseAuth.instance.currentUser?.uid != userId) return;
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_key, snapshot);
+      if (FirebaseAuth.instance.currentUser?.uid != userId) return;
+      await prefs.setString(storageKey, snapshot);
+    });
+    _writeQueue = write;
+    try {
+      await write;
     } catch (_) {
-      if (mounted) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == userId) {
         setState(() => _message = 'تعذر حفظ التغيير على الجهاز. تحقق من المساحة ثم أعد المحاولة.');
       }
     }
