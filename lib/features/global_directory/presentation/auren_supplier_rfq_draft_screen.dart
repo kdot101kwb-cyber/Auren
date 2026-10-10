@@ -47,6 +47,47 @@ class _AurenSupplierRfqDraftScreenState
     'sw': 'Kiswahili',
   };
 
+  String get _localizedDelivery {
+    const labels = <String, Map<String, String>>{
+      'en': {
+        'شحن إلى العنوان': 'Ship to destination',
+        'استلام من المورد': 'Pickup from supplier',
+        'يُحدّد لاحقاً': 'To be agreed',
+      },
+      'zh': {
+        'شحن إلى العنوان': '送货至指定地点',
+        'استلام من المورد': '供应商处自提',
+        'يُحدّد لاحقاً': '另行协商',
+      },
+      'fr': {
+        'شحن إلى العنوان': 'Livraison à destination',
+        'استلام من المورد': 'Retrait chez le fournisseur',
+        'يُحدّد لاحقاً': 'À convenir',
+      },
+      'es': {
+        'شحن إلى العنوان': 'Envío al destino',
+        'استلام من المورد': 'Recogida en el proveedor',
+        'يُحدّد لاحقاً': 'Por acordar',
+      },
+      'tr': {
+        'شحن إلى العنوان': 'Adrese teslimat',
+        'استلام من المورد': 'Tedarikçiden teslim alma',
+        'يُحدّد لاحقاً': 'Daha sonra kararlaştırılacak',
+      },
+      'pt': {
+        'شحن إلى العنوان': 'Entrega no destino',
+        'استلام من المورد': 'Retirada no fornecedor',
+        'يُحدّد لاحقاً': 'A combinar',
+      },
+      'sw': {
+        'شحن إلى العنوان': 'Kusafirisha hadi unakopelekewa',
+        'استلام من المورد': 'Kuchukua kwa msambazaji',
+        'يُحدّد لاحقاً': 'Kukubaliana baadaye',
+      },
+    };
+    return labels[_language]?[_delivery] ?? _delivery;
+  }
+
   String _buildDraft() {
     final product = _productController.text.trim();
     final quantity = _quantityController.text.trim();
@@ -68,7 +109,7 @@ Please provide a quotation for:
 - Quantity: $quantity
 - Specifications: ${shownSpecs ?? 'Please suggest available options'}
 - Delivery destination: $destination
-- Delivery method: $_delivery
+- Delivery method: ${_localizedDelivery}
 - Target budget: ${shownBudget ?? 'Please provide available pricing'}
 ${shownContact == null ? '' : '- Preferred contact method: $shownContact'}
 
@@ -84,7 +125,7 @@ Thank you.'''.trim();
 - 数量：$quantity
 - 规格：${shownSpecs ?? '请推荐可供选择的规格'}
 - 交货目的地：$destination
-- 交付方式：$_delivery
+- 交付方式：${_localizedDelivery}
 - 目标预算：${shownBudget ?? '请提供可选价格'}
 ${shownContact == null ? '' : '- 首选联系方式：$shownContact'}
 
@@ -100,7 +141,7 @@ Veuillez nous transmettre un devis pour :
 - Quantité : $quantity
 - Spécifications : ${shownSpecs ?? 'Veuillez proposer les options disponibles'}
 - Destination de livraison : $destination
-- Mode de livraison : $_delivery
+- Mode de livraison : ${_localizedDelivery}
 - Budget cible : ${shownBudget ?? 'Veuillez indiquer les tarifs disponibles'}
 ${shownContact == null ? '' : '- Moyen de contact préféré : $shownContact'}
 
@@ -116,7 +157,7 @@ Solicitamos una cotización para:
 - Cantidad: $quantity
 - Especificaciones: ${shownSpecs ?? 'Por favor, sugiera las opciones disponibles'}
 - Destino de entrega: $destination
-- Método de entrega: $_delivery
+- Método de entrega: ${_localizedDelivery}
 - Presupuesto objetivo: ${shownBudget ?? 'Indique los precios disponibles'}
 ${shownContact == null ? '' : '- Medio de contacto preferido: $shownContact'}
 
@@ -132,7 +173,7 @@ Aşağıdaki ürün/hizmet için fiyat teklifi rica ederiz:
 - Miktar: $quantity
 - Özellikler: ${shownSpecs ?? 'Lütfen mevcut seçenekleri önerin'}
 - Teslimat adresi: $destination
-- Teslimat yöntemi: $_delivery
+- Teslimat yöntemi: ${_localizedDelivery}
 - Hedef bütçe: ${shownBudget ?? 'Lütfen mevcut fiyatları belirtin'}
 ${shownContact == null ? '' : '- Tercih edilen iletişim yöntemi: $shownContact'}
 
@@ -148,7 +189,7 @@ Solicitamos uma cotação para:
 - Quantidade: $quantity
 - Especificações: ${shownSpecs ?? 'Por favor, sugira as opções disponíveis'}
 - Destino da entrega: $destination
-- Método de entrega: $_delivery
+- Método de entrega: ${_localizedDelivery}
 - Orçamento previsto: ${shownBudget ?? 'Informe os preços disponíveis'}
 ${shownContact == null ? '' : '- Meio de contato preferido: $shownContact'}
 
@@ -164,7 +205,7 @@ Tunaomba bei ya bidhaa/huduma ifuatayo:
 - Kiasi: $quantity
 - Sifa: ${shownSpecs ?? 'Tafadhali pendekeza chaguo zinazopatikana'}
 - Mahali pa kupeleka: $destination
-- Njia ya usafirishaji: $_delivery
+- Njia ya usafirishaji: ${_localizedDelivery}
 - Bajeti inayolengwa: ${shownBudget ?? 'Tafadhali toa bei zinazopatikana'}
 ${shownContact == null ? '' : '- Njia tunayopendelea ya mawasiliano: $shownContact'}
 
@@ -181,7 +222,7 @@ Asante.'''.trim();
 - الكمية المطلوبة: $quantity
 - المواصفات: ${shownSpecs ?? 'يرجى اقتراح الخيارات المتاحة'}
 - الوجهة: $destination
-- طريقة التسليم: $_delivery
+- طريقة التسليم: ${_localizedDelivery}
 - الميزانية المستهدفة: ${shownBudget ?? 'يرجى توضيح الأسعار المتاحة'}
 ${shownContact == null ? '' : '- وسيلة التواصل التي سنستخدمها: $shownContact'}
 
