@@ -46,8 +46,14 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
     const message = clean(payload?.message, 5000);
     if (!message) { const error = new Error('Message is required.'); error.code = 'validation'; throw error; }
     const ref = db.collection('supplier_contact_requests').doc(stableKey);
-    if ((await ref.get()).exists) return {type:'supplier_contact_draft_created', requestId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
     const userRef = db.collection('users').doc(uid).collection('supplier_contact_requests').doc(ref.id);
+    const existing = await ref.get();
+    if (existing.exists) {
+      if (existing.data()?.requesterUid !== uid) {
+        const error = new Error('Idempotency key is already used by another account.'); error.code = 'permission-denied'; throw error;
+      }
+      return {type:'supplier_contact_draft_created', requestId:ref.id, supplierId:existing.data()?.supplierId || supplierId, status:existing.data()?.status || 'draft', externalDispatch:existing.data()?.externalDispatch === true, matchFlowId:existing.data()?.matchFlowId || matchFlowId};
+    }
     const data = {
       ...common, message,
       channel: clean(payload?.channel || 'draft', 40),
@@ -57,7 +63,8 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
     const batch=db.batch();
     batch.set(ref,data); batch.set(userRef,data);
     await batch.commit();
-    await updateMatchFlow(uid,matchFlowId,'waiting_response',{supplierRequestId:ref.id,supplierRequestType:'contact'});
+    // Creating a local draft is not evidence that the supplier was contacted.
+    await updateMatchFlow(uid,matchFlowId,'active',{supplierRequestId:ref.id,supplierRequestType:'contact',supplierWorkflowStatus:'draft'});
     return {type:'supplier_contact_draft_created', requestId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
@@ -66,8 +73,14 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
     const quantity = clean(payload?.quantity, 80);
     if (!product || !quantity) { const error = new Error('Product and quantity are required.'); error.code = 'validation'; throw error; }
     const ref = db.collection('supplier_rfqs').doc(stableKey);
-    if ((await ref.get()).exists) return {type:'supplier_rfq_created', rfqId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
     const userRef = db.collection('users').doc(uid).collection('supplier_rfqs').doc(ref.id);
+    const existing = await ref.get();
+    if (existing.exists) {
+      if (existing.data()?.requesterUid !== uid) {
+        const error = new Error('Idempotency key is already used by another account.'); error.code = 'permission-denied'; throw error;
+      }
+      return {type:'supplier_rfq_created', rfqId:ref.id, supplierId:existing.data()?.supplierId || supplierId, status:existing.data()?.status || 'draft', externalDispatch:existing.data()?.externalDispatch === true, matchFlowId:existing.data()?.matchFlowId || matchFlowId};
+    }
     const data = {
       ...common, product, quantity,
       unit: clean(payload?.unit, 40),
@@ -77,7 +90,8 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
     const batch=db.batch();
     batch.set(ref,data); batch.set(userRef,data);
     await batch.commit();
-    await updateMatchFlow(uid,matchFlowId,'waiting_response',{supplierRequestId:ref.id,supplierRequestType:'rfq'});
+    // A saved RFQ draft is not sent to the supplier; keep the flow active.
+    await updateMatchFlow(uid,matchFlowId,'active',{supplierRequestId:ref.id,supplierRequestType:'rfq',supplierWorkflowStatus:'draft'});
     return {type:'supplier_rfq_created', rfqId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
