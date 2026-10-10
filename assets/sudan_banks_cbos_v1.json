@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "source_name": "Central Bank of Sudan",
+  "source_url": "https://cbos.gov.sd/en/node/636",
+  "directory_url": "https://cbos.gov.sd/en/commercial-bank-locator",
+  "last_reviewed": "2026-10-10",
+  "disclaimer": "Names are transcribed from the Central Bank of Sudan's public Operating Banks page. This is not a statement that every branch or service is currently available. Verify current licensing, branch operation, account terms and contact details with CBOS and the bank directly.",
+  "banks": [
+    {
+      "id": "sd-bank-01",
+      "name": "Agricultural Bank of Sudan",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-02",
+      "name": "Industrial Development Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-03",
+      "name": "Export Development Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-04",
+      "name": "Savings and Social Development Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-05",
+      "name": "Animal Resources Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-06",
+      "name": "Omdurman National Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-07",
+      "name": "El Nilein Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-08",
+      "name": "Workers' National Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-09",
+      "name": "Bank of Khartoum",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-10",
+      "name": "Faisal Islamic Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-11",
+      "name": "Sudanese Islamic Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-12",
+      "name": "Sudanese French Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-13",
+      "name": "Sudanese Egyptian Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-14",
+      "name": "Arab Sudanese Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-15",
+      "name": "Saudi Sudanese Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-16",
+      "name": "Qatar National Bank (Sudan Branch)",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-17",
+      "name": "Qatar Islamic Bank (Sudan Branch)",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-18",
+      "name": "Al Salam Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-19",
+      "name": "Al Baraka Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-20",
+      "name": "Al Khaleej Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-21",
+      "name": "Al Jazeera Sudanese Jordanian Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-22",
+      "name": "Byblos Bank Africa",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-23",
+      "name": "Blue Nile Mashreq Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-24",
+      "name": "AlNile Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-25",
+      "name": "Farmer's Commercial Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-26",
+      "name": "Financial Investment Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-27",
+      "name": "Family Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-28",
+      "name": "United Capital Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-29",
+      "name": "Ivory Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-30",
+      "name": "Balad Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-31",
+      "name": "Africa and Gulf Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-32",
+      "name": "Tadamon Islamic Bank",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-33",
+      "name": "National Bank of Sudan",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-34",
+      "name": "National Bank of Egypt - Khartoum",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-35",
+      "name": "Banque Sahelo-Saharienne pour l'Investissement et le Commerce",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-36",
+      "name": "Ziraat Katilim",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    },
+    {
+      "id": "sd-bank-37",
+      "name": "National Bank of Egypt (Khartoum)",
+      "country": "Sudan",
+      "source": "Central Bank of Sudan operating banks list",
+      "source_url": "https://cbos.gov.sd/en/node/636",
+      "status": "listed_by_regulator_source_check_required"
+    }
+  ]
+}

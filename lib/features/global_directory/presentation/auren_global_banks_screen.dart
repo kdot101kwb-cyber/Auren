@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'auren_sudan_banks_screen.dart';
 
 class AurenGlobalBanksScreen extends StatefulWidget {
   const AurenGlobalBanksScreen({super.key});
@@ -32,6 +33,14 @@ class _AurenGlobalBanksScreenState extends State<AurenGlobalBanksScreen> {
     appBar: AppBar(title: const Text('AUREN Global Banks')),
     body: ListView(padding: const EdgeInsets.all(16), children: [
       const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('دليل عالمي أولي للبنوك ومؤسسات التمويل والجهات الرقابية. وجود المؤسسة هنا لا يعني أنها مرخّصة في بلدك أو أنها تقبل حسابات من جميع الدول. تحقق من الجهة الرقابية المحلية ومن الشروط والرسوم في المصدر الرسمي.'))),
+      const SizedBox(height: 12),
+      Card(child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.flag_outlined)),
+        title: const Text('البنوك العاملة في السودان'),
+        subtitle: const Text('قائمة أسماء من مصدر بنك السودان المركزي مع رابط للتحقق الرسمي.'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSudanBanksScreen())),
+      )),
       const SizedBox(height: 12),
       TextField(onChanged: (v) => setState(() => _query = v.trim().toLowerCase()), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث بالاسم أو الدولة أو نوع الجهة', border: OutlineInputBorder())),
       const SizedBox(height: 12),
