@@ -32,6 +32,7 @@ class _AurenSupplierOfferComparisonScreenState
   List<_Offer> _offers = [];
   bool _loading = true;
   String _filterStatus = 'all';
+  String _filterValidity = 'all';
   String _message = 'جارٍ تحميل العروض…';
   StreamSubscription<User?>? _authSubscription;
   String? _observedUid;
@@ -323,6 +324,8 @@ class _AurenSupplierOfferComparisonScreenState
           'الشحن والرسوم: ${offer.shipping} ${offer.currency}',
           'الإجمالي التقديري: ${total == null ? 'غير مكتمل' : '${total.toStringAsFixed(2)} ${offer.currency}'}',
           'الحالة: ${_statuses[offer.status] ?? offer.status}',
+          'صلاحية العرض: ${offer.validity.isEmpty ? 'غير محددة' : offer.validity}',
+          if (_validityNotice(offer.validity) != null) _validityNotice(offer.validity)!,
           'شروط الدفع: ${offer.payment.isEmpty ? 'غير محددة' : offer.payment}',
           'ملاحظات: ${offer.notes.isEmpty ? 'لا توجد' : offer.notes}',
           '',
@@ -378,9 +381,17 @@ class _AurenSupplierOfferComparisonScreenState
   @override
   Widget build(BuildContext context) {
     final currencies = _offers.map((o) => o.currency).toSet();
-    final filteredOffers = _sorted
-        .where((offer) => _filterStatus == 'all' || offer.status == _filterStatus)
-        .toList(growable: false);
+    final filteredOffers = _sorted.where((offer) {
+      final statusMatches = _filterStatus == 'all' || offer.status == _filterStatus;
+      final validityMatches = _filterValidity == 'all' ||
+          SupplierOfferComparisonLogic.validityCategory(offer.validity) == _filterValidity;
+      return statusMatches && validityMatches;
+    }).toList(growable: false);
+    final expiredCount = _offers.where((o) => SupplierOfferComparisonLogic.validityCategory(o.validity) == 'expired').length;
+    final expiringCount = _offers.where((o) {
+      final category = SupplierOfferComparisonLogic.validityCategory(o.validity);
+      return category == 'today' || category == 'soon';
+    }).length;
     return Scaffold(
       appBar: AppBar(title: const Text('مقارنة عروض الموردين')),
       floatingActionButton: FloatingActionButton.extended(
@@ -405,6 +416,8 @@ class _AurenSupplierOfferComparisonScreenState
                       Chip(label: Text('${_offers.length}/10 عروض')),
                       Chip(label: Text('${_offers.where((o) => o.status == 'verify').length} بحاجة للتحقق')),
                       Chip(label: Text('${_offers.where((o) => o.status == 'shortlist').length} بالقائمة المختصرة')),
+                      Chip(label: Text('$expiredCount عروض منتهية'), avatar: const Icon(Icons.error_outline, size: 18)),
+                      Chip(label: Text('$expiringCount عروض قاربت على الانتهاء'), avatar: const Icon(Icons.schedule, size: 18)),
                     ]),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
@@ -423,6 +436,26 @@ class _AurenSupplierOfferComparisonScreenState
                       ],
                       onChanged: (value) {
                         if (value != null) setState(() => _filterStatus = value);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _filterValidity,
+                      decoration: const InputDecoration(
+                        labelText: 'تصفية حسب صلاحية العرض',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'all', child: Text('كل الصلاحيات')),
+                        DropdownMenuItem(value: 'expired', child: Text('منتهي الصلاحية')),
+                        DropdownMenuItem(value: 'today', child: Text('ينتهي اليوم')),
+                        DropdownMenuItem(value: 'soon', child: Text('ينتهي خلال 7 أيام')),
+                        DropdownMenuItem(value: 'valid', child: Text('ساري لأكثر من 7 أيام')),
+                        DropdownMenuItem(value: 'unknown', child: Text('تاريخ غير محدد أو نصي')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => _filterValidity = value);
                       },
                     ),
                     if (currencies.length > 1)
