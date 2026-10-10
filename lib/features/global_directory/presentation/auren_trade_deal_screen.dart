@@ -225,6 +225,30 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
     }
   }
 
+  void _appendSupplierResponseTemplate() {
+    final date = DateTime.now().toLocal().toIso8601String().split('T').first;
+    final template = '''
+رد المورد — $date
+- اسم المورد:
+- السعر المعروض والعملة:
+- مدة التجهيز والتسليم:
+- الحد الأدنى للطلب:
+- شروط الدفع:
+- صلاحية العرض:
+- الشحن والتأمين والرسوم:
+- ملاحظات التحقق والمستندات:
+'''.trim();
+    final existing = _notes.text.trim();
+    _notes.text = existing.isEmpty ? template : '$existing\n\n$template';
+    _notes.selection = TextSelection.collapsed(offset: _notes.text.length);
+    _saveDraft();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أُضيف نموذج رد المورد إلى الملاحظات؛ املأه بعد استلام عرض حقيقي.')),
+      );
+    }
+  }
+
   bool _hasValidEstimatedValue() {
     final raw = _value.text.trim();
     if (raw.isEmpty) return true;
@@ -472,6 +496,12 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
               labelText: 'ملاحظات وشروط ومواعيد',
               border: OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _appendSupplierResponseTemplate,
+            icon: const Icon(Icons.mark_email_read_outlined),
+            label: const Text('تسجيل رد أو عرض وصل من المورد'),
           ),
           const SizedBox(height: 24),
           Text('مرحلة الصفقة', style: theme.textTheme.titleLarge),
