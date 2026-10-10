@@ -20,14 +20,15 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 ## Persistence and trust boundaries
 
 - Data is saved in SharedPreferences on the current device, using a key scoped to the current Firebase UID (or `guest` when signed out).
-- These offer records are not synced to Firestore or another device in this version.
+- Signed-in users can explicitly save the comparison to `users/{uid}/supplier_offer_comparisons/active_draft` and restore it on another device. The cloud document is owner-scoped by Firestore rules and limited to 10 validated offers.
+- Local autosaves remain on this device; cloud changes are not silently uploaded. Use **Save to my account** after changes.
 - Switching accounts resets the visible list and reloads that account's local key.
 - Supplier identities, documents, quotations, and payment details are not verified by AUREN.
 - Changing an offer to “tentatively selected” is not contract acceptance and does not send a purchase order or external message.
 
 ## Follow-up work
 
-- Add owner-scoped cloud persistence and Firestore rules.
+- Add automated Firestore rules integration tests for cross-user access denial and malformed offer payloads.
 - Add structured verification evidence and quote attachments.
 - Add delivered-quantity / tax / duty / insurance comparisons and explicit FX rates with timestamps.
 - Add automated widget tests for sorting, status filtering, and account switching.
