@@ -289,10 +289,11 @@ class _AurenSupplierOfferComparisonScreenState
   void _snack(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   double? _total(_Offer offer) {
-    final price = double.tryParse(offer.price.replaceAll(',', '').replaceAll(' ', ''));
-    final shipping = double.tryParse(offer.shipping.replaceAll(',', '').replaceAll(' ', ''));
-    if (price == null || !price.isFinite || price < 0 || shipping == null || !shipping.isFinite || shipping < 0) return null;
-    return price + shipping;
+    final price = _parseNonNegativeAmount(offer.price);
+    final shipping = _parseNonNegativeAmount(offer.shipping);
+    if (price == null || shipping == null) return null;
+    final total = price + shipping;
+    return total.isFinite ? total : null;
   }
 
   bool _isLowest(_Offer candidate) {
