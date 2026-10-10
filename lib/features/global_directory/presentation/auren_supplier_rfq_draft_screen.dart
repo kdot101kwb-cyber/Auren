@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -93,8 +94,27 @@ class _AurenSupplierRfqDraftScreenState
       final raw = prefs.getString(key);
       if (!mounted || generation != _loadGeneration ||
           FirebaseAuth.instance.currentUser?.uid != userId) return;
-      if (raw != null) {
-        final decoded = jsonDecode(raw);
+      String? draftJson = raw;
+      if (draftJson == null && userId != null) {
+        try {
+          final cloud = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .collection('supplier_rfq_drafts')
+              .doc('active_draft')
+              .get();
+          if (!mounted || generation != _loadGeneration ||
+              FirebaseAuth.instance.currentUser?.uid != userId) return;
+          final data = cloud.data();
+          if (cloud.exists && data != null) {
+            draftJson = jsonEncode(data);
+          }
+        } catch (_) {
+          // Continue with a blank/local draft if cloud access is unavailable.
+        }
+      }
+      if (draftJson != null) {
+        final decoded = jsonDecode(draftJson);
         if (decoded is Map<String, dynamic>) {
           final initialTarget = widget.initialSupplier?.trim();
           final savedTarget = (decoded['target'] as String?) ?? '';
@@ -206,6 +226,78 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
 
 شكراً لكم.
 '''.trim();
+  }
+
+  bool _hasValidBudget() {
+    final raw = _budgetController.text.trim();
+    if (raw.isEmpty) return true;
+    final amount = double.tryParse(raw.replaceAll(',', '').replaceAll(' ', ''));
+    return amount != null && amount.isFinite && amount >= 0;
+  }
+
+  Future<void> _saveToAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('سجّل الدخول لحفظ مسودة طلب السعر في حسابك.')),
+        );
+      }
+      return;
+    }
+    if (!_formKey.currentState!.validate() || !_hasValidBudget()) {
+      if (!_hasValidBudget() && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('أدخل ميزانية رقمية غير سالبة أو اتركها فارغة.')),
+        );
+      }
+      return;
+    }
+    _saveTimer?.cancel();
+    final userId = user.uid;
+    final data = <String, dynamic>{
+      'ownerId': userId,
+      'target': _targetController.text.trim(),
+      'product': _productController.text.trim(),
+      'quantity': _quantityController.text.trim(),
+      'destination': _destinationController.text.trim(),
+      'specifications': _specificationsController.text.trim(),
+      'budget': _budgetController.text.trim(),
+      'currency': _currency,
+      'delivery': _delivery,
+      'contact': _contactController.text.trim(),
+      'draft': _draft ?? '',
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('supplier_rfq_drafts')
+          .doc('active_draft')
+          .set(data);
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+      await _persistDraft();
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ مسودة طلب السعر في حسابك. لم يتم إرسالها للمورد.')),
+      );
+    } on FirebaseException catch (error) {
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.code == 'permission-denied'
+              ? 'قواعد الأمان رفضت الحفظ؛ تحقق من نشر قواعد Firestore.'
+              : 'تعذر الحفظ السحابي (${error.code})؛ بقيت المسودة على الجهاز.'),
+        ),
+      );
+    } catch (_) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == userId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر حفظ المسودة في الحساب؛ بقيت البيانات المحلية متاحة.')),
+        );
+      }
+    }
   }
 
   Future<void> _copyDraft() async {
@@ -415,6 +507,12 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
                   },
                   icon: const Icon(Icons.description_outlined),
                   label: const Text('إنشاء مسودة طلب السعر'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _saveToAccount,
+                  icon: const Icon(Icons.cloud_upload_outlined),
+                  label: const Text('حفظ المسودة في حسابي'),
                 ),
               ],
             ),
