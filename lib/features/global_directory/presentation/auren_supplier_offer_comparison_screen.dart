@@ -18,7 +18,6 @@ class AurenSupplierOfferComparisonScreen extends StatefulWidget {
 
 class _AurenSupplierOfferComparisonScreenState
     extends State<AurenSupplierOfferComparisonScreen> {
-  static const _currencies = ['USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN'];
   static const _statuses = <String, String>{
     'received': 'وصل العرض',
     'verify': 'بحاجة للتحقق',
@@ -35,8 +34,6 @@ class _AurenSupplierOfferComparisonScreenState
   String? _observedUid;
   int _loadGeneration = 0;
   Future<void> _writeQueue = Future<void>.value();
-
-  String get _key => 'auren_supplier_offers_v1_${FirebaseAuth.instance.currentUser?.uid ?? 'guest'}';
 
   @override
   void initState() {
