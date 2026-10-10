@@ -86,7 +86,7 @@ class _AurenMusicAudioLabState extends State<AurenMusicAudioLab> {
   }
 
   int? _midiNumber(String note) {
-    final match = RegExp(r'^([A-G]#?)(-?\\d+)$').firstMatch(note);
+    final match = RegExp(r'^([A-G]#?)(-?\d+)$').firstMatch(note);
     if (match == null) return null;
     const semitones = <String, int>{
       'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5,
