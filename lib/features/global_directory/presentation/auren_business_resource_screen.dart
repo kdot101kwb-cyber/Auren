@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,41 +31,69 @@ class _AurenBusinessResourceScreenState
   final _queryController = TextEditingController();
   final Set<String> _completedChecklistItems = <String>{};
   bool _checklistLoaded = false;
+  StreamSubscription<User?>? _authSubscription;
+  String? _observedUserId;
+  int _checklistLoadGeneration = 0;
+  Future<void> _checklistWriteQueue = Future<void>.value();
 
-  String get _checklistStorageKey {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
-    return 'auren_business_checklist_v1_${userId}_${widget.type.index}';
-  }
+  String _storageKeyFor(String? userId) =>
+      'auren_business_checklist_v1_${userId ?? 'guest'}_${widget.type.index}';
 
   @override
   void initState() {
     super.initState();
+    _observedUserId = FirebaseAuth.instance.currentUser?.uid;
     _loadChecklist();
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (!mounted || user?.uid == _observedUserId) return;
+      _observedUserId = user?.uid;
+      _checklistLoadGeneration++;
+      setState(() {
+        _checklistLoaded = false;
+        _completedChecklistItems.clear();
+      });
+      _loadChecklist();
+    });
   }
 
   Future<void> _loadChecklist() async {
+    final generation = ++_checklistLoadGeneration;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final key = _storageKeyFor(userId);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getStringList(_checklistStorageKey) ?? <String>[];
-      if (!mounted) return;
+      final saved = prefs.getStringList(key) ?? <String>[];
+      if (!mounted ||
+          generation != _checklistLoadGeneration ||
+          FirebaseAuth.instance.currentUser?.uid != userId) {
+        return;
+      }
       _completedChecklistItems
         ..clear()
         ..addAll(saved.where((item) => _checklist.contains(item)));
     } catch (_) {
       // Checklist remains usable in memory if local storage is unavailable.
     } finally {
-      if (mounted) setState(() => _checklistLoaded = true);
+      if (mounted &&
+          generation == _checklistLoadGeneration &&
+          FirebaseAuth.instance.currentUser?.uid == userId) {
+        setState(() => _checklistLoaded = true);
+      }
     }
   }
 
   Future<void> _persistChecklist() async {
     if (!_checklistLoaded) return;
-    try {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final key = _storageKeyFor(userId);
+    final snapshot = _completedChecklistItems.toList();
+    final write = _checklistWriteQueue.then((_) async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(
-        _checklistStorageKey,
-        _completedChecklistItems.toList(),
-      );
+      await prefs.setStringList(key, snapshot);
+    });
+    _checklistWriteQueue = write.catchError((Object _) {});
+    try {
+      await write;
     } catch (_) {
       // Keep the current checklist state for this screen session.
     }
@@ -311,6 +341,8 @@ class _AurenBusinessResourceScreenState
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
+    _checklistLoadGeneration++;
     _queryController.dispose();
     super.dispose();
   }
