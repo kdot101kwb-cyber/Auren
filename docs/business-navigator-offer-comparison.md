@@ -16,6 +16,7 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - Blank or invalid numeric values are not ranked.
 - Currency conversion, tax/duty estimation, product-spec normalization, and exchange-rate lookup are not performed.
 - Users can filter by lifecycle status, edit/delete offers, and copy a plain-text summary.
+- If the validity field is entered as a real `YYYY-MM-DD` calendar date, the screen shows whether it has expired, expires today, or expires within seven calendar days. Free-form validity notes remain supported but are not interpreted as dates; no notification is sent.
 
 ## Persistence and trust boundaries
 
