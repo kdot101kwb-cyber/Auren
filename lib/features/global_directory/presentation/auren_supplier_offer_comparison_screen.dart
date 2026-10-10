@@ -103,8 +103,11 @@ class _AurenSupplierOfferComparisonScreenState
     }
   }
 
-  Future<void> _persist() async {
+  Future<void> _persist({String? expectedUid}) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    // Cloud restore must never persist the previous account's data under a
+    // newly active account if auth changes between restore and local save.
+    if (expectedUid != null && uid != expectedUid) return;
     final key = 'auren_supplier_offers_v1_${uid ?? 'guest'}';
     final snapshot = jsonEncode(_offers.map((o) => o.toJson()).toList());
     try {
@@ -240,7 +243,7 @@ class _AurenSupplierOfferComparisonScreenState
         return;
       }
       setState(() => _offers = restored);
-      await _persist();
+      await _persist(expectedUid: user.uid);
       if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
       setState(() => _message = 'تم استعادة ' + restored.length.toString() + ' عروض من حسابك.');
     } on FirebaseException catch (error) {
