@@ -294,6 +294,23 @@ class _AurenSupplierOfferComparisonScreenState
     await _persist();
   }
 
+  String? _validityNotice(String validity) {
+    final days = SupplierOfferComparisonLogic.daysUntilValidity(validity);
+    if (days == null) return null;
+    if (days < 0) return 'انتهت صلاحية العرض منذ ${-days} يوم';
+    if (days == 0) return 'تنتهي صلاحية العرض اليوم';
+    if (days <= 7) return 'تنتهي صلاحية العرض خلال ${days} يوم';
+    return 'تاريخ الانتهاء المسجل: ${validity.trim()}';
+  }
+
+  Color _validityColor(String validity) {
+    final days = SupplierOfferComparisonLogic.daysUntilValidity(validity);
+    if (days == null) return Colors.grey;
+    if (days < 0) return Colors.red;
+    if (days <= 7) return Colors.deepOrange;
+    return Colors.green;
+  }
+
   Future<void> _copySummary() async {
     final lines = <String>[
       'ملخص مقارنة عروض الموردين',
@@ -486,6 +503,14 @@ class _AurenSupplierOfferComparisonScreenState
           detail('مدة التسليم', offer.leadTime.isEmpty ? 'غير محددة' : offer.leadTime),
           detail('شروط الدفع', offer.payment.isEmpty ? 'غير محددة' : offer.payment),
           detail('صلاحية العرض', offer.validity.isEmpty ? 'غير محددة' : offer.validity),
+          if (_validityNotice(offer.validity) != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 4),
+              child: Text(
+                _validityNotice(offer.validity)!,
+                style: TextStyle(color: _validityColor(offer.validity), fontWeight: FontWeight.w600),
+              ),
+            ),
           if (offer.notes.isNotEmpty) detail('ملاحظات', offer.notes),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
@@ -583,7 +608,7 @@ class _OfferDialogState extends State<_OfferDialog> {
         TextFormField(controller: _moq, maxLength: 100, decoration: const InputDecoration(labelText: 'الحد الأدنى للطلب')),
         TextFormField(controller: _lead, maxLength: 100, decoration: const InputDecoration(labelText: 'مدة التجهيز/التسليم')),
         TextFormField(controller: _payment, maxLength: 300, decoration: const InputDecoration(labelText: 'شروط الدفع')),
-        TextFormField(controller: _validity, maxLength: 100, decoration: const InputDecoration(labelText: 'صلاحية العرض')),
+        TextFormField(controller: _validity, maxLength: 100, decoration: const InputDecoration(labelText: 'صلاحية العرض (YYYY-MM-DD للتنبيه)'),),
         TextFormField(controller: _notes, maxLength: 500, maxLines: 2, decoration: const InputDecoration(labelText: 'ملاحظات / تحقق')),
       ])),
     )),
