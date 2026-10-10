@@ -31,7 +31,9 @@ test('supplier request lifecycle preserves user ownership and match flow', () =>
 test('supplier workflow creates user-scoped request mirrors and updates Match Flow', () => {
   const source = read('supplier_actions.js');
   assert.match(source, /const userRef = db\.collection\('users'\)/);
-  assert.match(source, /batch\.set\(ref,data\); batch\.set\(userRef,data\)/);
+  assert.match(source, /tx\.create\(ref,data\)/);
+  assert.match(source, /tx\.create\(userRef,data\)/);
+  assert.match(source, /db\.runTransaction\(async tx =>/);
   assert.match(source, /updateMatchFlow\(uid,matchFlowId,'active'/);
   assert.match(source, /supplierWorkflowStatus:'draft'/);
 });
@@ -126,4 +128,12 @@ test('supplier lifecycle refuses to mutate a global mirror owned by another acco
   assert.equal((source.match(/globalFresh\.data\(\)\?\.requesterUid !== uid/g) || []).length, 3);
   assert.equal((source.match(/if \(globalFresh\.exists\) tx\.set\(/g) || []).length, 3);
   assert.match(source, /Supplier request mirror belongs to another account/);
+});
+
+test('supplier request idempotency reads and creates both records atomically', () => {
+  const source = read('supplier_actions.js');
+  assert.equal((source.match(/const outcome = await db\.runTransaction\(async tx =>/g) || []).length, 2);
+  assert.equal((source.match(/tx\.create\(ref,data\)/g) || []).length, 2);
+  assert.equal((source.match(/tx\.create\(userRef,data\)/g) || []).length, 2);
+  assert.equal((source.match(/const existingUser = await tx\.get\(userRef\)/g) || []).length, 2);
 });
