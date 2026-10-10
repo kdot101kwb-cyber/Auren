@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,18 +48,91 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
       final values = prefs.getStringList(_storageKey);
       if (!mounted) return;
       if (values != null && values.length >= 8) {
-        _product.text = values[0];
-        _counterparty.text = values[1];
-        _quantity.text = values[2];
-        _value.text = values[3];
-        _notes.text = values[4];
-        _currency = values[5];
-        _stage = (int.tryParse(values[6]) ?? 0).clamp(0, _stages.length - 1).toInt();
+        _applyValues(values);
       }
-      setState(() { _loaded = true; _status = values == null ? 'لا توجد صفقة محفوظة بعد.' : 'تم تحميل المسودة المحفوظة على هذا الجهاز.'; });
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          final snapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('trade_deals')
+              .doc('active_draft')
+              .get();
+          if (snapshot.exists && mounted) {
+            final data = snapshot.data()!;
+            _product.text = data['product'] as String? ?? '';
+            _counterparty.text = data['counterparty'] as String? ?? '';
+            _quantity.text = data['quantity'] as String? ?? '';
+            _value.text = data['estimatedValue'] as String? ?? '';
+            _notes.text = data['notes'] as String? ?? '';
+            final currency = data['currency'] as String? ?? 'USD';
+            _currency = const ['USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN']
+                    .contains(currency)
+                ? currency
+                : 'USD';
+            _stage = ((data['stage'] as num?)?.toInt() ?? 0)
+                .clamp(0, _stages.length - 1)
+                .toInt();
+            setState(() {
+              _loaded = true;
+              _status = 'تم تحميل مسودة الصفقة من حسابك.';
+            });
+            await _persistLocalSilently();
+            return;
+          }
+        } catch (_) {
+          // Keep the local draft available if cloud access is unavailable.
+        }
+      }
+
+      setState(() {
+        _loaded = true;
+        _status = values == null
+            ? (user == null
+                ? 'لا توجد مسودة محفوظة بعد. سجّل الدخول للمزامنة مع حسابك.'
+                : 'لا توجد مسودة سحابية؛ يمكنك حفظ المسودة الحالية في حسابك.')
+            : 'تم تحميل المسودة المحفوظة على هذا الجهاز.';
+      });
     } catch (_) {
-      if (mounted) setState(() { _loaded = true; _status = 'تعذر تحميل المسودة المحلية.'; });
+      if (mounted) {
+        setState(() {
+          _loaded = true;
+          _status = 'تعذر تحميل المسودة المحلية.';
+        });
+      }
     }
+  }
+
+  void _applyValues(List<String> values) {
+    _product.text = values[0];
+    _counterparty.text = values[1];
+    _quantity.text = values[2];
+    _value.text = values[3];
+    _notes.text = values[4];
+    final currency = values[5];
+    _currency = const ['USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN']
+            .contains(currency)
+        ? currency
+        : 'USD';
+    _stage = (int.tryParse(values[6]) ?? 0)
+        .clamp(0, _stages.length - 1)
+        .toInt();
+  }
+
+  Future<void> _persistLocalSilently() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_storageKey, <String>[
+      _product.text,
+      _counterparty.text,
+      _quantity.text,
+      _value.text,
+      _notes.text,
+      _currency,
+      '$_stage',
+      DateTime.now().toIso8601String(),
+    ]);
   }
 
   Future<void> _saveDraft() async {
@@ -69,6 +144,46 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
       if (mounted) setState(() => _status = 'تم حفظ المسودة على هذا الجهاز.');
     } catch (_) {
       if (mounted) setState(() => _status = 'تعذر حفظ المسودة؛ انسخ الملخص للاحتفاظ به.');
+    }
+  }
+
+  Future<void> _saveToAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => _status = 'سجّل الدخول أولاً لحفظ الصفقة في حسابك. المسودة المحلية ما زالت متاحة.');
+      return;
+    }
+    if (_product.text.trim().isEmpty) {
+      setState(() => _status = 'أدخل المنتج أو الخدمة قبل الحفظ في حسابك.');
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('trade_deals')
+          .doc('active_draft')
+          .set(<String, dynamic>{
+        'ownerId': user.uid,
+        'product': _product.text.trim(),
+        'counterparty': _counterparty.text.trim(),
+        'quantity': _quantity.text.trim(),
+        'estimatedValue': _value.text.trim(),
+        'currency': _currency,
+        'notes': _notes.text.trim(),
+        'stage': _stage,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      await _persistLocalSilently();
+      if (mounted) setState(() => _status = 'تم حفظ مسودة الصفقة في حسابك وعلى هذا الجهاز.');
+    } on FirebaseException catch (error) {
+      if (mounted) {
+        setState(() => _status = error.code == 'permission-denied'
+            ? 'رفضت قواعد Firestore الحفظ؛ تأكد من نشر قواعد الأمان الجديدة.'
+            : 'تعذر الحفظ السحابي (${error.code})؛ بيانات الجهاز لم تُحذف.');
+      }
+    } catch (_) {
+      if (mounted) setState(() => _status = 'تعذر الحفظ السحابي؛ بيانات الجهاز لم تُحذف.');
     }
   }
 
@@ -102,7 +217,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'نظّم رحلة الصفقة من تحديد المنتج إلى إغلاقها. تُحفظ المسودة على هذا الجهاز فقط؛ لا تُرسل رسائل ولا تُزامَن مع حسابك أو أجهزة أخرى.',
+                'نظّم رحلة الصفقة من تحديد المنتج إلى إغلاقها. تُحفظ المسودة محلياً تلقائياً. يمكنك حفظ نسخة في حسابك عند تسجيل الدخول؛ لا تُرسل رسائل أو أوامر شراء.',
                 style: theme.textTheme.bodyMedium,
               ),
             ),
@@ -230,6 +345,12 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
             },
             icon: const Icon(Icons.summarize_outlined),
             label: const Text('عرض ملخص الصفقة'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _saveToAccount,
+            icon: const Icon(Icons.cloud_upload_outlined),
+            label: const Text('حفظ الصفقة في حسابي'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
