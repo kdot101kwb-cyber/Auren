@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'auren_trade_deal_screen.dart';
 
 enum AurenBusinessResourceType {
   factories,
@@ -342,6 +343,24 @@ class _AurenBusinessResourceScreenState
                 trailing: const Icon(Icons.open_in_new),
                 onTap: () => _open(resource.url),
               ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.route_outlined),
+              title: const Text('متابعة صفقة تجارية'),
+              subtitle: const Text(
+                'نظّم مراحل الطلب والعروض والتحقق والتفاوض والشحن في مسار واحد.',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AurenTradeDealScreen(),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 20),
