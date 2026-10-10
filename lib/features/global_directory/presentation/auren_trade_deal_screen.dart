@@ -228,9 +228,16 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
 
   Future<void> _clearDraft() async {
     _saveTimer?.cancel();
+    final localStorageKey = _storageKey;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_storageKey);
+      // Wait for any in-flight autosave before removing the key, otherwise
+      // an earlier write could recreate the draft immediately after clearing.
+      final clearLocal = _localWriteQueue.then((_) async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(localStorageKey);
+      });
+      _localWriteQueue = clearLocal.catchError((Object _) {});
+      await clearLocal;
 
       var cloudDraftCleared = true;
       final user = FirebaseAuth.instance.currentUser;
