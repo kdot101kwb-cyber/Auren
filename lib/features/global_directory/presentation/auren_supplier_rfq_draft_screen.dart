@@ -107,7 +107,10 @@ class _AurenSupplierRfqDraftScreenState
               FirebaseAuth.instance.currentUser?.uid != userId) return;
           final data = cloud.data();
           if (cloud.exists && data != null) {
-            draftJson = jsonEncode(data);
+            draftJson = jsonEncode({
+              for (final entry in data.entries)
+                if (entry.key != 'updatedAt') entry.key: entry.value,
+            });
           }
         } catch (_) {
           // Continue with a blank/local draft if cloud access is unavailable.
