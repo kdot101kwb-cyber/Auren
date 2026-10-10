@@ -167,6 +167,16 @@ void main() {
       }
     });
 
+    test('classifies expired, today, soon, valid and unknown dates', () {
+      final today = DateTime(2026, 10, 11, 23, 45);
+      expect(SupplierOfferComparisonLogic.validityCategory('2026-10-10', today: today), 'expired');
+      expect(SupplierOfferComparisonLogic.validityCategory('2026-10-11', today: today), 'today');
+      expect(SupplierOfferComparisonLogic.validityCategory('2026-10-18', today: today), 'soon');
+      expect(SupplierOfferComparisonLogic.validityCategory('2026-10-19', today: today), 'valid');
+      expect(SupplierOfferComparisonLogic.validityCategory('valid for 30 days', today: today), 'unknown');
+      expect(SupplierOfferComparisonLogic.validityCategory('2026-02-30', today: today), 'unknown');
+    });
+
     test('calculates calendar days to expiry without using elapsed hours', () {
       final today = DateTime(2026, 10, 11, 23, 45);
       expect(
