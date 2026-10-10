@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'auren_supplier_rfq_draft_screen.dart';
 
 /// First usable step of AUREN Business Navigator.
 /// This screen creates an informational plan only; it does not submit registrations,
@@ -301,6 +302,16 @@ class _AurenBusinessNavigatorScreenState
                 ),
               );
             }),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenSupplierRfqDraftScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.request_quote_outlined),
+              label: const Text('جهّز طلب عرض سعر من مورد'),
+            ),
             const SizedBox(height: 18),
             Text('مصادر رسمية للبدء', style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
