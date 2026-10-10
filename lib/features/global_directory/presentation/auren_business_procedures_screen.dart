@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'auren_business_support_sources_screen.dart';
+import 'auren_business_navigator_screen.dart';
 
 class AurenBusinessProceduresScreen extends StatefulWidget {
   const AurenBusinessProceduresScreen({super.key});
@@ -102,6 +103,12 @@ class _AurenBusinessProceduresScreenState extends State<AurenBusinessProceduresS
             onChanged: (value) => setState(() => _region = value ?? 'الكل'),
           ),
           const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AurenBusinessNavigatorScreen())),
+            icon: const Icon(Icons.rocket_launch_rounded),
+            label: const Text('ابدأ مشروعك مع AUREN Business Navigator'),
+          ),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AurenBusinessSupportSourcesScreen())),
             icon: const Icon(Icons.business_center_outlined),
