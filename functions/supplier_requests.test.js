@@ -32,7 +32,8 @@ test('supplier workflow creates user-scoped request mirrors and updates Match Fl
   const source = read('supplier_actions.js');
   assert.match(source, /const userRef = db\.collection\('users'\)/);
   assert.match(source, /batch\.set\(ref,data\); batch\.set\(userRef,data\)/);
-  assert.match(source, /updateMatchFlow\(uid,matchFlowId,'waiting_response'/);
+  assert.match(source, /updateMatchFlow\(uid,matchFlowId,'active'/);
+  assert.match(source, /supplierWorkflowStatus:'draft'/);
 });
 
 test('supplier action lookup supports exporter importer and manufacturer collections', () => {
@@ -101,4 +102,21 @@ test('supplier retry rechecks eligibility and retry count inside its transaction
   assert.match(retrySource, /Retry limit reached/);
   assert.match(retrySource, /tx\.set\(ref, update, \{merge:true\}\)/);
   assert.match(retrySource, /tx\.set\(globalRef, update, \{merge:true\}\)/);
+});
+
+test('supplier request idempotency cannot disclose or reuse another account request', () => {
+  const source = read('supplier_actions.js');
+  assert.match(source, /existing\.data\(\)\?\.requesterUid !== uid/);
+  assert.match(source, /Idempotency key is already used by another account/);
+  assert.match(source, /permission-denied/);
+  // Both contact and RFQ paths independently enforce ownership before returning.
+  assert.equal((source.match(/existing\.data\(\)\?\.requesterUid !== uid/g) || []).length, 2);
+});
+
+test('creating a supplier draft does not falsely mark a supplier as contacted', () => {
+  const source = read('supplier_actions.js');
+  assert.match(source, /Creating a local draft is not evidence that the supplier was contacted/);
+  assert.match(source, /A saved RFQ draft is not sent to the supplier/);
+  assert.doesNotMatch(source, /updateMatchFlow\(uid,matchFlowId,'waiting_response'/);
+  assert.match(source, /externalDispatch:false/);
 });
