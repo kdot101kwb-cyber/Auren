@@ -37,6 +37,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   Timer? _saveTimer;
   Future<void> _localWriteQueue = Future<void>.value();
   StreamSubscription<User?>? _authSubscription;
+  String? _observedUserId;
   int _loadGeneration = 0;
   String _status = 'جارٍ تحميل بيانات الصفقة…';
 
@@ -48,9 +49,11 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   @override
   void initState() {
     super.initState();
+    _observedUserId = FirebaseAuth.instance.currentUser?.uid;
     _loadDraft();
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (!mounted) return;
+      if (!mounted || user?.uid == _observedUserId) return;
+      _observedUserId = user?.uid;
       _saveTimer?.cancel();
       // Remove the previous account's values before loading the new identity.
       _product.clear();
