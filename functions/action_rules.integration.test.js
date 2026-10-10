@@ -5,8 +5,41 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const firebase = require('firebase/compat/app');
-require('firebase/compat/firestore');
+const {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  runTransaction,
+  Timestamp,
+} = require('firebase/firestore');
+
+// Keep the small compat-shaped surface used by these tests, but back it with
+// the modular Firestore SDK. Rules-unit-testing v3 exposes a Firebase App,
+// not a compat app with app.firestore().
+function testFirestore(context) {
+  const db = getFirestore(context.app());
+  const wrapRef = (pathOrRef) => {
+    const ref = typeof pathOrRef === 'string' ? doc(db, pathOrRef) : pathOrRef;
+    return {
+      _ref: ref,
+      get: () => getDoc(ref),
+      set: (data) => setDoc(ref, data),
+      update: (data) => updateDoc(ref, data),
+      delete: () => deleteDoc(ref),
+    };
+  };
+
+  return {
+    doc: (path) => wrapRef(path),
+    runTransaction: (callback) => runTransaction(db, (transaction) => callback({
+      get: (ref) => transaction.get(ref._ref),
+      update: (ref, data) => transaction.update(ref._ref, data),
+    })),
+  };
+}
 
 const {
   initializeTestEnvironment,
@@ -32,8 +65,8 @@ test.after(async () => {
 
 async function seedAction(userId, actionId, overrides = {}) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = context.firestore();
-    const now = firebase.firestore.Timestamp.now();
+    const db = testFirestore(context);
+    const now = Timestamp.now();
     await db.doc(`users/${userId}/actions/${actionId}`).set({
       actionType: 'demo.create_note',
       title: 'Create note',
@@ -50,7 +83,7 @@ async function seedAction(userId, actionId, overrides = {}) {
 }
 
 function actionRef(userId, actionId) {
-  return testEnv.authenticatedContext(userId).firestore()
+  return testFirestore(testEnv.authenticatedContext(userId))
       .doc(`users/${userId}/actions/${actionId}`);
 }
 
@@ -62,7 +95,7 @@ test('owner can read and edit only the pending draft with version +1', async () 
     title: 'Updated title',
     payload: {text: 'updated'},
     draftVersion: 1,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
   const snap = await ref.get();
   assert.equal(snap.data().draftVersion, 1);
@@ -74,7 +107,7 @@ test('same draftVersion is rejected', async () => {
   await assertFails(actionRef('rules-user-2', 'same-version').update({
     payload: {text: 'tampered'},
     draftVersion: 0,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
@@ -83,7 +116,7 @@ test('version jump greater than +1 is rejected', async () => {
   await assertFails(actionRef('rules-user-3', 'version-jump').update({
     payload: {text: 'tampered'},
     draftVersion: 2,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
@@ -92,7 +125,7 @@ test('client cannot change status during draft editing', async () => {
   await assertFails(actionRef('rules-user-4', 'status-change').update({
     status: 'approved',
     draftVersion: 1,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
@@ -101,16 +134,16 @@ test('client cannot change actionType', async () => {
   await assertFails(actionRef('rules-user-5', 'action-type').update({
     actionType: 'memory.save',
     draftVersion: 1,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
 test('client cannot change createdAt', async () => {
   await seedAction('rules-user-6', 'created-at');
   await assertFails(actionRef('rules-user-6', 'created-at').update({
-    createdAt: firebase.firestore.Timestamp.fromMillis(Date.now() - 1000),
+    createdAt: Timestamp.fromMillis(Date.now() - 1000),
     draftVersion: 1,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
@@ -119,10 +152,10 @@ test('client cannot write approval fields', async () => {
   await assertFails(actionRef('rules-user-7', 'approval-fields').update({
     approvedBy: 'rules-user-7',
     approvedPayloadHash: 'forged-hash',
-    approvalExpiresAt: firebase.firestore.Timestamp.now(),
+    approvalExpiresAt: Timestamp.now(),
     idempotencyKey: 'forged-key',
     draftVersion: 1,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
@@ -131,13 +164,13 @@ test('client cannot update an action after it leaves pending', async () => {
     status: 'approved',
     approvedBy: 'rules-user-8',
     approvedPayloadHash: 'server-hash',
-    approvalExpiresAt: firebase.firestore.Timestamp.now(),
+    approvalExpiresAt: Timestamp.now(),
     idempotencyKey: 'server-key',
   });
   await assertFails(actionRef('rules-user-8', 'approved-action').update({
     payload: {text: 'tampered'},
     draftVersion: 1,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
@@ -148,30 +181,30 @@ test('client cannot delete an action', async () => {
 
 test('another user cannot read or update the action', async () => {
   await seedAction('rules-owner', 'cross-user');
-  const ref = testEnv.authenticatedContext('rules-other').firestore()
+  const ref = testFirestore(testEnv.authenticatedContext('rules-other'))
       .doc('users/rules-owner/actions/cross-user');
   await assertFails(ref.get());
   await assertFails(ref.update({
     payload: {text: 'cross-user tamper'},
     draftVersion: 1,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
 test('unauthenticated client cannot read or update the action', async () => {
   await seedAction('rules-user-10', 'unauth');
-  const ref = testEnv.unauthenticatedContext().firestore()
+  const ref = testFirestore(testEnv.unauthenticatedContext())
       .doc('users/rules-user-10/actions/unauth');
   await assertFails(ref.get());
   await assertFails(ref.update({
     payload: {text: 'unauth tamper'},
     draftVersion: 1,
-    updatedAt: firebase.firestore.Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
 test('client cannot create action documents directly', async () => {
-  const db = testEnv.authenticatedContext('rules-user-11').firestore();
+  const db = testFirestore(testEnv.authenticatedContext('rules-user-11'));
   const ref = db.doc('users/rules-user-11/actions/client-create');
   await assertFails(ref.set({
     actionType: 'demo.create_note',
@@ -181,8 +214,8 @@ test('client cannot create action documents directly', async () => {
     status: 'pending',
     draftVersion: 0,
     requiresApproval: true,
-    createdAt: firebase.firestore.Timestamp.now(),
-    updatedAt: firebase.firestore.Timestamp.now(),
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
   }));
 });
 
@@ -196,7 +229,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
   });
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = context.firestore();
+    const db = testFirestore(context);
     const ref = db.doc('users/rules-concurrency/actions/execution-claim');
 
     const claim = async () => {
@@ -206,7 +239,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
           assert.equal(snap.data().status, 'approved');
           tx.update(ref, {
             status: 'executing',
-            updatedAt: firebase.firestore.Timestamp.now(),
+            updatedAt: Timestamp.now(),
           });
         });
         return true;
