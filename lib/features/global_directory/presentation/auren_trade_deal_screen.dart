@@ -239,7 +239,14 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
 - ملاحظات التحقق والمستندات:
 '''.trim();
     final existing = _notes.text.trim();
-    _notes.text = existing.isEmpty ? template : '$existing\n\n$template';
+    final updated = existing.isEmpty ? template : '$existing\n\n$template';
+    if (updated.length > 3000) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الملاحظات ممتلئة؛ اختصرها قبل إضافة نموذج رد المورد.')),
+      );
+      return;
+    }
+    _notes.text = updated;
     _notes.selection = TextSelection.collapsed(offset: _notes.text.length);
     _saveDraft();
     if (mounted) {
