@@ -129,7 +129,9 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
             : 'تم تحميل المسودة المحفوظة على هذا الجهاز.';
       });
     } catch (_) {
-      if (mounted) {
+      if (mounted &&
+          loadGeneration == _loadGeneration &&
+          FirebaseAuth.instance.currentUser?.uid == userId) {
         setState(() {
           _loaded = true;
           _status = 'تعذر تحميل المسودة المحلية.';
@@ -190,7 +192,8 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
 
   Future<void> _writeDraft() async {
     if (!_loaded) return;
-    final storageKey = _storageKey;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final storageKey = 'auren_trade_deal_v1_${userId ?? 'guest'}';
     final values = _draftValues();
     try {
       // Serialize writes: a slower earlier platform write must not finish
@@ -201,9 +204,11 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
       });
       _localWriteQueue = write.catchError((Object _) {});
       await write;
-      if (mounted) setState(() => _status = 'تم حفظ المسودة على هذا الجهاز.');
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == userId) {
+        setState(() => _status = 'تم حفظ المسودة على هذا الجهاز.');
+      }
     } catch (_) {
-      if (mounted) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == userId) {
         setState(() => _status = 'تعذر حفظ المسودة؛ انسخ الملخص للاحتفاظ به.');
       }
     }
