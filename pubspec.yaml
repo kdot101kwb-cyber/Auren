@@ -42,7 +42,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
   assets:
     - functions/global_verified_api_registry_v1.json
     - assets/global_finance_institutions_v1.json
