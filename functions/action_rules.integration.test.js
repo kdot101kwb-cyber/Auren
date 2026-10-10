@@ -6,7 +6,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const {
-  getFirestore,
   doc,
   getDoc,
   setDoc,
@@ -16,11 +15,11 @@ const {
   Timestamp,
 } = require('firebase/firestore');
 
-// Keep the small compat-shaped surface used by these tests, but back it with
-// the modular Firestore SDK. Rules-unit-testing v3 exposes a Firebase App,
-// not a compat app with app.firestore().
+// Keep the small compat-shaped surface used by these tests, but use the
+// Firestore instance configured by rules-unit-testing so auth and emulator
+// settings remain attached to each test context.
 function testFirestore(context) {
-  const db = getFirestore(context.app());
+  const db = context.firestore();
   const wrapRef = (pathOrRef) => {
     const ref = typeof pathOrRef === 'string' ? doc(db, pathOrRef) : pathOrRef;
     return {
