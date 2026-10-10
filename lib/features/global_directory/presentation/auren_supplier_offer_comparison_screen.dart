@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,6 +35,7 @@ class _AurenSupplierOfferComparisonScreenState
   String? _observedUid;
   int _loadGeneration = 0;
   Future<void> _writeQueue = Future<void>.value();
+  bool _cloudBusy = false;
 
   @override
   void initState() {
@@ -96,6 +98,63 @@ class _AurenSupplierOfferComparisonScreenState
       if (mounted && FirebaseAuth.instance.currentUser?.uid == uid) {
         setState(() => _message = 'تعذر حفظ العروض محلياً.');
       }
+    }
+  }
+
+  Future<void> _saveToAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) { _snack('سجّل الدخول أولاً لحفظ العروض في حسابك.'); return; }
+    if (_cloudBusy) return;
+    setState(() { _cloudBusy = true; _message = 'جارٍ حفظ العروض في حسابك…'; });
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid)
+          .collection('supplier_offer_comparisons').doc('active_draft').set({
+        'ownerId': user.uid,
+        'offers': _offers.map((offer) => offer.toJson()).toList(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      setState(() => _message = 'تم حفظ العروض في حسابك.');
+      _snack('تم حفظ العروض في حسابك.');
+    } on FirebaseException catch (error) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) {
+        setState(() => _message = 'تعذر الحفظ السحابي: ' + error.code);
+        _snack('تعذر الحفظ السحابي؛ تحقق من قواعد Firestore والاتصال.');
+      }
+    } catch (_) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذر الحفظ السحابي.');
+    } finally {
+      if (mounted) setState(() => _cloudBusy = false);
+    }
+  }
+
+  Future<void> _loadFromAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) { _snack('سجّل الدخول أولاً لاستعادة عروض حسابك.'); return; }
+    if (_cloudBusy) return;
+    setState(() { _cloudBusy = true; _message = 'جارٍ استعادة عروض الحساب…'; });
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('users').doc(user.uid)
+          .collection('supplier_offer_comparisons').doc('active_draft').get();
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      final data = snapshot.data();
+      final rawOffers = data?['offers'];
+      if (!snapshot.exists || data?['ownerId'] != user.uid || rawOffers is! List) {
+        setState(() => _message = 'لا توجد نسخة سحابية صالحة لاستعادتها.');
+        return;
+      }
+      final restored = rawOffers.whereType<Map>()
+          .map((item) => _Offer.fromJson(Map<String, dynamic>.from(item))).take(10).toList();
+      setState(() => _offers = restored);
+      await _persist();
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      setState(() => _message = 'تم استعادة ' + restored.length.toString() + ' عروض من حسابك.');
+    } on FirebaseException catch (error) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذرت الاستعادة: ' + error.code);
+    } catch (_) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذرت استعادة العروض السحابية.');
+    } finally {
+      if (mounted) setState(() => _cloudBusy = false);
     }
   }
 
@@ -262,6 +321,19 @@ class _AurenSupplierOfferComparisonScreenState
                       icon: const Icon(Icons.copy_all_outlined),
                       label: const Text('نسخ ملخص العروض'),
                     ),
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      OutlinedButton.icon(
+                        onPressed: _cloudBusy ? null : _saveToAccount,
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        label: const Text('حفظ في حسابي'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _cloudBusy ? null : _loadFromAccount,
+                        icon: const Icon(Icons.cloud_download_outlined),
+                        label: const Text('استعادة من حسابي'),
+                      ),
+                    ]),
                   ]),
                 )),
                 if (_offers.isEmpty)
