@@ -281,6 +281,26 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   }
 
   Future<void> _clearDraft() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('مسح مسودة الصفقة؟'),
+        content: const Text(
+          'سيتم حذف المسودة المحلية، ومحاولة حذف النسخة المحفوظة في حسابك إن كنت مسجلاً للدخول. لا يمكن التراجع عن الحذف المحلي.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('مسح المسودة'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     _saveTimer?.cancel();
     // Keep the delete bound to the identity that initiated the action.
     final user = FirebaseAuth.instance.currentUser;
