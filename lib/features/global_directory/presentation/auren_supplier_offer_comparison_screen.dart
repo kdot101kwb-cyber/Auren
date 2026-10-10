@@ -137,9 +137,12 @@ class _AurenSupplierOfferComparisonScreenState
     if (offers.length > 10) return 'لا يمكن حفظ أكثر من 10 عروض.';
     const currencies = {'USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN'};
     const statuses = {'received', 'verify', 'shortlist', 'accepted', 'rejected'};
+    final seenIds = <String>{};
     for (var i = 0; i < offers.length; i++) {
       final offer = offers[i];
+      final receivedAt = DateTime.tryParse(offer.receivedAt);
       if (offer.id.isEmpty || offer.id.length > 40 ||
+          !seenIds.add(offer.id) || receivedAt == null ||
           offer.supplier.trim().isEmpty || offer.supplier.length > 200 ||
           offer.price.isEmpty || offer.price.length > 50 ||
           _parseNonNegativeAmount(offer.price) == null ||
