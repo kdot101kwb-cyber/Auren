@@ -6,6 +6,7 @@ import '../../../core/models/business.dart';
 import '../../../services/business/business_repository.dart';
 import 'business_detail_screen.dart';
 import 'saved_businesses_screen.dart';
+import 'supplier_requests_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 class AurenBusinessScreen extends StatefulWidget{const AurenBusinessScreen({super.key});@override State<AurenBusinessScreen> createState()=>_AurenBusinessScreenState();}
 class _AurenBusinessScreenState extends State<AurenBusinessScreen>{
@@ -20,12 +21,13 @@ class _AurenBusinessScreenState extends State<AurenBusinessScreen>{
    final uid = FirebaseAuth.instance.currentUser?.uid;
    return Scaffold(
      appBar: AppBar(title: const Text('Business'), actions: [
+       IconButton(tooltip: 'طلبات الموردين', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierRequestsScreen())), icon: const Icon(Icons.request_quote_outlined)),
        IconButton(onPressed: _create, icon: const Icon(Icons.add_business_outlined)),
        IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedBusinessesScreen())), icon: const Icon(Icons.bookmarks_outlined)),
        IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'حلّل احتياجي واقترح لي شركات ومتاجر وخدمات مناسبة.'))), icon: const Icon(Icons.auto_awesome)),
      ]),
      body: Column(children: [
-       Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: 'ابحث عن شركة، متجر أو خدمة...', prefixIcon: const Icon(Icons.search), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))))),
+       Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: 'ابحث عن شركة، متجر أو خدمة...', prefixIcon: const Icon(Icons.search), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)))),
        _chips(types, _type, (v) => setState(() => _type = v)),
        _chips(cats, _category, (v) => setState(() => _category = v)),
        Expanded(child: ListView(children: [
