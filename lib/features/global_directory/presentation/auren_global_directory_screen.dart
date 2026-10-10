@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../business/presentation/business_screen.dart';
+import 'auren_start_business_screen.dart';
 
 class AurenGlobalDirectoryScreen extends StatefulWidget {
   const AurenGlobalDirectoryScreen({super.key});
@@ -52,6 +54,16 @@ class _AurenGlobalDirectoryScreenState extends State<AurenGlobalDirectoryScreen>
             Text('اكتشف الشركات والمصانع والبنوك والفرص والمصادر الرسمية من مكان واحد. حالة التكامل موضحة بوضوح.'),
           ]),
         ),
+        const SizedBox(height: 16),
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.rocket_launch_outlined)),
+            title: const Text('ابدأ مشروعك مع AUREN'),
+            subtitle: const Text('خطوات أولية للبحث عن السوق والموردين والإجراءات والتمويل.'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenStartBusinessScreen())),
+          ),
+        ),
         const SizedBox(height: 24),
         Text('استكشف حسب المجال', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
@@ -60,7 +72,11 @@ class _AurenGlobalDirectoryScreenState extends State<AurenGlobalDirectoryScreen>
           title: Text(category.title),
           subtitle: Text(category.description),
           trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _DirectoryCategoryPage(category: category))),
+          onTap: () => Navigator.push(context, MaterialPageRoute(
+            builder: (_) => category.title == 'الشركات والمصانع'
+                ? const AurenBusinessScreen()
+                : _DirectoryCategoryPage(category: category),
+          )),
         ))),
         const SizedBox(height: 20),
         Text('المصادر الرسمية المسجّلة', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
