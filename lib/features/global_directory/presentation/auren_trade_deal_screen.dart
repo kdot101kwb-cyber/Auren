@@ -223,6 +223,14 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
     }
   }
 
+  bool _hasValidEstimatedValue() {
+    final raw = _value.text.trim();
+    if (raw.isEmpty) return true;
+    final normalized = raw.replaceAll(',', '').replaceAll(' ', '');
+    final amount = double.tryParse(normalized);
+    return amount != null && amount.isFinite && amount >= 0;
+  }
+
   Future<void> _saveToAccount() async {
     _saveTimer?.cancel();
     final user = FirebaseAuth.instance.currentUser;
@@ -234,6 +242,10 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
     }
     if (_product.text.trim().isEmpty) {
       setState(() => _status = 'أدخل المنتج أو الخدمة قبل الحفظ في حسابك.');
+      return;
+    }
+    if (!_hasValidEstimatedValue()) {
+      setState(() => _status = 'قيمة الصفقة يجب أن تكون رقماً صفرياً أو موجباً، ويمكن استخدام الفاصلة للفصل بين الآلاف.');
       return;
     }
     try {
