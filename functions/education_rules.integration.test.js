@@ -3,17 +3,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const firebase = require('firebase/compat/app');
+require('firebase/compat/firestore');
 const {
   initializeTestEnvironment,
   assertSucceeds,
   assertFails,
 } = require('@firebase/rules-unit-testing');
-const {
-  doc,
-  setDoc,
-  updateDoc,
-  Timestamp,
-} = require('firebase/firestore');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
 let testEnv;
@@ -28,7 +24,7 @@ test.before(async () => {
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();
-    await setDoc(doc(db, 'courses/course-3'), {
+    await db.doc('courses/course-3').set({
       title: 'Test Course',
       description: 'Education rules integration fixture',
       category: 'general',
@@ -36,7 +32,7 @@ test.before(async () => {
       skills: ['testing'],
       lessonCount: 3,
       status: 'published',
-      createdAt: Timestamp.now(),
+      createdAt: firebase.firestore.Timestamp.now(),
     });
   });
 });
@@ -47,10 +43,10 @@ test.after(async () => {
 
 test('canonical enrollment accepts rounded 1/3 progress', async () => {
   const db = testEnv.authenticatedContext('education-user').firestore();
-  const enrollment = doc(db, 'users/education-user/enrollments/course-3');
-  const now = Timestamp.now();
+  const enrollment = db.doc('users/education-user/enrollments/course-3');
+  const now = firebase.firestore.Timestamp.now();
 
-  await assertSucceeds(setDoc(enrollment, {
+  await assertSucceeds(enrollment.set({
     courseId: 'course-3',
     completedLessons: 0,
     progress: 0,
@@ -59,18 +55,18 @@ test('canonical enrollment accepts rounded 1/3 progress', async () => {
     updatedAt: now,
   }));
 
-  await assertSucceeds(updateDoc(enrollment, {
+  await assertSucceeds(enrollment.update({
     completedLessons: 1,
     progress: 33,
     status: 'active',
-    updatedAt: Timestamp.now(),
+    updatedAt: firebase.firestore.Timestamp.now(),
   }));
 });
 
 test('canonical enrollment rejects false completion and false 100%', async () => {
   const db = testEnv.authenticatedContext('education-user-2').firestore();
-  const enrollment = doc(db, 'users/education-user-2/enrollments/course-3');
-  const now = Timestamp.now();
+  const enrollment = db.doc('users/education-user-2/enrollments/course-3');
+  const now = firebase.firestore.Timestamp.now();
 
   await assertSucceeds(setDoc(enrollment, {
     courseId: 'course-3',
@@ -81,24 +77,24 @@ test('canonical enrollment rejects false completion and false 100%', async () =>
     updatedAt: now,
   }));
 
-  await assertFails(updateDoc(enrollment, {
+  await assertFails(enrollment.update({
     completedLessons: 0,
     progress: 100,
     status: 'completed',
-    updatedAt: Timestamp.now(),
+    updatedAt: firebase.firestore.Timestamp.now(),
   }));
 
   await assertFails(updateDoc(enrollment, {
     completedLessons: 3,
     progress: 99,
     status: 'completed',
-    updatedAt: Timestamp.now(),
+    updatedAt: firebase.firestore.Timestamp.now(),
   }));
 
   await assertSucceeds(updateDoc(enrollment, {
     completedLessons: 3,
     progress: 100,
     status: 'completed',
-    updatedAt: Timestamp.now(),
+    updatedAt: firebase.firestore.Timestamp.now(),
   }));
 });
