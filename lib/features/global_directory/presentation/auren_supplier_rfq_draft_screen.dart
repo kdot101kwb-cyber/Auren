@@ -154,6 +154,7 @@ class _AurenSupplierRfqDraftScreenState
   @override
   void dispose() {
     _saveTimer?.cancel();
+    if (_loaded) _persistDraft();
     _authSubscription?.cancel();
     _targetController.dispose();
     _productController.dispose();
