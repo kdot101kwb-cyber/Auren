@@ -76,7 +76,19 @@ class _AurenCountryBusinessComplianceScreenState extends State<AurenCountryBusin
         ]))),
         const SizedBox(height: 12),
         TextField(onChanged: (value) => setState(() => _query = value.trim()), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث عن دولة أو منطقة', border: OutlineInputBorder())),
-        if (_query.isNotEmpty) Wrap(spacing: 8, children: countries.take(8).map((item) => ActionChip(label: Text(item['name'] ?? ''), onPressed: () => setState(() { _country = item['name'] ?? _country; _query = ''; })).toList()),
+        if (_query.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            children: countries.take(8).map((item) {
+              return ActionChip(
+                label: Text(item['name'] ?? ''),
+                onPressed: () => setState(() {
+                  _country = item['name'] ?? _country;
+                  _query = '';
+                }),
+              );
+            }).toList(),
+          ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: _country, isExpanded: true,
