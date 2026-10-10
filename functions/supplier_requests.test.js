@@ -108,11 +108,13 @@ test('supplier retry rechecks eligibility and retry count inside its transaction
 
 test('supplier request idempotency cannot disclose or reuse another account request', () => {
   const source = read('supplier_actions.js');
-  assert.match(source, /existing\.data\(\)\?\.requesterUid !== uid/);
+  assert.match(source, /const previous = existing\.data\(\) \|\| \{\};/);
+  assert.match(source, /previous\.requesterUid !== uid/);
   assert.match(source, /Idempotency key is already used by another account/);
   assert.match(source, /permission-denied/);
   // Both contact and RFQ paths independently enforce ownership before returning.
-  assert.equal((source.match(/existing\.data\(\)\?\.requesterUid !== uid/g) || []).length, 2);
+  assert.equal((source.match(/previous\.requesterUid !== uid/g) || []).length, 2);
+  assert.equal((source.match(/const outcome = await db\.runTransaction\(async tx =>/g) || []).length, 2);
 });
 
 test('creating a supplier draft does not falsely mark a supplier as contacted', () => {
