@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const firebase = require('firebase/compat/app');
 require('firebase/compat/firestore');
@@ -18,7 +19,9 @@ test.before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
     firestore: {
-      rules: path.resolve(__dirname, '../firestore.rules'),
+      host: '127.0.0.1',
+      port: 8080,
+      rules: fs.readFileSync(path.resolve(__dirname, '../firestore.rules'), 'utf8'),
     },
   });
 
@@ -68,7 +71,7 @@ test('canonical enrollment rejects false completion and false 100%', async () =>
   const enrollment = db.doc('users/education-user-2/enrollments/course-3');
   const now = firebase.firestore.Timestamp.now();
 
-  await assertSucceeds(setDoc(enrollment, {
+  await assertSucceeds(enrollment.set({
     courseId: 'course-3',
     completedLessons: 0,
     progress: 0,
@@ -84,14 +87,14 @@ test('canonical enrollment rejects false completion and false 100%', async () =>
     updatedAt: firebase.firestore.Timestamp.now(),
   }));
 
-  await assertFails(updateDoc(enrollment, {
+  await assertFails(enrollment.update({
     completedLessons: 3,
     progress: 99,
     status: 'completed',
     updatedAt: firebase.firestore.Timestamp.now(),
   }));
 
-  await assertSucceeds(updateDoc(enrollment, {
+  await assertSucceeds(enrollment.update({
     completedLessons: 3,
     progress: 100,
     status: 'completed',
