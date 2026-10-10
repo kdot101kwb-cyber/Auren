@@ -24,13 +24,16 @@ class SupplierOfferComparisonLogic {
   /// Free-form validity notes intentionally return null rather than being guessed.
   static DateTime? parseIsoValidityDate(String value) {
     final raw = value.trim();
-    if (raw.length != 10 ||
-        !RegExp(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}
+    final parts = raw.split('-');
+    if (raw.length != 10 || parts.length != 3 ||
+        parts[0].length != 4 || parts[1].length != 2 || parts[2].length != 2 ||
+        parts.any((part) => int.tryParse(part) == null)) {
       return null;
     }
-    final parts = raw.split('-').map(int.parse).toList(growable: false);
-    final date = DateTime.utc(parts[0], parts[1], parts[2]);
-    if (date.year != parts[0] || date.month != parts[1] || date.day != parts[2]) {
+    final date = DateTime.utc(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+    if (date.year != int.parse(parts[0]) ||
+        date.month != int.parse(parts[1]) ||
+        date.day != int.parse(parts[2])) {
       return null;
     }
     return date;
