@@ -367,6 +367,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _product,
+            maxLength: 200,
             onChanged: (_) => _saveDraft(),
             decoration: const InputDecoration(
               labelText: 'المنتج أو الخدمة',
@@ -376,6 +377,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _counterparty,
+            maxLength: 200,
             onChanged: (_) => _saveDraft(),
             decoration: const InputDecoration(
               labelText: 'اسم المورد أو المشتري (اختياري)',
@@ -385,6 +387,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _quantity,
+            maxLength: 100,
             onChanged: (_) => _saveDraft(),
             decoration: const InputDecoration(
               labelText: 'الكمية',
@@ -397,6 +400,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
               Expanded(
                 child: TextField(
                   controller: _value,
+                  maxLength: 50,
                   onChanged: (_) => _saveDraft(),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
@@ -426,6 +430,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _notes,
+            maxLength: 3000,
             onChanged: (_) => _saveDraft(),
             minLines: 2,
             maxLines: 4,
