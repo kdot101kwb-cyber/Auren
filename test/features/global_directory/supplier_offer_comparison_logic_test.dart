@@ -79,6 +79,7 @@ void main() {
         ),
         isTrue,
       );
+      // 100 + 20 is not the lowest USD total because 110 + 0 is cheaper.
       expect(
         SupplierOfferComparisonLogic.isLowest(
           currency: 'USD',
@@ -86,7 +87,7 @@ void main() {
           shipping: '20',
           offers: offers,
         ),
-        isTrue,
+        isFalse,
       );
       expect(
         SupplierOfferComparisonLogic.isLowest(
