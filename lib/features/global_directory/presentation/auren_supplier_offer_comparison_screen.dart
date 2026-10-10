@@ -63,8 +63,33 @@ class _AurenSupplierOfferComparisonScreenState
       final prefs = await SharedPreferences.getInstance();
       if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != uid) return;
       final raw = prefs.getString(key);
-      final list = raw == null ? <dynamic>[] : jsonDecode(raw) as List<dynamic>;
-      final items = list.whereType<Map<String, dynamic>>().map(_Offer.fromJson).take(10).toList();
+      final decoded = raw == null ? <dynamic>[] : jsonDecode(raw);
+      if (decoded is! List<dynamic>) {
+        throw const FormatException('Stored supplier offers must be a list.');
+      }
+      if (decoded.length > 10) {
+        throw const FormatException('Stored supplier offers exceed the limit.');
+      }
+      if (decoded.any((item) => item is! Map)) {
+        throw const FormatException('Stored supplier offer record is malformed.');
+      }
+      const localOfferKeys = {
+        'id', 'supplier', 'price', 'currency', 'shipping', 'moq',
+        'leadTime', 'payment', 'validity', 'notes', 'status', 'receivedAt',
+      };
+      final items = decoded.map((item) {
+        final map = Map<String, dynamic>.from(item as Map);
+        if (map.keys.toSet().difference(localOfferKeys).isNotEmpty ||
+            !map.keys.toSet().containsAll(localOfferKeys) ||
+            map.values.any((value) => value is! String)) {
+          throw const FormatException('Stored supplier offer fields are malformed.');
+        }
+        return _Offer.fromJson(map);
+      }).toList();
+      final validationError = _cloudValidationError(items);
+      if (validationError != null) {
+        throw const FormatException('Stored supplier offer values are invalid.');
+      }
       if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != uid) return;
       setState(() {
         _offers = items;
