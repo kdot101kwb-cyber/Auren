@@ -129,8 +129,8 @@ exports.updateAurenSupplierRequestStatus = onCall(
     if (nextStatus !== currentStatus && !transitions[currentStatus]?.has(nextStatus)) {
       throw new HttpsError('failed-precondition', 'Invalid supplier request status transition.');
     }
-    if (nextStatus === 'replied' && data.externalDispatch !== true) {
-      throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as replied.');
+    if (['waiting_response','replied'].includes(nextStatus) && data.externalDispatch !== true) {
+      throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as awaiting or receiving a supplier response.');
     }
     const update = {
       status: nextStatus,
@@ -151,8 +151,8 @@ exports.updateAurenSupplierRequestStatus = onCall(
       if (nextStatus !== freshStatus && !transitions[freshStatus]?.has(nextStatus)) {
         throw new HttpsError('failed-precondition','Invalid supplier request status transition.');
       }
-      if (nextStatus === 'replied' && freshData.externalDispatch !== true) {
-        throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as replied.');
+      if (['waiting_response','replied'].includes(nextStatus) && freshData.externalDispatch !== true) {
+        throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as awaiting or receiving a supplier response.');
       }
       tx.set(ref, update, {merge:true});
       if (globalFresh.exists) tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
