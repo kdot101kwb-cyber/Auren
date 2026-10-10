@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Local prototype for organizing a trade opportunity.
 /// It does not persist data or contact buyers, suppliers, banks, or carriers.
@@ -28,6 +29,56 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
 
   int _stage = 0;
   String _currency = 'USD';
+  bool _loaded = false;
+  String _status = 'جارٍ تحميل بيانات الصفقة…';
+
+  String get _storageKey => 'auren_trade_deal_v1';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDraft();
+  }
+
+  Future<void> _loadDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final values = prefs.getStringList(_storageKey);
+      if (!mounted) return;
+      if (values != null && values.length >= 8) {
+        _product.text = values[0];
+        _counterparty.text = values[1];
+        _quantity.text = values[2];
+        _value.text = values[3];
+        _notes.text = values[4];
+        _currency = values[5];
+        _stage = int.tryParse(values[6])?.clamp(0, _stages.length - 1) ?? 0;
+      }
+      setState(() { _loaded = true; _status = values == null ? 'لا توجد صفقة محفوظة بعد.' : 'تم تحميل المسودة المحفوظة على هذا الجهاز.'; });
+    } catch (_) {
+      if (mounted) setState(() { _loaded = true; _status = 'تعذر تحميل المسودة المحلية.'; });
+    }
+  }
+
+  Future<void> _saveDraft() async {
+    if (!_loaded) return;
+    final values = <String>[_product.text, _counterparty.text, _quantity.text, _value.text, _notes.text, _currency, '$_stage', DateTime.now().toIso8601String()];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_storageKey, values);
+      if (mounted) setState(() => _status = 'تم حفظ المسودة على هذا الجهاز.');
+    } catch (_) {
+      if (mounted) setState(() => _status = 'تعذر حفظ المسودة؛ انسخ الملخص للاحتفاظ به.');
+    }
+  }
+
+  Future<void> _clearDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_storageKey);
+    if (!mounted) return;
+    _product.clear(); _counterparty.clear(); _quantity.clear(); _value.clear(); _notes.clear();
+    setState(() { _stage = 0; _currency = 'USD'; _status = 'تم مسح المسودة المحلية.'; });
+  }
 
   @override
   void dispose() {
@@ -51,14 +102,17 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'نظّم رحلة الصفقة من تحديد المنتج إلى إغلاقها. هذه نسخة أولية تحفظ الحالة داخل الشاشة فقط؛ لا تُرسل رسائل ولا تحفظ البيانات بعد إغلاقها.',
+                'نظّم رحلة الصفقة من تحديد المنتج إلى إغلاقها. تُحفظ المسودة على هذا الجهاز فقط؛ لا تُرسل رسائل ولا تُزامَن مع حسابك أو أجهزة أخرى.',
                 style: theme.textTheme.bodyMedium,
               ),
             ),
           ),
+          const SizedBox(height: 8),
+          Text(_status, style: theme.textTheme.bodySmall),
           const SizedBox(height: 16),
           TextField(
             controller: _product,
+            onChanged: (_) => _saveDraft(),
             decoration: const InputDecoration(
               labelText: 'المنتج أو الخدمة',
               border: OutlineInputBorder(),
@@ -67,6 +121,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _counterparty,
+            onChanged: (_) => _saveDraft(),
             decoration: const InputDecoration(
               labelText: 'اسم المورد أو المشتري (اختياري)',
               border: OutlineInputBorder(),
@@ -75,6 +130,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _quantity,
+            onChanged: (_) => _saveDraft(),
             decoration: const InputDecoration(
               labelText: 'الكمية',
               border: OutlineInputBorder(),
@@ -86,6 +142,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
               Expanded(
                 child: TextField(
                   controller: _value,
+                  onChanged: (_) => _saveDraft(),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
                     labelText: 'قيمة الصفقة التقديرية',
@@ -113,6 +170,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _notes,
+            onChanged: (_) => _saveDraft(),
             minLines: 2,
             maxLines: 4,
             decoration: const InputDecoration(
@@ -140,6 +198,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
               ),
               onChanged: (value) {
                 if (value != null) setState(() => _stage = value);
+                _saveDraft();
               },
             );
           }),
@@ -171,6 +230,12 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
             },
             icon: const Icon(Icons.summarize_outlined),
             label: const Text('عرض ملخص الصفقة'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _clearDraft,
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('مسح المسودة المحفوظة'),
           ),
           const SizedBox(height: 12),
           const Text(
