@@ -127,9 +127,11 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         .toInt();
   }
 
-  Future<void> _persistLocalSilently() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_storageKey, <String>[
+  Future<void> _persistLocalSilently({String? storageKey}) async {
+    // Capture the account key before awaiting so an account switch cannot
+    // redirect this write into a different user's local draft.
+    final key = storageKey ?? _storageKey;
+    final values = <String>[
       _product.text,
       _counterparty.text,
       _quantity.text,
@@ -138,7 +140,9 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
       _currency,
       '$_stage',
       DateTime.now().toIso8601String(),
-    ]);
+    ];
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(key, values);
   }
 
   void _saveDraft() {
@@ -176,6 +180,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   Future<void> _saveToAccount() async {
     _saveTimer?.cancel();
     final user = FirebaseAuth.instance.currentUser;
+    final localStorageKey = _storageKey;
     if (user == null) {
       setState(() => _status = 'سجّل الدخول أولاً لحفظ الصفقة في حسابك. المسودة المحلية ما زالت متاحة.');
       return;
@@ -201,7 +206,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         'stage': _stage,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      await _persistLocalSilently();
+      await _persistLocalSilently(storageKey: localStorageKey);
       if (mounted) setState(() => _status = 'تم حفظ مسودة الصفقة في حسابك وعلى هذا الجهاز.');
     } on FirebaseException catch (error) {
       if (mounted) {
