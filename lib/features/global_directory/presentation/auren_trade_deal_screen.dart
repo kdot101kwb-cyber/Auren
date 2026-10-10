@@ -34,7 +34,10 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   bool _loaded = false;
   String _status = 'جارٍ تحميل بيانات الصفقة…';
 
-  String get _storageKey => 'auren_trade_deal_v1';
+  String get _storageKey {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    return 'auren_trade_deal_v1_$userId';
+  }
 
   @override
   void initState() {
@@ -188,11 +191,35 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   }
 
   Future<void> _clearDraft() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_storageKey);
-    if (!mounted) return;
-    _product.clear(); _counterparty.clear(); _quantity.clear(); _value.clear(); _notes.clear();
-    setState(() { _stage = 0; _currency = 'USD'; _status = 'تم مسح المسودة المحلية.'; });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_storageKey);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('trade_deals')
+            .doc('active_draft')
+            .delete()
+            .catchError((_) {});
+      }
+      if (!mounted) return;
+      _product.clear();
+      _counterparty.clear();
+      _quantity.clear();
+      _value.clear();
+      _notes.clear();
+      setState(() {
+        _stage = 0;
+        _currency = 'USD';
+        _status = 'تم مسح المسودة المحفوظة لهذا الحساب وهذا الجهاز.';
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _status = 'تعذر مسح المسودة بالكامل.');
+      }
+    }
   }
 
   @override
@@ -278,6 +305,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
                 ],
                 onChanged: (value) {
                   if (value != null) setState(() => _currency = value);
+                  _saveDraft();
                 },
               ),
             ],
