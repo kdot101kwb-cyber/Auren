@@ -140,7 +140,9 @@ class _AurenSupplierOfferComparisonScreenState
   List<_Offer> get _sorted {
     final result = List<_Offer>.from(_offers);
     result.sort((a, b) {
-      if (a.currency != b.currency) return a.supplier.compareTo(b.supplier);
+      // Group currencies first: numeric comparisons are meaningful only
+      // inside the same currency; never imply an FX conversion.
+      if (a.currency != b.currency) return a.currency.compareTo(b.currency);
       final x = _total(a), y = _total(b);
       if (x == null && y == null) return a.supplier.compareTo(b.supplier);
       if (x == null) return 1;
