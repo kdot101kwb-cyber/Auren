@@ -71,14 +71,16 @@ void main() {
       expect(request.title, 'طلب عرض سعر');
     });
 
-    test('does not treat a malformed retry count as a retry allowance', () {
+    test('clamps retry counts to the supported UI range', () {
       final request = AurenSupplierRequest.fromMap({
         'retryCount': -3,
       });
 
-      // Parsing preserves the backend value; enforcement of the retry cap
-      // remains the responsibility of the trusted backend.
-      expect(request.retryCount, -3);
+      // Invalid negative values must not enable inconsistent UI behavior.
+      expect(request.retryCount, 0);
+
+      final overLimit = AurenSupplierRequest.fromMap({'retryCount': 9});
+      expect(overLimit.retryCount, 5);
     });
   });
 }
