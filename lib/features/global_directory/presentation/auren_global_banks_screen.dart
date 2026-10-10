@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'auren_sudan_banks_screen.dart';
+import 'auren_african_central_banks_screen.dart';
 
 class AurenGlobalBanksScreen extends StatefulWidget {
   const AurenGlobalBanksScreen({super.key});
@@ -33,6 +34,14 @@ class _AurenGlobalBanksScreenState extends State<AurenGlobalBanksScreen> {
     appBar: AppBar(title: const Text('AUREN Global Banks')),
     body: ListView(padding: const EdgeInsets.all(16), children: [
       const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('دليل عالمي أولي للبنوك ومؤسسات التمويل والجهات الرقابية. وجود المؤسسة هنا لا يعني أنها مرخّصة في بلدك أو أنها تقبل حسابات من جميع الدول. تحقق من الجهة الرقابية المحلية ومن الشروط والرسوم في المصدر الرسمي.'))),
+      const SizedBox(height: 12),
+      Card(child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.public_outlined)),
+        title: const Text('البنوك المركزية في أفريقيا'),
+        subtitle: const Text('دليل حسب الدولة والإقليم وروابط الجهات الرقابية الرسمية.'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAfricanCentralBanksScreen())),
+      )),
       const SizedBox(height: 12),
       Card(child: ListTile(
         leading: const CircleAvatar(child: Icon(Icons.flag_outlined)),

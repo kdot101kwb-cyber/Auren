@@ -48,3 +48,4 @@ flutter:
     - assets/global_finance_institutions_v1.json
     - assets/global_bank_institutions_v1.json
     - assets/sudan_banks_cbos_v1.json
+    - assets/africa_central_banks_v1.json
