@@ -8,10 +8,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Prepares an editable RFQ draft. It never sends a message to a supplier.
 class AurenSupplierRfqDraftScreen extends StatefulWidget {
-  const AurenSupplierRfqDraftScreen({super.key, this.initialSupplier});
+  const AurenSupplierRfqDraftScreen({
+    super.key,
+    this.initialSupplier,
+    this.initialProduct,
+    this.initialQuantity,
+    this.initialDestination,
+  });
 
   /// Optional discovery platform/source name; it is not a verified supplier.
   final String? initialSupplier;
+  final String? initialProduct;
+  final String? initialQuantity;
+  final String? initialDestination;
 
   @override
   State<AurenSupplierRfqDraftScreen> createState() =>
@@ -49,6 +58,9 @@ class _AurenSupplierRfqDraftScreenState
     if (initialSupplier != null && initialSupplier.isNotEmpty) {
       _targetController.text = initialSupplier;
     }
+    _productController.text = widget.initialProduct?.trim() ?? '';
+    _quantityController.text = widget.initialQuantity?.trim() ?? '';
+    _destinationController.text = widget.initialDestination?.trim() ?? '';
     _loadSavedDraft();
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (!mounted || user?.uid == _observedUserId) return;
@@ -89,9 +101,15 @@ class _AurenSupplierRfqDraftScreenState
           _targetController.text = initialTarget != null && initialTarget.isNotEmpty
               ? initialTarget
               : savedTarget;
-          _productController.text = (decoded['product'] as String?) ?? '';
-          _quantityController.text = (decoded['quantity'] as String?) ?? '';
-          _destinationController.text = (decoded['destination'] as String?) ?? '';
+          _productController.text = widget.initialProduct?.trim().isNotEmpty == true
+              ? widget.initialProduct!.trim()
+              : (decoded['product'] as String?) ?? '';
+          _quantityController.text = widget.initialQuantity?.trim().isNotEmpty == true
+              ? widget.initialQuantity!.trim()
+              : (decoded['quantity'] as String?) ?? '';
+          _destinationController.text = widget.initialDestination?.trim().isNotEmpty == true
+              ? widget.initialDestination!.trim()
+              : (decoded['destination'] as String?) ?? '';
           _specificationsController.text = (decoded['specifications'] as String?) ?? '';
           _budgetController.text = (decoded['budget'] as String?) ?? '';
           _contactController.text = (decoded['contact'] as String?) ?? '';
