@@ -191,6 +191,22 @@ void main() {
       );
     });
 
+    test('uses supplier name as a deterministic tie-breaker for equal totals', () {
+      expect(
+        compare(
+          aCurrency: 'USD',
+          aSupplier: 'Zulu Supplies',
+          aPrice: '80',
+          aShipping: '20',
+          bCurrency: 'USD',
+          bSupplier: 'Alpha Textiles',
+          bPrice: '90',
+          bShipping: '10',
+        ),
+        greaterThan(0),
+      );
+    });
+
     test('places invalid totals last and sorts invalid peers by supplier', () {
       expect(
         compare(
