@@ -93,7 +93,11 @@ test('supplier retry rechecks eligibility and retry count inside its transaction
   assert.match(retrySource, /const fresh = await tx\.get\(ref\)/);
   assert.match(retrySource, /const currentStatus = String\(data\.status \|\| ''\)\.toLowerCase\(\)/);
   assert.match(retrySource, /Only failed or cancelled requests can be retried/);
-  assert.match(retrySource, /const retryCount = Number\(data\.retryCount \|\| 0\) \+ 1/);
+  assert.match(retrySource, /const previousRetryCount = data\.retryCount == null \? 0 : Number\(data\.retryCount\)/);
+  assert.match(retrySource, /Number\.isSafeInteger\(previousRetryCount\)/);
+  assert.match(retrySource, /previousRetryCount < 0/);
+  assert.match(retrySource, /Stored retry count is invalid/);
+  assert.match(retrySource, /const retryCount = previousRetryCount \+ 1/);
   assert.match(retrySource, /Retry limit reached/);
   assert.match(retrySource, /tx\.set\(ref, update, \{merge:true\}\)/);
   assert.match(retrySource, /tx\.set\(globalRef, update, \{merge:true\}\)/);
