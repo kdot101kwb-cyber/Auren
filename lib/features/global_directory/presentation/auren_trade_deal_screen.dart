@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +34,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   int _stage = 0;
   String _currency = 'USD';
   bool _loaded = false;
+  Timer? _saveTimer;
   String _status = 'جارٍ تحميل بيانات الصفقة…';
 
   String get _storageKey {
@@ -138,19 +141,40 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
     ]);
   }
 
-  Future<void> _saveDraft() async {
+  void _saveDraft() {
     if (!_loaded) return;
-    final values = <String>[_product.text, _counterparty.text, _quantity.text, _value.text, _notes.text, _currency, '$_stage', DateTime.now().toIso8601String()];
+    // Debounce rapid keystrokes so overlapping writes cannot restore an older
+    // snapshot after a newer edit.
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 350), _writeDraft);
+  }
+
+  Future<void> _writeDraft() async {
+    if (!_loaded) return;
+    final storageKey = _storageKey;
+    final values = <String>[
+      _product.text,
+      _counterparty.text,
+      _quantity.text,
+      _value.text,
+      _notes.text,
+      _currency,
+      '$_stage',
+      DateTime.now().toIso8601String(),
+    ];
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(_storageKey, values);
+      await prefs.setStringList(storageKey, values);
       if (mounted) setState(() => _status = 'تم حفظ المسودة على هذا الجهاز.');
     } catch (_) {
-      if (mounted) setState(() => _status = 'تعذر حفظ المسودة؛ انسخ الملخص للاحتفاظ به.');
+      if (mounted) {
+        setState(() => _status = 'تعذر حفظ المسودة؛ انسخ الملخص للاحتفاظ به.');
+      }
     }
   }
 
   Future<void> _saveToAccount() async {
+    _saveTimer?.cancel();
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       setState(() => _status = 'سجّل الدخول أولاً لحفظ الصفقة في حسابك. المسودة المحلية ما زالت متاحة.');
@@ -191,6 +215,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
   }
 
   Future<void> _clearDraft() async {
+    _saveTimer?.cancel();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_storageKey);
@@ -233,6 +258,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
 
   @override
   void dispose() {
+    _saveTimer?.cancel();
     _product.dispose();
     _counterparty.dispose();
     _quantity.dispose();
