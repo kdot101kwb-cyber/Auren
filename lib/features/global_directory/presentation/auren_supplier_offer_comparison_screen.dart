@@ -272,6 +272,7 @@ class _AurenSupplierOfferComparisonScreenState
             IconButton(tooltip: 'حذف العرض', onPressed: () => _delete(offer), icon: const Icon(Icons.delete_outline)),
           ]),
           const Divider(),
+          detail('تاريخ التسجيل', offer.receivedAt.length >= 10 ? offer.receivedAt.substring(0, 10) : offer.receivedAt),
           detail('السعر المسجل', '${offer.price} ${offer.currency}'),
           detail('الشحن والرسوم', '${offer.shipping} ${offer.currency}'),
           detail('الحد الأدنى', offer.moq.isEmpty ? 'غير محدد' : offer.moq),
@@ -295,10 +296,10 @@ class _AurenSupplierOfferComparisonScreenState
 }
 
 class _Offer {
-  const _Offer({required this.id, required this.supplier, required this.price, required this.currency, required this.shipping, required this.moq, required this.leadTime, required this.payment, required this.validity, required this.notes, required this.status});
-  final String id, supplier, price, currency, shipping, moq, leadTime, payment, validity, notes, status;
-  _Offer copyWith({String? status}) => _Offer(id: id, supplier: supplier, price: price, currency: currency, shipping: shipping, moq: moq, leadTime: leadTime, payment: payment, validity: validity, notes: notes, status: status ?? this.status);
-  Map<String, dynamic> toJson() => {'id': id, 'supplier': supplier, 'price': price, 'currency': currency, 'shipping': shipping, 'moq': moq, 'leadTime': leadTime, 'payment': payment, 'validity': validity, 'notes': notes, 'status': status};
+  const _Offer({required this.id, required this.supplier, required this.price, required this.currency, required this.shipping, required this.moq, required this.leadTime, required this.payment, required this.validity, required this.notes, required this.status, required this.receivedAt});
+  final String id, supplier, price, currency, shipping, moq, leadTime, payment, validity, notes, status, receivedAt;
+  _Offer copyWith({String? status}) => _Offer(id: id, supplier: supplier, price: price, currency: currency, shipping: shipping, moq: moq, leadTime: leadTime, payment: payment, validity: validity, notes: notes, status: status ?? this.status, receivedAt: receivedAt);
+  Map<String, dynamic> toJson() => {'id': id, 'supplier': supplier, 'price': price, 'currency': currency, 'shipping': shipping, 'moq': moq, 'leadTime': leadTime, 'payment': payment, 'validity': validity, 'notes': notes, 'status': status, 'receivedAt': receivedAt};
   factory _Offer.fromJson(Map<String, dynamic> j) => _Offer(
     id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
     supplier: j['supplier'] as String? ?? '', price: j['price'] as String? ?? '',
@@ -306,6 +307,7 @@ class _Offer {
     shipping: j['shipping'] as String? ?? '0', moq: j['moq'] as String? ?? '',
     leadTime: j['leadTime'] as String? ?? '', payment: j['payment'] as String? ?? '',
     validity: j['validity'] as String? ?? '', notes: j['notes'] as String? ?? '',
+    receivedAt: j['receivedAt'] as String? ?? DateTime.now().toIso8601String(),
     status: _statuses.containsKey(j['status']) ? j['status'] as String : 'received',
   );
   static const _currencies = ['USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN'];
@@ -379,7 +381,7 @@ class _OfferDialogState extends State<_OfferDialog> {
           id: widget.initialOffer?.id ?? DateTime.now().microsecondsSinceEpoch.toString(), supplier: _supplier.text.trim(),
           price: _price.text.trim(), currency: _currency, shipping: _shipping.text.trim().isEmpty ? '0' : _shipping.text.trim(),
           moq: _moq.text.trim(), leadTime: _lead.text.trim(), payment: _payment.text.trim(),
-          validity: _validity.text.trim(), notes: _notes.text.trim(), status: widget.initialOffer?.status ?? 'received',
+          validity: _validity.text.trim(), notes: _notes.text.trim(), status: widget.initialOffer?.status ?? 'received', receivedAt: widget.initialOffer?.receivedAt ?? DateTime.now().toIso8601String(),
         ));
       }, child: const Text('حفظ العرض')),
     ],
