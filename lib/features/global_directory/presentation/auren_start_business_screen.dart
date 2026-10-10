@@ -119,7 +119,7 @@ class _AurenStartBusinessScreenState extends State<AurenStartBusinessScreen> {
               label: const Text('استكشف صفحات الشركات والأنشطة'),
             ),
             OutlinedButton.icon(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierFinderScreen())),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSupplierFinderScreen())),
               icon: const Icon(Icons.local_shipping_outlined),
               label: const Text('افتح أداة البحث عن الموردين'),
             ),
