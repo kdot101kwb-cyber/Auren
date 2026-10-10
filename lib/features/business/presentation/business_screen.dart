@@ -27,7 +27,7 @@ class _AurenBusinessScreenState extends State<AurenBusinessScreen>{
        IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessengerScreen(initialPrompt: 'حلّل احتياجي واقترح لي شركات ومتاجر وخدمات مناسبة.'))), icon: const Icon(Icons.auto_awesome)),
      ]),
      body: Column(children: [
-       Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: 'ابحث عن شركة، متجر أو خدمة...', prefixIcon: const Icon(Icons.search), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)))),
+       Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: 'ابحث عن شركة، متجر أو خدمة...', prefixIcon: const Icon(Icons.search), border: OutlineInputBorder(borderRadius: BorderRadius.circular(16))))),
        _chips(types, _type, (v) => setState(() => _type = v)),
        _chips(cats, _category, (v) => setState(() => _category = v)),
        Expanded(child: ListView(children: [
