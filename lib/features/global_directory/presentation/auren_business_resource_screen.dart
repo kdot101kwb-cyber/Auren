@@ -198,6 +198,24 @@ class _AurenBusinessResourceScreenState
             url: 'https://www.wto.org/english/tratop_e/tariffs_e/tariff_data_e.htm',
           ),
           _BusinessResource(
+            name: 'TradeKey — المشترون الدوليون',
+            category: 'العثور على مشترين',
+            description: 'دليل B2B للبحث عن شركات مهتمة بالتجارة الدولية؛ تحقق من هوية المشتري وطلبه قبل التفاوض.',
+            url: 'https://www.tradekey.com/',
+          ),
+          _BusinessResource(
+            name: 'Europages — المشترون والشركات',
+            category: 'عملاء وشركاء تجاريون',
+            description: 'استخدم دليل الشركات للعثور على جهات محتملة في الأسواق الأوروبية؛ الظهور في الدليل لا يثبت وجود طلب شراء.',
+            url: 'https://www.europages.com/',
+          ),
+          _BusinessResource(
+            name: 'ITC Export Potential Map',
+            category: 'فرص وأسواق التصدير',
+            description: 'استكشاف إمكانات التصدير والمنتجات والأسواق ذات الفرص المحتملة اعتماداً على بيانات التجارة.',
+            url: 'https://exportpotential.intracen.org/',
+          ),
+          _BusinessResource(
             name: 'UN Comtrade',
             category: 'إحصاءات التجارة',
             description: 'بيانات إحصائية عن تجارة السلع بين الدول، وليست قائمة بمشترين جاهزين.',
