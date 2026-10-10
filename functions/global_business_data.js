@@ -6,6 +6,33 @@ const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 
 const TRADE_API = 'https://comtradeapi.un.org/public/v1/preview/C/A/HS';
 
+const BUSINESS_COLLECTION_BY_TYPE = Object.freeze({
+  supplier: 'auren_suppliers',
+  exporter: 'auren_exporters',
+  importer: 'auren_importers',
+  manufacturer: 'auren_manufacturers',
+  wholesaler: 'auren_wholesalers',
+  distributor: 'auren_distributors',
+  retailer: 'auren_retailers',
+  farmer: 'auren_farmers',
+  logistics_provider: 'auren_logistics_providers',
+  customs_broker: 'auren_customs_brokers',
+  raw_material_supplier: 'auren_raw_material_suppliers',
+  inspection_provider: 'auren_inspection_providers',
+  institutional_buyer: 'auren_institutional_buyers',
+  authorized_dealer: 'auren_authorized_dealers',
+  trade_finance: 'auren_trade_finance_partners',
+  insurer: 'auren_trade_insurers',
+  commercial_agent: 'auren_commercial_agents',
+  sourcing_agent: 'auren_sourcing_agents',
+  packaging_provider: 'auren_packaging_providers',
+  warehouse: 'auren_warehouses',
+  maintenance_provider: 'auren_maintenance_providers',
+  cooperative: 'auren_cooperatives',
+  chamber_of_commerce: 'auren_chambers_of_commerce',
+  recycler: 'auren_recyclers',
+});
+
 function clean(value, max = 300) {
   return String(value ?? '').trim().slice(0, max);
 }
@@ -29,7 +56,7 @@ function normalizeBusinessRecord(input = {}) {
   const businessType = clean(input.businessType || input.type, 40).toLowerCase();
   let parsedSourceUrl;
   try { parsedSourceUrl = new URL(sourceUrl); } catch (_) { parsedSourceUrl = null; }
-  const allowedTypes = new Set(['supplier', 'exporter', 'importer', 'manufacturer']);
+  const allowedTypes = new Set(Object.keys(BUSINESS_COLLECTION_BY_TYPE));
   if (!name || !countryCode || !source || !parsedSourceUrl || parsedSourceUrl.protocol !== 'https:' || !license || !allowedTypes.has(businessType)) {
     throw new HttpsError('invalid-argument',
       'Business records require name, countryCode, businessType, source, sourceUrl, and license.');
@@ -192,12 +219,7 @@ exports.importLicensedBusinessRecords = onCall({region: 'us-central1', timeoutSe
   }
   const db = getFirestore();
   const batch = db.batch();
-  const collectionByType = {
-    supplier: 'auren_suppliers',
-    exporter: 'auren_exporters',
-    importer: 'auren_importers',
-    manufacturer: 'auren_manufacturers',
-  };
+  const collectionByType = BUSINESS_COLLECTION_BY_TYPE;
   let imported = 0;
   const rejected = [];
   records.forEach((input, index) => {
@@ -230,6 +252,7 @@ exports.importLicensedBusinessRecords = onCall({region: 'us-central1', timeoutSe
   };
 });
 
+module.exports.businessCollectionForType = (type) => BUSINESS_COLLECTION_BY_TYPE[clean(type, 40).toLowerCase()] || null;
 module.exports.normalizeBusinessRecord = normalizeBusinessRecord;
 module.exports.businessDocumentId = businessDocumentId;
 module.exports.normalizeTradeObservation = normalizeTradeObservation;
