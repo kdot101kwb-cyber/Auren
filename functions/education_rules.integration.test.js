@@ -41,7 +41,7 @@ test.before(async () => {
 });
 
 test.after(async () => {
-  await testEnv.cleanup();
+  if (testEnv) await testEnv.cleanup();
 });
 
 test('canonical enrollment accepts rounded 1/3 progress', async () => {
