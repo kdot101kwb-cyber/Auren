@@ -277,6 +277,18 @@ class _AurenBusinessResourceScreenState
             url: 'https://www.tradekey.com/',
           ),
           _BusinessResource(
+            name: 'Alibaba.com — المشترون وطلبات التوريد',
+            category: 'سوق B2B دولي',
+            description: 'استكشف فرص التواصل التجاري وطلبات التوريد المتاحة؛ لا تفترض أن كل ملف أو طلب شراء موثّق.',
+            url: 'https://www.alibaba.com/',
+          ),
+          _BusinessResource(
+            name: 'Global Sources — المشترون والشركاء',
+            category: 'سوق B2B دولي',
+            description: 'استكشف الشركات والمنتجات وفرص التواصل التجاري، ثم تحقق مستقلاً من الطرف المقابل.',
+            url: 'https://www.globalsources.com/',
+          ),
+          _BusinessResource(
             name: 'Europages — المشترون والشركات',
             category: 'عملاء وشركاء تجاريون',
             description: 'استخدم دليل الشركات للعثور على جهات محتملة في الأسواق الأوروبية؛ الظهور في الدليل لا يثبت وجود طلب شراء.',
@@ -367,8 +379,28 @@ class _AurenBusinessResourceScreenState
 
   Future<void> _open(String value) async {
     final uri = Uri.tryParse(value);
-    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('رابط المصدر غير صالح.')),
+        );
+      }
+      return;
+    }
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الرابط. تحقق من الاتصال أو افتحه من المتصفح.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الرابط حالياً.')),
+        );
+      }
+    }
   }
 
   @override
