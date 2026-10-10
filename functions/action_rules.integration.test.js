@@ -34,7 +34,7 @@ test.after(async () => {
 });
 
 function firestoreForContext(context) {
-  const db = firestoreForContext(context);
+  const db = getFirestore(context.getApp());
   connectFirestoreEmulator(db, '127.0.0.1', 8080);
   return db;
 }
