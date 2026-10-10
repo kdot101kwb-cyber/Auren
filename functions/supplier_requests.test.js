@@ -120,3 +120,10 @@ test('creating a supplier draft does not falsely mark a supplier as contacted', 
   assert.doesNotMatch(source, /updateMatchFlow\(uid,matchFlowId,'waiting_response'/);
   assert.match(source, /externalDispatch:false/);
 });
+
+test('supplier lifecycle refuses to mutate a global mirror owned by another account', () => {
+  const source = read('supplier_requests.js');
+  assert.equal((source.match(/globalFresh\.data\(\)\?\.requesterUid !== uid/g) || []).length, 3);
+  assert.equal((source.match(/if \(globalFresh\.exists\) tx\.set\(/g) || []).length, 3);
+  assert.match(source, /Supplier request mirror belongs to another account/);
+});
