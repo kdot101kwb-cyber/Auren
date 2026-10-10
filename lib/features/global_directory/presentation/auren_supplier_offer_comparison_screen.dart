@@ -28,6 +28,7 @@ class _AurenSupplierOfferComparisonScreenState
 
   List<_Offer> _offers = [];
   bool _loading = true;
+  String _filterStatus = 'all';
   String _message = 'جارٍ تحميل العروض…';
   StreamSubscription<User?>? _authSubscription;
   String? _observedUid;
@@ -198,6 +199,25 @@ class _AurenSupplierOfferComparisonScreenState
                       Chip(label: Text('${_offers.where((o) => o.status == 'verify').length} بحاجة للتحقق')),
                       Chip(label: Text('${_offers.where((o) => o.status == 'shortlist').length} بالقائمة المختصرة')),
                     ]),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _filterStatus,
+                      decoration: const InputDecoration(
+                        labelText: 'تصفية العروض حسب الحالة',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: 'all', child: Text('كل العروض')),
+                        ..._statuses.entries.map((entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            )),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => _filterStatus = value);
+                      },
+                    ),
                     if (currencies.length > 1)
                       const Text('توجد عملات مختلفة؛ لا تقارن أسعارها مباشرة.', style: TextStyle(color: Colors.deepOrange)),
                   ]),
@@ -205,7 +225,9 @@ class _AurenSupplierOfferComparisonScreenState
                 if (_offers.isEmpty)
                   const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد عروض بعد. اضغط «إضافة عرض» لتسجيل أول عرض.')))
                 else
-                  ..._sorted.map((offer) => _card(offer, isLowest: _isLowest(offer))),
+                  ..._sorted
+                      .where((offer) => _filterStatus == 'all' || offer.status == _filterStatus)
+                      .map((offer) => _card(offer, isLowest: _isLowest(offer))),
                 const SizedBox(height: 12),
                 const Text('قبل الدفع: تحقق مستقلاً من تسجيل الشركة، وعينة المنتج، والمراجع التجارية، وشروط الدفع والشحن والتأمين والمستندات.', style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
