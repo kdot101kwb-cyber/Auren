@@ -101,12 +101,13 @@ class _AurenSupplierOfferComparisonScreenState
     }
   }
 
-  String? _cloudValidationError() {
-    if (_offers.length > 10) return 'لا يمكن حفظ أكثر من 10 عروض.';
+  String? _cloudValidationError([List<_Offer>? candidates]) {
+    final offers = candidates ?? _offers;
+    if (offers.length > 10) return 'لا يمكن حفظ أكثر من 10 عروض.';
     const currencies = {'USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN'};
     const statuses = {'received', 'verify', 'shortlist', 'accepted', 'rejected'};
-    for (var i = 0; i < _offers.length; i++) {
-      final offer = _offers[i];
+    for (var i = 0; i < offers.length; i++) {
+      final offer = offers[i];
       if (offer.id.isEmpty || offer.id.length > 40 ||
           offer.supplier.trim().isEmpty || offer.supplier.length > 200 ||
           offer.price.isEmpty || offer.price.length > 50 ||
@@ -165,8 +166,18 @@ class _AurenSupplierOfferComparisonScreenState
         setState(() => _message = 'لا توجد نسخة سحابية صالحة لاستعادتها.');
         return;
       }
+      if (rawOffers.length > 10) {
+        setState(() => _message = 'نسخة الحساب تتجاوز الحد المسموح؛ لم يتم استبدال عروضك المحلية.');
+        return;
+      }
       final restored = rawOffers.whereType<Map>()
-          .map((item) => _Offer.fromJson(Map<String, dynamic>.from(item))).take(10).toList();
+          .map((item) => _Offer.fromJson(Map<String, dynamic>.from(item))).toList();
+      final validationError = _cloudValidationError(restored);
+      if (validationError != null) {
+        setState(() => _message = 'تعذر استعادة النسخة: تحتوي بيانات غير صالحة.');
+        _snack(validationError);
+        return;
+      }
       setState(() => _offers = restored);
       await _persist();
       if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
