@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'auren_supplier_rfq_draft_screen.dart';
+import 'auren_supplier_discovery_screen.dart';
+import 'auren_investor_discovery_screen.dart';
 
 /// First usable step of AUREN Business Navigator.
 /// This screen creates an informational plan only; it does not submit registrations,
@@ -311,6 +313,26 @@ class _AurenBusinessNavigatorScreenState
               ),
               icon: const Icon(Icons.request_quote_outlined),
               label: const Text('جهّز طلب عرض سعر من مورد'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenSupplierDiscoveryScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.inventory_2_outlined),
+              label: const Text('اكتشف الموردين والمصادر'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenInvestorDiscoveryScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.handshake_outlined),
+              label: const Text('اكتشف المستثمرين والتمويل'),
             ),
             const SizedBox(height: 18),
             Text('مصادر رسمية للبدء', style: theme.textTheme.titleLarge),
