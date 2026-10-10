@@ -310,8 +310,12 @@ class _AurenSupplierOfferComparisonScreenState
         ].join('\n');
       }),
     ];
-    await Clipboard.setData(ClipboardData(text: lines.join('\n')));
-    if (mounted) _snack('تم نسخ ملخص العروض إلى الحافظة.');
+    try {
+      await Clipboard.setData(ClipboardData(text: lines.join('\n')));
+      if (mounted) _snack('تم نسخ ملخص العروض إلى الحافظة.');
+    } catch (_) {
+      if (mounted) _snack('تعذر نسخ الملخص؛ حاول مرة أخرى.');
+    }
   }
 
   void _snack(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
@@ -430,6 +434,14 @@ class _AurenSupplierOfferComparisonScreenState
                     ]),
                   ]),
                 )),
+                if (_offers.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: Text(
+                      'عرض ${filteredOffers.length} من ${_offers.length} عروض',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
                 if (_offers.isEmpty)
                   const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد عروض بعد. اضغط «إضافة عرض» لتسجيل أول عرض.')))
                 else if (filteredOffers.isEmpty)
