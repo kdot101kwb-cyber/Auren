@@ -135,9 +135,19 @@ class _AurenSupplierOfferComparisonScreenState
     final price = _number(_price.text);
     final shipping = _number(_shipping.text);
     if (price == null || shipping == null) return;
+    final supplierName = _supplier.text.trim();
+    final duplicate = _offers.any((offer) =>
+        (offer['supplier'] as String).trim().toLowerCase() == supplierName.toLowerCase() &&
+        offer['currency'] == _currency &&
+        (offer['price'] as num).toDouble() == price &&
+        (offer['shipping'] as num).toDouble() == shipping);
+    if (duplicate) {
+      setState(() => _message = 'يوجد عرض مطابق من هذا المورد وبالعملة نفسها؛ راجع القائمة قبل إضافته مرة أخرى.');
+      return;
+    }
     final offer = <String, dynamic>{
       'id': DateTime.now().microsecondsSinceEpoch.toString(),
-      'supplier': _supplier.text.trim(),
+      'supplier': supplierName,
       'price': price,
       'shipping': shipping,
       'currency': _currency,
