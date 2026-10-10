@@ -54,6 +54,8 @@ class SupplierOfferComparisonLogic {
     if (aTotal == null && bTotal == null) return aSupplier.compareTo(bSupplier);
     if (aTotal == null) return 1;
     if (bTotal == null) return -1;
-    return aTotal.compareTo(bTotal);
+    final totalOrder = aTotal.compareTo(bTotal);
+    // Keep equal-price offers in a deterministic order across rebuilds.
+    return totalOrder != 0 ? totalOrder : aSupplier.compareTo(bSupplier);
   }
 }
