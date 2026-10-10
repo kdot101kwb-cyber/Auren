@@ -4,6 +4,7 @@ import 'auren_supplier_rfq_draft_screen.dart';
 import 'auren_supplier_discovery_screen.dart';
 import 'auren_investor_discovery_screen.dart';
 import 'auren_business_resource_screen.dart';
+import 'auren_trade_deal_screen.dart';
 
 /// First usable step of AUREN Business Navigator.
 /// This screen creates an informational plan only; it does not submit registrations,
@@ -404,6 +405,16 @@ class _AurenBusinessNavigatorScreenState
               ),
               icon: const Icon(Icons.local_shipping_outlined),
               label: const Text('التصدير والاستيراد والأسواق'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenTradeDealScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.track_changes_outlined),
+              label: const Text('متابعة صفقة تجارية'),
             ),
             const SizedBox(height: 18),
             Text('مصادر رسمية للبدء', style: theme.textTheme.titleLarge),
