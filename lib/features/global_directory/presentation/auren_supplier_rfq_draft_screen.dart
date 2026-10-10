@@ -84,7 +84,11 @@ class _AurenSupplierRfqDraftScreenState
       if (raw != null) {
         final decoded = jsonDecode(raw);
         if (decoded is Map<String, dynamic>) {
-          _targetController.text = (decoded['target'] as String?) ?? _targetController.text;
+          final initialTarget = widget.initialSupplier?.trim();
+          final savedTarget = (decoded['target'] as String?) ?? '';
+          _targetController.text = initialTarget != null && initialTarget.isNotEmpty
+              ? initialTarget
+              : savedTarget;
           _productController.text = (decoded['product'] as String?) ?? '';
           _quantityController.text = (decoded['quantity'] as String?) ?? '';
           _destinationController.text = (decoded['destination'] as String?) ?? '';
@@ -94,7 +98,10 @@ class _AurenSupplierRfqDraftScreenState
           _currency = (decoded['currency'] as String?) ?? 'USD';
           _delivery = (decoded['delivery'] as String?) ?? 'شحن إلى العنوان';
           final savedDraft = decoded['draft'];
-          _draft = savedDraft is String ? savedDraft : null;
+          _draft = initialTarget != null && initialTarget.isNotEmpty &&
+                  initialTarget != savedTarget
+              ? null
+              : (savedDraft is String ? savedDraft : null);
         }
       }
     } catch (_) {
@@ -107,7 +114,10 @@ class _AurenSupplierRfqDraftScreenState
     }
   }
 
-  void _scheduleSave() {
+  void _scheduleSave({bool invalidateDraft = true}) {
+    if (invalidateDraft && _draft != null && mounted) {
+      setState(() => _draft = null);
+    }
     if (!_loaded) return;
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 350), _persistDraft);
@@ -134,7 +144,11 @@ class _AurenSupplierRfqDraftScreenState
       if (FirebaseAuth.instance.currentUser?.uid != userId) return;
       await prefs.setString(key, jsonEncode(snapshot));
     });
-    await _writeQueue;
+    try {
+      await _writeQueue;
+    } catch (_) {
+      // Keep the editable form usable if device storage is temporarily unavailable.
+    }
   }
 
   @override
@@ -378,7 +392,7 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
                   onPressed: () {
                     if (!_formKey.currentState!.validate()) return;
                     setState(() => _draft = _buildDraft());
-                    _scheduleSave();
+                    _scheduleSave(invalidateDraft: false);
                   },
                   icon: const Icon(Icons.description_outlined),
                   label: const Text('إنشاء مسودة طلب السعر'),
