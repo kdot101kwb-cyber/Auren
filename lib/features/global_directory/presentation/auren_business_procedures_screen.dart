@@ -59,7 +59,7 @@ class _AurenBusinessProceduresScreenState extends State<AurenBusinessProceduresS
     {'country': 'الإمارات العربية المتحدة', 'countryEn': 'United Arab Emirates', 'region': 'الشرق الأوسط', 'authority': 'UAE Government Portal', 'topic': 'معلومات تأسيس الأعمال والتراخيص بحسب الإمارة والنشاط', 'url': 'https://u.ae/en/information-and-services/business', 'level': 'بوابة حكومية رسمية'},
   ];
 
-  static const _regions = ['الكل', 'أفريقيا', 'أوروبا', 'أمريكا الشمالية', 'آسيا', 'الشرق الأوسط', 'أوقيانوسيا'];
+  static const _regions = ['الكل', 'أفريقيا', 'أوروبا', 'أمريكا الشمالية', 'أمريكا الوسطى', 'أمريكا الجنوبية', 'آسيا', 'الشرق الأوسط', 'أوقيانوسيا'];
 
   Future<void> _open(String value) async {
     final uri = Uri.tryParse(value);
