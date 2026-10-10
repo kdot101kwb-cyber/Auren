@@ -130,7 +130,7 @@ class _AurenSupplierOfferComparisonScreenState
     final raw = value.trim();
     // Accept plain digits or correctly grouped thousands separators only.
     // Removing every comma first would incorrectly accept values like "1,,2".
-    final validNumber = RegExp(r'^(?:\\d+|\\d{1,3}(?:,\\d{3})+)(?:\\.\\d+)?
+    final validNumber = RegExp(r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$');
 
   String? _cloudValidationError([List<_Offer>? candidates]) {
     final offers = candidates ?? _offers;
@@ -551,7 +551,7 @@ class _OfferDialogState extends State<_OfferDialog> {
     final raw = value?.trim() ?? '';
     if (optional && raw.isEmpty) return null;
     if (raw.length > 50) return 'الرقم أطول من الحد المسموح';
-    final validNumber = RegExp(r'^(?:\\d+|\\d{1,3}(?:,\\d{3})+)(?:\\.\\d+)?
+    final validNumber = RegExp(r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$');
   }
 
   @override
