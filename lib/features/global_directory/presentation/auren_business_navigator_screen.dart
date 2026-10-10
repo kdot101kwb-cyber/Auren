@@ -107,10 +107,29 @@ class _AurenBusinessNavigatorScreenState
 
   Future<void> _openSource(String key) async {
     final url = _officialStartingPoints[_country]?[key];
-    if (url == null) return;
-    final uri = Uri.tryParse(url);
-    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final uri = url == null ? null : Uri.tryParse(url);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('رابط الجهة الرسمية غير صالح.')),
+        );
+      }
+      return;
+    }
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الموقع. تحقق من الاتصال أو افتحه من المتصفح.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الموقع حالياً.')),
+        );
+      }
+    }
   }
 
   @override
