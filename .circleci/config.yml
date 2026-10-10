@@ -144,13 +144,17 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - functions-node-v2-
-            - functions-node-v2
+            - functions-node-v3-
+            - functions-node-v3
       - run:
           name: Install Functions dependencies
-          command: cd functions && npm install --no-audit --no-fund
+          command: |
+            cd functions
+            npm install --no-audit --no-fund
+            echo "========== RESOLVED FIREBASE TEST SDK VERSIONS =========="
+            npm ls firebase @firebase/rules-unit-testing
       - save_cache:
-          key: functions-node-v2-{{ .Branch }}
+          key: functions-node-v3-{{ .Branch }}
           paths:
             - functions/node_modules
       - run:
@@ -182,7 +186,7 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y openjdk-21-jre-headless
             fi
-            npx --yes firebase-tools emulators:exec --only firestore "node --test functions/action_rules.integration.test.js" 2>&1 | tee firestore_action_rules.log
+            npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore "node --test functions/action_rules.integration.test.js" 2>&1 | tee firestore_action_rules.log
             status=${PIPESTATUS[0]}
             echo "firestore_action_rules_exit_code=${status}" >> firestore_action_rules.log
             exit ${status}
