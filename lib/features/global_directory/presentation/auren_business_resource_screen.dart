@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'auren_trade_deal_screen.dart';
 
@@ -26,6 +28,46 @@ class _AurenBusinessResourceScreenState
     extends State<AurenBusinessResourceScreen> {
   final _queryController = TextEditingController();
   final Set<String> _completedChecklistItems = <String>{};
+  bool _checklistLoaded = false;
+
+  String get _checklistStorageKey {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    return 'auren_business_checklist_v1_${userId}_${widget.type.index}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChecklist();
+  }
+
+  Future<void> _loadChecklist() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getStringList(_checklistStorageKey) ?? <String>[];
+      if (!mounted) return;
+      _completedChecklistItems
+        ..clear()
+        ..addAll(saved.where((item) => _checklist.contains(item)));
+    } catch (_) {
+      // Checklist remains usable in memory if local storage is unavailable.
+    } finally {
+      if (mounted) setState(() => _checklistLoaded = true);
+    }
+  }
+
+  Future<void> _persistChecklist() async {
+    if (!_checklistLoaded) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        _checklistStorageKey,
+        _completedChecklistItems.toList(),
+      );
+    } catch (_) {
+      // Keep the current checklist state for this screen session.
+    }
+  }
 
   String get _title {
     switch (widget.type) {
@@ -385,6 +427,7 @@ class _AurenBusinessResourceScreenState
                     _completedChecklistItems.remove(item);
                   }
                 });
+                _persistChecklist();
               },
             ),
           ),
