@@ -6,7 +6,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const {
-  getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, Timestamp,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  Timestamp,
+  runTransaction,
 } = require('firebase/firestore');
 
 const {
@@ -33,7 +39,7 @@ test.after(async () => {
 
 async function seedAction(userId, actionId, overrides = {}) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = getFirestore(context.getApp());
+    const db = context.firestore();
     const now = Timestamp.now();
     await setDoc(doc(db, `users/${userId}/actions/${actionId}`), {
       actionType: 'demo.create_note',
@@ -51,7 +57,7 @@ async function seedAction(userId, actionId, overrides = {}) {
 }
 
 function actionRef(userId, actionId) {
-  return doc(getFirestore(testEnv.authenticatedContext(userId).getApp()), `users/${userId}/actions/${actionId}`);
+  return doc(testEnv.authenticatedContext(userId).firestore(), `users/${userId}/actions/${actionId}`);
 }
 
 test('owner can read and edit only the pending draft with version +1', async () => {
@@ -148,7 +154,7 @@ test('client cannot delete an action', async () => {
 
 test('another user cannot read or update the action', async () => {
   await seedAction('rules-owner', 'cross-user');
-  const ref = doc(getFirestore(testEnv.authenticatedContext('rules-other').getApp()), 'users/rules-owner/actions/cross-user');
+  const ref = doc(testEnv.authenticatedContext('rules-other').firestore(), 'users/rules-owner/actions/cross-user');
   await assertFails(getDoc(ref));
   await assertFails(updateDoc(ref, {
     payload: {text: 'cross-user tamper'},
@@ -159,7 +165,7 @@ test('another user cannot read or update the action', async () => {
 
 test('unauthenticated client cannot read or update the action', async () => {
   await seedAction('rules-user-10', 'unauth');
-  const ref = doc(getFirestore(testEnv.unauthenticatedContext().getApp()), 'users/rules-user-10/actions/unauth');
+  const ref = doc(testEnv.unauthenticatedContext().firestore(), 'users/rules-user-10/actions/unauth');
   await assertFails(getDoc(ref));
   await assertFails(updateDoc(ref, {
     payload: {text: 'unauth tamper'},
@@ -169,7 +175,7 @@ test('unauthenticated client cannot read or update the action', async () => {
 });
 
 test('client cannot create action documents directly', async () => {
-  const db = getFirestore(testEnv.authenticatedContext('rules-user-11').getApp());
+  const db = testEnv.authenticatedContext('rules-user-11').firestore();
   const ref = doc(db, 'users/rules-user-11/actions/client-create');
   await assertFails(setDoc(ref, {
     actionType: 'demo.create_note',
@@ -194,7 +200,7 @@ test('concurrent execution claims allow exactly one winner', async () => {
   });
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    const db = getFirestore(context.getApp());
+    const db = context.firestore();
     const ref = doc(db, 'users/rules-concurrency/actions/execution-claim');
 
     const claim = async () => {
