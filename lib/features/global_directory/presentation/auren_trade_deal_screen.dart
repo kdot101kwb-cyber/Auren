@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Local prototype for organizing a trade opportunity.
-/// It does not persist data or contact buyers, suppliers, banks, or carriers.
+/// Local draft tracker for organizing a trade opportunity.
+/// It persists on this device only and never contacts external parties.
 class AurenTradeDealScreen extends StatefulWidget {
   const AurenTradeDealScreen({super.key});
 
@@ -52,7 +52,7 @@ class _AurenTradeDealScreenState extends State<AurenTradeDealScreen> {
         _value.text = values[3];
         _notes.text = values[4];
         _currency = values[5];
-        _stage = int.tryParse(values[6])?.clamp(0, _stages.length - 1) ?? 0;
+        _stage = (int.tryParse(values[6]) ?? 0).clamp(0, _stages.length - 1).toInt();
       }
       setState(() { _loaded = true; _status = values == null ? 'لا توجد صفقة محفوظة بعد.' : 'تم تحميل المسودة المحفوظة على هذا الجهاز.'; });
     } catch (_) {
