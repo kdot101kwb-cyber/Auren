@@ -219,6 +219,9 @@ class _AurenBusinessNavigatorScreenState
           const SizedBox(height: 12),
           TextField(
             controller: _budgetController,
+            onChanged: (_) {
+              if (_planCreated) setState(() {});
+            },
             keyboardType: TextInputType.text,
             decoration: const InputDecoration(
               labelText: 'الميزانية التقريبية (اختياري)',
