@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'auren_trade_deal_screen.dart';
+import 'auren_supplier_rfq_draft_screen.dart';
 
 enum AurenBusinessResourceType {
   factories,
@@ -454,18 +455,41 @@ class _AurenBusinessResourceScreenState
             ),
           ...rows.map(
             (resource) => Card(
-              child: ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.business_outlined),
-                ),
-                title: Text(resource.name),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text('${resource.category}\n${resource.description}'),
-                ),
-                isThreeLine: true,
-                trailing: const Icon(Icons.open_in_new),
-                onTap: () => _open(resource.url),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.business_outlined),
+                    ),
+                    title: Text(resource.name),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text('${resource.category}\n${resource.description}'),
+                    ),
+                    isThreeLine: true,
+                    trailing: const Icon(Icons.open_in_new),
+                    onTap: () => _open(resource.url),
+                  ),
+                  if (widget.type == AurenBusinessResourceType.factories ||
+                      widget.type == AurenBusinessResourceType.companies)
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => AurenSupplierRfqDraftScreen(
+                                initialSupplier: resource.name,
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.request_quote_outlined),
+                          label: const Text('جهّز طلب عرض سعر لهذا المصدر'),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
