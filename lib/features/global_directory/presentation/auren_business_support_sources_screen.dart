@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'auren_country_business_compliance_screen.dart';
 
 class AurenBusinessSupportSourcesScreen extends StatefulWidget {
   const AurenBusinessSupportSourcesScreen({super.key});
@@ -74,6 +75,12 @@ class _AurenBusinessSupportSourcesScreenState extends State<AurenBusinessSupport
           SizedBox(height: 8),
           Text('دليل استكشاف للضرائب والجمارك والاستثمار والملكية الفكرية والمعايير والمناقصات. المصادر الدولية لا تحل محل الجهة الحكومية المختصة في بلدك أو السوق المستهدف.'),
         ]))),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AurenCountryBusinessComplianceScreen())),
+          icon: const Icon(Icons.fact_check_outlined),
+          label: const Text('ملفات إجراءات وامتثال الأعمال حسب الدولة'),
+        ),
         const SizedBox(height: 12),
         TextField(onChanged: (value) => setState(() => _query = value.trim()), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ابحث باسم الجهة أو الدولة أو الموضوع', border: OutlineInputBorder())),
         const SizedBox(height: 12),
