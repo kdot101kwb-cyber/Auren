@@ -289,6 +289,24 @@ class _AurenBusinessResourceScreenState
             url: 'https://exportpotential.intracen.org/',
           ),
           _BusinessResource(
+            name: 'EC21 — المشترون وطلبات الشراء',
+            category: 'طلبات شراء دولية (B2B)',
+            description: 'دليل عالمي يعرض طلبات شراء منشورة؛ راجع تفاصيل الطلب وهوية الشركة وشروط العضوية قبل التواصل.',
+            url: 'https://www.ec21.com/',
+          ),
+          _BusinessResource(
+            name: 'go4WorldBusiness — المشترون والموردون',
+            category: 'مطابقة فرص B2B',
+            description: 'ابحث عن مشترين وموردين وطلبات شراء عبر قطاعات ودول متعددة؛ بعض مزايا التواصل قد تكون محدودة حسب العضوية.',
+            url: 'https://www.go4worldbusiness.com/',
+          ),
+          _BusinessResource(
+            name: 'Alibaba RFQ — طلبات عروض المشترين',
+            category: 'طلبات عروض الأسعار',
+            description: 'سوق لطلبات عروض الأسعار المنشورة من المشترين؛ الوصول والردود يخضعان لشروط حساب المنصة.',
+            url: 'https://sourcing.alibaba.com/rfq_search_list.htm',
+          ),
+          _BusinessResource(
             name: 'UN Comtrade',
             category: 'إحصاءات التجارة',
             description: 'بيانات إحصائية عن تجارة السلع بين الدول، وليست قائمة بمشترين جاهزين.',
