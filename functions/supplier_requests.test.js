@@ -137,3 +137,9 @@ test('supplier request idempotency reads and creates both records atomically', (
   assert.equal((source.match(/tx\.create\(userRef,data\)/g) || []).length, 2);
   assert.equal((source.match(/const existingUser = await tx\.get\(userRef\)/g) || []).length, 2);
 });
+
+test('supplier response lifecycle requires evidence of external dispatch', () => {
+  const source = read('supplier_requests.js');
+  assert.equal((source.match(/\['waiting_response','replied'\]\.includes\(nextStatus\) && (?:data|freshData)\.externalDispatch !== true/g) || []).length, 2);
+  assert.match(source, /cannot be marked as awaiting or receiving a supplier response/);
+});
