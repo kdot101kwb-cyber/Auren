@@ -178,6 +178,89 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
                           labelText: 'الميزانية (اختياري)',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          final raw = value?.trim() ?? '';
+                          if (raw.isEmpty) return null;
+                          // Accept plain decimals or correctly grouped thousands.
+                          final validFormat = RegExp(
+                            r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _currency,
+                        decoration: const InputDecoration(
+                          labelText: 'العملة',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'USD', child: Text('USD')),
+                          DropdownMenuItem(value: 'EUR', child: Text('EUR')),
+                          DropdownMenuItem(value: 'SDG', child: Text('SDG')),
+                          DropdownMenuItem(value: 'KES', child: Text('KES')),
+                          DropdownMenuItem(value: 'NGN', child: Text('NGN')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) setState(() => _currency = value);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _contactController,
+                  decoration: const InputDecoration(
+                    labelText: 'وسيلة التواصل التي ستستخدمها (اختياري)',
+                    hintText: 'بريد عمل أو رقم هاتف مخصص',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () {
+                    if (!_formKey.currentState!.validate()) return;
+                    setState(() => _draft = _buildDraft());
+                  },
+                  icon: const Icon(Icons.description_outlined),
+                  label: const Text('إنشاء مسودة طلب السعر'),
+                ),
+              ],
+            ),
+          ),
+          if (_draft != null) ...[
+            const SizedBox(height: 24),
+            Text('راجع المسودة', style: theme.textTheme.titleLarge),
+            const SizedBox(height: 8),
+            SelectableText(_draft!),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _copyDraft,
+              icon: const Icon(Icons.copy_rounded),
+              label: const Text('نسخ المسودة'),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'قبل الإرسال، تحقق من هوية المورد وسجله وشروط الدفع والشحن. لا ترسل مستندات حساسة أو دفعات قبل التحقق.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+,
+                          ).hasMatch(raw);
+                          if (!validFormat) {
+                            return 'أدخل مبلغاً رقمياً صحيحاً، مثال: 1200 أو 1,200.50';
+                          }
+                          final amount = double.tryParse(raw.replaceAll(',', ''));
+                          if (amount == null || !amount.isFinite || amount <= 0) {
+                            return 'يجب أن تكون الميزانية أكبر من صفر';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                     const SizedBox(width: 10),
