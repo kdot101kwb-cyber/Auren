@@ -412,9 +412,20 @@ class _AurenSupplierOfferComparisonScreenState
   }
 
   int? _parseOptionalDays(String value) {
-    final raw = value.trim().toLowerCase().replaceAll(RegExp(r'\\s+'), '');
-    final match = RegExp(
-      r'^([0-9]+)(d|day|days|wk|wks|week|weeks|يوم|أيام|ايام|أسبوع|أسابيع|اسبوع|اسابيع)?
+    final raw = value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+    final pattern = r'^([0-9]+)(d|day|days|wk|wks|week|weeks|يوم|أيام|ايام|أسبوع|أسابيع|اسبوع|اسابيع)?' + r'$';
+    final match = RegExp(pattern).firstMatch(raw);
+    if (match == null) return null;
+    final amount = int.tryParse(match.group(1)!);
+    if (amount == null) return null;
+    final unit = match.group(2);
+    final isWeeks = unit == 'wk' || unit == 'wks' ||
+        unit == 'week' || unit == 'weeks' ||
+        unit == 'أسبوع' || unit == 'أسابيع' ||
+        unit == 'اسبوع' || unit == 'اسابيع';
+    if (isWeeks && amount > 0x7FFFFFFFFFFFFFFF ~/ 7) return null;
+    return isWeeks ? amount * 7 : amount;
+  }
 
   List<SupplierRankingResult> _rankedOffers(String currency) =>
       SupplierRankingLogic.rank(
