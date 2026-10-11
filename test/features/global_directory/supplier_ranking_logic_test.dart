@@ -102,4 +102,52 @@ void main() {
       );
     });
   });
+    test('warns when budget, delivery, and minimum-order constraints are missed', () {
+      const candidate = SupplierRankingCandidate(
+        id: 'over', name: 'Over budget', currency: 'USD',
+        price: 150, shipping: 10, leadTimeDays: 12, minimumOrder: 100,
+      );
+      final result = SupplierRankingLogic.rank(
+        [candidate],
+        currency: 'USD',
+        maxBudget: 100,
+        maxLeadTimeDays: 5,
+        maxMinimumOrder: 20,
+      ).single;
+      expect(result.reasons, isNot(contains('within_budget')));
+      expect(result.reasons, isNot(contains('meets_lead_time')));
+      expect(result.reasons, isNot(contains('meets_minimum_order')));
+      expect(result.warnings, contains('over_budget_or_invalid_budget'));
+      expect(result.warnings, contains('minimum_order_exceeds_requirement'));
+      expect(result.warnings, contains('supplier_not_verified'));
+    });
+
+    test('does not award verification or rating points for invalid metadata', () {
+      const candidate = SupplierRankingCandidate(
+        id: 'bad-meta', name: 'Bad metadata', currency: 'USD',
+        price: 10, shipping: 0, leadTimeDays: 1, minimumOrder: 1,
+        verified: false, rating: 9,
+      );
+      final result = SupplierRankingLogic.rank(
+        [candidate], currency: 'USD',
+      ).single;
+      expect(result.score, 70);
+      expect(result.reasons, isNot(contains('marked_verified')));
+      expect(result.reasons, isNot(contains('rating_available')));
+      expect(result.warnings, contains('missing_or_invalid_rating'));
+    });
+
+    test('rejects overflowed total costs and never returns a non-finite score', () {
+      const candidate = SupplierRankingCandidate(
+        id: 'overflow', name: 'Overflow', currency: 'USD',
+        price: double.maxFinite, shipping: double.maxFinite,
+      );
+      final result = SupplierRankingLogic.rank(
+        [candidate], currency: 'USD', maxBudget: 100,
+      ).single;
+      expect(result.candidate.totalCost, isNull);
+      expect(result.score.isFinite, isTrue);
+      expect(result.warnings, contains('missing_or_invalid_cost'));
+    });
+
 }
