@@ -105,4 +105,18 @@ class SupplierOfferComparisonLogic {
     // Keep equal-price offers in a deterministic order across rebuilds.
     return totalOrder != 0 ? totalOrder : aSupplier.compareTo(bSupplier);
   }
+
+  /// Escapes a CSV field and guards spreadsheet formula injection.
+  /// Every cell is quoted; embedded quotes are doubled per RFC 4180.
+  static String csvCell(String value) {
+    var safeValue = value;
+    if (RegExp(r'^\s*[=+@-]').hasMatch(safeValue)) {
+      safeValue = "'$safeValue";
+    }
+    return '"${safeValue.replaceAll('"', '""')}"';
+  }
+
+  /// Serializes one row as comma-separated, quoted cells.
+  static String csvRow(Iterable<String> values) =>
+      values.map(csvCell).join(',');
 }
