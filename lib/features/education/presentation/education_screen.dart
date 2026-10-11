@@ -82,7 +82,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
     Navigator.push(context,MaterialPageRoute(builder:(_)=>_EducationCourseDetail(course:course,repo:repo,uid:uid)));
   }
 }
-class _EducationCourseDetail extends StatelessWidget {
+class _EducationCourseDetail extends StatefulWidget {
   final AurenCourse course;
   final EducationRepository repo;
   final String uid;
@@ -94,58 +94,171 @@ class _EducationCourseDetail extends StatelessWidget {
   });
 
   @override
+  State<_EducationCourseDetail> createState() => _EducationCourseDetailState();
+}
+
+class _EducationCourseDetailState extends State<_EducationCourseDetail> {
+  bool _savingProgress = false;
+
+  Future<void> _completeLesson(int completedLessons, int lessonCount) async {
+    if (_savingProgress || completedLessons >= lessonCount) return;
+    setState(() => _savingProgress = true);
+    try {
+      await widget.repo.setProgress(widget.uid, widget.course.id, completedLessons + 1);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ تقدمك في الدورة')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر حفظ التقدم: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _savingProgress = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(course.title)),
+      appBar: AppBar(title: Text(widget.course.title)),
       body: StreamBuilder<List<AurenLesson>>(
-        stream: repo.watchLessons(course.id),
-        builder: (context, snapshot) {
-          final lessons = snapshot.data ?? const <AurenLesson>[];
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(course.description),
-                      const SizedBox(height: 8),
-                      Text('عدد الدروس: ${course.lessonCount}'),
-                      const SizedBox(height: 8),
-                      if (course.skills.isNotEmpty)
-                        Text('Skills: ${course.skills.join(' • ')}'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              ...lessons.map(
-                (lesson) => Card(
-                  child: ListTile(
-                    leading: CircleAvatar(child: Text('${lesson.order}')),
-                    title: Text(lesson.title),
-                    subtitle: Text('${lesson.durationMinutes} دقيقة'),
-                    onTap: () => showDialog<void>(
-                      context: context,
-                      builder: (dialogContext) => AlertDialog(
-                        title: Text(lesson.title),
-                        content: SingleChildScrollView(
-                          child: Text(lesson.content),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(dialogContext),
-                            child: const Text('إغلاق'),
-                          ),
+        stream: widget.repo.watchLessons(widget.course.id),
+        builder: (context, lessonSnapshot) {
+          if (lessonSnapshot.hasError) {
+            return const Center(child: Text('تعذر تحميل دروس الدورة حالياً.'));
+          }
+          if (!lessonSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final lessons = lessonSnapshot.data!;
+          return StreamBuilder<List<AurenLearningProgress>>(
+            stream: widget.repo.watchMyLearning(widget.uid),
+            builder: (context, progressSnapshot) {
+              if (progressSnapshot.hasError) {
+                return const Center(child: Text('تعذر تحميل تقدمك في الدورة.'));
+              }
+              final enrollment = (progressSnapshot.data ?? const <AurenLearningProgress>[])
+                  .where((item) => item.courseId == widget.course.id)
+                  .firstOrNull;
+              final completed = enrollment?.completedLessons ?? 0;
+              final total = widget.course.lessonCount;
+              final progress = total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
+
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.course.description),
+                          const SizedBox(height: 8),
+                          Text('عدد الدروس: $total'),
+                          const SizedBox(height: 10),
+                          LinearProgressIndicator(value: progress),
+                          const SizedBox(height: 6),
+                          Text('أكملت $completed من $total درسًا (${(progress * 100).round()}%)'),
+                          if (widget.course.skills.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text('المهارات: ${widget.course.skills.join(' • ')}'),
+                          ],
+                          if (completed >= total && total > 0) ...[
+                            const SizedBox(height: 10),
+                            const Row(
+                              children: [
+                                Icon(Icons.verified, color: Colors.green),
+                                SizedBox(width: 8),
+                                Expanded(child: Text('أكملت الدورة؛ تمت إضافة المهارات المرتبطة إلى ملفك المهني عند توفرها.')),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
+                  const SizedBox(height: 10),
+                  if (lessons.isEmpty)
+                    const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text('لا توجد دروس منشورة في هذه الدورة حتى الآن.'),
+                      ),
+                    )
+                  else
+                    ...lessons.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final lesson = entry.value;
+                      final isCompleted = index < completed;
+                      final isNext = index == completed;
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: CircleAvatar(
+                                  child: Icon(isCompleted ? Icons.check : Icons.menu_book_outlined),
+                                ),
+                                title: Text(lesson.title),
+                                subtitle: Text('${lesson.durationMinutes} دقيقة'),
+                                onTap: () => showDialog<void>(
+                                  context: context,
+                                  builder: (dialogContext) => AlertDialog(
+                                    title: Text(lesson.title),
+                                    content: SingleChildScrollView(child: Text(lesson.content)),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(dialogContext),
+                                        child: const Text('إغلاق'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (isCompleted)
+                                const Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Chip(
+                                    avatar: Icon(Icons.check_circle, size: 18),
+                                    label: Text('مكتمل'),
+                                  ),
+                                )
+                              else if (isNext && completed < total)
+                                Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: FilledButton.icon(
+                                    onPressed: _savingProgress
+                                        ? null
+                                        : () => _completeLesson(completed, total),
+                                    icon: _savingProgress
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          )
+                                        : const Icon(Icons.check),
+                                    label: Text(_savingProgress ? 'جارٍ الحفظ…' : 'إكمال الدرس'),
+                                  ),
+                                )
+                              else
+                                const Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Text('أكمل الدرس السابق أولاً'),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              );
+            },
           );
         },
       ),
