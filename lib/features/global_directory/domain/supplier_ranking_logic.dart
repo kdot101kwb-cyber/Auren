@@ -129,12 +129,14 @@ class SupplierRankingLogic {
         score += 20;
       }
 
-      if (maxMinimumOrder != null) {
+      if (maxMinimumOrder != null && 
+          (!maxMinimumOrder.isFinite || maxMinimumOrder < 0)) {
+        warnings.add('invalid_max_minimum_order_constraint');
+      } else if (maxMinimumOrder != null) {
         final moq = c.minimumOrder;
         if (moq == null || !moq.isFinite || moq < 0) {
           warnings.add('missing_or_invalid_minimum_order');
-        } else if (maxMinimumOrder.isFinite &&
-            maxMinimumOrder >= 0 && moq <= maxMinimumOrder) {
+        } else if (moq <= maxMinimumOrder) {
           score += 10;
           reasons.add('meets_minimum_order');
         } else {
