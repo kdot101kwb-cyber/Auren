@@ -96,7 +96,7 @@ class SupplierRfqIntentParser {
       caseSensitive: false,
     ).firstMatch(text);
     if (leadTimeMatch != null) {
-      leadTime = '\${leadTimeMatch.group(1)} \${leadTimeMatch.group(2)}';
+      leadTime = '${leadTimeMatch.group(1)} ${leadTimeMatch.group(2)}';
     }
 
     String? product;
@@ -164,7 +164,7 @@ class SupplierRfqIntentParser {
 
     return SupplierRfqIntent(
       product: product,
-      quantity: amount == null ? null : '$amount\${unit == null ? '' : ' $unit'}',
+      quantity: amount == null ? null : '$amount${unit == null ? '' : ' $unit'}',
       unit: unit,
       destination: destination,
       budget: budget,
