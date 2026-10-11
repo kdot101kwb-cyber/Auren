@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'auren_supplier_rfq_draft_screen.dart';
+import 'auren_supplier_offer_comparison_screen.dart';
 
 /// Curated starting points for supplier discovery. Listings are not endorsements
 /// and supplier identity, quality, stock, and payment terms must be checked.
@@ -75,6 +76,20 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
         padding: const EdgeInsets.all(16),
         children: [
           const Text('ابدأ من أدلة الموردين، ثم قارن عروض الأسعار وتحقق من الشركة قبل الدفع. ظهور المصدر هنا لا يعني التحقق من كل مورد داخله.'),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.compare_arrows_outlined),
+              title: const Text('مقارنة عروض الأسعار المسجلة'),
+              subtitle: const Text('سجّل العروض التي استلمتها وقارن التكلفة بالعملة نفسها.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenSupplierOfferComparisonScreen(),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _queryController,
