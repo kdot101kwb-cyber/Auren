@@ -181,10 +181,18 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
                         validator: (value) {
                           final raw = value?.trim() ?? '';
                           if (raw.isEmpty) return null;
-                          final validFormat = RegExp(
-                            r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$',
-                          ).hasMatch(raw);
-                          if (!validFormat) {
+                          final parts = raw.split('.');
+                          final whole = parts.first;
+                          final groups = whole.split(',');
+                          final digitsOnly = (String value) => value.isNotEmpty &&
+                              value.codeUnits.every((digit) => digit >= 48 && digit <= 57);
+                          final validGrouping = groups.first.isNotEmpty &&
+                              groups.first.length <= 3 &&
+                              digitsOnly(groups.first) &&
+                              groups.skip(1).every((group) => group.length == 3 && digitsOnly(group));
+                          final validDecimal = parts.length == 1 ||
+                              (parts.length == 2 && parts[1].length <= 2 && digitsOnly(parts[1]));
+                          if (parts.length > 2 || !validGrouping || !validDecimal) {
                             return 'أدخل مبلغاً رقمياً صحيحاً، مثال: 1200 أو 1,200.50';
                           }
                           final amount = double.tryParse(raw.replaceAll(',', ''));
