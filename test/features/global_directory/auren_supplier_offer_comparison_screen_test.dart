@@ -134,7 +134,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('طلب عرض سعر من مورد'), findsOneWidget);
-    expect(find.text('Selected Supplier'), findsOneWidget);
+    expect(
+      tester.widget<TextFormField>(find.byType(TextFormField).first).controller?.text,
+      'Selected Supplier',
+    );
     expect(
       find.textContaining('لن يتم التواصل مع أي مورد تلقائياً'),
       findsOneWidget,
