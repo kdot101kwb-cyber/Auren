@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'auren_supplier_rfq_draft_screen.dart';
 import 'auren_supplier_offer_comparison_screen.dart';
+import 'auren_supplier_requests_screen.dart';
 
 /// Curated starting points for supplier discovery. Listings are not endorsements
 /// and supplier identity, quality, stock, and payment terms must be checked.
@@ -98,6 +99,20 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
                     auth: widget.auth,
                     firestore: widget.firestore,
                   ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.assignment_outlined),
+              title: const Text('طلبات الموردين'),
+              subtitle: const Text('تابع مسودات طلباتك وحالاتها وسجّل الرد أو الإكمال يدوياً.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenSupplierRequestsScreen(),
                 ),
               ),
             ),
