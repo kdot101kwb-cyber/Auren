@@ -18,6 +18,8 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - Users can filter by lifecycle status, edit/delete offers, and copy a plain-text summary.
 - Users can also copy a spreadsheet-ready CSV table containing price, currency, shipping/fees, estimated total, status, validity, minimum order, lead time, payment terms, notes, and capture date. Cells are quoted and embedded quotes/newlines are escaped.
 - CSV cells that begin with spreadsheet formula characters (including after leading whitespace) are prefixed as text to reduce formula-injection risk when opening the export in spreadsheet software.
+- The comparison view highlights repeated supplier labels after trimming, case-folding, and collapsing whitespace. This is only a duplicate-name hint, not proof that two records represent the same legal business.
+- Each offer warns when minimum order, lead time, payment terms, or validity is missing, so users can request the missing terms before choosing. These are advisory warnings and do not block editing or export.
 - If the validity field is entered as a real `YYYY-MM-DD` calendar date, the screen shows whether it has expired, expires today, or expires within seven calendar days. Free-form validity notes remain supported but are not interpreted as dates; no notification is sent.
 - The summary shows counts of expired and soon-to-expire offers. A separate validity filter can show expired, due today, due within seven days, valid beyond seven days, or unknown/free-form validity. The copied summary includes the entered validity and any calculated warning.
 
