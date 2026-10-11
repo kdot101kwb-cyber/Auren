@@ -97,6 +97,8 @@ class _LiveButton extends StatelessWidget{
   }
 }
 class _Explorer extends StatelessWidget{
+  static const List<String> sports = ['الكل','Football','Basketball','Tennis','Cricket','Volleyball','Rugby','Boxing','MMA','Formula 1'];
+  static const Map<String,String> resources = <String,String>{'games':'المباريات','teams':'الفرق','players':'اللاعبون','leagues':'البطولات','standings':'الترتيب','fixtures':'جدول المباريات','game_details':'تفاصيل المباراة','live':'مباشر'};
   final TextEditingController query,country,league,season;final String sport,resource;final bool loading;final ValueChanged<String> onSport,onResource;final Future<void> Function() onSearch;
   const _Explorer({required this.query,required this.country,required this.league,required this.season,required this.sport,required this.resource,required this.loading,required this.onSport,required this.onResource,required this.onSearch});
   @override Widget build(BuildContext context)=>_Section(title:'استكشف',icon:Icons.explore_rounded,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
