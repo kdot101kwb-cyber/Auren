@@ -1570,7 +1570,8 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
 
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('AUREN TV'), actions: [
-      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)), IconButton(tooltip: 'تقويم EPG', onPressed: _showEpgCalendar, icon: const Icon(Icons.calendar_month_outlined)), IconButton(tooltip: 'خط EPG الزمني', onPressed: _showEpgTimeline, icon: const Icon(Icons.timeline)), IconButton(tooltip: 'AUREN AI • EPG', onPressed: _showEpgAiSearch, icon: const Icon(Icons.auto_awesome)), IconButton(tooltip: 'For You • TV', onPressed: _showEpgPersonalized, icon: const Icon(Icons.person_search_outlined)), IconButton(tooltip: 'Smart EPG', onPressed: _showEpgSmartSettings, icon: const Icon(Icons.tune)), IconButton(tooltip: 'TV Home • For You', onPressed: _showTvHome, icon: const Icon(Icons.home_work_outlined)), IconButton(tooltip: 'Multi-Channel EPG', onPressed: _showMultiChannelEpg, icon: const Icon(Icons.view_agenda_outlined)), IconButton(tooltip: 'TV Profiles', onPressed: _showTvProfiles, icon: const Icon(Icons.account_circle_outlined)), IconButton(tooltip: 'Watch Together', onPressed: _showWatchTogether, icon: const Icon(Icons.groups_outlined)), if (playing != null) IconButton(tooltip: 'Mini Player', onPressed: _togglePip, icon: Icon(_pipMode ? Icons.picture_in_picture : Icons.picture_in_picture_alt_outlined)),
+      IconButton(tooltip: 'برامجي المحفوظة', onPressed: _showEpgWatchlist, icon: const Icon(Icons.bookmarks_outlined)), IconButton(tooltip: 'تذكيرات EPG', onPressed: _showEpgReminderCenter, icon: const Icon(Icons.notifications_none)), IconButton(tooltip: 'تقويم EPG', onPressed: _showEpgCalendar, icon: const Icon(Icons.calendar_month_outlined)), IconButton(tooltip: 'خط EPG الزمني', onPressed: _showEpgTimeline, icon: const Icon(Icons.timeline)), IconButton(tooltip: 'AUREN AI • EPG', onPressed: _showEpgAiSearch, icon: const Icon(Icons.auto_awesome)), IconButton(tooltip: 'For You • TV', onPressed: _showEpgPersonalized, icon: const Icon(Icons.person_search_outlined)), IconButton(tooltip: 'Smart EPG', onPressed: _showEpgSmartSettings, icon: const Icon(Icons.tune)), IconButton(tooltip: 'TV Home • For You', onPressed: _showTvHome, icon: const Icon(Icons.home_work_outlined)),
+      IconButton(tooltip: 'AUREN TV Assistant', onPressed: _showTvAssistant, icon: const Icon(Icons.assistant_outlined)), IconButton(tooltip: 'Multi-Channel EPG', onPressed: _showMultiChannelEpg, icon: const Icon(Icons.view_agenda_outlined)), IconButton(tooltip: 'TV Profiles', onPressed: _showTvProfiles, icon: const Icon(Icons.account_circle_outlined)), IconButton(tooltip: 'Watch Together', onPressed: _showWatchTogether, icon: const Icon(Icons.groups_outlined)), if (playing != null) IconButton(tooltip: 'Mini Player', onPressed: _togglePip, icon: Icon(_pipMode ? Icons.picture_in_picture : Icons.picture_in_picture_alt_outlined)),
       IconButton(tooltip: 'مصادر IPTV الخاصة بي', onPressed: _showSources, icon: const Icon(Icons.link)),
       if (activeSource != null)
         IconButton(
@@ -1625,6 +1626,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
         child: TextField(
           controller: _search,
+          onChanged: _smartSearch,
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search),
             hintText: 'ابحث بذكاء: قناة، دولة، لغة أو فئة',
@@ -1838,6 +1840,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
                 subtitle: Text('${c.country} • ${c.language} • ${c.category}', maxLines: 2, overflow: TextOverflow.ellipsis),
                 trailing: Wrap( children: [
                   IconButton(tooltip: 'جدول البرامج', onPressed: () => _showSchedule(c), icon: const Icon(Icons.calendar_month_outlined)),
+                  IconButton(tooltip: 'فحص القناة', onPressed: () => _checkChannel(c), icon: const Icon(Icons.health_and_safety_outlined)),
                   IconButton(tooltip: (favorites.contains(c.id) || favorites.contains(_favoriteKey(c))) ? 'إزالة من المفضلة' : 'أضف للمفضلة', onPressed: () => toggleFavorite(c), icon: Icon((favorites.contains(c.id) || favorites.contains(_favoriteKey(c))) ? Icons.star : Icons.star_border)),
                 ]),
                 onTap: () => play(c),
