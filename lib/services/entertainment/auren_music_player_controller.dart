@@ -77,7 +77,6 @@ class AurenMusicPlayerController extends ChangeNotifier {
   void stopAdaptiveSession() {
     _adaptiveSessionActive = false;
     _adaptivePool = const [];
-    _adaptiveCursor = 0;
     _adaptiveServedIds.clear();
     _sessionSkipCount = 0;
     _sessionCompletionCount = 0;
