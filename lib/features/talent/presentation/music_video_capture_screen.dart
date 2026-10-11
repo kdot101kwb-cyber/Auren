@@ -81,18 +81,20 @@ class _AurenMusicVideoCaptureScreenState
 
   Future<void> _deleteVideo() async {
     final path = _savedPath;
-    await _player?.dispose();
-    if (path != null) {
-      try {
+    try {
+      if (path != null) {
         final file = File(path);
         if (await file.exists()) await file.delete();
-      } catch (_) {
-        if (mounted) {
-          setState(() => _error = 'تعذّر حذف الملف المحلي.');
-          return;
-        }
       }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'تعذّر حذف الملف المحلي.');
+      }
+      return;
     }
+
+    final player = _player;
+    if (player != null) await player.dispose();
     if (mounted) {
       setState(() {
         _player = null;
