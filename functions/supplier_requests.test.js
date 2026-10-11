@@ -185,3 +185,14 @@ test('supplier status update rejects stale concurrent changes before writing', (
   assert.match(updateSource, /HttpsError\('aborted'/);
   assert.match(updateSource, /Invalid supplier request status transition/);
 });
+
+test('supplier cancellation only accepts known non-terminal lifecycle states', () => {
+  const source = read('supplier_requests.js');
+  const cancelSource = source.slice(
+    source.indexOf('exports.cancelAurenSupplierRequest'),
+    source.indexOf('exports.updateAurenSupplierRequestStatus'),
+  );
+  assert.match(cancelSource, /new Set\(\['draft','waiting_response','replied','failed'\]\)/);
+  assert.match(cancelSource, /if \(!cancellableStatuses\.has\(currentStatus\)\)/);
+  assert.match(cancelSource, /Request cannot be cancelled in its current state/);
+});
