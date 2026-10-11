@@ -277,7 +277,7 @@ test('another user cannot read a supplier offer comparison', async () => {
   const owner = 'supplier-offer-owner';
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await context.firestore()
-        .doc(`users/${owner}/supplier_offer_comparisons/active_draft')
+        .doc(`users/${owner}/supplier_offer_comparisons/active_draft`)
         .set({
           ownerId: owner,
           offers: [supplierOffer()],
