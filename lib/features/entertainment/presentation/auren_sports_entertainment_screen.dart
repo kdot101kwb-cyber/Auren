@@ -12,8 +12,6 @@ class AurenSportsEntertainmentScreen extends StatefulWidget {
 class _AurenSportsEntertainmentScreenState extends State<AurenSportsEntertainmentScreen> {
   final repo = EntertainmentRepository();
   final query = TextEditingController(), country = TextEditingController(), league = TextEditingController(), season = TextEditingController();
-  static const sports = ['الكل','Football','Basketball','Volleyball','Tennis','Table Tennis','Boxing','MMA','Athletics','Swimming','Cycling','Gymnastics','Archery','Weightlifting','Rugby','Cricket','Baseball','Hockey','Handball','Motorsport','Formula 1','Wrestling','Judo','Karate','Taekwondo','Fencing','Rowing','Badminton','Golf','Chess & Mind Sports','NFL'];
-  static const resources = {'games':'المباريات','leagues':'البطولات','teams':'الفرق','standings':'الترتيب','players':'اللاعبون','team_stats':'إحصائيات الفريق','game_details':'تفاصيل المباراة'};
   String sport='الكل', resource='games';
   bool loading=false;
   bool liveLoading=false;
