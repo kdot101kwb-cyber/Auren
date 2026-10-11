@@ -196,3 +196,9 @@ test('supplier cancellation only accepts known non-terminal lifecycle states', (
   assert.match(cancelSource, /if \(!cancellableStatuses\.has\(currentStatus\)\)/);
   assert.match(cancelSource, /Request cannot be cancelled in its current state/);
 });
+
+test('supplier lifecycle event timestamps are only assigned on state entry', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /nextStatus === 'replied' && currentStatus !== 'replied'/);
+  assert.match(source, /nextStatus === 'completed' && currentStatus !== 'completed'/);
+});
