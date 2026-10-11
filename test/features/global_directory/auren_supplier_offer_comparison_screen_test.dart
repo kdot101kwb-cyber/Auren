@@ -103,7 +103,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('ولا تُطبَّق على USD'), findsOneWidget);
-    expect(find.text('50'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField).first).controller?.text, '50');
   });
 
   testWidgets('status filter hides non-matching offers', (tester) async {
