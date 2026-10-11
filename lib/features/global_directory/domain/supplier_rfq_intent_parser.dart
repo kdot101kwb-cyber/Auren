@@ -140,7 +140,8 @@ class SupplierRfqIntentParser {
               )
               .first
               .trim();
-        }      }
+        }
+      }
     } else {
       final productMatch = RegExp(
         r'(?:i need|need|looking for|product\s*[:=]?|المنتج\s*[:=]?|أحتاج|احتاج|عايز|عاوز|محتاج|اريد|أريد)\s+(.+)',
