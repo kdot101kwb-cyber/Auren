@@ -95,6 +95,25 @@ void main() {
       expect(result.map((item) => item.candidate.id), ['a', 'z']);
     });
 
+    test('breaks identical name and score ties by id regardless of input order', () {
+      const candidates = [
+        SupplierRankingCandidate(
+          id: 'b', name: 'Same supplier', currency: 'USD',
+          price: 10, shipping: 0, leadTimeDays: 1, minimumOrder: 1,
+          verified: true, rating: 5,
+        ),
+        SupplierRankingCandidate(
+          id: 'a', name: 'Same supplier', currency: 'USD',
+          price: 10, shipping: 0, leadTimeDays: 1, minimumOrder: 1,
+          verified: true, rating: 5,
+        ),
+      ];
+      final result = SupplierRankingLogic.rank(candidates, currency: 'USD');
+      expect(result.map((item) => item.candidate.id), ['a', 'b']);
+      final reversed = SupplierRankingLogic.rank(candidates.reversed, currency: 'USD');
+      expect(reversed.map((item) => item.candidate.id), ['a', 'b']);
+    });
+
     test('returns no candidates for a currency without matching offers', () {
       expect(
         SupplierRankingLogic.rank(candidates, currency: 'GBP'),
