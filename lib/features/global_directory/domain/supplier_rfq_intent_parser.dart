@@ -42,7 +42,7 @@ class SupplierRfqIntentParser {
       if(before.isNotEmpty) product=before;
       if(product==null||product.isEmpty){
         var after=text.substring(qm.end).trim().replaceFirst(RegExp(r'^(?:of|من)\s+'),'');
-        if(after.isNotEmpty) product=after.split(RegExp(r'\s+(?:to|in|for|إلى|الى|في|بميزانية|خلال)\s+',caseSensitive:false)).first.trim();
+        if(after.isNotEmpty) product=after.split(RegExp(r'\s+(?:delivered\s+to|shipped?\s+to|with\s+a\s+budget|budget|within|to|in|for|إلى|الى|في|بميزانية|خلال)\s+',caseSensitive:false)).first.trim();
       }
     } else {
       final pm=RegExp(r'(?:i need|need|looking for|product\s*[:=]?|المنتج\s*[:=]?|أحتاج|احتاج|عايز|عاوز|محتاج|اريد|أريد)\s+(.+)',caseSensitive:false).firstMatch(text);
