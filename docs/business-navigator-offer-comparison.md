@@ -27,6 +27,7 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 
 - Data is saved in SharedPreferences on the current device, using a key scoped to the current Firebase UID (or `guest` when signed out).
 - Signed-in users can explicitly save the comparison to `users/{uid}/supplier_offer_comparisons/active_draft` and restore it on another device. The cloud document is owner-scoped by Firestore rules and limited to 10 validated offers.
+- Firestore rules independently reject malformed price and shipping strings (including invalid thousands-separator grouping) before an offer comparison can be written; integration tests cover valid amounts, malformed amounts, and cross-user read denial.
 - Local autosaves remain on this device; cloud changes are not silently uploaded. Use **Save to my account** after changes.
 - Switching accounts resets the visible list and reloads that account's local key.
 - Supplier identities, documents, quotations, and payment details are not verified by AUREN.
