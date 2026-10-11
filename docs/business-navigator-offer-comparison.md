@@ -15,7 +15,7 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - The lowest-cost label is only applied among offers in the same currency with parseable non-negative amounts.
 - Blank or invalid numeric values are not ranked.
 - Currency conversion, tax/duty estimation, product-spec normalization, and exchange-rate lookup are not performed.
-- Users can filter by lifecycle status, edit/delete offers, and copy a plain-text summary.
+- Users can filter by lifecycle status, edit/delete offers, and copy a plain-text summary. Both summary and CSV exports respect the active status and validity filters.
 - Users can also copy a spreadsheet-ready CSV table containing price, currency, shipping/fees, estimated total, status, validity, minimum order, lead time, payment terms, notes, and capture date. Cells are quoted and embedded quotes/newlines are escaped.
 - CSV cells that begin with spreadsheet formula characters (including after leading whitespace) are prefixed as text to reduce formula-injection risk when opening the export in spreadsheet software.
 - The comparison view highlights repeated supplier labels after trimming, case-folding, and collapsing whitespace. This is only a duplicate-name hint, not proof that two records represent the same legal business.
@@ -31,14 +31,14 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - Local autosaves remain on this device; cloud changes are not silently uploaded. Use **Save to my account** after changes.
 - Switching accounts resets the visible list and reloads that account's local key.
 - Supplier identities, documents, quotations, and payment details are not verified by AUREN.
-- Changing an offer to “tentatively selected” is not contract acceptance and does not send a purchase order or external message.
+- Changing an offer to “tentatively selected” is not contract acceptance and does not send a purchase order or external message. A tentatively selected offer can open a prefilled, editable RFQ draft for that supplier; the draft remains local until the user explicitly saves it, and no external message is sent.
 
 ## Follow-up work
 
 - Add automated Firestore rules integration tests for cross-user access denial and malformed offer payloads.
 - Add structured verification evidence and quote attachments.
 - Add delivered-quantity / tax / duty / insurance comparisons and explicit FX rates with timestamps.
-- Add automated widget tests for sorting, status filtering, and account switching.
+- Widget coverage now exercises ranking exclusions for rejected/expired offers, currency isolation, budget currency boundaries, status filtering, account-scoped local storage, invalid price validation, cloud-restore confirmation, and provisional selection into an editable RFQ draft. End-to-end discovery-to-RFQ flow from live supplier search remains outside this screen's current test coverage.
 
 ## Supplier request lifecycle screen
 
@@ -54,6 +54,6 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 
 - `SupplierRankingLogic` ranks only candidates in the requested currency; it never compares raw amounts across currencies or performs FX conversion.
 - Scores are explainable through reason keys and warning keys. Missing/invalid cost, lead time, minimum order, verification state, or rating is surfaced instead of being silently treated as a positive signal.
-- Optional user constraints include maximum total budget, lead time, and minimum order. The result is deterministic: score first, then comparable total cost, then supplier name.
+- Optional user constraints include maximum total budget, lead time, and minimum order. The result is deterministic: score first, then comparable total cost, then supplier name, then candidate ID.
 - A `verified` flag is only supplied data; this ranking helper does not independently verify supplier identity or claims. Ranking is advisory and must not automatically accept an offer or place an order.
 - Pure unit tests cover same-currency filtering, missing data, invalid totals, constraints, stable tie-breaking, and immutable results.
