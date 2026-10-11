@@ -90,7 +90,13 @@ class SupplierRankingLogic {
         score += 40;
         reasons.add('competitive_total_cost');
       } else {
-        score += 40 * ((maxCost! - cost) / (maxCost! - minCost!));
+        final costRange = maxCost! - minCost!;
+        final normalizedCost = costRange.isFinite
+            ? (maxCost - cost) / costRange
+            : (1 - cost / maxCost) / (1 - minCost! / maxCost);
+        // Finite endpoints can still have an infinite difference. Normalize
+        // by the maximum in that case to avoid Infinity / Infinity => NaN.
+        score += 40 * normalizedCost.clamp(0.0, 1.0);
         if (cost == minCost) reasons.add('lowest_comparable_total_cost');
       }
 
