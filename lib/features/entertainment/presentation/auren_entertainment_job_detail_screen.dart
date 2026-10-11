@@ -13,10 +13,10 @@ import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
 int aurenFindNextPlayableEpisodeIndex(List<dynamic> episodes, int start, {int maxEpisodes = 20}) {
   for (var i = start; i < episodes.length && i < maxEpisodes; i++) {
     final item = episodes[i] is Map
-        ? Map<String, dynamic>.from(episodes[i] as Map)
+        ? Map<String, dynamic>.from(episodes[i])
         : <String, dynamic>{};
     final media = item['media'] is Map
-        ? Map<String, dynamic>.from(item['media'] as Map)
+        ? Map<String, dynamic>.from(item['media'])
         : <String, dynamic>{};
     final video = media['video'];
     if (video is Map && video['url']?.toString().isNotEmpty == true) return i;
@@ -68,7 +68,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
           .httpsCallable('publishEntertainmentOutput');
       final result = await callable.call({'jobId': jobId});
       if (!context.mounted) return;
-      final data = Map<String, dynamic>.from(result.data as Map);
+      final data = Map<String, dynamic>.from(result.data);
       final publishedItemId = data['itemId']?.toString() ?? '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -321,7 +321,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                 const SizedBox(height: 18),
                 _sectionTitle('Series Blueprint'),
                 const SizedBox(height: 8),
-                _seriesBlueprintCard(context, Map<String, dynamic>.from(job['seriesBlueprint'] as Map)),
+                _seriesBlueprintCard(context, Map<String, dynamic>.from(job['seriesBlueprint'])),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(context).push(
@@ -422,13 +422,13 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                 _musicReadyCard(context, job),
               ],
               if (status == 'ready' && job['providerResult'] is Map &&
-                  (job['providerResult'] as Map).isNotEmpty) ...[
+                  (job['providerResult']).isNotEmpty) ...[
                 const SizedBox(height: 18),
                 _sectionTitle('الناتج'),
                 const SizedBox(height: 8),
                 _outputCard(
                   context,
-                  Map<String, dynamic>.from(job['providerResult'] as Map),
+                  Map<String, dynamic>.from(job['providerResult']),
                   published: job['publishedItemId']?.toString().isNotEmpty == true,
                   publishedItemId: job['publishedItemId']?.toString() ?? '',
                   onPublish: () => _publish(context, uid),
@@ -475,7 +475,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     final raw = episodes[episodeIndex];
     final episode = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     final number = int.tryParse(episode['episodeNumber']?.toString() ?? '') ?? 1;
-    final media = episode['media'] is Map ? Map<String, dynamic>.from(episode['media'] as Map) : <String, dynamic>{};
+    final media = episode['media'] is Map ? Map<String, dynamic>.from(episode['media']) : <String, dynamic>{};
     final video = media['video'];
     if (video == null) return;
     final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
@@ -485,7 +485,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
         ? (episodes[nextIndex] is Map ? Map<String, dynamic>.from(episodes[nextIndex]) : <String, dynamic>{})
         : <String, dynamic>{};
     final nextNumber = int.tryParse(nextEpisode['episodeNumber']?.toString() ?? '') ?? 0;
-    final nextMedia = nextEpisode['media'] is Map ? Map<String, dynamic>.from(nextEpisode['media'] as Map) : <String, dynamic>{};
+    final nextMedia = nextEpisode['media'] is Map ? Map<String, dynamic>.from(nextEpisode['media']) : <String, dynamic>{};
     final nextThumb = nextMedia['thumbnail'];
     final nextPreview = nextThumb is Map ? nextThumb['url']?.toString() ?? '' : nextThumb?.toString() ?? '';
     final pickerEpisodes = episodes.take(20).map((item) {
