@@ -316,7 +316,7 @@ class _AurenSupplierOfferComparisonScreenState
     final lines = <String>[
       'ملخص مقارنة عروض الموردين',
       'ملاحظة: بيانات مدخلة يدوياً ولم يتم التحقق من الموردين.',
-      ...offers.map((offer) {
+      ..._sorted.map((offer) {
         final total = _total(offer);
         return [
           'المورد: ${offer.supplier}',
@@ -357,7 +357,7 @@ class _AurenSupplierOfferComparisonScreenState
         'Notes',
         'Recorded at',
       ]),
-      ..._sorted.map((offer) {
+      ...offers.map((offer) {
         final total = _total(offer);
         return SupplierOfferComparisonLogic.csvRow([
           offer.supplier,
