@@ -335,3 +335,44 @@ test('another user cannot read a supplier offer comparison', async () => {
       .doc(`users/${owner}/supplier_offer_comparisons/active_draft`);
   await assertFails(otherUserRef.get());
 });
+
+
+test('supplier offer comparison rejects signed, exponent, and non-finite purchase prices', async () => {
+  const uid = 'supplier-offer-numeric-edge-price';
+  for (const price of ['-1', '+1', '1e3', 'NaN', 'Infinity', '1.2.3']) {
+    await assertFails(supplierOfferComparisonRef(uid).set({
+      ownerId: uid,
+      offers: [supplierOffer({ id: `offer-${price}`, price })],
+      updatedAt: firebase.firestore.Timestamp.now(),
+    }), `price should be rejected: ${price}`);
+  }
+});
+
+test('supplier offer comparison rejects malformed decimal and signed shipping costs', async () => {
+  const uid = 'supplier-offer-numeric-edge-shipping';
+  for (const shipping of ['-1', '+1', '1e3', '1.2.3', '1,23.45']) {
+    await assertFails(supplierOfferComparisonRef(uid).set({
+      ownerId: uid,
+      offers: [supplierOffer({ id: `offer-${shipping}`, shipping })],
+      updatedAt: firebase.firestore.Timestamp.now(),
+    }), `shipping should be rejected: ${shipping}`);
+  }
+});
+
+test('supplier offer comparison prevents another user from writing to an owner draft', async () => {
+  const owner = 'supplier-offer-write-owner';
+  const ownerRef = supplierOfferComparisonRef(owner);
+  await assertSucceeds(ownerRef.set({
+    ownerId: owner,
+    offers: [supplierOffer()],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+
+  const otherUserRef = testEnv.authenticatedContext('supplier-offer-write-other')
+      .firestore()
+      .doc(`users/${owner}/supplier_offer_comparisons/active_draft`);
+  await assertFails(otherUserRef.update({
+    offers: [supplierOffer({ price: '1.00' })],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
