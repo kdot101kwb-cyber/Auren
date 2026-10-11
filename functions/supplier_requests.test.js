@@ -69,7 +69,8 @@ test('supplier cancellation rechecks terminal state inside transaction', () => {
   );
   assert.match(cancelSource, /await db\.runTransaction\(async tx =>/);
   assert.match(cancelSource, /const fresh = await tx\.get\(ref\)/);
-  assert.match(cancelSource, /\['completed','cancelled'\]\.includes\(currentStatus\)/);
+  assert.match(cancelSource, /new Set\(\['draft','waiting_response','replied','failed'\]\)/);
+  assert.match(cancelSource, /if \(!cancellableStatuses\.has\(currentStatus\)\)/);
   assert.match(cancelSource, /tx\.set\(globalRef, update, \{merge:true\}\)/);
   assert.match(cancelSource, /updateMatchFlow\(uid,cancelled\.matchFlowId,'cancelled'/);
 });
