@@ -113,6 +113,153 @@ class SupplierRfqIntentParser {
         RegExp(r'^(?:about|around|approximately)\s+', caseSensitive: false),
         '',
       );
+      // A leading intent phrase is not a product. Treat it as empty even
+      // if a future input variation leaves part of the phrase behind.
+      if (RegExp(
+        r'^(?:i\s+need|need|looking\s+for|طلب|أحتاج|احتاج|عايز|عاوز|محتاج|اريد|أريد)
+        // Skip a unit that appears after the quantity, e.g. "500 pieces of tea"
+        // or "٥٠٠ قطعة قماش", without treating the unit as the product.
+        afterQuantity = afterQuantity.replaceFirst(
+          RegExp(
+            r'^(?:pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)\s*',
+            caseSensitive: false,
+          ),
+          '',
+        );
+        afterQuantity = afterQuantity.replaceFirst(
+          RegExp(r'^(?:of|من)\s+', caseSensitive: false),
+          '',
+        );
+        if (afterQuantity.isNotEmpty) {
+          product = afterQuantity
+              .split(
+                RegExp(
+                  r'\s+(?:delivered\s+to|shipped?\s+to|with\s+a\s+budget|budget|within|to|in|for|إلى|الى|في|بميزانية|خلال)\s+',
+                  caseSensitive: false,
+                ),
+              )
+              .first
+              .trim();
+        }
+      }
+    } else {
+      final productMatch = RegExp(
+        r'(?:i need|need|looking for|product\s*[:=]?|المنتج\s*[:=]?|أحتاج|احتاج|عايز|عاوز|محتاج|اريد|أريد)\s+(.+)',
+        caseSensitive: false,
+      ).firstMatch(text);
+      if (productMatch != null) {
+        product = productMatch
+            .group(1)!
+            .split(
+              RegExp(
+                r'\s+(?:to|in|for|إلى|الى|في|بميزانية|ميزانية|خلال)\s+',
+                caseSensitive: false,
+              ),
+            )
+            .first
+            .trim();
+      }
+    }
+
+    if (product != null) {
+      product = product
+          .replaceFirst(
+            RegExp(r'\s+(?:budget|بميزانية|ميزانية|\$|€).*$', caseSensitive: false),
+            '',
+          )
+          .trim();
+      if (product.isEmpty) product = null;
+    }
+
+    return SupplierRfqIntent(
+      product: product,
+      quantity: amount == null ? null : '$amount${unit == null ? '' : ' $unit'}',
+      unit: unit,
+      destination: destination,
+      budget: budget,
+      currency: currency,
+      leadTime: leadTime,
+    );
+  }
+
+  static String _digits(String value) {
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+    final output = StringBuffer();
+    for (final rune in value.runes) {
+      final character = String.fromCharCode(rune);
+      final arabicIndex = arabicDigits.indexOf(character);
+      final persianIndex = persianDigits.indexOf(character);
+      output.write(
+        arabicIndex >= 0
+            ? arabicIndex
+            : persianIndex >= 0
+                ? persianIndex
+                : character,
+      );
+    }
+    return output.toString();
+  }
+
+  static String? _unit(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final value = raw.toLowerCase();
+    if ([
+      'piece',
+      'pieces',
+      'pcs',
+      'unit',
+      'units',
+      'قطعة',
+      'قطع',
+      'حبة',
+      'حبات',
+    ].contains(value)) {
+      return 'pieces';
+    }
+    if (['kg', 'g', 'كيلو', 'كيلوغرام'].contains(value)) {
+      return value == 'g' ? 'g' : 'kg';
+    }
+    if (['ton', 'tons', 'طن'].contains(value)) return 'tons';
+    if (['liter', 'liters', 'litre', 'litres', 'لتر'].contains(value)) {
+      return 'liters';
+    }
+    if (['meter', 'meters', 'metre', 'metres', 'متر'].contains(value)) {
+      return 'meters';
+    }
+    if (['yard', 'yards'].contains(value)) return 'yards';
+    if (['box', 'boxes', 'صندوق', 'كرتون'].contains(value)) return 'boxes';
+    return value;
+  }
+
+  static String? _currency(String? raw) {
+    if (raw == null) return null;
+    switch (raw.toUpperCase()) {
+      case 'USD':
+      case r'$':
+      case 'دولار':
+      case 'دولارات':
+        return 'USD';
+      case 'EUR':
+      case '€':
+      case 'يورو':
+        return 'EUR';
+      case 'SDG':
+        return 'SDG';
+      case 'KES':
+        return 'KES';
+      case 'NGN':
+        return 'NGN';
+      default:
+        return null;
+    }
+  }
+}
+,
+        caseSensitive: false,
+      ).hasMatch(beforeQuantity)) {
+        beforeQuantity = '';
+      }
       if (beforeQuantity.isNotEmpty) {
         product = beforeQuantity;
       } else {
