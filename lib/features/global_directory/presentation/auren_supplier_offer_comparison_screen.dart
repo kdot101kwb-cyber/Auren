@@ -316,7 +316,7 @@ class _AurenSupplierOfferComparisonScreenState
     final lines = <String>[
       'ملخص مقارنة عروض الموردين',
       'ملاحظة: بيانات مدخلة يدوياً ولم يتم التحقق من الموردين.',
-      ..._sorted.map((offer) {
+      ...offers.map((offer) {
         final total = _total(offer);
         return [
           'المورد: ${offer.supplier}',
@@ -340,7 +340,7 @@ class _AurenSupplierOfferComparisonScreenState
     }
   }
 
-  Future<void> _copyCsv() async {
+  Future<void> _copyCsv(List<_Offer> offers) async {
     final rows = <String>[
       SupplierOfferComparisonLogic.csvRow([
         'Supplier',
@@ -512,7 +512,7 @@ class _AurenSupplierOfferComparisonScreenState
                     ),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
-                      onPressed: _offers.isEmpty ? null : _copyCsv,
+                      onPressed: filteredOffers.isEmpty ? null : () => _copyCsv(filteredOffers),
                       icon: const Icon(Icons.table_chart_outlined),
                       label: const Text('نسخ CSV للجدول'),
                     ),
