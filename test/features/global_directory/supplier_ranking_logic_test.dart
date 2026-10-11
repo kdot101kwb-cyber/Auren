@@ -150,6 +150,19 @@ void main() {
       expect(result.warnings, contains('missing_or_invalid_cost'));
     });
 
+  test('warns when the requested maximum lead time is invalid', () {
+    const candidate = SupplierRankingCandidate(
+      id: 'fast', name: 'Fast', currency: 'USD',
+      price: 10, shipping: 0, leadTimeDays: 1,
+      minimumOrder: 1, verified: true, rating: 5,
+    );
+    final result = SupplierRankingLogic.rank(
+      [candidate], currency: 'USD', maxLeadTimeDays: -1,
+    ).single;
+    expect(result.reasons, isNot(contains('meets_lead_time')));
+    expect(result.warnings, contains('invalid_max_lead_time_constraint'));
+  });
+
   test('keeps scores finite for extreme finite costs', () {
     const candidates = [
       SupplierRankingCandidate(
