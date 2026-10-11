@@ -150,7 +150,7 @@ void main() {
       expect(result.warnings, contains('missing_or_invalid_cost'));
     });
 
-  test('keeps scores finite when the comparable cost range overflows', () {
+  test('keeps scores finite for extreme finite costs', () {
     const candidates = [
       SupplierRankingCandidate(
         id: 'small', name: 'Small', currency: 'USD',
