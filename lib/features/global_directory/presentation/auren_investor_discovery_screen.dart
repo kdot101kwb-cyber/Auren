@@ -32,8 +32,23 @@ class _AurenInvestorDiscoveryScreenState extends State<AurenInvestorDiscoveryScr
 
   Future<void> _open(String value) async {
     final uri = Uri.tryParse(value);
-    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      _showOpenError();
+      return;
+    }
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) _showOpenError();
+    } catch (_) {
+      _showOpenError();
+    }
+  }
+
+  void _showOpenError() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تعذر فتح الموقع؛ تحقق من الاتصال أو افتحه من المتصفح.')),
+    );
   }
 
   @override

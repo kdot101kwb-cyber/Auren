@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'auren_supplier_rfq_draft_screen.dart';
 import 'auren_supplier_discovery_screen.dart';
 import 'auren_investor_discovery_screen.dart';
+import 'auren_business_resource_screen.dart';
+import 'auren_trade_deal_screen.dart';
 
 /// First usable step of AUREN Business Navigator.
 /// This screen creates an informational plan only; it does not submit registrations,
@@ -106,10 +108,29 @@ class _AurenBusinessNavigatorScreenState
 
   Future<void> _openSource(String key) async {
     final url = _officialStartingPoints[_country]?[key];
-    if (url == null) return;
-    final uri = Uri.tryParse(url);
-    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final uri = url == null ? null : Uri.tryParse(url);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('رابط الجهة الرسمية غير صالح.')),
+        );
+      }
+      return;
+    }
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الموقع. تحقق من الاتصال أو افتحه من المتصفح.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الموقع حالياً.')),
+        );
+      }
+    }
   }
 
   @override
@@ -218,6 +239,9 @@ class _AurenBusinessNavigatorScreenState
           const SizedBox(height: 12),
           TextField(
             controller: _budgetController,
+            onChanged: (_) {
+              if (_planCreated) setState(() {});
+            },
             keyboardType: TextInputType.text,
             decoration: const InputDecoration(
               labelText: 'الميزانية التقريبية (اختياري)',
@@ -333,6 +357,64 @@ class _AurenBusinessNavigatorScreenState
               ),
               icon: const Icon(Icons.handshake_outlined),
               label: const Text('اكتشف المستثمرين والتمويل'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenBusinessResourceScreen(
+                    type: AurenBusinessResourceType.factories,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.factory_outlined),
+              label: const Text('اكتشف المصانع والمصنّعين'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenBusinessResourceScreen(
+                    type: AurenBusinessResourceType.companies,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.business_outlined),
+              label: const Text('دليل الشركات والشركاء'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenBusinessResourceScreen(
+                    type: AurenBusinessResourceType.banks,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.account_balance_outlined),
+              label: const Text('البنوك وتمويل التجارة'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenBusinessResourceScreen(
+                    type: AurenBusinessResourceType.exportImport,
+                  ),
+                ),
+              ),
+              icon: const Icon(Icons.local_shipping_outlined),
+              label: const Text('التصدير والاستيراد والأسواق'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenTradeDealScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.track_changes_outlined),
+              label: const Text('متابعة صفقة تجارية'),
             ),
             const SizedBox(height: 18),
             Text('مصادر رسمية للبدء', style: theme.textTheme.titleLarge),
