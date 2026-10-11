@@ -508,15 +508,6 @@ class _AurenEntertainmentOutputScreenState
     _resetControlsTimer();
   }
 
-  Future<void> _exitFullscreenIfNeeded() async {
-    if (!_isFullscreen) return;
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-  }
-
   bool get _canSaveWatchProgress => widget.watchUid?.isNotEmpty == true &&
       widget.watchJobId?.isNotEmpty == true &&
       (widget.watchEpisodeNumber ?? 0) > 0;
