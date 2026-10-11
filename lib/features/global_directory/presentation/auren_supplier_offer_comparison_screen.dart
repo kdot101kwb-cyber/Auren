@@ -708,7 +708,13 @@ class _AurenSupplierOfferComparisonScreenState
               )).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  setState(() => _selectedRankingCurrency = value);
+                  setState(() {
+                    if (_selectedRankingCurrency != value) {
+                      // A budget amount must never carry across currencies.
+                      _rankingBudgetController.clear();
+                    }
+                    _selectedRankingCurrency = value;
+                  });
                 }
               },
             ),
