@@ -319,4 +319,52 @@ void main() {
       expect(SupplierOfferComparisonLogic.csvCell('Normal supplier'), '"Normal supplier"');
     });
   });
+
+  group('SupplierOfferComparisonLogic quote quality review', () {
+    test('detects duplicate supplier labels ignoring case and extra whitespace', () {
+      expect(
+        SupplierOfferComparisonLogic.duplicateSupplierNames([
+          ' Acme   Textiles ',
+          'acme textiles',
+          'Other Supplier',
+          '',
+          '   ',
+        ]),
+        {'acme textiles'},
+      );
+    });
+
+    test('does not flag unique or blank supplier labels as duplicates', () {
+      expect(
+        SupplierOfferComparisonLogic.duplicateSupplierNames([
+          'Acme',
+          'Beta',
+          '',
+          '   ',
+        ]),
+        isEmpty,
+      );
+    });
+
+    test('reports only missing decision-critical quote terms', () {
+      expect(
+        SupplierOfferComparisonLogic.missingDecisionFields(
+          moq: '',
+          leadTime: '  ',
+          payment: 'Net 30',
+          validity: '',
+        ),
+        ['minimum_order', 'lead_time', 'validity'],
+      );
+      expect(
+        SupplierOfferComparisonLogic.missingDecisionFields(
+          moq: '100 units',
+          leadTime: '2 weeks',
+          payment: '50% deposit',
+          validity: '2026-12-31',
+        ),
+        isEmpty,
+      );
+    });
+  });
 }
