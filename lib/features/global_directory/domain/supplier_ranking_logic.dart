@@ -62,9 +62,15 @@ class SupplierRankingLogic {
     double? maxBudget,
     double? maxMinimumOrder,
   }) {
+    final requestedCurrency = currency.trim().toUpperCase();
+    // A blank currency is not a comparable monetary unit. Never allow offers
+    // with missing currency metadata to be ranked together as if they matched.
+    if (requestedCurrency.isEmpty) {
+      return const <SupplierRankingResult>[];
+    }
+
     final sameCurrency = candidates
-        .where((c) => c.currency.trim().toUpperCase() ==
-            currency.trim().toUpperCase())
+        .where((c) => c.currency.trim().toUpperCase() == requestedCurrency)
         .toList(growable: false);
     final validCosts = sameCurrency
         .map((c) => c.totalCost)
