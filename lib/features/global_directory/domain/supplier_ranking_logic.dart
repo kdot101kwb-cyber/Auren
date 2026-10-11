@@ -100,7 +100,9 @@ class SupplierRankingLogic {
         if (cost == minCost) reasons.add('lowest_comparable_total_cost');
       }
 
-      if (maxLeadTimeDays != null) {
+      if (maxLeadTimeDays != null && maxLeadTimeDays < 0) {
+        warnings.add('invalid_max_lead_time_constraint');
+      } else if (maxLeadTimeDays != null) {
         final days = c.leadTimeDays;
         if (days == null || days < 0) {
           warnings.add('missing_or_invalid_lead_time');
