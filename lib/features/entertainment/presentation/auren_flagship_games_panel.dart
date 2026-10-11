@@ -846,6 +846,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         children: [
           _stat('Best', _bestScore.toString()),
           _stat('Wins', _wins.toString()),
+           _stat('Rounds', _savedRounds.toString()),
           _stat('Rating', _serverRating.toString()),
           _stat('Matches', _serverMatches.toString()),
         ]),
