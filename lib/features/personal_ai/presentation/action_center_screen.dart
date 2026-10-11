@@ -5,7 +5,6 @@ import '../../../core/models/action_request.dart';
 import '../../../services/actions/action_executor.dart';
 import '../../../services/actions/action_repository.dart';
 import '../../../services/auth/auth_service.dart';
-import '../../supplier/presentation/auren_supplier_action_draft_screen.dart';
 
 class AurenActionCenterScreen extends StatefulWidget {
   const AurenActionCenterScreen({super.key});
@@ -395,7 +394,7 @@ class _AurenActionCenterScreenState extends State<AurenActionCenterScreen> {
           '${action.description}\n$statusLabel'
           '${action.executionStartedAt == null ? '' : '\nبدأ التنفيذ: ' + _formatActionTime(action.executionStartedAt!)}'
           '${action.executionSpendingDay == null ? '' : '\nيوم الإنفاق: ${action.executionSpendingDay}'}'
-          '${action.result == null ? '' : '\n${action.result}'}',
+          '${action.result == null ? '' : '\n${_resultLabel(action)}'}',
         ),
         isThreeLine: action.result != null || !history,
         trailing: history

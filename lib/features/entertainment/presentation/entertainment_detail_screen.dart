@@ -293,7 +293,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                   final comments = commentSnapshot.data ?? const [];
                   if (comments.isEmpty) return const Text('لسه ما في تعليقات. كن أول من يعلّق.');
                   return Column(children: comments.take(20).map<Widget>((comment) {
-                    final data = comment.data() as Map<String, dynamic>;
+                    final data = comment.data();
                     final commentUid = data['uid']?.toString() ?? '';
                     final authorLabel = commentUid.isNotEmpty && commentUid == uid ? 'أنت' : 'مستخدم AUREN';
                     return Card(child: ListTile(

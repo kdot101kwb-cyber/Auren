@@ -7,6 +7,6 @@ class LifeDashboardService {
   final g=r[0] as QuerySnapshot<Map<String,dynamic>>; final a=g.docs.where((d)=>(d.data()['status']?.toString()??'active')=='active').toList();
   final avg=a.isEmpty?0:a.fold<int>(0,(s,d)=>s+((d.data()['progress'] as num?)?.toInt()??0))~/a.length;
   QuerySnapshot<Map<String,dynamic>>? o; try{o=await db.collection('opportunities').where('visibility',isEqualTo:'public').limit(100).get();}catch(_){}
-  return AurenLifeDashboard(activeGoals:a.length,memories:(r[1] as QuerySnapshot).size,businesses:(r[2] as QuerySnapshot).size,products:(r[3] as QuerySnapshot).size,posts:(r[4] as QuerySnapshot).size,opportunities:o?.size??0,averageProgress:avg);
+  return AurenLifeDashboard(activeGoals:a.length,memories:(r[1]).size,businesses:(r[2]).size,products:(r[3]).size,posts:(r[4]).size,opportunities:o?.size??0,averageProgress:avg);
  }
 }

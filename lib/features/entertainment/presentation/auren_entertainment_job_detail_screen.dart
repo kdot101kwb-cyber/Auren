@@ -13,10 +13,10 @@ import '../../../services/entertainment/auren_entertainment_orchestrator.dart';
 int aurenFindNextPlayableEpisodeIndex(List<dynamic> episodes, int start, {int maxEpisodes = 20}) {
   for (var i = start; i < episodes.length && i < maxEpisodes; i++) {
     final item = episodes[i] is Map
-        ? Map<String, dynamic>.from(episodes[i] as Map)
+        ? Map<String, dynamic>.from(episodes[i])
         : <String, dynamic>{};
     final media = item['media'] is Map
-        ? Map<String, dynamic>.from(item['media'] as Map)
+        ? Map<String, dynamic>.from(item['media'])
         : <String, dynamic>{};
     final video = media['video'];
     if (video is Map && video['url']?.toString().isNotEmpty == true) return i;
@@ -68,7 +68,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
           .httpsCallable('publishEntertainmentOutput');
       final result = await callable.call({'jobId': jobId});
       if (!context.mounted) return;
-      final data = Map<String, dynamic>.from(result.data as Map);
+      final data = Map<String, dynamic>.from(result.data);
       final publishedItemId = data['itemId']?.toString() ?? '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -321,7 +321,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                 const SizedBox(height: 18),
                 _sectionTitle('Series Blueprint'),
                 const SizedBox(height: 8),
-                _seriesBlueprintCard(context, Map<String, dynamic>.from(job['seriesBlueprint'] as Map)),
+                _seriesBlueprintCard(context, Map<String, dynamic>.from(job['seriesBlueprint'])),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.of(context).push(
@@ -347,7 +347,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                       return const Card(child: ListTile(leading: Icon(Icons.hourglass_empty_rounded), title: Text('الحزمة النهائية لم تصبح متاحة بعد'), subtitle: Text('سيتم عرض الحلقات والأصول تلقائياً عند اكتمالها.')));
                     }
                     final data = packageSnapshot.data!;
-                    final pkg = data['package'] is Map ? Map<String, dynamic>.from(data['package'] as Map) : <String, dynamic>{};
+                    final pkg = data['package'] is Map ? Map<String, dynamic>.from(data['package']) : <String, dynamic>{};
                     final episodes = pkg['episodes'] is List ? pkg['episodes'] as List : const [];
                     final assets = pkg['availableAssets'] is List ? (pkg['availableAssets'] as List).map((e) => e.toString()).toList() : const <String>[];
                     return Card(
@@ -365,7 +365,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                           ...episodes.take(20).map((episode) {
                             final e = episode is Map ? Map<String, dynamic>.from(episode) : <String, dynamic>{};
                             final n = e['episodeNumber'] ?? '?';
-                            final media = e['media'] is Map ? Map<String, dynamic>.from(e['media'] as Map) : <String, dynamic>{};
+                            final media = e['media'] is Map ? Map<String, dynamic>.from(e['media']) : <String, dynamic>{};
                             final hasVideo = media['video'] is Map || media['video']?.toString().isNotEmpty == true;
                             final hasTrailer = media['trailer'] is Map || media['trailer']?.toString().isNotEmpty == true;
                             final episodeNumber = int.tryParse(n.toString()) ?? 1;
@@ -422,13 +422,13 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
                 _musicReadyCard(context, job),
               ],
               if (status == 'ready' && job['providerResult'] is Map &&
-                  (job['providerResult'] as Map).isNotEmpty) ...[
+                  (job['providerResult']).isNotEmpty) ...[
                 const SizedBox(height: 18),
                 _sectionTitle('الناتج'),
                 const SizedBox(height: 8),
                 _outputCard(
                   context,
-                  Map<String, dynamic>.from(job['providerResult'] as Map),
+                  Map<String, dynamic>.from(job['providerResult']),
                   published: job['publishedItemId']?.toString().isNotEmpty == true,
                   publishedItemId: job['publishedItemId']?.toString() ?? '',
                   onPublish: () => _publish(context, uid),
@@ -475,21 +475,21 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     final raw = episodes[episodeIndex];
     final episode = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     final number = int.tryParse(episode['episodeNumber']?.toString() ?? '') ?? 1;
-    final media = episode['media'] is Map ? Map<String, dynamic>.from(episode['media'] as Map) : <String, dynamic>{};
+    final media = episode['media'] is Map ? Map<String, dynamic>.from(episode['media']) : <String, dynamic>{};
     final video = media['video'];
     if (video == null) return;
     final output = video is Map ? Map<String, dynamic>.from(video) : {'url': video.toString(), 'type': 'video', 'mimeType': 'video/mp4'};
 
     final nextIndex = aurenFindNextPlayableEpisodeIndex(episodes, episodeIndex + 1);
     final nextEpisode = nextIndex >= 0
-        ? (episodes[nextIndex] is Map ? Map<String, dynamic>.from(episodes[nextIndex] as Map) : <String, dynamic>{})
+        ? (episodes[nextIndex] is Map ? Map<String, dynamic>.from(episodes[nextIndex]) : <String, dynamic>{})
         : <String, dynamic>{};
     final nextNumber = int.tryParse(nextEpisode['episodeNumber']?.toString() ?? '') ?? 0;
-    final nextMedia = nextEpisode['media'] is Map ? Map<String, dynamic>.from(nextEpisode['media'] as Map) : <String, dynamic>{};
+    final nextMedia = nextEpisode['media'] is Map ? Map<String, dynamic>.from(nextEpisode['media']) : <String, dynamic>{};
     final nextThumb = nextMedia['thumbnail'];
     final nextPreview = nextThumb is Map ? nextThumb['url']?.toString() ?? '' : nextThumb?.toString() ?? '';
     final pickerEpisodes = episodes.take(20).map((item) {
-      final e = item is Map ? Map<String, dynamic>.from(item as Map) : <String, dynamic>{};
+      final e = item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{};
       return {'episodeNumber': e['episodeNumber'], 'label': 'الحلقة ${e['episodeNumber'] ?? ''}'};
     }).toList();
 
@@ -503,7 +503,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
           episodes: pickerEpisodes,
           onSelectEpisode: (selected) {
             final index = episodes.indexWhere((item) {
-              final e = item is Map ? Map<String, dynamic>.from(item as Map) : <String, dynamic>{};
+              final e = item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{};
               return int.tryParse(e['episodeNumber']?.toString() ?? '') == selected;
             });
             _openEpisode(playerContext, uid, seriesTitle, episodes, index);
@@ -540,7 +540,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
   Widget _seriesBlueprintCard(BuildContext context, Map<String, dynamic> blueprint) {
     final characters = blueprint['characters'] is List ? blueprint['characters'] as List : const [];
     final episodes = blueprint['episodes'] is List ? blueprint['episodes'] as List : const [];
-    final arc = blueprint['seasonArc'] is Map ? Map<String, dynamic>.from(blueprint['seasonArc'] as Map) : <String, dynamic>{};
+    final arc = blueprint['seasonArc'] is Map ? Map<String, dynamic>.from(blueprint['seasonArc']) : <String, dynamic>{};
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -567,7 +567,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             const SizedBox(height: 14), const Text('الشخصيات', style: TextStyle(fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
             ...characters.take(8).map((raw) {
-              final character = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+              final character = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
               final name = character['name']?.toString() ?? 'شخصية';
               final role = character['role']?.toString() ?? '';
               return ListTile(contentPadding: EdgeInsets.zero, dense: true, leading: const Icon(Icons.person_outline_rounded),
@@ -578,7 +578,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             const SizedBox(height: 14), const Text('الحلقات', style: TextStyle(fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
             ...episodes.take(20).map((raw) {
-              final episode = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+              final episode = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
               final number = episode['number']?.toString() ?? '?';
               final title = episode['title']?.toString().trim() ?? '';
               final logline = episode['logline']?.toString().trim() ?? '';
@@ -813,11 +813,11 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
   }
   Widget _movieReadyCard(BuildContext context, Map<String, dynamic> job) {
     final raw = job['movieAssemblyManifest'] ?? job['movieArtifacts'];
-    final manifest = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+    final manifest = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     final scenes = manifest['scenes'] is List ? manifest['scenes'] as List : const [];
     final assemblyId = job['movieAssemblyId']?.toString() ?? manifest['assemblyId']?.toString() ?? '';
     final playable = scenes.where((s) {
-      final m = s is Map ? Map<String, dynamic>.from(s as Map) : <String, dynamic>{};
+      final m = s is Map ? Map<String, dynamic>.from(s) : <String, dynamic>{};
       final o = m['output'] ?? m['media'] ?? m['video'];
       final url = o is Map ? o['url']?.toString() ?? '' : o?.toString() ?? '';
       return url.isNotEmpty;
@@ -842,7 +842,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
 
   Widget _musicReadyCard(BuildContext context, Map<String, dynamic> job) {
     final raw = job['musicArtifact'] ?? job['providerResult'];
-    final artifact = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+    final artifact = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     final url = artifact['url']?.toString() ?? artifact['mediaUrl']?.toString() ?? '';
     final title = job['title']?.toString().isNotEmpty == true ? job['title'].toString() : job['idea']?.toString() ?? 'أغنية AUREN';
     return Card(

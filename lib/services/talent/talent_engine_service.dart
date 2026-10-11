@@ -21,27 +21,27 @@ class AurenTalentEngineService {
     final profileDocs=<QueryDocumentSnapshot<Map<String,dynamic>>>[];
     const profilePageSize=500;
     DocumentSnapshot<Map<String,dynamic>>? lastProfileDoc;
-    do {
+    while (true) {
       Query<Map<String,dynamic>> profileQuery=_db.collectionGroup('profile_modes')
           .where('discoverable',isEqualTo:true)
           .limit(profilePageSize);
-      if(lastProfileDoc!=null) profileQuery=profileQuery.startAfterDocument(lastProfileDoc!);
+      if(lastProfileDoc!=null) profileQuery=profileQuery.startAfterDocument(lastProfileDoc);
       final page=await profileQuery.get();
       if(page.docs.isEmpty) break;
       profileDocs.addAll(page.docs);
       lastProfileDoc=page.docs.last;
       if(page.docs.length<profilePageSize) break;
-    } while(lastProfileDoc!=null);
+    }
     // Load the complete verified Skill Graph in pages. A global limit could
     // otherwise hide a candidate's verified skill when the collection grows.
     final verifiedByOwner=<String,List<String>>{};
     const pageSize=500;
     DocumentSnapshot<Map<String,dynamic>>? lastVerifiedDoc;
-    do {
+    while (true) {
       Query<Map<String,dynamic>> query=_db.collection('talent_skill_graph')
           .where('verified',isEqualTo:true)
           .limit(pageSize);
-      if(lastVerifiedDoc!=null) query=query.startAfterDocument(lastVerifiedDoc!);
+      if(lastVerifiedDoc!=null) query=query.startAfterDocument(lastVerifiedDoc);
       final page=await query.get();
       if(page.docs.isEmpty) break;
       for(final skillDoc in page.docs){
@@ -53,7 +53,7 @@ class AurenTalentEngineService {
       }
       lastVerifiedDoc=page.docs.last;
       if(page.docs.length<pageSize) break;
-    } while(lastVerifiedDoc!=null);
+    }
     final candidates=<AurenTalentCandidate>[];
     for(final doc in profileDocs){
       final d=doc.data(); final owner=doc.reference.parent.parent?.id ?? '';
@@ -96,31 +96,31 @@ class AurenTalentEngineService {
         <QueryDocumentSnapshot<Map<String, dynamic>>>[];
     const profilePageSize = 500;
     DocumentSnapshot<Map<String, dynamic>>? lastProfileDoc;
-    do {
+    while (true) {
       Query<Map<String, dynamic>> profileQuery = _db
           .collectionGroup('profile_modes')
           .where('discoverable', isEqualTo: true)
           .limit(profilePageSize);
       if (lastProfileDoc != null) {
-        profileQuery = profileQuery.startAfterDocument(lastProfileDoc!);
+        profileQuery = profileQuery.startAfterDocument(lastProfileDoc);
       }
       final page = await profileQuery.get();
       if (page.docs.isEmpty) break;
       profileDocs.addAll(page.docs);
       lastProfileDoc = page.docs.last;
       if (page.docs.length < profilePageSize) break;
-    } while (lastProfileDoc != null);
+    }
 
     final verifiedByOwner = <String, List<String>>{};
     const pageSize = 500;
     DocumentSnapshot<Map<String, dynamic>>? lastVerifiedDoc;
-    do {
+    while (true) {
       Query<Map<String, dynamic>> query = _db
           .collection('talent_skill_graph')
           .where('verified', isEqualTo: true)
           .limit(pageSize);
       if (lastVerifiedDoc != null) {
-        query = query.startAfterDocument(lastVerifiedDoc!);
+        query = query.startAfterDocument(lastVerifiedDoc);
       }
       final page = await query.get();
       if (page.docs.isEmpty) break;
@@ -133,7 +133,7 @@ class AurenTalentEngineService {
       }
       lastVerifiedDoc = page.docs.last;
       if (page.docs.length < pageSize) break;
-    } while (lastVerifiedDoc != null);
+    }
 
     final matches = <AurenTalentCandidate>[];
     final seenOwners = <String>{};

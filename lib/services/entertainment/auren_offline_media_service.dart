@@ -136,7 +136,7 @@ class AurenOfflineMediaService {
       final request=http.Request('GET',uri);
       if(existingPart>0) request.headers['Range']='bytes=$existingPart-';
       final response=await client.send(request);
-      if(response.statusCode==416 && await temp.exists()){await temp.delete(); return download(url:url,title:title,type:type,id:id,onProgress:onProgress);}
+      if(response.statusCode==416 && await temp.exists()){await temp.delete(); return await download(url:url,title:title,type:type,id:id,onProgress:onProgress);}
       if(response.statusCode<200||response.statusCode>=300)throw HttpException('HTTP ${response.statusCode}');
       final total=(response.contentLength??0)+(response.statusCode==206?existingPart:0);
       var received=existingPart;

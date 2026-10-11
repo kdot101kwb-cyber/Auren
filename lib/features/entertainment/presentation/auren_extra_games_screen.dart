@@ -97,11 +97,11 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
           ),
         ),
         Padding(padding: const EdgeInsets.fromLTRB(12, 4, 12, 8), child: Row(children: [
-          Expanded(child: _statTile(Icons.stars_rounded, 'XP', '\$_gamingXp')), const SizedBox(width: 8),
-          Expanded(child: _statTile(Icons.sports_esports, 'جولات', '\$_gamesPlayed')), const SizedBox(width: 8),
-          Expanded(child: _statTile(Icons.workspace_premium, 'جوائز', '\${_gameBadges.length}')),
+          Expanded(child: _statTile(Icons.stars_rounded, 'XP', '$_gamingXp')), const SizedBox(width: 8),
+          Expanded(child: _statTile(Icons.sports_esports, 'جولات', '$_gamesPlayed')), const SizedBox(width: 8),
+          Expanded(child: _statTile(Icons.workspace_premium, 'جوائز', '${_gameBadges.length}')),
         ])),
-        Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('المستوى \${1 + (_seasonXp ~/ 250)} • نقاط الموسم: $_seasonXp', style: Theme.of(context).textTheme.labelSmall)),
+        Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('المستوى ${1 + (_seasonXp ~/ 250)} • نقاط الموسم: $_seasonXp', style: Theme.of(context).textTheme.labelSmall)),
         Expanded(child: Column(children: [
           Expanded(child: _buildSelectedGame()),
           _miniGameRewardCard(),
@@ -120,10 +120,6 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
         ])),
       ]),
     ));
-  }
-
-  void _awardGamingXp({int base = 10, String? badge}) {
-    setState(() { _gamingXp += base; _gamesPlayed++; if (badge != null) _gameBadges.add(badge); });
   }
 
   String get _selectedGameId => _games[_selected].$1.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_').toLowerCase();
@@ -532,12 +528,12 @@ class _TenMoreGamesPanel extends StatefulWidget {
   @override State<_TenMoreGamesPanel> createState()=>_TenMoreGamesPanelState();
 }
 class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
-  int _game=0,_score=0,_number=50,_target=50,_heads=0,_tails=0,_mathA=2,_mathB=3,_mathAnswer=5,_seconds=20,_targetScore=0,_hangWrong=0,_odd=0,_color=0,_count=5;
+  int _game=0,_score=0,_target=50,_heads=0,_tails=0,_mathA=2,_mathB=3,_mathAnswer=5,_targetScore=0,_hangWrong=0,_odd=0,_color=0,_count=5;
   final _rng=Random(); final _input=TextEditingController();
   @override void initState(){super.initState();_game=widget.initialIndex;} String _word='AUREN',_last='AUREN',_msg='ابدأ اللعبة';
   Timer? _timer;
   final _words=['AUREN','SUDAN','FLUTTER','MUSIC','PLANET'];
-  void _reset(){_score=0;_number=50;_target=1+_rng.nextInt(100);_heads=0;_tails=0;_seconds=20;_targetScore=0;_hangWrong=0;_last='AUREN';_msg='ابدأ اللعبة';_newMath();_newRound();setState((){});}
+  void _reset(){_score=0;_target=1+_rng.nextInt(100);_heads=0;_tails=0;_targetScore=0;_hangWrong=0;_last='AUREN';_msg='ابدأ اللعبة';_newMath();_newRound();setState((){});}
   void _newMath(){_mathA=1+_rng.nextInt(12);_mathB=1+_rng.nextInt(12);_mathAnswer=_mathA+_mathB;}
   void _newRound(){_odd=_rng.nextInt(9);_color=_rng.nextInt(4);_count=2+_rng.nextInt(9);}
   void _math(int n){if(n==_mathAnswer){_score++;_newMath();setState((){});}}
@@ -557,7 +553,7 @@ class _TenMoreGamesPanelState extends State<_TenMoreGamesPanel>{
       case 0: body=Column(children:[Text('النمط: '+(_score%2==0?'🔵 🟢 🟡':'🟢 🔴 🟡'),style:const TextStyle(fontSize:28)),const SizedBox(height:14),Wrap(spacing:8,children:[for(var i=0;i<4;i++)FilledButton.tonal(onPressed:(){if(i==(_score%4)){_score++;setState((){});}else{_msg='حاول مرة أخرى';setState((){});}},child:Text(['🔵','🟢','🟡','🔴'][i]))])]);break;
       case 1: body=Column(children:[Text(_mathA.toString()+' + '+_mathB.toString()+' = ?',style:const TextStyle(fontSize:32,fontWeight:FontWeight.w900)),Wrap(spacing:8,children:[for(var n in [_mathAnswer-2,_mathAnswer-1,_mathAnswer,_mathAnswer+1])FilledButton.tonal(onPressed:()=>_math(n),child:Text(n.toString()))])]);break;
       case 2: body=Column(children:[Text(_msg),TextField(keyboardType:TextInputType.number,decoration:const InputDecoration(labelText:'خمن 1-100',border:OutlineInputBorder()),onSubmitted:(v){final n=int.tryParse(v);if(n!=null)_guess(n);})]);break;
-      case 3: body=Column(children:[Text(_msg,style:const TextStyle(fontSize:50)),Text('صورة: '+_heads.toString()+' • كتابة: '+_tails.toString())]);break;
+      case 3: body=Column(children:[Text(_msg,style:const TextStyle(fontSize:50)),Text('صورة: '+_heads.toString()+' • كتابة: '+_tails.toString()),const SizedBox(height:8),FilledButton.icon(onPressed:_flip,icon:const Icon(Icons.casino_outlined),label:const Text('ارمِ العملة'))]);break;
       case 4: body=Column(children:[Text('🎯',style:const TextStyle(fontSize:70)),Text('النقاط: '+_targetScore.toString()),FilledButton(onPressed:_tapTarget,child:const Text('اضغط الهدف'))]);break;
       case 5: body=Column(children:[Text(_word.split('').map((x)=>x==' '? ' ': ' _ ').join()),Text('أخطاء: '+_hangWrong.toString()+'/6'),Wrap(spacing:4,children:[for(final l in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''))OutlinedButton(onPressed:()=>_hang(l),child:Text(l))])]);break;
       case 6: body=Column(children:[Text('آخر كلمة: '+_last),TextField(controller:_input,textCapitalization:TextCapitalization.characters,onSubmitted:(_){_chain();},decoration:const InputDecoration(labelText:'كلمة تبدأ بآخر حرف',border:OutlineInputBorder()))]);break;
@@ -642,13 +638,23 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
     if(i==2){_message='🛡️ صدّ الهجمة!';_combo=min(10,_combo+2);return;}
     if(i==3){if(_shots<=0){_message='لا توجد سهام';return;}_shots--;final hit=_rng.nextDouble()<.72;_message=hit?'🏹 إصابة!':'❌ أخطأت';_score+=hit?18:2;return;}
     if(i==4){final ok=_rng.nextDouble()<.65;_message=ok?'⚡ رد فعل ناجح!':'💥 تأخرت!';_score+=ok?20:0;if(!ok)_health=max(0,_health-12);return;}
-    final dmg=i==1?18+_rng.nextInt(18):22+_rng.nextInt(16);_enemy=max(0,_enemy-dmg);_score+=dmg;_combo=min(10,_combo+1);_message='⚔️ ضرر \${dmg} — العدو \${_enemy}';if(_enemy==0){_level++;_enemy=100;_energy=10;_message='🏆 فوز! عدو جديد.';}
+    final dmg=i==1?18+_rng.nextInt(18):22+_rng.nextInt(16);_enemy=max(0,_enemy-dmg);_score+=dmg;_combo=min(10,_combo+1);_message='⚔️ ضرر ${dmg} — العدو ${_enemy}';if(_enemy==0){_level++;_enemy=100;_energy=10;_message='🏆 فوز! عدو جديد.';}
   }
-  void _sportsAction(int i){if(i==5){final ok=_rng.nextDouble()<.62;_message=ok?'⚽ GOAL!':'🧤 تصدّى الحارس';_score+=ok?25:4;}else if(i==6){final ok=_rng.nextDouble()<.7;_message=ok?'🏀 سلة!':'❌ ضاعت';_score+=ok?20:2;}else if(i==7){_laps++;_score+=12;_energy=min(10,_energy+1);_message='🏃 اندفاعة — لفة \${_laps}';}else if(i==8){final ok=_rng.nextDouble()<.68;_message=ok?'🎾 ردّ ناجح!':'❌ خارج الملعب';_score+=ok?18:3;}else{_laps++;_score+=15;_message='🚴 لفة \${_laps}';}}
+  void _sportsAction(int i){if(i==5){final ok=_rng.nextDouble()<.62;_message=ok?'⚽ GOAL!':'🧤 تصدّى الحارس';_score+=ok?25:4;}else if(i==6){final ok=_rng.nextDouble()<.7;_message=ok?'🏀 سلة!':'❌ ضاعت';_score+=ok?20:2;}else if(i==7){_laps++;_score+=12;_energy=min(10,_energy+1);_message='🏃 اندفاعة — لفة ${_laps}';}else if(i==8){final ok=_rng.nextDouble()<.68;_message=ok?'🎾 ردّ ناجح!':'❌ خارج الملعب';_score+=ok?18:3;}else{_laps++;_score+=15;_message='🚴 لفة ${_laps}';}}
   void _thinkingAction(int i){
-    final ok=_rng.nextDouble()<.62; if(i==14&&ok)_challenge=1+_rng.nextInt(99);
-    final labels=['','','','','','','','','','','🧩 لغز','🔢 مصفوفة','♟️ قرار','🧠 نمط','🔐 رمز','🃏 تطابق','🧠 تسلسل','🔵 لون','🧩 زوج','👀 ذاكرة'];
-    _message=ok?'\${labels[i]} صحيح!':'\${labels[i]} جرّب مرة أخرى';_score+=ok?18:2;
+    const labels = [
+      'Arena Duel', 'Punch Rush', 'Shield Block', 'Archer Aim',
+      'Battle Reflex', 'Penalty King', 'Hoops', 'Sprint', 'Tennis Rally',
+      'Cycling', 'Logic Grid', 'Number Matrix', 'Strategy', 'Pattern Logic',
+      'Code Breaker', 'Memory Match+', 'Sequence Recall', 'Color Memory',
+      'Pair Recall', 'Flash Memory',
+    ];
+    if (i < 10 || i >= labels.length) return;
+    final ok = _rng.nextDouble() < .62;
+    if (i == 14 && ok) _challenge = 1 + _rng.nextInt(99);
+    final label = labels[i];
+    _message = ok ? '$label صحيح!' : '$label جرّب مرة أخرى';
+    _score += ok ? 18 : 2;
   }
   void _advancedMission(){
     final missions=[
@@ -677,18 +683,18 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
   void _adventureAction(){
     final i=widget.gameIndex-21;
     if(i==6){_resource++;_score+=25;_message='💎 كنز مكتشف!';}
-    else if(i==7){_laps++;_score+=20;_message='🚀 قطاع \${_laps}';}
+    else if(i==7){_laps++;_score+=20;_message='🚀 قطاع ${_laps}';}
     else if(i==8){_health=max(0,_health-5);_score+=18;_message='🧟 هربت من الخطر!';}
     else if(i==9){_score+=10+_combo*2;_combo=min(10,_combo+1);_message='🎵 إيقاع ناجح!';}
-    else if(i==10){_resource++;_energy=min(10,_energy+1);_score+=12;_message='🏝️ مورد \${_resource}';}
+    else if(i==10){_resource++;_energy=min(10,_energy+1);_score+=12;_message='🏝️ مورد ${_resource}';}
     else if(i==11){_level++;_score+=30;_message='⏳ قفزة زمنية!';}
     else{_score+=10+_rng.nextInt(16);_message='🗺️ منطقة جديدة اكتُشفت';}
   }
   void _checkLevel(){if(_score>=_target){_level++;_target=25+(_level-1)*15;_energy=10;_combo=0;}}
   void _reset(){setState((){_x=0;_y=0;_score=0;_energy=10;_health=100;_combo=0;_level=1;_target=25;_enemy=100;_shots=5;_resource=0;_laps=0;_challenge=1+_rng.nextInt(9);_message='جاهز!';});}
   @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(16),children:[
-    Text(title,style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),Text('3D • المستوى \${_level} • النقاط \${_score}'),
-    Wrap(spacing:8,children:[Chip(label:Text('HP \${_health}')),Chip(label:Text('⚡ \${_energy}')),Chip(label:Text('Combo \${_combo}')),Chip(label:Text('الهدف \${_target}')),if((!widget.core&&!widget.adventure&&widget.gameIndex<5)||widget.gameIndex==20)Chip(label:Text('العدو \${_enemy}')),if(widget.gameIndex==3)Chip(label:Text('سهام \${_shots}')),if(widget.adventure)Chip(label:Text('موارد \${_resource}'))]),
+    Text(title,style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),Text('3D • المستوى ${_level} • النقاط ${_score}'),
+    Wrap(spacing:8,children:[Chip(label:Text('HP ${_health}')),Chip(label:Text('⚡ ${_energy}')),Chip(label:Text('Combo ${_combo}')),Chip(label:Text('الهدف ${_target}')),if((!widget.core&&!widget.adventure&&widget.gameIndex<5)||widget.gameIndex==20)Chip(label:Text('العدو ${_enemy}')),if(widget.gameIndex==3)Chip(label:Text('سهام ${_shots}')),if(widget.adventure)Chip(label:Text('موارد ${_resource}'))]),
     const SizedBox(height:12),SizedBox(height:300,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:CustomPaint(painter:_ThreeDGameScenePainter(preset:preset,x:_x,y:_y,score:_score,health:_health,combo:_combo,level:_level),child:const SizedBox.expand()))),
     const SizedBox(height:12),Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_message,style:const TextStyle(fontWeight:FontWeight.w800)))),
     Row(mainAxisAlignment:MainAxisAlignment.center,children:[IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,-1):null,icon:const Icon(Icons.arrow_upward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(-1,0):null,icon:const Icon(Icons.arrow_back)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(1,0):null,icon:const Icon(Icons.arrow_forward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,1):null,icon:const Icon(Icons.arrow_downward))]),

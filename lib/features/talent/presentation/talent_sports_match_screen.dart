@@ -8,8 +8,6 @@ class AurenSportsMatchScreen extends StatefulWidget {
   final Map<String, dynamic> event;
   const AurenSportsMatchScreen({super.key, required this.event});
 
-  String _value(String key) => (event[key] ?? '').toString().trim();
-
   @override
   State<AurenSportsMatchScreen> createState() => _AurenSportsMatchScreenState();
 }

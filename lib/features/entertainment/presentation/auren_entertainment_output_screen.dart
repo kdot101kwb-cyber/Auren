@@ -508,15 +508,6 @@ class _AurenEntertainmentOutputScreenState
     _resetControlsTimer();
   }
 
-  Future<void> _exitFullscreenIfNeeded() async {
-    if (!_isFullscreen) return;
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-  }
-
   bool get _canSaveWatchProgress => widget.watchUid?.isNotEmpty == true &&
       widget.watchJobId?.isNotEmpty == true &&
       (widget.watchEpisodeNumber ?? 0) > 0;
@@ -660,7 +651,7 @@ class _AurenEntertainmentOutputScreenState
   String _effectivePlaybackUrl() {
     final urls = _qualityUrls;
     if (_lowData && urls.containsKey('480p')) return urls['480p']!;
-    if (_quality != 'auto' && urls.containsKey(_quality)) return urls[_quality]!;
+    if (_effectiveQuality != 'auto' && urls.containsKey(_effectiveQuality)) return urls[_effectiveQuality]!;
     return _url;
   }
 
@@ -991,7 +982,7 @@ class _AurenEntertainmentOutputScreenState
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
-                      _lowData ? 'Low Data' : (_quality == 'auto' ? 'Auto' : _quality),
+                      _lowData ? 'Low Data' : (_effectiveQuality == 'auto' ? 'Auto' : _effectiveQuality),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),

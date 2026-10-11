@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../data/auren_game_progress.dart';
 import '../data/auren_game_multiplayer.dart';
-import 'auren_global_gaming_leaderboard_screen.dart';
 import 'auren_gaming_profile_screen.dart';
 import 'auren_gaming_tournament_screen.dart';
 import 'auren_live_spectator_screen.dart';
@@ -151,7 +150,6 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       final l = state['ludo'];
       final cl = state['cpuLudo'];
       final hostId = state['ludoHostId']?.toString();
-      final guestId = state['ludoGuestId']?.toString();
       final me = _multiplayer.playerId;
       final myPieces = me == hostId ? l : cl;
       final opponentPieces = me == hostId ? cl : l;
@@ -848,6 +846,7 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
         children: [
           _stat('Best', _bestScore.toString()),
           _stat('Wins', _wins.toString()),
+           _stat('Rounds', _savedRounds.toString()),
           _stat('Rating', _serverRating.toString()),
           _stat('Matches', _serverMatches.toString()),
         ]),

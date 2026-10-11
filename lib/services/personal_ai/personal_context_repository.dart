@@ -70,8 +70,8 @@ class PersonalContextRepository {
     ]);
 
     return _fromSnapshots(
-      results[0] as QuerySnapshot<Map<String, dynamic>>,
-      results[1] as QuerySnapshot<Map<String, dynamic>>,
+      results[0],
+      results[1],
     );
   }
 

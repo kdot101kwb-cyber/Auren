@@ -136,7 +136,6 @@ class _AurenBusinessNavigatorScreenState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final sources = _officialStartingPoints[_country]!;
     return Scaffold(
       appBar: AppBar(title: const Text('AUREN Business Navigator')),
       body: ListView(
