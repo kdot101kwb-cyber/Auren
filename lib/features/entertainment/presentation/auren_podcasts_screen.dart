@@ -524,7 +524,6 @@ class _AurenPodcastsScreenState extends State<AurenPodcastsScreen> {
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, index) {
               final episode = episodes[index];
-              final audioUrl = episode['audioUrl']?.toString() ?? '';
               final title = episode['title']?.toString() ?? 'Episode';
               final artwork = episode['artworkUrl']?.toString() ?? '';
               return SizedBox(
