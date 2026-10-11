@@ -1,4 +1,5 @@
 import 'package:auren/features/global_directory/presentation/auren_supplier_discovery_screen.dart';
+import 'package:auren/features/global_directory/presentation/auren_supplier_rfq_draft_screen.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:flutter/material.dart';
@@ -60,4 +61,48 @@ void main() {
     expect(find.text('Thomasnet'), findsAtLeastNWidgets(1));
     expect(find.text('Alibaba.com'), findsNothing);
   });
+
+  testWidgets('RFQ cloud restore ignores a draft owned by another user',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final auth = MockFirebaseAuth(
+      signedIn: true,
+      mockUser: MockUser(uid: 'user-a'),
+    );
+    final firestore = FakeFirebaseFirestore();
+    await firestore
+        .collection('users')
+        .doc('user-a')
+        .collection('supplier_rfq_drafts')
+        .doc('active_draft')
+        .set({
+      'ownerId': 'user-b',
+      'target': 'Private supplier',
+      'product': 'Private product',
+      'quantity': '100',
+      'destination': 'Khartoum, Sudan',
+      'specifications': '',
+      'budget': '50',
+      'currency': 'USD',
+      'delivery': 'شحن إلى العنوان',
+      'contact': '',
+      'draft': 'Private draft text',
+    });
+
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRfqDraftScreen(
+        auth: auth,
+        firestore: firestore,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final fields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
+    expect(fields[0].controller?.text, isEmpty);
+    expect(fields[1].controller?.text, isEmpty);
+    expect(find.text('Private draft text'), findsNothing);
+  });
+
 }
