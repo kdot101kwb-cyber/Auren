@@ -17,6 +17,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
     if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول عشان تستخدم التعلم.')));
     return Scaffold(
       appBar:AppBar(title:const Text('AUREN Education'),actions:[
+        IconButton(tooltip:'الدورات المحفوظة',icon:const Icon(Icons.bookmarks_outlined),onPressed:()=>_showSavedCourses(context,uid)),
         IconButton(icon:const Icon(Icons.auto_awesome),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ابني لي خطة تعلم شخصية بناءً على أهدافي ومهاراتي.')))),
       ]),
       body:StreamBuilder<List<AurenCourse>>(
@@ -51,6 +52,84 @@ class _EducationState extends State<AurenAURENEducationScreen> {
       ),
     );
   }
+  Future<void> _showSavedCourses(BuildContext context, String uid) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(sheetContext).size.height * 0.72,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Text('مكتبتي التعليمية', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+              ),
+              Expanded(
+                child: StreamBuilder<List<AurenCourse>>(
+                  stream: repo.watchSavedCourses(uid),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return const Center(child: Text('تعذر تحميل الدورات المحفوظة.'));
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final saved = snapshot.data!;
+                    if (saved.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text('ما حفظت أي دورة لسه. احفظ الدورات المهمة ليك عشان ترجع ليها هنا.'),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: saved.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (context, index) {
+                        final course = saved[index];
+                        return Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.school_outlined),
+                            title: Text(course.title),
+                            subtitle: Text(course.category),
+                            onTap: () {
+                              Navigator.pop(sheetContext);
+                              _openCourse(context, uid, course, null);
+                            },
+                            trailing: IconButton(
+                              tooltip: 'إزالة من المحفوظات',
+                              icon: const Icon(Icons.bookmark_remove_outlined),
+                              onPressed: () async {
+                                try {
+                                  await repo.toggleSaved(uid, course.id, false);
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('تعذر إزالة الدورة من المحفوظات.')),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _courseCard(BuildContext context,String uid,AurenCourse course)=>StreamBuilder<List<AurenLearningProgress>>(
     stream:repo.watchMyLearning(uid),
     builder:(context,snapshot){
