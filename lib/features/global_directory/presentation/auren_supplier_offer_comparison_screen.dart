@@ -695,6 +695,19 @@ class _AurenSupplierOfferComparisonScreenState
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 8),
+            if ((_rankingBudgetController.text.trim().isNotEmpty &&
+                    _parseOptionalQuantity(_rankingBudgetController.text) == null) ||
+                (_rankingLeadTimeController.text.trim().isNotEmpty &&
+                    _parseOptionalDays(_rankingLeadTimeController.text) == null) ||
+                (_rankingMinimumOrderController.text.trim().isNotEmpty &&
+                    _parseOptionalQuantity(_rankingMinimumOrderController.text) == null))
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'بعض شروط الترتيب غير صالحة وتم تجاهلها؛ أدخل أرقاماً موجبة أو صفراً.',
+                  style: TextStyle(color: Colors.deepOrange, fontSize: 12),
+                ),
+              ),
             DropdownButtonFormField<String>(
               value: currency,
               decoration: const InputDecoration(
@@ -709,7 +722,7 @@ class _AurenSupplierOfferComparisonScreenState
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
-                    if (_selectedRankingCurrency != value) {
+                    if (currency != value) {
                       // A budget amount must never carry across currencies.
                       _rankingBudgetController.clear();
                     }
