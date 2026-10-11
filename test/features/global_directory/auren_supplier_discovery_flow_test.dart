@@ -51,6 +51,17 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets('discovery exposes the supplier requests workflow',
+      (tester) async {
+    await pumpDiscovery(tester);
+
+    expect(find.text('طلبات الموردين'), findsOneWidget);
+    expect(
+      find.textContaining('تابع مسودات طلباتك وحالاتها'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('supplier source search filters the listed platforms',
       (tester) async {
     await pumpDiscovery(tester);
