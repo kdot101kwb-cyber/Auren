@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/supplier_offer_comparison_logic.dart';
 import '../domain/supplier_ranking_logic.dart';
+import 'auren_supplier_rfq_draft_screen.dart';
 
 /// Local, account-scoped-on-device comparison of supplier quotes.
 /// It does not verify suppliers or send external messages.
@@ -954,8 +955,29 @@ class _AurenSupplierOfferComparisonScreenState
             items: _statuses.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
             onChanged: (value) => _setStatus(offer, value),
           ),
-          if (offer.status == 'accepted')
-            const Padding(padding: EdgeInsets.only(top: 8), child: Text('اختيار مبدئي فقط؛ لا يعني عقداً أو إرسال أمر شراء.', style: TextStyle(color: Colors.deepOrange, fontSize: 12))),
+          if (offer.status == 'accepted') ...[
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text(
+                'اختيار مبدئي فقط؛ لا يعني عقداً أو إرسال أمر شراء.',
+                style: TextStyle(color: Colors.deepOrange, fontSize: 12),
+              ),
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => AurenSupplierRfqDraftScreen(
+                      initialSupplier: offer.supplier,
+                    ),
+                  ),
+                ),
+                icon: const Icon(Icons.request_quote_outlined),
+                label: const Text('إنشاء مسودة طلب سعر لهذا المورد'),
+              ),
+            ),
+          ],
         ]),
       ),
     );
