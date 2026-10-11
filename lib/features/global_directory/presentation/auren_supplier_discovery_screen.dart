@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -7,7 +9,10 @@ import 'auren_supplier_offer_comparison_screen.dart';
 /// Curated starting points for supplier discovery. Listings are not endorsements
 /// and supplier identity, quality, stock, and payment terms must be checked.
 class AurenSupplierDiscoveryScreen extends StatefulWidget {
-  const AurenSupplierDiscoveryScreen({super.key});
+  const AurenSupplierDiscoveryScreen({super.key, this.auth, this.firestore});
+
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
 
   @override
   State<AurenSupplierDiscoveryScreen> createState() => _AurenSupplierDiscoveryScreenState();
@@ -56,7 +61,11 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   Future<void> _prepareRfq(String sourceName) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AurenSupplierRfqDraftScreen(initialSupplier: sourceName),
+        builder: (_) => AurenSupplierRfqDraftScreen(
+          initialSupplier: sourceName,
+          auth: widget.auth,
+          firestore: widget.firestore,
+        ),
       ),
     );
   }
@@ -85,7 +94,10 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => const AurenSupplierOfferComparisonScreen(),
+                  builder: (_) => AurenSupplierOfferComparisonScreen(
+                    auth: widget.auth,
+                    firestore: widget.firestore,
+                  ),
                 ),
               ),
             ),
