@@ -73,6 +73,14 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
     );
   }
 
+  Future<void> _searchWebForProduct(String product) async {
+    final cleaned = product.trim();
+    if (cleaned.isEmpty) return;
+    final query = '$cleaned supplier manufacturer wholesale';
+    final uri = Uri.https('www.google.com', '/search', {'q': query});
+    await _open(uri.toString());
+  }
+
   @override
   Widget build(BuildContext context) {
     final query = _queryController.text.trim().toLowerCase();
@@ -123,6 +131,12 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _prepareProductRfq(_queryController.text.trim()),
               ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _searchWebForProduct(_queryController.text),
+              icon: const Icon(Icons.travel_explore),
+              label: const Text('ابحث عن موردين لهذا المنتج على الويب'),
             ),
             const SizedBox(height: 8),
           ],
