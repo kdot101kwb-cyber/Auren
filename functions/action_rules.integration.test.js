@@ -282,6 +282,43 @@ test('supplier offer comparison rejects malformed shipping amounts', async () =>
   }));
 });
 
+test('supplier offer comparison rejects malformed amounts on update', async () => {
+  const uid = 'supplier-offer-update-bad-amount';
+  const ref = supplierOfferComparisonRef(uid);
+  await assertSucceeds(ref.set({
+    ownerId: uid,
+    offers: [supplierOffer()],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+  await assertFails(ref.update({
+    offers: [supplierOffer({ price: '1,2,3' })],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
+test('supplier offer comparison owner cannot be changed after creation', async () => {
+  const uid = 'supplier-offer-owner-immutable';
+  const ref = supplierOfferComparisonRef(uid);
+  await assertSucceeds(ref.set({
+    ownerId: uid,
+    offers: [supplierOffer()],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+  await assertFails(ref.update({
+    ownerId: 'different-owner',
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
+test('supplier offer comparison rejects an empty purchase price', async () => {
+  const uid = 'supplier-offer-empty-price';
+  await assertFails(supplierOfferComparisonRef(uid).set({
+    ownerId: uid,
+    offers: [supplierOffer({ price: '' })],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
 test('another user cannot read a supplier offer comparison', async () => {
   const owner = 'supplier-offer-owner';
   await testEnv.withSecurityRulesDisabled(async (context) => {
