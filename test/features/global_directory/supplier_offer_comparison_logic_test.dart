@@ -311,7 +311,7 @@ void main() {
       for (final value in ['=1+1', '+SUM(A1:A2)', '-cmd', '@SUM(A1)', '  =1+1', '\\t=1+1']) {
         expect(
           SupplierOfferComparisonLogic.csvCell(value),
-          '"'$value"',
+          '"' + "'$value" + '"',
           reason: 'CSV formula-like cell should be treated as text: $value',
         );
       }
