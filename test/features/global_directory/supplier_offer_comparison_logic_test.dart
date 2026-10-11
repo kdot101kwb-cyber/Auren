@@ -100,6 +100,23 @@ void main() {
       );
     });
 
+    test('ignores rejected offers when finding the lowest total', () {
+      final offers = [
+        {'currency': 'USD', 'price': '1', 'shipping': '0', 'status': 'rejected'},
+        {'currency': 'USD', 'price': '100', 'shipping': '5', 'status': 'received'},
+        {'currency': 'USD', 'price': '120', 'shipping': '0', 'status': 'shortlist'},
+      ];
+      expect(
+        SupplierOfferComparisonLogic.isLowest(
+          currency: 'USD',
+          price: '100',
+          shipping: '5',
+          offers: offers,
+        ),
+        isTrue,
+      );
+    });
+
     test('does not rank invalid candidate amounts and ignores invalid peers', () {
       final offers = [
         {'currency': 'USD', 'price': 'bad', 'shipping': '0'},
