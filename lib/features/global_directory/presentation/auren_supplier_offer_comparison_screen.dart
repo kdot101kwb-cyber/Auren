@@ -325,16 +325,22 @@ class _AurenSupplierOfferComparisonScreenState
   double? _total(_Offer offer) =>
       SupplierOfferComparisonLogic.total(offer.price, offer.shipping);
 
-  bool _isLowest(_Offer candidate) => SupplierOfferComparisonLogic.isLowest(
-        currency: candidate.currency,
-        price: candidate.price,
-        shipping: candidate.shipping,
-        offers: _offers.map((offer) => <String, String>{
-          'currency': offer.currency,
-          'price': offer.price,
-          'shipping': offer.shipping,
-        }),
-      );
+  bool _isLowest(_Offer candidate) {
+    // A rejected quote must never be presented as a viable low-cost option.
+    if (candidate.status == 'rejected') return false;
+    return SupplierOfferComparisonLogic.isLowest(
+      currency: candidate.currency,
+      price: candidate.price,
+      shipping: candidate.shipping,
+      offers: _offers
+          .where((offer) => offer.status != 'rejected')
+          .map((offer) => <String, String>{
+                'currency': offer.currency,
+                'price': offer.price,
+                'shipping': offer.shipping,
+              }),
+    );
+  }
 
   List<_Offer> get _sorted {
     final result = List<_Offer>.from(_offers);
