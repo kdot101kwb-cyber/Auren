@@ -139,8 +139,8 @@ exports.updateAurenSupplierRequestStatus = onCall(
     const update = {
       status: nextStatus,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      ...(nextStatus === 'replied' ? {repliedAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
-      ...(nextStatus === 'completed' ? {completedAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
+      ...(nextStatus === 'replied' && currentStatus !== 'replied' ? {repliedAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
+      ...(nextStatus === 'completed' && currentStatus !== 'completed' ? {completedAt: admin.firestore.FieldValue.serverTimestamp()} : {}),
     };
     await db.runTransaction(async tx => {
       const fresh = await tx.get(ref);
