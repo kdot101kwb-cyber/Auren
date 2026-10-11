@@ -48,3 +48,12 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - The UI only offers response-related transitions when the request records `externalDispatch: true`; the backend independently enforces this precondition and validates every transition.
 - A draft, cancellation, or retry is local workflow bookkeeping. The current integration does not send email, SMS, chat messages, purchase orders, or RFQs to suppliers.
 - Status and list data are loaded from the authenticated user's own request subcollections through callable functions; the server checks ownership before changing any shared mirror document.
+
+
+## Supplier matching and ranking logic
+
+- `SupplierRankingLogic` ranks only candidates in the requested currency; it never compares raw amounts across currencies or performs FX conversion.
+- Scores are explainable through reason keys and warning keys. Missing/invalid cost, lead time, minimum order, verification state, or rating is surfaced instead of being silently treated as a positive signal.
+- Optional user constraints include maximum total budget, lead time, and minimum order. The result is deterministic: score first, then comparable total cost, then supplier name.
+- A `verified` flag is only supplied data; this ranking helper does not independently verify supplier identity or claims. Ranking is advisory and must not automatically accept an offer or place an order.
+- Pure unit tests cover same-currency filtering, missing data, invalid totals, constraints, stable tie-breaking, and immutable results.
