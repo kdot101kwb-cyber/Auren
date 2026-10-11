@@ -970,6 +970,8 @@ class _AurenSupplierOfferComparisonScreenState
                   MaterialPageRoute<void>(
                     builder: (_) => AurenSupplierRfqDraftScreen(
                       initialSupplier: offer.supplier,
+                      auth: widget.auth,
+                      firestore: widget.firestore,
                     ),
                   ),
                 ),
