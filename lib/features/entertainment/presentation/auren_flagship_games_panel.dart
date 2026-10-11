@@ -150,7 +150,6 @@ class _AurenFlagshipGamesPanelState extends State<AurenFlagshipGamesPanel> {
       final l = state['ludo'];
       final cl = state['cpuLudo'];
       final hostId = state['ludoHostId']?.toString();
-      final guestId = state['ludoGuestId']?.toString();
       final me = _multiplayer.playerId;
       final myPieces = me == hostId ? l : cl;
       final opponentPieces = me == hostId ? cl : l;
