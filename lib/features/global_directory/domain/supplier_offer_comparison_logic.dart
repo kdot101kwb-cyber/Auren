@@ -29,7 +29,7 @@ class SupplierOfferComparisonLogic {
     final candidateTotal = total(price, shipping);
     if (candidateTotal == null) return false;
     final comparable = offers
-        .where((offer) => offer['currency'] == currency)
+        .where((offer) => offer['currency'] == currency && offer['status'] != 'rejected')
         .map((offer) => total(offer['price'] ?? '', offer['shipping'] ?? ''))
         .whereType<double>();
     if (comparable.isEmpty) return false;
