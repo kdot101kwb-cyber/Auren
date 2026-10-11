@@ -35,6 +35,9 @@ class _AurenSupplierOfferComparisonScreenState
   String _filterStatus = 'all';
   String _filterValidity = 'all';
   String? _selectedRankingCurrency;
+  final _rankingBudgetController = TextEditingController();
+  final _rankingLeadTimeController = TextEditingController();
+  final _rankingMinimumOrderController = TextEditingController();
   String _message = 'جارٍ تحميل العروض…';
   StreamSubscription<User?>? _authSubscription;
   String? _observedUid;
@@ -404,9 +407,8 @@ class _AurenSupplierOfferComparisonScreenState
 
   double? _parseOptionalQuantity(String value) {
     final raw = value.trim();
-    if (raw.isEmpty || !RegExp(r'^[0-9]+(?:[.][0-9]+)?$').hasMatch(raw)) return null;
-    final parsed = double.tryParse(raw);
-    return parsed != null && parsed.isFinite && parsed >= 0 ? parsed : null;
+    if (raw.isEmpty) return null;
+    return _parseNonNegativeAmount(raw);
   }
 
   int? _parseOptionalDays(String value) {
@@ -427,7 +429,11 @@ class _AurenSupplierOfferComparisonScreenState
           verified: false, rating: null,
         )),
         currency: currency,
+        maxBudget: _parseOptionalQuantity(_rankingBudgetController.text),
+        maxLeadTimeDays: _parseOptionalDays(_rankingLeadTimeController.text),
+        maxMinimumOrder: _parseOptionalQuantity(_rankingMinimumOrderController.text),
       );
+
   List<_Offer> get _sorted {
     final result = List<_Offer>.from(_offers);
     result.sort((a, b) => SupplierOfferComparisonLogic.compare(
@@ -447,6 +453,9 @@ class _AurenSupplierOfferComparisonScreenState
   void dispose() {
     _loadGeneration++;
     _authSubscription?.cancel();
+    _rankingBudgetController.dispose();
+    _rankingLeadTimeController.dispose();
+    _rankingMinimumOrderController.dispose();
     super.dispose();
   }
 
@@ -650,6 +659,42 @@ class _AurenSupplierOfferComparisonScreenState
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 10),
+            TextField(
+              controller: _rankingBudgetController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'الميزانية القصوى ($currency)',
+                hintText: 'اختياري',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _rankingLeadTimeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'أقصى مدة للتسليم بالأيام',
+                hintText: 'اختياري',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _rankingMinimumOrderController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'أقصى حد أدنى للطلب',
+                hintText: 'اختياري',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: currency,
               decoration: const InputDecoration(
