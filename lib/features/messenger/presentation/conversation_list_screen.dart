@@ -25,24 +25,6 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
   String? _uid;
   @override void initState() { super.initState(); _bootstrap(); }
   Future<void> _bootstrap() async { try { final uid = _auth.currentUserId; if (mounted) setState(() => _uid = uid); } catch (_) {} }
-  Future<void> _startDirectMessage(AurenUserProfile profile) async {
-    final uid = _uid;
-    if (uid == null || profile.uid == uid) return;
-    try {
-      final conversation = await _repo.getOrCreateDirectConversation(
-        uid: uid,
-        otherUid: profile.uid,
-        otherTitle: profile.displayName,
-      );
-      if (!mounted) return;
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => MessengerScreen(conversationId: conversation.id)),
-      );
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر بدء المحادثة: $e')));
-    }
-  }
 
   Future<void> _createGroup() async {
     final uid = _uid;
