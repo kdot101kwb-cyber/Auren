@@ -29,18 +29,18 @@ class TalentDiscoveryService {
     final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
     const pageSize = 200;
     DocumentSnapshot<Map<String, dynamic>>? lastDoc;
-    do {
+    while (true) {
       Query<Map<String, dynamic>> query = db.collection('talent_skill_graph')
           .where('ownerId',isEqualTo:ownerId)
           .where('verified',isEqualTo:true)
           .limit(pageSize);
-      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+      if (lastDoc != null) query = query.startAfterDocument(lastDoc);
       final page = await query.get();
       if (page.docs.isEmpty) break;
       verifiedDocs.addAll(page.docs);
       lastDoc = page.docs.last;
       if (page.docs.length < pageSize) break;
-    } while (lastDoc != null);
+    }
     final userSkills = verifiedDocs
         .map((d)=>_norm((d.data()['skill'] ?? '').toString()))
         .where((e)=>e.isNotEmpty)
@@ -51,20 +51,20 @@ class TalentDiscoveryService {
     final opportunityDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
     const opportunityPageSize = 200;
     DocumentSnapshot<Map<String, dynamic>>? lastOpportunity;
-    do {
+    while (true) {
       Query<Map<String, dynamic>> query = db
           .collection('opportunities')
           .where('status', isEqualTo: 'open')
           .limit(opportunityPageSize);
       if (lastOpportunity != null) {
-        query = query.startAfterDocument(lastOpportunity!);
+        query = query.startAfterDocument(lastOpportunity);
       }
       final page = await query.get();
       if (page.docs.isEmpty) break;
       opportunityDocs.addAll(page.docs);
       lastOpportunity = page.docs.last;
       if (page.docs.length < opportunityPageSize) break;
-    } while (lastOpportunity != null);
+    }
 
     final matches=<AurenTalentMatch>[];
     for(final d in opportunityDocs){
