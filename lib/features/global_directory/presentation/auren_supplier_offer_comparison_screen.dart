@@ -13,7 +13,10 @@ import '../domain/supplier_ranking_logic.dart';
 /// Local, account-scoped-on-device comparison of supplier quotes.
 /// It does not verify suppliers or send external messages.
 class AurenSupplierOfferComparisonScreen extends StatefulWidget {
-  const AurenSupplierOfferComparisonScreen({super.key});
+  const AurenSupplierOfferComparisonScreen({super.key, this.auth, this.firestore});
+
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
 
   @override
   State<AurenSupplierOfferComparisonScreen> createState() =>
@@ -22,6 +25,8 @@ class AurenSupplierOfferComparisonScreen extends StatefulWidget {
 
 class _AurenSupplierOfferComparisonScreenState
     extends State<AurenSupplierOfferComparisonScreen> {
+  FirebaseAuth get _auth => widget.auth ?? FirebaseAuth.instance;
+  FirebaseFirestore get _firestore => widget.firestore ?? FirebaseFirestore.instance;
   static const _statuses = <String, String>{
     'received': 'وصل العرض',
     'verify': 'بحاجة للتحقق',
@@ -35,6 +40,7 @@ class _AurenSupplierOfferComparisonScreenState
   String _filterStatus = 'all';
   String _filterValidity = 'all';
   String? _selectedRankingCurrency;
+  String? _budgetCurrency;
   final _rankingBudgetController = TextEditingController();
   final _rankingLeadTimeController = TextEditingController();
   final _rankingMinimumOrderController = TextEditingController();
@@ -48,9 +54,9 @@ class _AurenSupplierOfferComparisonScreenState
   @override
   void initState() {
     super.initState();
-    _observedUid = FirebaseAuth.instance.currentUser?.uid;
+    _observedUid = _auth.currentUser?.uid;
     _load();
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+    _authSubscription = _auth.authStateChanges().listen((user) {
       if (!mounted || user?.uid == _observedUid) return;
       _observedUid = user?.uid;
       ++_loadGeneration;
@@ -65,11 +71,11 @@ class _AurenSupplierOfferComparisonScreenState
 
   Future<void> _load() async {
     final generation = ++_loadGeneration;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = _auth.currentUser?.uid;
     final key = 'auren_supplier_offers_v1_${uid ?? 'guest'}';
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != uid) return;
+      if (!mounted || generation != _loadGeneration || _auth.currentUser?.uid != uid) return;
       final raw = prefs.getString(key);
       final decoded = raw == null ? <dynamic>[] : jsonDecode(raw);
       if (decoded is! List<dynamic>) {
@@ -98,21 +104,21 @@ class _AurenSupplierOfferComparisonScreenState
       if (validationError != null) {
         throw const FormatException('Stored supplier offer values are invalid.');
       }
-      if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != uid) return;
+      if (!mounted || generation != _loadGeneration || _auth.currentUser?.uid != uid) return;
       setState(() {
         _offers = items;
         _loading = false;
         _message = items.isEmpty ? 'أضف عروضاً استلمتها فعلياً لمقارنتها.' : 'تم تحميل ${items.length} عروض من هذا الجهاز.';
       });
     } catch (_) {
-      if (mounted && generation == _loadGeneration && FirebaseAuth.instance.currentUser?.uid == uid) {
+      if (mounted && generation == _loadGeneration && _auth.currentUser?.uid == uid) {
         setState(() { _loading = false; _message = 'تعذر قراءة المسودة المحلية؛ يمكنك إضافة عروض جديدة.'; });
       }
     }
   }
 
   Future<void> _persist({String? expectedUid}) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = _auth.currentUser?.uid;
     // Cloud restore must never persist the previous account's data under a
     // newly active account if auth changes between restore and local save.
     if (expectedUid != null && uid != expectedUid) return;
@@ -120,18 +126,18 @@ class _AurenSupplierOfferComparisonScreenState
     final snapshot = jsonEncode(_offers.map((o) => o.toJson()).toList());
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+      if (_auth.currentUser?.uid != uid) return;
       final write = _writeQueue.then((_) async {
-        if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+        if (_auth.currentUser?.uid != uid) return;
         await prefs.setString(key, snapshot);
       });
       _writeQueue = write.catchError((Object _) {});
       await write;
-      if (mounted && FirebaseAuth.instance.currentUser?.uid == uid) {
+      if (mounted && _auth.currentUser?.uid == uid) {
         setState(() => _message = 'تم حفظ العروض على هذا الجهاز.');
       }
     } catch (_) {
-      if (mounted && FirebaseAuth.instance.currentUser?.uid == uid) {
+      if (mounted && _auth.currentUser?.uid == uid) {
         setState(() => _message = 'تعذر حفظ العروض محلياً.');
       }
     }
@@ -169,43 +175,70 @@ class _AurenSupplierOfferComparisonScreenState
   }
 
   Future<void> _saveToAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) { _snack('سجّل الدخول أولاً لحفظ العروض في حسابك.'); return; }
     final validationError = _cloudValidationError();
+    if (validationError != null) { _snack(validationError); return; }
+    final shouldReplace = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تأكيد حفظ العروض'),
+        content: const Text('سيستبدل هذا النسخة السحابية الحالية إن وُجدت. هل تريد المتابعة؟'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('متابعة')),
+        ],
+      ),
+    );
+    if (shouldReplace != true || !mounted || _auth.currentUser?.uid != user.uid) return;
     if (validationError != null) { _snack(validationError); return; }
     if (_cloudBusy) return;
     setState(() { _cloudBusy = true; _message = 'جارٍ حفظ العروض في حسابك…'; });
     try {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid)
+      await _firestore.collection('users').doc(user.uid)
           .collection('supplier_offer_comparisons').doc('active_draft').set({
         'ownerId': user.uid,
         'offers': _offers.map((offer) => offer.toJson()).toList(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      if (!mounted || _auth.currentUser?.uid != user.uid) return;
       setState(() => _message = 'تم حفظ العروض في حسابك.');
       _snack('تم حفظ العروض في حسابك.');
     } on FirebaseException catch (error) {
-      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) {
+      if (mounted && _auth.currentUser?.uid == user.uid) {
         setState(() => _message = 'تعذر الحفظ السحابي: ' + error.code);
         _snack('تعذر الحفظ السحابي؛ تحقق من قواعد Firestore والاتصال.');
       }
     } catch (_) {
-      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذر الحفظ السحابي.');
+      if (mounted && _auth.currentUser?.uid == user.uid) setState(() => _message = 'تعذر الحفظ السحابي.');
     } finally {
       if (mounted) setState(() => _cloudBusy = false);
     }
   }
 
   Future<void> _loadFromAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) { _snack('سجّل الدخول أولاً لاستعادة عروض حسابك.'); return; }
     if (_cloudBusy) return;
+    if (_offers.isNotEmpty) {
+      final shouldReplace = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('تأكيد استعادة العروض'),
+          content: const Text('سيستبدل هذا عروضك المحلية الحالية بالعروض المحفوظة في الحساب. هل تريد المتابعة؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('استعادة')),
+          ],
+        ),
+      );
+      if (shouldReplace != true || !mounted || _auth.currentUser?.uid != user.uid) return;
+    }
     setState(() { _cloudBusy = true; _message = 'جارٍ استعادة عروض الحساب…'; });
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('users').doc(user.uid)
+      final snapshot = await _firestore.collection('users').doc(user.uid)
           .collection('supplier_offer_comparisons').doc('active_draft').get();
-      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      if (!mounted || _auth.currentUser?.uid != user.uid) return;
       final data = snapshot.data();
       final rawOffers = data?['offers'];
       if (!snapshot.exists || data?['ownerId'] != user.uid || rawOffers is! List) {
@@ -245,12 +278,12 @@ class _AurenSupplierOfferComparisonScreenState
       }
       setState(() => _offers = restored);
       await _persist(expectedUid: user.uid);
-      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      if (!mounted || _auth.currentUser?.uid != user.uid) return;
       setState(() => _message = 'تم استعادة ' + restored.length.toString() + ' عروض من حسابك.');
     } on FirebaseException catch (error) {
-      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذرت الاستعادة: ' + error.code);
+      if (mounted && _auth.currentUser?.uid == user.uid) setState(() => _message = 'تعذرت الاستعادة: ' + error.code);
     } catch (_) {
-      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذرت استعادة العروض السحابية.');
+      if (mounted && _auth.currentUser?.uid == user.uid) setState(() => _message = 'تعذرت استعادة العروض السحابية.');
     } finally {
       if (mounted) setState(() => _cloudBusy = false);
     }
@@ -317,11 +350,11 @@ class _AurenSupplierOfferComparisonScreenState
     return Colors.green;
   }
 
-  Future<void> _copySummary() async {
+  Future<void> _copySummary(List<_Offer> offers) async {
     final lines = <String>[
       'ملخص مقارنة عروض الموردين',
       'ملاحظة: بيانات مدخلة يدوياً ولم يتم التحقق من الموردين.',
-      ..._sorted.map((offer) {
+      ...offers.map((offer) {
         final total = _total(offer);
         return [
           'المورد: ${offer.supplier}',
@@ -394,25 +427,47 @@ class _AurenSupplierOfferComparisonScreenState
   double? _total(_Offer offer) =>
       SupplierOfferComparisonLogic.total(offer.price, offer.shipping);
 
-  bool _isLowest(_Offer candidate) => SupplierOfferComparisonLogic.isLowest(
+  bool _isRankable(_Offer offer) =>
+      offer.status != 'rejected' &&
+      SupplierOfferComparisonLogic.validityCategory(offer.validity) != 'expired';
+
+  bool _isLowest(_Offer candidate) =>
+      _isRankable(candidate) && SupplierOfferComparisonLogic.isLowest(
         currency: candidate.currency,
         price: candidate.price,
         shipping: candidate.shipping,
-        offers: _offers.map((offer) => <String, String>{
+        offers: _offers.where(_isRankable).map((offer) => <String, String>{
           'currency': offer.currency,
           'price': offer.price,
           'shipping': offer.shipping,
         }),
       );
 
+  String _normalizeDigits(String value) {
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+    var normalized = value;
+    for (var i = 0; i < 10; i++) {
+      normalized = normalized.replaceAll(arabic[i], '$i').replaceAll(persian[i], '$i');
+    }
+    return normalized;
+  }
+
   double? _parseOptionalQuantity(String value) {
-    final raw = value.trim();
+    final raw = _normalizeDigits(value).trim();
     if (raw.isEmpty) return null;
     return _parseNonNegativeAmount(raw);
   }
 
+  double? _parseMoq(String value) {
+    final raw = _normalizeDigits(value).trim();
+    if (raw.isEmpty) return null;
+    final match = RegExp(r'^([0-9][0-9,]*(?:\.[0-9]+)?)(?:\s|$)').firstMatch(raw);
+    return match == null ? null : _parseNonNegativeAmount(match.group(1)!);
+  }
+
   int? _parseOptionalDays(String value) {
-    final raw = value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+    final raw = _normalizeDigits(value).trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
     final pattern = r'^([0-9]+)(d|day|days|wk|wks|week|weeks|يوم|أيام|ايام|أسبوع|أسابيع|اسبوع|اسابيع)?' + r'$';
     final match = RegExp(pattern).firstMatch(raw);
     if (match == null) return null;
@@ -423,25 +478,27 @@ class _AurenSupplierOfferComparisonScreenState
         unit == 'week' || unit == 'weeks' ||
         unit == 'أسبوع' || unit == 'أسابيع' ||
         unit == 'اسبوع' || unit == 'اسابيع';
-    if (isWeeks && amount > 0x7FFFFFFFFFFFFFFF ~/ 7) return null;
+    if (amount > 100000) return null;
     return isWeeks ? amount * 7 : amount;
   }
 
   List<SupplierRankingResult> _rankedOffers(String currency) =>
       SupplierRankingLogic.rank(
-        _offers.map((offer) => SupplierRankingCandidate(
+        _offers.where(_isRankable).map((offer) => SupplierRankingCandidate(
           id: offer.id, name: offer.supplier, currency: offer.currency,
           price: _parseNonNegativeAmount(offer.price),
           shipping: _parseNonNegativeAmount(offer.shipping),
           leadTimeDays: _parseOptionalDays(offer.leadTime),
-          minimumOrder: _parseOptionalQuantity(offer.moq),
+          minimumOrder: _parseMoq(offer.moq),
           // No evidence workflow or rating field exists here; never infer them.
           verified: false, rating: null,
         )),
         currency: currency,
-        maxBudget: _parseOptionalQuantity(_rankingBudgetController.text),
+        maxBudget: _budgetCurrency == currency
+            ? _parseOptionalQuantity(_rankingBudgetController.text)
+            : null,
         maxLeadTimeDays: _parseOptionalDays(_rankingLeadTimeController.text),
-        maxMinimumOrder: _parseOptionalQuantity(_rankingMinimumOrderController.text),
+        maxMinimumOrder: _parseMoq(_rankingMinimumOrderController.text),
       );
 
   List<_Offer> get _sorted {
@@ -577,7 +634,7 @@ class _AurenSupplierOfferComparisonScreenState
                       const Text('توجد عملات مختلفة؛ لا تقارن أسعارها مباشرة.', style: TextStyle(color: Colors.deepOrange)),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
-                      onPressed: _offers.isEmpty ? null : _copySummary,
+                      onPressed: filteredOffers.isEmpty ? null : () => _copySummary(filteredOffers),
                       icon: const Icon(Icons.copy_all_outlined),
                       label: const Text('نسخ ملخص العروض'),
                     ),
@@ -625,12 +682,19 @@ class _AurenSupplierOfferComparisonScreenState
   }
 
   Widget _rankingCard() {
-    final currencies = _offers
+    final currencies = _offers.where(_isRankable)
         .map((offer) => offer.currency)
         .toSet()
         .toList()
       ..sort();
-    if (currencies.isEmpty) return const SizedBox.shrink();
+    if (currencies.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('كل العروض مرفوضة أو منتهية.'),
+        ),
+      );
+    }
     final currency = currencies.contains(_selectedRankingCurrency)
         ? _selectedRankingCurrency!
         : currencies.first;
@@ -680,7 +744,7 @@ class _AurenSupplierOfferComparisonScreenState
                 border: const OutlineInputBorder(),
                 isDense: true,
               ),
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) => setState(() => _budgetCurrency = currency),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -734,16 +798,17 @@ class _AurenSupplierOfferComparisonScreenState
               onChanged: (value) {
                 if (value != null) {
                   setState(() {
-                    if (currency != value) {
-                      // A budget amount must never carry across currencies.
-                      _rankingBudgetController.clear();
-                    }
                     _selectedRankingCurrency = value;
                   });
                 }
               },
             ),
             const SizedBox(height: 8),
+            if (_rankingBudgetController.text.trim().isNotEmpty && _budgetCurrency != currency)
+              Text(
+                'الميزانية أُدخلت بعملة ${_budgetCurrency ?? 'غير محددة'} ولا تُطبَّق على $currency.',
+                style: const TextStyle(color: Colors.deepOrange, fontSize: 12),
+              ),
             if (ranked.isEmpty)
               const Text('لا توجد عروض بهذه العملة.')
             else
@@ -777,14 +842,14 @@ class _AurenSupplierOfferComparisonScreenState
                       ),
                       if (result.candidate.totalCost != null)
                         Padding(
-                          padding: const EdgeInsets.only(left: 38, top: 3),
+                          padding: const EdgeInsetsDirectional.only(start: 38, top: 3),
                           child: Text(
                             'الإجمالي: ${result.candidate.totalCost!.toStringAsFixed(2)} $currency',
                           ),
                         ),
                       if (details.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(left: 38, top: 3),
+                          padding: const EdgeInsetsDirectional.only(start: 38, top: 3),
                           child: Text(
                             details.join(' • '),
                             style: const TextStyle(fontSize: 12, color: Colors.grey),
