@@ -117,6 +117,15 @@ class SupplierRfqIntentParser {
         product = beforeQuantity;
       } else {
         var afterQuantity = text.substring(quantityMatch.end).trim();
+        // Skip a unit that appears after the quantity, e.g. "500 pieces of tea"
+        // or "٥٠٠ قطعة قماش", without treating the unit as the product.
+        afterQuantity = afterQuantity.replaceFirst(
+          RegExp(
+            r'^(?:pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)\s*',
+            caseSensitive: false,
+          ),
+          '',
+        );
         afterQuantity = afterQuantity.replaceFirst(
           RegExp(r'^(?:of|من)\s+', caseSensitive: false),
           '',
@@ -131,8 +140,7 @@ class SupplierRfqIntentParser {
               )
               .first
               .trim();
-        }
-      }
+        }      }
     } else {
       final productMatch = RegExp(
         r'(?:i need|need|looking for|product\s*[:=]?|المنتج\s*[:=]?|أحتاج|احتاج|عايز|عاوز|محتاج|اريد|أريد)\s+(.+)',
