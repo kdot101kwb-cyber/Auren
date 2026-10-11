@@ -642,8 +642,19 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
   }
   void _sportsAction(int i){if(i==5){final ok=_rng.nextDouble()<.62;_message=ok?'⚽ GOAL!':'🧤 تصدّى الحارس';_score+=ok?25:4;}else if(i==6){final ok=_rng.nextDouble()<.7;_message=ok?'🏀 سلة!':'❌ ضاعت';_score+=ok?20:2;}else if(i==7){_laps++;_score+=12;_energy=min(10,_energy+1);_message='🏃 اندفاعة — لفة ${_laps}';}else if(i==8){final ok=_rng.nextDouble()<.68;_message=ok?'🎾 ردّ ناجح!':'❌ خارج الملعب';_score+=ok?18:3;}else{_laps++;_score+=15;_message='🚴 لفة ${_laps}';}}
   void _thinkingAction(int i){
-    final ok=_rng.nextDouble()<.62; if(i==14&&ok)_challenge=1+_rng.nextInt(99);
-    _message=ok?'${labels[i]} صحيح!':'${labels[i]} جرّب مرة أخرى';_score+=ok?18:2;
+    const labels = [
+      'Arena Duel', 'Punch Rush', 'Shield Block', 'Archer Aim',
+      'Battle Reflex', 'Penalty King', 'Hoops', 'Sprint', 'Tennis Rally',
+      'Cycling', 'Logic Grid', 'Number Matrix', 'Strategy', 'Pattern Logic',
+      'Code Breaker', 'Memory Match+', 'Sequence Recall', 'Color Memory',
+      'Pair Recall', 'Flash Memory',
+    ];
+    if (i < 10 || i >= labels.length) return;
+    final ok = _rng.nextDouble() < .62;
+    if (i == 14 && ok) _challenge = 1 + _rng.nextInt(99);
+    final label = labels[i];
+    _message = ok ? '$label صحيح!' : '$label جرّب مرة أخرى';
+    _score += ok ? 18 : 2;
   }
   void _advancedMission(){
     final missions=[
