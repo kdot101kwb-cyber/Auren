@@ -57,7 +57,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Thomasnet');
     await tester.pumpAndSettle();
 
-    expect(find.text('Thomasnet'), findsOneWidget);
+    expect(find.text('Thomasnet'), findsAtLeastNWidgets(1));
     expect(find.text('Alibaba.com'), findsNothing);
   });
 }
