@@ -4,7 +4,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-
 const firebase = require('firebase/compat/app');
 require('firebase/compat/firestore');
 
@@ -40,7 +39,7 @@ async function seedAction(userId, actionId, overrides = {}) {
       actionType: 'demo.create_note',
       title: 'Create note',
       description: 'Server-created action draft',
-      payload: {text: 'hello'},
+      payload: { text: 'hello' },
       status: 'pending',
       draftVersion: 0,
       requiresApproval: true,
@@ -62,19 +61,19 @@ test('owner can read and edit only the pending draft with version +1', async () 
   await assertSucceeds(ref.get());
   await assertSucceeds(ref.update({
     title: 'Updated title',
-    payload: {text: 'updated'},
+    payload: { text: 'updated' },
     draftVersion: 1,
     updatedAt: firebase.firestore.Timestamp.now(),
   }));
   const snap = await ref.get();
   assert.equal(snap.data().draftVersion, 1);
-  assert.deepEqual(snap.data().payload, {text: 'updated'});
+  assert.deepEqual(snap.data().payload, { text: 'updated' });
 });
 
 test('same draftVersion is rejected', async () => {
   await seedAction('rules-user-2', 'same-version');
   await assertFails(actionRef('rules-user-2', 'same-version').update({
-    payload: {text: 'tampered'},
+    payload: { text: 'tampered' },
     draftVersion: 0,
     updatedAt: firebase.firestore.Timestamp.now(),
   }));
@@ -83,7 +82,7 @@ test('same draftVersion is rejected', async () => {
 test('version jump greater than +1 is rejected', async () => {
   await seedAction('rules-user-3', 'version-jump');
   await assertFails(actionRef('rules-user-3', 'version-jump').update({
-    payload: {text: 'tampered'},
+    payload: { text: 'tampered' },
     draftVersion: 2,
     updatedAt: firebase.firestore.Timestamp.now(),
   }));
@@ -137,7 +136,7 @@ test('client cannot update an action after it leaves pending', async () => {
     idempotencyKey: 'server-key',
   });
   await assertFails(actionRef('rules-user-8', 'approved-action').update({
-    payload: {text: 'tampered'},
+    payload: { text: 'tampered' },
     draftVersion: 1,
     updatedAt: firebase.firestore.Timestamp.now(),
   }));
@@ -154,7 +153,7 @@ test('another user cannot read or update the action', async () => {
       .doc('users/rules-owner/actions/cross-user');
   await assertFails(ref.get());
   await assertFails(ref.update({
-    payload: {text: 'cross-user tamper'},
+    payload: { text: 'cross-user tamper' },
     draftVersion: 1,
     updatedAt: firebase.firestore.Timestamp.now(),
   }));
@@ -166,7 +165,7 @@ test('unauthenticated client cannot read or update the action', async () => {
       .doc('users/rules-user-10/actions/unauth');
   await assertFails(ref.get());
   await assertFails(ref.update({
-    payload: {text: 'unauth tamper'},
+    payload: { text: 'unauth tamper' },
     draftVersion: 1,
     updatedAt: firebase.firestore.Timestamp.now(),
   }));
@@ -179,7 +178,7 @@ test('client cannot create action documents directly', async () => {
     actionType: 'demo.create_note',
     title: 'Client-created',
     description: 'Should be server-owned',
-    payload: {text: 'hello'},
+    payload: { text: 'hello' },
     status: 'pending',
     draftVersion: 0,
     requiresApproval: true,
