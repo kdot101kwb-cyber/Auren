@@ -118,6 +118,29 @@ void main() {
     expect(find.text('عرض 1 من 2 عروض'), findsOneWidget);
   });
 
+  testWidgets('provisional selection opens an editable RFQ draft for that supplier',
+      (tester) async {
+    await pumpScreen(tester, localOffers: [
+      offer('1', 'Selected Supplier', '100', 'USD'),
+    ]);
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('اختير مبدئياً').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('إنشاء مسودة طلب سعر لهذا المورد'), findsOneWidget);
+    await tester.tap(find.text('إنشاء مسودة طلب سعر لهذا المورد'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('طلب عرض سعر من مورد'), findsOneWidget);
+    expect(find.text('Selected Supplier'), findsOneWidget);
+    expect(
+      find.textContaining('لن يتم التواصل مع أي مورد تلقائياً'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('signed-in account reads its own local preference key',
       (tester) async {
     SharedPreferences.setMockInitialValues({
