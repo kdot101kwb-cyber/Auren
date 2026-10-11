@@ -1627,7 +1627,10 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
         child: TextField(
           controller: _search,
-          onChanged: _smartSearch,
+          onChanged: (v) {
+            _smartSearch(v);
+            setState(() { query = _normalizeSearch(v); });
+          },
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search),
             hintText: 'ابحث بذكاء: قناة، دولة، لغة أو فئة',
@@ -1647,7 +1650,6 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
             ],
             ),
           ),
-          onChanged: (v) => setState(() { query = _normalizeSearch(v); }),
         ),
       ),
       Padding(
