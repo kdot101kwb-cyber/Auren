@@ -159,3 +159,29 @@ test('supplier request listing clamps limits to integer values within 1–100', 
   assert.match(source, /Math\.floor\(requestedLimit\)/);
   assert.match(source, /Math\.min\(Math\.max\(Math\.floor\(requestedLimit\), 1\), 100\)/);
 });
+
+test('supplier lifecycle gates response states on verified external dispatch flag', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /\['waiting_response','replied'\]\.includes\(nextStatus\) && data\.externalDispatch !== true/);
+  assert.match(source, /\['waiting_response','replied'\]\.includes\(nextStatus\) && freshData\.externalDispatch !== true/);
+});
+
+test('supplier retry enforces failed or cancelled status and a five-retry ceiling', () => {
+  const source = read('supplier_requests.js');
+  const retrySource = source.slice(source.indexOf('exports.retryAurenSupplierRequest'));
+  assert.match(retrySource, /\['failed','cancelled'\]\.includes\(currentStatus\)/);
+  assert.match(retrySource, /Number\.isSafeInteger\(previousRetryCount\)/);
+  assert.match(retrySource, /retryCount > 5/);
+  assert.match(retrySource, /externalDispatch:false/);
+});
+
+test('supplier status update rejects stale concurrent changes before writing', () => {
+  const source = read('supplier_requests.js');
+  const updateSource = source.slice(
+    source.indexOf('exports.updateAurenSupplierRequestStatus'),
+    source.indexOf('exports.retryAurenSupplierRequest'),
+  );
+  assert.match(updateSource, /freshStatus !== currentStatus/);
+  assert.match(updateSource, /HttpsError\('aborted'/);
+  assert.match(updateSource, /Invalid supplier request status transition/);
+});
