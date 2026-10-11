@@ -6,7 +6,9 @@ class SupplierOfferComparisonLogic {
     final raw = value.trim();
     // Accept plain digits or correctly grouped thousands separators only.
     // Removing every comma first would incorrectly accept values like "1,,2".
-    final validNumber = RegExp(r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$');
+    final validNumber = RegExp(
+      r'^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:[.][0-9]+)?$',
+    );
     if (!validNumber.hasMatch(raw)) return null;
     final parsed = double.tryParse(raw.replaceAll(',', ''));
     return parsed != null && parsed.isFinite && parsed >= 0 ? parsed : null;
@@ -18,6 +20,51 @@ class SupplierOfferComparisonLogic {
     if (parsedPrice == null || parsedShipping == null) return null;
     final value = parsedPrice + parsedShipping;
     return value.isFinite ? value : null;
+  }
+
+  /// Parses only an unambiguous ISO calendar date (YYYY-MM-DD).
+  /// Free-form validity notes intentionally return null rather than being guessed.
+  static DateTime? parseIsoValidityDate(String value) {
+    final raw = value.trim();
+    final parts = raw.split('-');
+    if (raw.length != 10 ||
+        parts.length != 3 ||
+        parts[0].length != 4 ||
+        parts[1].length != 2 ||
+        parts[2].length != 2 ||
+        parts.any((part) => int.tryParse(part) == null)) {
+      return null;
+    }
+
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+    final day = int.parse(parts[2]);
+    final date = DateTime.utc(year, month, day);
+    if (date.year != year || date.month != month || date.day != day) {
+      return null;
+    }
+    return date;
+  }
+
+  /// Classifies quote validity for reminders and filtering.
+  /// Unknown/free-form notes are never guessed; the seven-day window is inclusive.
+  static String validityCategory(String value, {DateTime? today}) {
+    final days = daysUntilValidity(value, today: today);
+    if (days == null) return 'unknown';
+    if (days < 0) return 'expired';
+    if (days == 0) return 'today';
+    if (days <= 7) return 'soon';
+    return 'valid';
+  }
+
+  /// Returns calendar days until an ISO validity date, or null for free-form
+  /// notes and invalid dates. Uses calendar days, not elapsed 24-hour periods.
+  static int? daysUntilValidity(String value, {DateTime? today}) {
+    final date = parseIsoValidityDate(value);
+    if (date == null) return null;
+    final reference = today ?? DateTime.now();
+    final todayUtc = DateTime.utc(reference.year, reference.month, reference.day);
+    return date.difference(todayUtc).inDays;
   }
 
   static bool isLowest({
