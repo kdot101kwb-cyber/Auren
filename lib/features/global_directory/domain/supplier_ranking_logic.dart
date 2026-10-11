@@ -97,11 +97,8 @@ class SupplierRankingLogic {
         reasons.add('competitive_total_cost');
       } else {
         final costRange = maxCost! - minCost!;
-        final normalizedCost = costRange.isFinite
-            ? (maxCost - cost) / costRange
-            : (1 - cost / maxCost) / (1 - minCost! / maxCost);
-        // Finite endpoints can still have an infinite difference. Normalize
-        // by the maximum in that case to avoid Infinity / Infinity => NaN.
+        // totalCost is finite and non-negative, so this difference is finite.
+        final normalizedCost = (maxCost - cost) / costRange;
         score += 40 * normalizedCost.clamp(0.0, 1.0);
         if (cost == minCost) reasons.add('lowest_comparable_total_cost');
       }
@@ -191,8 +188,10 @@ class SupplierRankingLogic {
       } else if (bCost != null) {
         return 1;
       }
-      return a.candidate.name.toLowerCase().compareTo(
+      final nameOrder = a.candidate.name.toLowerCase().compareTo(
           b.candidate.name.toLowerCase());
+      if (nameOrder != 0) return nameOrder;
+      return a.candidate.id.compareTo(b.candidate.id);
     });
     return List.unmodifiable(results);
   }
