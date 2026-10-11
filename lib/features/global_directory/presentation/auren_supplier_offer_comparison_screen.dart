@@ -345,16 +345,22 @@ class _AurenSupplierOfferComparisonScreenState
 
   List<_Offer> get _sorted {
     final result = List<_Offer>.from(_offers);
-    result.sort((a, b) => SupplierOfferComparisonLogic.compare(
-          aCurrency: a.currency,
-          aSupplier: a.supplier,
-          aPrice: a.price,
-          aShipping: a.shipping,
-          bCurrency: b.currency,
-          bSupplier: b.supplier,
-          bPrice: b.price,
-          bShipping: b.shipping,
-        ));
+    result.sort((a, b) {
+      // Keep rejected quotes visible for audit, but below viable offers.
+      final aRejected = a.status == 'rejected';
+      final bRejected = b.status == 'rejected';
+      if (aRejected != bRejected) return aRejected ? 1 : -1;
+      return SupplierOfferComparisonLogic.compare(
+        aCurrency: a.currency,
+        aSupplier: a.supplier,
+        aPrice: a.price,
+        aShipping: a.shipping,
+        bCurrency: b.currency,
+        bSupplier: b.supplier,
+        bPrice: b.price,
+        bShipping: b.shipping,
+      );
+    });
     return result;
   }
 
