@@ -150,4 +150,22 @@ void main() {
       expect(result.warnings, contains('missing_or_invalid_cost'));
     });
 
+  test('keeps scores finite when the comparable cost range overflows', () {
+    const candidates = [
+      SupplierRankingCandidate(
+        id: 'small', name: 'Small', currency: 'USD',
+        price: 1, shipping: 0,
+      ),
+      SupplierRankingCandidate(
+        id: 'large', name: 'Large', currency: 'USD',
+        price: double.maxFinite, shipping: 0,
+      ),
+    ];
+    final result = SupplierRankingLogic.rank(candidates, currency: 'USD');
+    expect(result, hasLength(2));
+    expect(result.every((item) => item.score.isFinite), isTrue);
+    expect(result.first.candidate.id, 'small');
+    expect(result.first.score, greaterThan(result.last.score));
+  });
+
 }
