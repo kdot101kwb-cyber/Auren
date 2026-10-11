@@ -181,9 +181,19 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
                         validator: (value) {
                           final raw = value?.trim() ?? '';
                           if (raw.isEmpty) return null;
-                          // Accept plain decimals or correctly grouped thousands.
                           final validFormat = RegExp(
-                            r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?
+                            r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$',
+                          ).hasMatch(raw);
+                          if (!validFormat) {
+                            return 'أدخل مبلغاً رقمياً صحيحاً، مثال: 1200 أو 1,200.50';
+                          }
+                          final amount = double.tryParse(raw.replaceAll(',', ''));
+                          if (amount == null || !amount.isFinite || amount <= 0) {
+                            return 'يجب أن تكون الميزانية أكبر من صفر';
+                          }
+                          return null;
+                        },
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
