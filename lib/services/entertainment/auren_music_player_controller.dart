@@ -35,7 +35,6 @@ class AurenMusicPlayerController extends ChangeNotifier {
   DateTime _lastSessionAdaptation = DateTime.fromMillisecondsSinceEpoch(0);
   List<AurenEntertainmentItem> _adaptivePool = const [];
   bool _adaptiveSessionActive = false;
-  int _adaptiveCursor = 0;
   final Set<String> _adaptiveServedIds = <String>{};
   String _adaptiveActivity = 'تلقائي';
   String _adaptiveMood = 'الكل';
@@ -62,7 +61,6 @@ class AurenMusicPlayerController extends ChangeNotifier {
   }) {
     _adaptivePool = List.unmodifiable(candidates.where((x) => x.mediaUrl.isNotEmpty));
     _adaptiveSessionActive = _adaptivePool.isNotEmpty;
-    _adaptiveCursor = 0;
     _adaptiveServedIds
       ..clear()
       ..addAll(_history.take(8).map((x) => x.id));
@@ -349,7 +347,6 @@ class AurenMusicPlayerController extends ChangeNotifier {
       if (!_queue.any((x) => x.id == candidate.id)) _queue.add(candidate);
     }
 
-    _adaptiveCursor += selected.length;
     _adaptiveServedIds.addAll(selected.map((x) => x.id));
     _sessionSkipCount = 0;
     _sessionCompletionCount = 0;
