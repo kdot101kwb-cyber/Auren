@@ -653,6 +653,7 @@ class _AurenSupplierOfferComparisonScreenState
       'missing_or_invalid_rating' => 'لا يوجد تقييم موثوق',
       'over_budget_or_invalid_budget' => 'يتجاوز الميزانية أو الميزانية غير صالحة',
       'minimum_order_exceeds_requirement' => 'الحد الأدنى أعلى من المطلوب',
+      'invalid_max_minimum_order_constraint' => 'شرط الحد الأقصى للطلب غير صالح',
       'invalid_max_lead_time_constraint' => 'شرط أقصى مدة التسليم غير صالح',
       _ => key,
     };
@@ -1235,6 +1236,7 @@ class _OfferDialogState extends State<_OfferDialog> {
       'missing_or_invalid_rating' => 'لا يوجد تقييم موثوق',
       'over_budget_or_invalid_budget' => 'يتجاوز الميزانية أو الميزانية غير صالحة',
       'minimum_order_exceeds_requirement' => 'الحد الأدنى أعلى من المطلوب',
+      'invalid_max_minimum_order_constraint' => 'شرط الحد الأقصى للطلب غير صالح',
       _ => key,
     };
     return Card(
