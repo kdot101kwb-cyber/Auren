@@ -163,6 +163,54 @@ class _FlowCardState extends State<_FlowCard> {
               const SizedBox(height: 6),
               Text(intent, maxLines: 2, overflow: TextOverflow.ellipsis),
             ],
+            if ((widget.data['supplierRequestId'] ?? '').toString().trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Card(
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.receipt_long_outlined, size: 19),
+                          SizedBox(width: 7),
+                          Expanded(
+                            child: Text(
+                              'نتيجة إجراء المورد',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        (widget.data['supplierRequestType'] ?? '').toString() == 'rfq'
+                            ? 'تم حفظ طلب عرض السعر كمسودة.'
+                            : 'تم حفظ طلب التواصل كمسودة.',
+                      ),
+                      const SizedBox(height: 4),
+                      SelectableText(
+                        'رقم الطلب: ${widget.data['supplierRequestId']}',
+                      ),
+                      if ((widget.data['supplierWorkflowStatus'] ?? '').toString().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'حالة طلب المورد: ${_supplierStatusLabel((widget.data['supplierWorkflowStatus'] ?? '').toString())}',
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'لم يتم إرسال رسالة إلى المورد تلقائياً. افتح «طلبات الموردين وحالاتها» لمتابعة الطلب.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             if (status == 'waiting_response') ...[
               const SizedBox(height: 8),
               const Text(
@@ -565,6 +613,25 @@ class _FlowCardState extends State<_FlowCard> {
         (e) => e.name == value,
         orElse: () => AurenMatchAction.open,
       );
+
+  static String _supplierStatusLabel(String status) {
+    switch (status) {
+      case 'draft':
+        return 'مسودة محفوظة';
+      case 'waiting_response':
+        return 'في انتظار الرد';
+      case 'replied':
+        return 'تم الرد';
+      case 'completed':
+        return 'مكتمل';
+      case 'failed':
+        return 'فشل';
+      case 'cancelled':
+        return 'ملغي';
+      default:
+        return status;
+    }
+  }
 
   static String _nextStep(String action, String status, String kind) {
     if (status != 'replied') return '';

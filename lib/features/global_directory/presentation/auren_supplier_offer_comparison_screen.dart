@@ -1,0 +1,616 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../domain/supplier_offer_comparison_logic.dart';
+
+/// Local, account-scoped-on-device comparison of supplier quotes.
+/// It does not verify suppliers or send external messages.
+class AurenSupplierOfferComparisonScreen extends StatefulWidget {
+  const AurenSupplierOfferComparisonScreen({super.key});
+
+  @override
+  State<AurenSupplierOfferComparisonScreen> createState() =>
+      _AurenSupplierOfferComparisonScreenState();
+}
+
+class _AurenSupplierOfferComparisonScreenState
+    extends State<AurenSupplierOfferComparisonScreen> {
+  static const _statuses = <String, String>{
+    'received': 'وصل العرض',
+    'verify': 'بحاجة للتحقق',
+    'shortlist': 'ضمن القائمة المختصرة',
+    'accepted': 'اختير مبدئياً',
+    'rejected': 'مرفوض',
+  };
+
+  List<_Offer> _offers = [];
+  bool _loading = true;
+  String _filterStatus = 'all';
+  String _message = 'جارٍ تحميل العروض…';
+  StreamSubscription<User?>? _authSubscription;
+  String? _observedUid;
+  int _loadGeneration = 0;
+  Future<void> _writeQueue = Future<void>.value();
+  bool _cloudBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _observedUid = FirebaseAuth.instance.currentUser?.uid;
+    _load();
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (!mounted || user?.uid == _observedUid) return;
+      _observedUid = user?.uid;
+      ++_loadGeneration;
+      setState(() {
+        _offers = [];
+        _loading = true;
+        _message = 'تغير الحساب؛ جارٍ تحميل عروضه المحلية…';
+      });
+      _load();
+    });
+  }
+
+  Future<void> _load() async {
+    final generation = ++_loadGeneration;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final key = 'auren_supplier_offers_v1_${uid ?? 'guest'}';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != uid) return;
+      final raw = prefs.getString(key);
+      final decoded = raw == null ? <dynamic>[] : jsonDecode(raw);
+      if (decoded is! List<dynamic>) {
+        throw const FormatException('Stored supplier offers must be a list.');
+      }
+      if (decoded.length > 10) {
+        throw const FormatException('Stored supplier offers exceed the limit.');
+      }
+      if (decoded.any((item) => item is! Map)) {
+        throw const FormatException('Stored supplier offer record is malformed.');
+      }
+      const localOfferKeys = {
+        'id', 'supplier', 'price', 'currency', 'shipping', 'moq',
+        'leadTime', 'payment', 'validity', 'notes', 'status', 'receivedAt',
+      };
+      final items = decoded.map((item) {
+        final map = Map<String, dynamic>.from(item as Map);
+        if (map.keys.toSet().difference(localOfferKeys).isNotEmpty ||
+            !map.keys.toSet().containsAll(localOfferKeys) ||
+            map.values.any((value) => value is! String)) {
+          throw const FormatException('Stored supplier offer fields are malformed.');
+        }
+        return _Offer.fromJson(map);
+      }).toList();
+      final validationError = _cloudValidationError(items);
+      if (validationError != null) {
+        throw const FormatException('Stored supplier offer values are invalid.');
+      }
+      if (!mounted || generation != _loadGeneration || FirebaseAuth.instance.currentUser?.uid != uid) return;
+      setState(() {
+        _offers = items;
+        _loading = false;
+        _message = items.isEmpty ? 'أضف عروضاً استلمتها فعلياً لمقارنتها.' : 'تم تحميل ${items.length} عروض من هذا الجهاز.';
+      });
+    } catch (_) {
+      if (mounted && generation == _loadGeneration && FirebaseAuth.instance.currentUser?.uid == uid) {
+        setState(() { _loading = false; _message = 'تعذر قراءة المسودة المحلية؛ يمكنك إضافة عروض جديدة.'; });
+      }
+    }
+  }
+
+  Future<void> _persist({String? expectedUid}) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    // Cloud restore must never persist the previous account's data under a
+    // newly active account if auth changes between restore and local save.
+    if (expectedUid != null && uid != expectedUid) return;
+    final key = 'auren_supplier_offers_v1_${uid ?? 'guest'}';
+    final snapshot = jsonEncode(_offers.map((o) => o.toJson()).toList());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+      final write = _writeQueue.then((_) async {
+        if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+        await prefs.setString(key, snapshot);
+      });
+      _writeQueue = write.catchError((Object _) {});
+      await write;
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == uid) {
+        setState(() => _message = 'تم حفظ العروض على هذا الجهاز.');
+      }
+    } catch (_) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == uid) {
+        setState(() => _message = 'تعذر حفظ العروض محلياً.');
+      }
+    }
+  }
+
+  double? _parseNonNegativeAmount(String value) =>
+      SupplierOfferComparisonLogic.parseNonNegativeAmount(value);
+
+  String? _cloudValidationError([List<_Offer>? candidates]) {
+    final offers = candidates ?? _offers;
+    if (offers.length > 10) return 'لا يمكن حفظ أكثر من 10 عروض.';
+    const currencies = {'USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN'};
+    const statuses = {'received', 'verify', 'shortlist', 'accepted', 'rejected'};
+    final seenIds = <String>{};
+    for (var i = 0; i < offers.length; i++) {
+      final offer = offers[i];
+      final receivedAt = DateTime.tryParse(offer.receivedAt);
+      if (offer.id.isEmpty || offer.id.length > 40 ||
+          !seenIds.add(offer.id) || receivedAt == null ||
+          offer.supplier.trim().isEmpty || offer.supplier.length > 200 ||
+          offer.price.isEmpty || offer.price.length > 50 ||
+          _parseNonNegativeAmount(offer.price) == null ||
+          offer.shipping.length > 50 ||
+          _parseNonNegativeAmount(offer.shipping) == null ||
+          offer.moq.length > 100 || offer.leadTime.length > 100 ||
+          offer.payment.length > 300 || offer.validity.length > 100 ||
+          offer.notes.length > 500 ||
+          !currencies.contains(offer.currency) ||
+          !statuses.contains(offer.status) || offer.receivedAt.isEmpty ||
+          offer.receivedAt.length > 40) {
+        return 'العرض رقم ${i + 1} يحتوي بيانات غير صالحة. تأكد من السعر والشحن والعملة والحقول المطلوبة.';
+      }
+    }
+    return null;
+  }
+
+  Future<void> _saveToAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) { _snack('سجّل الدخول أولاً لحفظ العروض في حسابك.'); return; }
+    final validationError = _cloudValidationError();
+    if (validationError != null) { _snack(validationError); return; }
+    if (_cloudBusy) return;
+    setState(() { _cloudBusy = true; _message = 'جارٍ حفظ العروض في حسابك…'; });
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid)
+          .collection('supplier_offer_comparisons').doc('active_draft').set({
+        'ownerId': user.uid,
+        'offers': _offers.map((offer) => offer.toJson()).toList(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      setState(() => _message = 'تم حفظ العروض في حسابك.');
+      _snack('تم حفظ العروض في حسابك.');
+    } on FirebaseException catch (error) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) {
+        setState(() => _message = 'تعذر الحفظ السحابي: ' + error.code);
+        _snack('تعذر الحفظ السحابي؛ تحقق من قواعد Firestore والاتصال.');
+      }
+    } catch (_) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذر الحفظ السحابي.');
+    } finally {
+      if (mounted) setState(() => _cloudBusy = false);
+    }
+  }
+
+  Future<void> _loadFromAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) { _snack('سجّل الدخول أولاً لاستعادة عروض حسابك.'); return; }
+    if (_cloudBusy) return;
+    setState(() { _cloudBusy = true; _message = 'جارٍ استعادة عروض الحساب…'; });
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('users').doc(user.uid)
+          .collection('supplier_offer_comparisons').doc('active_draft').get();
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      final data = snapshot.data();
+      final rawOffers = data?['offers'];
+      if (!snapshot.exists || data?['ownerId'] != user.uid || rawOffers is! List) {
+        setState(() => _message = 'لا توجد نسخة سحابية صالحة لاستعادتها.');
+        return;
+      }
+      if (rawOffers.length > 10) {
+        setState(() => _message = 'نسخة الحساب تتجاوز الحد المسموح؛ لم يتم استبدال عروضك المحلية.');
+        return;
+      }
+      if (rawOffers.any((item) => item is! Map)) {
+        setState(() => _message = 'نسخة الحساب تحتوي سجلات تالفة؛ احتفظنا بالعروض المحلية.');
+        _snack('تعذر استعادة النسخة لأن بعض سجلات العروض غير صالحة.');
+        return;
+      }
+      const cloudOfferKeys = {
+        'id', 'supplier', 'price', 'currency', 'shipping', 'moq',
+        'leadTime', 'payment', 'validity', 'notes', 'status', 'receivedAt',
+      };
+      for (final item in rawOffers) {
+        final map = Map<String, dynamic>.from(item as Map);
+        if (map.keys.toSet().difference(cloudOfferKeys).isNotEmpty ||
+            !map.keys.toSet().containsAll(cloudOfferKeys) ||
+            map.values.any((value) => value is! String)) {
+          setState(() => _message = 'نسخة الحساب تحتوي حقولاً غير صالحة؛ احتفظنا بالعروض المحلية.');
+          _snack('تعذر استعادة النسخة لأن بنية أحد العروض غير صالحة.');
+          return;
+        }
+      }
+      final restored = rawOffers
+          .map((item) => _Offer.fromJson(Map<String, dynamic>.from(item as Map))).toList();
+      final validationError = _cloudValidationError(restored);
+      if (validationError != null) {
+        setState(() => _message = 'تعذر استعادة النسخة: تحتوي بيانات غير صالحة.');
+        _snack(validationError);
+        return;
+      }
+      setState(() => _offers = restored);
+      await _persist(expectedUid: user.uid);
+      if (!mounted || FirebaseAuth.instance.currentUser?.uid != user.uid) return;
+      setState(() => _message = 'تم استعادة ' + restored.length.toString() + ' عروض من حسابك.');
+    } on FirebaseException catch (error) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذرت الاستعادة: ' + error.code);
+    } catch (_) {
+      if (mounted && FirebaseAuth.instance.currentUser?.uid == user.uid) setState(() => _message = 'تعذرت استعادة العروض السحابية.');
+    } finally {
+      if (mounted) setState(() => _cloudBusy = false);
+    }
+  }
+
+  Future<void> _add() async {
+    if (_offers.length >= 10) {
+      _snack('الحد الأقصى 10 عروض في هذه المسودة.');
+      return;
+    }
+    final offer = await showDialog<_Offer>(context: context, builder: (_) => _OfferDialog());
+    if (offer == null || !mounted) return;
+    setState(() => _offers = [..._offers, offer]);
+    await _persist();
+  }
+
+  Future<void> _edit(_Offer offer) async {
+    final updated = await showDialog<_Offer>(
+      context: context,
+      builder: (_) => _OfferDialog(initialOffer: offer),
+    );
+    if (updated == null || !mounted) return;
+    setState(() => _offers = _offers.map((item) => item.id == offer.id ? updated : item).toList());
+    await _persist();
+  }
+
+  Future<void> _setStatus(_Offer offer, String? status) async {
+    if (status == null) return;
+    setState(() => _offers = _offers.map((o) => o.id == offer.id ? o.copyWith(status: status) : o).toList());
+    await _persist();
+  }
+
+  Future<void> _delete(_Offer offer) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف العرض؟'),
+        content: Text('سيُحذف عرض ${offer.supplier} من المسودة المحلية.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('حذف')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _offers = _offers.where((o) => o.id != offer.id).toList());
+    await _persist();
+  }
+
+  Future<void> _copySummary() async {
+    final lines = <String>[
+      'ملخص مقارنة عروض الموردين',
+      'ملاحظة: بيانات مدخلة يدوياً ولم يتم التحقق من الموردين.',
+      ..._sorted.map((offer) {
+        final total = _total(offer);
+        return [
+          'المورد: ${offer.supplier}',
+          'السعر: ${offer.price} ${offer.currency}',
+          'الشحن والرسوم: ${offer.shipping} ${offer.currency}',
+          'الإجمالي التقديري: ${total == null ? 'غير مكتمل' : '${total.toStringAsFixed(2)} ${offer.currency}'}',
+          'الحالة: ${_statuses[offer.status] ?? offer.status}',
+          'شروط الدفع: ${offer.payment.isEmpty ? 'غير محددة' : offer.payment}',
+          'ملاحظات: ${offer.notes.isEmpty ? 'لا توجد' : offer.notes}',
+          '',
+        ].join('\n');
+      }),
+    ];
+    try {
+      await Clipboard.setData(ClipboardData(text: lines.join('\n')));
+      if (mounted) _snack('تم نسخ ملخص العروض إلى الحافظة.');
+    } catch (_) {
+      if (mounted) _snack('تعذر نسخ الملخص؛ حاول مرة أخرى.');
+    }
+  }
+
+  void _snack(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+
+  double? _total(_Offer offer) =>
+      SupplierOfferComparisonLogic.total(offer.price, offer.shipping);
+
+  bool _isLowest(_Offer candidate) {
+    // A rejected quote must never be presented as a viable low-cost option.
+    if (candidate.status == 'rejected') return false;
+    return SupplierOfferComparisonLogic.isLowest(
+      currency: candidate.currency,
+      price: candidate.price,
+      shipping: candidate.shipping,
+      offers: _offers
+          .where((offer) => offer.status != 'rejected')
+          .map((offer) => <String, String>{
+                'currency': offer.currency,
+                'status': offer.status,
+                'price': offer.price,
+                'shipping': offer.shipping,
+              }),
+    );
+  }
+
+  List<_Offer> get _sorted {
+    final result = List<_Offer>.from(_offers);
+    result.sort((a, b) {
+      // Keep rejected quotes visible for audit, but below viable offers.
+      final aRejected = a.status == 'rejected';
+      final bRejected = b.status == 'rejected';
+      if (aRejected != bRejected) return aRejected ? 1 : -1;
+      return SupplierOfferComparisonLogic.compare(
+        aCurrency: a.currency,
+        aSupplier: a.supplier,
+        aPrice: a.price,
+        aShipping: a.shipping,
+        bCurrency: b.currency,
+        bSupplier: b.supplier,
+        bPrice: b.price,
+        bShipping: b.shipping,
+      );
+    });
+    return result;
+  }
+
+  @override
+  void dispose() {
+    _loadGeneration++;
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currencies = _offers.map((o) => o.currency).toSet();
+    final filteredOffers = _sorted
+        .where((offer) => _filterStatus == 'all' || offer.status == _filterStatus)
+        .toList(growable: false);
+    return Scaffold(
+      appBar: AppBar(title: const Text('مقارنة عروض الموردين')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _loading ? null : _add,
+        icon: const Icon(Icons.add),
+        label: const Text('إضافة عرض'),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+              children: [
+                Card(child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('قارن قبل اتخاذ القرار', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    const Text('أدخل عروضاً استلمتها بنفسك. الترتيب حسب السعر والرسوم المسجلة وبالعملة نفسها فقط. لا يوجد تحويل عملات تلقائي أو تحقق من المورد.'),
+                    const SizedBox(height: 8),
+                    Text(_message, style: Theme.of(context).textTheme.bodySmall),
+                    Wrap(spacing: 8, children: [
+                      Chip(label: Text('${_offers.length}/10 عروض')),
+                      Chip(label: Text('${_offers.where((o) => o.status == 'verify').length} بحاجة للتحقق')),
+                      Chip(label: Text('${_offers.where((o) => o.status == 'shortlist').length} بالقائمة المختصرة')),
+                    ]),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _filterStatus,
+                      decoration: const InputDecoration(
+                        labelText: 'تصفية العروض حسب الحالة',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: [
+                        const DropdownMenuItem(value: 'all', child: Text('كل العروض')),
+                        ..._statuses.entries.map((entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            )),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => _filterStatus = value);
+                      },
+                    ),
+                    if (currencies.length > 1)
+                      const Text('توجد عملات مختلفة؛ لا تقارن أسعارها مباشرة.', style: TextStyle(color: Colors.deepOrange)),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _offers.isEmpty ? null : _copySummary,
+                      icon: const Icon(Icons.copy_all_outlined),
+                      label: const Text('نسخ ملخص العروض'),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      OutlinedButton.icon(
+                        onPressed: _cloudBusy ? null : _saveToAccount,
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        label: const Text('حفظ في حسابي'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _cloudBusy ? null : _loadFromAccount,
+                        icon: const Icon(Icons.cloud_download_outlined),
+                        label: const Text('استعادة من حسابي'),
+                      ),
+                    ]),
+                  ]),
+                )),
+                if (_offers.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: Text(
+                      'عرض ${filteredOffers.length} من ${_offers.length} عروض',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                if (_offers.isEmpty)
+                  const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد عروض بعد. اضغط «إضافة عرض» لتسجيل أول عرض.')))
+                else if (filteredOffers.isEmpty)
+                  const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد عروض بالحالة المحددة. غيّر التصفية لعرض عروض أخرى.')))
+                else
+                  ...filteredOffers.map((offer) => _card(offer, isLowest: _isLowest(offer))),
+                const SizedBox(height: 12),
+                const Text('قبل الدفع: تحقق مستقلاً من تسجيل الشركة، وعينة المنتج، والمراجع التجارية، وشروط الدفع والشحن والتأمين والمستندات.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+    );
+  }
+
+  Widget _card(_Offer offer, {required bool isLowest}) {
+    final total = _total(offer);
+    Widget detail(String label, String value) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(width: 125, child: Text(label, style: const TextStyle(color: Colors.grey))),
+        Expanded(child: Text(value)),
+      ]),
+    );
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const CircleAvatar(child: Icon(Icons.storefront_outlined)),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(offer.supplier, style: Theme.of(context).textTheme.titleMedium),
+              Text(total == null ? 'التكلفة غير مكتملة' : 'الإجمالي التقديري: ${total.toStringAsFixed(2)} ${offer.currency}'),
+              if (isLowest)
+                Text('الأقل تكلفة ضمن ${offer.currency}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+            ])),
+            IconButton(tooltip: 'تعديل العرض', onPressed: () => _edit(offer), icon: const Icon(Icons.edit_outlined)),
+            IconButton(tooltip: 'حذف العرض', onPressed: () => _delete(offer), icon: const Icon(Icons.delete_outline)),
+          ]),
+          const Divider(),
+          detail('تاريخ التسجيل', offer.receivedAt.length >= 10 ? offer.receivedAt.substring(0, 10) : offer.receivedAt),
+          detail('السعر المسجل', '${offer.price} ${offer.currency}'),
+          detail('الشحن والرسوم', '${offer.shipping} ${offer.currency}'),
+          detail('الحد الأدنى', offer.moq.isEmpty ? 'غير محدد' : offer.moq),
+          detail('مدة التسليم', offer.leadTime.isEmpty ? 'غير محددة' : offer.leadTime),
+          detail('شروط الدفع', offer.payment.isEmpty ? 'غير محددة' : offer.payment),
+          detail('صلاحية العرض', offer.validity.isEmpty ? 'غير محددة' : offer.validity),
+          if (offer.notes.isNotEmpty) detail('ملاحظات', offer.notes),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _statuses.containsKey(offer.status) ? offer.status : 'received',
+            decoration: const InputDecoration(labelText: 'حالة العرض', border: OutlineInputBorder(), isDense: true),
+            items: _statuses.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
+            onChanged: (value) => _setStatus(offer, value),
+          ),
+          if (offer.status == 'accepted')
+            const Padding(padding: EdgeInsets.only(top: 8), child: Text('اختيار مبدئي فقط؛ لا يعني عقداً أو إرسال أمر شراء.', style: TextStyle(color: Colors.deepOrange, fontSize: 12))),
+        ]),
+      ),
+    );
+  }
+}
+
+class _Offer {
+  const _Offer({required this.id, required this.supplier, required this.price, required this.currency, required this.shipping, required this.moq, required this.leadTime, required this.payment, required this.validity, required this.notes, required this.status, required this.receivedAt});
+  final String id, supplier, price, currency, shipping, moq, leadTime, payment, validity, notes, status, receivedAt;
+  _Offer copyWith({String? status}) => _Offer(id: id, supplier: supplier, price: price, currency: currency, shipping: shipping, moq: moq, leadTime: leadTime, payment: payment, validity: validity, notes: notes, status: status ?? this.status, receivedAt: receivedAt);
+  Map<String, dynamic> toJson() => {'id': id, 'supplier': supplier, 'price': price, 'currency': currency, 'shipping': shipping, 'moq': moq, 'leadTime': leadTime, 'payment': payment, 'validity': validity, 'notes': notes, 'status': status, 'receivedAt': receivedAt};
+  factory _Offer.fromJson(Map<String, dynamic> j) => _Offer(
+    id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
+    supplier: j['supplier'] as String? ?? '', price: j['price'] as String? ?? '',
+    currency: _currencies.contains(j['currency']) ? j['currency'] as String : 'USD',
+    shipping: j['shipping'] as String? ?? '0', moq: j['moq'] as String? ?? '',
+    leadTime: j['leadTime'] as String? ?? '', payment: j['payment'] as String? ?? '',
+    validity: j['validity'] as String? ?? '', notes: j['notes'] as String? ?? '',
+    receivedAt: j['receivedAt'] as String? ?? DateTime.now().toIso8601String(),
+    status: _statuses.containsKey(j['status']) ? j['status'] as String : 'received',
+  );
+  static const _currencies = ['USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN'];
+  static const _statuses = {'received': 'وصل العرض', 'verify': 'بحاجة للتحقق', 'shortlist': 'ضمن القائمة المختصرة', 'accepted': 'اختير مبدئياً', 'rejected': 'مرفوض'};
+}
+
+class _OfferDialog extends StatefulWidget {
+  const _OfferDialog({this.initialOffer});
+  final _Offer? initialOffer;
+  @override
+  State<_OfferDialog> createState() => _OfferDialogState();
+}
+
+class _OfferDialogState extends State<_OfferDialog> {
+  final _form = GlobalKey<FormState>();
+  final _supplier = TextEditingController(), _price = TextEditingController(), _shipping = TextEditingController(text: '0');
+  final _moq = TextEditingController(), _lead = TextEditingController(), _payment = TextEditingController(), _validity = TextEditingController(), _notes = TextEditingController();
+  String _currency = 'USD';
+
+  @override
+  void initState() {
+    super.initState();
+    final offer = widget.initialOffer;
+    if (offer == null) return;
+    _supplier.text = offer.supplier;
+    _price.text = offer.price;
+    _shipping.text = offer.shipping;
+    _moq.text = offer.moq;
+    _lead.text = offer.leadTime;
+    _payment.text = offer.payment;
+    _validity.text = offer.validity;
+    _notes.text = offer.notes;
+    _currency = offer.currency;
+  }
+
+  @override
+  void dispose() {
+    for (final c in [_supplier, _price, _shipping, _moq, _lead, _payment, _validity, _notes]) { c.dispose(); }
+    super.dispose();
+  }
+
+  String? _amount(String? value, {bool optional = false}) {
+    final raw = value?.trim() ?? '';
+    if (optional && raw.isEmpty) return null;
+    if (raw.length > 50) return 'الرقم أطول من الحد المسموح';
+    final validNumber = RegExp(r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$');
+    if (!validNumber.hasMatch(raw)) {
+      return 'أدخل رقماً صحيحاً مثل 1200 أو 1,200.50';
+    }
+    final number = double.tryParse(raw.replaceAll(',', ''));
+    return number == null || !number.isFinite || number < 0
+        ? 'أدخل رقماً صفرياً أو موجباً'
+        : null;
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.initialOffer == null ? 'تسجيل عرض مورد' : 'تعديل عرض المورد'),
+    content: SizedBox(width: 460, child: Form(
+      key: _form,
+      child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextFormField(controller: _supplier, maxLength: 200, decoration: const InputDecoration(labelText: 'اسم المورد *'), validator: (v) => v == null || v.trim().isEmpty ? 'اسم المورد مطلوب' : null),
+        TextFormField(controller: _price, maxLength: 50, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'السعر *'), validator: _amount),
+        DropdownButtonFormField<String>(value: _currency, decoration: const InputDecoration(labelText: 'العملة'), items: _Offer._currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(), onChanged: (v) { if (v != null) setState(() => _currency = v); }),
+        TextFormField(controller: _shipping, maxLength: 50, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الشحن والرسوم (اختياري)'), validator: (v) => _amount(v, optional: true)),
+        TextFormField(controller: _moq, maxLength: 100, decoration: const InputDecoration(labelText: 'الحد الأدنى للطلب')),
+        TextFormField(controller: _lead, maxLength: 100, decoration: const InputDecoration(labelText: 'مدة التجهيز/التسليم')),
+        TextFormField(controller: _payment, maxLength: 300, decoration: const InputDecoration(labelText: 'شروط الدفع')),
+        TextFormField(controller: _validity, maxLength: 100, decoration: const InputDecoration(labelText: 'صلاحية العرض')),
+        TextFormField(controller: _notes, maxLength: 500, maxLines: 2, decoration: const InputDecoration(labelText: 'ملاحظات / تحقق')),
+      ])),
+    )),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+      FilledButton(onPressed: () {
+        if (!_form.currentState!.validate()) return;
+        Navigator.pop(context, _Offer(
+          id: widget.initialOffer?.id ?? DateTime.now().microsecondsSinceEpoch.toString(), supplier: _supplier.text.trim(),
+          price: _price.text.trim(), currency: _currency, shipping: _shipping.text.trim().isEmpty ? '0' : _shipping.text.trim(),
+          moq: _moq.text.trim(), leadTime: _lead.text.trim(), payment: _payment.text.trim(),
+          validity: _validity.text.trim(), notes: _notes.text.trim(), status: widget.initialOffer?.status ?? 'received', receivedAt: widget.initialOffer?.receivedAt ?? DateTime.now().toIso8601String(),
+        ));
+      }, child: const Text('حفظ العرض')),
+    ],
+  );
+}
