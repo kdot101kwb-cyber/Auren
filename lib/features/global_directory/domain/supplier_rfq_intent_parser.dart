@@ -2,6 +2,8 @@
 class SupplierRfqIntent {
   const SupplierRfqIntent({this.product, this.quantity, this.unit, this.destination, this.budget, this.currency, this.leadTime});
   final String? product, quantity, unit, destination, budget, currency, leadTime;
+  bool get hasUsefulFields => [product, quantity, destination, budget, currency, leadTime]
+      .any((value) => value != null && value.isNotEmpty);
   List<String> get missingRequiredFields => [
     if (product == null || product!.isEmpty) 'المنتج',
     if (quantity == null || quantity!.isEmpty) 'الكمية',
