@@ -255,20 +255,6 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
       );
     }
   }
-  void _concierge(List<AurenEntertainmentItem> source) {
-    final controller = AurenMusicPlayerController.instance;
-    final items = _smart(source).where((item) => item.mediaUrl.isNotEmpty).take(12).toList();
-    for (final item in items) {
-      if (!controller.queue.any((queued) => queued.id == item.id)) {
-        controller.addToQueue(item);
-      }
-    }
-    if (!mounted) return;
-    final label = mood == 'الكل' && context == 'تلقائي' ? 'ذكي تلقائي' : '$mood • $context';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('AUREN جهّز لك قائمة: $label (' + items.length.toString() + ' مقاطع)')),
-    );
-  }
   void _mix() {
     final controller = AurenMusicPlayerController.instance;
     final queue = controller.queue;
@@ -289,6 +275,16 @@ class _AurenSmartMusicScreenState extends State<AurenSmartMusicScreen> {
       appBar: AppBar(
         title: const Text('AUREN Smart Music'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.playlist_add_rounded),
+            tooltip: 'إنشاء قائمة ذكية',
+            onPressed: () => _generateSmartPlaylist(_latestSource),
+          ),
+          IconButton(
+            icon: const Icon(Icons.shuffle_rounded),
+            tooltip: 'خلط قائمة التشغيل',
+            onPressed: _mix,
+          ),
           IconButton(
             icon: const Icon(Icons.auto_awesome_rounded),
             tooltip: 'AI Music Concierge',
