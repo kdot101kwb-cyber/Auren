@@ -119,4 +119,39 @@ class SupplierOfferComparisonLogic {
   /// Serializes one row as comma-separated, quoted cells.
   static String csvRow(Iterable<String> values) =>
       values.map(csvCell).join(',');
+
+  /// Normalizes a supplier label for duplicate hints without asserting identity.
+  /// This is a UI aid only; similarly named businesses may be unrelated.
+  static String normalizeSupplierName(String value) =>
+      value.trim().toLowerCase().replaceAll(RegExp(r'\\s+'), ' ');
+
+  /// Returns normalized names occurring more than once.
+  static Set<String> duplicateSupplierNames(Iterable<String> supplierNames) {
+    final counts = <String, int>{};
+    for (final name in supplierNames) {
+      final normalized = normalizeSupplierName(name);
+      if (normalized.isEmpty) continue;
+      counts[normalized] = (counts[normalized] ?? 0) + 1;
+    }
+    return counts.entries
+        .where((entry) => entry.value > 1)
+        .map((entry) => entry.key)
+        .toSet();
+  }
+
+  /// Lists optional quote terms that are still missing before a decision.
+  /// Returned identifiers are stable keys for presentation and testing.
+  static List<String> missingDecisionFields({
+    required String moq,
+    required String leadTime,
+    required String payment,
+    required String validity,
+  }) {
+    final missing = <String>[];
+    if (moq.trim().isEmpty) missing.add('minimum_order');
+    if (leadTime.trim().isEmpty) missing.add('lead_time');
+    if (payment.trim().isEmpty) missing.add('payment_terms');
+    if (validity.trim().isEmpty) missing.add('validity');
+    return List.unmodifiable(missing);
+  }
 }
