@@ -87,7 +87,8 @@ exports.cancelAurenSupplierRequest = onCall(
       if (globalFresh.exists && globalFresh.data()?.requesterUid !== uid) throw new HttpsError('permission-denied','Supplier request mirror belongs to another account.');
       const data = fresh.data() || {};
       const currentStatus = String(data.status || 'draft').toLowerCase();
-      if (['completed','cancelled'].includes(currentStatus)) {
+      const cancellableStatuses = new Set(['draft','waiting_response','replied','failed']);
+      if (!cancellableStatuses.has(currentStatus)) {
         throw new HttpsError('failed-precondition','Request cannot be cancelled in its current state.');
       }
       const update = {
