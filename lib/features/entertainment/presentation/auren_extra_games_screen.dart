@@ -97,8 +97,8 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
           ),
         ),
         Padding(padding: const EdgeInsets.fromLTRB(12, 4, 12, 8), child: Row(children: [
-          Expanded(child: _statTile(Icons.stars_rounded, 'XP', '\$_gamingXp')), const SizedBox(width: 8),
-          Expanded(child: _statTile(Icons.sports_esports, 'جولات', '\$_gamesPlayed')), const SizedBox(width: 8),
+          Expanded(child: _statTile(Icons.stars_rounded, 'XP', '$_gamingXp')), const SizedBox(width: 8),
+          Expanded(child: _statTile(Icons.sports_esports, 'جولات', '$_gamesPlayed')), const SizedBox(width: 8),
           Expanded(child: _statTile(Icons.workspace_premium, 'جوائز', '${_gameBadges.length}')),
         ])),
         Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('المستوى ${1 + (_seasonXp ~/ 250)} • نقاط الموسم: $_seasonXp', style: Theme.of(context).textTheme.labelSmall)),
@@ -120,10 +120,6 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
         ])),
       ]),
     ));
-  }
-
-  void _awardGamingXp({int base = 10, String? badge}) {
-    setState(() { _gamingXp += base; _gamesPlayed++; if (badge != null) _gameBadges.add(badge); });
   }
 
   String get _selectedGameId => _games[_selected].$1.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_').toLowerCase();
