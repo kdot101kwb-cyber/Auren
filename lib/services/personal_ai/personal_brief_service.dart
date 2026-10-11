@@ -44,8 +44,8 @@ class PersonalBriefService {
           .where('enabled', isEqualTo: true).limit(100).get(),
     ]);
 
-    final goals = results[0] as QuerySnapshot<Map<String, dynamic>>;
-    final memories = results[1] as QuerySnapshot<Map<String, dynamic>>;
+    final goals = results[0];
+    final memories = results[1];
 
     final active = goals.docs.where((d) => (d.data()['status']?.toString() ?? 'active') == 'active').toList();
     final progressValues = active.map((d) => ((d.data()['progress'] as num?)?.toInt() ?? 0).clamp(0, 100)).toList();
