@@ -92,7 +92,6 @@ class _AurenGamingScreenState extends State<AurenGamingScreen> {
     board[index] = mark;
     final winner = _winner(board);
     final draw = winner == null && board.every((e) => e.isNotEmpty);
-    final nextUid = winner != null || draw ? '' : players.firstWhere((p) => p != uid, orElse: () => uid);
     try {
       await _service.playMove(roomId: _roomId!, index: index);
       if (winner != null || draw) {
