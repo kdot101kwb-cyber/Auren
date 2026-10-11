@@ -89,7 +89,7 @@ class _AurenTvScreenState extends State<AurenTvScreen> {
     }
     AurenTvService.instance.favorites().then((v) { if (mounted) setState(() => favorites = v); });
     Future.wait([AurenTvProfileService.instance.profiles(), AurenTvProfileService.instance.activeProfileId()]).then((v) { if (!mounted) return; final ps=v[0] as List<AurenTvProfile>; final active=v[1] as String; setState(() { _activeTvProfile=active; _tvProfiles..clear()..addEntries(ps.map((p)=>MapEntry(p.id,p.name))); }); });
-    AurenTvService.instance.autoRefreshSources(limit: 150).then((_) => AurenTvService.instance.refreshEpgAndSyncReminders()).catchError((_) {});
+    AurenTvService.instance.autoRefreshSources(limit: 150).then((_) => AurenTvService.instance.refreshEpgAndSyncReminders()).catchError((Object _) => 0);
     _recoveryTimer = Timer.periodic(const Duration(seconds: 3), (_) => _monitorPlayback());
     Connectivity().checkConnectivity().then((results) {
       if (!mounted) return;
