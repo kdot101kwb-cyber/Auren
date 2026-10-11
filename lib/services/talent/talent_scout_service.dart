@@ -23,20 +23,20 @@ class TalentScoutService {
     final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
     const verifiedPageSize = 200;
     DocumentSnapshot<Map<String, dynamic>>? lastVerifiedDoc;
-    do {
+    while (true) {
       Query<Map<String, dynamic>> query = db.collection('talent_skill_graph')
           .where('ownerId', isEqualTo: cleanUid)
           .where('verified', isEqualTo: true)
           .limit(verifiedPageSize);
       if (lastVerifiedDoc != null) {
-        query = query.startAfterDocument(lastVerifiedDoc!);
+        query = query.startAfterDocument(lastVerifiedDoc);
       }
       final page = await query.get();
       if (page.docs.isEmpty) break;
       verifiedDocs.addAll(page.docs);
       lastVerifiedDoc = page.docs.last;
       if (page.docs.length < verifiedPageSize) break;
-    } while (lastVerifiedDoc != null);
+    }
     final talentSkillLabels = verifiedDocs
         .map((d) => (d.data()['skill'] ?? '').toString().trim())
         .where((x) => x.isNotEmpty)
@@ -138,7 +138,7 @@ class TalentScoutService {
           .orderBy('expiresAt')
           .limit(pageSize);
       if (lastDoc != null) {
-        query = query.startAfterDocument(lastDoc!);
+        query = query.startAfterDocument(lastDoc);
       }
 
       final snap = await query.get();
@@ -168,18 +168,18 @@ class TalentScoutService {
     final verifiedDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
     const pageSize = 200;
     DocumentSnapshot<Map<String, dynamic>>? lastDoc;
-    do {
+    while (true) {
       Query<Map<String, dynamic>> query = db.collection('talent_skill_graph')
           .where('ownerId', isEqualTo: cleanOwnerId)
           .where('verified', isEqualTo: true)
           .limit(pageSize);
-      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+      if (lastDoc != null) query = query.startAfterDocument(lastDoc);
       final page = await query.get();
       if (page.docs.isEmpty) break;
       verifiedDocs.addAll(page.docs);
       lastDoc = page.docs.last;
       if (page.docs.length < pageSize) break;
-    } while (lastDoc != null);
+    }
     final talentSkills = verifiedDocs
         .map((d) => _norm((d.data()['skill'] ?? '').toString()))
         .where((x) => x.isNotEmpty)
