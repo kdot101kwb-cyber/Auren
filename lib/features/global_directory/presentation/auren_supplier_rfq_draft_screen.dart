@@ -138,9 +138,21 @@ class _AurenSupplierRfqDraftScreenState
           _contactController.text = (decoded['contact'] as String?) ?? '';
           _currency = (decoded['currency'] as String?) ?? 'USD';
           _delivery = (decoded['delivery'] as String?) ?? 'شحن إلى العنوان';
+          final savedProduct = (decoded['product'] as String?) ?? '';
+          final savedQuantity = (decoded['quantity'] as String?) ?? '';
+          final savedDestination = (decoded['destination'] as String?) ?? '';
+          final hasChangedInitialValues =
+              (initialTarget != null &&
+                  initialTarget.isNotEmpty &&
+                  initialTarget != savedTarget) ||
+              (widget.initialProduct?.trim().isNotEmpty == true &&
+                  widget.initialProduct!.trim() != savedProduct) ||
+              (widget.initialQuantity?.trim().isNotEmpty == true &&
+                  widget.initialQuantity!.trim() != savedQuantity) ||
+              (widget.initialDestination?.trim().isNotEmpty == true &&
+                  widget.initialDestination!.trim() != savedDestination);
           final savedDraft = decoded['draft'];
-          _draft = initialTarget != null && initialTarget.isNotEmpty &&
-                  initialTarget != savedTarget
+          _draft = hasChangedInitialValues
               ? null
               : (savedDraft is String && savedDraft.isNotEmpty ? savedDraft : null);
         }
