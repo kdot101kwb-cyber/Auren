@@ -662,10 +662,10 @@ class _AurenSupplierOfferComparisonScreenState
             TextField(
               controller: _rankingBudgetController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'الميزانية القصوى ($currency)',
                 hintText: 'اختياري',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               onChanged: (_) => setState(() {}),
