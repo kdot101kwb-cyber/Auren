@@ -431,6 +431,20 @@ class _AurenSupplierOfferComparisonScreenState
           SupplierOfferComparisonLogic.validityCategory(offer.validity) == _filterValidity;
       return statusMatches && validityMatches;
     }).toList(growable: false);
+    final duplicateSupplierKeys = SupplierOfferComparisonLogic.duplicateSupplierNames(
+      _offers.map((offer) => offer.supplier),
+    );
+    final duplicateSupplierOfferCount = _offers.where((offer) =>
+      duplicateSupplierKeys.contains(SupplierOfferComparisonLogic.normalizeSupplierName(offer.supplier)),
+    ).length;
+    final incompleteQuoteCount = _offers.where((offer) =>
+      SupplierOfferComparisonLogic.missingDecisionFields(
+        moq: offer.moq,
+        leadTime: offer.leadTime,
+        payment: offer.payment,
+        validity: offer.validity,
+      ).isNotEmpty,
+    ).length;
     final expiredCount = _offers.where((o) => SupplierOfferComparisonLogic.validityCategory(o.validity) == 'expired').length;
     final expiringCount = _offers.where((o) {
       final category = SupplierOfferComparisonLogic.validityCategory(o.validity);
@@ -462,6 +476,16 @@ class _AurenSupplierOfferComparisonScreenState
                       Chip(label: Text('${_offers.where((o) => o.status == 'shortlist').length} بالقائمة المختصرة')),
                       Chip(label: Text('$expiredCount عروض منتهية'), avatar: const Icon(Icons.error_outline, size: 18)),
                       Chip(label: Text('$expiringCount عروض قاربت على الانتهاء'), avatar: const Icon(Icons.schedule, size: 18)),
+                      if (duplicateSupplierOfferCount > 0)
+                        Chip(
+                          label: Text('$duplicateSupplierOfferCount عروض بأسماء موردين مكررة'),
+                          avatar: const Icon(Icons.content_copy_outlined, size: 18),
+                        ),
+                      if (incompleteQuoteCount > 0)
+                        Chip(
+                          label: Text('$incompleteQuoteCount عروض ناقصة الشروط'),
+                          avatar: const Icon(Icons.rule_outlined, size: 18),
+                        ),
                     ]),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
@@ -554,6 +578,21 @@ class _AurenSupplierOfferComparisonScreenState
 
   Widget _card(_Offer offer, {required bool isLowest}) {
     final total = _total(offer);
+    final duplicateName = SupplierOfferComparisonLogic.duplicateSupplierNames(
+      _offers.map((item) => item.supplier),
+    ).contains(SupplierOfferComparisonLogic.normalizeSupplierName(offer.supplier));
+    final missingFields = SupplierOfferComparisonLogic.missingDecisionFields(
+      moq: offer.moq,
+      leadTime: offer.leadTime,
+      payment: offer.payment,
+      validity: offer.validity,
+    );
+    const fieldLabels = <String, String>{
+      'minimum_order': 'الحد الأدنى للطلب',
+      'lead_time': 'مدة التسليم',
+      'payment_terms': 'شروط الدفع',
+      'validity': 'صلاحية العرض',
+    };
     Widget detail(String label, String value) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -579,6 +618,30 @@ class _AurenSupplierOfferComparisonScreenState
             IconButton(tooltip: 'حذف العرض', onPressed: () => _delete(offer), icon: const Icon(Icons.delete_outline)),
           ]),
           const Divider(),
+          if (duplicateName)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.content_copy_outlined, color: Colors.deepOrange, size: 18),
+                SizedBox(width: 6),
+                Expanded(child: Text(
+                  'اسم هذا المورد مكرر في المسودة. تأكد أن العرضين من نفس الجهة قبل حذف أي منهما.',
+                  style: TextStyle(color: Colors.deepOrange, fontSize: 12),
+                )),
+              ]),
+            ),
+          if (missingFields.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Icon(Icons.rule_outlined, color: Colors.deepOrange, size: 18),
+                const SizedBox(width: 6),
+                Expanded(child: Text(
+                  'معلومات ناقصة لاتخاذ القرار: ${missingFields.map((field) => fieldLabels[field] ?? field).join('، ')}',
+                  style: const TextStyle(color: Colors.deepOrange, fontSize: 12),
+                )),
+              ]),
+            ),
           detail('تاريخ التسجيل', offer.receivedAt.length >= 10 ? offer.receivedAt.substring(0, 10) : offer.receivedAt),
           detail('السعر المسجل', '${offer.price} ${offer.currency}'),
           detail('الشحن والرسوم', '${offer.shipping} ${offer.currency}'),
