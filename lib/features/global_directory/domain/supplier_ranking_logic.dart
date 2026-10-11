@@ -90,7 +90,7 @@ class SupplierRankingLogic {
         score += 40;
         reasons.add('competitive_total_cost');
       } else {
-        score += 40 * ((maxCost! - cost) / (maxCost - minCost));
+        score += 40 * ((maxCost! - cost) / (maxCost! - minCost!));
         if (cost == minCost) reasons.add('lowest_comparable_total_cost');
       }
 
