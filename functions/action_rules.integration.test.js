@@ -222,3 +222,70 @@ test('concurrent execution claims allow exactly one winner', async () => {
     assert.equal(finalSnap.data().status, 'executing');
   });
 });
+
+function supplierOffer(overrides = {}) {
+  return {
+    id: 'offer-1',
+    supplier: 'Acme Textiles',
+    price: '1,200.50',
+    currency: 'USD',
+    shipping: '25.00',
+    moq: '100 units',
+    leadTime: '2 weeks',
+    payment: '50% deposit',
+    validity: '2026-12-31',
+    notes: '',
+    status: 'received',
+    receivedAt: '2026-10-11T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function supplierOfferComparisonRef(userId) {
+  return testEnv.authenticatedContext(userId).firestore()
+      .doc(`users/${userId}/supplier_offer_comparisons/active_draft`);
+}
+
+test('supplier offer comparison accepts valid numeric price and shipping strings', async () => {
+  const uid = 'supplier-offer-valid';
+  await assertSucceeds(supplierOfferComparisonRef(uid).set({
+    ownerId: uid,
+    offers: [supplierOffer()],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
+test('supplier offer comparison rejects malformed price grouping', async () => {
+  const uid = 'supplier-offer-bad-price';
+  await assertFails(supplierOfferComparisonRef(uid).set({
+    ownerId: uid,
+    offers: [supplierOffer({ price: '12,34' })],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
+test('supplier offer comparison rejects malformed shipping amounts', async () => {
+  const uid = 'supplier-offer-bad-shipping';
+  await assertFails(supplierOfferComparisonRef(uid).set({
+    ownerId: uid,
+    offers: [supplierOffer({ shipping: '1,,2' })],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
+test('another user cannot read a supplier offer comparison', async () => {
+  const owner = 'supplier-offer-owner';
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore()
+        .doc(`users/${owner}/supplier_offer_comparisons/active_draft')
+        .set({
+          ownerId: owner,
+          offers: [supplierOffer()],
+          updatedAt: firebase.firestore.Timestamp.now(),
+        });
+  });
+  const otherUserRef = testEnv.authenticatedContext('supplier-offer-other')
+      .firestore()
+      .doc(`users/${owner}/supplier_offer_comparisons/active_draft`);
+  await assertFails(otherUserRef.get());
+});
