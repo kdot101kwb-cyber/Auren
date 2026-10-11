@@ -20,7 +20,7 @@ class _AurenEntertainmentMoviePlayerScreenState extends State<AurenEntertainment
   bool _completed = false;
 
   List<Map<String,dynamic>> get _playable => widget.scenes.map((raw) {
-    final s = raw is Map ? Map<String,dynamic>.from(raw as Map) : <String,dynamic>{};
+    final s = raw is Map ? Map<String,dynamic>.from(raw) : <String,dynamic>{};
     final o = s['output'] ?? s['media'] ?? s['video'];
     final url = o is Map ? o['url']?.toString() ?? '' : o?.toString() ?? '';
     return {'scene': s, 'url': url};
