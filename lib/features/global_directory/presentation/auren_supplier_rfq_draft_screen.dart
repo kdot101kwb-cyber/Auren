@@ -112,7 +112,10 @@ class _AurenSupplierRfqDraftScreenState
           if (!mounted || generation != _loadGeneration ||
               _auth.currentUser?.uid != userId) return;
           final data = cloud.data();
-          if (cloud.exists && data != null) {
+          // Defense in depth: only hydrate this user's draft when the stored
+          // owner matches the authenticated user. Firestore rules must also
+          // enforce ownership; the client check is not a replacement for rules.
+          if (cloud.exists && data != null && data['ownerId'] == userId) {
             draftJson = jsonEncode({
               for (final entry in data.entries)
                 if (entry.key != 'updatedAt') entry.key: entry.value,
