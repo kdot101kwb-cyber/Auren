@@ -99,9 +99,9 @@ class _AurenExtraGamesScreenState extends State<AurenExtraGamesScreen> {
         Padding(padding: const EdgeInsets.fromLTRB(12, 4, 12, 8), child: Row(children: [
           Expanded(child: _statTile(Icons.stars_rounded, 'XP', '\$_gamingXp')), const SizedBox(width: 8),
           Expanded(child: _statTile(Icons.sports_esports, 'جولات', '\$_gamesPlayed')), const SizedBox(width: 8),
-          Expanded(child: _statTile(Icons.workspace_premium, 'جوائز', '\${_gameBadges.length}')),
+          Expanded(child: _statTile(Icons.workspace_premium, 'جوائز', '${_gameBadges.length}')),
         ])),
-        Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('المستوى \${1 + (_seasonXp ~/ 250)} • نقاط الموسم: $_seasonXp', style: Theme.of(context).textTheme.labelSmall)),
+        Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('المستوى ${1 + (_seasonXp ~/ 250)} • نقاط الموسم: $_seasonXp', style: Theme.of(context).textTheme.labelSmall)),
         Expanded(child: Column(children: [
           Expanded(child: _buildSelectedGame()),
           _miniGameRewardCard(),
@@ -642,13 +642,13 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
     if(i==2){_message='🛡️ صدّ الهجمة!';_combo=min(10,_combo+2);return;}
     if(i==3){if(_shots<=0){_message='لا توجد سهام';return;}_shots--;final hit=_rng.nextDouble()<.72;_message=hit?'🏹 إصابة!':'❌ أخطأت';_score+=hit?18:2;return;}
     if(i==4){final ok=_rng.nextDouble()<.65;_message=ok?'⚡ رد فعل ناجح!':'💥 تأخرت!';_score+=ok?20:0;if(!ok)_health=max(0,_health-12);return;}
-    final dmg=i==1?18+_rng.nextInt(18):22+_rng.nextInt(16);_enemy=max(0,_enemy-dmg);_score+=dmg;_combo=min(10,_combo+1);_message='⚔️ ضرر \${dmg} — العدو \${_enemy}';if(_enemy==0){_level++;_enemy=100;_energy=10;_message='🏆 فوز! عدو جديد.';}
+    final dmg=i==1?18+_rng.nextInt(18):22+_rng.nextInt(16);_enemy=max(0,_enemy-dmg);_score+=dmg;_combo=min(10,_combo+1);_message='⚔️ ضرر ${dmg} — العدو ${_enemy}';if(_enemy==0){_level++;_enemy=100;_energy=10;_message='🏆 فوز! عدو جديد.';}
   }
-  void _sportsAction(int i){if(i==5){final ok=_rng.nextDouble()<.62;_message=ok?'⚽ GOAL!':'🧤 تصدّى الحارس';_score+=ok?25:4;}else if(i==6){final ok=_rng.nextDouble()<.7;_message=ok?'🏀 سلة!':'❌ ضاعت';_score+=ok?20:2;}else if(i==7){_laps++;_score+=12;_energy=min(10,_energy+1);_message='🏃 اندفاعة — لفة \${_laps}';}else if(i==8){final ok=_rng.nextDouble()<.68;_message=ok?'🎾 ردّ ناجح!':'❌ خارج الملعب';_score+=ok?18:3;}else{_laps++;_score+=15;_message='🚴 لفة \${_laps}';}}
+  void _sportsAction(int i){if(i==5){final ok=_rng.nextDouble()<.62;_message=ok?'⚽ GOAL!':'🧤 تصدّى الحارس';_score+=ok?25:4;}else if(i==6){final ok=_rng.nextDouble()<.7;_message=ok?'🏀 سلة!':'❌ ضاعت';_score+=ok?20:2;}else if(i==7){_laps++;_score+=12;_energy=min(10,_energy+1);_message='🏃 اندفاعة — لفة ${_laps}';}else if(i==8){final ok=_rng.nextDouble()<.68;_message=ok?'🎾 ردّ ناجح!':'❌ خارج الملعب';_score+=ok?18:3;}else{_laps++;_score+=15;_message='🚴 لفة ${_laps}';}}
   void _thinkingAction(int i){
     final ok=_rng.nextDouble()<.62; if(i==14&&ok)_challenge=1+_rng.nextInt(99);
     final labels=['','','','','','','','','','','🧩 لغز','🔢 مصفوفة','♟️ قرار','🧠 نمط','🔐 رمز','🃏 تطابق','🧠 تسلسل','🔵 لون','🧩 زوج','👀 ذاكرة'];
-    _message=ok?'\${labels[i]} صحيح!':'\${labels[i]} جرّب مرة أخرى';_score+=ok?18:2;
+    _message=ok?'${labels[i]} صحيح!':'${labels[i]} جرّب مرة أخرى';_score+=ok?18:2;
   }
   void _advancedMission(){
     final missions=[
@@ -677,18 +677,18 @@ class _ThreeDGamePanelState extends State<_ThreeDGamePanel>{
   void _adventureAction(){
     final i=widget.gameIndex-21;
     if(i==6){_resource++;_score+=25;_message='💎 كنز مكتشف!';}
-    else if(i==7){_laps++;_score+=20;_message='🚀 قطاع \${_laps}';}
+    else if(i==7){_laps++;_score+=20;_message='🚀 قطاع ${_laps}';}
     else if(i==8){_health=max(0,_health-5);_score+=18;_message='🧟 هربت من الخطر!';}
     else if(i==9){_score+=10+_combo*2;_combo=min(10,_combo+1);_message='🎵 إيقاع ناجح!';}
-    else if(i==10){_resource++;_energy=min(10,_energy+1);_score+=12;_message='🏝️ مورد \${_resource}';}
+    else if(i==10){_resource++;_energy=min(10,_energy+1);_score+=12;_message='🏝️ مورد ${_resource}';}
     else if(i==11){_level++;_score+=30;_message='⏳ قفزة زمنية!';}
     else{_score+=10+_rng.nextInt(16);_message='🗺️ منطقة جديدة اكتُشفت';}
   }
   void _checkLevel(){if(_score>=_target){_level++;_target=25+(_level-1)*15;_energy=10;_combo=0;}}
   void _reset(){setState((){_x=0;_y=0;_score=0;_energy=10;_health=100;_combo=0;_level=1;_target=25;_enemy=100;_shots=5;_resource=0;_laps=0;_challenge=1+_rng.nextInt(9);_message='جاهز!';});}
   @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(16),children:[
-    Text(title,style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),Text('3D • المستوى \${_level} • النقاط \${_score}'),
-    Wrap(spacing:8,children:[Chip(label:Text('HP \${_health}')),Chip(label:Text('⚡ \${_energy}')),Chip(label:Text('Combo \${_combo}')),Chip(label:Text('الهدف \${_target}')),if((!widget.core&&!widget.adventure&&widget.gameIndex<5)||widget.gameIndex==20)Chip(label:Text('العدو \${_enemy}')),if(widget.gameIndex==3)Chip(label:Text('سهام \${_shots}')),if(widget.adventure)Chip(label:Text('موارد \${_resource}'))]),
+    Text(title,style:const TextStyle(fontSize:28,fontWeight:FontWeight.w900)),Text('3D • المستوى ${_level} • النقاط ${_score}'),
+    Wrap(spacing:8,children:[Chip(label:Text('HP ${_health}')),Chip(label:Text('⚡ ${_energy}')),Chip(label:Text('Combo ${_combo}')),Chip(label:Text('الهدف ${_target}')),if((!widget.core&&!widget.adventure&&widget.gameIndex<5)||widget.gameIndex==20)Chip(label:Text('العدو ${_enemy}')),if(widget.gameIndex==3)Chip(label:Text('سهام ${_shots}')),if(widget.adventure)Chip(label:Text('موارد ${_resource}'))]),
     const SizedBox(height:12),SizedBox(height:300,child:ClipRRect(borderRadius:BorderRadius.circular(22),child:CustomPaint(painter:_ThreeDGameScenePainter(preset:preset,x:_x,y:_y,score:_score,health:_health,combo:_combo,level:_level),child:const SizedBox.expand()))),
     const SizedBox(height:12),Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_message,style:const TextStyle(fontWeight:FontWeight.w800)))),
     Row(mainAxisAlignment:MainAxisAlignment.center,children:[IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,-1):null,icon:const Icon(Icons.arrow_upward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(-1,0):null,icon:const Icon(Icons.arrow_back)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(1,0):null,icon:const Icon(Icons.arrow_forward)),IconButton.filledTonal(onPressed:_energy>0&&_health>0?()=>_move(0,1):null,icon:const Icon(Icons.arrow_downward))]),
