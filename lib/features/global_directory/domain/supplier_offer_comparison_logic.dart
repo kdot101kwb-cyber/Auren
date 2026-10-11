@@ -110,7 +110,7 @@ class SupplierOfferComparisonLogic {
   /// Every cell is quoted; embedded quotes are doubled per RFC 4180.
   static String csvCell(String value) {
     var safeValue = value;
-    if (RegExp(r'^[\\s]*[=+@-]').hasMatch(safeValue)) {
+    if (RegExp(r'^\s*[=+@-]').hasMatch(safeValue)) {
       safeValue = "'$safeValue";
     }
     return '"${safeValue.replaceAll('"', '""')}"';
