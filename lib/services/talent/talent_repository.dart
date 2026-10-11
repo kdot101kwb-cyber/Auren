@@ -87,13 +87,13 @@ class TalentRepository {
     final missions = <Map<String, String>>[];
     const pageSize = 200;
     DocumentSnapshot<Map<String, dynamic>>? lastDoc;
-    do {
+    while (true) {
       var query = db
           .collection('talent_mission_evidence')
           .where('ownerId', isEqualTo: cleanOwnerId)
           .orderBy('createdAt', descending: true)
           .limit(pageSize);
-      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+      if (lastDoc != null) query = query.startAfterDocument(lastDoc);
       final page = await query.get();
       if (page.docs.isEmpty) break;
       for (final doc in page.docs) {
@@ -107,7 +107,7 @@ class TalentRepository {
       }
       lastDoc = page.docs.last;
       if (page.docs.length < pageSize) break;
-    } while (lastDoc != null);
+    }
 
     return missions;
   }
