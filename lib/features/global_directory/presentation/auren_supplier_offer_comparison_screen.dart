@@ -336,6 +336,7 @@ class _AurenSupplierOfferComparisonScreenState
           .where((offer) => offer.status != 'rejected')
           .map((offer) => <String, String>{
                 'currency': offer.currency,
+                'status': offer.status,
                 'price': offer.price,
                 'shipping': offer.shipping,
               }),
