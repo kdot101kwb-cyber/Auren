@@ -255,6 +255,15 @@ test('supplier offer comparison accepts valid numeric price and shipping strings
   }));
 });
 
+test('supplier offer comparison allows unknown shipping cost', async () => {
+  const uid = 'supplier-offer-unknown-shipping';
+  await assertSucceeds(supplierOfferComparisonRef(uid).set({
+    ownerId: uid,
+    offers: [supplierOffer({ shipping: '' })],
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
 test('supplier offer comparison rejects malformed price grouping', async () => {
   const uid = 'supplier-offer-bad-price';
   await assertFails(supplierOfferComparisonRef(uid).set({
