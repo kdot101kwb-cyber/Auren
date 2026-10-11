@@ -150,6 +150,20 @@ void main() {
       expect(result.warnings, contains('missing_or_invalid_cost'));
     });
 
+  test('warns when the requested maximum minimum order is invalid', () {
+    const candidate = SupplierRankingCandidate(
+      id: 'small-moq', name: 'Small MOQ', currency: 'USD',
+      price: 10, shipping: 0, minimumOrder: 1,
+      verified: true, rating: 5,
+    );
+    final result = SupplierRankingLogic.rank(
+      [candidate], currency: 'USD', maxMinimumOrder: -1,
+    ).single;
+    expect(result.reasons, isNot(contains('meets_minimum_order')));
+    expect(result.warnings, contains('invalid_max_minimum_order_constraint'));
+    expect(result.warnings, isNot(contains('minimum_order_exceeds_requirement')));
+  });
+
   test('warns when the requested maximum lead time is invalid', () {
     const candidate = SupplierRankingCandidate(
       id: 'fast', name: 'Fast', currency: 'USD',
