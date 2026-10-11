@@ -123,7 +123,7 @@ class SupplierOfferComparisonLogic {
   /// Normalizes a supplier label for duplicate hints without asserting identity.
   /// This is a UI aid only; similarly named businesses may be unrelated.
   static String normalizeSupplierName(String value) =>
-      value.trim().toLowerCase().replaceAll(RegExp(r'\\s+'), ' ');
+      value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
   /// Returns normalized names occurring more than once.
   static Set<String> duplicateSupplierNames(Iterable<String> supplierNames) {
