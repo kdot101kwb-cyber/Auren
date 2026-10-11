@@ -340,6 +340,50 @@ class _AurenSupplierOfferComparisonScreenState
     }
   }
 
+  Future<void> _copyCsv() async {
+    final rows = <String>[
+      SupplierOfferComparisonLogic.csvRow([
+        'Supplier',
+        'Price',
+        'Currency',
+        'Shipping and fees',
+        'Estimated total',
+        'Status',
+        'Validity date',
+        'Validity warning',
+        'Minimum order',
+        'Lead time',
+        'Payment terms',
+        'Notes',
+        'Recorded at',
+      ]),
+      ..._sorted.map((offer) {
+        final total = _total(offer);
+        return SupplierOfferComparisonLogic.csvRow([
+          offer.supplier,
+          offer.price,
+          offer.currency,
+          offer.shipping,
+          total == null ? '' : total.toStringAsFixed(2),
+          _statuses[offer.status] ?? offer.status,
+          offer.validity,
+          _validityNotice(offer.validity) ?? '',
+          offer.moq,
+          offer.leadTime,
+          offer.payment,
+          offer.notes,
+          offer.receivedAt,
+        ]);
+      }),
+    ];
+    try {
+      await Clipboard.setData(ClipboardData(text: rows.join('\\n')));
+      if (mounted) _snack('تم نسخ CSV؛ يمكنك لصقه في جدول بيانات.');
+    } catch (_) {
+      if (mounted) _snack('تعذر نسخ ملف CSV؛ حاول مرة أخرى.');
+    }
+  }
+
   void _snack(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   double? _total(_Offer offer) =>
@@ -465,6 +509,12 @@ class _AurenSupplierOfferComparisonScreenState
                       onPressed: _offers.isEmpty ? null : _copySummary,
                       icon: const Icon(Icons.copy_all_outlined),
                       label: const Text('نسخ ملخص العروض'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _offers.isEmpty ? null : _copyCsv,
+                      icon: const Icon(Icons.table_chart_outlined),
+                      label: const Text('نسخ CSV للجدول'),
                     ),
                     const SizedBox(height: 8),
                     Wrap(spacing: 8, runSpacing: 8, children: [
