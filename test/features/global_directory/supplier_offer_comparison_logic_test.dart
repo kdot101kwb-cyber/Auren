@@ -303,12 +303,12 @@ void main() {
     test('quotes every cell and escapes commas, quotes and newlines', () {
       expect(SupplierOfferComparisonLogic.csvCell('Acme, Ltd'), '"Acme, Ltd"');
       expect(SupplierOfferComparisonLogic.csvCell('He said "yes"'), '"He said ""yes"""');
-      expect(SupplierOfferComparisonLogic.csvCell('line 1\\nline 2'), '"line 1\\nline 2"');
+      expect(SupplierOfferComparisonLogic.csvCell('line 1\nline 2'), '"line 1\nline 2"');
       expect(SupplierOfferComparisonLogic.csvRow(['supplier', 'price']), '"supplier","price"');
     });
 
     test('neutralizes spreadsheet formula prefixes including leading whitespace', () {
-      for (final value in ['=1+1', '+SUM(A1:A2)', '-cmd', '@SUM(A1)', '  =1+1', '\\t=1+1']) {
+      for (final value in ['=1+1', '+SUM(A1:A2)', '-cmd', '@SUM(A1)', '  =1+1', '\t=1+1']) {
         expect(
           SupplierOfferComparisonLogic.csvCell(value),
           '"' + "'$value" + '"',
