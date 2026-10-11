@@ -377,7 +377,7 @@ class _AurenSupplierOfferComparisonScreenState
       }),
     ];
     try {
-      await Clipboard.setData(ClipboardData(text: rows.join('\\n')));
+      await Clipboard.setData(ClipboardData(text: rows.join('\n')));
       if (mounted) _snack('تم نسخ CSV؛ يمكنك لصقه في جدول بيانات.');
     } catch (_) {
       if (mounted) _snack('تعذر نسخ ملف CSV؛ حاول مرة أخرى.');
