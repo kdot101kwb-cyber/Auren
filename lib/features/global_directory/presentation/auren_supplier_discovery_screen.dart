@@ -55,7 +55,20 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   Future<void> _prepareRfq(String sourceName) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AurenSupplierRfqDraftScreen(initialSupplier: sourceName),
+        builder: (_) => AurenSupplierRfqDraftScreen(
+          initialSupplier: sourceName,
+          initialProduct: _queryController.text.trim(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _prepareProductRfq(String product) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AurenSupplierRfqDraftScreen(
+          initialProduct: product,
+        ),
       ),
     );
   }
@@ -99,6 +112,20 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
             onChanged: (value) => setState(() => _category = value ?? 'الكل'),
           ),
           const SizedBox(height: 12),
+          if (_queryController.text.trim().isNotEmpty) ...[
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.request_quote_outlined),
+                title: const Text('جهّز طلبك لهذا المنتج'),
+                subtitle: Text(
+                  '“${_queryController.text.trim()}” — سننقل اسم المنتج إلى مسودة طلب السعر. هذا بحث في الأدلة المتاحة وليس تأكيداً لوجود مورد مطابق.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _prepareProductRfq(_queryController.text.trim()),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           Text('المصادر المتاحة: ${rows.length}', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           if (rows.isEmpty) const Text('لا توجد نتائج. جرّب كلمة بحث أخرى.'),
