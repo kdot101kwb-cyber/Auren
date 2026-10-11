@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'auren_supplier_rfq_draft_screen.dart';
+import 'auren_supplier_requests_screen.dart';
 import 'auren_supplier_discovery_screen.dart';
 import 'auren_investor_discovery_screen.dart';
 import 'auren_business_resource_screen.dart';
@@ -337,6 +338,16 @@ class _AurenBusinessNavigatorScreenState
               ),
               icon: const Icon(Icons.request_quote_outlined),
               label: const Text('جهّز طلب عرض سعر من مورد'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenSupplierRequestsScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.assignment_outlined),
+              label: const Text('طلبات الموردين وحالاتها'),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
