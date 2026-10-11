@@ -583,6 +583,7 @@ class _AurenSupplierOfferComparisonScreenState
                     ]),
                   ]),
                 )),
+                if (_offers.isNotEmpty) _rankingCard(),
                 if (_offers.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -601,6 +602,125 @@ class _AurenSupplierOfferComparisonScreenState
                 const Text('قبل الدفع: تحقق مستقلاً من تسجيل الشركة، وعينة المنتج، والمراجع التجارية، وشروط الدفع والشحن والتأمين والمستندات.', style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
+    );
+  }
+
+  Widget _rankingCard() {
+    final currencies = _offers
+        .map((offer) => offer.currency)
+        .toSet()
+        .toList()
+      ..sort();
+    if (currencies.isEmpty) return const SizedBox.shrink();
+    final currency = currencies.contains(_selectedRankingCurrency)
+        ? _selectedRankingCurrency!
+        : currencies.first;
+    final ranked = _rankedOffers(currency);
+    String reasonLabel(String key) => switch (key) {
+      'competitive_total_cost' => 'تكلفة متقاربة',
+      'lowest_comparable_total_cost' => 'أقل تكلفة قابلة للمقارنة',
+      'meets_lead_time' => 'يلتزم بمدة التسليم',
+      'within_budget' => 'داخل الميزانية',
+      'meets_minimum_order' => 'يلائم الحد الأدنى للطلب',
+      'marked_verified' => 'موسوم كمورد موثّق',
+      'rating_available' => 'التقييم متوفر',
+      _ => key,
+    };
+    String warningLabel(String key) => switch (key) {
+      'missing_or_invalid_cost' => 'السعر أو الشحن ناقص/غير صالح',
+      'missing_or_invalid_lead_time' => 'مدة التسليم غير محددة',
+      'missing_or_invalid_minimum_order' => 'الحد الأدنى غير محدد',
+      'supplier_not_verified' => 'لم يتم التحقق من المورد',
+      'missing_or_invalid_rating' => 'لا يوجد تقييم موثوق',
+      'over_budget_or_invalid_budget' => 'يتجاوز الميزانية أو الميزانية غير صالحة',
+      'minimum_order_exceeds_requirement' => 'الحد الأدنى أعلى من المطلوب',
+      _ => key,
+    };
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('ترتيب الموردين المبدئي',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            const Text(
+              'ترتيب إرشادي حسب البيانات المسجلة فقط؛ لا يعني توثيق المورد أو ضمان العرض.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: currency,
+              decoration: const InputDecoration(
+                labelText: 'عملة المقارنة',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: currencies.map((code) => DropdownMenuItem(
+                value: code,
+                child: Text(code),
+              )).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedRankingCurrency = value);
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            if (ranked.isEmpty)
+              const Text('لا توجد عروض بهذه العملة.')
+            else
+              ...ranked.take(3).toList().asMap().entries.map((entry) {
+                final index = entry.key;
+                final result = entry.value;
+                final details = <String>[
+                  ...result.reasons.map(reasonLabel),
+                  ...result.warnings.map(warningLabel),
+                ];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 15,
+                            child: Text('${index + 1}'),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              result.candidate.name,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Text('${result.score.toStringAsFixed(0)}/100'),
+                        ],
+                      ),
+                      if (result.candidate.totalCost != null)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 38, top: 3),
+                          child: Text(
+                            'الإجمالي: ${result.candidate.totalCost!.toStringAsFixed(2)} $currency',
+                          ),
+                        ),
+                      if (details.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 38, top: 3),
+                          child: Text(
+                            details.join(' • '),
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+          ],
+        ),
+      ),
     );
   }
 
