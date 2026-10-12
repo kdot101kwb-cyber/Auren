@@ -1,0 +1,3 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:auren/features/universal_search/domain/universal_search_ranker.dart';
+void main(){const r=UniversalSearchRanker();test('ranks exact title and deduplicates ids',(){final x=r.rank(query:'AUREN',candidates:const [SearchCandidate(id:'b',title:'Auren tools'),SearchCandidate(id:'a',title:'auren'),SearchCandidate(id:'a',title:'auren duplicate')]);expect(x.first.candidate.id,'a');expect(x,hasLength(2));});test('empty query and invalid limit',(){expect(r.rank(query:' ',candidates:const []),isEmpty);expect(()=>r.rank(query:'x',candidates:const [],limit:-1),throwsArgumentError);});}
