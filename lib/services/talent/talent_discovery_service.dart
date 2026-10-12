@@ -66,13 +66,19 @@ class TalentDiscoveryService {
       final opportunityOwner=(data['ownerId'] ?? '').toString().trim();
       if(opportunityOwner==ownerId) continue;
 
-      final o=AurenOpportunity.fromMap(d.id,data);
-      final oppSkills=o.skills.map(_norm).where((e)=>e.isNotEmpty).toSet();
-      if(oppSkills.isEmpty) continue;
-      final common=userSkills.intersection(oppSkills).toList()..sort();
-      final missing=oppSkills.difference(userSkills).toList()..sort();
-      final score=((common.length/oppSkills.length)*100).round().clamp(0,100).toInt();
-      if(score>0) matches.add(AurenTalentMatch(opportunity:o,score:score,matchedSkills:common,missingSkills:missing));
+      final o = AurenOpportunity.fromMap(d.id, data);
+      final evaluation = TalentSkillMatcher.evaluate(
+        verifiedSkills: userSkills.cast<String>(),
+        requiredSkills: o.skills,
+      );
+      if (evaluation.score > 0) {
+        matches.add(AurenTalentMatch(
+          opportunity: o,
+          score: evaluation.score,
+          matchedSkills: evaluation.matchedSkills,
+          missingSkills: evaluation.missingSkills,
+        ));
+      }
     }
     matches.sort((a,b)=>b.score.compareTo(a.score));
     return matches.take(safeLimit).toList();
