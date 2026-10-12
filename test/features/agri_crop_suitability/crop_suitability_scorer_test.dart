@@ -103,6 +103,39 @@ void main() {
     );
   });
 
+  test('rejects reversed temperature and out-of-range pH requirements', () {
+    expect(
+      () => scorer.score(
+        const CropRequirements(
+          name: 'Invalid temperature range',
+          minRainfall: 300,
+          maxRainfall: 800,
+          minTemp: 35,
+          maxTemp: 20,
+          minPh: 5.5,
+          maxPh: 7.5,
+        ),
+        const FieldConditions(rainfall: 400, temperature: 25, ph: 6),
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => scorer.score(
+        const CropRequirements(
+          name: 'Invalid pH range',
+          minRainfall: 300,
+          maxRainfall: 800,
+          minTemp: 18,
+          maxTemp: 32,
+          minPh: 15,
+          maxPh: 16,
+        ),
+        const FieldConditions(rainfall: 400, temperature: 25, ph: 6),
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('returns an immutable explanation list', () {
     final result = scorer.score(
       crop,
