@@ -168,7 +168,7 @@ class OpportunityRadarMatcher {
 
     return OpportunityMatch(
       opportunity: opportunity,
-      score: points.clamp(0, 100),
+      score: points.clamp(0, 100).toInt(),
       reasons: List.unmodifiable(reasons),
     );
   }
