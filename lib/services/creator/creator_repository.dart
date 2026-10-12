@@ -71,6 +71,9 @@ class CreatorRepository {
       // create a second post. This check is inside the transaction to avoid a
       // race between simultaneous publish requests.
       if (data['status'] == 'published') return;
+      if (data['status'] != 'draft') {
+        throw StateError('لا يمكن نشر مسودة في هذه الحالة.');
+      }
 
       final title = data['title']?.toString().trim() ?? '';
       final body = data['body']?.toString().trim() ?? '';
