@@ -65,10 +65,10 @@ class _AurenProductDetailScreenState extends State<AurenProductDetailScreen> {
             Row(children: [
               Expanded(child: FilledButton.icon(onPressed: uid == null ? null : _contact, icon: const Icon(Icons.chat_outlined), label: const Text('تواصل مع البائع'))),
               const SizedBox(width: 10),
-              IconButton(onPressed: uid == null ? null : () async { await commerce.addToCart(uid: uid, productId: p.id, quantity: 1); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت الإضافة للسلة'))); }, icon: const Icon(Icons.add_shopping_cart_outlined)),
+              IconButton(onPressed: uid == null ? null : () async { await commerce.addToCart(uid: uid!, productId: p.id, quantity: 1); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت الإضافة للسلة'))); }, icon: const Icon(Icons.add_shopping_cart_outlined)),
             ]),
             const SizedBox(width: 10),
-            IconButton(onPressed: uid == null ? null : () async { await repo.toggleSaved(uid, p.id, true); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الحفظ'))); }, icon: const Icon(Icons.bookmark_add_outlined)),
+            IconButton(onPressed: uid == null ? null : () async { await repo.toggleSaved(uid!, p.id, true); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الحفظ'))); }, icon: const Icon(Icons.bookmark_add_outlined)),
           ]),
 
           const SizedBox(height: 20),
