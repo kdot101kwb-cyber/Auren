@@ -1,0 +1,3 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:auren/features/agri_crop_suitability/domain/crop_suitability_scorer.dart';
+void main(){const s=CropSuitabilityScorer();const c=CropRequirements(name:'Crop',minRainfall:300,maxRainfall:800,minTemp:18,maxTemp:32,minPh:5.5,maxPh:7.5);test('in-range field scores 100',(){expect(s.score(c,const FieldConditions(rainfall:500,temperature:25,ph:6.5)).score,100);});test('out-of-range field scores zero and rejects NaN',(){expect(s.score(c,const FieldConditions(rainfall:100,temperature:40,ph:8)).score,0);expect(()=>s.score(c,const FieldConditions(rainfall:double.nan,temperature:20,ph:6)),throwsArgumentError);});}
