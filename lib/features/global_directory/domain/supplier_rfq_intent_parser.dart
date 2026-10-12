@@ -25,12 +25,8 @@ class SupplierRfqIntentParser {
       r'(?:quantity\s*[:=]?\s*|qty\s*[:=]?\s*|الكمية\s*[:=]?\s*|عدد\s*)(\d+(?:[,.]\d+)?)\s*(pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)?',
       caseSensitive: false,
     ).firstMatch(text);
-    final unitQuantity = RegExp(
-      r'(\d+(?:[,.]\d+)?)\s*(pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)',
-      caseSensitive: false,
-    ).firstMatch(text);
     final budgetSpan = RegExp(
-      r'(?:budget|بميزانية|ميزانية|بحدود|حد أقصى)\s*[:=]?\s*(?:USD|EUR|SDG|KES|NGN|\$|€)?\s*\d[\d,.]*\s*(?:USD|EUR|SDG|KES|NGN|دولار|دولارات|يورو|جنيه)?',
+      r'(?:budget|بميزانية|ميزانية|بحدود|حد أقصى)\s*[:=]?\s*(?:of\s*)?(?:USD|EUR|SDG|KES|NGN|\$|€)?\s*\d[\d,.]*\s*(?:USD|EUR|SDG|KES|NGN|دولار|دولارات|يورو|جنيه)?',
       caseSensitive: false,
     ).firstMatch(text);
     final symbolBudgetSpan = RegExp(r'[$€]\s*\d[\d,.]*').firstMatch(text);
@@ -45,7 +41,12 @@ class SupplierRfqIntentParser {
           (leadTimeSpan != null && i >= leadTimeSpan.start && i < leadTimeSpan.end);
       masked.write(excluded ? ' ' : text[i]);
     }
-    final bareQuantity = RegExp(r'\d+(?:[,.]\d+)?').firstMatch(masked.toString());
+    final quantitySearchText = masked.toString();
+    final unitQuantity = RegExp(
+      r'(\d+(?:[,.]\d+)?)\s*(pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)',
+      caseSensitive: false,
+    ).firstMatch(quantitySearchText);
+    final bareQuantity = RegExp(r'\d+(?:[,.]\d+)?').firstMatch(quantitySearchText);
     final quantityMatch = labeledQuantity ?? unitQuantity ?? bareQuantity;
     final amount = quantityMatch?.group(labeledQuantity != null || unitQuantity != null ? 1 : 0)
         ?.replaceAll(',', '.');
