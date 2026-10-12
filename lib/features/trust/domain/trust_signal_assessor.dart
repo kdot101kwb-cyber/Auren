@@ -69,14 +69,14 @@ class TrustSignalAssessor {
           age <= const Duration(days: 365) ? 0.6 : 0.3;
       final evidenceFactor =
           (signal.evidenceReference?.trim().isNotEmpty ?? false) ? 1.0 : 0.65;
-      final delta = _delta(signal.kind) * signal.weight.clamp(0.25, 2.0) *
+      final delta = _delta(signal.kind) * signal.weight.clamp(0.25, 2.0).toDouble() *
           recency * evidenceFactor;
       points += delta;
       counted.add(signal);
       if (delta > 0) {
-        explanations.add(_explanation(signal.kind, positive: true));
+        explanations.add(_explanation(signal.kind));
       } else if (delta < 0) {
-        explanations.add(_explanation(signal.kind, positive: false));
+        explanations.add(_explanation(signal.kind));
       }
     }
 
@@ -105,7 +105,7 @@ class TrustSignalAssessor {
     }
   }
 
-  String _explanation(TrustSignalKind kind, {required bool positive}) {
+  String _explanation(TrustSignalKind kind) {
     switch (kind) {
       case TrustSignalKind.verifiedContact: return 'Contact verification signal recorded';
       case TrustSignalKind.completedTransaction: return 'Completed transaction signal recorded';
