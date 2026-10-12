@@ -44,24 +44,28 @@ class AurenRandomGroupConnectService {
       return;
     }
     while (true) {
-      final result = await _functions.httpsCallable('listAurenRandomGroupCandidates').call({
-        'requestId': requestId,
-        'groupSize': groupSize.clamp(3, 8).toInt(),
-        'language': language.trim(),
-      });
-      final data = Map<String, dynamic>.from(result.data as Map);
-      final raw = data['candidates'] as List? ?? const [];
-      yield raw.map((item) {
-        final candidate = Map<String, dynamic>.from(item as Map);
-        return <String, dynamic>{
-          'id': candidate['requestId'],
-          'country': candidate['country'] ?? '',
-          'language': candidate['language'] ?? '',
-          'interest': candidate['interest'] ?? '',
-          'goal': candidate['goal'] ?? '',
-          'groupSize': groupSize,
-        };
-      }).toList();
+      try {
+        final result = await _functions.httpsCallable('listAurenRandomGroupCandidates').call({
+          'requestId': requestId,
+          'groupSize': groupSize.clamp(3, 8).toInt(),
+          'language': language.trim(),
+        });
+        final data = Map<String, dynamic>.from(result.data as Map);
+        final raw = data['candidates'] as List? ?? const [];
+        yield raw.map((item) {
+          final candidate = Map<String, dynamic>.from(item as Map);
+          return <String, dynamic>{
+            'id': candidate['requestId'],
+            'country': candidate['country'] ?? '',
+            'language': candidate['language'] ?? '',
+            'interest': candidate['interest'] ?? '',
+            'goal': candidate['goal'] ?? '',
+            'groupSize': groupSize,
+          };
+        }).toList();
+      } catch (_) {
+        yield const <Map<String, dynamic>>[];
+      }
       await Future<void>.delayed(const Duration(seconds: 20));
     }
   }
