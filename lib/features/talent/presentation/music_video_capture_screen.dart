@@ -43,7 +43,7 @@ class _AurenMusicVideoCaptureScreenState
         source: ImageSource.camera,
         maxDuration: const Duration(minutes: 5),
       );
-      if (captured == null) return;
+      if (!mounted || captured == null) return;
 
       setState(() => _saving = true);
       final directory = await getApplicationDocumentsDirectory();
