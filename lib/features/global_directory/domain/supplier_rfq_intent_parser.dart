@@ -18,16 +18,53 @@ class SupplierRfqIntentParser {
     final text = _digits(input).replaceAll(RegExp(r'\s+'), ' ').trim();
     if (text.isEmpty) return const SupplierRfqIntent();
 
-    final quantityMatch = RegExp(
-      r'(?:quantity\s*[:=]?\s*|qty\s*[:=]?\s*|الكمية\s*[:=]?\s*|عدد\s*)?(\d+(?:[,.]\d+)?)\s*(pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)?',
+    // Prefer an explicit quantity label, then a number with a known unit.
+    // Mask budget and lead-time spans before using a bare-number fallback so
+    // those values cannot accidentally become the requested quantity.
+    final labeledQuantity = RegExp(
+      r'(?:quantity\s*[:=]?\s*|qty\s*[:=]?\s*|الكمية\s*[:=]?\s*|عدد\s*)(\d+(?:[,.]\d+)?)\s*(pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)?',
       caseSensitive: false,
     ).firstMatch(text);
-    final amount = quantityMatch?.group(1)?.replaceAll(',', '.');
-    final unit = _unit(quantityMatch?.group(2));
+    final budgetSpan = RegExp(
+      r'(?:budget|بميزانية|ميزانية|بحدود|حد أقصى)\s*[:=]?\s*(?:of\s*)?(?:USD|EUR|SDG|KES|NGN|\$|€)?\s*\d[\d,.]*\s*(?:USD|EUR|SDG|KES|NGN|دولار|دولارات|يورو|جنيه)?',
+      caseSensitive: false,
+    ).firstMatch(text);
+    final symbolBudgetSpan = RegExp(r'[$€]\s*\d[\d,.]*').firstMatch(text);
+    final leadTimeSpan = RegExp(
+      r'(?:within|in|lead time\s*[:=]?|خلال|مدة التوريد\s*[:=]?)\s*\d+\s*(?:days?|weeks?|أيام|يوم|أسابيع|أسبوع)',
+      caseSensitive: false,
+    ).firstMatch(text);
+    final masked = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final excluded = (budgetSpan != null && i >= budgetSpan.start && i < budgetSpan.end) ||
+          (symbolBudgetSpan != null && i >= symbolBudgetSpan.start && i < symbolBudgetSpan.end) ||
+          (leadTimeSpan != null && i >= leadTimeSpan.start && i < leadTimeSpan.end);
+      masked.write(excluded ? ' ' : text[i]);
+    }
+    final quantitySearchText = masked.toString();
+    final unitQuantity = RegExp(
+      r'(\d+(?:[,.]\d+)?)\s*(pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)',
+      caseSensitive: false,
+    ).firstMatch(quantitySearchText);
+    // A bare number is a quantity only when it immediately follows a
+    // request-intent phrase; otherwise it may be a model number (e.g. iPhone 15).
+    final bareQuantity = RegExp(
+      r'(?:i\s+need|need|looking\s+for|طلب|أحتاج|احتاج|عايز|عاوز|محتاج|اريد|أريد)\s+(?:about\s+|around\s+|approximately\s+)?(\d+(?:[,.]\d+)?)',
+      caseSensitive: false,
+    ).firstMatch(quantitySearchText);
+    final quantityMatch = labeledQuantity ?? unitQuantity ?? bareQuantity;
+    final amount = (labeledQuantity != null || unitQuantity != null
+            ? quantityMatch?.group(1)
+            : bareQuantity?.group(1))
+        ?.replaceAll(',', '.');
+    final rawUnit = quantityMatch == labeledQuantity || quantityMatch == unitQuantity
+        ? quantityMatch?.group(2)
+        : null;
+    final unit = _unit(rawUnit);
 
     String? destination;
     final destinationMatch = RegExp(
-      r'(?:delivered\s+to|shipped?\s+to|destination\s*[:=]?|to|إلى|الى|للتسليم في|التسليم إلى|في)\s+(.+)',
+      r'(?:delivered\s+to|shipped?\s+to|destination\s*[:=]?|\bto\b|إلى|الى|للتسليم في|التسليم إلى|في)\s+(.+)',
       caseSensitive: false,
     ).firstMatch(text);
     if (destinationMatch != null) {
@@ -41,7 +78,7 @@ class SupplierRfqIntentParser {
     String? budget;
     String? currency;
     final budgetMatch = RegExp(
-      r'(?:budget|بميزانية|ميزانية|بحدود|حد أقصى)\s*[:=]?\s*(USD|EUR|SDG|KES|NGN|\$|€)?\s*(\d[\d,.]*)\s*(USD|EUR|SDG|KES|NGN|دولار|دولارات|يورو|جنيه)?',
+      r'(?:budget|بميزانية|ميزانية|بحدود|حد أقصى)\s*[:=]?\s*(?:of\s*)?(USD|EUR|SDG|KES|NGN|\$|€)?\s*(\d[\d,.]*)\s*(USD|EUR|SDG|KES|NGN|دولار|دولارات|يورو|جنيه)?',
       caseSensitive: false,
     ).firstMatch(text);
     final symbolMatch = RegExp(r'([$€])\s*(\d[\d,.]*)').firstMatch(text);
@@ -89,7 +126,7 @@ class SupplierRfqIntentParser {
         afterQuantity = afterQuantity.replaceFirst(RegExp(r'^(?:of|من)\s+', caseSensitive: false), '');
         if (afterQuantity.isNotEmpty) {
           product = afterQuantity.split(
-            RegExp(r'\s+(?:delivered\s+to|shipped?\s+to|with\s+a\s+budget|budget|within|to|in|for|إلى|الى|في|بميزانية|خلال)\s+', caseSensitive: false),
+            RegExp(r'\s+(?:delivered\s+to|shipped?\s+to|with\s+a\s+budget|budget|\bwithin\b|\bto\b|\bin\b|\bfor\b|إلى|الى|في|بميزانية|خلال)\s+', caseSensitive: false),
           ).first.trim();
         }
       }
@@ -100,7 +137,7 @@ class SupplierRfqIntentParser {
       ).firstMatch(text);
       if (productMatch != null) {
         product = productMatch.group(1)!.split(
-          RegExp(r'\s+(?:to|in|for|إلى|الى|في|بميزانية|ميزانية|خلال)\s+', caseSensitive: false),
+          RegExp(r'\s+(?:\bto\b|\bin\b|\bfor\b|إلى|الى|في|بميزانية|ميزانية|خلال)\s+', caseSensitive: false),
         ).first.trim();
       }
     }

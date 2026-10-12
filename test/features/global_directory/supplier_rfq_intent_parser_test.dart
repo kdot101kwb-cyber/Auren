@@ -44,6 +44,80 @@ void main() {
       expect(r.missingRequiredFields, hasLength(3));
     });
 
+    test('prefers labeled quantity over product model numbers', () {
+      final r = SupplierRfqIntentParser.parse(
+        'I need iPhone 15, quantity 20 boxes delivered to Nairobi with a budget of USD 4500 within 14 days',
+      );
+      expect(r.quantity, '20 boxes');
+      expect(r.product, contains('iPhone 15'));
+      expect(r.budget, '4500');
+      expect(r.leadTime, '14 days');
+    });
+
+    test('does not infer quantity from a product model number alone', () {
+      final r = SupplierRfqIntentParser.parse(
+        'I need iPhone 15 delivered to Nairobi with a budget of USD 4500',
+      );
+      expect(r.quantity, isNull);
+      expect(r.product, contains('iPhone 15'));
+      expect(r.budget, '4500');
+    });
+
+    test('does not mistake an earlier budget or later lead time for quantity', () {
+      final r = SupplierRfqIntentParser.parse(
+        'Budget USD 4500; I need 500 cotton shirts delivered to Khartoum within 14 days',
+      );
+      expect(r.quantity, '500');
+      expect(r.budget, '4500');
+      expect(r.leadTime, '14 days');
+      expect(r.destination, 'Khartoum');
+    });
+
+    test('does not treat a natural-language budget as quantity', () {
+      final r = SupplierRfqIntentParser.parse(
+        'Please source cotton fabric with a budget of USD 4500',
+      );
+      expect(r.quantity, isNull);
+      expect(r.budget, '4500');
+      expect(r.currency, 'USD');
+    });
+
+    test('supports Arabic explicit quantity labels after a budget', () {
+      final r = SupplierRfqIntentParser.parse(
+        'ميزانية ١٢٠٠ دولار، الكمية: ٥٠٠ قطعة قماش إلى الخرطوم',
+      );
+      expect(r.quantity, '500 pieces');
+      expect(r.budget, '1200');
+      expect(r.destination, 'الخرطوم');
+    });
+
+    test('does not infer a quantity from lead time alone', () {
+      final r = SupplierRfqIntentParser.parse(
+        'I need iPhone 15 delivered within 14 days',
+      );
+      expect(r.quantity, isNull);
+      expect(r.leadTime, '14 days');
+    });
+
+    test('does not treat a symbol-only budget as quantity', () {
+      final r = SupplierRfqIntentParser.parse(
+        'Please source cotton fabric for \$1200',
+      );
+      expect(r.quantity, isNull);
+      expect(r.budget, '1200');
+      expect(r.currency, 'USD');
+    });
+
+
+    test('does not mistake product qualifiers for delivery destinations', () {
+      final r = SupplierRfqIntentParser.parse(
+        'I need 500 cotton shirts in bulk delivered to Khartoum',
+      );
+      expect(r.quantity, '500');
+      expect(r.product, contains('cotton shirts'));
+      expect(r.destination, 'Khartoum');
+    });
+
     test('supports currency codes without conversion', () {
       final r = SupplierRfqIntentParser.parse(
         'need 20 boxes of tea to Nairobi budget KES 4500',
