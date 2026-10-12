@@ -1,0 +1,3 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:auren/features/creator_analytics/domain/creator_analytics_aggregator.dart';
+void main(){const a=CreatorAnalyticsAggregator();test('aggregates engagement metrics',(){final r=a.aggregate(const [CreatorMetricSnapshot(views:100,likes:10,comments:4,shares:6,followersGained:3),CreatorMetricSnapshot(views:100,likes:5,comments:1,shares:2,followersGained:2)]);expect(r.views,200);expect(r.engagements,28);expect(r.engagementRate,0.14);});test('clamps negatives and handles zero views',(){final r=a.aggregate(const [CreatorMetricSnapshot(views:0,likes:-1,comments:0,shares:0,followersGained:-1)]);expect(r.engagements,0);expect(r.engagementRate,0);});}
