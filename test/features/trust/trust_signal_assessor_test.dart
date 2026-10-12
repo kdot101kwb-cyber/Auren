@@ -56,6 +56,8 @@ void main() {
     expect(result.label, 'Not enough evidence');
   });
 
+  test('rejects whitespace-padded signal IDs', () { final result = assessor.assess(signals: [TrustSignal(id: ' tx-1 ', kind: TrustSignalKind.policyViolation, occurredAt: now), TrustSignal(id: 'tx-1', kind: TrustSignalKind.completedTransaction, occurredAt: now)], now: now); expect(result.evidenceCount, 1); expect(result.score, 56); });
+
   test('scores remain bounded', () {
     final result = assessor.assess(
       signals: List.generate(20, (i) => TrustSignal(
