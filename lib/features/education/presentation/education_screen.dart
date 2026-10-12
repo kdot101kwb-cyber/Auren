@@ -148,7 +148,26 @@ class _EducationState extends State<AurenAURENEducationScreen> {
         Row(children:[
           Expanded(child:FilledButton(onPressed:()=>_openCourse(context,uid,course,progress),child:Text(progress==null?'التسجيل / فتح':'متابعة'))),
           const SizedBox(width:8),
-          IconButton(onPressed:()=>repo.toggleSaved(uid,course.id,true),icon:const Icon(Icons.bookmark_border)),
+          IconButton(
+            tooltip: 'حفظ الدورة',
+            onPressed: () async {
+              try {
+                await repo.toggleSaved(uid, course.id, true);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم حفظ الدورة في مكتبتك التعليمية')),
+                  );
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تعذر حفظ الدورة. تأكد من أن الدورة منشورة ثم حاول مجددًا.')),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.bookmark_border),
+          ),
         ]),
       ])));
     },
