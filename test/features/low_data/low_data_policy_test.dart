@@ -41,6 +41,8 @@ void main() {
     expect(result.maxBytes, 2 * 1024 * 1024);
   });
 
+  test('unknown connection defaults to no automatic media transfer', () { final result = policy.decide(connection: DataConnection.unknown, content: DataContentKind.video, lowDataMode: false, userRequested: false); expect(result.allowNetwork, isFalse); expect(result.allowAutoplay, isFalse); expect(result.allowPrefetch, isFalse); expect(result.maxBytes, 0); });
+
   test('text remains available in low-data mode with a smaller budget', () {
     final result = policy.decide(
       connection: DataConnection.metered,
