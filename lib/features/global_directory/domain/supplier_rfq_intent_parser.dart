@@ -46,9 +46,16 @@ class SupplierRfqIntentParser {
       r'(\d+(?:[,.]\d+)?)\s*(pieces?|pcs|units?|kg|g|tons?|liters?|litres?|meters?|metres?|yards?|boxes?|قطعة|قطع|حبة|حبات|كيلو(?:غرام)?|طن|لتر|متر|كرتون|صندوق)',
       caseSensitive: false,
     ).firstMatch(quantitySearchText);
-    final bareQuantity = RegExp(r'\d+(?:[,.]\d+)?').firstMatch(quantitySearchText);
+    // A bare number is a quantity only when it immediately follows a
+    // request-intent phrase; otherwise it may be a model number (e.g. iPhone 15).
+    final bareQuantity = RegExp(
+      r'(?:i\s+need|need|looking\s+for|طلب|أحتاج|احتاج|عايز|عاوز|محتاج|اريد|أريد)\s+(?:about\s+|around\s+|approximately\s+)?(\d+(?:[,.]\d+)?)',
+      caseSensitive: false,
+    ).firstMatch(quantitySearchText);
     final quantityMatch = labeledQuantity ?? unitQuantity ?? bareQuantity;
-    final amount = quantityMatch?.group(labeledQuantity != null || unitQuantity != null ? 1 : 0)
+    final amount = (labeledQuantity != null || unitQuantity != null
+            ? quantityMatch?.group(1)
+            : bareQuantity?.group(1))
         ?.replaceAll(',', '.');
     final rawUnit = quantityMatch == labeledQuantity || quantityMatch == unitQuantity
         ? quantityMatch?.group(2)
