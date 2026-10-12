@@ -45,8 +45,9 @@ void main() {
     final service = AurenUniversalSearchService(repository: repository);
     final query = 'a' * 200;
 
-    expect(service.watch(query, uid: 'viewer'), isA<Stream<List<AurenSearchResult>>>());
-    await service.watch(query, uid: 'viewer').first;
+    final stream = service.watch(query, uid: 'viewer');
+    expect(stream, isA<Stream<List<AurenSearchResult>>>());
+    await stream.first;
 
     expect(repository.lastQuery, 'a' * 80);
     expect(repository.lastUid, 'viewer');
