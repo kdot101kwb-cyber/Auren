@@ -48,7 +48,7 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
     if (h != null) parsed = ((double.tryParse(h.group(1)!) ?? 1) * 60).round();
     if (h == null && m != null) parsed = int.tryParse(m.group(1)!);
     if (parsed != null) {
-      final next = parsed!.clamp(10, 240);
+      final next = parsed.clamp(10, 240);
       if (next != minutes && mounted) setState(() => minutes = next);
     }
 
