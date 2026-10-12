@@ -37,6 +37,8 @@ void main() {
     expect(profile.minimumTouchTarget, 56);
   });
 
+  test('caps combined scale and preserves reduced motion at high scale', () { final profile = resolver.resolve(preferences: const AccessibilityPreferences(textScale: 2.0, reduceMotion: true), platformTextScale: 2.0); expect(profile.textScale, 2.4); expect(profile.reduceMotion, isTrue); expect(profile.animationDurationFactor, 0); });
+
   test('rejects invalid app and platform text scales', () {
     expect(
       () => resolver.resolve(
