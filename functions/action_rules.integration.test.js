@@ -239,9 +239,10 @@ test('random connect requests: only waiting requests or involved users are reada
   await assertSucceeds(peer.doc('random_connect/matched-private').get());
 });
 
-test('random group requests: only waiting requests or the owner are readable', async () => {
+test('random group requests expose full request data only to the owner', async () => {
   await seedSocialRequest('random_group_connect', 'group-waiting', {
     uid: 'group-owner', status: 'waiting', groupSize: 4,
+    country: 'Sudan', language: 'Arabic', interest: 'technology', goal: 'social group',
   });
   await seedSocialRequest('random_group_connect', 'grouped-private', {
     uid: 'group-owner', status: 'grouped', groupSize: 4,
@@ -249,7 +250,27 @@ test('random group requests: only waiting requests or the owner are readable', a
   const stranger = testEnv.authenticatedContext('group-stranger').firestore();
   const owner = testEnv.authenticatedContext('group-owner').firestore();
 
-  await assertSucceeds(stranger.doc('random_group_connect/group-waiting').get());
+  await assertFails(stranger.doc('random_group_connect/group-waiting').get());
   await assertFails(stranger.doc('random_group_connect/grouped-private').get());
+  await assertSucceeds(owner.doc('random_group_connect/group-waiting').get());
   await assertSucceeds(owner.doc('random_group_connect/grouped-private').get());
+});
+
+test('random group membership and conversation metadata are server-owned', async () => {
+  await seedSocialRequest('random_groups', 'trusted-group', {
+    memberUids: ['group-owner', 'group-member', 'group-third'],
+    size: 3,
+    status: 'active',
+  });
+  const owner = testEnv.authenticatedContext('group-owner').firestore();
+  await assertFails(owner.doc('random_groups/client-forged-group').set({
+    memberUids: ['group-owner', 'stranger', 'third'],
+    size: 3,
+    status: 'active',
+    createdAt: firebase.firestore.Timestamp.now(),
+  }));
+  await assertFails(owner.doc('random_groups/trusted-group').update({
+    conversationId: 'forged-conversation',
+    chatReady: true,
+  }));
 });
