@@ -54,6 +54,15 @@ void main() {
       expect(r.leadTime, '14 days');
     });
 
+    test('does not infer quantity from a product model number alone', () {
+      final r = SupplierRfqIntentParser.parse(
+        'I need iPhone 15 delivered to Nairobi with a budget of USD 4500',
+      );
+      expect(r.quantity, isNull);
+      expect(r.product, contains('iPhone 15'));
+      expect(r.budget, '4500');
+    });
+
     test('does not mistake an earlier budget or later lead time for quantity', () {
       final r = SupplierRfqIntentParser.parse(
         'Budget USD 4500; I need 500 cotton shirts delivered to Khartoum within 14 days',
