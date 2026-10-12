@@ -305,3 +305,32 @@ test('random group request can transition to grouped only with lifecycle fields'
     goal: 'tampered',
   }));
 });
+
+
+test('random group request cannot transition to grouped without groupId', async () => {
+  await seedRandomGroupRequest('grouped-missing-group-id', {});
+  const ref = testEnv.authenticatedContext('group-owner').firestore().doc('random_group_connect/grouped-missing-group-id');
+  await assertFails(ref.update({
+    status: 'grouped',
+    matchedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
+test('random group request cannot transition to grouped without matchedAt', async () => {
+  await seedRandomGroupRequest('grouped-missing-matched-at', {});
+  const ref = testEnv.authenticatedContext('group-owner').firestore().doc('random_group_connect/grouped-missing-matched-at');
+  await assertFails(ref.update({
+    status: 'grouped',
+    groupId: 'group-created-by-service',
+  }));
+});
+
+test('random group request rejects an empty groupId', async () => {
+  await seedRandomGroupRequest('grouped-empty-group-id', {});
+  const ref = testEnv.authenticatedContext('group-owner').firestore().doc('random_group_connect/grouped-empty-group-id');
+  await assertFails(ref.update({
+    status: 'grouped',
+    groupId: '',
+    matchedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
