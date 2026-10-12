@@ -34,7 +34,6 @@ class AurenRandomGroupConnectService {
   }
 
   Stream<List<Map<String, dynamic>>> watch({
-    required String uid,
     required String language,
     required int groupSize,
     required String? requestId,
@@ -90,7 +89,6 @@ class AurenRandomGroupConnectService {
 
   Future<String> createMessengerGroup({
     required String groupId,
-    required String uid,
     required String title,
   }) async {
     final result = await _functions.httpsCallable('createAurenRandomGroupConversation').call({
