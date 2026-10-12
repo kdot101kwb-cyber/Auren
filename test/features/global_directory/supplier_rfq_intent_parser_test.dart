@@ -99,6 +99,15 @@ void main() {
       expect(r.leadTime, '14 days');
     });
 
+    test('does not treat a symbol-only budget as quantity', () {
+      final r = SupplierRfqIntentParser.parse(
+        'Please source cotton fabric for \$1200',
+      );
+      expect(r.quantity, isNull);
+      expect(r.budget, '1200');
+      expect(r.currency, 'USD');
+    });
+
     test('supports currency codes without conversion', () {
       final r = SupplierRfqIntentParser.parse(
         'need 20 boxes of tea to Nairobi budget KES 4500',
