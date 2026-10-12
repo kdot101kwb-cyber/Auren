@@ -86,6 +86,8 @@ void main() {
     expect(results.single.opportunity.id, 'a');
   });
 
+  test('rejects whitespace-padded IDs to prevent duplicate aliases', () { final results = matcher.rank(profile: const OpportunityProfile(skills: {'design'}), opportunities: const [RadarOpportunity(id: ' role ', title: 'Padded', requiredSkills: {'design'}), RadarOpportunity(id: 'role', title: 'Canonical', requiredSkills: {'design'})], now: now); expect(results.map((e) => e.opportunity.id), ['role']); });
+
   test('rejects invalid score thresholds and negative limits', () {
     expect(
       () => matcher.rank(
