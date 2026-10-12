@@ -108,6 +108,16 @@ void main() {
       expect(r.currency, 'USD');
     });
 
+
+    test('does not mistake product qualifiers for delivery destinations', () {
+      final r = SupplierRfqIntentParser.parse(
+        'I need 500 cotton shirts in bulk delivered to Khartoum',
+      );
+      expect(r.quantity, '500');
+      expect(r.product, contains('cotton shirts'));
+      expect(r.destination, 'Khartoum');
+    });
+
     test('supports currency codes without conversion', () {
       final r = SupplierRfqIntentParser.parse(
         'need 20 boxes of tea to Nairobi budget KES 4500',
