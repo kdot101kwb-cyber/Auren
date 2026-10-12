@@ -2,6 +2,7 @@
 
 const admin = require('firebase-admin');
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
+const {normalizeGroupSelection, hasBlockedPair} = require('./random_group_matching_logic');
 
 const db = admin.firestore();
 const groups = db.collection('random_groups');
@@ -31,12 +32,13 @@ async function readBlockedPairs(tx, memberUids) {
   for (const uid of memberUids) {
     for (const otherUid of memberUids) {
       if (uid !== otherUid) {
-        refs.push(db.collection('users').doc(uid).collection('blocked').doc(otherUid));
+        refs.push({uid, blockedUid: otherUid, ref: db.collection('users').doc(uid).collection('blocked').doc(otherUid)});
       }
     }
   }
-  const snaps = await Promise.all(refs.map((ref) => tx.get(ref)));
-  return snaps.some((snap) => snap.exists);
+  const snaps = await Promise.all(refs.map((item) => tx.get(item.ref)));
+  const existingBlocks = snaps.map((snap, index) => snap.exists ? refs[index] : null).filter(Boolean);
+  return hasBlockedPair(memberUids, existingBlocks);
 }
 
 exports.listAurenRandomGroupCandidates = onCall(
@@ -84,15 +86,12 @@ exports.formAurenRandomGroup = onCall(
     const candidateRequestIds = request.data?.candidateRequestIds;
     const groupSize = request.data?.groupSize;
     validateSize(groupSize);
-    if (!ownRequestId || !Array.isArray(candidateRequestIds) ||
-        candidateRequestIds.length !== groupSize - 1 ||
-        candidateRequestIds.some((id) => typeof id !== 'string' || !clean(id)) ||
-        new Set(candidateRequestIds).size !== candidateRequestIds.length ||
-        candidateRequestIds.includes(ownRequestId)) {
-      throw new HttpsError('invalid-argument', 'Select exactly groupSize - 1 unique candidate requests.');
+    let requestIds;
+    try {
+      requestIds = normalizeGroupSelection({ownRequestId, candidateRequestIds, groupSize});
+    } catch (error) {
+      throw new HttpsError(error.code || 'invalid-argument', error.message);
     }
-
-    const requestIds = [ownRequestId, ...candidateRequestIds.map((id) => clean(id))];
     const requestRefs = requestIds.map((id) => requests.doc(id));
     const groupRef = groups.doc();
     const created = await db.runTransaction(async (tx) => {
