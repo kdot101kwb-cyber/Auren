@@ -53,6 +53,49 @@ void main() {
     );
   });
 
+  test('rejects blank titles and whitespace-padded IDs', () {
+    expect(
+      () => planner.build(
+        minutesPerDay: 30,
+        milestones: const [
+          GoalMilestone(id: 'valid', title: '  ', estimatedMinutes: 10),
+        ],
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => planner.build(
+        minutesPerDay: 30,
+        milestones: const [
+          GoalMilestone(id: ' padded ', title: 'Task', estimatedMinutes: 10),
+        ],
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('rejects blank or whitespace-padded dependency IDs', () {
+    expect(
+      () => planner.build(
+        minutesPerDay: 30,
+        milestones: const [
+          GoalMilestone(id: 'a', title: 'A', estimatedMinutes: 10, dependsOn: {''}),
+        ],
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => planner.build(
+        minutesPerDay: 30,
+        milestones: const [
+          GoalMilestone(id: 'a', title: 'A', estimatedMinutes: 10, dependsOn: {' b'}),
+          GoalMilestone(id: 'b', title: 'B', estimatedMinutes: 10),
+        ],
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('spreads work over days based on daily capacity', () {
     final plan = planner.build(
       minutesPerDay: 30,
