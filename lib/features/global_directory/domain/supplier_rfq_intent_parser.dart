@@ -70,7 +70,7 @@ class SupplierRfqIntentParser {
     String? budget;
     String? currency;
     final budgetMatch = RegExp(
-      r'(?:budget|بميزانية|ميزانية|بحدود|حد أقصى)\s*[:=]?\s*(USD|EUR|SDG|KES|NGN|\$|€)?\s*(\d[\d,.]*)\s*(USD|EUR|SDG|KES|NGN|دولار|دولارات|يورو|جنيه)?',
+      r'(?:budget|بميزانية|ميزانية|بحدود|حد أقصى)\s*[:=]?\s*(?:of\s*)?(USD|EUR|SDG|KES|NGN|\$|€)?\s*(\d[\d,.]*)\s*(USD|EUR|SDG|KES|NGN|دولار|دولارات|يورو|جنيه)?',
       caseSensitive: false,
     ).firstMatch(text);
     final symbolMatch = RegExp(r'([$€])\s*(\d[\d,.]*)').firstMatch(text);
