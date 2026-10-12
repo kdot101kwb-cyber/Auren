@@ -1,0 +1,3 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:auren/features/action_approval/domain/action_approval_policy.dart';
+void main(){const p=ActionApprovalPolicy();test('external and financial actions require approval',(){expect(p.evaluate(const ActionRequest(id:'send',risk:ActionRisk.externalCommunication,userInitiated:true,validPayload:true)).disposition,ActionDisposition.approvalRequired);expect(p.evaluate(const ActionRequest(id:'pay',risk:ActionRisk.financial,userInitiated:true,validPayload:true)).disposition,ActionDisposition.approvalRequired);});test('destructive action denied without approval',(){expect(p.evaluate(const ActionRequest(id:'delete',risk:ActionRisk.destructive,userInitiated:true,validPayload:true)).disposition,ActionDisposition.deny);});}
