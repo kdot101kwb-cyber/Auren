@@ -132,11 +132,15 @@ exports.createAurenRandomGroupConversation = onCall(
       if (!groupSnap.exists) throw new HttpsError('not-found', 'Group not found.');
       const group = groupSnap.data() || {};
       const members = Array.isArray(group.memberUids) ? group.memberUids : [];
-      if (!members.includes(uid)) throw new HttpsError('permission-denied', 'Only a group member can open this chat.');
-      if (group.conversationId && group.chatReady === true) return {conversationId: group.conversationId};
+      if (members.length < 3 || members.length > 8 ||
+          members.some((member) => typeof member !== 'string' || !member) ||
+          new Set(members).size !== members.length || !members.includes(uid)) {
+        throw new HttpsError('permission-denied', 'Only a verified group member can open this chat.');
+      }
       if (await hasAnyBlock(tx, members)) {
         throw new HttpsError('failed-precondition', 'A group member has blocked another member. The chat cannot be opened.');
       }
+      if (group.conversationId && group.chatReady === true) return {conversationId: group.conversationId};
       const conversationRef = db.collection('conversations').doc();
       tx.create(conversationRef, {
         memberIds: members,
