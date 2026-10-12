@@ -59,22 +59,23 @@ exports.listAurenRandomGroupCandidates = onCall(
 
     const snap = await requests.where('status', '==', 'waiting')
       .where('groupSize', '==', groupSize).limit(40).get();
-    const candidates = [];
-    for (const doc of snap.docs) {
+    const candidates = await Promise.all(snap.docs.map(async (doc) => {
       const data = doc.data();
-      if (data.uid === uid || !clean(data.uid) || (language && clean(data.language, 40) !== language)) continue;
-      const blockedByCaller = await db.collection('users').doc(uid).collection('blocked').doc(data.uid).get();
-      const blockedCaller = await db.collection('users').doc(data.uid).collection('blocked').doc(uid).get();
-      if (blockedByCaller.exists || blockedCaller.exists) continue;
-      candidates.push({
+      if (data.uid === uid || !clean(data.uid) || (language && clean(data.language, 40) !== language)) return null;
+      const [blockedByCaller, blockedCaller] = await Promise.all([
+        db.collection('users').doc(uid).collection('blocked').doc(data.uid).get(),
+        db.collection('users').doc(data.uid).collection('blocked').doc(uid).get(),
+      ]);
+      if (blockedByCaller.exists || blockedCaller.exists) return null;
+      return {
         requestId: doc.id,
         country: clean(data.country, 80),
         language: clean(data.language, 40),
         interest: clean(data.interest, 120),
         goal: clean(data.goal, 160),
-      });
-    }
-    return {candidates: candidates.slice(0, 30)};
+      };
+    }));
+    return {candidates: candidates.filter(Boolean).slice(0, 30)};
   },
 );
 
