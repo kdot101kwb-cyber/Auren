@@ -213,3 +213,43 @@ test('concurrent execution claims allow exactly one winner', async () => {
     assert.equal(finalSnap.data().status, 'executing');
   });
 });
+
+
+async function seedSocialRequest(collection, id, data) {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(`${collection}/${id}`).set(data);
+  });
+}
+
+test('random connect requests: only waiting requests or involved users are readable', async () => {
+  await seedSocialRequest('random_connect', 'waiting-public', {
+    uid: 'social-owner', status: 'waiting', displayName: 'Discoverable',
+  });
+  await seedSocialRequest('random_connect', 'matched-private', {
+    uid: 'social-owner', status: 'matched', matchedWith: 'social-peer',
+    displayName: 'Matched profile',
+  });
+  const stranger = testEnv.authenticatedContext('social-stranger').firestore();
+  const owner = testEnv.authenticatedContext('social-owner').firestore();
+  const peer = testEnv.authenticatedContext('social-peer').firestore();
+
+  await assertSucceeds(stranger.doc('random_connect/waiting-public').get());
+  await assertFails(stranger.doc('random_connect/matched-private').get());
+  await assertSucceeds(owner.doc('random_connect/matched-private').get());
+  await assertSucceeds(peer.doc('random_connect/matched-private').get());
+});
+
+test('random group requests: only waiting requests or the owner are readable', async () => {
+  await seedSocialRequest('random_group_connect', 'group-waiting', {
+    uid: 'group-owner', status: 'waiting', groupSize: 4,
+  });
+  await seedSocialRequest('random_group_connect', 'grouped-private', {
+    uid: 'group-owner', status: 'grouped', groupSize: 4,
+  });
+  const stranger = testEnv.authenticatedContext('group-stranger').firestore();
+  const owner = testEnv.authenticatedContext('group-owner').firestore();
+
+  await assertSucceeds(stranger.doc('random_group_connect/group-waiting').get());
+  await assertFails(stranger.doc('random_group_connect/grouped-private').get());
+  await assertSucceeds(owner.doc('random_group_connect/grouped-private').get());
+});
