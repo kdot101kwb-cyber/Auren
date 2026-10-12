@@ -75,7 +75,9 @@ class OpportunityRadarMatcher {
     final seenIds = <String>{};
     final matches = <OpportunityMatch>[];
     for (final opportunity in opportunities) {
-      if (opportunity.id.trim().isEmpty || !seenIds.add(opportunity.id)) {
+      if (opportunity.id.trim().isEmpty ||
+          opportunity.id != opportunity.id.trim() ||
+          !seenIds.add(opportunity.id)) {
         continue;
       }
       if (opportunity.expiresAt != null &&
