@@ -1,35 +1,106 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../messaging/conversation_repository.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class AurenRandomGroupConnectService {
   final FirebaseFirestore _db;
-  AurenRandomGroupConnectService({FirebaseFirestore? firestore}) : _db = firestore ?? FirebaseFirestore.instance;
+  final FirebaseFunctions _functions;
 
-  CollectionReference<Map<String, dynamic>> get _c => _db.collection('random_group_connect');
+  AurenRandomGroupConnectService({
+    FirebaseFirestore? firestore,
+    FirebaseFunctions? functions,
+  })  : _db = firestore ?? FirebaseFirestore.instance,
+        _functions = functions ?? FirebaseFunctions.instanceFor(region: 'us-central1');
 
-  Future<String> join({required String uid, required String country, required String language, required String interest, required String goal, int groupSize = 4}) async {
+  CollectionReference<Map<String, dynamic>> get _requests =>
+      _db.collection('random_group_connect');
+
+  Future<String> join({
+    required String uid,
+    required String country,
+    required String language,
+    required String interest,
+    required String goal,
+    int groupSize = 4,
+  }) async {
+    final normalizedLanguage = language.trim();
+    if (uid.isEmpty || normalizedLanguage.isEmpty) {
+      throw ArgumentError('A signed-in user and language are required.');
+    }
     final size = groupSize.clamp(3, 8).toInt();
-    final ref = _c.doc();
-    await ref.set({'uid': uid, 'country': country.trim(), 'language': language.trim(), 'interest': interest.trim(), 'goal': goal.trim(), 'groupSize': size, 'status': 'waiting', 'createdAt': FieldValue.serverTimestamp()});
+    final ref = _requests.doc();
+    await ref.set({
+      'uid': uid,
+      'country': country.trim().substring(0, country.trim().length.clamp(0, 80)),
+      'language': normalizedLanguage.substring(0, normalizedLanguage.length.clamp(0, 60)),
+      'interest': interest.trim().substring(0, interest.trim().length.clamp(0, 120)),
+      'goal': goal.trim().substring(0, goal.trim().length.clamp(0, 120)),
+      'groupSize': size,
+      'status': 'waiting',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
     return ref.id;
   }
 
-  Stream<List<Map<String, dynamic>>> watch({required String uid, required String language, int groupSize = 4}) => _c.where('status', isEqualTo: 'waiting').where('groupSize', isEqualTo: groupSize.clamp(3, 8).toInt()).limit(40).snapshots().map((s) => s.docs.where((d) => d.data()['uid'] != uid).map((d) => {'id': d.id, ...d.data()}).toList());
+  Stream<List<Map<String, dynamic>>> watch({
+    required String uid,
+    required String language,
+    int groupSize = 4,
+  }) async* {
+    Future<List<Map<String, dynamic>>> load() async {
+      final callable = _functions.httpsCallable('listAurenRandomGroupCandidates');
+      final result = await callable.call<Map<String, dynamic>>({
+        'groupSize': groupSize.clamp(3, 8).toInt(),
+        'language': language.trim(),
+      });
+      final candidates = result.data['candidates'];
+      if (candidates is! List) return const [];
+      return candidates.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+    }
 
-  Future<String> formGroup({required String requestId, required String uid, required List<String> memberUids}) async {
-    final members = {...memberUids, uid}.toList();
-    if (members.length < 3 || members.length > 8) throw StateError('Group size must be between 3 and 8.');
-    final groupRef = _db.collection('random_groups').doc();
-    await _db.runTransaction((tx) async {
-      final req = await tx.get(_c.doc(requestId));
-      if (!req.exists || req.data()?['status'] != 'waiting') throw StateError('This group request is no longer available.');
-      tx.set(groupRef, {'memberUids': members, 'size': members.length, 'status': 'active', 'createdAt': FieldValue.serverTimestamp()});
-      tx.update(_c.doc(requestId), {'status': 'grouped', 'groupId': groupRef.id, 'matchedAt': FieldValue.serverTimestamp()});
-    });
-    return groupRef.id;
+    yield await load();
+    await for (final _ in Stream<int>.periodic(const Duration(seconds: 15), (i) => i)) {
+      yield await load();
+    }
   }
 
-  Future<String> createMessengerGroup({required String groupId, required String uid, required String title}) async { final groupRef=_db.collection('random_groups').doc(groupId); final snap=await groupRef.get(); final data=snap.data(); if(!snap.exists||data==null) throw StateError('Group not found.'); final members=List<String>.from(data['memberUids'] as List? ?? const []); if(!members.contains(uid)) throw StateError('Only a group member can open the chat.'); final existing=data['conversationId'] as String?; if(existing!=null&&existing.isNotEmpty)return existing; final conversation=await ConversationRepository(firestore:_db).createGroup(uid:uid,title:title,memberIds:members); await _db.runTransaction((tx) async { final latest=await tx.get(groupRef); final latestId=latest.data()?['conversationId'] as String?; if(latestId==null||latestId.isEmpty)tx.update(groupRef,{'conversationId':conversation.id,'chatReady':true}); }); return conversation.id; }
+  Future<String> formGroup({
+    required String uid,
+    required List<String> requestIds,
+  }) async {
+    if (uid.isEmpty) throw ArgumentError('A signed-in user is required.');
+    final callable = _functions.httpsCallable('formAurenRandomGroup');
+    final result = await callable.call<Map<String, dynamic>>({'requestIds': requestIds});
+    final groupId = result.data['groupId'];
+    if (groupId is! String || groupId.isEmpty) {
+      throw StateError('The server did not return a group ID.');
+    }
+    return groupId;
+  }
 
-  Future<void> cancel(String uid, String requestId) async { final ref = _c.doc(requestId); final snap = await ref.get(); if (snap.exists && snap.data()?['uid'] == uid) await ref.update({'status': 'cancelled'}); }
+  Future<String> createMessengerGroup({
+    required String groupId,
+    required String uid,
+    required String title,
+  }) async {
+    if (groupId.trim().isEmpty || uid.isEmpty) throw ArgumentError('Invalid group.');
+    final callable = _functions.httpsCallable('createAurenRandomGroupConversation');
+    final result = await callable.call<Map<String, dynamic>>({
+      'groupId': groupId,
+      'title': title,
+    });
+    final conversationId = result.data['conversationId'];
+    if (conversationId is! String || conversationId.isEmpty) {
+      throw StateError('The server did not return a conversation ID.');
+    }
+    return conversationId;
+  }
+
+  Future<void> cancel(String uid, String requestId) async {
+    if (uid.isEmpty || requestId.isEmpty) return;
+    final ref = _requests.doc(requestId);
+    final snap = await ref.get();
+    if (snap.exists && snap.data()?['uid'] == uid && snap.data()?['status'] == 'waiting') {
+      await ref.update({'status': 'cancelled'});
+    }
+  }
 }
