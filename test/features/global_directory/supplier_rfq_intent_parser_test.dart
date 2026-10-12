@@ -82,6 +82,23 @@ void main() {
       expect(r.currency, 'USD');
     });
 
+    test('supports Arabic explicit quantity labels after a budget', () {
+      final r = SupplierRfqIntentParser.parse(
+        'ميزانية ١٢٠٠ دولار، الكمية: ٥٠٠ قطعة قماش إلى الخرطوم',
+      );
+      expect(r.quantity, '500 pieces');
+      expect(r.budget, '1200');
+      expect(r.destination, 'الخرطوم');
+    });
+
+    test('does not infer a quantity from lead time alone', () {
+      final r = SupplierRfqIntentParser.parse(
+        'I need iPhone 15 delivered within 14 days',
+      );
+      expect(r.quantity, isNull);
+      expect(r.leadTime, '14 days');
+    });
+
     test('supports currency codes without conversion', () {
       final r = SupplierRfqIntentParser.parse(
         'need 20 boxes of tea to Nairobi budget KES 4500',
