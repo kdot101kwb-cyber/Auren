@@ -44,6 +44,26 @@ void main() {
       expect(r.missingRequiredFields, hasLength(3));
     });
 
+    test('prefers labeled quantity over product model numbers', () {
+      final r = SupplierRfqIntentParser.parse(
+        'I need iPhone 15, quantity 20 boxes delivered to Nairobi with a budget of USD 4500 within 14 days',
+      );
+      expect(r.quantity, '20 boxes');
+      expect(r.product, contains('iPhone 15'));
+      expect(r.budget, '4500');
+      expect(r.leadTime, '14 days');
+    });
+
+    test('does not mistake an earlier budget or later lead time for quantity', () {
+      final r = SupplierRfqIntentParser.parse(
+        'Budget USD 4500; I need 500 cotton shirts delivered to Khartoum within 14 days',
+      );
+      expect(r.quantity, '500');
+      expect(r.budget, '4500');
+      expect(r.leadTime, '14 days');
+      expect(r.destination, 'Khartoum');
+    });
+
     test('supports currency codes without conversion', () {
       final r = SupplierRfqIntentParser.parse(
         'need 20 boxes of tea to Nairobi budget KES 4500',
