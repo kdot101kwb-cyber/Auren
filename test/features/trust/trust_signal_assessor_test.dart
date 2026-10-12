@@ -20,21 +20,25 @@ void main() {
 
   test('negative signals reduce score more than positive review signals add', () {
     final positive = assessor.assess(
-      signals: [TrustSignal(
-        id: 'review',
-        kind: TrustSignalKind.helpfulReview,
-        occurredAt: now,
-        evidenceReference: 'review-id',
-      )],
+      signals: [
+        TrustSignal(
+          id: 'review',
+          kind: TrustSignalKind.helpfulReview,
+          occurredAt: now,
+          evidenceReference: 'review-id',
+        ),
+      ],
       now: now,
     );
     final negative = assessor.assess(
-      signals: [TrustSignal(
-        id: 'violation',
-        kind: TrustSignalKind.policyViolation,
-        occurredAt: now,
-        evidenceReference: 'case-id',
-      )],
+      signals: [
+        TrustSignal(
+          id: 'violation',
+          kind: TrustSignalKind.policyViolation,
+          occurredAt: now,
+          evidenceReference: 'case-id',
+        ),
+      ],
       now: now,
     );
     expect(positive.score, greaterThan(50));
@@ -46,8 +50,17 @@ void main() {
     final result = assessor.assess(
       signals: [
         TrustSignal(id: '', kind: TrustSignalKind.policyViolation, occurredAt: now),
-        TrustSignal(id: 'future', kind: TrustSignalKind.policyViolation, occurredAt: now.add(const Duration(days: 1))),
-        TrustSignal(id: 'bad-weight', kind: TrustSignalKind.policyViolation, occurredAt: now, weight: double.nan),
+        TrustSignal(
+          id: 'future',
+          kind: TrustSignalKind.policyViolation,
+          occurredAt: now.add(const Duration(days: 1)),
+        ),
+        TrustSignal(
+          id: 'bad-weight',
+          kind: TrustSignalKind.policyViolation,
+          occurredAt: now,
+          weight: double.nan,
+        ),
       ],
       now: now,
     );
@@ -56,17 +69,39 @@ void main() {
     expect(result.label, 'Not enough evidence');
   });
 
-  test('rejects whitespace-padded signal IDs', () { final result = assessor.assess(signals: [TrustSignal(id: ' tx-1 ', kind: TrustSignalKind.policyViolation, occurredAt: now), TrustSignal(id: 'tx-1', kind: TrustSignalKind.completedTransaction, occurredAt: now)], now: now); expect(result.evidenceCount, 1); expect(result.score, 56); });
+  test('rejects whitespace-padded signal IDs', () {
+    final result = assessor.assess(
+      signals: [
+        TrustSignal(
+          id: ' tx-1 ',
+          kind: TrustSignalKind.policyViolation,
+          occurredAt: now,
+        ),
+        TrustSignal(
+          id: 'tx-1',
+          kind: TrustSignalKind.completedTransaction,
+          occurredAt: now,
+        ),
+      ],
+      now: now,
+    );
+    expect(result.evidenceCount, 1);
+    // No evidence reference applies the 0.65 factor: round(50 + 6 * 0.65) = 54.
+    expect(result.score, 54);
+  });
 
   test('scores remain bounded', () {
     final result = assessor.assess(
-      signals: List.generate(20, (i) => TrustSignal(
-        id: 'violation-$i',
-        kind: TrustSignalKind.policyViolation,
-        occurredAt: now,
-        weight: 2,
-        evidenceReference: 'case-$i',
-      )),
+      signals: List.generate(
+        20,
+        (i) => TrustSignal(
+          id: 'violation-$i',
+          kind: TrustSignalKind.policyViolation,
+          occurredAt: now,
+          weight: 2,
+          evidenceReference: 'case-$i',
+        ),
+      ),
       now: now,
     );
     expect(result.score, 0);
