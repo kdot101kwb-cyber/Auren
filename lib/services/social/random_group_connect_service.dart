@@ -14,6 +14,9 @@ class AurenRandomGroupConnectService {
   CollectionReference<Map<String, dynamic>> get _requests =>
       _db.collection('random_group_connect');
 
+  String _limit(String value, int max) =>
+      value.length <= max ? value : value.substring(0, max);
+
   Future<String> join({
     required String uid,
     required String country,
@@ -30,10 +33,10 @@ class AurenRandomGroupConnectService {
     final ref = _requests.doc();
     await ref.set({
       'uid': uid,
-      'country': country.trim().substring(0, country.trim().length.clamp(0, 80)),
-      'language': normalizedLanguage.substring(0, normalizedLanguage.length.clamp(0, 60)),
-      'interest': interest.trim().substring(0, interest.trim().length.clamp(0, 120)),
-      'goal': goal.trim().substring(0, goal.trim().length.clamp(0, 120)),
+      'country': _limit(country.trim(), 80),
+      'language': _limit(normalizedLanguage, 60),
+      'interest': _limit(interest.trim(), 120),
+      'goal': _limit(goal.trim(), 120),
       'groupSize': size,
       'status': 'waiting',
       'createdAt': FieldValue.serverTimestamp(),
