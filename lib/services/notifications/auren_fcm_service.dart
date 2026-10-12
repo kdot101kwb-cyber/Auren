@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,6 +16,10 @@ class AurenFcmService {
   final FlutterLocalNotificationsPlugin _local = FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+  StreamSubscription<RemoteMessage>? _foregroundSubscription;
+  StreamSubscription<RemoteMessage>? _openedSubscription;
+  StreamSubscription<String>? _tokenSubscription;
+  StreamSubscription<User?>? _authSubscription;
   void Function(RemoteMessage message)? _openHandler;
   RemoteMessage? _pendingOpenMessage;
 
@@ -38,7 +43,6 @@ class AurenFcmService {
 
   Future<void> initialize() async {
     if (_initialized) return;
-    _initialized = true;
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const settings = InitializationSettings(android: android);
@@ -61,16 +65,20 @@ class AurenFcmService {
       provisional: false,
     );
 
-    FirebaseMessaging.onMessage.listen(_showForeground);
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleOpen);
+    _foregroundSubscription ??=
+        FirebaseMessaging.onMessage.listen(_showForeground);
+    _openedSubscription ??=
+        FirebaseMessaging.onMessageOpenedApp.listen(_handleOpen);
     final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       Future<void>.delayed(const Duration(milliseconds: 700), () => _handleOpen(initialMessage));
     }
-    _messaging.onTokenRefresh.listen(_saveToken);
+    _tokenSubscription ??= _messaging.onTokenRefresh.listen(_saveToken);
 
     await _registerCurrentToken();
-    FirebaseAuth.instance.authStateChanges().listen((_) => _registerCurrentToken());
+    _authSubscription ??=
+        FirebaseAuth.instance.authStateChanges().listen((_) => _registerCurrentToken());
+    _initialized = true;
   }
 
   Future<void> _registerCurrentToken() async {
