@@ -253,3 +253,55 @@ test('random group requests: only waiting requests or the owner are readable', a
   await assertFails(stranger.doc('random_group_connect/grouped-private').get());
   await assertSucceeds(owner.doc('random_group_connect/grouped-private').get());
 });
+
+
+async function seedRandomGroupRequest(id, data) {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(`random_group_connect/${id}`).set({
+      uid: 'group-owner',
+      country: 'SD',
+      language: 'ar',
+      interest: 'technology',
+      goal: 'learn',
+      groupSize: 4,
+      status: 'waiting',
+      createdAt: firebase.firestore.Timestamp.now(),
+      ...data,
+    });
+  });
+}
+
+test('random group request owner can cancel their waiting request', async () => {
+  await seedRandomGroupRequest('owner-cancel', {});
+  const ref = testEnv.authenticatedContext('group-owner').firestore().doc('random_group_connect/owner-cancel');
+  await assertSucceeds(ref.update({ status: 'cancelled' }));
+});
+
+test('another user cannot update a random group request', async () => {
+  await seedRandomGroupRequest('foreign-update', {});
+  const ref = testEnv.authenticatedContext('group-stranger').firestore().doc('random_group_connect/foreign-update');
+  await assertFails(ref.update({ status: 'cancelled' }));
+});
+
+test('random group request owner cannot edit matching fields or change owner', async () => {
+  await seedRandomGroupRequest('tamper-fields', {});
+  const ref = testEnv.authenticatedContext('group-owner').firestore().doc('random_group_connect/tamper-fields');
+  await assertFails(ref.update({ goal: 'tampered' }));
+  await assertFails(ref.update({ uid: 'group-stranger', status: 'cancelled' }));
+});
+
+test('random group request can transition to grouped only with lifecycle fields', async () => {
+  await seedRandomGroupRequest('valid-grouped', {});
+  const ref = testEnv.authenticatedContext('group-owner').firestore().doc('random_group_connect/valid-grouped');
+  await assertSucceeds(ref.update({
+    status: 'grouped',
+    groupId: 'group-created-by-service',
+    matchedAt: firebase.firestore.Timestamp.now(),
+  }));
+  await assertFails(ref.update({
+    status: 'grouped',
+    groupId: 'group-created-by-service',
+    matchedAt: firebase.firestore.Timestamp.now(),
+    goal: 'tampered',
+  }));
+});
