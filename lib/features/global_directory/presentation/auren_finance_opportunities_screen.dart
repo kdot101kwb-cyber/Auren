@@ -54,8 +54,12 @@ class _AurenFinanceOpportunitiesScreenState
       _message('الرابط الرسمي غير متاح.');
       return;
     }
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && mounted) _message('تعذر فتح الموقع الآن.');
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) _message('تعذر فتح الموقع الآن.');
+    } catch (_) {
+      _message('تعذر فتح الموقع الآن. تحقق من الاتصال أو افتح الرابط من المتصفح.');
+    }
   }
 
   void _message(String value) {
