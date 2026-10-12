@@ -154,8 +154,8 @@ test('another user cannot read or update the action', async () => {
 test('unauthenticated client cannot read or update the action', async () => {
   await seedAction('rules-user-10', 'unauth');
   const ref = doc(testEnv.unauthenticatedContext().firestore(), 'users/rules-user-10/actions/unauth');
-  await assertFails(ref.get());
-  await assertFails(ref.update({
+  await assertFails(getDoc(ref));
+  await assertFails(updateDoc(ref, {
     payload: { text: 'unauth tamper' },
     draftVersion: 1,
     updatedAt: Timestamp.now(),
