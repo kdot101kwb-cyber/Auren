@@ -33,8 +33,10 @@ void main() {
         ),
       ],
       now: now,
+      minimumScore: 0,
     );
 
+    expect(results, hasLength(2));
     expect(results.first.opportunity.id, 'strong');
     expect(results.first.score, greaterThan(results.last.score));
     expect(results.first.reasons, contains('Location matches'));
