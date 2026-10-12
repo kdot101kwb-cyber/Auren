@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/talent.dart';
 import '../../core/models/opportunity.dart';
+import 'talent_skill_matcher.dart';
 
 class AurenTalentMatch {
   final AurenOpportunity opportunity;
@@ -13,13 +14,6 @@ class AurenTalentMatch {
 class TalentDiscoveryService {
   final FirebaseFirestore db;
   TalentDiscoveryService({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
-
-  String _norm(String value) => value
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
 
   Future<List<AurenTalentMatch>> matchOpportunities(AurenTalent talent,{int limit=20}) async {
     final ownerId = talent.ownerId.trim();
@@ -42,7 +36,7 @@ class TalentDiscoveryService {
       if (page.docs.length < pageSize) break;
     } while (lastDoc != null);
     final userSkills = verifiedDocs
-        .map((d)=>_norm((d.data()['skill'] ?? '').toString()))
+        .map((d) => TalentSkillMatcher.normalize((d.data()['skill'] ?? '').toString()))
         .where((e)=>e.isNotEmpty)
         .toSet();
 
