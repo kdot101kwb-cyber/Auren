@@ -64,7 +64,7 @@ class SupplierRfqIntentParser {
 
     String? destination;
     final destinationMatch = RegExp(
-      r'(?:delivered\s+to|shipped?\s+to|destination\s*[:=]?|to|إلى|الى|للتسليم في|التسليم إلى|في)\s+(.+)',
+      r'(?:delivered\s+to|shipped?\s+to|destination\s*[:=]?|\\bto\\b|إلى|الى|للتسليم في|التسليم إلى|في)\s+(.+)',
       caseSensitive: false,
     ).firstMatch(text);
     if (destinationMatch != null) {
@@ -126,7 +126,7 @@ class SupplierRfqIntentParser {
         afterQuantity = afterQuantity.replaceFirst(RegExp(r'^(?:of|من)\s+', caseSensitive: false), '');
         if (afterQuantity.isNotEmpty) {
           product = afterQuantity.split(
-            RegExp(r'\s+(?:delivered\s+to|shipped?\s+to|with\s+a\s+budget|budget|within|to|in|for|إلى|الى|في|بميزانية|خلال)\s+', caseSensitive: false),
+            RegExp(r'\s+(?:delivered\s+to|shipped?\s+to|with\s+a\s+budget|budget|\\bwithin\\b|\\bto\\b|\\bin\\b|\\bfor\\b|إلى|الى|في|بميزانية|خلال)\s+', caseSensitive: false),
           ).first.trim();
         }
       }
@@ -137,7 +137,7 @@ class SupplierRfqIntentParser {
       ).firstMatch(text);
       if (productMatch != null) {
         product = productMatch.group(1)!.split(
-          RegExp(r'\s+(?:to|in|for|إلى|الى|في|بميزانية|ميزانية|خلال)\s+', caseSensitive: false),
+          RegExp(r'\s+(?:\\bto\\b|\\bin\\b|\\bfor\\b|إلى|الى|في|بميزانية|ميزانية|خلال)\s+', caseSensitive: false),
         ).first.trim();
       }
     }
