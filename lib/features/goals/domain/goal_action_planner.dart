@@ -53,7 +53,12 @@ class GoalActionPlanner {
 
     final byId = <String, GoalMilestone>{};
     for (final item in milestones) {
-      if (item.id.trim().isEmpty) throw ArgumentError('Milestone IDs must not be blank');
+      if (item.id.trim().isEmpty || item.id != item.id.trim()) {
+        throw ArgumentError('Milestone IDs must be nonblank and have no surrounding whitespace');
+      }
+      if (item.title.trim().isEmpty) {
+        throw ArgumentError('Milestone titles must not be blank: ${item.id}');
+      }
       if (byId.containsKey(item.id)) throw ArgumentError('Duplicate milestone ID: ${item.id}');
       if (item.estimatedMinutes <= 0) {
         throw ArgumentError.value(item.estimatedMinutes, 'estimatedMinutes', 'Must be positive');
@@ -63,6 +68,9 @@ class GoalActionPlanner {
 
     for (final item in milestones) {
       for (final dependency in item.dependsOn) {
+        if (dependency.trim().isEmpty || dependency != dependency.trim()) {
+          throw ArgumentError('Dependency IDs must be nonblank and have no surrounding whitespace');
+        }
         if (!byId.containsKey(dependency)) {
           throw ArgumentError('Unknown dependency "$dependency" for "${item.id}"');
         }
