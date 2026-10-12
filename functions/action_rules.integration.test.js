@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const {
@@ -21,7 +22,7 @@ test.before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,
     firestore: {
-      rules: path.resolve(__dirname, '../firestore.rules'),
+      rules: fs.readFileSync(path.resolve(__dirname, '../firestore.rules'), 'utf8'),
     },
   });
 });
