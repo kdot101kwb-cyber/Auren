@@ -44,7 +44,9 @@ class LowDataPolicy {
       );
     }
 
-    final constrained = lowDataMode || connection == DataConnection.metered;
+    final constrained = lowDataMode ||
+        connection == DataConnection.metered ||
+        connection == DataConnection.unknown;
     if (content == DataContentKind.text) {
       return DataDeliveryDecision(
         allowNetwork: true,
