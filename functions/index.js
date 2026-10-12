@@ -4967,3 +4967,6 @@ Object.assign(module.exports, require('./personal_ai_life_engine'));
 
 // Global business data ingestion and source-provenance normalization.
 Object.assign(module.exports, require('./global_business_data'));
+
+// Trusted Random Group Connect matching and Messenger bootstrap.
+Object.assign(module.exports, require('./random_group_matching'));
