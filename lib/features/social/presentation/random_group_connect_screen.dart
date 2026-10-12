@@ -46,9 +46,13 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
         requestId = id;
         submitting = false;
       });
-    } catch (_) {
-      if (mounted) setState(() => submitting = false);
-      rethrow;
+    } catch (error) {
+      if (mounted) {
+        setState(() => submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر الانضمام للانتظار: $error')),
+        );
+      }
     }
   }
 
