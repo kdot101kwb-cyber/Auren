@@ -17,10 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check library sources
+      - name: Check library source availability
         shell: bash
         run: |
-          set -euo pipefail
+          set -uo pipefail
+
           declare -A URLS=(
             [openlibrary]="https://openlibrary.org/search.json?q=auren"
             [crossref]="https://api.crossref.org/works?query.title=auren&rows=1"
@@ -28,8 +29,56 @@ jobs:
             [unesco]="https://data.unesco.org/api/explore/v2.1/catalog/datasets/ich001/records?limit=1"
           )
 
+          failed=0
+          warnings=()
+
           for name in "${!URLS[@]}"; do
             url="${URLS[$name]}"
             echo "Checking $name: $url"
-            curl --fail --silent --show-error --location               --max-time 15               --retry 2               --retry-delay 2               -A "AUREN-Library-Health/1.0"               "$url" > /dev/null
+
+            if ! http_code=$(curl --silent --show-error --location \
+              --max-time 15 --retry 2 --retry-delay 2 \
+              -A "AUREN-Library-Health/1.0" \
+              -o /dev/null -w '%{http_code}' "$url"); then
+              echo "::error title=Library source unreachable::$name request failed (network/TLS/timeout)."
+              failed=1
+              continue
+            fi
+
+            case "$http_code" in
+              2??)
+                echo "OK: $name returned HTTP $http_code"
+                ;;
+              403)
+                # Some public APIs deny hosted CI IP ranges. Record this as a
+                # degraded source, not a full workflow failure; other sources
+                # must still be checked.
+                warning="$name returned HTTP 403; source access is restricted from this runner."
+                echo "::warning title=Library source restricted::$warning"
+                warnings+=("$warning")
+                ;;
+              *)
+                echo "::error title=Library source unhealthy::$name returned HTTP $http_code"
+                failed=1
+                ;;
+            esac
           done
+
+          if (("${#warnings[@]}" > 0)); then
+            {
+              echo "## Library API health: warnings"
+              echo
+              echo "The workflow completed, but one or more public sources restricted access:"
+              for warning in "${warnings[@]}"; do
+                echo "- $warning"
+              done
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## Library API health: all sources reachable"
+              echo
+              echo "All checked library sources returned a 2xx response."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          exit "$failed"
