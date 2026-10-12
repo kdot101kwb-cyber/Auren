@@ -52,6 +52,7 @@ class TrustSignalAssessor {
     final unique = <String, TrustSignal>{};
     for (final signal in signals) {
       if (signal.id.trim().isEmpty ||
+          signal.id != signal.id.trim() ||
           signal.occurredAt.isAfter(now) ||
           !signal.weight.isFinite ||
           signal.weight <= 0) {
