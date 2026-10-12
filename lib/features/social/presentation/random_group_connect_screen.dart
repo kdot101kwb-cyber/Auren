@@ -69,7 +69,6 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
       );
       final conversationId = await service.createMessengerGroup(
         groupId: groupId,
-        uid: uid,
         title: 'AUREN Random Group',
       );
       if (!mounted) return;
@@ -116,7 +115,6 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
           if (requestId != null)
             StreamBuilder<List<Map<String, dynamic>>>(
               stream: service.watch(
-                uid: uid,
                 language: language.text,
                 groupSize: size,
                 requestId: requestId,
