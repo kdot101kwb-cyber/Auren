@@ -21,10 +21,20 @@ class _AurenGlobalCentralBanksScreenState extends State<AurenGlobalCentralBanksS
   Future<void> _open(String value) async {
     final uri = Uri.tryParse(value);
     if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return;
-    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!ok && mounted) ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تعذر فتح الموقع الرسمي الآن.')),
-    );
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الموقع الرسمي الآن.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر فتح الموقع الرسمي الآن.')),
+        );
+      }
+    }
   }
 
   @override
