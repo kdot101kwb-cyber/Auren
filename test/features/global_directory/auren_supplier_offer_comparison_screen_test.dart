@@ -14,13 +14,14 @@ Map<String, String> offer(
   String currency, {
   String status = 'received',
   String validity = '',
+  String shipping = '0',
 }) =>
     {
       'id': id,
       'supplier': name,
       'price': price,
       'currency': currency,
-      'shipping': '0',
+      'shipping': shipping,
       'moq': '',
       'leadTime': '',
       'payment': '',
@@ -106,6 +107,16 @@ void main() {
       tester.widget<TextField>(find.byType(TextField).last).controller?.text,
       isEmpty,
     );
+  });
+
+  testWidgets('blank freight stays incomplete in the comparison', (tester) async {
+    await pumpScreen(tester, localOffers: [
+      offer('1', 'Supplier Without Freight Quote', '100', 'USD', shipping: ''),
+      offer('2', 'Supplier With Freight Quote', '125', 'USD', shipping: '10'),
+    ]);
+    expect(find.text('الشحن والرسوم: غير معروف — لم يُدخل'), findsOneWidget);
+    expect(find.text('الإجمالي غير مكتمل — أدخل الشحن والرسوم أولاً'), findsOneWidget);
+    expect(find.text('الإجمالي التقديري: 135.00 USD'), findsOneWidget);
   });
 
   testWidgets('rejected offers are excluded from ranking', (tester) async {
