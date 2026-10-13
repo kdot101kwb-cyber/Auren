@@ -1139,13 +1139,8 @@ class _OfferDialogState extends State<_OfferDialog> {
     final raw = value?.trim() ?? '';
     if (optional && raw.isEmpty) return null;
     if (raw.length > 50) return 'الرقم أطول من الحد المسموح';
-    final validNumber = RegExp(r'^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$');
-    if (!validNumber.hasMatch(raw)) {
-      return 'أدخل رقماً صحيحاً مثل 1200 أو 1,200.50';
-    }
-    final number = double.tryParse(raw.replaceAll(',', ''));
-    return number == null || !number.isFinite || number < 0
-        ? 'أدخل رقماً صفرياً أو موجباً'
+    return SupplierOfferComparisonLogic.parseNonNegativeAmount(raw) == null
+        ? 'أدخل رقماً صحيحاً مثل 1200 أو 1,200.50'
         : null;
   }
 
