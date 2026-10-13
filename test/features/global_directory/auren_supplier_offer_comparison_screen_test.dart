@@ -288,6 +288,34 @@ void main() {
     expect(find.text('تسجيل عرض مورد'), findsOneWidget);
   });
 
+  testWidgets('cloud offers without legacy shipping stay incomplete after restore',
+      (tester) async {
+    final auth = MockFirebaseAuth(
+      signedIn: true,
+      mockUser: MockUser(uid: 'u1'),
+    );
+    final firestore = FakeFirebaseFirestore();
+    final legacyOffer = offer('legacy-cloud', 'Legacy Cloud Supplier', '100', 'USD');
+    legacyOffer.remove('shipping');
+    await firestore
+        .collection('users')
+        .doc('u1')
+        .collection('supplier_offer_comparisons')
+        .doc('active_draft')
+        .set({
+      'ownerId': 'u1',
+      'offers': [legacyOffer],
+    });
+
+    await pumpScreen(tester, localOffers: [], auth: auth, firestore: firestore);
+    await tester.tap(find.text('استعادة من حسابي'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('غير معروف — لم يُدخل'), findsOneWidget);
+    expect(find.text('الإجمالي غير مكتمل — أدخل الشحن والرسوم أولاً'), findsOneWidget);
+    expect(find.text('الإجمالي التقديري: 100.00 USD'), findsNothing);
+  });
+
   testWidgets('account restore asks before replacing local offers',
       (tester) async {
     final auth = MockFirebaseAuth(
