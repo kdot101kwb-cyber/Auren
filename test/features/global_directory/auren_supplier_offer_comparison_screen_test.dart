@@ -142,6 +142,15 @@ void main() {
     expect(find.text('الإجمالي غير مكتمل — أدخل الشحن والرسوم أولاً'), findsOneWidget);
   });
 
+  testWidgets('stored offers with unknown currency are rejected, not relabeled USD',
+      (tester) async {
+    await pumpScreen(tester, localOffers: [
+      offer('bad-currency', 'Unknown Currency Supplier', '100', 'XYZ'),
+    ]);
+    expect(find.text('تعذر قراءة المسودة المحلية؛ يمكنك إضافة عروض جديدة.'), findsOneWidget);
+    expect(find.text('الإجمالي التقديري: 100.00 USD'), findsNothing);
+  });
+
   testWidgets('rejected offers are excluded from ranking', (tester) async {
     await pumpScreen(tester, localOffers: [
       offer('1', 'Supplier A', '100', 'USD', status: 'rejected'),
