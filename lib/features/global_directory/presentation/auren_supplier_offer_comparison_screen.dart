@@ -1087,7 +1087,8 @@ class _Offer {
   factory _Offer.fromJson(Map<String, dynamic> j) => _Offer(
     id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
     supplier: j['supplier'] as String? ?? '', price: j['price'] as String? ?? '',
-    currency: _currencies.contains(j['currency']) ? j['currency'] as String : 'USD',
+    // Preserve invalid/missing currency metadata so validation rejects it; never relabel it USD.
+    currency: j['currency'] as String? ?? '',
     shipping: j['shipping'] as String? ?? '', moq: j['moq'] as String? ?? '',
     leadTime: j['leadTime'] as String? ?? '', payment: j['payment'] as String? ?? '',
     validity: j['validity'] as String? ?? '', notes: j['notes'] as String? ?? '',
