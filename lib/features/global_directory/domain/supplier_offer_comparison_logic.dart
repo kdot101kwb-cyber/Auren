@@ -103,6 +103,9 @@ class SupplierOfferComparisonLogic {
     if (normalizedACurrency != normalizedBCurrency) {
       return normalizedACurrency.compareTo(normalizedBCurrency);
     }
+    // Missing currency metadata is not a comparable currency group. Keep such
+    // records deterministic by supplier name instead of comparing raw amounts.
+    if (normalizedACurrency.isEmpty) return aSupplier.compareTo(bSupplier);
     final aTotal = total(aPrice, aShipping);
     final bTotal = total(bPrice, bShipping);
     if (aTotal == null && bTotal == null) return aSupplier.compareTo(bSupplier);
