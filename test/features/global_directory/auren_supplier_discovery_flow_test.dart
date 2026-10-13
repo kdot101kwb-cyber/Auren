@@ -50,11 +50,35 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets('a product need opens a prefilled RFQ draft without a supplier',
+      (tester) async {
+    await pumpDiscovery(tester);
+
+    final productField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'مثال: ألواح شمسية أو بذور قمح');
+    await tester.enterText(productField, 'ألواح شمسية');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('جهّز طلب عرض سعر لاحتياجي'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('طلب عرض سعر من مورد'), findsOneWidget);
+    final fields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
+    expect(fields[0].controller?.text, isEmpty);
+    expect(fields[1].controller?.text, 'ألواح شمسية');
+    expect(find.textContaining('لن يتم التواصل مع أي مورد تلقائياً'),
+        findsOneWidget);
+  });
+
   testWidgets('supplier source search filters the listed platforms',
       (tester) async {
     await pumpDiscovery(tester);
 
-    await tester.enterText(find.byType(TextField).first, 'Thomasnet');
+    final sourceSearch = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'ابحث عن قطاع أو منصة أو نوع مورد');
+    await tester.enterText(sourceSearch, 'Thomasnet');
     await tester.pumpAndSettle();
 
     expect(find.text('Thomasnet'), findsAtLeastNWidgets(1));
