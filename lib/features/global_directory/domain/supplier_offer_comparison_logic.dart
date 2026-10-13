@@ -3,7 +3,7 @@ class SupplierOfferComparisonLogic {
   const SupplierOfferComparisonLogic._();
 
   static double? parseNonNegativeAmount(String value) {
-    final raw = value.trim();
+    final raw = _normalizeDigits(value.trim());
     // Accept plain digits or correctly grouped thousands separators only.
     // Removing every comma first would incorrectly accept values like "1,,2".
     final validNumber = RegExp(
@@ -12,6 +12,23 @@ class SupplierOfferComparisonLogic {
     if (!validNumber.hasMatch(raw)) return null;
     final parsed = double.tryParse(raw.replaceAll(',', ''));
     return parsed != null && parsed.isFinite && parsed >= 0 ? parsed : null;
+  }
+
+  static String _normalizeDigits(String value) {
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+    final output = StringBuffer();
+    for (final rune in value.runes) {
+      final character = String.fromCharCode(rune);
+      final arabicIndex = arabicDigits.indexOf(character);
+      final persianIndex = persianDigits.indexOf(character);
+      output.write(arabicIndex >= 0
+          ? arabicIndex
+          : persianIndex >= 0
+              ? persianIndex
+              : character);
+    }
+    return output.toString();
   }
 
   static double? total(String price, String shipping) {
