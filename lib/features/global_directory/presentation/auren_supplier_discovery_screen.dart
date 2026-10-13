@@ -122,6 +122,11 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
                   builder: (_) => AurenSupplierOfferComparisonScreen(
                     auth: widget.auth,
                     firestore: widget.firestore,
+                    initialProduct: product.isEmpty ? null : product,
+                    initialQuantity: quantity.isEmpty ? null : quantity,
+                    initialDestination: destination.isEmpty ? null : destination,
+                    initialBudget: budget.isEmpty ? null : budget,
+                    initialCurrency: _currency,
                   ),
                 ),
               ),
