@@ -137,7 +137,7 @@ void main() {
     await tester.enterText(sourceSearch, 'Thomasnet');
     await tester.pumpAndSettle();
 
-    expect(find.text('Thomasnet'), findsAtLeastNWidgets(1));
+    expect(find.widgetWithText(ListTile, 'Thomasnet'), findsOneWidget);
     expect(find.text('Alibaba.com'), findsNothing);
   });
 }
