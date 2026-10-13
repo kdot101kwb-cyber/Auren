@@ -220,7 +220,9 @@ class _AurenSupplierOfferComparisonScreenState
       ),
     );
     if (shouldReplace != true || !mounted || _auth.currentUser?.uid != user.uid) return;
-    if (validationError != null) { _snack(validationError); return; }
+    // Revalidate immediately before the write; never rely on a pre-dialog snapshot.
+    final latestValidationError = _cloudValidationError();
+    if (latestValidationError != null) { _snack(latestValidationError); return; }
     if (_cloudBusy) return;
     setState(() { _cloudBusy = true; _message = 'جارٍ حفظ العروض في حسابك…'; });
     try {
