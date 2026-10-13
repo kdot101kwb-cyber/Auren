@@ -3,6 +3,11 @@ import 'package:auren/features/global_directory/domain/supplier_offer_comparison
 
 void main() {
   group('SupplierOfferComparisonLogic.parseNonNegativeAmount', () {
+    test('accepts Arabic and Persian numerals', () {
+      expect(SupplierOfferComparisonLogic.parseNonNegativeAmount('١٢٣٤'), 1234);
+      expect(SupplierOfferComparisonLogic.parseNonNegativeAmount('۱۲.۵'), 12.5);
+    });
+
     test('accepts plain and correctly grouped decimal amounts', () {
       expect(SupplierOfferComparisonLogic.parseNonNegativeAmount('0'), 0);
       expect(SupplierOfferComparisonLogic.parseNonNegativeAmount(' 12.50 '), 12.5);
