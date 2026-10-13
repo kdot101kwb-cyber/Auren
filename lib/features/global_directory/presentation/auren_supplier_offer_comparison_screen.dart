@@ -14,10 +14,24 @@ import 'auren_supplier_rfq_draft_screen.dart';
 /// Local, account-scoped-on-device comparison of supplier quotes.
 /// It does not verify suppliers or send external messages.
 class AurenSupplierOfferComparisonScreen extends StatefulWidget {
-  const AurenSupplierOfferComparisonScreen({super.key, this.auth, this.firestore});
+  const AurenSupplierOfferComparisonScreen({
+    super.key,
+    this.auth,
+    this.firestore,
+    this.initialProduct,
+    this.initialQuantity,
+    this.initialDestination,
+    this.initialBudget,
+    this.initialCurrency,
+  });
 
   final FirebaseAuth? auth;
   final FirebaseFirestore? firestore;
+  final String? initialProduct;
+  final String? initialQuantity;
+  final String? initialDestination;
+  final String? initialBudget;
+  final String? initialCurrency;
 
   @override
   State<AurenSupplierOfferComparisonScreen> createState() =>
@@ -55,6 +69,11 @@ class _AurenSupplierOfferComparisonScreenState
   @override
   void initState() {
     super.initState();
+    _rankingBudgetController.text = widget.initialBudget?.trim() ?? '';
+    _selectedRankingCurrency = widget.initialCurrency?.trim().toUpperCase();
+    _budgetCurrency = _rankingBudgetController.text.isEmpty
+        ? null
+        : widget.initialCurrency?.trim().toUpperCase();
     _observedUid = _auth.currentUser?.uid;
     _load();
     _authSubscription = _auth.authStateChanges().listen((user) {
