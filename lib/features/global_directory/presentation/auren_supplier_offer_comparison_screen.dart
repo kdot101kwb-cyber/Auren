@@ -1093,7 +1093,8 @@ class _Offer {
     leadTime: j['leadTime'] as String? ?? '', payment: j['payment'] as String? ?? '',
     validity: j['validity'] as String? ?? '', notes: j['notes'] as String? ?? '',
     receivedAt: j['receivedAt'] as String? ?? DateTime.now().toIso8601String(),
-    status: _statuses.containsKey(j['status']) ? j['status'] as String : 'received',
+    // Do not turn malformed historical state into a received quote; validation rejects it.
+    status: j['status'] as String? ?? '',
   );
   static const _currencies = ['USD', 'EUR', 'SDG', 'KES', 'AED', 'NGN'];
   static const _statuses = {'received': 'وصل العرض', 'verify': 'بحاجة للتحقق', 'shortlist': 'ضمن القائمة المختصرة', 'accepted': 'اختير مبدئياً', 'rejected': 'مرفوض'};
