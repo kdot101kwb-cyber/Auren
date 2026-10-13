@@ -12,6 +12,7 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 ## Comparison behavior
 
 - Offers are sorted by currency first and then by recorded price plus recorded shipping/fees.
+- Currency codes are trimmed and compared case-insensitively in pure comparison helpers, so `usd`, `USD`, and ` USD ` stay in the same comparison group; this is normalization only, not currency conversion.
 - The lowest-cost label is only applied among offers in the same currency with parseable non-negative amounts.
 - Blank or invalid numeric values are not ranked.
 - Currency conversion, tax/duty estimation, product-spec normalization, and exchange-rate lookup are not performed.
