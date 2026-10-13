@@ -151,6 +151,15 @@ void main() {
     expect(find.text('الإجمالي التقديري: 100.00 USD'), findsNothing);
   });
 
+  testWidgets('stored offers with unknown status are rejected instead of marked received',
+      (tester) async {
+    await pumpScreen(tester, localOffers: [
+      offer('bad-status', 'Unknown Status Supplier', '100', 'USD', status: 'maybe'),
+    ]);
+    expect(find.text('تعذر قراءة المسودة المحلية؛ يمكنك إضافة عروض جديدة.'), findsOneWidget);
+    expect(find.text('وصل العرض'), findsNothing);
+  });
+
   testWidgets('rejected offers are excluded from ranking', (tester) async {
     await pumpScreen(tester, localOffers: [
       offer('1', 'Supplier A', '100', 'USD', status: 'rejected'),
