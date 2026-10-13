@@ -4,7 +4,7 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 
 ## Captured fields
 
-- Supplier name, quoted amount, currency, shipping/fees
+- Supplier name, quoted amount, currency, shipping/fees (shipping may be left blank when unknown)
 - Minimum order, lead time, payment terms, offer validity, notes
 - Date the offer was recorded
 - Lifecycle status: received, needs verification, shortlisted, tentatively selected, rejected
@@ -14,7 +14,7 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - Offers are sorted by currency first and then by recorded price plus recorded shipping/fees.
 - Currency codes are trimmed and compared case-insensitively in pure comparison helpers, so `usd`, `USD`, and ` USD ` stay in the same comparison group; this is normalization only, not currency conversion.
 - The lowest-cost label is only applied among offers in the same currency with parseable non-negative amounts.
-- Blank or invalid numeric values are not ranked.
+- Blank or invalid numeric values are not ranked. Blank shipping means unknown, not free: the offer has no calculated total and is not marked lowest until shipping/fees are entered.
 - Currency conversion, tax/duty estimation, product-spec normalization, and exchange-rate lookup are not performed.
 - Users can filter by lifecycle status, edit/delete offers, and copy a plain-text summary. Both summary and CSV exports respect the active status and validity filters.
 - Users can also copy a spreadsheet-ready CSV table containing price, currency, shipping/fees, estimated total, status, validity, minimum order, lead time, payment terms, notes, and capture date. Cells are quoted and embedded quotes/newlines are escaped.
@@ -28,7 +28,7 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 
 - Data is saved in SharedPreferences on the current device, using a key scoped to the current Firebase UID (or `guest` when signed out).
 - Signed-in users can explicitly save the comparison to `users/{uid}/supplier_offer_comparisons/active_draft` and restore it on another device. The cloud document is owner-scoped by Firestore rules and limited to 10 validated offers.
-- Firestore rules independently reject malformed price and shipping strings (including invalid thousands-separator grouping) on create and update. Integration tests cover valid amounts, unknown shipping cost, malformed and empty amounts, immutable ownership, and cross-user read denial.
+- Firestore rules independently reject malformed price and shipping strings (including invalid thousands-separator grouping) on create and update. A blank shipping string is permitted to represent an unknown quote, but the UI does not treat it as zero or calculate a total. Integration tests cover valid amounts, unknown shipping cost, malformed and empty amounts, immutable ownership, and cross-user read denial.
 - Local autosaves remain on this device; cloud changes are not silently uploaded. Use **Save to my account** after changes.
 - Switching accounts resets the visible list and reloads that account's local key.
 - Supplier identities, documents, quotations, and payment details are not verified by AUREN.
