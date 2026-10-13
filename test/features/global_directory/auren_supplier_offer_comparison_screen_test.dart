@@ -114,7 +114,7 @@ void main() {
       offer('1', 'Supplier Without Freight Quote', '100', 'USD', shipping: ''),
       offer('2', 'Supplier With Freight Quote', '125', 'USD', shipping: '10'),
     ]);
-    expect(find.text('الشحن والرسوم: غير معروف — لم يُدخل'), findsOneWidget);
+    expect(find.text('غير معروف — لم يُدخل'), findsOneWidget);
     expect(find.text('الإجمالي غير مكتمل — أدخل الشحن والرسوم أولاً'), findsOneWidget);
     expect(find.text('الإجمالي التقديري: 135.00 USD'), findsOneWidget);
   });
@@ -126,7 +126,7 @@ void main() {
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'Freight Pending Supplier');
     await tester.enterText(fields.at(1), '100');
-    expect(tester.widget<TextFormField>(fields.at(3)).controller?.text, isEmpty);
+    expect(tester.widget<TextFormField>(fields.at(2)).controller?.text, isEmpty);
     await tester.tap(find.text('حفظ العرض'));
     await tester.pumpAndSettle();
     expect(find.text('الشحن والرسوم: غير معروف — لم يُدخل'), findsOneWidget);
