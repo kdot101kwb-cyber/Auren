@@ -841,6 +841,15 @@ class _AurenSupplierOfferComparisonScreenState
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 8),
+            if ((widget.initialQuantity?.trim().isNotEmpty ?? false) &&
+                _parseMoq(widget.initialQuantity!) == null)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'تعذر قراءة كمية الطلب كرقم؛ لم تُستخدم لتصفية الحد الأدنى للطلب. أدخل الكمية رقمياً أدناه.',
+                  style: TextStyle(color: Colors.deepOrange, fontSize: 12),
+                ),
+              ),
             if ((_rankingBudgetController.text.trim().isNotEmpty &&
                     _parseOptionalQuantity(_rankingBudgetController.text) == null) ||
                 (_rankingLeadTimeController.text.trim().isNotEmpty &&
