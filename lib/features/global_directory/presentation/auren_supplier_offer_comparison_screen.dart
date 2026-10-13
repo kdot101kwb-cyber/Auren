@@ -827,10 +827,15 @@ class _AurenSupplierOfferComparisonScreenState
             TextField(
               controller: _rankingMinimumOrderController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'أقصى حد أدنى للطلب',
+              decoration: InputDecoration(
+                labelText: (widget.initialQuantity?.trim().isNotEmpty ?? false)
+                    ? 'كمية طلبك / أقصى حد أدنى للطلب'
+                    : 'أقصى حد أدنى للطلب',
                 hintText: 'اختياري',
-                border: OutlineInputBorder(),
+                helperText: (widget.initialQuantity?.trim().isNotEmpty ?? false)
+                    ? 'يُستخدم الرقم لتفضيل العروض التي لا يتجاوز حدها الأدنى كمية طلبك.'
+                    : null,
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               onChanged: (_) => setState(() {}),
