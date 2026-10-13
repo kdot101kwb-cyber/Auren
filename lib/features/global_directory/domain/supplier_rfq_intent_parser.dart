@@ -164,68 +164,21 @@ class SupplierRfqIntentParser {
 
   static String? _amount(String? raw) {
     if (raw == null) return null;
-    final value = raw.trim();
-    const validNumber = r'^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:[.][0-9]+)?
     const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
     const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
     final output = StringBuffer();
-    for (final rune in value.runes) {
+    for (final rune in raw.trim().runes) {
       final character = String.fromCharCode(rune);
       final arabicIndex = arabicDigits.indexOf(character);
       final persianIndex = persianDigits.indexOf(character);
       output.write(arabicIndex >= 0 ? arabicIndex : persianIndex >= 0 ? persianIndex : character);
     }
-    return output.toString();
-  }
-
-  static String? _unit(String? raw) {
-    if (raw == null || raw.isEmpty) return null;
-    final value = raw.toLowerCase();
-    if (['piece','pieces','pcs','unit','units','قطعة','قطع','حبة','حبات'].contains(value)) return 'pieces';
-    if (['kg','g','كيلو','كيلوغرام'].contains(value)) return value == 'g' ? 'g' : 'kg';
-    if (['ton','tons','طن'].contains(value)) return 'tons';
-    if (['liter','liters','litre','litres','لتر'].contains(value)) return 'liters';
-    if (['meter','meters','metre','metres','متر'].contains(value)) return 'meters';
-    if (['yard','yards'].contains(value)) return 'yards';
-    if (['box','boxes','صندوق','كرتون'].contains(value)) return 'boxes';
-    return value;
-  }
-
-  static String? _currency(String? raw) {
-    if (raw == null) return null;
-    switch (raw.toUpperCase()) {
-      case 'USD':
-      case r'$':
-      case 'دولار':
-      case 'دولارات': return 'USD';
-      case 'EUR':
-      case '€':
-      case 'يورو': return 'EUR';
-      case 'SDG': return 'SDG';
-      case 'KES': return 'KES';
-      case 'NGN': return 'NGN';
-      default: return null;
-    }
-  }
-}
-;
+    final value = output.toString();
+    const validNumber = r'^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:[.][0-9]+)?$';
     if (!RegExp(validNumber).hasMatch(value)) return null;
     final normalized = value.replaceAll(',', '');
     final parsed = double.tryParse(normalized);
     return parsed != null && parsed.isFinite && parsed >= 0 ? normalized : null;
-  }
-
-  static String _digits(String value) {
-    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
-    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
-    final output = StringBuffer();
-    for (final rune in value.runes) {
-      final character = String.fromCharCode(rune);
-      final arabicIndex = arabicDigits.indexOf(character);
-      final persianIndex = persianDigits.indexOf(character);
-      output.write(arabicIndex >= 0 ? arabicIndex : persianIndex >= 0 ? persianIndex : character);
-    }
-    return output.toString();
   }
 
   static String? _unit(String? raw) {
