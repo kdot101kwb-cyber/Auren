@@ -154,15 +154,14 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final fields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
     await tester.enterText(find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'المنتج أو الخدمة *'), 'قماش');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'المنتج أو الخدمة *'), 'قماش');
     await tester.enterText(find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'الكمية المطلوبة *'), '500 قطعة');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'الكمية المطلوبة *'), '500 قطعة');
     await tester.enterText(find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'مدينة وبلد التسليم *'), 'الخرطوم، السودان');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'مدينة وبلد التسليم *'), 'الخرطوم، السودان');
     await tester.enterText(find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'الميزانية (اختياري)'), '1,,200');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'الميزانية (اختياري)'), '1,,200');
     await tester.tap(find.text('إنشاء مسودة طلب السعر'));
     await tester.pumpAndSettle();
 
@@ -202,10 +201,10 @@ void main() {
     await tester.pumpAndSettle();
 
     final budgetField = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'الميزانية (اختياري)');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'الميزانية (اختياري)');
     expect(tester.widget<TextFormField>(budgetField).controller?.text, '2500');
     final productField = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'المنتج أو الخدمة *');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'المنتج أو الخدمة *');
     expect(tester.widget<TextFormField>(productField).controller?.text, 'Solar panels');
   });
 
@@ -222,11 +221,11 @@ void main() {
     await tester.pumpAndSettle();
 
     final product = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'المنتج أو الخدمة *');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'المنتج أو الخدمة *');
     final quantity = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'الكمية المطلوبة *');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'الكمية المطلوبة *');
     final destination = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.decoration?.labelText == 'مدينة وبلد التسليم *');
+      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'مدينة وبلد التسليم *');
     final intent = find.byWidgetPredicate((widget) =>
       widget is TextField && widget.decoration?.hintText?.startsWith('مثال: أحتاج') == true);
 
