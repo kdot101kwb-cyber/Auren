@@ -51,6 +51,21 @@ void main() {
       expect(SupplierOfferComparisonLogic.total('bad', '10'), isNull);
     });
 
+    test('treats blank shipping as unknown rather than free', () {
+      expect(SupplierOfferComparisonLogic.total('100', ''), isNull);
+      expect(
+        SupplierOfferComparisonLogic.isLowest(
+          currency: 'USD',
+          price: '100',
+          shipping: '',
+          offers: const [
+            {'currency': 'USD', 'price': '100', 'shipping': '0'},
+          ],
+        ),
+        isFalse,
+      );
+    });
+
     test('rejects a non-finite sum', () {
       expect(
         SupplierOfferComparisonLogic.total(
