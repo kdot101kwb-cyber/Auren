@@ -92,6 +92,41 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets('purchasing need carries into offer comparison as context',
+      (tester) async {
+    await pumpDiscovery(tester);
+
+    final productField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'مثال: ألواح شمسية أو بذور قمح');
+    final quantityField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'الكمية المطلوبة (اختياري)');
+    final destinationField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'مدينة وبلد التسليم (اختياري)');
+    final budgetField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'الميزانية القصوى (اختياري)');
+
+    await tester.enterText(productField, 'ألواح شمسية');
+    await tester.enterText(quantityField, '20 لوحة');
+    await tester.enterText(destinationField, 'بورتسودان، السودان');
+    await tester.enterText(budgetField, '2500');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('مقارنة عروض الأسعار المسجلة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('احتياجك للمقارنة'), findsOneWidget);
+    expect(find.text('المنتج: ألواح شمسية'), findsOneWidget);
+    expect(find.text('الكمية: 20 لوحة'), findsOneWidget);
+    expect(find.text('وجهة التسليم: بورتسودان، السودان'), findsOneWidget);
+    expect(find.text('الميزانية المطلوبة: 2500 USD'), findsOneWidget);
+    expect(find.text('لا توجد عروض بعد. اضغط «إضافة عرض» لتسجيل أول عرض.'),
+        findsOneWidget);
+  });
+
   testWidgets('supplier source search filters the listed platforms',
       (tester) async {
     await pumpDiscovery(tester);
