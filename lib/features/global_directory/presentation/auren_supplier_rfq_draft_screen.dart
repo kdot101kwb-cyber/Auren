@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/supplier_rfq_intent_parser.dart';
+
 /// Prepares an editable RFQ draft. It never sends a message to a supplier.
 class AurenSupplierRfqDraftScreen extends StatefulWidget {
   const AurenSupplierRfqDraftScreen({
@@ -57,6 +59,9 @@ class _AurenSupplierRfqDraftScreenState
   int _loadGeneration = 0;
   bool _loaded = false;
   Future<void> _writeQueue = Future<void>.value();
+  final _intentController = TextEditingController();
+  String? _intentMessage;
+  List<String> _intentMissing = const [];
 
   String _storageKey(String? userId) =>
       'auren_supplier_rfq_draft_v1_${userId ?? 'guest'}';
@@ -90,6 +95,9 @@ class _AurenSupplierRfqDraftScreenState
       _specificationsController.clear();
       _budgetController.clear();
       _contactController.clear();
+      _intentController.clear();
+      _intentMessage = null;
+      _intentMissing = const [];
       setState(() {
         _currency = 'USD';
         _delivery = 'شحن إلى العنوان';
@@ -121,7 +129,9 @@ class _AurenSupplierRfqDraftScreenState
           if (!mounted || generation != _loadGeneration ||
               _auth.currentUser?.uid != userId) return;
           final data = cloud.data();
-          if (cloud.exists && data != null) {
+          // Defense in depth: never restore a cloud draft whose stored owner differs.
+          // Firestore security rules must independently enforce ownership.
+          if (cloud.exists && data != null && data['ownerId'] == userId) {
             draftJson = jsonEncode({
               for (final entry in data.entries)
                 if (entry.key != 'updatedAt') entry.key: entry.value,
@@ -179,6 +189,24 @@ class _AurenSupplierRfqDraftScreenState
     }
   }
 
+  void _parseIntent() {
+    final parsed = SupplierRfqIntentParser.parse(_intentController.text);
+    setState(() {
+      if (parsed.product != null) _productController.text = parsed.product!;
+      if (parsed.quantity != null) _quantityController.text = parsed.quantity!;
+      if (parsed.destination != null) _destinationController.text = parsed.destination!;
+      if (parsed.budget != null) _budgetController.text = parsed.budget!;
+      if (parsed.currency != null) _currency = parsed.currency!;
+      _intentMissing = parsed.missingRequiredFields;
+      _intentMessage = parsed.hasUsefulFields
+          ? (parsed.missingRequiredFields.isEmpty
+              ? 'استخرجنا الحقول الأساسية. راجعها قبل إنشاء المسودة.'
+              : 'استخرجنا بعض التفاصيل. أكمل الحقول الناقصة أدناه.')
+          : 'لم نتمكن من استخراج تفاصيل كافية؛ أدخل المنتج والكمية ووجهة التسليم يدوياً.';
+    });
+    if (parsed.hasUsefulFields) _scheduleSave();
+  }
+
   void _scheduleSave({bool invalidateDraft = true}) {
     if (invalidateDraft && _draft != null && mounted) {
       setState(() => _draft = null);
@@ -228,6 +256,7 @@ class _AurenSupplierRfqDraftScreenState
     _specificationsController.dispose();
     _budgetController.dispose();
     _contactController.dispose();
+    _intentController.dispose();
     super.dispose();
   }
 
@@ -378,6 +407,34 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
             ),
             onChanged: (_) => _scheduleSave(),
           ),
+          const SizedBox(height: 12),
+          Text('اكتب طلبك بلغتك', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _intentController,
+            minLines: 2,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: 'مثال: أحتاج 500 قطعة قماش إلى الخرطوم بميزانية 1200 دولار',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: FilledButton.tonalIcon(
+              onPressed: _parseIntent,
+              icon: const Icon(Icons.auto_awesome_outlined),
+              label: const Text('استخراج تفاصيل الطلب'),
+            ),
+          ),
+          if (_intentMessage != null) ...[
+            const SizedBox(height: 6),
+            Text(_intentMessage!),
+            if (_intentMissing.isNotEmpty)
+              Text('الحقول الناقصة: ${_intentMissing.join('، ')}',
+                  style: const TextStyle(color: Colors.deepOrange)),
+          ],
           const SizedBox(height: 12),
           Form(
             key: _formKey,
