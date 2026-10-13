@@ -184,6 +184,22 @@ void main() {
       );
     });
 
+    test('does not compare amounts when both currency codes are missing', () {
+      expect(
+        SupplierOfferComparisonLogic.compare(
+          aCurrency: '',
+          aSupplier: 'Zulu',
+          aPrice: '1',
+          aShipping: '0',
+          bCurrency: ' ',
+          bSupplier: 'Alpha',
+          bPrice: '999',
+          bShipping: '0',
+        ),
+        greaterThan(0),
+      );
+    });
+
     test('sorts different normalized currency codes deterministically', () {
       expect(
         SupplierOfferComparisonLogic.compare(
