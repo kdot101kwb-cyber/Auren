@@ -119,6 +119,20 @@ void main() {
     expect(find.text('الإجمالي التقديري: 135.00 USD'), findsOneWidget);
   });
 
+  testWidgets('new quote form leaves unprovided shipping blank', (tester) async {
+    await pumpScreen(tester, localOffers: []);
+    await tester.tap(find.text('إضافة عرض'));
+    await tester.pumpAndSettle();
+    final fields = find.byType(TextFormField);
+    await tester.enterText(fields.at(0), 'Freight Pending Supplier');
+    await tester.enterText(fields.at(1), '100');
+    expect(tester.widget<TextFormField>(fields.at(3)).controller?.text, isEmpty);
+    await tester.tap(find.text('حفظ العرض'));
+    await tester.pumpAndSettle();
+    expect(find.text('الشحن والرسوم: غير معروف — لم يُدخل'), findsOneWidget);
+    expect(find.text('الإجمالي غير مكتمل — أدخل الشحن والرسوم أولاً'), findsOneWidget);
+  });
+
   testWidgets('rejected offers are excluded from ranking', (tester) async {
     await pumpScreen(tester, localOffers: [
       offer('1', 'Supplier A', '100', 'USD', status: 'rejected'),
