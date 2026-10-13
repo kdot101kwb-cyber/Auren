@@ -57,7 +57,15 @@ void main() {
     final productField = find.byWidgetPredicate((widget) =>
         widget is TextField &&
         widget.decoration?.hintText == 'مثال: ألواح شمسية أو بذور قمح');
+    final quantityField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'الكمية المطلوبة (اختياري)');
+    final destinationField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'مدينة وبلد التسليم (اختياري)');
     await tester.enterText(productField, 'ألواح شمسية');
+    await tester.enterText(quantityField, '20 لوحة');
+    await tester.enterText(destinationField, 'بورتسودان، السودان');
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('جهّز طلب عرض سعر لاحتياجي'));
@@ -67,6 +75,8 @@ void main() {
     final fields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
     expect(fields[0].controller?.text, isEmpty);
     expect(fields[1].controller?.text, 'ألواح شمسية');
+    expect(fields[2].controller?.text, '20 لوحة');
+    expect(fields[3].controller?.text, 'بورتسودان، السودان');
     expect(find.textContaining('لن يتم التواصل مع أي مورد تلقائياً'),
         findsOneWidget);
   });
