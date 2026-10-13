@@ -70,6 +70,10 @@ class _AurenSupplierOfferComparisonScreenState
   void initState() {
     super.initState();
     _rankingBudgetController.text = widget.initialBudget?.trim() ?? '';
+    final requestedQuantity = widget.initialQuantity?.trim() ?? '';
+    if (requestedQuantity.isNotEmpty && _parseMoq(requestedQuantity) != null) {
+      _rankingMinimumOrderController.text = requestedQuantity;
+    }
     _selectedRankingCurrency = widget.initialCurrency?.trim().toUpperCase();
     _budgetCurrency = _rankingBudgetController.text.isEmpty
         ? null
