@@ -119,6 +119,15 @@ void main() {
     expect(find.text('الإجمالي التقديري: 135.00 USD'), findsOneWidget);
   });
 
+  testWidgets('legacy offers without shipping remain unknown, not free', (tester) async {
+    final legacyOffer = offer('legacy', 'Legacy Supplier', '100', 'USD');
+    legacyOffer.remove('shipping');
+    await pumpScreen(tester, localOffers: [legacyOffer]);
+    expect(find.text('غير معروف — لم يُدخل'), findsOneWidget);
+    expect(find.text('الإجمالي غير مكتمل — أدخل الشحن والرسوم أولاً'), findsOneWidget);
+    expect(find.text('الإجمالي التقديري: 100.00 USD'), findsNothing);
+  });
+
   testWidgets('new quote form leaves unprovided shipping blank', (tester) async {
     await pumpScreen(tester, localOffers: []);
     await tester.tap(find.text('إضافة عرض'));
@@ -204,7 +213,8 @@ void main() {
       (tester) async {
     await pumpScreen(tester, localOffers: [
       offer('1', 'Selected Supplier', '100', 'USD'),
-    ]);
+    ], initialProduct: 'Solar panels', initialQuantity: '20 panels',
+      initialDestination: 'Port Sudan, Sudan', initialBudget: '2500', initialCurrency: 'USD');
 
     await tester.tap(find.byType(DropdownButtonFormField<String>).last);
     await tester.pumpAndSettle();
@@ -216,10 +226,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('طلب عرض سعر من مورد'), findsOneWidget);
-    expect(
-      tester.widget<TextFormField>(find.byType(TextFormField).first).controller?.text,
-      'Selected Supplier',
-    );
+    final draftFields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
+    expect(draftFields[0].controller?.text, 'Selected Supplier');
+    expect(draftFields[1].controller?.text, 'Solar panels');
+    expect(draftFields[2].controller?.text, '20 panels');
+    expect(draftFields[3].controller?.text, 'Port Sudan, Sudan');
+    expect(draftFields[5].controller?.text, '2500');
     expect(
       find.textContaining('لن يتم التواصل مع أي مورد تلقائياً'),
       findsOneWidget,
