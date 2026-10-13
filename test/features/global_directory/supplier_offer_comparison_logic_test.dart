@@ -167,6 +167,40 @@ void main() {
     });
   });
 
+  group('SupplierOfferComparisonLogic.compare', () {
+    test('treats currency codes case-insensitively before comparing prices', () {
+      expect(
+        SupplierOfferComparisonLogic.compare(
+          aCurrency: 'usd',
+          aSupplier: 'Alpha',
+          aPrice: '10',
+          aShipping: '0',
+          bCurrency: ' USD ',
+          bSupplier: 'Beta',
+          bPrice: '20',
+          bShipping: '0',
+        ),
+        lessThan(0),
+      );
+    });
+
+    test('sorts different normalized currency codes deterministically', () {
+      expect(
+        SupplierOfferComparisonLogic.compare(
+          aCurrency: ' eur ',
+          aSupplier: 'Alpha',
+          aPrice: '100',
+          aShipping: '0',
+          bCurrency: 'USD',
+          bSupplier: 'Beta',
+          bPrice: '1',
+          bShipping: '0',
+        ),
+        lessThan(0),
+      );
+    });
+  });
+
   group('SupplierOfferComparisonLogic quote validity dates', () {
     test('parses only real ISO calendar dates', () {
       expect(
