@@ -83,11 +83,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('طلب عرض سعر من مورد'), findsOneWidget);
-    expect(fields[0].controller?.text, isEmpty);
-    expect(fields[1].controller?.text, 'ألواح شمسية');
-    expect(fields[2].controller?.text, '20 لوحة');
-    expect(fields[3].controller?.text, 'بورتسودان، السودان');
-    expect(fields[5].controller?.text, '2500');
+    final draftFields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
+    expect(draftFields[0].controller?.text, isEmpty);
+    expect(draftFields[1].controller?.text, 'ألواح شمسية');
+    expect(draftFields[2].controller?.text, '20 لوحة');
+    expect(draftFields[3].controller?.text, 'بورتسودان، السودان');
+    expect(draftFields[5].controller?.text, '2500');
     expect(find.text('SDG'), findsWidgets);
     expect(find.textContaining('لن يتم التواصل مع أي مورد تلقائياً'),
         findsOneWidget);
