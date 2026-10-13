@@ -82,7 +82,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('طلب عرض سعر من مورد'), findsOneWidget);
-    final fields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
     expect(fields[0].controller?.text, isEmpty);
     expect(fields[1].controller?.text, 'ألواح شمسية');
     expect(fields[2].controller?.text, '20 لوحة');
