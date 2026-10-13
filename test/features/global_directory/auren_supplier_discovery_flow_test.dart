@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:auren/features/global_directory/presentation/auren_supplier_discovery_screen.dart';
 import 'package:auren/features/global_directory/presentation/auren_supplier_rfq_draft_screen.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -166,6 +167,45 @@ void main() {
 
     expect(find.text('أدخل ميزانية رقمية غير سالبة'), findsOneWidget);
     expect(find.text('راجع المسودة'), findsNothing);
+  });
+
+  testWidgets('incoming RFQ budget takes precedence over an older saved budget',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'auren_supplier_rfq_draft_v1_guest': jsonEncode({
+        'target': '',
+        'product': 'Saved product',
+        'quantity': '5',
+        'destination': 'Saved destination',
+        'specifications': '',
+        'budget': '999',
+        'contact': '',
+        'currency': 'USD',
+        'delivery': 'شحن إلى العنوان',
+        'draft': 'old draft',
+      }),
+    });
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRfqDraftScreen(
+        auth: MockFirebaseAuth(),
+        firestore: FakeFirebaseFirestore(),
+        initialProduct: 'Solar panels',
+        initialQuantity: '20 panels',
+        initialDestination: 'Port Sudan, Sudan',
+        initialBudget: '2500',
+        initialCurrency: 'USD',
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final budgetField = find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'الميزانية (اختياري)');
+    expect(tester.widget<TextFormField>(budgetField).controller?.text, '2500');
+    final productField = find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'المنتج أو الخدمة *');
+    expect(tester.widget<TextFormField>(productField).controller?.text, 'Solar panels');
   });
 
   testWidgets('RFQ cloud restore ignores a draft owned by another user',
