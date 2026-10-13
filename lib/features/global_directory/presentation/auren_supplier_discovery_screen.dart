@@ -23,6 +23,8 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   final _productController = TextEditingController();
   final _quantityController = TextEditingController();
   final _destinationController = TextEditingController();
+  final _budgetController = TextEditingController();
+  String _currency = 'USD';
   String _category = 'الكل';
 
   static const _sources = <Map<String, String>>[
@@ -40,6 +42,7 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
     _productController.dispose();
     _quantityController.dispose();
     _destinationController.dispose();
+    _budgetController.dispose();
     super.dispose();
   }
 
@@ -69,6 +72,8 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
     String? product,
     String? quantity,
     String? destination,
+    String? budget,
+    String? currency,
   }) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -77,6 +82,8 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
           initialProduct: product,
           initialQuantity: quantity,
           initialDestination: destination,
+          initialBudget: budget,
+          initialCurrency: currency,
           auth: widget.auth,
           firestore: widget.firestore,
         ),
@@ -90,6 +97,7 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
     final product = _productController.text.trim();
     final quantity = _quantityController.text.trim();
     final destination = _destinationController.text.trim();
+    final budget = _budgetController.text.trim();
     final rows = _sources.where((item) {
       final matchesCategory = _category == 'الكل' || item['type'] == _category;
       final searchable = '${item['name']} ${item['focus']} ${item['type']}'.toLowerCase();
@@ -163,6 +171,34 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
                     ),
                   ),
                   const SizedBox(height: 10),
+                  TextField(
+                    controller: _budgetController,
+                    onChanged: (_) => setState(() {}),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                      hintText: 'الميزانية القصوى (اختياري)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _currency,
+                    decoration: const InputDecoration(
+                      labelText: 'عملة الميزانية',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'USD', child: Text('USD')),
+                      DropdownMenuItem(value: 'EUR', child: Text('EUR')),
+                      DropdownMenuItem(value: 'SDG', child: Text('SDG')),
+                      DropdownMenuItem(value: 'KES', child: Text('KES')),
+                      DropdownMenuItem(value: 'NGN', child: Text('NGN')),
+                    ],
+                    onChanged: (value) => setState(() => _currency = value ?? 'USD'),
+                  ),
+                  const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
@@ -173,6 +209,8 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
                                 product: product,
                                 quantity: quantity,
                                 destination: destination,
+                                budget: budget,
+                                currency: _currency,
                               ),
                       icon: const Icon(Icons.request_quote_outlined),
                       label: const Text('جهّز طلب عرض سعر لاحتياجي'),
