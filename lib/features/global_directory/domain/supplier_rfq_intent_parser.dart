@@ -181,6 +181,19 @@ class SupplierRfqIntentParser {
     return parsed != null && parsed.isFinite && parsed >= 0 ? normalized : null;
   }
 
+  static String _digits(String value) {
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+    final output = StringBuffer();
+    for (final rune in value.runes) {
+      final character = String.fromCharCode(rune);
+      final arabicIndex = arabicDigits.indexOf(character);
+      final persianIndex = persianDigits.indexOf(character);
+      output.write(arabicIndex >= 0 ? arabicIndex : persianIndex >= 0 ? persianIndex : character);
+    }
+    return output.toString();
+  }
+
   static String? _unit(String? raw) {
     if (raw == null || raw.isEmpty) return null;
     final value = raw.toLowerCase();
