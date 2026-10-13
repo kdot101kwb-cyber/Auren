@@ -21,6 +21,8 @@ class AurenSupplierDiscoveryScreen extends StatefulWidget {
 class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScreen> {
   final _queryController = TextEditingController();
   final _productController = TextEditingController();
+  final _quantityController = TextEditingController();
+  final _destinationController = TextEditingController();
   String _category = 'الكل';
 
   static const _sources = <Map<String, String>>[
@@ -36,6 +38,8 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   void dispose() {
     _queryController.dispose();
     _productController.dispose();
+    _quantityController.dispose();
+    _destinationController.dispose();
     super.dispose();
   }
 
@@ -60,12 +64,19 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
     );
   }
 
-  Future<void> _prepareRfq(String? sourceName, {String? product}) async {
+  Future<void> _prepareRfq(
+    String? sourceName, {
+    String? product,
+    String? quantity,
+    String? destination,
+  }) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => AurenSupplierRfqDraftScreen(
           initialSupplier: sourceName,
           initialProduct: product,
+          initialQuantity: quantity,
+          initialDestination: destination,
           auth: widget.auth,
           firestore: widget.firestore,
         ),
@@ -77,6 +88,8 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   Widget build(BuildContext context) {
     final query = _queryController.text.trim().toLowerCase();
     final product = _productController.text.trim();
+    final quantity = _quantityController.text.trim();
+    final destination = _destinationController.text.trim();
     final rows = _sources.where((item) {
       final matchesCategory = _category == 'الكل' || item['type'] == _category;
       final searchable = '${item['name']} ${item['focus']} ${item['type']}'.toLowerCase();
@@ -128,12 +141,39 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
                     ),
                   ),
                   const SizedBox(height: 10),
+                  TextField(
+                    controller: _quantityController,
+                    onChanged: (_) => setState(() {}),
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.format_list_numbered),
+                      hintText: 'الكمية المطلوبة (اختياري)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _destinationController,
+                    onChanged: (_) => setState(() {}),
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.location_on_outlined),
+                      hintText: 'مدينة وبلد التسليم (اختياري)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: product.isEmpty
                           ? null
-                          : () => _prepareRfq(null, product: product),
+                          : () => _prepareRfq(
+                                null,
+                                product: product,
+                                quantity: quantity,
+                                destination: destination,
+                              ),
                       icon: const Icon(Icons.request_quote_outlined),
                       label: const Text('جهّز طلب عرض سعر لاحتياجي'),
                     ),
