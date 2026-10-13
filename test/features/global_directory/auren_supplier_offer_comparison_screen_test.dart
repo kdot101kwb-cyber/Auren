@@ -135,7 +135,7 @@ void main() {
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'Arabic Numeral Supplier');
     await tester.enterText(fields.at(1), '١٠٠');
-    await tester.enterText(fields.at(3), '١٠');
+    await tester.enterText(fields.at(2), '١٠');
     await tester.tap(find.text('حفظ العرض'));
     await tester.pumpAndSettle();
     expect(find.text('الإجمالي التقديري: 110.00 USD'), findsOneWidget);
