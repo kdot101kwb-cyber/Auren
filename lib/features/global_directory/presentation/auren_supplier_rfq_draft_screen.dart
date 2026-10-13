@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/supplier_offer_comparison_logic.dart';
 import '../domain/supplier_rfq_intent_parser.dart';
 
 /// Prepares an editable RFQ draft. It never sends a message to a supplier.
@@ -287,8 +288,7 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
   bool _hasValidBudget() {
     final raw = _budgetController.text.trim();
     if (raw.isEmpty) return true;
-    final amount = double.tryParse(raw.replaceAll(',', '').replaceAll(' ', ''));
-    return amount != null && amount.isFinite && amount >= 0;
+    return SupplierOfferComparisonLogic.parseNonNegativeAmount(raw) != null;
   }
 
   Future<void> _saveToAccount() async {
@@ -536,8 +536,8 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
                         validator: (value) {
                           final raw = value?.trim() ?? '';
                           if (raw.isEmpty) return null;
-                          final amount = double.tryParse(raw.replaceAll(',', '').replaceAll(' ', ''));
-                          if (amount == null || !amount.isFinite || amount < 0) {
+                          final amount = SupplierOfferComparisonLogic.parseNonNegativeAmount(raw);
+                          if (amount == null) {
                             return 'أدخل ميزانية رقمية غير سالبة';
                           }
                           return null;
