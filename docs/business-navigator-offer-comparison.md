@@ -50,6 +50,13 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - Status and list data are loaded from the authenticated user's own request subcollections through callable functions; the server checks ownership before changing any shared mirror document.
 
 
+## Request-to-comparison handoff
+
+- The discovery screen can pass the user's product, requested quantity, delivery destination, maximum budget, and budget currency into the offer-comparison screen.
+- The comparison screen displays those values as request context and pre-fills the advisory ranking budget. The budget remains associated with its original currency; it is not applied when ranking a different currency.
+- Product, quantity, and destination are context only: the current recorded-offer schema does not capture normalized product specifications, quoted quantity, or destination-specific shipping coverage, so the app does not claim that an offer matches them automatically.
+- This handoff is local UI state only. It does not select a supplier, send an RFQ, create a purchase order, or transfer money. Users must still record received offers and verify terms independently.
+
 ## Supplier matching and ranking logic
 
 - `SupplierRankingLogic` ranks only candidates in the requested currency; it never compares raw amounts across currencies or performs FX conversion.
