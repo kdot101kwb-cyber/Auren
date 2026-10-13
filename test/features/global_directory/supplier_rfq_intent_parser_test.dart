@@ -118,6 +118,15 @@ void main() {
       expect(r.destination, 'Khartoum');
     });
 
+    test('does not normalize malformed budget grouping into a valid amount', () {
+      final r = SupplierRfqIntentParser.parse(
+        'Please source cotton fabric with a budget of USD 1,,200',
+      );
+      expect(r.budget, isNull);
+      expect(r.currency, 'USD');
+      expect(r.quantity, isNull);
+    });
+
     test('supports currency codes without conversion', () {
       final r = SupplierRfqIntentParser.parse(
         'need 20 boxes of tea to Nairobi budget KES 4500',
