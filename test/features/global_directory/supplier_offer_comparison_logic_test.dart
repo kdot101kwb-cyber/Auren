@@ -100,6 +100,33 @@ void main() {
       );
     });
 
+    test('normalizes currency codes before comparing totals', () {
+      final offers = [
+        {'currency': ' usd ', 'price': '100', 'shipping': '0'},
+        {'currency': 'USD', 'price': '120', 'shipping': '0'},
+        {'currency': 'EUR', 'price': '1', 'shipping': '0'},
+      ];
+
+      expect(
+        SupplierOfferComparisonLogic.isLowest(
+          currency: 'usd',
+          price: '100',
+          shipping: '0',
+          offers: offers,
+        ),
+        isTrue,
+      );
+      expect(
+        SupplierOfferComparisonLogic.isLowest(
+          currency: '   ',
+          price: '100',
+          shipping: '0',
+          offers: offers,
+        ),
+        isFalse,
+      );
+    });
+
     test('does not rank invalid candidate amounts and ignores invalid peers', () {
       final offers = [
         {'currency': 'USD', 'price': 'bad', 'shipping': '0'},
