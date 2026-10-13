@@ -185,7 +185,7 @@ class _AurenSupplierOfferComparisonScreenState
           offer.price.isEmpty || offer.price.length > 50 ||
           _parseNonNegativeAmount(offer.price) == null ||
           offer.shipping.length > 50 ||
-          _parseNonNegativeAmount(offer.shipping) == null ||
+          (offer.shipping.isNotEmpty && _parseNonNegativeAmount(offer.shipping) == null) ||
           offer.moq.length > 100 || offer.leadTime.length > 100 ||
           offer.payment.length > 300 || offer.validity.length > 100 ||
           offer.notes.length > 500 ||
@@ -383,8 +383,8 @@ class _AurenSupplierOfferComparisonScreenState
         return [
           'المورد: ${offer.supplier}',
           'السعر: ${offer.price} ${offer.currency}',
-          'الشحن والرسوم: ${offer.shipping} ${offer.currency}',
-          'الإجمالي التقديري: ${total == null ? 'غير مكتمل' : '${total.toStringAsFixed(2)} ${offer.currency}'}',
+          'الشحن والرسوم: ${offer.shipping.isEmpty ? 'غير معروف' : '${offer.shipping} ${offer.currency}'}',
+          'الإجمالي التقديري: ${total == null ? 'غير مكتمل — الشحن غير معروف أو البيانات غير صالحة' : '${total.toStringAsFixed(2)} ${offer.currency}'}',
           'الحالة: ${_statuses[offer.status] ?? offer.status}',
           'صلاحية العرض: ${offer.validity.isEmpty ? 'غير محددة' : offer.validity}',
           if (_validityNotice(offer.validity) != null) _validityNotice(offer.validity)!,
@@ -978,7 +978,7 @@ class _AurenSupplierOfferComparisonScreenState
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(offer.supplier, style: Theme.of(context).textTheme.titleMedium),
-              Text(total == null ? 'التكلفة غير مكتملة' : 'الإجمالي التقديري: ${total.toStringAsFixed(2)} ${offer.currency}'),
+              Text(total == null ? (offer.shipping.isEmpty ? 'الإجمالي غير مكتمل — أدخل الشحن والرسوم أولاً' : 'التكلفة غير مكتملة') : 'الإجمالي التقديري: ${total.toStringAsFixed(2)} ${offer.currency}'),
               if (isLowest)
                 Text('الأقل تكلفة ضمن ${offer.currency}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
             ])),
@@ -1012,7 +1012,7 @@ class _AurenSupplierOfferComparisonScreenState
             ),
           detail('تاريخ التسجيل', offer.receivedAt.length >= 10 ? offer.receivedAt.substring(0, 10) : offer.receivedAt),
           detail('السعر المسجل', '${offer.price} ${offer.currency}'),
-          detail('الشحن والرسوم', '${offer.shipping} ${offer.currency}'),
+          detail('الشحن والرسوم', offer.shipping.isEmpty ? 'غير معروف — لم يُدخل' : '${offer.shipping} ${offer.currency}'),
           detail('الحد الأدنى', offer.moq.isEmpty ? 'غير محدد' : offer.moq),
           detail('مدة التسليم', offer.leadTime.isEmpty ? 'غير محددة' : offer.leadTime),
           detail('شروط الدفع', offer.payment.isEmpty ? 'غير محددة' : offer.payment),
@@ -1092,7 +1092,7 @@ class _OfferDialog extends StatefulWidget {
 
 class _OfferDialogState extends State<_OfferDialog> {
   final _form = GlobalKey<FormState>();
-  final _supplier = TextEditingController(), _price = TextEditingController(), _shipping = TextEditingController(text: '0');
+  final _supplier = TextEditingController(), _price = TextEditingController(), _shipping = TextEditingController();
   final _moq = TextEditingController(), _lead = TextEditingController(), _payment = TextEditingController(), _validity = TextEditingController(), _notes = TextEditingController();
   String _currency = 'USD';
 
@@ -1141,7 +1141,7 @@ class _OfferDialogState extends State<_OfferDialog> {
         TextFormField(controller: _supplier, maxLength: 200, decoration: const InputDecoration(labelText: 'اسم المورد *'), validator: (v) => v == null || v.trim().isEmpty ? 'اسم المورد مطلوب' : null),
         TextFormField(controller: _price, maxLength: 50, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'السعر *'), validator: _amount),
         DropdownButtonFormField<String>(value: _currency, decoration: const InputDecoration(labelText: 'العملة'), items: _Offer._currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(), onChanged: (v) { if (v != null) setState(() => _currency = v); }),
-        TextFormField(controller: _shipping, maxLength: 50, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الشحن والرسوم (اختياري)'), validator: (v) => _amount(v, optional: true)),
+        TextFormField(controller: _shipping, maxLength: 50, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الشحن والرسوم (اختياري؛ اتركه فارغاً إذا غير معروف)'), validator: (v) => _amount(v, optional: true)),
         TextFormField(controller: _moq, maxLength: 100, decoration: const InputDecoration(labelText: 'الحد الأدنى للطلب')),
         TextFormField(controller: _lead, maxLength: 100, decoration: const InputDecoration(labelText: 'مدة التجهيز/التسليم')),
         TextFormField(controller: _payment, maxLength: 300, decoration: const InputDecoration(labelText: 'شروط الدفع')),
@@ -1155,7 +1155,7 @@ class _OfferDialogState extends State<_OfferDialog> {
         if (!_form.currentState!.validate()) return;
         Navigator.pop(context, _Offer(
           id: widget.initialOffer?.id ?? DateTime.now().microsecondsSinceEpoch.toString(), supplier: _supplier.text.trim(),
-          price: _price.text.trim(), currency: _currency, shipping: _shipping.text.trim().isEmpty ? '0' : _shipping.text.trim(),
+          price: _price.text.trim(), currency: _currency, shipping: _shipping.text.trim(),
           moq: _moq.text.trim(), leadTime: _lead.text.trim(), payment: _payment.text.trim(),
           validity: _validity.text.trim(), notes: _notes.text.trim(), status: widget.initialOffer?.status ?? 'received', receivedAt: widget.initialOffer?.receivedAt ?? DateTime.now().toIso8601String(),
         ));
