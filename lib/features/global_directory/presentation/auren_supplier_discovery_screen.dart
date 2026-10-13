@@ -1,12 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'auren_supplier_rfq_draft_screen.dart';
+import 'auren_supplier_offer_comparison_screen.dart';
 
 /// Curated starting points for supplier discovery. Listings are not endorsements
 /// and supplier identity, quality, stock, and payment terms must be checked.
 class AurenSupplierDiscoveryScreen extends StatefulWidget {
-  const AurenSupplierDiscoveryScreen({super.key});
+  const AurenSupplierDiscoveryScreen({super.key, this.auth, this.firestore});
+
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
 
   @override
   State<AurenSupplierDiscoveryScreen> createState() => _AurenSupplierDiscoveryScreenState();
@@ -14,6 +20,11 @@ class AurenSupplierDiscoveryScreen extends StatefulWidget {
 
 class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScreen> {
   final _queryController = TextEditingController();
+  final _productController = TextEditingController();
+  final _quantityController = TextEditingController();
+  final _destinationController = TextEditingController();
+  final _budgetController = TextEditingController();
+  String _currency = 'USD';
   String _category = 'الكل';
 
   static const _sources = <Map<String, String>>[
@@ -28,6 +39,10 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   @override
   void dispose() {
     _queryController.dispose();
+    _productController.dispose();
+    _quantityController.dispose();
+    _destinationController.dispose();
+    _budgetController.dispose();
     super.dispose();
   }
 
@@ -52,10 +67,26 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
     );
   }
 
-  Future<void> _prepareRfq(String sourceName) async {
+  Future<void> _prepareRfq(
+    String? sourceName, {
+    String? product,
+    String? quantity,
+    String? destination,
+    String? budget,
+    String? currency,
+  }) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AurenSupplierRfqDraftScreen(initialSupplier: sourceName),
+        builder: (_) => AurenSupplierRfqDraftScreen(
+          initialSupplier: sourceName,
+          initialProduct: product,
+          initialQuantity: quantity,
+          initialDestination: destination,
+          initialBudget: budget,
+          initialCurrency: currency,
+          auth: widget.auth,
+          firestore: widget.firestore,
+        ),
       ),
     );
   }
@@ -63,6 +94,10 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   @override
   Widget build(BuildContext context) {
     final query = _queryController.text.trim().toLowerCase();
+    final product = _productController.text.trim();
+    final quantity = _quantityController.text.trim();
+    final destination = _destinationController.text.trim();
+    final budget = _budgetController.text.trim();
     final rows = _sources.where((item) {
       final matchesCategory = _category == 'الكل' || item['type'] == _category;
       final searchable = '${item['name']} ${item['focus']} ${item['type']}'.toLowerCase();
@@ -75,6 +110,121 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
         padding: const EdgeInsets.all(16),
         children: [
           const Text('ابدأ من أدلة الموردين، ثم قارن عروض الأسعار وتحقق من الشركة قبل الدفع. ظهور المصدر هنا لا يعني التحقق من كل مورد داخله.'),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.compare_arrows_outlined),
+              title: const Text('مقارنة عروض الأسعار المسجلة'),
+              subtitle: const Text('سجّل العروض التي استلمتها وقارن التكلفة بالعملة نفسها.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => AurenSupplierOfferComparisonScreen(
+                    auth: widget.auth,
+                    firestore: widget.firestore,
+                    initialProduct: product.isEmpty ? null : product,
+                    initialQuantity: quantity.isEmpty ? null : quantity,
+                    initialDestination: destination.isEmpty ? null : destination,
+                    initialBudget: budget.isEmpty ? null : budget,
+                    initialCurrency: _currency,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('ابدأ من احتياجك', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  const Text('اكتب المنتج أو المادة المطلوبة، وسنجهّز لك مسودة طلب عرض سعر قابلة للتعديل. لا يتم إرسالها لأي مورد.'),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _productController,
+                    onChanged: (_) => setState(() {}),
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.inventory_2_outlined),
+                      hintText: 'مثال: ألواح شمسية أو بذور قمح',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _quantityController,
+                    onChanged: (_) => setState(() {}),
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.format_list_numbered),
+                      hintText: 'الكمية المطلوبة (اختياري)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _destinationController,
+                    onChanged: (_) => setState(() {}),
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.location_on_outlined),
+                      hintText: 'مدينة وبلد التسليم (اختياري)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _budgetController,
+                    onChanged: (_) => setState(() {}),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                      hintText: 'الميزانية القصوى (اختياري)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _currency,
+                    decoration: const InputDecoration(
+                      labelText: 'عملة الميزانية',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'USD', child: Text('USD')),
+                      DropdownMenuItem(value: 'EUR', child: Text('EUR')),
+                      DropdownMenuItem(value: 'SDG', child: Text('SDG')),
+                      DropdownMenuItem(value: 'KES', child: Text('KES')),
+                      DropdownMenuItem(value: 'NGN', child: Text('NGN')),
+                    ],
+                    onChanged: (value) => setState(() => _currency = value ?? 'USD'),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: product.isEmpty
+                          ? null
+                          : () => _prepareRfq(
+                                null,
+                                product: product,
+                                quantity: quantity,
+                                destination: destination,
+                                budget: budget,
+                                currency: _currency,
+                              ),
+                      icon: const Icon(Icons.request_quote_outlined),
+                      label: const Text('جهّز طلب عرض سعر لاحتياجي'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _queryController,

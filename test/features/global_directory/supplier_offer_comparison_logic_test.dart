@@ -51,6 +51,21 @@ void main() {
       expect(SupplierOfferComparisonLogic.total('bad', '10'), isNull);
     });
 
+    test('treats blank shipping as unknown rather than free', () {
+      expect(SupplierOfferComparisonLogic.total('100', ''), isNull);
+      expect(
+        SupplierOfferComparisonLogic.isLowest(
+          currency: 'USD',
+          price: '100',
+          shipping: '',
+          offers: const [
+            {'currency': 'USD', 'price': '100', 'shipping': '0'},
+          ],
+        ),
+        isFalse,
+      );
+    });
+
     test('rejects a non-finite sum', () {
       expect(
         SupplierOfferComparisonLogic.total(
@@ -100,6 +115,33 @@ void main() {
       );
     });
 
+    test('normalizes currency codes before comparing totals', () {
+      final offers = [
+        {'currency': ' usd ', 'price': '100', 'shipping': '0'},
+        {'currency': 'USD', 'price': '120', 'shipping': '0'},
+        {'currency': 'EUR', 'price': '1', 'shipping': '0'},
+      ];
+
+      expect(
+        SupplierOfferComparisonLogic.isLowest(
+          currency: 'usd',
+          price: '100',
+          shipping: '0',
+          offers: offers,
+        ),
+        isTrue,
+      );
+      expect(
+        SupplierOfferComparisonLogic.isLowest(
+          currency: '   ',
+          price: '100',
+          shipping: '0',
+          offers: offers,
+        ),
+        isFalse,
+      );
+    });
+
     test('does not rank invalid candidate amounts and ignores invalid peers', () {
       final offers = [
         {'currency': 'USD', 'price': 'bad', 'shipping': '0'},
@@ -136,6 +178,56 @@ void main() {
           ],
         ),
         isFalse,
+      );
+    });
+  });
+
+  group('SupplierOfferComparisonLogic.compare', () {
+    test('treats currency codes case-insensitively before comparing prices', () {
+      expect(
+        SupplierOfferComparisonLogic.compare(
+          aCurrency: 'usd',
+          aSupplier: 'Alpha',
+          aPrice: '10',
+          aShipping: '0',
+          bCurrency: ' USD ',
+          bSupplier: 'Beta',
+          bPrice: '20',
+          bShipping: '0',
+        ),
+        lessThan(0),
+      );
+    });
+
+    test('does not compare amounts when both currency codes are missing', () {
+      expect(
+        SupplierOfferComparisonLogic.compare(
+          aCurrency: '',
+          aSupplier: 'Zulu',
+          aPrice: '1',
+          aShipping: '0',
+          bCurrency: ' ',
+          bSupplier: 'Alpha',
+          bPrice: '999',
+          bShipping: '0',
+        ),
+        greaterThan(0),
+      );
+    });
+
+    test('sorts different normalized currency codes deterministically', () {
+      expect(
+        SupplierOfferComparisonLogic.compare(
+          aCurrency: ' eur ',
+          aSupplier: 'Alpha',
+          aPrice: '100',
+          aShipping: '0',
+          bCurrency: 'USD',
+          bSupplier: 'Beta',
+          bPrice: '1',
+          bShipping: '0',
+        ),
+        lessThan(0),
       );
     });
   });

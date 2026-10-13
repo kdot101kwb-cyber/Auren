@@ -4,7 +4,7 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 
 ## Captured fields
 
-- Supplier name, quoted amount, currency, shipping/fees
+- Supplier name, quoted amount, currency, shipping/fees (shipping may be left blank when unknown)
 - Minimum order, lead time, payment terms, offer validity, notes
 - Date the offer was recorded
 - Lifecycle status: received, needs verification, shortlisted, tentatively selected, rejected
@@ -12,10 +12,11 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 ## Comparison behavior
 
 - Offers are sorted by currency first and then by recorded price plus recorded shipping/fees.
+- Currency codes are trimmed and compared case-insensitively in pure comparison helpers, so `usd`, `USD`, and ` USD ` stay in the same comparison group; this is normalization only, not currency conversion.
 - The lowest-cost label is only applied among offers in the same currency with parseable non-negative amounts.
-- Blank or invalid numeric values are not ranked.
+- Blank or invalid numeric values are not ranked. Blank shipping means unknown, not free: the offer has no calculated total and is not marked lowest until shipping/fees are entered.
 - Currency conversion, tax/duty estimation, product-spec normalization, and exchange-rate lookup are not performed.
-- Users can filter by lifecycle status, edit/delete offers, and copy a plain-text summary.
+- Users can filter by lifecycle status, edit/delete offers, and copy a plain-text summary. Both summary and CSV exports respect the active status and validity filters.
 - Users can also copy a spreadsheet-ready CSV table containing price, currency, shipping/fees, estimated total, status, validity, minimum order, lead time, payment terms, notes, and capture date. Cells are quoted and embedded quotes/newlines are escaped.
 - CSV cells that begin with spreadsheet formula characters (including after leading whitespace) are prefixed as text to reduce formula-injection risk when opening the export in spreadsheet software.
 - The comparison view highlights repeated supplier labels after trimming, case-folding, and collapsing whitespace. This is only a duplicate-name hint, not proof that two records represent the same legal business.
@@ -27,18 +28,18 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 
 - Data is saved in SharedPreferences on the current device, using a key scoped to the current Firebase UID (or `guest` when signed out).
 - Signed-in users can explicitly save the comparison to `users/{uid}/supplier_offer_comparisons/active_draft` and restore it on another device. The cloud document is owner-scoped by Firestore rules and limited to 10 validated offers.
-- Firestore rules independently reject malformed price and shipping strings (including invalid thousands-separator grouping) on create and update. Integration tests cover valid amounts, unknown shipping cost, malformed and empty amounts, immutable ownership, and cross-user read denial.
+- Firestore rules independently reject malformed price and shipping strings (including invalid thousands-separator grouping) on create and update. A blank shipping string is permitted to represent an unknown quote, but the UI does not treat it as zero or calculate a total. Integration tests cover valid amounts, unknown shipping cost, malformed and empty amounts, immutable ownership, and cross-user read denial.
 - Local autosaves remain on this device; cloud changes are not silently uploaded. Use **Save to my account** after changes.
 - Switching accounts resets the visible list and reloads that account's local key.
 - Supplier identities, documents, quotations, and payment details are not verified by AUREN.
-- Changing an offer to “tentatively selected” is not contract acceptance and does not send a purchase order or external message.
+- Changing an offer to “tentatively selected” is not contract acceptance and does not send a purchase order or external message. A tentatively selected offer can open a prefilled, editable RFQ draft for that supplier; the draft remains local until the user explicitly saves it, and no external message is sent.
 
 ## Follow-up work
 
 - Add automated Firestore rules integration tests for cross-user access denial and malformed offer payloads.
 - Add structured verification evidence and quote attachments.
 - Add delivered-quantity / tax / duty / insurance comparisons and explicit FX rates with timestamps.
-- Add automated widget tests for sorting, status filtering, and account switching.
+- Widget coverage now exercises ranking exclusions for rejected/expired offers, currency isolation, budget currency boundaries, status filtering, account-scoped local storage, invalid price validation, cloud-restore confirmation, and provisional selection into an editable RFQ draft. End-to-end discovery-to-RFQ flow from live supplier search remains outside this screen's current test coverage.
 
 ## Supplier request lifecycle screen
 
@@ -48,3 +49,20 @@ The Business Navigator offer comparison screen is a local-first helper for recor
 - The UI only offers response-related transitions when the request records `externalDispatch: true`; the backend independently enforces this precondition and validates every transition.
 - A draft, cancellation, or retry is local workflow bookkeeping. The current integration does not send email, SMS, chat messages, purchase orders, or RFQs to suppliers.
 - Status and list data are loaded from the authenticated user's own request subcollections through callable functions; the server checks ownership before changing any shared mirror document.
+
+
+## Request-to-comparison handoff
+
+- The discovery screen can pass the user's product, requested quantity, delivery destination, maximum budget, and budget currency into the offer-comparison screen.
+- The comparison screen displays those values as request context and pre-fills the advisory ranking budget. The budget remains associated with its original currency; it is not applied when ranking a different currency.
+- If the requested quantity starts with a parseable number (for example, `20 panels`), it also pre-fills the ranking constraint for the maximum acceptable supplier minimum order. Unparseable quantity text is shown with a warning and is not silently used as a numeric constraint.
+- Product and destination remain context only: the current recorded-offer schema does not capture normalized product specifications, quoted quantity, or destination-specific shipping coverage, so the app does not claim that an offer matches them automatically.
+- This handoff is local UI state only. It does not select a supplier, send an RFQ, create a purchase order, or transfer money. Users must still record received offers and verify terms independently.
+
+## Supplier matching and ranking logic
+
+- `SupplierRankingLogic` ranks only candidates in the requested currency; it never compares raw amounts across currencies or performs FX conversion.
+- Scores are explainable through reason keys and warning keys. Missing/invalid cost, lead time, minimum order, verification state, or rating is surfaced instead of being silently treated as a positive signal.
+- Optional user constraints include maximum total budget, lead time, and minimum order. The result is deterministic: score first, then comparable total cost, then supplier name, then candidate ID.
+- A `verified` flag is only supplied data; this ranking helper does not independently verify supplier identity or claims. Ranking is advisory and must not automatically accept an offer or place an order.
+- Pure unit tests cover same-currency filtering, missing data, invalid totals, constraints, stable tie-breaking, and immutable results.

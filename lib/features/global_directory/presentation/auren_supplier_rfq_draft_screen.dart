@@ -15,6 +15,10 @@ class AurenSupplierRfqDraftScreen extends StatefulWidget {
     this.initialProduct,
     this.initialQuantity,
     this.initialDestination,
+    this.initialBudget,
+    this.initialCurrency,
+    this.auth,
+    this.firestore,
   });
 
   /// Optional discovery platform/source name; it is not a verified supplier.
@@ -22,6 +26,10 @@ class AurenSupplierRfqDraftScreen extends StatefulWidget {
   final String? initialProduct;
   final String? initialQuantity;
   final String? initialDestination;
+  final String? initialBudget;
+  final String? initialCurrency;
+  final FirebaseAuth? auth;
+  final FirebaseFirestore? firestore;
 
   @override
   State<AurenSupplierRfqDraftScreen> createState() =>
@@ -30,6 +38,8 @@ class AurenSupplierRfqDraftScreen extends StatefulWidget {
 
 class _AurenSupplierRfqDraftScreenState
     extends State<AurenSupplierRfqDraftScreen> {
+  FirebaseAuth get _auth => widget.auth ?? FirebaseAuth.instance;
+  FirebaseFirestore get _firestore => widget.firestore ?? FirebaseFirestore.instance;
   final _formKey = GlobalKey<FormState>();
   final _targetController = TextEditingController();
   final _productController = TextEditingController();
@@ -54,7 +64,7 @@ class _AurenSupplierRfqDraftScreenState
   @override
   void initState() {
     super.initState();
-    _observedUserId = FirebaseAuth.instance.currentUser?.uid;
+    _observedUserId = _auth.currentUser?.uid;
     final initialSupplier = widget.initialSupplier?.trim();
     if (initialSupplier != null && initialSupplier.isNotEmpty) {
       _targetController.text = initialSupplier;
@@ -62,8 +72,13 @@ class _AurenSupplierRfqDraftScreenState
     _productController.text = widget.initialProduct?.trim() ?? '';
     _quantityController.text = widget.initialQuantity?.trim() ?? '';
     _destinationController.text = widget.initialDestination?.trim() ?? '';
+    _budgetController.text = widget.initialBudget?.trim() ?? '';
+    const supportedCurrencies = {'USD', 'EUR', 'SDG', 'KES', 'NGN'};
+    if (supportedCurrencies.contains(widget.initialCurrency)) {
+      _currency = widget.initialCurrency!;
+    }
     _loadSavedDraft();
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+    _authSubscription = _auth.authStateChanges().listen((user) {
       if (!mounted || user?.uid == _observedUserId) return;
       _observedUserId = user?.uid;
       _saveTimer?.cancel();
@@ -87,24 +102,24 @@ class _AurenSupplierRfqDraftScreenState
 
   Future<void> _loadSavedDraft() async {
     final generation = ++_loadGeneration;
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final userId = _auth.currentUser?.uid;
     final key = _storageKey(userId);
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(key);
       if (!mounted || generation != _loadGeneration ||
-          FirebaseAuth.instance.currentUser?.uid != userId) return;
+          _auth.currentUser?.uid != userId) return;
       String? draftJson = raw;
       if (draftJson == null && userId != null) {
         try {
-          final cloud = await FirebaseFirestore.instance
+          final cloud = await _firestore
               .collection('users')
               .doc(userId)
               .collection('supplier_rfq_drafts')
               .doc('active_draft')
               .get();
           if (!mounted || generation != _loadGeneration ||
-              FirebaseAuth.instance.currentUser?.uid != userId) return;
+              _auth.currentUser?.uid != userId) return;
           final data = cloud.data();
           if (cloud.exists && data != null) {
             draftJson = jsonEncode({
@@ -133,10 +148,19 @@ class _AurenSupplierRfqDraftScreenState
           _destinationController.text = widget.initialDestination?.trim().isNotEmpty == true
               ? widget.initialDestination!.trim()
               : (decoded['destination'] as String?) ?? '';
+          _budgetController.text = widget.initialBudget?.trim().isNotEmpty == true
+              ? widget.initialBudget!.trim()
+              : (decoded['budget'] as String?) ?? '';
           _specificationsController.text = (decoded['specifications'] as String?) ?? '';
           _budgetController.text = (decoded['budget'] as String?) ?? '';
           _contactController.text = (decoded['contact'] as String?) ?? '';
-          _currency = (decoded['currency'] as String?) ?? 'USD';
+          const supportedCurrencies = {'USD', 'EUR', 'SDG', 'KES', 'NGN'};
+          final savedCurrency = decoded['currency'] as String?;
+          _currency = supportedCurrencies.contains(widget.initialCurrency)
+              ? widget.initialCurrency!
+              : supportedCurrencies.contains(savedCurrency)
+                  ? savedCurrency!
+                  : 'USD';
           _delivery = (decoded['delivery'] as String?) ?? 'شحن إلى العنوان';
           final savedDraft = decoded['draft'];
           _draft = initialTarget != null && initialTarget.isNotEmpty &&
@@ -149,7 +173,7 @@ class _AurenSupplierRfqDraftScreenState
       // A malformed local draft should not prevent creating a new RFQ.
     } finally {
       if (mounted && generation == _loadGeneration &&
-          FirebaseAuth.instance.currentUser?.uid == userId) {
+          _auth.currentUser?.uid == userId) {
         setState(() => _loaded = true);
       }
     }
@@ -165,7 +189,7 @@ class _AurenSupplierRfqDraftScreenState
   }
 
   Future<void> _persistDraft() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final userId = _auth.currentUser?.uid;
     final key = _storageKey(userId);
     final snapshot = <String, Object?>{
       'target': _targetController.text,
@@ -180,9 +204,9 @@ class _AurenSupplierRfqDraftScreenState
       'draft': _draft,
     };
     _writeQueue = _writeQueue.catchError((_) {}).then((_) async {
-      if (FirebaseAuth.instance.currentUser?.uid != userId) return;
+      if (_auth.currentUser?.uid != userId) return;
       final prefs = await SharedPreferences.getInstance();
-      if (FirebaseAuth.instance.currentUser?.uid != userId) return;
+      if (_auth.currentUser?.uid != userId) return;
       await prefs.setString(key, jsonEncode(snapshot));
     });
     try {
@@ -239,7 +263,7 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
   }
 
   Future<void> _saveToAccount() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -273,20 +297,20 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
       'updatedAt': FieldValue.serverTimestamp(),
     };
     try {
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('users')
           .doc(userId)
           .collection('supplier_rfq_drafts')
           .doc('active_draft')
           .set(data);
-      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+      if (!mounted || _auth.currentUser?.uid != userId) return;
       await _persistDraft();
-      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+      if (!mounted || _auth.currentUser?.uid != userId) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تم حفظ مسودة طلب السعر في حسابك. لم يتم إرسالها للمورد.')),
       );
     } on FirebaseException catch (error) {
-      if (!mounted || FirebaseAuth.instance.currentUser?.uid != userId) return;
+      if (!mounted || _auth.currentUser?.uid != userId) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error.code == 'permission-denied'
@@ -295,7 +319,7 @@ ${contact.isEmpty ? '' : '- وسيلة التواصل التي سنستخدمه�
         ),
       );
     } catch (_) {
-      if (mounted && FirebaseAuth.instance.currentUser?.uid == userId) {
+      if (mounted && _auth.currentUser?.uid == userId) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تعذر حفظ المسودة في الحساب؛ بقيت البيانات المحلية متاحة.')),
         );

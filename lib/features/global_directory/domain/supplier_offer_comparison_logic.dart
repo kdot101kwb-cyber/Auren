@@ -75,8 +75,11 @@ class SupplierOfferComparisonLogic {
   }) {
     final candidateTotal = total(price, shipping);
     if (candidateTotal == null) return false;
+    final requestedCurrency = currency.trim().toUpperCase();
+    if (requestedCurrency.isEmpty) return false;
     final comparable = offers
-        .where((offer) => offer['currency'] == currency)
+        .where((offer) =>
+            (offer['currency'] ?? '').trim().toUpperCase() == requestedCurrency)
         .map((offer) => total(offer['price'] ?? '', offer['shipping'] ?? ''))
         .whereType<double>();
     if (comparable.isEmpty) return false;
@@ -95,7 +98,14 @@ class SupplierOfferComparisonLogic {
   }) {
     // Currency groups are alphabetical; numeric totals are only compared
     // inside the same currency, never across currencies.
-    if (aCurrency != bCurrency) return aCurrency.compareTo(bCurrency);
+    final normalizedACurrency = aCurrency.trim().toUpperCase();
+    final normalizedBCurrency = bCurrency.trim().toUpperCase();
+    if (normalizedACurrency != normalizedBCurrency) {
+      return normalizedACurrency.compareTo(normalizedBCurrency);
+    }
+    // Missing currency metadata is not a comparable currency group. Keep such
+    // records deterministic by supplier name instead of comparing raw amounts.
+    if (normalizedACurrency.isEmpty) return aSupplier.compareTo(bSupplier);
     final aTotal = total(aPrice, aShipping);
     final bTotal = total(bPrice, bShipping);
     if (aTotal == null && bTotal == null) return aSupplier.compareTo(bSupplier);
