@@ -15,6 +15,8 @@ class AurenSupplierRfqDraftScreen extends StatefulWidget {
     this.initialProduct,
     this.initialQuantity,
     this.initialDestination,
+    this.initialBudget,
+    this.initialCurrency,
     this.auth,
     this.firestore,
   });
@@ -24,6 +26,8 @@ class AurenSupplierRfqDraftScreen extends StatefulWidget {
   final String? initialProduct;
   final String? initialQuantity;
   final String? initialDestination;
+  final String? initialBudget;
+  final String? initialCurrency;
   final FirebaseAuth? auth;
   final FirebaseFirestore? firestore;
 
@@ -68,6 +72,11 @@ class _AurenSupplierRfqDraftScreenState
     _productController.text = widget.initialProduct?.trim() ?? '';
     _quantityController.text = widget.initialQuantity?.trim() ?? '';
     _destinationController.text = widget.initialDestination?.trim() ?? '';
+    _budgetController.text = widget.initialBudget?.trim() ?? '';
+    const supportedCurrencies = {'USD', 'EUR', 'SDG', 'KES', 'NGN'};
+    if (supportedCurrencies.contains(widget.initialCurrency)) {
+      _currency = widget.initialCurrency!;
+    }
     _loadSavedDraft();
     _authSubscription = _auth.authStateChanges().listen((user) {
       if (!mounted || user?.uid == _observedUserId) return;
@@ -139,10 +148,19 @@ class _AurenSupplierRfqDraftScreenState
           _destinationController.text = widget.initialDestination?.trim().isNotEmpty == true
               ? widget.initialDestination!.trim()
               : (decoded['destination'] as String?) ?? '';
+          _budgetController.text = widget.initialBudget?.trim().isNotEmpty == true
+              ? widget.initialBudget!.trim()
+              : (decoded['budget'] as String?) ?? '';
           _specificationsController.text = (decoded['specifications'] as String?) ?? '';
           _budgetController.text = (decoded['budget'] as String?) ?? '';
           _contactController.text = (decoded['contact'] as String?) ?? '';
-          _currency = (decoded['currency'] as String?) ?? 'USD';
+          const supportedCurrencies = {'USD', 'EUR', 'SDG', 'KES', 'NGN'};
+          final savedCurrency = decoded['currency'] as String?;
+          _currency = supportedCurrencies.contains(widget.initialCurrency)
+              ? widget.initialCurrency!
+              : supportedCurrencies.contains(savedCurrency)
+                  ? savedCurrency!
+                  : 'USD';
           _delivery = (decoded['delivery'] as String?) ?? 'شحن إلى العنوان';
           final savedDraft = decoded['draft'];
           _draft = initialTarget != null && initialTarget.isNotEmpty &&
