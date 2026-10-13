@@ -129,6 +129,34 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets('selected budget currency is preserved when opening comparison',
+      (tester) async {
+    await pumpDiscovery(tester);
+
+    final productField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'مثال: ألواح شمسية أو بذور قمح');
+    final budgetField = find.byWidgetPredicate((widget) =>
+        widget is TextField &&
+        widget.decoration?.hintText == 'الميزانية القصوى (اختياري)');
+
+    await tester.enterText(productField, 'بذور قمح');
+    await tester.enterText(budgetField, '4500');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('عملة الميزانية'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('KES').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('مقارنة عروض الأسعار المسجلة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('المنتج: بذور قمح'), findsOneWidget);
+    expect(find.text('الميزانية المطلوبة: 4500 KES'), findsOneWidget);
+    expect(find.text('4500 USD'), findsNothing);
+  });
+
   testWidgets('supplier source search filters the listed platforms',
       (tester) async {
     await pumpDiscovery(tester);
