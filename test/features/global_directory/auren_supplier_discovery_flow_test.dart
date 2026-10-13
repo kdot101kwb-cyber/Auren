@@ -208,6 +208,40 @@ void main() {
     expect(tester.widget<TextFormField>(productField).controller?.text, 'Solar panels');
   });
 
+  testWidgets('vague intent extraction preserves manually entered RFQ fields',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRfqDraftScreen(
+        auth: MockFirebaseAuth(),
+        firestore: FakeFirebaseFirestore(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final product = find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'المنتج أو الخدمة *');
+    final quantity = find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'الكمية المطلوبة *');
+    final destination = find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'مدينة وبلد التسليم *');
+    final intent = find.byWidgetPredicate((widget) =>
+      widget is TextField && widget.decoration?.hintText?.startsWith('مثال: أحتاج') == true);
+
+    await tester.enterText(product, 'قماش قطني');
+    await tester.enterText(quantity, '500 قطعة');
+    await tester.enterText(destination, 'الخرطوم، السودان');
+    await tester.enterText(intent, 'hello');
+    await tester.tap(find.text('استخراج تفاصيل الطلب'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<TextFormField>(product).controller?.text, 'قماش قطني');
+    expect(tester.widget<TextFormField>(quantity).controller?.text, '500 قطعة');
+    expect(tester.widget<TextFormField>(destination).controller?.text, 'الخرطوم، السودان');
+    expect(find.textContaining('لم نتمكن من استخراج تفاصيل كافية'), findsOneWidget);
+  });
+
   testWidgets('RFQ cloud restore ignores a draft owned by another user',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
