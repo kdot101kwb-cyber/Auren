@@ -155,13 +155,13 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'المنتج أو الخدمة *'), 'قماش');
+      widget is TextField && widget.decoration?.labelText == 'المنتج أو الخدمة *'), 'قماش');
     await tester.enterText(find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'الكمية المطلوبة *'), '500 قطعة');
+      widget is TextField && widget.decoration?.labelText == 'الكمية المطلوبة *'), '500 قطعة');
     await tester.enterText(find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'مدينة وبلد التسليم *'), 'الخرطوم، السودان');
+      widget is TextField && widget.decoration?.labelText == 'مدينة وبلد التسليم *'), 'الخرطوم، السودان');
     await tester.enterText(find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'الميزانية (اختياري)'), '1,,200');
+      widget is TextField && widget.decoration?.labelText == 'الميزانية (اختياري)'), '1,,200');
     await tester.tap(find.text('إنشاء مسودة طلب السعر'));
     await tester.pumpAndSettle();
 
@@ -201,11 +201,11 @@ void main() {
     await tester.pumpAndSettle();
 
     final budgetField = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'الميزانية (اختياري)');
-    expect(tester.widget<TextFormField>(budgetField).controller?.text, '2500');
+      widget is TextField && widget.decoration?.labelText == 'الميزانية (اختياري)');
+    expect(tester.widget<TextField>(budgetField).controller?.text, '2500');
     final productField = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'المنتج أو الخدمة *');
-    expect(tester.widget<TextFormField>(productField).controller?.text, 'Solar panels');
+      widget is TextField && widget.decoration?.labelText == 'المنتج أو الخدمة *');
+    expect(tester.widget<TextField>(productField).controller?.text, 'Solar panels');
   });
 
   testWidgets('vague intent extraction preserves manually entered RFQ fields',
@@ -221,11 +221,11 @@ void main() {
     await tester.pumpAndSettle();
 
     final product = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'المنتج أو الخدمة *');
+      widget is TextField && widget.decoration?.labelText == 'المنتج أو الخدمة *');
     final quantity = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'الكمية المطلوبة *');
+      widget is TextField && widget.decoration?.labelText == 'الكمية المطلوبة *');
     final destination = find.byWidgetPredicate((widget) =>
-      widget is TextFormField && widget.child is TextField && (widget.child as TextField).decoration?.labelText == 'مدينة وبلد التسليم *');
+      widget is TextField && widget.decoration?.labelText == 'مدينة وبلد التسليم *');
     final intent = find.byWidgetPredicate((widget) =>
       widget is TextField && widget.decoration?.hintText?.startsWith('مثال: أحتاج') == true);
 
@@ -236,9 +236,9 @@ void main() {
     await tester.tap(find.text('استخراج تفاصيل الطلب'));
     await tester.pumpAndSettle();
 
-    expect(tester.widget<TextFormField>(product).controller?.text, 'قماش قطني');
-    expect(tester.widget<TextFormField>(quantity).controller?.text, '500 قطعة');
-    expect(tester.widget<TextFormField>(destination).controller?.text, 'الخرطوم، السودان');
+    expect(tester.widget<TextField>(product).controller?.text, 'قماش قطني');
+    expect(tester.widget<TextField>(quantity).controller?.text, '500 قطعة');
+    expect(tester.widget<TextField>(destination).controller?.text, 'الخرطوم، السودان');
     expect(find.textContaining('لم نتمكن من استخراج تفاصيل كافية'), findsOneWidget);
   });
 
