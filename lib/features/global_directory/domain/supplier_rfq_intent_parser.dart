@@ -83,11 +83,13 @@ class SupplierRfqIntentParser {
     ).firstMatch(text);
     final symbolMatch = RegExp(r'([$€])\s*(\d[\d,.]*)').firstMatch(text);
     if (budgetMatch != null) {
-      budget = budgetMatch.group(2)?.replaceAll(',', '');
-      currency = _currency(budgetMatch.group(1)) ?? _currency(budgetMatch.group(3));
+      budget = _amount(budgetMatch.group(2));
+      if (budget != null) {
+        currency = _currency(budgetMatch.group(1)) ?? _currency(budgetMatch.group(3));
+      }
     } else if (symbolMatch != null) {
-      budget = symbolMatch.group(2)?.replaceAll(',', '');
-      currency = _currency(symbolMatch.group(1));
+      budget = _amount(symbolMatch.group(2));
+      if (budget != null) currency = _currency(symbolMatch.group(1));
     }
     final currencyCodeMatch = RegExp(r'\b(USD|EUR|SDG|KES|NGN)\b', caseSensitive: false).firstMatch(text);
     currency ??= _currency(currencyCodeMatch?.group(1));
@@ -158,6 +160,59 @@ class SupplierRfqIntentParser {
       currency: currency,
       leadTime: leadTime,
     );
+  }
+
+  static String? _amount(String? raw) {
+    if (raw == null) return null;
+    final value = raw.trim();
+    const validNumber = r'^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)(?:[.][0-9]+)?
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+    final output = StringBuffer();
+    for (final rune in value.runes) {
+      final character = String.fromCharCode(rune);
+      final arabicIndex = arabicDigits.indexOf(character);
+      final persianIndex = persianDigits.indexOf(character);
+      output.write(arabicIndex >= 0 ? arabicIndex : persianIndex >= 0 ? persianIndex : character);
+    }
+    return output.toString();
+  }
+
+  static String? _unit(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final value = raw.toLowerCase();
+    if (['piece','pieces','pcs','unit','units','قطعة','قطع','حبة','حبات'].contains(value)) return 'pieces';
+    if (['kg','g','كيلو','كيلوغرام'].contains(value)) return value == 'g' ? 'g' : 'kg';
+    if (['ton','tons','طن'].contains(value)) return 'tons';
+    if (['liter','liters','litre','litres','لتر'].contains(value)) return 'liters';
+    if (['meter','meters','metre','metres','متر'].contains(value)) return 'meters';
+    if (['yard','yards'].contains(value)) return 'yards';
+    if (['box','boxes','صندوق','كرتون'].contains(value)) return 'boxes';
+    return value;
+  }
+
+  static String? _currency(String? raw) {
+    if (raw == null) return null;
+    switch (raw.toUpperCase()) {
+      case 'USD':
+      case r'$':
+      case 'دولار':
+      case 'دولارات': return 'USD';
+      case 'EUR':
+      case '€':
+      case 'يورو': return 'EUR';
+      case 'SDG': return 'SDG';
+      case 'KES': return 'KES';
+      case 'NGN': return 'NGN';
+      default: return null;
+    }
+  }
+}
+;
+    if (!RegExp(validNumber).hasMatch(value)) return null;
+    final normalized = value.replaceAll(',', '');
+    final parsed = double.tryParse(normalized);
+    return parsed != null && parsed.isFinite && parsed >= 0 ? normalized : null;
   }
 
   static String _digits(String value) {
