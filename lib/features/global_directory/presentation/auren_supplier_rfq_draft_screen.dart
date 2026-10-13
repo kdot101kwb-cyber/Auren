@@ -163,7 +163,6 @@ class _AurenSupplierRfqDraftScreenState
               ? widget.initialBudget!.trim()
               : (decoded['budget'] as String?) ?? '';
           _specificationsController.text = (decoded['specifications'] as String?) ?? '';
-          _budgetController.text = (decoded['budget'] as String?) ?? '';
           _contactController.text = (decoded['contact'] as String?) ?? '';
           const supportedCurrencies = {'USD', 'EUR', 'SDG', 'KES', 'NGN'};
           final savedCurrency = decoded['currency'] as String?;
