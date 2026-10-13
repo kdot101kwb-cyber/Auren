@@ -679,6 +679,7 @@ class _AurenSupplierOfferComparisonScreenState
                     ]),
                   ]),
                 )),
+                if (_hasInitialRequestContext) _requestContextCard(),
                 if (_offers.isNotEmpty) _rankingCard(),
                 if (_offers.isNotEmpty)
                   Padding(
@@ -698,6 +699,46 @@ class _AurenSupplierOfferComparisonScreenState
                 const Text('قبل الدفع: تحقق مستقلاً من تسجيل الشركة، وعينة المنتج، والمراجع التجارية، وشروط الدفع والشحن والتأمين والمستندات.', style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
+    );
+  }
+
+  bool get _hasInitialRequestContext =>
+      (widget.initialProduct?.trim().isNotEmpty ?? false) ||
+      (widget.initialQuantity?.trim().isNotEmpty ?? false) ||
+      (widget.initialDestination?.trim().isNotEmpty ?? false) ||
+      (widget.initialBudget?.trim().isNotEmpty ?? false);
+
+  Widget _requestContextCard() {
+    final details = <String>[
+      if (widget.initialProduct?.trim().isNotEmpty ?? false)
+        'المنتج: ${widget.initialProduct!.trim()}',
+      if (widget.initialQuantity?.trim().isNotEmpty ?? false)
+        'الكمية: ${widget.initialQuantity!.trim()}',
+      if (widget.initialDestination?.trim().isNotEmpty ?? false)
+        'وجهة التسليم: ${widget.initialDestination!.trim()}',
+      if (widget.initialBudget?.trim().isNotEmpty ?? false)
+        'الميزانية المطلوبة: ${widget.initialBudget!.trim()} ${widget.initialCurrency?.trim().toUpperCase() ?? ''}'.trim(),
+    ];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('احتياجك للمقارنة', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 6),
+            const Text(
+              'هذه بيانات طلبك كمرجع للمراجعة؛ لا تعني أن العروض تطابق مواصفات المنتج أو وجهة الشحن تلقائياً.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            ...details.map((detail) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(detail),
+            )),
+          ],
+        ),
+      ),
     );
   }
 
