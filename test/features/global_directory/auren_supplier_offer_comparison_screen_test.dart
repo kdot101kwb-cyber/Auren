@@ -129,7 +129,7 @@ void main() {
     expect(tester.widget<TextFormField>(fields.at(2)).controller?.text, isEmpty);
     await tester.tap(find.text('حفظ العرض'));
     await tester.pumpAndSettle();
-    expect(find.text('الشحن والرسوم: غير معروف — لم يُدخل'), findsOneWidget);
+    expect(find.text('غير معروف — لم يُدخل'), findsOneWidget);
     expect(find.text('الإجمالي غير مكتمل — أدخل الشحن والرسوم أولاً'), findsOneWidget);
   });
 
