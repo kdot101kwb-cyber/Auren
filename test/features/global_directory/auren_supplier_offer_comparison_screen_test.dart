@@ -128,6 +128,19 @@ void main() {
     expect(find.text('الإجمالي التقديري: 100.00 USD'), findsNothing);
   });
 
+  testWidgets('manual quote form accepts Arabic numeral amounts', (tester) async {
+    await pumpScreen(tester, localOffers: []);
+    await tester.tap(find.text('إضافة عرض'));
+    await tester.pumpAndSettle();
+    final fields = find.byType(TextFormField);
+    await tester.enterText(fields.at(0), 'Arabic Numeral Supplier');
+    await tester.enterText(fields.at(1), '١٠٠');
+    await tester.enterText(fields.at(3), '١٠');
+    await tester.tap(find.text('حفظ العرض'));
+    await tester.pumpAndSettle();
+    expect(find.text('الإجمالي التقديري: 110.00 USD'), findsOneWidget);
+  });
+
   testWidgets('new quote form leaves unprovided shipping blank', (tester) async {
     await pumpScreen(tester, localOffers: []);
     await tester.tap(find.text('إضافة عرض'));
