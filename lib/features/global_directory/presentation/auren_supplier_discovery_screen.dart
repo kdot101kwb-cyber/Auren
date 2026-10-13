@@ -20,6 +20,7 @@ class AurenSupplierDiscoveryScreen extends StatefulWidget {
 
 class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScreen> {
   final _queryController = TextEditingController();
+  final _productController = TextEditingController();
   String _category = 'الكل';
 
   static const _sources = <Map<String, String>>[
@@ -34,6 +35,7 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   @override
   void dispose() {
     _queryController.dispose();
+    _productController.dispose();
     super.dispose();
   }
 
@@ -58,11 +60,12 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
     );
   }
 
-  Future<void> _prepareRfq(String sourceName) async {
+  Future<void> _prepareRfq(String? sourceName, {String? product}) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => AurenSupplierRfqDraftScreen(
           initialSupplier: sourceName,
+          initialProduct: product,
           auth: widget.auth,
           firestore: widget.firestore,
         ),
@@ -73,6 +76,7 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
   @override
   Widget build(BuildContext context) {
     final query = _queryController.text.trim().toLowerCase();
+    final product = _productController.text.trim();
     final rows = _sources.where((item) {
       final matchesCategory = _category == 'الكل' || item['type'] == _category;
       final searchable = '${item['name']} ${item['focus']} ${item['type']}'.toLowerCase();
@@ -99,6 +103,42 @@ class _AurenSupplierDiscoveryScreenState extends State<AurenSupplierDiscoveryScr
                     firestore: widget.firestore,
                   ),
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('ابدأ من احتياجك', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  const Text('اكتب المنتج أو المادة المطلوبة، وسنجهّز لك مسودة طلب عرض سعر قابلة للتعديل. لا يتم إرسالها لأي مورد.'),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _productController,
+                    onChanged: (_) => setState(() {}),
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.inventory_2_outlined),
+                      hintText: 'مثال: ألواح شمسية أو بذور قمح',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: product.isEmpty
+                          ? null
+                          : () => _prepareRfq(null, product: product),
+                      icon: const Icon(Icons.request_quote_outlined),
+                      label: const Text('جهّز طلب عرض سعر لاحتياجي'),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
