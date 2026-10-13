@@ -127,6 +127,39 @@ void main() {
       expect(r.quantity, isNull);
     });
 
+    test('normalizes Persian digits without changing currency values', () {
+      final r = SupplierRfqIntentParser.parse(
+        'Need ۲۵ boxes of tea to Nairobi with budget KES ۴۵۰۰',
+      );
+      expect(r.quantity, '25 boxes');
+      expect(r.budget, '4500');
+      expect(r.currency, 'KES');
+    });
+
+    test('accepts correctly grouped decimal budgets and rejects bad grouping', () {
+      final valid = SupplierRfqIntentParser.parse(
+        'Source cotton fabric with budget USD 1,234.50',
+      );
+      expect(valid.budget, '1234.50');
+      expect(valid.currency, 'USD');
+
+      for (final malformed in ['12,34', '1,,200', '1,20,000']) {
+        final result = SupplierRfqIntentParser.parse(
+          'Source cotton fabric with budget USD $malformed',
+        );
+        expect(result.budget, isNull, reason: 'Should reject $malformed');
+        expect(result.currency, 'USD');
+      }
+    });
+
+    test('does not assign a default currency when none is stated', () {
+      final r = SupplierRfqIntentParser.parse(
+        'Need 20 boxes of tea to Nairobi with budget 4500',
+      );
+      expect(r.budget, '4500');
+      expect(r.currency, isNull);
+    });
+
     test('supports currency codes without conversion', () {
       final r = SupplierRfqIntentParser.parse(
         'need 20 boxes of tea to Nairobi budget KES 4500',
