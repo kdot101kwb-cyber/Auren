@@ -142,6 +142,33 @@ void main() {
     expect(find.text('Alibaba.com'), findsNothing);
   });
 
+  testWidgets('RFQ draft rejects malformed grouped budget amounts', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRfqDraftScreen(
+        auth: MockFirebaseAuth(),
+        firestore: FakeFirebaseFirestore(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final fields = tester.widgetList<TextFormField>(find.byType(TextFormField)).toList();
+    await tester.enterText(find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'المنتج أو الخدمة *'), 'قماش');
+    await tester.enterText(find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'الكمية المطلوبة *'), '500 قطعة');
+    await tester.enterText(find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'مدينة وبلد التسليم *'), 'الخرطوم، السودان');
+    await tester.enterText(find.byWidgetPredicate((widget) =>
+      widget is TextFormField && widget.decoration?.labelText == 'الميزانية (اختياري)'), '1,,200');
+    await tester.tap(find.text('إنشاء مسودة طلب السعر'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('أدخل ميزانية رقمية غير سالبة'), findsOneWidget);
+    expect(find.text('راجع المسودة'), findsNothing);
+  });
+
   testWidgets('RFQ cloud restore ignores a draft owned by another user',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
