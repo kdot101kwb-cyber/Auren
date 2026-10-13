@@ -35,6 +35,11 @@ Future<void> pumpScreen(
   required List<Map<String, String>> localOffers,
   MockFirebaseAuth? auth,
   FakeFirebaseFirestore? firestore,
+  String? initialProduct,
+  String? initialQuantity,
+  String? initialDestination,
+  String? initialBudget,
+  String? initialCurrency,
 }) async {
   SharedPreferences.setMockInitialValues({
     'auren_supplier_offers_v1_guest': jsonEncode(localOffers),
@@ -45,12 +50,64 @@ Future<void> pumpScreen(
     home: AurenSupplierOfferComparisonScreen(
       auth: auth ?? MockFirebaseAuth(),
       firestore: firestore ?? FakeFirebaseFirestore(),
+      initialProduct: initialProduct,
+      initialQuantity: initialQuantity,
+      initialDestination: initialDestination,
+      initialBudget: initialBudget,
+      initialCurrency: initialCurrency,
     ),
   ));
   await tester.pumpAndSettle();
 }
 
 void main() {
+  testWidgets('request quantity pre-fills the maximum supplier MOQ constraint',
+      (tester) async {
+    await pumpScreen(
+      tester,
+      localOffers: [
+        offer('1', 'MOQ 10 Supplier', '100', 'USD'),
+        offer('2', 'MOQ 30 Supplier', '80', 'USD'),
+      ],
+      initialProduct: 'Solar panels',
+      initialQuantity: '20 panels',
+      initialDestination: 'Port Sudan, Sudan',
+      initialBudget: '2500',
+      initialCurrency: 'USD',
+    );
+
+    expect(find.text('احتياجك للمقارنة'), findsOneWidget);
+    expect(find.text('المنتج: Solar panels'), findsOneWidget);
+    expect(find.text('الكمية: 20 panels'), findsOneWidget);
+    expect(find.text('وجهة التسليم: Port Sudan, Sudan'), findsOneWidget);
+    expect(find.text('الميزانية المطلوبة: 2500 USD'), findsOneWidget);
+    expect(find.text('كمية طلبك / أقصى حد أدنى للطلب'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField).last).controller?.text,
+      '20 panels',
+    );
+    expect(find.text('MOQ 10 Supplier'), findsNWidgets(2));
+    expect(find.text('MOQ 30 Supplier'), findsOneWidget);
+  });
+
+  testWidgets('unparseable requested quantity is not silently applied',
+      (tester) async {
+    await pumpScreen(
+      tester,
+      localOffers: [offer('1', 'Supplier A', '100', 'USD')],
+      initialQuantity: 'about twenty panels',
+    );
+
+    expect(
+      find.textContaining('تعذر قراءة كمية الطلب كرقم'),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<TextField>(find.byType(TextField).last).controller?.text,
+      isEmpty,
+    );
+  });
+
   testWidgets('rejected offers are excluded from ranking', (tester) async {
     await pumpScreen(tester, localOffers: [
       offer('1', 'Supplier A', '100', 'USD', status: 'rejected'),
