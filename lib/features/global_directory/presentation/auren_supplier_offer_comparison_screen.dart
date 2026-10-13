@@ -115,10 +115,15 @@ class _AurenSupplierOfferComparisonScreenState
         'id', 'supplier', 'price', 'currency', 'shipping', 'moq',
         'leadTime', 'payment', 'validity', 'notes', 'status', 'receivedAt',
       };
+      // Shipping was optional in older local drafts; preserve it as unknown.
+      const requiredLocalOfferKeys = {
+        'id', 'supplier', 'price', 'currency', 'moq', 'leadTime',
+        'payment', 'validity', 'notes', 'status', 'receivedAt',
+      };
       final items = decoded.map((item) {
         final map = Map<String, dynamic>.from(item as Map);
         if (map.keys.toSet().difference(localOfferKeys).isNotEmpty ||
-            !map.keys.toSet().containsAll(localOfferKeys) ||
+            !map.keys.toSet().containsAll(requiredLocalOfferKeys) ||
             map.values.any((value) => value is! String)) {
           throw const FormatException('Stored supplier offer fields are malformed.');
         }
@@ -282,10 +287,15 @@ class _AurenSupplierOfferComparisonScreenState
         'id', 'supplier', 'price', 'currency', 'shipping', 'moq',
         'leadTime', 'payment', 'validity', 'notes', 'status', 'receivedAt',
       };
+      // Legacy account drafts may not have recorded shipping; do not assume free freight.
+      const requiredCloudOfferKeys = {
+        'id', 'supplier', 'price', 'currency', 'moq', 'leadTime',
+        'payment', 'validity', 'notes', 'status', 'receivedAt',
+      };
       for (final item in rawOffers) {
         final map = Map<String, dynamic>.from(item as Map);
         if (map.keys.toSet().difference(cloudOfferKeys).isNotEmpty ||
-            !map.keys.toSet().containsAll(cloudOfferKeys) ||
+            !map.keys.toSet().containsAll(requiredCloudOfferKeys) ||
             map.values.any((value) => value is! String)) {
           setState(() => _message = 'نسخة الحساب تحتوي حقولاً غير صالحة؛ احتفظنا بالعروض المحلية.');
           _snack('تعذر استعادة النسخة لأن بنية أحد العروض غير صالحة.');
@@ -1048,6 +1058,11 @@ class _AurenSupplierOfferComparisonScreenState
                   MaterialPageRoute<void>(
                     builder: (_) => AurenSupplierRfqDraftScreen(
                       initialSupplier: offer.supplier,
+                      initialProduct: widget.initialProduct,
+                      initialQuantity: widget.initialQuantity,
+                      initialDestination: widget.initialDestination,
+                      initialBudget: widget.initialBudget,
+                      initialCurrency: widget.initialCurrency,
                       auth: widget.auth,
                       firestore: widget.firestore,
                     ),
@@ -1073,7 +1088,7 @@ class _Offer {
     id: j['id'] as String? ?? DateTime.now().microsecondsSinceEpoch.toString(),
     supplier: j['supplier'] as String? ?? '', price: j['price'] as String? ?? '',
     currency: _currencies.contains(j['currency']) ? j['currency'] as String : 'USD',
-    shipping: j['shipping'] as String? ?? '0', moq: j['moq'] as String? ?? '',
+    shipping: j['shipping'] as String? ?? '', moq: j['moq'] as String? ?? '',
     leadTime: j['leadTime'] as String? ?? '', payment: j['payment'] as String? ?? '',
     validity: j['validity'] as String? ?? '', notes: j['notes'] as String? ?? '',
     receivedAt: j['receivedAt'] as String? ?? DateTime.now().toIso8601String(),
