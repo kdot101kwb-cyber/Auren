@@ -87,7 +87,7 @@ void main() {
       '20 panels',
     );
     expect(find.text('MOQ 10 Supplier'), findsNWidgets(2));
-    expect(find.text('MOQ 30 Supplier'), findsOneWidget);
+    expect(find.text('MOQ 30 Supplier'), findsNWidgets(2));
   });
 
   testWidgets('unparseable requested quantity is not silently applied',
