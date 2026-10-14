@@ -92,7 +92,7 @@ test('supplier retry rechecks eligibility and retry count inside its transaction
   const source = read('supplier_requests.js');
   const retrySource = source.slice(source.indexOf('exports.retryAurenSupplierRequest'));
   assert.match(retrySource, /const fresh = await tx\.get\(ref\)/);
-  assert.match(retrySource, /const currentStatus = String\(data\.status \|\| ''\)\.toLowerCase\(\)/);
+  assert.match(retrySource, /const currentStatus = lifecycle\.normalizeStatus\(data\.status, ''\)/);
   assert.match(retrySource, /Only failed or cancelled requests can be retried/);
   assert.match(retrySource, /lifecycle\.nextRetryCount\(data\.retryCount\)/);
   assert.match(retrySource, /const retryCount = retry\.count/);
@@ -225,4 +225,12 @@ test('supplier lifecycle updates Match Flow inside the same transaction as reque
   assert.match(source, /async function updateMatchFlowInTransaction\(tx, uid, flowId, status, extra = \{\}\)/);
   assert.equal((source.match(/updateMatchFlowInTransaction\(tx, uid, (?:data|freshData)\./g) || []).length, 3);
   assert.doesNotMatch(source, /await updateMatchFlow\(uid,\s*(?:cancelled|retry)\.matchFlowId/);
+});
+
+test('supplier lifecycle trims stored statuses before terminal and retry checks', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /const currentStatus = lifecycle\.normalizeStatus\(data\.status\)/);
+  assert.match(source, /const freshStatus = lifecycle\.normalizeStatus\(freshData\.status\)/);
+  assert.match(source, /const currentStatus = lifecycle\.normalizeStatus\(data\.status, ''\)/);
+  assert.doesNotMatch(source, /async function updateMatchFlow\(/);
 });
