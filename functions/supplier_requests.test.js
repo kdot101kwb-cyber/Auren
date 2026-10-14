@@ -95,7 +95,7 @@ test('supplier retry rechecks eligibility and retry count inside its transaction
   assert.match(retrySource, /const currentStatus = String\(data\.status \|\| ''\)\.toLowerCase\(\)/);
   assert.match(retrySource, /Only failed or cancelled requests can be retried/);
   assert.match(retrySource, /lifecycle\.nextRetryCount\(data\.retryCount\)/);
-  assert.match(retrySource, /const retryCount = previousRetryCount \+ 1/);
+  assert.match(retrySource, /const retryCount = retry\.count/);
   assert.match(retrySource, /Retry limit reached/);
   assert.match(retrySource, /tx\.set\(ref, update, \{merge:true\}\)/);
   assert.match(retrySource, /if \(globalFresh\.exists\) tx\.set\(globalRef, update, \{merge:true\}\)/);
