@@ -205,4 +205,28 @@ void main() {
     expect(source.requests.single.retryCount, 3);
     expect(find.text('مسودة'), findsOneWidget);
   });
+
+  testWidgets('never offers waiting-for-response for a draft without dispatch evidence', (tester) async {
+    final source = _FakeRequestsSource([_request(externalDispatch: false)]);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRequestsScreen(dataSource: source),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تسجيل انتظار الرد'), findsNothing);
+    expect(source.statusUpdates, isEmpty);
+  });
+
+  testWidgets('does not offer retry after the five-attempt limit', (tester) async {
+    final source = _FakeRequestsSource([
+      _request(status: 'failed', retryCount: 5),
+    ]);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRequestsScreen(dataSource: source),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('إعادة كمسودة'), findsNothing);
+    expect(source.retryCalls, 0);
+  });
 }
