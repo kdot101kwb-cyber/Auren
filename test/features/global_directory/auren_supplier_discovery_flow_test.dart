@@ -236,6 +236,39 @@ void main() {
     expect(tester.widget<TextField>(productField).controller?.text, 'Solar panels');
   });
 
+  testWidgets('changed incoming product invalidates a stale saved RFQ preview',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'auren_supplier_rfq_draft_v1_guest': jsonEncode({
+        'target': '',
+        'product': 'Old product',
+        'quantity': '10 units',
+        'destination': 'Khartoum, Sudan',
+        'specifications': '',
+        'budget': '999',
+        'contact': '',
+        'currency': 'USD',
+        'delivery': 'شحن إلى العنوان',
+        'draft': 'STALE PREVIEW FOR OLD PRODUCT',
+      }),
+    });
+
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRfqDraftScreen(
+        auth: MockFirebaseAuth(),
+        firestore: FakeFirebaseFirestore(),
+        initialProduct: 'New product',
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New product'), findsOneWidget);
+    expect(find.text('STALE PREVIEW FOR OLD PRODUCT'), findsNothing);
+    expect(find.text('راجع المسودة'), findsNothing);
+  });
+
   testWidgets('vague intent extraction preserves manually entered RFQ fields',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 3000));
