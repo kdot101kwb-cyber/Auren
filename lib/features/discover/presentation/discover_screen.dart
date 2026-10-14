@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../emergency/presentation/emergency_screen.dart';
 import '../../content/presentation/content_platform_screen.dart';
+import '../../creator/presentation/creator_universe_screen.dart';
 import '../../tv/presentation/auren_tv_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
@@ -51,7 +52,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('AUREN TV', 'تلفزيونات مباشرة من العالم عبر مصادر IPTV العامة', Icons.live_tv_outlined),
     _DiscoverItem('Travel', 'خطط رحلاتك واحفظ وجهاتك', Icons.flight_takeoff_outlined),
     _DiscoverItem('Local Intelligence', 'الأعمال والخدمات والفرص في منطقتك', Icons.location_searching_outlined),
-    _DiscoverItem('Creators', 'مبدعون ومحتوى يستحق المتابعة', Icons.movie_creation_outlined),
+    _DiscoverItem('Creator Universe', 'استوديو المبدع، القنوات، الفيديوهات وأدوات الإنتاج', Icons.movie_creation_outlined),
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
     _DiscoverItem('Agriculture Intelligence', 'أسعار المحاصيل والأسواق والبيانات الزراعية عالميًا', Icons.agriculture_outlined),
     _DiscoverItem('Wallet', 'محفظة ورصيد وحدود إنفاق', Icons.account_balance_wallet_outlined),
@@ -82,15 +83,15 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     // Context changes presentation priority, not the underlying Discover data.
     final priority = <String>[];
     if (_hasAny(q, const ['business', 'company', 'shop', 'product', 'خدمة', 'شركة', 'تجارة', 'منتج'])) {
-      priority.addAll(['Business', 'Creators', 'People', 'Places', 'Opportunities']);
+      priority.addAll(['Business', 'Creator Universe', 'People', 'Places', 'Opportunities']);
     } else if (_hasAny(q, const ['creator', 'content', 'video', 'music', 'محتوى', 'فيديو', 'موسيقى'])) {
-      priority.addAll(['Creators', 'Entertainment', 'Communities', 'People', 'Business']);
+      priority.addAll(['Creator Universe', 'Entertainment', 'Communities', 'People', 'Business']);
     } else if (_hasAny(q, const ['job', 'career', 'skill', 'work', 'وظيفة', 'مهنة', 'مهارة', 'فرصة'])) {
       priority.addAll(['Opportunities', 'Talent', 'People', 'Communities', 'Business']);
     } else if (_hasAny(q, const ['travel', 'trip', 'place', 'hotel', 'سفر', 'مكان', 'فندق', 'رحلة'])) {
       priority.addAll(['Places', 'Entertainment', 'People', 'Communities', 'Business']);
     } else {
-      priority.addAll(['People', 'Places', 'Creators', 'Entertainment', 'Communities', 'Opportunities', 'Talent', 'Business']);
+      priority.addAll(['People', 'Places', 'Creator Universe', 'Entertainment', 'Communities', 'Opportunities', 'Talent', 'Business']);
     }
 
     source.sort((a, b) {
@@ -109,6 +110,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen()));
       return;
     }
+    if (item.title == 'Creator Universe') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCreatorUniverseScreen())); return; }
     if (item.title == 'AUREN Content') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenContentPlatformScreen())); return; }
     if (item.title == 'AUREN TV') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTvScreen())); return; }
     if (item.title == 'Emergency Services') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEmergencyScreen())); return; }
