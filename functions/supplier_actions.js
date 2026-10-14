@@ -14,7 +14,7 @@ async function updateMatchFlow(uid, flowId, status, extra = {}) {
   const snap = await ref.get();
   if (!snap.exists) return;
   await ref.set({
-    status, supplierWorkflowStatus: status,
+    supplierWorkflowStatus: status,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     ...extra,
   }, {merge:true});
@@ -57,7 +57,7 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
     const batch=db.batch();
     batch.set(ref,data); batch.set(userRef,data);
     await batch.commit();
-    await updateMatchFlow(uid,matchFlowId,'waiting_response',{supplierRequestId:ref.id,supplierRequestType:'contact'});
+    await updateMatchFlow(uid,matchFlowId,'draft',{supplierRequestId:ref.id,supplierRequestType:'contact'});
     return {type:'supplier_contact_draft_created', requestId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
@@ -77,7 +77,7 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
     const batch=db.batch();
     batch.set(ref,data); batch.set(userRef,data);
     await batch.commit();
-    await updateMatchFlow(uid,matchFlowId,'waiting_response',{supplierRequestId:ref.id,supplierRequestType:'rfq'});
+    await updateMatchFlow(uid,matchFlowId,'draft',{supplierRequestId:ref.id,supplierRequestType:'rfq'});
     return {type:'supplier_rfq_created', rfqId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
