@@ -38,7 +38,7 @@ test('supplier workflow creates user-scoped request mirrors and updates Match Fl
   assert.match(source, /function getMatchFlowRef\(uid, flowId\)/);
   assert.match(source, /function stageMatchFlowUpdate\(tx, ref, snap, status, extra = \{\}\)/);
   assert.equal((source.match(/stageMatchFlowUpdate\(tx, flowRef, flowSnap, 'active'/g) || []).length, 2);
-  assert.match(source, /supplierWorkflowStatus:'draft'/);
+  assert.match(source, /supplierWorkflowStatus:\\s*'draft'/);
 });
 
 test('supplier action lookup supports exporter importer and manufacturer collections', () => {
