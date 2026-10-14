@@ -223,6 +223,6 @@ test('supplier status normalization is case-insensitive and defaults empty value
 test('supplier lifecycle updates Match Flow inside the same transaction as request state', () => {
   const source = read('supplier_requests.js');
   assert.match(source, /async function updateMatchFlowInTransaction\(tx, uid, flowId, status, extra = \{\}\)/);
-  assert.equal((source.match(/updateMatchFlowInTransaction\(tx, uid,/g) || []).length, 3);
+  assert.equal((source.match(/updateMatchFlowInTransaction\(tx, uid, (?:data|freshData)\./g) || []).length, 3);
   assert.doesNotMatch(source, /await updateMatchFlow\(uid,\s*(?:cancelled|retry)\.matchFlowId/);
 });
