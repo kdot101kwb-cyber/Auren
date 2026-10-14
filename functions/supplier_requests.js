@@ -23,19 +23,6 @@ function matchFlowRef(uid, flowId) {
   return db.collection('users').doc(uid).collection('match_action_flows').doc(id);
 }
 
-async function updateMatchFlow(uid, flowId, status, extra = {}) {
-  const ref = matchFlowRef(uid, flowId);
-  if (!ref) return;
-  const snap = await ref.get();
-  if (!snap.exists) return;
-  await ref.set({
-    status,
-    supplierWorkflowStatus: status,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    ...extra,
-  }, {merge:true});
-}
-
 async function updateMatchFlowInTransaction(tx, uid, flowId, status, extra = {}) {
   const ref = matchFlowRef(uid, flowId);
   if (!ref) return;
@@ -100,7 +87,7 @@ exports.cancelAurenSupplierRequest = onCall(
       if (!fresh.exists) throw new HttpsError('not-found','Supplier request not found.');
       if (globalFresh.exists && globalFresh.data()?.requesterUid !== uid) throw new HttpsError('permission-denied','Supplier request mirror belongs to another account.');
       const data = fresh.data() || {};
-      const currentStatus = String(data.status || 'draft').toLowerCase();
+      const currentStatus = lifecycle.normalizeStatus(data.status);
       if (['completed','cancelled'].includes(currentStatus)) {
         throw new HttpsError('failed-precondition','Request cannot be cancelled in its current state.');
       }
@@ -153,7 +140,7 @@ exports.updateAurenSupplierRequestStatus = onCall(
       if (!fresh.exists) throw new HttpsError('not-found','Supplier request not found.');
       if (globalFresh.exists && globalFresh.data()?.requesterUid !== uid) throw new HttpsError('permission-denied','Supplier request mirror belongs to another account.');
       const freshData = fresh.data() || {};
-      const freshStatus = String(freshData.status || 'draft').toLowerCase();
+      const freshStatus = lifecycle.normalizeStatus(freshData.status);
       if (freshStatus !== currentStatus) {
         throw new HttpsError('aborted','Supplier request changed; refresh and try again.');
       }
@@ -189,7 +176,7 @@ exports.retryAurenSupplierRequest = onCall(
       if (!fresh.exists) throw new HttpsError('not-found','Supplier request not found.');
       if (globalFresh.exists && globalFresh.data()?.requesterUid !== uid) throw new HttpsError('permission-denied','Supplier request mirror belongs to another account.');
       const data = fresh.data() || {};
-      const currentStatus = String(data.status || '').toLowerCase();
+      const currentStatus = lifecycle.normalizeStatus(data.status, '');
       if (!['failed','cancelled'].includes(currentStatus)) {
         throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
       }
