@@ -186,6 +186,9 @@ void main() {
         .toList();
     expect(values, contains('My supplier'));
     expect(values, contains('My product'));
+    expect(values, contains('100'));
+    expect(values, contains('Khartoum, Sudan'));
+    expect(values, contains('50'));
   });
 
   testWidgets('RFQ cloud restore ignores a draft owned by another user',
@@ -231,6 +234,9 @@ void main() {
         .toList();
     expect(values, isNot(contains('Private supplier')));
     expect(values, isNot(contains('Private product')));
+    expect(values, isNot(contains('100')));
+    expect(values, isNot(contains('Khartoum, Sudan')));
+    expect(values, isNot(contains('50')));
     expect(find.text('Private draft text'), findsNothing);
   });
 
