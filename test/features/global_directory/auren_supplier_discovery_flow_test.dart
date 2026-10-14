@@ -142,6 +142,52 @@ void main() {
     expect(find.text('Alibaba.com'), findsNothing);
   });
 
+
+  testWidgets('RFQ cloud restore accepts a draft owned by the current user',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final auth = MockFirebaseAuth(
+      signedIn: true,
+      mockUser: MockUser(uid: 'user-a'),
+    );
+    final firestore = FakeFirebaseFirestore();
+    await firestore
+        .collection('users')
+        .doc('user-a')
+        .collection('supplier_rfq_drafts')
+        .doc('active_draft')
+        .set({
+      'ownerId': 'user-a',
+      'target': 'My supplier',
+      'product': 'My product',
+      'quantity': '100',
+      'destination': 'Khartoum, Sudan',
+      'specifications': '',
+      'budget': '50',
+      'currency': 'USD',
+      'delivery': 'شحن إلى العنوان',
+      'contact': '',
+      'draft': 'My draft text',
+    });
+
+    await tester.binding.setSurfaceSize(const Size(800, 3000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRfqDraftScreen(
+        auth: auth,
+        firestore: firestore,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final values = tester
+        .widgetList<TextFormField>(find.byType(TextFormField))
+        .map((field) => field.controller?.text ?? '')
+        .toList();
+    expect(values, contains('My supplier'));
+    expect(values, contains('My product'));
+  });
+
   testWidgets('RFQ cloud restore ignores a draft owned by another user',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
