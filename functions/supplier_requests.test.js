@@ -53,12 +53,9 @@ test('supplier workflow never dispatches externally during draft creation', () =
   assert.doesNotMatch(source, /sendEmail|sendSMS|sendMessage|externalDispatch:true/);
 });
 
-test('supplier lifecycle restricts status transitions and keeps terminal states terminal', () => {
+test('supplier lifecycle endpoint delegates status transitions to shared policy', () => {
   const source = read('supplier_requests.js');
-  assert.match(source, /draft: new Set\(\['waiting_response', 'failed', 'cancelled'\]\)/);
-  assert.match(source, /waiting_response: new Set\(\['replied', 'completed', 'failed', 'cancelled'\]\)/);
-  assert.match(source, /replied: new Set\(\['completed', 'cancelled'\]\)/);
-  assert.match(source, /cancelled: new Set\(\)/);
+  assert.match(source, /lifecycle\.isAllowedTransition/);
   assert.match(source, /Invalid supplier request status transition/);
 });
 
@@ -97,10 +94,7 @@ test('supplier retry rechecks eligibility and retry count inside its transaction
   assert.match(retrySource, /const fresh = await tx\.get\(ref\)/);
   assert.match(retrySource, /const currentStatus = String\(data\.status \|\| ''\)\.toLowerCase\(\)/);
   assert.match(retrySource, /Only failed or cancelled requests can be retried/);
-  assert.match(retrySource, /const previousRetryCount = data\.retryCount == null \? 0 : Number\(data\.retryCount\)/);
-  assert.match(retrySource, /Number\.isSafeInteger\(previousRetryCount\)/);
-  assert.match(retrySource, /previousRetryCount < 0/);
-  assert.match(retrySource, /Stored retry count is invalid/);
+  assert.match(retrySource, /lifecycle\.nextRetryCount\(data\.retryCount\)/);
   assert.match(retrySource, /const retryCount = previousRetryCount \+ 1/);
   assert.match(retrySource, /Retry limit reached/);
   assert.match(retrySource, /tx\.set\(ref, update, \{merge:true\}\)/);
