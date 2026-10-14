@@ -147,21 +147,35 @@ class _AurenSupplierRfqDraftScreenState
         if (decoded is Map<String, dynamic>) {
           final initialTarget = widget.initialSupplier?.trim();
           final savedTarget = (decoded['target'] as String?) ?? '';
+          final savedProduct = (decoded['product'] as String?) ?? '';
+          final savedQuantity = (decoded['quantity'] as String?) ?? '';
+          final savedDestination = (decoded['destination'] as String?) ?? '';
+          final savedBudget = (decoded['budget'] as String?) ?? '';
+          final incomingContextChanged =
+              (initialTarget?.isNotEmpty == true && initialTarget != savedTarget) ||
+              (widget.initialProduct?.trim().isNotEmpty == true &&
+                  widget.initialProduct!.trim() != savedProduct) ||
+              (widget.initialQuantity?.trim().isNotEmpty == true &&
+                  widget.initialQuantity!.trim() != savedQuantity) ||
+              (widget.initialDestination?.trim().isNotEmpty == true &&
+                  widget.initialDestination!.trim() != savedDestination) ||
+              (widget.initialBudget?.trim().isNotEmpty == true &&
+                  widget.initialBudget!.trim() != savedBudget);
           _targetController.text = initialTarget != null && initialTarget.isNotEmpty
               ? initialTarget
               : savedTarget;
           _productController.text = widget.initialProduct?.trim().isNotEmpty == true
               ? widget.initialProduct!.trim()
-              : (decoded['product'] as String?) ?? '';
+              : savedProduct;
           _quantityController.text = widget.initialQuantity?.trim().isNotEmpty == true
               ? widget.initialQuantity!.trim()
-              : (decoded['quantity'] as String?) ?? '';
+              : savedQuantity;
           _destinationController.text = widget.initialDestination?.trim().isNotEmpty == true
               ? widget.initialDestination!.trim()
-              : (decoded['destination'] as String?) ?? '';
+              : savedDestination;
           _budgetController.text = widget.initialBudget?.trim().isNotEmpty == true
               ? widget.initialBudget!.trim()
-              : (decoded['budget'] as String?) ?? '';
+              : savedBudget;
           _specificationsController.text = (decoded['specifications'] as String?) ?? '';
           _contactController.text = (decoded['contact'] as String?) ?? '';
           const supportedCurrencies = {'USD', 'EUR', 'SDG', 'KES', 'NGN'};
@@ -173,8 +187,7 @@ class _AurenSupplierRfqDraftScreenState
                   : 'USD';
           _delivery = (decoded['delivery'] as String?) ?? 'شحن إلى العنوان';
           final savedDraft = decoded['draft'];
-          _draft = initialTarget != null && initialTarget.isNotEmpty &&
-                  initialTarget != savedTarget
+          _draft = incomingContextChanged
               ? null
               : (savedDraft is String && savedDraft.isNotEmpty ? savedDraft : null);
         }
