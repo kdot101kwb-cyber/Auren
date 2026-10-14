@@ -15,19 +15,34 @@ class AurenSupplierRequest {
     retryCount:(int.tryParse(d['retryCount']?.toString()??'0')??0).clamp(0, 5) as int);
   String get title=>type=='rfq'?(product.isEmpty?'طلب عرض سعر':product):'طلب تواصل';
 }
-class AurenSupplierRequestsRepository {
+
+/// Contract used by the supplier-request screen and replaceable in widget tests.
+abstract interface class AurenSupplierRequestsDataSource {
+  Future<List<AurenSupplierRequest>> list({String? status, int limit = 30});
+  Future<AurenSupplierRequest> get({required String id, required String type});
+  Future<void> cancel(AurenSupplierRequest request);
+  Future<void> retry(AurenSupplierRequest request);
+  Future<void> updateStatus(AurenSupplierRequest request, String status);
+}
+
+class AurenSupplierRequestsRepository implements AurenSupplierRequestsDataSource {
   final FirebaseFunctions _functions;
   AurenSupplierRequestsRepository({FirebaseFunctions? functions}):_functions=functions??FirebaseFunctions.instanceFor(region:'us-central1');
+  @override
   Future<List<AurenSupplierRequest>> list({String? status,int limit=30}) async {
     final r=await _functions.httpsCallable('listAurenSupplierRequests').call({if(status!=null&&status.isNotEmpty)'status':status,'limit':limit});
     final rows=(Map<String,dynamic>.from(r.data as Map)['requests'] as List?)??const [];
     return rows.map((e)=>AurenSupplierRequest.fromMap(Map<String,dynamic>.from(e as Map))).toList();
   }
+  @override
   Future<AurenSupplierRequest> get({required String id,required String type}) async {
     final r=await _functions.httpsCallable('getAurenSupplierRequest').call({'requestId':id,'type':type});
     return AurenSupplierRequest.fromMap(Map<String,dynamic>.from(r.data as Map));
   }
+  @override
   Future<void> cancel(AurenSupplierRequest r) async{await _functions.httpsCallable('cancelAurenSupplierRequest').call({'requestId':r.id,'type':r.type});}
+  @override
   Future<void> retry(AurenSupplierRequest r) async{await _functions.httpsCallable('retryAurenSupplierRequest').call({'requestId':r.id,'type':r.type});}
+  @override
   Future<void> updateStatus(AurenSupplierRequest r,String status) async{await _functions.httpsCallable('updateAurenSupplierRequestStatus').call({'requestId':r.id,'type':r.type,'status':status});}
 }
