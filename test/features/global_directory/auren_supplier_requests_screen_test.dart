@@ -260,4 +260,55 @@ void main() {
     expect(find.text('تسجيل وصول رد'), findsNothing);
     expect(source.statusUpdates, isEmpty);
   });
+
+  testWidgets('completed requests are terminal and expose no lifecycle actions', (tester) async {
+    final source = _FakeRequestsSource([
+      _request(status: 'completed', externalDispatch: true),
+    ]);
+
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRequestsScreen(dataSource: source),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('مكتمل'), findsOneWidget);
+    expect(find.text('إلغاء الطلب'), findsNothing);
+    expect(find.text('إعادة كمسودة'), findsNothing);
+    expect(find.text('تسجيل فشل'), findsNothing);
+    expect(find.text('تسجيل انتظار الرد'), findsNothing);
+    expect(find.text('تسجيل وصول رد'), findsNothing);
+    expect(source.cancelCalls, 0);
+    expect(source.retryCalls, 0);
+    expect(source.statusUpdates, isEmpty);
+  });
+
+  testWidgets('cancelled requests can only be retried as a fresh draft', (tester) async {
+    final source = _FakeRequestsSource([
+      _request(status: 'cancelled', retryCount: 1, externalDispatch: true),
+    ]);
+
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRequestsScreen(dataSource: source),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ملغي'), findsOneWidget);
+    expect(find.text('إلغاء الطلب'), findsNothing);
+    expect(find.text('تسجيل فشل'), findsNothing);
+    expect(find.text('إعادة كمسودة'), findsOneWidget);
+
+    await tester.tap(find.text('إعادة كمسودة'));
+    await tester.pumpAndSettle();
+    expect(find.text('إعادة الطلب كمسودة؟'), findsOneWidget);
+    await tester.tap(find.text('تأكيد'));
+    await tester.pumpAndSettle();
+
+    expect(source.retryCalls, 1);
+    expect(source.requests.single.status, 'draft');
+    expect(source.requests.single.externalDispatch, isFalse);
+    expect(source.requests.single.retryCount, 2);
+    expect(find.text('مسودة'), findsOneWidget);
+    expect(find.text('تسجيل انتظار الرد'), findsNothing);
+  });
+
 }
