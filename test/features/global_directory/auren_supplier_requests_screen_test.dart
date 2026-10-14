@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auren/features/global_directory/presentation/auren_supplier_requests_screen.dart';
@@ -94,6 +96,25 @@ AurenSupplierRequest _request({
       externalDispatch: externalDispatch,
       retryCount: retryCount,
     );
+
+
+class _BlockingRequestsSource extends _FakeRequestsSource {
+  _BlockingRequestsSource(super.requests);
+
+  final Completer<void> _updateCompleter = Completer<void>();
+  int updateCalls = 0;
+
+  @override
+  Future<void> updateStatus(AurenSupplierRequest request, String status) async {
+    updateCalls++;
+    await _updateCompleter.future;
+    await super.updateStatus(request, status);
+  }
+
+  void completeUpdate() {
+    if (!_updateCompleter.isCompleted) _updateCompleter.complete();
+  }
+}
 
 void main() {
   testWidgets('shows draft status and makes clear no supplier was contacted', (tester) async {
@@ -309,6 +330,52 @@ void main() {
     expect(source.requests.single.retryCount, 2);
     expect(find.text('مسودة'), findsOneWidget);
     expect(find.text('تسجيل انتظار الرد'), findsNothing);
+  });
+
+
+  testWidgets('failed requests can be cancelled but cannot be retried beyond limit', (tester) async {
+    final source = _FakeRequestsSource([
+      _request(status: 'failed', retryCount: 5),
+    ]);
+
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRequestsScreen(dataSource: source),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('فشل'), findsOneWidget);
+    expect(find.text('إعادة كمسودة'), findsNothing);
+    expect(find.text('إلغاء الطلب'), findsOneWidget);
+
+    await tester.tap(find.text('إلغاء الطلب'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تأكيد'));
+    await tester.pumpAndSettle();
+
+    expect(source.cancelCalls, 1);
+    expect(source.requests.single.status, 'cancelled');
+    expect(find.text('ملغي'), findsOneWidget);
+    expect(find.text('إعادة كمسودة'), findsNothing);
+  });
+
+  testWidgets('busy request ignores repeated taps while an action is in flight', (tester) async {
+    final source = _BlockingRequestsSource([_request()]);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRequestsScreen(dataSource: source),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('تسجيل فشل'));
+    await tester.pump();
+
+    expect(source.updateCalls, 1);
+    await tester.tap(find.text('تسجيل فشل'));
+    await tester.pump();
+
+    expect(source.updateCalls, 1);
+    source.completeUpdate();
+    await tester.pumpAndSettle();
+    expect(source.requests.single.status, 'failed');
   });
 
 }
