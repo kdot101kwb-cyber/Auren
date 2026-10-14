@@ -69,7 +69,7 @@ test('supplier cancellation rechecks terminal state inside transaction', () => {
   assert.match(cancelSource, /const fresh = await tx\.get\(ref\)/);
   assert.match(cancelSource, /\['completed','cancelled'\]\.includes\(currentStatus\)/);
   assert.match(cancelSource, /tx\.set\(globalRef, update, \{merge:true\}\)/);
-  assert.match(cancelSource, /updateMatchFlow\(uid,cancelled\.matchFlowId,'cancelled'/);
+  assert.match(cancelSource, /updateMatchFlowInTransaction\(tx, uid, data\.matchFlowId, 'cancelled'/);
 });
 
 test('supplier status updates recheck state inside transaction to prevent stale writes', () => {
@@ -81,8 +81,8 @@ test('supplier status updates recheck state inside transaction to prevent stale 
 
 test('cancel and retry keep Match Flow status consistent without dispatching messages', () => {
   const source = read('supplier_requests.js');
-  assert.match(source, /updateMatchFlow\(uid,cancelled\.matchFlowId,'cancelled'/);
-  assert.match(source, /updateMatchFlow\(uid,retry\.matchFlowId,'active'/);
+  assert.match(source, /updateMatchFlowInTransaction\(tx, uid, data\.matchFlowId, 'cancelled'/);
+  assert.match(source, /updateMatchFlowInTransaction\(tx, uid, data\.matchFlowId, 'active', \{retryCount\}\)/);
   assert.match(source, /status:'draft', retryCount, externalDispatch:false/);
   assert.match(source, /Only failed or cancelled requests can be retried/);
   assert.match(source, /Retry limit reached/);
@@ -218,4 +218,11 @@ test('supplier status normalization is case-insensitive and defaults empty value
   assert.equal(lifecycle.normalizeStatus(' RePlIeD '), 'replied');
   assert.equal(lifecycle.normalizeStatus(''), 'draft');
   assert.equal(lifecycle.normalizeStatus(null), 'draft');
+});
+
+test('supplier lifecycle updates Match Flow inside the same transaction as request state', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /async function updateMatchFlowInTransaction\(tx, uid, flowId, status, extra = \{\}\)/);
+  assert.equal((source.match(/updateMatchFlowInTransaction\(tx, uid,/g) || []).length, 3);
+  assert.doesNotMatch(source, /await updateMatchFlow\(uid,\s*(?:cancelled|retry)\.matchFlowId/);
 });
