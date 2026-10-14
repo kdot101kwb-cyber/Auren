@@ -7,13 +7,15 @@ function clean(value, max) {
   return String(value || '').trim().slice(0, max);
 }
 
-async function updateMatchFlow(uid, flowId, status, extra = {}) {
+function getMatchFlowRef(uid, flowId) {
   const id = clean(flowId, 180);
-  if (!id) return;
-  const ref = db.collection('users').doc(uid).collection('match_action_flows').doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return;
-  await ref.set({
+  if (!id) return null;
+  return db.collection('users').doc(uid).collection('match_action_flows').doc(id);
+}
+
+function stageMatchFlowUpdate(tx, ref, snap, status, extra = {}) {
+  if (!ref || !snap?.exists) return;
+  tx.set(ref, {
     status, supplierWorkflowStatus: status,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     ...extra,
@@ -56,6 +58,8 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
     const outcome = await db.runTransaction(async tx => {
       const existing = await tx.get(ref);
       const existingUser = await tx.get(userRef);
+      const flowRef = getMatchFlowRef(uid, matchFlowId);
+      const flowSnap = flowRef ? await tx.get(flowRef) : null;
       if (existing.exists) {
         const previous = existing.data() || {};
         if (previous.requesterUid !== uid) {
@@ -66,11 +70,15 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
       }
       tx.create(ref,data);
       tx.create(userRef,data);
+      stageMatchFlowUpdate(tx, flowRef, flowSnap, 'active', {
+        supplierRequestId: ref.id,
+        supplierRequestType: operation,
+        supplierWorkflowStatus: 'draft',
+      });
       return {created:true,status:'draft',supplierId,externalDispatch:false,matchFlowId};
     });
     if (!outcome.created) return {type:'supplier_contact_draft_created', requestId:ref.id, ...outcome};
-    // Creating a local draft is not evidence that the supplier was contacted.
-    await updateMatchFlow(uid,matchFlowId,'active',{supplierRequestId:ref.id,supplierRequestType:'contact',supplierWorkflowStatus:'draft'});
+    // The request mirrors and Match Flow are committed atomically; no supplier is contacted.
     return {type:'supplier_contact_draft_created', requestId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
@@ -89,6 +97,8 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
     const outcome = await db.runTransaction(async tx => {
       const existing = await tx.get(ref);
       const existingUser = await tx.get(userRef);
+      const flowRef = getMatchFlowRef(uid, matchFlowId);
+      const flowSnap = flowRef ? await tx.get(flowRef) : null;
       if (existing.exists) {
         const previous = existing.data() || {};
         if (previous.requesterUid !== uid) {
@@ -99,11 +109,15 @@ async function createSupplierWorkflow({uid, operation, payload, idempotencyKey})
       }
       tx.create(ref,data);
       tx.create(userRef,data);
+      stageMatchFlowUpdate(tx, flowRef, flowSnap, 'active', {
+        supplierRequestId: ref.id,
+        supplierRequestType: operation,
+        supplierWorkflowStatus: 'draft',
+      });
       return {created:true,status:'draft',supplierId,externalDispatch:false,matchFlowId};
     });
     if (!outcome.created) return {type:'supplier_rfq_created', rfqId:ref.id, ...outcome};
-    // A saved RFQ draft is not sent to the supplier; keep the flow active.
-    await updateMatchFlow(uid,matchFlowId,'active',{supplierRequestId:ref.id,supplierRequestType:'rfq',supplierWorkflowStatus:'draft'});
+    // The request mirrors and Match Flow are committed atomically; no supplier is contacted.
     return {type:'supplier_rfq_created', rfqId:ref.id, supplierId, status:'draft', externalDispatch:false, matchFlowId};
   }
 
