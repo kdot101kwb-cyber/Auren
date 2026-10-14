@@ -22,7 +22,7 @@ import '../../saved/presentation/saved_center_screen.dart';
 import 'core_ten_screen.dart';
 import 'core_five_next_screen.dart';
 import 'systems_47_screen.dart';
-import '../../suppliers/presentation/auren_supplier_requests_screen.dart';
+import '../../global_directory/presentation/auren_supplier_requests_screen.dart';
 import '../../global_directory/presentation/auren_global_directory_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
