@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const lifecycle = require('./supplier_request_lifecycle');
 
 const read = (name) => fs.readFileSync(path.join(__dirname, name), 'utf8');
 
@@ -158,4 +159,69 @@ test('supplier request listing clamps limits to integer values within 1–100', 
   assert.match(source, /Number\.isFinite\(requestedLimit\)/);
   assert.match(source, /Math\.floor\(requestedLimit\)/);
   assert.match(source, /Math\.min\(Math\.max\(Math\.floor\(requestedLimit\), 1\), 100\)/);
+});
+
+
+test('supplier lifecycle policy allows only documented status transitions', () => {
+  const allowed = [
+    ['draft', 'waiting_response'],
+    ['draft', 'failed'],
+    ['draft', 'cancelled'],
+    ['waiting_response', 'replied'],
+    ['waiting_response', 'completed'],
+    ['waiting_response', 'failed'],
+    ['waiting_response', 'cancelled'],
+    ['replied', 'completed'],
+    ['replied', 'cancelled'],
+    ['failed', 'cancelled'],
+    ['cancelled', 'cancelled'],
+    ['completed', 'completed'],
+  ];
+  for (const [current, next] of allowed) {
+    assert.equal(lifecycle.isAllowedTransition(current, next), true, current + ' -> ' + next);
+  }
+  const denied = [
+    ['draft', 'replied'],
+    ['draft', 'completed'],
+    ['waiting_response', 'draft'],
+    ['replied', 'waiting_response'],
+    ['failed', 'draft'],
+    ['cancelled', 'draft'],
+    ['completed', 'cancelled'],
+    ['unknown', 'draft'],
+  ];
+  for (const [current, next] of denied) {
+    assert.equal(lifecycle.isAllowedTransition(current, next), false, current + ' -> ' + next);
+  }
+});
+
+test('supplier lifecycle requires confirmed dispatch before response statuses', () => {
+  for (const status of ['waiting_response', 'replied']) {
+    assert.equal(lifecycle.requiresExternalDispatch(status, false), true);
+    assert.equal(lifecycle.requiresExternalDispatch(status, undefined), true);
+    assert.equal(lifecycle.requiresExternalDispatch(status, true), false);
+  }
+  for (const status of ['draft', 'failed', 'cancelled', 'completed']) {
+    assert.equal(lifecycle.requiresExternalDispatch(status, false), false);
+  }
+});
+
+test('supplier retry policy accepts counts zero through four and stops at five', () => {
+  for (let count = 0; count < 5; count += 1) {
+    assert.deepEqual(lifecycle.nextRetryCount(count), {ok: true, count: count + 1});
+  }
+  assert.deepEqual(lifecycle.nextRetryCount(5), {ok: false, reason: 'limit-reached'});
+});
+
+test('supplier retry policy rejects corrupt negative, fractional, unsafe, and nonnumeric counts', () => {
+  for (const count of [-1, 1.5, Number.MAX_SAFE_INTEGER + 1, 'not-a-number']) {
+    assert.deepEqual(lifecycle.nextRetryCount(count), {ok: false, reason: 'invalid-count'});
+  }
+  assert.deepEqual(lifecycle.nextRetryCount(null), {ok: true, count: 1});
+});
+
+test('supplier status normalization is case-insensitive and defaults empty values to draft', () => {
+  assert.equal(lifecycle.normalizeStatus(' RePlIeD '), 'replied');
+  assert.equal(lifecycle.normalizeStatus(''), 'draft');
+  assert.equal(lifecycle.normalizeStatus(null), 'draft');
 });
