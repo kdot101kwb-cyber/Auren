@@ -229,4 +229,35 @@ void main() {
     expect(find.text('إعادة كمسودة'), findsNothing);
     expect(source.retryCalls, 0);
   });
+
+  testWidgets('records a supplier reply only for a dispatched waiting request', (tester) async {
+    final source = _FakeRequestsSource([
+      _request(status: 'waiting_response', externalDispatch: true),
+    ]);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRequestsScreen(dataSource: source),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تسجيل وصول رد'), findsOneWidget);
+    await tester.tap(find.text('تسجيل وصول رد'));
+    await tester.pumpAndSettle();
+
+    expect(source.statusUpdates, ['replied']);
+    expect(source.requests.single.status, 'replied');
+    expect(find.text('تم الرد'), findsOneWidget);
+  });
+
+  testWidgets('does not offer reply action for waiting request without dispatch evidence', (tester) async {
+    final source = _FakeRequestsSource([
+      _request(status: 'waiting_response', externalDispatch: false),
+    ]);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenSupplierRequestsScreen(dataSource: source),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تسجيل وصول رد'), findsNothing);
+    expect(source.statusUpdates, isEmpty);
+  });
 }
