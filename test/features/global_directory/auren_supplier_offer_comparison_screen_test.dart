@@ -91,6 +91,19 @@ void main() {
     expect(find.text('MOQ 30 Supplier'), findsNWidgets(2));
   });
 
+  testWidgets('budget context does not invent a currency when none was selected',
+      (tester) async {
+    await pumpScreen(
+      tester,
+      localOffers: [],
+      initialProduct: 'Wheat seeds',
+      initialBudget: '4500',
+    );
+
+    expect(find.text('الميزانية المطلوبة: 4500'), findsOneWidget);
+    expect(find.text('الميزانية المطلوبة: 4500 USD'), findsNothing);
+  });
+
   testWidgets('unparseable requested quantity is not silently applied',
       (tester) async {
     await pumpScreen(
