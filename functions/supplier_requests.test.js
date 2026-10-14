@@ -35,7 +35,9 @@ test('supplier workflow creates user-scoped request mirrors and updates Match Fl
   assert.match(source, /tx\.create\(ref,data\)/);
   assert.match(source, /tx\.create\(userRef,data\)/);
   assert.match(source, /db\.runTransaction\(async tx =>/);
-  assert.match(source, /updateMatchFlow\(uid,matchFlowId,'active'/);
+  assert.match(source, /function getMatchFlowRef\(uid, flowId\)/);
+  assert.match(source, /function stageMatchFlowUpdate\(tx, ref, snap, status, extra = \{\}\)/);
+  assert.equal((source.match(/stageMatchFlowUpdate\(tx, flowRef, flowSnap, 'active'/g) || []).length, 2);
   assert.match(source, /supplierWorkflowStatus:'draft'/);
 });
 
@@ -114,8 +116,8 @@ test('supplier request idempotency cannot disclose or reuse another account requ
 
 test('creating a supplier draft does not falsely mark a supplier as contacted', () => {
   const source = read('supplier_actions.js');
-  assert.match(source, /Creating a local draft is not evidence that the supplier was contacted/);
-  assert.match(source, /A saved RFQ draft is not sent to the supplier/);
+  assert.match(source, /request mirrors and Match Flow are committed atomically; no supplier is contacted/);
+  assert.equal((source.match(/stageMatchFlowUpdate\(tx, flowRef, flowSnap, 'active'/g) || []).length, 2);
   assert.doesNotMatch(source, /updateMatchFlow\(uid,matchFlowId,'waiting_response'/);
   assert.match(source, /externalDispatch:false/);
 });
