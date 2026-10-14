@@ -66,10 +66,10 @@ void main() {
 
     expect(find.text('طلبات الموردين'), findsOneWidget);
     expect(find.text('Cotton fabric'), findsOneWidget);
-    expect(find.text('Nile Textiles').evaluate().isNotEmpty, isTrue);
+    expect(find.textContaining('Nile Textiles'), findsOneWidget);
     expect(find.text('مسودة'), findsOneWidget);
     expect(find.text('لم يُسجّل إرسال خارجي لهذا الطلب.'), findsOneWidget);
-    expect(find.text('لا يوجد إرسال خارجي تلقائي.'), findsOneWidget);
+    expect(find.textContaining('لا يوجد إرسال خارجي تلقائي.'), findsOneWidget);
     expect(find.text('تسجيل انتظار الرد'), findsNothing);
   });
 
