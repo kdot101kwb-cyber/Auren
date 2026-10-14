@@ -3,6 +3,7 @@
 const admin = require('firebase-admin');
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const db = admin.firestore();
+const lifecycle = require('./supplier_request_lifecycle');
 
 const clean = (v, max) => String(v ?? '').trim().slice(0, max);
 
@@ -120,19 +121,11 @@ exports.updateAurenSupplierRequestStatus = onCall(
     const snap = await ref.get();
     if (!snap.exists) throw new HttpsError('not-found','Supplier request not found.');
     const data = snap.data() || {};
-    const currentStatus = String(data.status || 'draft').toLowerCase();
-    const transitions = {
-      draft: new Set(['waiting_response', 'failed', 'cancelled']),
-      waiting_response: new Set(['replied', 'completed', 'failed', 'cancelled']),
-      replied: new Set(['completed', 'cancelled']),
-      failed: new Set(['cancelled']),
-      cancelled: new Set(),
-      completed: new Set(),
-    };
-    if (nextStatus !== currentStatus && !transitions[currentStatus]?.has(nextStatus)) {
+    const currentStatus = lifecycle.normalizeStatus(data.status);
+    if (!lifecycle.isAllowedTransition(currentStatus, nextStatus)) {
       throw new HttpsError('failed-precondition', 'Invalid supplier request status transition.');
     }
-    if (['waiting_response','replied'].includes(nextStatus) && data.externalDispatch !== true) {
+    if (lifecycle.requiresExternalDispatch(nextStatus, data.externalDispatch)) {
       throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as awaiting or receiving a supplier response.');
     }
     const update = {
@@ -151,10 +144,10 @@ exports.updateAurenSupplierRequestStatus = onCall(
       if (freshStatus !== currentStatus) {
         throw new HttpsError('aborted','Supplier request changed; refresh and try again.');
       }
-      if (nextStatus !== freshStatus && !transitions[freshStatus]?.has(nextStatus)) {
+      if (!lifecycle.isAllowedTransition(freshStatus, nextStatus)) {
         throw new HttpsError('failed-precondition','Invalid supplier request status transition.');
       }
-      if (['waiting_response','replied'].includes(nextStatus) && freshData.externalDispatch !== true) {
+      if (lifecycle.requiresExternalDispatch(nextStatus, freshData.externalDispatch)) {
         throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as awaiting or receiving a supplier response.');
       }
       tx.set(ref, update, {merge:true});
@@ -187,12 +180,14 @@ exports.retryAurenSupplierRequest = onCall(
       if (!['failed','cancelled'].includes(currentStatus)) {
         throw new HttpsError('failed-precondition','Only failed or cancelled requests can be retried.');
       }
-      const previousRetryCount = data.retryCount == null ? 0 : Number(data.retryCount);
-      if (!Number.isSafeInteger(previousRetryCount) || previousRetryCount < 0) {
+      const retry = lifecycle.nextRetryCount(data.retryCount);
+      if (!retry.ok && retry.reason === 'invalid-count') {
         throw new HttpsError('failed-precondition','Stored retry count is invalid.');
       }
-      const retryCount = previousRetryCount + 1;
-      if (retryCount > 5) throw new HttpsError('resource-exhausted','Retry limit reached.');
+      if (!retry.ok && retry.reason === 'limit-reached') {
+        throw new HttpsError('resource-exhausted','Retry limit reached.');
+      }
+      const retryCount = retry.count;
       const update = {
         status:'draft', retryCount, externalDispatch:false,
         lastError:'', retriedAt:admin.firestore.FieldValue.serverTimestamp(), updatedAt:admin.firestore.FieldValue.serverTimestamp(),
