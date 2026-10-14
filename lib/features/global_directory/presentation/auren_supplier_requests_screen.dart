@@ -6,7 +6,10 @@ import '../../../services/suppliers/auren_supplier_requests_repository.dart';
 /// Account-scoped supplier request list. It records local workflow state only;
 /// it does not send messages to suppliers.
 class AurenSupplierRequestsScreen extends StatefulWidget {
-  const AurenSupplierRequestsScreen({super.key});
+  const AurenSupplierRequestsScreen({super.key, this.dataSource});
+
+  /// Optional data source keeps the UI testable without Firebase or network access.
+  final AurenSupplierRequestsDataSource? dataSource;
 
   @override
   State<AurenSupplierRequestsScreen> createState() =>
@@ -15,7 +18,7 @@ class AurenSupplierRequestsScreen extends StatefulWidget {
 
 class _AurenSupplierRequestsScreenState
     extends State<AurenSupplierRequestsScreen> {
-  final _repository = AurenSupplierRequestsRepository();
+  late final AurenSupplierRequestsDataSource _repository;
   String _statusFilter = 'all';
   bool _loading = true;
   Object? _error;
@@ -35,6 +38,7 @@ class _AurenSupplierRequestsScreenState
   @override
   void initState() {
     super.initState();
+    _repository = widget.dataSource ?? AurenSupplierRequestsRepository();
     _load();
   }
 
