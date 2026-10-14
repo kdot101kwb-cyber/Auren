@@ -36,6 +36,19 @@ async function updateMatchFlow(uid, flowId, status, extra = {}) {
   }, {merge:true});
 }
 
+async function updateMatchFlowInTransaction(tx, uid, flowId, status, extra = {}) {
+  const ref = matchFlowRef(uid, flowId);
+  if (!ref) return;
+  const snap = await tx.get(ref);
+  if (!snap.exists) return;
+  tx.set(ref, {
+    status,
+    supplierWorkflowStatus: status,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    ...extra,
+  }, {merge:true});
+}
+
 exports.getAurenSupplierRequest = onCall(
   {region:'us-central1', timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
@@ -91,6 +104,7 @@ exports.cancelAurenSupplierRequest = onCall(
       if (['completed','cancelled'].includes(currentStatus)) {
         throw new HttpsError('failed-precondition','Request cannot be cancelled in its current state.');
       }
+      await updateMatchFlowInTransaction(tx, uid, data.matchFlowId, 'cancelled', {completionReason:'cancelled'});
       const update = {
         status:'cancelled',
         cancelledAt:admin.firestore.FieldValue.serverTimestamp(),
@@ -100,7 +114,6 @@ exports.cancelAurenSupplierRequest = onCall(
       if (globalFresh.exists) tx.set(globalRef, update, {merge:true});
       return {matchFlowId:data.matchFlowId || ''};
     });
-    await updateMatchFlow(uid,cancelled.matchFlowId,'cancelled',{completionReason:'cancelled'});
     return {ok:true,id:requestId,type,status:'cancelled'};
   }
 );
@@ -150,12 +163,12 @@ exports.updateAurenSupplierRequestStatus = onCall(
       if (lifecycle.requiresExternalDispatch(nextStatus, freshData.externalDispatch)) {
         throw new HttpsError('failed-precondition','A request that was not externally dispatched cannot be marked as awaiting or receiving a supplier response.');
       }
+      await updateMatchFlowInTransaction(tx, uid, freshData.matchFlowId || data.matchFlowId, nextStatus, {
+        supplierRequestId: requestId,
+        supplierRequestType: type,
+      });
       tx.set(ref, update, {merge:true});
       if (globalFresh.exists) tx.set(db.collection(collectionFor(type)).doc(requestId), update, {merge:true});
-    });
-    await updateMatchFlow(uid, data.matchFlowId, nextStatus, {
-      supplierRequestId: requestId,
-      supplierRequestType: type,
     });
     return {ok:true,id:requestId,type,status:nextStatus};
   }
@@ -188,6 +201,7 @@ exports.retryAurenSupplierRequest = onCall(
         throw new HttpsError('resource-exhausted','Retry limit reached.');
       }
       const retryCount = retry.count;
+      await updateMatchFlowInTransaction(tx, uid, data.matchFlowId, 'active', {retryCount});
       const update = {
         status:'draft', retryCount, externalDispatch:false,
         lastError:'', retriedAt:admin.firestore.FieldValue.serverTimestamp(), updatedAt:admin.firestore.FieldValue.serverTimestamp(),
@@ -196,7 +210,6 @@ exports.retryAurenSupplierRequest = onCall(
       if (globalFresh.exists) tx.set(globalRef, update, {merge:true});
       return {retryCount, matchFlowId:data.matchFlowId || ''};
     });
-    await updateMatchFlow(uid,retry.matchFlowId,'active',{retryCount:retry.retryCount});
     return {ok:true,id:requestId,type,status:'draft',retryCount:retry.retryCount};
   }
 );
