@@ -1,51 +1,84 @@
 import 'package:firebase_core/firebase_core.dart';
-import '../../core/models/post.dart';
-import '../../core/models/product.dart';
-import '../business/business_repository.dart';
-import '../marketplace/marketplace_repository.dart';
-import '../social/post_repository.dart';
 
-enum AurenSearchType { business, product, post }
-class AurenSearchResult { final String id,title,subtitle; final AurenSearchType type; const AurenSearchResult({required this.id,required this.title,required this.subtitle,required this.type}); }
+import '../../core/models/search_result.dart' as core;
+import '../search/global_search_repository.dart';
+import '../search/search_repository.dart';
+
+/// Compatibility result model for callers of Personal AI search.
+/// The canonical Global Search repository owns discovery and safety filtering.
+enum AurenSearchType {
+  business,
+  product,
+  post,
+  person,
+  entertainment,
+  place,
+  opportunity,
+}
+
+class AurenSearchResult {
+  final String id;
+  final String title;
+  final String subtitle;
+  final AurenSearchType type;
+  final String? imageUrl;
+
+  const AurenSearchResult({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.type,
+    this.imageUrl,
+  });
+}
+
 class AurenUniversalSearchService {
- final BusinessRepository? _businesses; final MarketplaceRepository? _products; final PostRepository? _posts;
- AurenUniversalSearchService({BusinessRepository? businesses,MarketplaceRepository? products,PostRepository? posts}):_businesses=businesses,_products=products,_posts=posts;
- Stream<List<AurenSearchResult>> watch(String query) {
-   final q = query.trim().toLowerCase();
-   if (q.isEmpty) return Stream.value(const <AurenSearchResult>[]);
-   final safeQuery = q.length > 80 ? q.substring(0, 80) : q;
-   if (Firebase.apps.isEmpty) return Stream.value(const <AurenSearchResult>[]);
-   final businesses = _businesses ?? BusinessRepository();
-   final products = _products ?? MarketplaceRepository();
-   final posts = _posts ?? PostRepository();
-   return businesses.watchPublic(query: safeQuery).asyncMap((bs) async {
-     final results = await Future.wait([
-       products.watchPublic(query: safeQuery).first,
-       posts.watchFeed().first,
-     ]);
-     final ps = results[0] as List<AurenProduct>;
-     final fs = results[1] as List<AurenPost>;
-     final out = <AurenSearchResult>[
-       ...bs.take(20).map((b) => AurenSearchResult(
-         id: b.id,
-         title: b.name,
-         subtitle: 'Business • ${b.city}, ${b.country}',
-         type: AurenSearchType.business,
-       )),
-       ...ps.take(20).map((p) => AurenSearchResult(
-         id: p.id,
-         title: p.name,
-         subtitle: 'Product • ${p.category}',
-         type: AurenSearchType.product,
-       )),
-       ...fs.where((p) => ('${p.text} ${p.contentType}').toLowerCase().contains(safeQuery)).take(20).map((p) => AurenSearchResult(
-         id: p.id,
-         title: p.text.isEmpty ? 'AUREN Post' : p.text,
-         subtitle: 'Post • ${p.contentType}',
-         type: AurenSearchType.post,
-       )),
-     ];
-     return out.take(60).toList();
-   });
- }
+  final AurenSearchRepository? _repository;
+
+  AurenUniversalSearchService({AurenSearchRepository? repository})
+      : _repository = repository;
+
+  Stream<List<AurenSearchResult>> watch(String query, {String? uid}) {
+    final normalized = query.trim();
+    if (normalized.isEmpty) {
+      return Stream.value(const <AurenSearchResult>[]);
+    }
+    if (_repository == null && Firebase.apps.isEmpty) {
+      return Stream.value(const <AurenSearchResult>[]);
+    }
+
+    final boundedQuery = normalized.length > 80
+        ? normalized.substring(0, 80)
+        : normalized;
+    final repository = _repository ?? AurenGlobalSearchRepository();
+
+    return Stream.fromFuture(repository.search(boundedQuery, uid: uid)).map(
+      (results) => results
+          .map(_adapt)
+          .whereType<AurenSearchResult>()
+          .take(60)
+          .toList(growable: false),
+    );
+  }
+
+  AurenSearchResult? _adapt(core.AurenSearchResult result) {
+    final type = switch (result.type) {
+      core.AurenSearchType.businesses => AurenSearchType.business,
+      core.AurenSearchType.products => AurenSearchType.product,
+      core.AurenSearchType.posts => AurenSearchType.post,
+      core.AurenSearchType.people => AurenSearchType.person,
+      core.AurenSearchType.entertainment => AurenSearchType.entertainment,
+      core.AurenSearchType.places => AurenSearchType.place,
+      core.AurenSearchType.opportunities => AurenSearchType.opportunity,
+      core.AurenSearchType.ai => null,
+    };
+    if (type == null) return null;
+    return AurenSearchResult(
+      id: result.id,
+      title: result.title,
+      subtitle: result.subtitle,
+      type: type,
+      imageUrl: result.imageUrl,
+    );
+  }
 }
