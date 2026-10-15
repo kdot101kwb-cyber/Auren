@@ -7,7 +7,7 @@ const {getFirestore, FieldValue, Timestamp} = require('firebase-admin/firestore'
 const db = getFirestore();
 const auth = getAuth();
 const MAX_LOOKUPS = 50;
-const RATE_LIMIT = 20;
+const RATE_LIMIT = 5;
 const WINDOW_MS = 60 * 60 * 1000;
 
 function normalizeE164(value) {
