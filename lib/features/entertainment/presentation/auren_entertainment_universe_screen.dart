@@ -5,6 +5,7 @@ import '../../../services/entertainment/entertainment_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'auren_ai_series_studio_screen.dart';
 import 'auren_anime_world_screen.dart';
+import 'auren_books_manga_screen.dart';
 import 'auren_entertainment_create_screen.dart';
 import 'auren_gaming_screen.dart';
 import 'auren_podcasts_screen.dart';
@@ -133,6 +134,12 @@ class AurenEntertainmentUniverseScreen extends StatelessWidget {
             title: 'البودكاست والصوت',
             subtitle: 'اكتشف البرامج والحلقات الصوتية.',
             onTap: () => _open(context, const AurenPodcastsScreen()),
+          ),
+          _DestinationTile(
+            icon: Icons.menu_book_rounded,
+            title: 'الكتب والمانغا والمكتبة',
+            subtitle: 'استكشف الكتب والمانغا والأعمال المتاحة في مكتبة AUREN.',
+            onTap: () => _open(context, const AurenBooksMangaScreen()),
           ),
           _DestinationTile(
             icon: Icons.movie_creation_outlined,
