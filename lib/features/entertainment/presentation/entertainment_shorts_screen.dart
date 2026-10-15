@@ -148,8 +148,18 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                 value: _dataSaverMode,
                 onChanged: (value) {
                   setState(() => _dataSaverMode = value);
-                  final current = active;
-                  if (current >= 0) _retainControllersFor(current, const <AurenEntertainmentItem>[]);
+                  if (value) {
+                    final keepId = _activeItemId;
+                    for (final id in controllers.keys.toList()) {
+                      if (id == keepId) continue;
+                      final controller = controllers.remove(id)!;
+                      controller.pause();
+                      controller.dispose();
+                    }
+                    _retainedControllerIds
+                      ..clear()
+                      ..addAll(keepId == null ? const <String>{} : <String>{keepId});
+                  }
                 },
               ),
               SwitchListTile(
