@@ -22,6 +22,7 @@ import 'auren_books_manga_screen.dart';
 import 'auren_anime_world_screen.dart';
 import 'auren_entertainment_create_screen.dart';
 import 'auren_ai_series_studio_screen.dart';
+import 'auren_entertainment_universe_screen.dart';
 import 'auren_sports_entertainment_screen.dart';
 import 'auren_events_entertainment_screen.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
@@ -87,6 +88,15 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
           initialPrompt:
               'أنت AUREN World AI. ساعدني في استكشاف العوالم والتجارب التفاعلية داخل AUREN. اقترح عالماً مناسباً لاهتماماتي أو ساعدني في إنشاء تجربة تفاعلية، ولا تدّعي وجود عالم أو ميزة غير متاحة.',
         ),
+      ),
+    );
+  }
+
+  void _openUniverse() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const AurenEntertainmentUniverseScreen(),
       ),
     );
   }
@@ -626,6 +636,12 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
             onPressed: _openAI,
             icon: const Icon(Icons.auto_awesome),
             label: const Text('ماذا تريد أن تفعل الآن؟'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _openUniverse,
+            icon: const Icon(Icons.explore_rounded),
+            label: const Text('افتح عالم الترفيه'),
           ),
         ],
       ),
