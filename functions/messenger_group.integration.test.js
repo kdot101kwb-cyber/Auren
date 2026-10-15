@@ -47,6 +47,33 @@ function conversationDb(uid) {
   return testEnv.authenticatedContext(uid).firestore();
 }
 
+
+test('random-group requests are private and cannot be deleted or forged by clients', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('random_group_connect/private-request').set({
+      uid: 'request-owner',
+      country: 'SD',
+      language: 'ar',
+      interest: 'learning',
+      goal: 'discussion',
+      groupSize: 3,
+      status: 'waiting',
+      createdAt: firebase.firestore.Timestamp.now(),
+    });
+  });
+  const ownerDb = conversationDb('request-owner');
+  const otherDb = conversationDb('request-outsider');
+  await assertSucceeds(ownerDb.doc('random_group_connect/private-request').get());
+  await assertFails(otherDb.doc('random_group_connect/private-request').get());
+  await assertFails(ownerDb.doc('random_group_connect/private-request').delete());
+  await assertFails(ownerDb.doc('random_groups/client-forged').set({
+    memberUids: ['request-owner', 'request-outsider', 'third-person'],
+    size: 3,
+    status: 'active',
+  }));
+  await assertSucceeds(ownerDb.doc('random_group_connect/private-request').update({status: 'cancelled'}));
+});
+
 test('group members can read the group conversation while outsiders cannot', async () => {
   await seedGroupConversation('messenger-group-read', ['group-owner', 'group-member', 'group-member-2']);
 
