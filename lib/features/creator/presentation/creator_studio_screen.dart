@@ -52,7 +52,7 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
         mediaType: _mediaType,
         contentType: _contentType,
         category: _category,
-        tags: _tags.text.split(RegExp(r'[,،\\s]+')),
+        tags: _tags.text.split(RegExp(r'[,،\s]+')),
       );
       _text.clear();
       _media.clear();
