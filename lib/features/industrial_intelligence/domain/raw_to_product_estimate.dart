@@ -4,6 +4,8 @@ class RawToProductEstimate {
   final double outputQuantity;
   final double rawAndProcessingCost;
   final double packagingCost;
+  final double transportCost;
+  final double otherCosts;
   final double transportAndOtherCost;
   final double totalCost;
   final double revenue;
@@ -15,6 +17,8 @@ class RawToProductEstimate {
     required this.outputQuantity,
     required this.rawAndProcessingCost,
     required this.packagingCost,
+    required this.transportCost,
+    required this.otherCosts,
     required this.transportAndOtherCost,
     required this.totalCost,
     required this.revenue,
@@ -85,6 +89,8 @@ class RawToProductEstimate {
       outputQuantity: outputQuantity,
       rawAndProcessingCost: rawAndProcessingCost,
       packagingCost: packagingCost,
+      transportCost: transportCost,
+      otherCosts: otherCosts,
       transportAndOtherCost: transportAndOtherCost,
       totalCost: totalCost,
       revenue: revenue,
