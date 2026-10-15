@@ -371,6 +371,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                             : 'ما لقينا شورتات في تصنيف "$shortCategory" حالياً.'),
                         const SizedBox(height: 12),
                         const Text('جرّب تصنيفاً آخر أو ارجع إلى الكل.'),
+                        if (shortCategory != 'الكل')
+                          TextButton.icon(
+                            onPressed: () => _changeShortCategory('الكل'),
+                            icon: const Icon(Icons.grid_view),
+                            label: const Text('عرض كل الشورتات'),
+                          ),
                       ],
                     ),
                   ),
