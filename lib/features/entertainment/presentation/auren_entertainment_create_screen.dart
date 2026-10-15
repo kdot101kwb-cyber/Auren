@@ -24,7 +24,7 @@ class _AurenEntertainmentCreateScreenState
   String _shortCategory = 'حسب مزاج المستخدم';
 
   static const _shortCategories = <String>['حسب مزاج المستخدم', 'كرتون', 'كوميديا', 'فلوقات', 'موسيقى', 'ألعاب', 'تعليمي', 'رياضة', 'منوعات'];
-  List<String> get _tags => _tagsController.text.split(RegExp(r'[,،#\\s]+')).map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toSet().take(20).toList();
+  List<String> get _tags => _tagsController.text.split(RegExp(r'[,،#\s]+')).map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toSet().take(20).toList();
 
   static const _modes = <String, IconData>{
     'أغنية': Icons.music_note_rounded,
@@ -119,9 +119,9 @@ class _AurenEntertainmentCreateScreenState
     setState(() => _saving = true);
     final idea = _idea.isEmpty ? _exampleFor(_mode) : _idea;
     try {
-      final draftId = _editingDraftId ?? await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: idea);
+      final draftId = _editingDraftId ?? await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: idea, category: _shortCategory, tags: _tags);
       _editingDraftId ??= draftId;
-      _activeJobId = await EntertainmentRepository().createEntertainmentJob(uid, draftId: draftId, mode: _mode, mood: _mood, length: _length, idea: idea);
+      _activeJobId = await EntertainmentRepository().createEntertainmentJob(uid, draftId: draftId, mode: _mode, mood: _mood, length: _length, idea: idea, category: _shortCategory, tags: _tags);
       try {
         if (_mode == 'مسلسل') {
           await EntertainmentRepository().generateSeriesBlueprint(_activeJobId!);
