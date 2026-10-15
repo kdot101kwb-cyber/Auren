@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Offline translations aligned with AUREN's currently supported locales.
 class RawToProductStrings {
   final String languageCode;
