@@ -343,10 +343,18 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                     _result('تكلفة التغليف', _money(packagingCosts)),
                     _result('النقل والتكاليف الأخرى', _money(_number(_transport) + _number(_otherCosts))),
                     _result('إجمالي تكلفة الإنتاج', _money(totalCosts), emphasized: true),
-                    _result('تكلفة الوحدة النهائية', _money(costPerProduct)),
+                    _result(
+                      'تكلفة الوحدة النهائية',
+                      outputQty > 0
+                          ? _money(costPerProduct)
+                          : 'غير متاحة لعدم وجود إنتاج صالح',
+                    ),
                     _result('إيرادات البيع المتوقعة', _money(revenue)),
                     _result('الربح أو الخسارة التقديرية', _money(profit), emphasized: true),
-                    _result('هامش الربح من المبيعات', '${margin.toStringAsFixed(1)}%'),
+                    _result(
+                      'هامش الربح من المبيعات',
+                      revenue > 0 ? '${margin.toStringAsFixed(1)}%' : 'غير متاح لعدم وجود إيرادات',
+                    ),
                     const SizedBox(height: 8),
                     const Text(
                       'تنبيه: لا تشمل هذه الحسبة الضرائب أو التمويل أو تغير الأسعار '
