@@ -116,10 +116,30 @@ class AurenCreatorStudioRepository {
       'searchText': cleanText.toLowerCase(),
     };
 
-    // Keep the creator post and the public Shorts item consistent in one batch.
+    // Public Shorts require a channel owned by this creator; reuse one or
+    // create a minimal public channel in the same atomic batch.
     final batch = _db.batch();
     batch.set(postRef, postData);
     if (isShort) {
+      final channels = _db.collection('content_channels');
+      final existingChannels = await channels
+          .where('ownerId', isEqualTo: cleanUid)
+          .where('public', isEqualTo: true)
+          .limit(1)
+          .get();
+      final channelRef = existingChannels.docs.isNotEmpty
+          ? existingChannels.docs.first.reference
+          : channels.doc();
+      if (existingChannels.docs.isEmpty) {
+        batch.set(channelRef, {
+          'ownerId': cleanUid,
+          'name': 'AUREN Creator ${cleanUid.substring(0, cleanUid.length > 6 ? 6 : cleanUid.length)}',
+          'description': 'قناة منشورات وشورتات صانع المحتوى على AUREN.',
+          'subscribers': 0,
+          'public': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
       final shortRef = _db.collection('entertainment_items').doc();
       batch.set(shortRef, {
         'title': cleanText.length > 120 ? cleanText.substring(0, 120) : cleanText,
@@ -129,6 +149,7 @@ class AurenCreatorStudioRepository {
         'mediaUrl': cleanMedia,
         'imageUrl': '',
         'creatorId': cleanUid,
+        'channelId': channelRef.id,
         'ownerId': cleanUid,
         'authorId': cleanUid,
         'category': cleanCategory,
