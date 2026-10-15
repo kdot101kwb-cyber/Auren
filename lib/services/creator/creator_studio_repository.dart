@@ -91,6 +91,9 @@ class AurenCreatorStudioRepository {
     if (!{'none', 'image', 'video', 'audio'}.contains(mediaType)) throw ArgumentError('Unsupported media type.');
 
     final isShort = cleanContentType == 'short';
+    if (isShort && cleanText.length > 3000) {
+      throw ArgumentError('وصف الشورت يجب ألا يتجاوز 3000 حرف.');
+    }
     if (isShort) {
       final uri = Uri.tryParse(cleanMedia);
       if (mediaType != 'video' || uri == null ||
