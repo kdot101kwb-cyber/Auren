@@ -57,6 +57,32 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
     }
   }
 
+  Future<void> cancelWaiting() async {
+    final uid = auth.currentUserId;
+    final id = requestId;
+    if (uid == null || id == null || submitting) return;
+    setState(() => submitting = true);
+    try {
+      await service.cancel(uid, id);
+      if (!mounted) return;
+      setState(() {
+        requestId = null;
+        selectedRequestIds.clear();
+        submitting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم إلغاء طلب الانتظار.')),
+      );
+    } catch (error) {
+      if (mounted) {
+        setState(() => submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر إلغاء الانتظار: ${_friendlyError(error)}')),
+        );
+      }
+    }
+  }
+
   Future<void> formSelectedGroup() async {
     final uid = auth.currentUserId;
     final ownRequestId = requestId;
@@ -112,6 +138,11 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
             onPressed: requestId == null && !submitting ? join : null,
             child: Text(requestId == null ? 'انضم للانتظار' : 'بانتظار المجموعة'),
           ),
+          if (requestId != null)
+            OutlinedButton(
+              onPressed: submitting ? null : cancelWaiting,
+              child: const Text('إلغاء الانتظار'),
+            ),
           const Divider(height: 32),
           if (requestId != null)
             StreamBuilder<List<Map<String, dynamic>>>(
