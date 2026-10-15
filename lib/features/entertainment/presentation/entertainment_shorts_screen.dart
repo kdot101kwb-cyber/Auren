@@ -85,6 +85,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       await c.dispose();
     } finally {
       _preparing.remove(item.id);
+      if (mounted && _retainedControllerIds.contains(item.id) && selectedUrl != _effectiveVideoUrl(item)) {
+        _prepare(item);
+      }
     }
   }
 
@@ -158,6 +161,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
             Navigator.pop(sheetContext);
             if ((_qualityUrls[item.id] ?? item.mediaUrl) == choice.$2) return;
             _qualityUrls[item.id] = choice.$2;
+            _playbackGeneration[item.id] = (_playbackGeneration[item.id] ?? 0) + 1;
             final old = controllers.remove(item.id);
             if (old != null) { old.pause(); old.dispose(); }
             _prepare(item);
@@ -186,6 +190,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                 value: _dataSaverMode,
                 onChanged: (value) {
                   final keepId = _activeItemId;
+                  if (keepId != null) {
+                    _playbackGeneration[keepId] = (_playbackGeneration[keepId] ?? 0) + 1;
+                  }
                   setState(() => _dataSaverMode = value);
                   if (value) {
                     for (final id in controllers.keys.toList()) {
