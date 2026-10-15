@@ -47,19 +47,42 @@ class AurenEventsRepository {
       final eventSnapshot = await transaction.get(eventRef);
       if (!eventSnapshot.exists || eventSnapshot.data() == null) throw StateError('الفعالية غير موجودة.');
       final attendeeSnapshot = await transaction.get(attendeeRef);
-      if (attendeeSnapshot.exists) return _statusFromString(attendeeSnapshot.data()?['status'] as String?);
       final data = eventSnapshot.data()!;
       final event = _fromMap(eventSnapshot.id, data);
-      if (!DateTime.now().isBefore(event.startsAt)) throw StateError('انتهى التسجيل لأن الفعالية بدأت.');
-      final confirmed = (data['confirmedCount'] as num?)?.toInt() ?? 0;
-      final status = AurenEventCapacityPolicy.statusForNewRsvp(event: event, confirmedAttendees: confirmed);
-      if (status == AurenEventRsvpStatus.going) {
-        transaction.update(eventRef, {'confirmedCount': confirmed + 1, 'updatedAt': FieldValue.serverTimestamp()});
+      if (!DateTime.now().isBefore(event.startsAt)) {
+        throw StateError('انتهى التسجيل لأن الفعالية بدأت.');
       }
-      transaction.set(attendeeRef, {
-        'userId': userId, 'status': _statusToString(status),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final existingStatus = attendeeSnapshot.exists
+          ? _statusFromString(attendeeSnapshot.data()?['status'] as String?)
+          : null;
+      if (existingStatus != null &&
+          existingStatus != AurenEventRsvpStatus.cancelled) {
+        return existingStatus;
+      }
+      final confirmed = (data['confirmedCount'] as num?)?.toInt() ?? 0;
+      final status = AurenEventCapacityPolicy.statusForNewRsvp(
+        event: event,
+        confirmedAttendees: confirmed,
+      );
+      final stamp = FieldValue.serverTimestamp();
+      if (status == AurenEventRsvpStatus.going) {
+        transaction.update(eventRef, {
+          'confirmedCount': confirmed + 1,
+          'updatedAt': stamp,
+        });
+      }
+      if (attendeeSnapshot.exists) {
+        transaction.update(attendeeRef, {
+          'status': _statusToString(status),
+          'updatedAt': stamp,
+        });
+      } else {
+        transaction.set(attendeeRef, {
+          'userId': userId,
+          'status': _statusToString(status),
+          'updatedAt': stamp,
+        });
+      }
       return status;
     });
   }
