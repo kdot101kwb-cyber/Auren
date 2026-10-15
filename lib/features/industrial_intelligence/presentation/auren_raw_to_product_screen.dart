@@ -59,7 +59,14 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
 
   double? _parseAmount(String value) {
     var normalized = _normalizeDigits(value).replaceAll(' ', '');
-    if (RegExp(r'^\\d{1,3}(,\\d{3})+(\\.\\d+)?
+    if (RegExp(r'^\d{1,3}(,\d{3})+(\.\d+)?$').hasMatch(normalized)) {
+      normalized = normalized.replaceAll(',', '');
+    } else if (normalized.contains(',') && !normalized.contains('.')) {
+      normalized = normalized.replaceAll(',', '.');
+    }
+    final parsed = double.tryParse(normalized);
+    return parsed != null && parsed.isFinite ? parsed : null;
+  }
 
   String _money(double value) =>
       '${value.toStringAsFixed(2)} $_currency';
