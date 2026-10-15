@@ -247,7 +247,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                                   Text(stage.purpose),
                                   const SizedBox(height: 3),
                                   Text(
-                                    'الناتج المعتاد: ${stage.typicalOutputs.join('، ')}',
+                                    "الناتج المعتاد: ${stage.typicalOutputs.join('، ')}",
                                     style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
