@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../global_directory/presentation/auren_supplier_discovery_screen.dart';
 
 class AurenSupplierFinderScreen extends StatelessWidget {
   const AurenSupplierFinderScreen({super.key});
@@ -26,6 +27,19 @@ class AurenSupplierFinderScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   const Text('واجهة AUREN جاهزة للعمل ويمكن توسيعها وربطها بالخدمات دون تعطيل التطبيق.'),
                   const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AurenSupplierDiscoveryScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.search),
+                    label: const Text('استكشف الموردين وجهّز طلب عرض سعر'),
+                  ),
+                  const SizedBox(height: 8),
                   FilledButton.icon(
                     onPressed: () {
                       Navigator.push(

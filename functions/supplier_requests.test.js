@@ -31,10 +31,11 @@ test('supplier request lifecycle preserves user ownership and match flow', () =>
 test('supplier workflow creates user-scoped request mirrors and updates Match Flow', () => {
   const source = read('supplier_actions.js');
   assert.match(source, /const userRef = db\.collection\('users'\)/);
-  assert.match(source, /batch\.set\(ref,data\); batch\.set\(userRef,data\)/);
-  assert.match(source, /updateMatchFlow\(uid,matchFlowId,'draft'/);
-  assert.match(source, /supplierWorkflowStatus: status/);
-  assert.doesNotMatch(source, /status, supplierWorkflowStatus: status/);
+  assert.match(source, /tx\.create\(ref,data\)/);
+  assert.match(source, /tx\.create\(userRef,data\)/);
+  assert.match(source, /db\.runTransaction\(async tx =>/);
+  assert.match(source, /updateMatchFlow\(uid,matchFlowId,'active'/);
+  assert.match(source, /supplierWorkflowStatus:'draft'/);
 });
 
 test('supplier action lookup supports exporter importer and manufacturer collections', () => {
@@ -83,7 +84,7 @@ test('supplier status updates recheck state inside transaction to prevent stale 
 test('cancel and retry keep Match Flow status consistent without dispatching messages', () => {
   const source = read('supplier_requests.js');
   assert.match(source, /updateMatchFlow\(uid,cancelled\.matchFlowId,'cancelled'/);
-  assert.match(source, /updateMatchFlow\(uid,retry\.matchFlowId,'active'/);
+  assert.match(source, /updateMatchFlow\(uid,retry\.matchFlowId,'draft'/);
   assert.match(source, /status:'draft', retryCount, externalDispatch:false/);
   assert.match(source, /Only failed or cancelled requests can be retried/);
   assert.match(source, /Retry limit reached/);
@@ -95,8 +96,75 @@ test('supplier retry rechecks eligibility and retry count inside its transaction
   assert.match(retrySource, /const fresh = await tx\.get\(ref\)/);
   assert.match(retrySource, /const currentStatus = String\(data\.status \|\| ''\)\.toLowerCase\(\)/);
   assert.match(retrySource, /Only failed or cancelled requests can be retried/);
-  assert.match(retrySource, /const retryCount = Number\(data\.retryCount \|\| 0\) \+ 1/);
+  assert.match(retrySource, /const previousRetryCount = data\.retryCount == null \? 0 : Number\(data\.retryCount\)/);
+  assert.match(retrySource, /Number\.isSafeInteger\(previousRetryCount\)/);
+  assert.match(retrySource, /previousRetryCount < 0/);
+  assert.match(retrySource, /Stored retry count is invalid/);
+  assert.match(retrySource, /const retryCount = previousRetryCount \+ 1/);
   assert.match(retrySource, /Retry limit reached/);
   assert.match(retrySource, /tx\.set\(ref, update, \{merge:true\}\)/);
-  assert.match(retrySource, /tx\.set\(globalRef, update, \{merge:true\}\)/);
+  assert.match(retrySource, /if \(globalFresh\.exists\) tx\.set\(globalRef, update, \{merge:true\}\)/);
+});
+
+test('supplier request idempotency cannot disclose or reuse another account request', () => {
+  const source = read('supplier_actions.js');
+  assert.match(source, /const previous = existing\.data\(\) \|\| \{\};/);
+  assert.match(source, /previous\.requesterUid !== uid/);
+  assert.match(source, /Idempotency key is already used by another account/);
+  assert.match(source, /permission-denied/);
+  // Both contact and RFQ paths independently enforce ownership before returning.
+  assert.equal((source.match(/previous\.requesterUid !== uid/g) || []).length, 2);
+  assert.equal((source.match(/const outcome = await db\.runTransaction\(async tx =>/g) || []).length, 2);
+});
+
+test('creating a supplier draft does not falsely mark a supplier as contacted', () => {
+  const source = read('supplier_actions.js');
+  assert.match(source, /Creating a local draft is not evidence that the supplier was contacted/);
+  assert.match(source, /A saved RFQ draft is not sent to the supplier/);
+  assert.doesNotMatch(source, /updateMatchFlow\(uid,matchFlowId,'waiting_response'/);
+  assert.match(source, /externalDispatch:false/);
+});
+
+test('supplier lifecycle refuses to mutate a global mirror owned by another account', () => {
+  const source = read('supplier_requests.js');
+  assert.equal((source.match(/globalFresh\.data\(\)\?\.requesterUid !== uid/g) || []).length, 3);
+  assert.equal((source.match(/if \(globalFresh\.exists\) tx\.set\(/g) || []).length, 3);
+  assert.match(source, /Supplier request mirror belongs to another account/);
+});
+
+test('supplier request idempotency reads and creates both records atomically', () => {
+  const source = read('supplier_actions.js');
+  assert.equal((source.match(/const outcome = await db\.runTransaction\(async tx =>/g) || []).length, 2);
+  assert.equal((source.match(/tx\.create\(ref,data\)/g) || []).length, 2);
+  assert.equal((source.match(/tx\.create\(userRef,data\)/g) || []).length, 2);
+  assert.equal((source.match(/const existingUser = await tx\.get\(userRef\)/g) || []).length, 2);
+});
+
+test('supplier response lifecycle requires evidence of external dispatch', () => {
+  const source = read('supplier_requests.js');
+  assert.equal((source.match(/\['waiting_response','replied'\]\.includes\(nextStatus\) && (?:data|freshData)\.externalDispatch !== true/g) || []).length, 2);
+  assert.match(source, /cannot be marked as awaiting or receiving a supplier response/);
+});
+
+test('supplier request API keeps document identity authoritative over stored payload fields', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /return \{\.\.\.snap\.data\(\), id:snap\.id, type\};/);
+  assert.match(source, /contacts\.docs\.map\(d=>\(\{\.\.\.d\.data\(\),id:d\.id,type:'contact'\}\)\)/);
+  assert.match(source, /rfqs\.docs\.map\(d=>\(\{\.\.\.d\.data\(\),id:d\.id,type:'rfq'\}\)\)/);
+});
+
+test('supplier request listing clamps limits to integer values within 1–100', () => {
+  const source = read('supplier_requests.js');
+  assert.match(source, /Number\.isFinite\(requestedLimit\)/);
+  assert.match(source, /Math\.floor\(requestedLimit\)/);
+  assert.match(source, /Math\.min\(Math\.max\(Math\.floor\(requestedLimit\), 1\), 100\)/);
+});
+
+
+test('supplier request updates never overwrite the parent Match Flow lifecycle status', () => {
+  const source = read('supplier_requests.js');
+  const helper = source.slice(source.indexOf('async function updateMatchFlow'), source.indexOf('exports.getAurenSupplierRequest'));
+  assert.match(helper, /supplierWorkflowStatus: status/);
+  assert.doesNotMatch(helper, /^\s*status,\s*$/m);
+  assert.match(source, /updateMatchFlow\(uid,retry\.matchFlowId,'draft'/);
 });
