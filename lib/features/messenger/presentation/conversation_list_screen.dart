@@ -6,6 +6,7 @@ import '../../../services/users/presence_service.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../services/users/user_search_repository.dart';
 import 'messenger_screen.dart';
+import 'phone_discovery_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../social/presentation/user_search_screen.dart';
 import '../../../services/notifications/notification_repository.dart';
@@ -152,6 +153,7 @@ class _AurenConversationListScreenState extends State<AurenConversationListScree
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenBlockedUsersScreen())),
           icon: const Icon(Icons.shield_outlined),
         ),
+        IconButton(tooltip: 'Find by phone / contacts', onPressed: () async { final profile = await Navigator.push<AurenUserProfile>(context, MaterialPageRoute(builder: (_) => const AurenPhoneDiscoveryScreen())); if (profile != null && mounted) await _startDirectMessage(profile); }, icon: const Icon(Icons.contacts_outlined)),
         IconButton(tooltip: 'New chat', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen())), icon: const Icon(Icons.edit_outlined)),
         IconButton(tooltip: 'New group', onPressed: _createGroup, icon: const Icon(Icons.group_add)),
         if (uid != null)
