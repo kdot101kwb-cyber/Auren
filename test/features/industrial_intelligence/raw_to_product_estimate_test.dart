@@ -129,6 +129,38 @@ void main() {
       );
     });
 
+    test('rejects overflow in combined fixed costs', () {
+      expect(
+        () => RawToProductEstimate.calculate(
+          rawQuantity: 1,
+          yieldPercent: 100,
+          rawUnitCost: 0,
+          processingPerRawUnit: 0,
+          packagingPerProduct: 0,
+          transportCost: double.maxFinite,
+          otherCosts: double.maxFinite,
+          sellingPricePerProduct: 1,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('rejects overflow in a margin derived from an extremely small revenue', () {
+      expect(
+        () => RawToProductEstimate.calculate(
+          rawQuantity: 1,
+          yieldPercent: 100,
+          rawUnitCost: double.maxFinite,
+          processingPerRawUnit: 0,
+          packagingPerProduct: 0,
+          transportCost: 0,
+          otherCosts: 0,
+          sellingPricePerProduct: double.minPositive,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('rejects negative, non-finite and out-of-range inputs', () {
       final base = <String, double>{
         'rawQuantity': 1,
