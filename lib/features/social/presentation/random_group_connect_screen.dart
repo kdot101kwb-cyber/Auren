@@ -137,6 +137,14 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text('اختَر ${size - 1} أعضاء معك. المختارون: ${selectedRequestIds.length}/${size - 1}'),
+                    if (rows.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Text(
+                          'ما لقينا مرشحين مناسبين حالياً. البحث بيتجدد تلقائياً كل 20 ثانية.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ...rows.map((candidate) {
                       final id = candidate['id'] as String;
                       final checked = selectedRequestIds.contains(id);
