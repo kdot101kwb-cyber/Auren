@@ -91,6 +91,13 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         await c.play();
       }
     } catch (_) {
+      // Initialization or playback can fail after the controller was inserted
+      // into the map. Remove only this controller so the UI cannot reuse a
+      // disposed instance; a later page visit can prepare a fresh one.
+      if (identical(controllers[item.id], c)) {
+        controllers.remove(item.id);
+        if (mounted) setState(() {});
+      }
       await c.dispose();
     } finally {
       _preparing.remove(item.id);
