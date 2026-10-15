@@ -159,3 +159,12 @@ test('supplier request listing clamps limits to integer values within 1–100', 
   assert.match(source, /Math\.floor\(requestedLimit\)/);
   assert.match(source, /Math\.min\(Math\.max\(Math\.floor\(requestedLimit\), 1\), 100\)/);
 });
+
+
+test('supplier request updates never overwrite the parent Match Flow lifecycle status', () => {
+  const source = read('supplier_requests.js');
+  const helper = source.slice(source.indexOf('async function updateMatchFlow'), source.indexOf('exports.getAurenSupplierRequest'));
+  assert.match(helper, /supplierWorkflowStatus: status/);
+  assert.doesNotMatch(helper, /^\s*status,\s*$/m);
+  assert.match(source, /updateMatchFlow\(uid,retry\.matchFlowId,'draft'/);
+});
