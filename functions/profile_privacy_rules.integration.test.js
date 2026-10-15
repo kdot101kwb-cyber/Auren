@@ -164,3 +164,18 @@ test('undiscoverable profile mode is hidden from other users but remains owner-r
   );
 });
 
+test('legacy profile modes missing contact visibility fields fail closed for public readers', async () => {
+  const legacy = profileMode('profile-owner-i', {
+    links: [{ label: 'Unclassified contact', url: 'https://private.example.com' }],
+  });
+  delete legacy.showContact;
+  await seed('profile-owner-i', 'professional', legacy);
+
+  await assertFails(
+    db('profile-viewer-i').doc('users/profile-owner-i/profile_modes/professional').get(),
+  );
+  await assertSucceeds(
+    db('profile-owner-i').doc('users/profile-owner-i/profile_modes/professional').get(),
+  );
+});
+
