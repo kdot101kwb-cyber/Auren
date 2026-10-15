@@ -352,7 +352,8 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                     const Divider(),
                     _result(l.rawProcessingCost, _money(rawCosts)),
                     _result(l.packagingCost, _money(packagingCosts)),
-                    _result(l.transportOther, _money(_number(_transport) + _number(_otherCosts))),
+                    _result(l.transport, _money(estimate.transportCost)),
+                    _result(l.other, _money(estimate.otherCosts)),
                     _result(l.total, _money(totalCosts), emphasized: true),
                     _result(
                       l.unit,
