@@ -58,6 +58,40 @@ void main() {
       expect(result.profitOrLoss, -30);
     });
 
+    test('reports exact break-even as zero profit and zero sales margin', () {
+      final result = RawToProductEstimate.calculate(
+        rawQuantity: 10,
+        yieldPercent: 80,
+        rawUnitCost: 2,
+        processingPerRawUnit: 1,
+        packagingPerProduct: 0.5,
+        transportCost: 20,
+        otherCosts: 0,
+        sellingPricePerProduct: 4.375,
+      );
+      expect(result.outputQuantity, 8);
+      expect(result.totalCost, 35);
+      expect(result.revenue, 35);
+      expect(result.profitOrLoss, 0);
+      expect(result.salesMarginPercent, 0);
+    });
+
+    test('rejects calculations whose derived values overflow', () {
+      expect(
+        () => RawToProductEstimate.calculate(
+          rawQuantity: double.maxFinite,
+          yieldPercent: 100,
+          rawUnitCost: 2,
+          processingPerRawUnit: 0,
+          packagingPerProduct: 0,
+          transportCost: 0,
+          otherCosts: 0,
+          sellingPricePerProduct: 0,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('rejects negative, non-finite and out-of-range inputs', () {
       final base = <String, double>{
         'rawQuantity': 1,
