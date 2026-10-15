@@ -4,6 +4,7 @@ import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'auren_ai_series_studio_screen.dart';
+import 'auren_live_entertainment_screen.dart';
 import 'auren_anime_world_screen.dart';
 import 'auren_books_manga_screen.dart';
 import 'auren_entertainment_create_screen.dart';
@@ -124,6 +125,12 @@ class AurenEntertainmentUniverseScreen extends StatelessWidget {
             onTap: () => _open(context, const AurenWatchTogetherScreen()),
           ),
           _DestinationTile(
+            icon: Icons.live_tv_rounded,
+            title: 'AUREN Live',
+            subtitle: 'تصفّح البث والمحتوى المباشر المتاح.',
+            onTap: () => _open(context, const AurenLiveEntertainmentScreen()),
+          ),
+          _DestinationTile(
             icon: Icons.sports_esports_outlined,
             title: 'الألعاب والتحديات',
             subtitle: 'انتقل إلى تجارب الألعاب الموجودة.',
@@ -187,21 +194,15 @@ class AurenEntertainmentUniverseScreen extends StatelessWidget {
                 ..sort((a, b) => a.id.compareTo(b.id));
               // Rotate the starting item once per day without changing the catalog
               // or promising that new content is published every day.
+              final dayIndex = DateTime.now()
+                  .difference(DateTime(2024, 1, 1))
+                  .inDays;
+              final rotationOffset = items.isEmpty ? 0 : dayIndex % items.length;
               final discoverItems = items.isEmpty
                   ? items
                   : <AurenEntertainmentItem>[
-                      ...items.skip(
-                        DateTime.now()
-                                .difference(DateTime(2024, 1, 1))
-                                .inDays %
-                            items.length,
-                      ),
-                      ...items.take(
-                        DateTime.now()
-                                .difference(DateTime(2024, 1, 1))
-                                .inDays %
-                            items.length,
-                      ),
+                      ...items.skip(rotationOffset),
+                      ...items.take(rotationOffset),
                     ];
               if (items.isEmpty) {
                 return const Card(
