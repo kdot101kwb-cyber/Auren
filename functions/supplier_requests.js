@@ -27,8 +27,9 @@ async function updateMatchFlow(uid, flowId, status, extra = {}) {
   if (!ref) return;
   const snap = await ref.get();
   if (!snap.exists) return;
+  // Supplier-request lifecycle is separate from the parent Match Flow lifecycle.
+  // Never overwrite the parent flow's "status" from a supplier sub-workflow.
   await ref.set({
-    status,
     supplierWorkflowStatus: status,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     ...extra,
@@ -201,7 +202,7 @@ exports.retryAurenSupplierRequest = onCall(
       if (globalFresh.exists) tx.set(globalRef, update, {merge:true});
       return {retryCount, matchFlowId:data.matchFlowId || ''};
     });
-    await updateMatchFlow(uid,retry.matchFlowId,'active',{retryCount:retry.retryCount});
+    await updateMatchFlow(uid,retry.matchFlowId,'draft',{retryCount:retry.retryCount});
     return {ok:true,id:requestId,type,status:'draft',retryCount:retry.retryCount};
   }
 );
