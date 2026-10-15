@@ -272,10 +272,6 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                                   const SizedBox(height: 2),
                                   Text(l.stageHelp),
                                   const SizedBox(height: 3),
-                                  Text(
-                                    '${l.expected}: ${l.routeName(selectedRoute.id).split('→').last.trim()}',
-                                    style: Theme.of(context).textTheme.bodySmall,
-                                  ),
                                 ],
                               ),
                             ),
