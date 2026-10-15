@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../domain/manufacturing_route_catalog.dart';
+import '../domain/raw_to_product_estimate.dart';
 
 /// A planning calculator only: values are supplied by the user and are not
 /// live market quotes, certified engineering estimates, or financial advice.
@@ -125,20 +126,24 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
   @override
   Widget build(BuildContext context) {
     final selectedRoute = ManufacturingRouteCatalog.findById(_routeId)!;
-    final rawQty = _number(_rawQuantity);
-    final yieldRate = _number(_yieldPercent) / 100;
-    final outputQty = rawQty * yieldRate;
-    final rawCosts = rawQty * (_number(_rawUnitCost) +
-        _number(_processingPerRawUnit));
-    final packagingCosts = outputQty * _number(_packagingPerProduct);
-    final totalCosts = rawCosts +
-        packagingCosts +
-        _number(_transport) +
-        _number(_otherCosts);
-    final revenue = outputQty * _number(_sellingPrice);
-    final profit = revenue - totalCosts;
-    final margin = revenue > 0 ? profit / revenue * 100 : 0.0;
-    final costPerProduct = outputQty > 0 ? totalCosts / outputQty : 0.0;
+    final estimate = RawToProductEstimate.calculate(
+      rawQuantity: _number(_rawQuantity),
+      yieldPercent: _number(_yieldPercent),
+      rawUnitCost: _number(_rawUnitCost),
+      processingPerRawUnit: _number(_processingPerRawUnit),
+      packagingPerProduct: _number(_packagingPerProduct),
+      transportCost: _number(_transport),
+      otherCosts: _number(_otherCosts),
+      sellingPricePerProduct: _number(_sellingPrice),
+    );
+    final outputQty = estimate.outputQuantity;
+    final rawCosts = estimate.rawAndProcessingCost;
+    final packagingCosts = estimate.packagingCost;
+    final totalCosts = estimate.totalCost;
+    final revenue = estimate.revenue;
+    final profit = estimate.profitOrLoss;
+    final margin = estimate.salesMarginPercent;
+    final costPerProduct = estimate.unitCost;
 
     return Scaffold(
       appBar: AppBar(
