@@ -86,4 +86,4 @@ exports.promoteAurenEventWaitlist = onDocumentUpdated(
   },
 );
 
-exports._test = {isConfirmedCancellation, timestampMillis, promoteNextWaitlisted};
+Object.defineProperty(exports, '_test', {\n  value: {isConfirmedCancellation, timestampMillis, promoteNextWaitlisted},\n  enumerable: false,\n});
