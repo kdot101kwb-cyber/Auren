@@ -1,5 +1,5 @@
 class AurenEntertainmentItem {
-  final String id, title, type, description, imageUrl, mediaUrl, mediaKind, creatorId, channelId, country, language, year, trailerUrl, artistName, albumName, source, sourceUrl, licenseNote, issn;
+  final String id, title, type, description, imageUrl, mediaUrl, mediaKind, creatorId, channelId, country, language, year, trailerUrl, artistName, albumName, source, sourceUrl, licenseNote, issn, mediaUrlLow, mediaUrlMedium, mediaUrlHigh;
   final List<String> genres, tags;
   final String category;
   final int seasons, episodes;
@@ -8,7 +8,7 @@ class AurenEntertainmentItem {
     required this.description, required this.imageUrl,
     required this.mediaUrl, required this.mediaKind,
     this.creatorId = '', this.channelId = '', this.country = '', this.language = '', this.year = '',
-    this.genres = const [], this.tags = const [], this.category = '', this.seasons = 0, this.episodes = 0, this.trailerUrl = '', this.artistName = '', this.albumName = '', this.source = '', this.sourceUrl = '', this.licenseNote = '', this.issn = '',
+    this.genres = const [], this.tags = const [], this.category = '', this.seasons = 0, this.episodes = 0, this.trailerUrl = '', this.artistName = '', this.albumName = '', this.source = '', this.sourceUrl = '', this.licenseNote = '', this.issn = '', this.mediaUrlLow = '', this.mediaUrlMedium = '', this.mediaUrlHigh = '',
   });
 
   bool get isVideo => mediaKind == 'video' || mediaUrl.toLowerCase().endsWith('.mp4') || mediaUrl.toLowerCase().contains('.m3u8');
@@ -32,6 +32,7 @@ class AurenEntertainmentItem {
     artistName: (d['artistName'] ?? d['artist'] ?? '').toString(),
     albumName: (d['albumName'] ?? d['album'] ?? '').toString(),
     source: (d['source'] ?? '').toString(), sourceUrl: (d['sourceUrl'] ?? '').toString(), licenseNote: (d['licenseNote'] ?? '').toString(), issn: (d['issn'] ?? '').toString(),
+    mediaUrlLow: (d['mediaUrlLow'] ?? d['videoUrlLow'] ?? '').toString(), mediaUrlMedium: (d['mediaUrlMedium'] ?? d['videoUrlMedium'] ?? '').toString(), mediaUrlHigh: (d['mediaUrlHigh'] ?? d['videoUrlHigh'] ?? '').toString(),
     genres: ((d['genres'] as List?)?.whereType<String>().take(10).toList() ?? const []),
     tags: ((d['tags'] as List?)?.whereType<String>().take(20).toList() ?? const []),
     category: (d['category'] ?? d['contentCategory'] ?? '').toString(),
