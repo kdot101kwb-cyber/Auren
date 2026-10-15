@@ -237,6 +237,9 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
               return StreamBuilder<AurenProfileModeData>(
                 stream: profileModes.watch(widget.profile.uid, mode),
                 builder: (context, snapshot) {
+                  // Fail closed when Firestore denies access to a profile mode.
+                  // Permission errors must never fall back to cached or partial contact data.
+                  if (snapshot.hasError) return const SizedBox.shrink();
                   final data = snapshot.data;
                   if (data == null || !data.discoverable) return const SizedBox.shrink();
 
