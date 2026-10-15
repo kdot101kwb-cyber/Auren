@@ -134,6 +134,9 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
       if (_contentType == 'short' && _pickedVideo != null) {
         mediaUrl = await _uploadShortVideo(uid);
         _media.text = mediaUrl;
+        // Keep the uploaded URL for a retry if Firestore publishing fails,
+        // rather than uploading the same file again.
+        if (mounted) setState(() => _pickedVideo = null);
       }
       await _repo.publish(
         uid: uid,
