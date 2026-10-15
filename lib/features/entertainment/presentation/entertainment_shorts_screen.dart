@@ -376,6 +376,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                   ),
                 )
               : PageView.builder(
+                  // Recreate the pager when the category changes so its internal
+                  // page position cannot point at an item from the previous feed.
+                  key: ValueKey<String>('shorts-$shortCategory'),
                   scrollDirection: Axis.vertical,
                   itemCount: visibleItems.length,
                   onPageChanged: (i) => _onPage(i, visibleItems),
