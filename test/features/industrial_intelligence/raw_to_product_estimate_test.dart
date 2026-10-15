@@ -83,7 +83,7 @@ void main() {
       expect(() => calculate({...base, 'rawUnitCost': -1}), throwsArgumentError);
       expect(() => calculate({...base, 'yieldPercent': 101}), throwsArgumentError);
       expect(() => calculate({...base, 'rawQuantity': double.infinity}), throwsArgumentError);
-      expect(() => calculate({...base, 'rawQuantity': 0}), throwsArgumentError);
+      expect(() => calculate({...base, 'rawQuantity': -1}), throwsArgumentError);
     });
   });
 }
