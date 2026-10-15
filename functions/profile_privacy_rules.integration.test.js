@@ -179,3 +179,34 @@ test('legacy profile modes missing contact visibility fields fail closed for pub
   );
 });
 
+
+
+test('root user documents with only public profile fields are readable by signed-in viewers', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('users/root-public-a').set({
+      displayName: 'Public AUREN User',
+      displayNameLower: 'public auren user',
+      photoUrl: null,
+      createdAt: '2026-10-15T00:00:00.000Z',
+    });
+  });
+
+  const snap = await assertSucceeds(db('root-viewer-a').doc('users/root-public-a').get());
+  assert.equal(snap.data().displayName, 'Public AUREN User');
+});
+
+test('root user documents containing unapproved private fields are denied to other users but readable by owner', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('users/root-private-b').set({
+      displayName: 'Private AUREN User',
+      displayNameLower: 'private auren user',
+      photoUrl: null,
+      createdAt: '2026-10-15T00:00:00.000Z',
+      privateEmail: 'private@example.com',
+    });
+  });
+
+  await assertFails(db('root-viewer-b').doc('users/root-private-b').get());
+  const ownerSnap = await assertSucceeds(db('root-private-b').doc('users/root-private-b').get());
+  assert.equal(ownerSnap.data().privateEmail, 'private@example.com');
+});
