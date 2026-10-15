@@ -34,6 +34,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   bool pureEntertainment = true;
   bool _dataSaverMode = false;
   final Map<String, String> _qualityUrls = {};
+  final Map<String, AurenEntertainmentItem> _itemsById = {};
   final Map<String, DateTime> _startedAt = {};
   final follows = FollowRepository();
   final Set<String> _tracked = {};
@@ -49,14 +50,20 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     if (uid != null) _savedStream = repo.watchSavedIds(uid!);
   }
 
+  String _effectiveVideoUrl(AurenEntertainmentItem item) {
+    final lowUrl = item.mediaUrlLow.trim();
+    if (_dataSaverMode && lowUrl.isNotEmpty) return lowUrl;
+    return _qualityUrls[item.id] ?? item.mediaUrl;
+  }
+
   Future<void> _prepare(AurenEntertainmentItem item) async {
+    final selectedUrl = _effectiveVideoUrl(item);
     if (controllers.containsKey(item.id) ||
         _preparing.contains(item.id) ||
-        (_qualityUrls[item.id] ?? item.mediaUrl).trim().isEmpty) {
+        selectedUrl.trim().isEmpty) {
       return;
     }
     _preparing.add(item.id);
-    final selectedUrl = _qualityUrls[item.id] ?? item.mediaUrl;
     final c = VideoPlayerController.networkUrl(Uri.parse(selectedUrl));
     try {
       await c.initialize();
@@ -176,9 +183,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                 subtitle: const Text('إيقاف تجهيز الشورت التالي مسبقاً لتقليل استهلاك الإنترنت والذاكرة'),
                 value: _dataSaverMode,
                 onChanged: (value) {
+                  final keepId = _activeItemId;
                   setState(() => _dataSaverMode = value);
                   if (value) {
-                    final keepId = _activeItemId;
                     for (final id in controllers.keys.toList()) {
                       if (id == keepId) continue;
                       final controller = controllers.remove(id)!;
@@ -188,6 +195,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     _retainedControllerIds
                       ..clear()
                       ..addAll(keepId == null ? const <String>{} : <String>{keepId});
+                  }
+                  final activeItem = keepId == null ? null : _itemsById[keepId];
+                  if (activeItem != null) {
+                    final controller = controllers.remove(activeItem.id);
+                    if (controller != null) {
+                      controller.pause();
+                      controller.dispose();
+                    }
+                    _prepare(activeItem);
                   }
                 },
               ),
@@ -410,6 +426,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     }
     if (error != null) {
       return Center(child: Text('Could not load Shorts: $error'));
+    }
+    for (final item in items) {
+      _itemsById[item.id] = item;
     }
     final visibleItems = items.where(_matchesCategory).toList();
 
