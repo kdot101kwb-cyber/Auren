@@ -298,12 +298,14 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   bool _matchesCategory(AurenEntertainmentItem item) {
     if (shortCategory == 'الكل') return true;
-    final haystack = '${item.title} ${item.description} ${item.genres.join(' ')} ${item.language} ${item.country}'.toLowerCase();
+    // Prefer publisher-supplied taxonomy, while keeping legacy title/description
+    // matching as a fallback for older catalog entries.
+    final haystack = '${item.category} ${item.tags.join(' ')} ${item.type} ${item.title} ${item.description} ${item.genres.join(' ')} ${item.language} ${item.country}'.toLowerCase();
     final keywords = switch (shortCategory) {
-      'كرتون' => ['كرتون', 'رسوم متحركة', 'انيميشن', 'animation', 'cartoon', 'toon'],
+      'كرتون' => ['كرتون', 'رسوم متحركة', 'انيميشن', 'أنيميشن', 'animation', 'animated', 'cartoon', 'toon'],
       'كوميديا' => ['ضحك', 'كوميديا', 'مضحك', 'نكت', 'funny', 'comedy', 'humor'],
       'فلوقات' => ['فلوق', 'يومياتي', 'vlog', 'daily life'],
-      'سوداني' => ['سوداني', 'السودان', 'sudan', 'sudanese', 'khartoum'],
+      'سوداني' => ['سوداني', 'السودان', 'sudan', 'sudanese', 'khartoum', 'خرطوم', 'sudanese comedy'],
       'موسيقى' => ['موسيقى', 'اغنية', 'أغنية', 'music', 'song', 'singing'],
       'ألعاب' => ['ألعاب', 'لعبة', 'قيم', 'gaming', 'game', 'gameplay'],
       _ => const <String>[],
