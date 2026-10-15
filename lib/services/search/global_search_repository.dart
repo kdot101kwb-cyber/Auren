@@ -2,8 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/search_result.dart';
 import '../../core/models/user_profile.dart';
 import '../social/safety_repository.dart';
+import 'search_repository.dart';
 
-class AurenGlobalSearchRepository {
+class AurenGlobalSearchRepository implements AurenSearchRepository {
   final FirebaseFirestore _db;
   AurenGlobalSearchRepository({FirebaseFirestore? firestore}) : _db = firestore ?? FirebaseFirestore.instance;
 
