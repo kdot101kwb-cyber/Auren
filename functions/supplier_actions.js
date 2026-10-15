@@ -14,7 +14,7 @@ async function updateMatchFlow(uid, flowId, status, extra = {}) {
   const snap = await ref.get();
   if (!snap.exists) return;
   await ref.set({
-    status, supplierWorkflowStatus: status,
+    supplierWorkflowStatus: status,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     ...extra,
   }, {merge:true});
