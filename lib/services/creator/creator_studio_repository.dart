@@ -74,22 +74,39 @@ class AurenCreatorStudioRepository {
     String mediaUrl = '',
     String mediaType = 'none',
     String contentType = 'creator',
+    String category = 'حسب مزاج المستخدم',
+    List<String> tags = const [],
   }) async {
     final cleanUid = uid.trim();
     final cleanText = text.trim();
     final cleanMedia = mediaUrl.trim();
+    final cleanContentType = contentType.trim().isEmpty ? 'creator' : contentType.trim();
+    final cleanCategory = category.trim().isEmpty ? 'حسب مزاج المستخدم' : category.trim();
+    final cleanTags = tags.map((tag) => tag.trim().replaceFirst(RegExp(r'^#+'), ''))
+        .where((tag) => tag.isNotEmpty).map((tag) => tag.length > 40 ? tag.substring(0, 40) : tag)
+        .toSet().take(20).toList();
     if (cleanUid.isEmpty || cleanUid.length > 128) throw ArgumentError('Invalid creator uid.');
     if (cleanText.isEmpty || cleanText.length > 4000) throw ArgumentError('Creator post text must be 1–4000 characters.');
     if (cleanMedia.length > 2000) throw ArgumentError('Media URL is too long.');
     if (!{'none', 'image', 'video', 'audio'}.contains(mediaType)) throw ArgumentError('Unsupported media type.');
 
-    final ref = _posts.doc();
-    await ref.set({
+    final isShort = cleanContentType == 'short';
+    if (isShort) {
+      final uri = Uri.tryParse(cleanMedia);
+      if (mediaType != 'video' || uri == null ||
+          (uri.scheme != 'https' && uri.scheme != 'http') || uri.host.isEmpty) {
+        throw ArgumentError('لنشر شورت، أضف رابط فيديو صالحاً واختر نوع الوسائط «فيديو».');
+      }
+      if (cleanCategory.length > 80) throw ArgumentError('تصنيف الشورت طويل جداً.');
+    }
+
+    final postRef = _posts.doc();
+    final postData = <String, dynamic>{
       'authorId': cleanUid,
       'text': cleanText,
       'mediaUrl': cleanMedia,
       'mediaType': cleanMedia.isEmpty ? 'none' : mediaType,
-      'contentType': contentType.trim().isEmpty ? 'creator' : contentType.trim(),
+      'contentType': cleanContentType,
       'contextLabel': 'Creator',
       'actionLabel': '',
       'communityId': '',
@@ -97,8 +114,39 @@ class AurenCreatorStudioRepository {
       'likes': 0,
       'comments': 0,
       'searchText': cleanText.toLowerCase(),
-    });
-    return ref.id;
+    };
+
+    // Keep the creator post and the public Shorts item consistent in one batch.
+    final batch = _db.batch();
+    batch.set(postRef, postData);
+    if (isShort) {
+      final shortRef = _db.collection('entertainment_items').doc();
+      batch.set(shortRef, {
+        'title': cleanText.length > 120 ? cleanText.substring(0, 120) : cleanText,
+        'description': cleanText,
+        'type': 'Short',
+        'mediaKind': 'video',
+        'mediaUrl': cleanMedia,
+        'imageUrl': '',
+        'creatorId': cleanUid,
+        'ownerId': cleanUid,
+        'authorId': cleanUid,
+        'category': cleanCategory,
+        'contentCategory': cleanCategory,
+        'tags': cleanTags,
+        'genres': cleanTags,
+        'visibility': 'public',
+        'language': '',
+        'country': '',
+        'likes': 0,
+        'views': 0,
+        'comments': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+        'publishedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+    return postRef.id;
   }
 
   Future<String> createCreatorSupportRequest({required String creatorUid, required String supporterUid, required int amountMinor, required String currency, required String message})async{
