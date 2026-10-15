@@ -24,6 +24,8 @@ class AurenEntertainmentShortsScreen extends StatefulWidget {
 class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScreen> {
   final repo = EntertainmentRepository();
   final controllers = <String, VideoPlayerController>{};
+  final Set<String> _preparing = {};
+  String? _activeItemId;
   int active = 0;
   String? uid;
   String mood = 'تسلية';
@@ -45,18 +47,31 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   Future<void> _prepare(AurenEntertainmentItem item) async {
-    if (controllers.containsKey(item.id) || item.mediaUrl.isEmpty) return;
+    if (controllers.containsKey(item.id) ||
+        _preparing.contains(item.id) ||
+        item.mediaUrl.trim().isEmpty) {
+      return;
+    }
+    _preparing.add(item.id);
     final c = VideoPlayerController.networkUrl(Uri.parse(item.mediaUrl));
     try {
       await c.initialize();
+      if (!mounted) {
+        await c.dispose();
+        return;
+      }
       c.setLooping(true);
       controllers[item.id] = c;
-      if (mounted) {
-        setState(() {});
-        if (active == 0) c.play();
+      setState(() {});
+      // Only the currently visible short may start playback. Prefetching the next
+      // item must never start audio/video behind the active page.
+      if (_activeItemId == item.id) {
+        await c.play();
       }
     } catch (_) {
       await c.dispose();
+    } finally {
+      _preparing.remove(item.id);
     }
   }
 
@@ -76,10 +91,20 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   void _onPage(int index, List<AurenEntertainmentItem> items) {
     if (active < items.length) _trackView(items[active]);
-    for (final c in controllers.values) c.pause();
-    setState(() => active = index);
-    _startedAt[items[index].id] = DateTime.now();
-    _prepare(items[index]).then((_) => controllers[items[index].id]?.play());
+    for (final c in controllers.values) {
+      c.pause();
+    }
+    final nextItem = items[index];
+    setState(() {
+      active = index;
+      _activeItemId = nextItem.id;
+    });
+    _startedAt[nextItem.id] = DateTime.now();
+    _prepare(nextItem).then((_) {
+      if (mounted && _activeItemId == nextItem.id) {
+        controllers[nextItem.id]?.play();
+      }
+    });
     if (index + 1 < items.length) _prepare(items[index + 1]);
   }
 
@@ -355,7 +380,10 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                   onPageChanged: (i) => _onPage(i, visibleItems),
                   itemBuilder: (context, index) {
                     final item = visibleItems[index];
-              _prepare(item);
+                    if (index == active && _activeItemId == null) {
+                      _activeItemId = item.id;
+                    }
+                    _prepare(item);
               final c = controllers[item.id];
 
               return Stack(
