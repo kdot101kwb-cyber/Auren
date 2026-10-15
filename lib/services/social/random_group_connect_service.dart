@@ -62,8 +62,11 @@ class AurenRandomGroupConnectService {
             'groupSize': groupSize,
           };
         }).toList();
-      } catch (_) {
-        yield const <Map<String, dynamic>>[];
+      } catch (error) {
+        // Preserve the failure event so the UI can distinguish an API/App Check
+        // error from a successful search that found no candidates. The loop
+        // retries after the normal polling delay below.
+        yield* Stream<List<Map<String, dynamic>>>.error(error);
       }
       await Future<void>.delayed(const Duration(seconds: 20));
     }
