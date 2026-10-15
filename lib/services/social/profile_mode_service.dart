@@ -178,6 +178,17 @@ class AurenProfileModeService {
         : AurenProfileModeData.empty(mode);
   }
 
+  /// Mirrors the Firestore policy so invalid contact visibility is caught
+  /// before a write reaches the backend.
+  static void validateContactVisibility({
+    required List<String> links,
+    required bool showContact,
+  }) {
+    if (!showContact && links.any((link) => link.trim().isNotEmpty)) {
+      throw ArgumentError('أظهر مشاركة التواصل أو احذف الروابط قبل الحفظ.');
+    }
+  }
+
   Future<void> save({
     required String uid,
     required AurenProfileMode mode,
@@ -216,6 +227,7 @@ class AurenProfileModeService {
     final cleanedSkills = cleanList(skills, 20, 60);
     final cleanedInterests = cleanList(interests, 20, 60);
     final cleanedLinks = cleanList(links, 5, 300);
+    validateContactVisibility(links: cleanedLinks, showContact: showContact);
     final cleanedGoals = cleanList(goals, 10, 120);
     final cleanedLanguages = cleanList(languages, 10, 40);
     final cleanedServices = cleanList(services, 15, 80);
