@@ -25,6 +25,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   final repo = EntertainmentRepository();
   final controllers = <String, VideoPlayerController>{};
   final Set<String> _preparing = {};
+  final Set<String> _retainedControllerIds = {};
   String? _activeItemId;
   int active = 0;
   String? uid;
@@ -56,7 +57,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final c = VideoPlayerController.networkUrl(Uri.parse(item.mediaUrl));
     try {
       await c.initialize();
-      if (!mounted) {
+      if (!mounted || !_retainedControllerIds.contains(item.id)) {
         await c.dispose();
         return;
       }
@@ -89,12 +90,30 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     }
   }
 
+  void _retainControllersFor(int index, List<AurenEntertainmentItem> items) {
+    final keep = <String>{items[index].id};
+    if (index + 1 < items.length) keep.add(items[index + 1].id);
+    _retainedControllerIds
+      ..clear()
+      ..addAll(keep);
+
+    // Keep at most the visible Short and its next item initialized. This bounds
+    // decoder/memory use on lower-end Android devices while preserving prefetch.
+    for (final id in controllers.keys.toList()) {
+      if (keep.contains(id)) continue;
+      final controller = controllers.remove(id)!;
+      controller.pause();
+      controller.dispose();
+    }
+  }
+
   void _onPage(int index, List<AurenEntertainmentItem> items) {
     if (active < items.length) _trackView(items[active]);
     for (final c in controllers.values) {
       c.pause();
     }
     final nextItem = items[index];
+    _retainControllersFor(index, items);
     setState(() {
       active = index;
       _activeItemId = nextItem.id;
@@ -316,9 +335,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   void _changeShortCategory(String value) {
     if (value == shortCategory) return;
+    _retainedControllerIds.clear();
     for (final controller in controllers.values) {
       controller.pause();
+      controller.dispose();
     }
+    controllers.clear();
     setState(() {
       shortCategory = value;
       active = 0;
@@ -396,7 +418,13 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     if (index == active && _activeItemId == null) {
                       _activeItemId = item.id;
                     }
-                    _prepare(item);
+                    if (index == active) {
+                      _retainControllersFor(index, visibleItems);
+                      _prepare(item);
+                    } else if (index == active + 1) {
+                      _retainedControllerIds.add(item.id);
+                      _prepare(item);
+                    }
               final c = controllers[item.id];
 
               return Stack(
