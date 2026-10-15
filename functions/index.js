@@ -4946,6 +4946,7 @@ Object.assign(module.exports, require('./unesco_heritage_search'));
 
 Object.assign(module.exports, require('./sports_discovery'));
 Object.assign(module.exports, require('./events_discovery'));
+Object.assign(module.exports, require('./events_waitlist'));
 
 Object.assign(module.exports, require('./sports_provider_registry'));
 
