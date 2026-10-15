@@ -365,6 +365,8 @@ class EntertainmentRepository {
     required String mood,
     required String length,
     required String idea,
+    String category = 'حسب مزاج المستخدم',
+    List<String> tags = const [],
   }) async {
     final ref = db.collection('users').doc(uid).collection('entertainmentDrafts').doc();
     await ref.set({
@@ -372,6 +374,8 @@ class EntertainmentRepository {
       'mood': mood,
       'length': length,
       'idea': idea,
+      'category': category,
+      'tags': tags.take(20).toList(),
       'status': 'draft',
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -386,6 +390,8 @@ class EntertainmentRepository {
     required String mood,
     required String length,
     required String idea,
+    String category = 'حسب مزاج المستخدم',
+    List<String> tags = const [],
   }) async {
     if (uid.isEmpty || draftId.isEmpty) return;
     await db.collection('users').doc(uid).collection('entertainmentDrafts').doc(draftId).update({
@@ -393,6 +399,8 @@ class EntertainmentRepository {
       'mood': mood,
       'length': length,
       'idea': idea,
+      'category': category,
+      'tags': tags.take(20).toList(),
       'status': 'draft',
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -463,6 +471,8 @@ class EntertainmentRepository {
     required String mood,
     required String length,
     required String idea,
+    String category = 'حسب مزاج المستخدم',
+    List<String> tags = const [],
   }) async {
     final ref = db.collection('users').doc(uid).collection('entertainmentCreationJobs').doc();
     await ref.set({
@@ -471,6 +481,8 @@ class EntertainmentRepository {
       'mood': mood,
       'length': length,
       'idea': idea,
+      'category': category,
+      'tags': tags.take(20).toList(),
       'status': 'planning',
       'provider': 'pollinations',
       'progress': 0,
