@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/models/talent.dart';
 import '../../core/models/opportunity.dart';
+import 'talent_skill_matcher.dart';
 
 class AurenTalentMatch {
   final AurenOpportunity opportunity;
@@ -13,13 +14,6 @@ class AurenTalentMatch {
 class TalentDiscoveryService {
   final FirebaseFirestore db;
   TalentDiscoveryService({FirebaseFirestore? firestore}):db=firestore??FirebaseFirestore.instance;
-
-  String _norm(String value) => value
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
 
   Future<List<AurenTalentMatch>> matchOpportunities(AurenTalent talent,{int limit=20}) async {
     final ownerId = talent.ownerId.trim();
@@ -42,7 +36,7 @@ class TalentDiscoveryService {
       if (page.docs.length < pageSize) break;
     } while (lastDoc != null);
     final userSkills = verifiedDocs
-        .map((d)=>_norm((d.data()['skill'] ?? '').toString()))
+        .map((d) => TalentSkillMatcher.normalize((d.data()['skill'] ?? '').toString()))
         .where((e)=>e.isNotEmpty)
         .toSet();
 
@@ -72,13 +66,19 @@ class TalentDiscoveryService {
       final opportunityOwner=(data['ownerId'] ?? '').toString().trim();
       if(opportunityOwner==ownerId) continue;
 
-      final o=AurenOpportunity.fromMap(d.id,data);
-      final oppSkills=o.skills.map(_norm).where((e)=>e.isNotEmpty).toSet();
-      if(oppSkills.isEmpty) continue;
-      final common=userSkills.intersection(oppSkills).toList()..sort();
-      final missing=oppSkills.difference(userSkills).toList()..sort();
-      final score=((common.length/oppSkills.length)*100).round().clamp(0,100).toInt();
-      if(score>0) matches.add(AurenTalentMatch(opportunity:o,score:score,matchedSkills:common,missingSkills:missing));
+      final o = AurenOpportunity.fromMap(d.id, data);
+      final evaluation = TalentSkillMatcher.evaluate(
+        verifiedSkills: userSkills.cast<String>(),
+        requiredSkills: o.skills,
+      );
+      if (evaluation.score > 0) {
+        matches.add(AurenTalentMatch(
+          opportunity: o,
+          score: evaluation.score,
+          matchedSkills: evaluation.matchedSkills,
+          missingSkills: evaluation.missingSkills,
+        ));
+      }
     }
     matches.sort((a,b)=>b.score.compareTo(a.score));
     return matches.take(safeLimit).toList();
