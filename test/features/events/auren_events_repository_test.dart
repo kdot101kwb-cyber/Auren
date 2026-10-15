@@ -87,6 +87,60 @@ void main() {
     );
   });
 
+  test('re-registering after cancellation restores a place when capacity is available', () async {
+    final start = DateTime.now().add(const Duration(days: 2));
+    final id = await repository.create(
+      ownerId: 'host-1',
+      title: 'Re-registration meetup',
+      description: '',
+      startsAt: start,
+      endsAt: start.add(const Duration(hours: 2)),
+      capacity: 1,
+    );
+
+    expect(
+      await repository.register(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.going,
+    );
+    await repository.cancelRegistration(eventId: id, userId: 'user-1');
+
+    expect(
+      await repository.register(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.going,
+    );
+    final event = (await firestore.collection('events').doc(id).get()).data()!;
+    expect(event['confirmedCount'], 1);
+    expect(
+      await repository.getRegistrationStatus(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.going,
+    );
+  });
+
+  test('re-registering after cancellation joins waitlist when capacity is full', () async {
+    final start = DateTime.now().add(const Duration(days: 2));
+    final id = await repository.create(
+      ownerId: 'host-1',
+      title: 'Re-registration waitlist',
+      description: '',
+      startsAt: start,
+      endsAt: start.add(const Duration(hours: 2)),
+      capacity: 1,
+    );
+    await repository.register(eventId: id, userId: 'user-1');
+    await repository.cancelRegistration(eventId: id, userId: 'user-1');
+    expect(
+      await repository.register(eventId: id, userId: 'user-2'),
+      AurenEventRsvpStatus.going,
+    );
+
+    expect(
+      await repository.register(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.waitlisted,
+    );
+    final event = (await firestore.collection('events').doc(id).get()).data()!;
+    expect(event['confirmedCount'], 1);
+  });
+
   test('cancelling a waitlisted RSVP does not change confirmed count', () async {
     final start = DateTime.now().add(const Duration(days: 2));
     final id = await repository.create(
