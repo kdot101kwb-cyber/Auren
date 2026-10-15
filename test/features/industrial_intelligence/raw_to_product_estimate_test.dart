@@ -25,6 +25,28 @@ void main() {
       expect(result.salesMarginPercent, closeTo(830 / 2550 * 100, 0.000001));
     });
 
+    test('supports the upper yield boundary of one hundred percent', () {
+      final result = RawToProductEstimate.calculate(
+        rawQuantity: 12,
+        yieldPercent: 100,
+        rawUnitCost: 2,
+        processingPerRawUnit: 0.5,
+        packagingPerProduct: 0.25,
+        transportCost: 3,
+        otherCosts: 1,
+        sellingPricePerProduct: 4,
+      );
+      expect(result.outputQuantity, 12);
+      expect(result.rawAndProcessingCost, 30);
+      expect(result.packagingCost, 3);
+      expect(result.transportAndOtherCost, 4);
+      expect(result.totalCost, 37);
+      expect(result.revenue, 48);
+      expect(result.profitOrLoss, 11);
+      expect(result.unitCost, closeTo(37 / 12, 0.000001));
+      expect(result.salesMarginPercent, closeTo(11 / 48 * 100, 0.000001));
+    });
+
     test('reports a loss and does not present negative margin as profit', () {
       final result = RawToProductEstimate.calculate(
         rawQuantity: 10,
