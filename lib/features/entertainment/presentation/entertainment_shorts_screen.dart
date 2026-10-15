@@ -310,29 +310,6 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       return Center(child: Text('Could not load Shorts: $error'));
     }
     final visibleItems = items.where(_matchesCategory).toList();
-    if (visibleItems.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.video_library_outlined, size: 44),
-              const SizedBox(height: 12),
-              Text(shortCategory == 'الكل'
-                  ? 'لا توجد Shorts متاحة حالياً.'
-                  : 'ما لقينا شورتات في تصنيف "$shortCategory" حالياً.'),
-              const SizedBox(height: 12),
-              if (shortCategory != 'الكل')
-                OutlinedButton(
-                  onPressed: () => _changeShortCategory('الكل'),
-                  child: const Text('عرض كل الشورتات'),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Column(
       children: [
@@ -354,12 +331,30 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           ),
         ),
         Expanded(
-          child: PageView.builder(
-            scrollDirection: Axis.vertical,
-            itemCount: visibleItems.length,
-            onPageChanged: (i) => _onPage(i, visibleItems),
-            itemBuilder: (context, index) {
-              final item = visibleItems[index];
+          child: visibleItems.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.video_library_outlined, size: 44),
+                        const SizedBox(height: 12),
+                        Text(shortCategory == 'الكل'
+                            ? 'لا توجد Shorts متاحة حالياً.'
+                            : 'ما لقينا شورتات في تصنيف "$shortCategory" حالياً.'),
+                        const SizedBox(height: 12),
+                        const Text('جرّب تصنيفاً آخر أو ارجع إلى الكل.'),
+                      ],
+                    ),
+                  ),
+                )
+              : PageView.builder(
+                  scrollDirection: Axis.vertical,
+                  itemCount: visibleItems.length,
+                  onPageChanged: (i) => _onPage(i, visibleItems),
+                  itemBuilder: (context, index) {
+                    final item = visibleItems[index];
               _prepare(item);
               final c = controllers[item.id];
 
