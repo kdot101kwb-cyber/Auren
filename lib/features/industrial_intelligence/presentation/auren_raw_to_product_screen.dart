@@ -363,15 +363,6 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
       ),
     );
   }
-}
-).hasMatch(normalized)) {
-      normalized = normalized.replaceAll(',', '');
-    } else if (normalized.contains(',') && !normalized.contains('.')) {
-      normalized = normalized.replaceAll(',', '.');
-    }
-    final parsed = double.tryParse(normalized);
-    return parsed != null && parsed.isFinite ? parsed : null;
-  }
 
   double _number(TextEditingController controller) =>
       _parseAmount(controller.text) ?? 0;
