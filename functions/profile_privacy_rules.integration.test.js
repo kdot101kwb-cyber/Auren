@@ -134,3 +134,33 @@ test('unauthenticated clients cannot read profile modes', async () => {
       .doc('users/profile-owner-f/profile_modes/professional').get(),
   );
 });
+
+test('public collection queries cannot enumerate modes without constraining contact visibility', async () => {
+  await seed('profile-owner-g', 'professional', profileMode('profile-owner-g', {
+    links: [{ label: 'Private contact', url: 'https://private.example.com' }],
+    showContact: false,
+  }));
+
+  await assertFails(
+    db('profile-viewer-g')
+      .collection('users/profile-owner-g/profile_modes')
+      .where('discoverable', '==', true)
+      .get(),
+  );
+});
+
+test('undiscoverable profile mode is hidden from other users but remains owner-readable', async () => {
+  await seed('profile-owner-h', 'professional', profileMode('profile-owner-h', {
+    discoverable: false,
+    links: [],
+    showContact: false,
+  }));
+
+  await assertFails(
+    db('profile-viewer-h').doc('users/profile-owner-h/profile_modes/professional').get(),
+  );
+  await assertSucceeds(
+    db('profile-owner-h').doc('users/profile-owner-h/profile_modes/professional').get(),
+  );
+});
+
