@@ -489,7 +489,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
     final nextThumb = nextMedia['thumbnail'];
     final nextPreview = nextThumb is Map ? nextThumb['url']?.toString() ?? '' : nextThumb?.toString() ?? '';
     final pickerEpisodes = episodes.take(20).map((item) {
-      final e = item is Map ? Map<String, dynamic>.from(item as Map) : <String, dynamic>{};
+      final e = item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{};
       return {'episodeNumber': e['episodeNumber'], 'label': 'الحلقة ${e['episodeNumber'] ?? ''}'};
     }).toList();
 
@@ -503,7 +503,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
           episodes: pickerEpisodes,
           onSelectEpisode: (selected) {
             final index = episodes.indexWhere((item) {
-              final e = item is Map ? Map<String, dynamic>.from(item as Map) : <String, dynamic>{};
+              final e = item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{};
               return int.tryParse(e['episodeNumber']?.toString() ?? '') == selected;
             });
             _openEpisode(playerContext, uid, seriesTitle, episodes, index);
@@ -567,7 +567,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             const SizedBox(height: 14), const Text('الشخصيات', style: TextStyle(fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
             ...characters.take(8).map((raw) {
-              final character = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+              final character = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
               final name = character['name']?.toString() ?? 'شخصية';
               final role = character['role']?.toString() ?? '';
               return ListTile(contentPadding: EdgeInsets.zero, dense: true, leading: const Icon(Icons.person_outline_rounded),
@@ -578,7 +578,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
             const SizedBox(height: 14), const Text('الحلقات', style: TextStyle(fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
             ...episodes.take(20).map((raw) {
-              final episode = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+              final episode = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
               final number = episode['number']?.toString() ?? '?';
               final title = episode['title']?.toString().trim() ?? '';
               final logline = episode['logline']?.toString().trim() ?? '';
@@ -813,11 +813,11 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
   }
   Widget _movieReadyCard(BuildContext context, Map<String, dynamic> job) {
     final raw = job['movieAssemblyManifest'] ?? job['movieArtifacts'];
-    final manifest = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+    final manifest = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     final scenes = manifest['scenes'] is List ? manifest['scenes'] as List : const [];
     final assemblyId = job['movieAssemblyId']?.toString() ?? manifest['assemblyId']?.toString() ?? '';
     final playable = scenes.where((s) {
-      final m = s is Map ? Map<String, dynamic>.from(s as Map) : <String, dynamic>{};
+      final m = s is Map ? Map<String, dynamic>.from(s) : <String, dynamic>{};
       final o = m['output'] ?? m['media'] ?? m['video'];
       final url = o is Map ? o['url']?.toString() ?? '' : o?.toString() ?? '';
       return url.isNotEmpty;
@@ -842,7 +842,7 @@ class AurenEntertainmentJobDetailScreen extends StatelessWidget {
 
   Widget _musicReadyCard(BuildContext context, Map<String, dynamic> job) {
     final raw = job['musicArtifact'] ?? job['providerResult'];
-    final artifact = raw is Map ? Map<String, dynamic>.from(raw as Map) : <String, dynamic>{};
+    final artifact = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     final url = artifact['url']?.toString() ?? artifact['mediaUrl']?.toString() ?? '';
     final title = job['title']?.toString().isNotEmpty == true ? job['title'].toString() : job['idea']?.toString() ?? 'أغنية AUREN';
     return Card(
