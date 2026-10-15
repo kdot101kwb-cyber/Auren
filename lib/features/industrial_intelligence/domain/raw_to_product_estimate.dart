@@ -46,9 +46,6 @@ class RawToProductEstimate {
     if (inputs.any((value) => !value.isFinite || value < 0)) {
       throw ArgumentError('All estimate inputs must be finite and non-negative.');
     }
-    if (rawQuantity == 0) {
-      throw ArgumentError.value(rawQuantity, 'rawQuantity', 'Must be greater than zero.');
-    }
     if (yieldPercent > 100) {
       throw ArgumentError.value(yieldPercent, 'yieldPercent', 'Must be between 0 and 100.');
     }
