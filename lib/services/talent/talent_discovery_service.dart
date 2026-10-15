@@ -34,7 +34,7 @@ class TalentDiscoveryService {
           .where('ownerId',isEqualTo:ownerId)
           .where('verified',isEqualTo:true)
           .limit(pageSize);
-      if (lastDoc != null) query = query.startAfterDocument(lastDoc!);
+      if (lastDoc != null) query = query.startAfterDocument(lastDoc);
       final page = await query.get();
       if (page.docs.isEmpty) break;
       verifiedDocs.addAll(page.docs);
@@ -57,7 +57,7 @@ class TalentDiscoveryService {
           .where('status', isEqualTo: 'open')
           .limit(opportunityPageSize);
       if (lastOpportunity != null) {
-        query = query.startAfterDocument(lastOpportunity!);
+        query = query.startAfterDocument(lastOpportunity);
       }
       final page = await query.get();
       if (page.docs.isEmpty) break;
