@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../domain/manufacturing_route_catalog.dart';
 import '../domain/raw_to_product_estimate.dart';
 import 'raw_to_product_strings.dart';
+import 'raw_to_product_stage_strings.dart';
 
 /// A planning calculator only: values are supplied by the user and are not
 /// live market quotes, certified engineering estimates, or financial advice.
@@ -263,9 +264,24 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(l.stageName(index), style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  Text(
+                                    RawToProductStageStrings.name(
+                                      selectedRoute.id,
+                                      index,
+                                      Localizations.localeOf(context).languageCode,
+                                      l.stageName(index),
+                                    ),
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
                                   const SizedBox(height: 2),
-                                  Text(l.stageHelp),
+                                  Text(
+                                    RawToProductStageStrings.purpose(
+                                      selectedRoute.id,
+                                      index,
+                                      Localizations.localeOf(context).languageCode,
+                                      l.stageHelp,
+                                    ),
+                                  ),
                                   const SizedBox(height: 3),
                                 ],
                               ),
