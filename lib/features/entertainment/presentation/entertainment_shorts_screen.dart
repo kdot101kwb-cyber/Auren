@@ -59,9 +59,18 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   Future<void> _prepare(AurenEntertainmentItem item) async {
     final selectedUrl = _effectiveVideoUrl(item);
-    if (controllers.containsKey(item.id) ||
-        _preparing.contains(item.id) ||
-        selectedUrl.trim().isEmpty) {
+    final existingController = controllers[item.id];
+    if (existingController != null) {
+      // Reuse an already prepared controller and start it only when its page
+      // is active. This avoids duplicate play() calls after initialization.
+      if (_activeItemId == item.id &&
+          existingController.value.isInitialized &&
+          !existingController.value.isPlaying) {
+        await existingController.play();
+      }
+      return;
+    }
+    if (_preparing.contains(item.id) || selectedUrl.trim().isEmpty) {
       return;
     }
     _preparing.add(item.id);
@@ -137,11 +146,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       _activeItemId = nextItem.id;
     });
     _startedAt[nextItem.id] = DateTime.now();
-    _prepare(nextItem).then((_) {
-      if (mounted && _activeItemId == nextItem.id) {
-        controllers[nextItem.id]?.play();
-      }
-    });
+    _prepare(nextItem);
     if (!_dataSaverMode && index + 1 < items.length) _prepare(items[index + 1]);
   }
 
