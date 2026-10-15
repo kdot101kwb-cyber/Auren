@@ -13,7 +13,15 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
   final _repo = AurenCreatorStudioRepository();
   final _text = TextEditingController();
   final _media = TextEditingController();
+  final _tags = TextEditingController();
   String _mediaType = 'none';
+  String _contentType = 'creator';
+  String _category = 'حسب مزاج المستخدم';
+
+  static const _shortCategories = <String>[
+    'حسب مزاج المستخدم', 'كرتون', 'كوميديا', 'فلوقات', 'موسيقى',
+    'ألعاب', 'تعليمي', 'رياضة', 'منوعات',
+  ];
   bool _publishing = false;
   Future<AurenCreatorStats>? _stats;
 
@@ -25,18 +33,36 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
     if (uid != null) _stats = _repo.loadStats(uid);
   }
 
-  @override void dispose() { _text.dispose(); _media.dispose(); super.dispose(); }
+  @override void dispose() {
+    _text.dispose();
+    _media.dispose();
+    _tags.dispose();
+    super.dispose();
+  }
 
   Future<void> _publish() async {
     final uid = _uid;
     if (uid == null || _publishing) return;
     setState(() => _publishing = true);
     try {
-      await _repo.publish(uid: uid, text: _text.text, mediaUrl: _media.text, mediaType: _mediaType);
+      await _repo.publish(
+        uid: uid,
+        text: _text.text,
+        mediaUrl: _media.text,
+        mediaType: _mediaType,
+        contentType: _contentType,
+        category: _category,
+        tags: _tags.text.split(RegExp(r'[,،\\s]+')),
+      );
       _text.clear();
       _media.clear();
+      _tags.clear();
       _refreshStats();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نشر المحتوى في Creator Studio.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_contentType == 'short'
+            ? 'تم نشر الشورت في Creator Studio وموجز AUREN Shorts.'
+            : 'تم نشر المحتوى في Creator Studio.'),
+      ));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تعذر النشر: $e')));
     } finally {
@@ -103,7 +129,26 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
             const SizedBox(height: 10),
             TextField(controller: _text, minLines: 4, maxLines: 8, maxLength: 4000, decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'اكتب فكرة، قصة، إعلان، فيديو أو محتوى لجمهورك...')),
             const SizedBox(height: 8),
-            TextField(controller: _media, decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Media URL (اختياري)')),
+            DropdownButtonFormField<String>(
+              initialValue: _contentType,
+              decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'مكان النشر'),
+              items: const [
+                DropdownMenuItem(value: 'creator', child: Text('منشور عادي')),
+                DropdownMenuItem(value: 'short', child: Text('AUREN Shorts')),
+              ],
+              onChanged: (v) => setState(() {
+                _contentType = v ?? 'creator';
+                if (_contentType == 'short') _mediaType = 'video';
+              }),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _media,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: _contentType == 'short' ? 'رابط الفيديو (مطلوب للشورت)' : 'Media URL (اختياري)',
+              ),
+            ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _mediaType,
@@ -116,6 +161,26 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
               ],
               onChanged: (v) => setState(() => _mediaType = v ?? 'none'),
             ),
+            if (_contentType == 'short') ...[
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _category,
+                decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'تصنيف الشورت'),
+                items: _shortCategories.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+                onChanged: (v) => setState(() => _category = v ?? 'حسب مزاج المستخدم'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _tags,
+                maxLength: 500,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'الوسوم (اختياري)',
+                  hintText: 'ضحك، رسوم متحركة، تحدي',
+                  helperText: 'افصل بين الوسوم بفاصلة أو مسافة؛ حتى 20 وسمًا',
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _publishing ? null : _publish, icon: const Icon(Icons.publish_rounded), label: Text(_publishing ? 'جاري النشر...' : 'نشر'))),
           ]))),
