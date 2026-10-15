@@ -85,7 +85,10 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       await c.dispose();
     } finally {
       _preparing.remove(item.id);
-      if (mounted && _retainedControllerIds.contains(item.id) && selectedUrl != _effectiveVideoUrl(item)) {
+      if (mounted &&
+          _retainedControllerIds.contains(item.id) &&
+          (generation != (_playbackGeneration[item.id] ?? 0) ||
+              selectedUrl != _effectiveVideoUrl(item))) {
         _prepare(item);
       }
     }
