@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../domain/manufacturing_route_catalog.dart';
 
 /// A planning calculator only: values are supplied by the user and are not
 /// live market quotes, certified engineering estimates, or financial advice.
@@ -23,6 +24,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
   final _rawName = TextEditingController(text: 'المادة الخام');
   final _productName = TextEditingController(text: 'المنتج النهائي');
   String _currency = 'USD';
+  String _routeId = 'cotton-to-garment';
 
   @override
   void dispose() {
@@ -122,6 +124,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedRoute = ManufacturingRouteCatalog.findById(_routeId)!;
     final rawQty = _number(_rawQuantity);
     final yieldRate = _number(_yieldPercent) / 100;
     final outputQty = rawQty * yieldRate;
@@ -178,6 +181,96 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                         if (value != null) setState(() => _currency = value);
                       },
                     ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('مسار التصنيع المقترح', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'اختر مثالاً لتسلسل المراحل. هذه مسارات إرشادية وليست تعليمات تشغيل أو اعتماداً هندسياً.',
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _routeId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'نوع سلسلة التصنيع',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ManufacturingRouteCatalog.routes.map((route) =>
+                        DropdownMenuItem<String>(
+                          value: route.id,
+                          child: Text('${route.rawMaterial} ← ${route.finalProduct}', overflow: TextOverflow.ellipsis),
+                        ),
+                      ).toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        final route = ManufacturingRouteCatalog.findById(value);
+                        if (route == null) return;
+                        setState(() {
+                          _routeId = value;
+                          _rawName.text = route.rawMaterial;
+                          _productName.text = route.finalProduct;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(selectedRoute.overview),
+                    const SizedBox(height: 12),
+                    ...selectedRoute.stages.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final stage = entry.value;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              child: Text('${index + 1}', style: const TextStyle(fontSize: 12)),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(stage.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  const SizedBox(height: 2),
+                                  Text(stage.purpose),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'الناتج المعتاد: ${stage.typicalOutputs.join('، ')}',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Divider(),
+                    Text('قبل البدء', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 6),
+                    ...selectedRoute.prerequisites.map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.checklist_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(item)),
+                        ],
+                      ),
+                    )),
                   ],
                 ),
               ),
