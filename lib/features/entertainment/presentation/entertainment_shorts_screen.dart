@@ -37,7 +37,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   Stream<Set<String>>? _savedStream;
 
   static const moods = <String>['تسلية', 'ضحك', 'موسيقى', 'أفلام', 'Gaming', 'اكتشاف'];
-  static const shortCategories = <String>['الكل', 'كرتون', 'كوميديا', 'فلوقات', 'سوداني', 'موسيقى', 'ألعاب'];
+  static const shortCategories = <String>['حسب مزاجي', 'الكل', 'كرتون', 'كوميديا', 'فلوقات', 'موسيقى', 'ألعاب'];
 
   @override
   void initState() {
@@ -297,7 +297,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   bool _matchesCategory(AurenEntertainmentItem item) {
-    if (shortCategory == 'الكل') return true;
+    // The personalized stream is already ranked using the viewer's selected mood.
+    // This tab intentionally avoids a fixed country/dialect category.
+    if (shortCategory == 'الكل' || shortCategory == 'حسب مزاجي') return true;
     // Prefer publisher-supplied taxonomy, while keeping legacy title/description
     // matching as a fallback for older catalog entries.
     final haystack = '${item.category} ${item.tags.join(' ')} ${item.type} ${item.title} ${item.description} ${item.genres.join(' ')} ${item.language} ${item.country}'.toLowerCase();
@@ -305,7 +307,6 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       'كرتون' => ['كرتون', 'رسوم متحركة', 'انيميشن', 'أنيميشن', 'animation', 'animated', 'cartoon', 'toon'],
       'كوميديا' => ['ضحك', 'كوميديا', 'مضحك', 'نكت', 'funny', 'comedy', 'humor'],
       'فلوقات' => ['فلوق', 'يومياتي', 'vlog', 'daily life'],
-      'سوداني' => ['سوداني', 'السودان', 'sudan', 'sudanese', 'khartoum', 'خرطوم', 'sudanese comedy'],
       'موسيقى' => ['موسيقى', 'اغنية', 'أغنية', 'music', 'song', 'singing'],
       'ألعاب' => ['ألعاب', 'لعبة', 'قيم', 'gaming', 'game', 'gameplay'],
       _ => const <String>[],
@@ -368,7 +369,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                       children: [
                         const Icon(Icons.video_library_outlined, size: 44),
                         const SizedBox(height: 12),
-                        Text(shortCategory == 'الكل'
+                        Text(shortCategory == 'الكل' || shortCategory == 'حسب مزاجي'
                             ? 'لا توجد Shorts متاحة حالياً.'
                             : 'ما لقينا شورتات في تصنيف "$shortCategory" حالياً.'),
                         const SizedBox(height: 12),
