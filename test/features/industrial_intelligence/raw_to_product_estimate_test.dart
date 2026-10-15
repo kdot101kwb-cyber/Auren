@@ -58,6 +58,25 @@ void main() {
       expect(result.profitOrLoss, -30);
     });
 
+    test('zero raw quantity produces no output and undefined unit metrics', () {
+      final result = RawToProductEstimate.calculate(
+        rawQuantity: 0,
+        yieldPercent: 85,
+        rawUnitCost: 1,
+        processingPerRawUnit: 0.4,
+        packagingPerProduct: 0.2,
+        transportCost: 0,
+        otherCosts: 0,
+        sellingPricePerProduct: 3,
+      );
+      expect(result.outputQuantity, 0);
+      expect(result.totalCost, 0);
+      expect(result.revenue, 0);
+      expect(result.profitOrLoss, 0);
+      expect(result.unitCost, isNull);
+      expect(result.salesMarginPercent, isNull);
+    });
+
     test('unit cost remains available but margin is undefined when selling price is zero', () {
       final result = RawToProductEstimate.calculate(
         rawQuantity: 10,
