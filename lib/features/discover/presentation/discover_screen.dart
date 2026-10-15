@@ -29,6 +29,7 @@ import '../../profile/presentation/adaptive_profile_surface.dart';
 import '../../../services/social/adaptive_profile_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../games/presentation/auren_games_screen.dart';
+import '../../events/presentation/auren_events_screen.dart';
 
 class AurenDiscoverScreen extends StatefulWidget {
   const AurenDiscoverScreen({super.key});
@@ -50,6 +51,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('AUREN Content', 'قنوات ومحتوى ومتابعة صناع المحتوى', Icons.ondemand_video_outlined),
     _DiscoverItem('AUREN TV', 'تلفزيونات مباشرة من العالم عبر مصادر IPTV العامة', Icons.live_tv_outlined),
     _DiscoverItem('Travel', 'خطط رحلاتك واحفظ وجهاتك', Icons.flight_takeoff_outlined),
+    _DiscoverItem('Events & Experiences', 'فعاليات مجتمعية وتعليمية وتجارب جديدة', Icons.event_available_outlined),
     _DiscoverItem('Local Intelligence', 'الأعمال والخدمات والفرص في منطقتك', Icons.location_searching_outlined),
     _DiscoverItem('Creators', 'مبدعون ومحتوى يستحق المتابعة', Icons.movie_creation_outlined),
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
@@ -105,6 +107,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
       terms.any((term) => text.contains(term));
 
   void _open(BuildContext context, _DiscoverItem item) {
+    if (item.title == 'Events & Experiences') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEventsScreen()));
+      return;
+    }
     if (item.title == 'Travel') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAURENTravelScreen()));
       return;
