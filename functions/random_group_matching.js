@@ -61,13 +61,16 @@ exports.listAurenRandomGroupCandidates = onCall(
       .where('groupSize', '==', groupSize).limit(40).get();
     const candidates = await Promise.all(snap.docs.map(async (doc) => {
       const data = doc.data();
-      if (data.uid === uid || !clean(data.uid) || (language && clean(data.language, 40) !== language)) return null;
+      const candidateUid = clean(data.uid);
+      if (candidateUid === uid || !candidateUid ||
+          (language && clean(data.language, 40) !== language)) return null;
       const [blockedByCaller, blockedCaller] = await Promise.all([
-        db.collection('users').doc(uid).collection('blocked').doc(data.uid).get(),
-        db.collection('users').doc(data.uid).collection('blocked').doc(uid).get(),
+        db.collection('users').doc(uid).collection('blocked').doc(candidateUid).get(),
+        db.collection('users').doc(candidateUid).collection('blocked').doc(uid).get(),
       ]);
       if (blockedByCaller.exists || blockedCaller.exists) return null;
       return {
+        candidateUid,
         requestId: doc.id,
         country: clean(data.country, 80),
         language: clean(data.language, 40),
@@ -75,7 +78,15 @@ exports.listAurenRandomGroupCandidates = onCall(
         goal: clean(data.goal, 160),
       };
     }));
-    return {candidates: candidates.filter(Boolean).slice(0, 30)};
+    // A user may have stale duplicate waiting requests. Never show them as
+    // multiple people or let duplicate requests make a group selection fail.
+    const seenUids = new Set();
+    const uniqueCandidates = candidates.filter((candidate) => {
+      if (!candidate || seenUids.has(candidate.candidateUid)) return false;
+      seenUids.add(candidate.candidateUid);
+      return true;
+    }).slice(0, 30).map(({candidateUid, ...candidate}) => candidate);
+    return {candidates: uniqueCandidates};
   },
 );
 
