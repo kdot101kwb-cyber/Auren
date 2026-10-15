@@ -33,6 +33,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   String shortCategory = 'الكل';
   bool pureEntertainment = true;
   bool _dataSaverMode = false;
+  final Map<String, String> _qualityUrls = {};
   final Map<String, DateTime> _startedAt = {};
   final follows = FollowRepository();
   final Set<String> _tracked = {};
@@ -51,11 +52,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   Future<void> _prepare(AurenEntertainmentItem item) async {
     if (controllers.containsKey(item.id) ||
         _preparing.contains(item.id) ||
-        item.mediaUrl.trim().isEmpty) {
+        (_qualityUrls[item.id] ?? item.mediaUrl).trim().isEmpty) {
       return;
     }
     _preparing.add(item.id);
-    final c = VideoPlayerController.networkUrl(Uri.parse(item.mediaUrl));
+    final selectedUrl = _qualityUrls[item.id] ?? item.mediaUrl;
+    final c = VideoPlayerController.networkUrl(Uri.parse(selectedUrl));
     try {
       await c.initialize();
       if (!mounted || !_retainedControllerIds.contains(item.id)) {
@@ -126,6 +128,33 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       }
     });
     if (!_dataSaverMode && index + 1 < items.length) _prepare(items[index + 1]);
+  }
+
+  Future<void> _showVideoQuality(AurenEntertainmentItem item) async {
+    final choices = <(String, String)>[
+      ('توفير البيانات', item.mediaUrlLow), ('متوسطة', item.mediaUrlMedium),
+      ('عالية', item.mediaUrlHigh), ('الأصلية', item.mediaUrl),
+    ].where((choice) {
+      final uri = Uri.tryParse(choice.$2.trim());
+      return uri != null && (uri.scheme == 'https' || uri.scheme == 'http') && uri.host.isNotEmpty;
+    }).toList();
+    if (choices.length < 2 || !mounted) return;
+    await showModalBottomSheet<void>(context: context, showDragHandle: true,
+      builder: (sheetContext) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const ListTile(leading: Icon(Icons.high_quality_outlined), title: Text('جودة الفيديو'), subtitle: Text('الخيارات المتاحة لهذا الفيديو')),
+        for (final choice in choices) ListTile(
+          leading: Icon((_qualityUrls[item.id] ?? item.mediaUrl) == choice.$2 ? Icons.radio_button_checked : Icons.radio_button_off),
+          title: Text(choice.$1),
+          onTap: () {
+            Navigator.pop(sheetContext);
+            if ((_qualityUrls[item.id] ?? item.mediaUrl) == choice.$2) return;
+            _qualityUrls[item.id] = choice.$2;
+            final old = controllers.remove(item.id);
+            if (old != null) { old.pause(); old.dispose(); }
+            _prepare(item);
+          },
+        ),
+      ])));
   }
 
   void _showMoods() {
@@ -623,6 +652,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     ),
                   ),
 
+                  if ([item.mediaUrlLow, item.mediaUrlMedium, item.mediaUrlHigh].where((url) => url.trim().isNotEmpty).length > 0)
+                    Positioned(top: 8, right: 8, child: IconButton(
+                      tooltip: 'جودة الفيديو',
+                      icon: const Icon(Icons.high_quality_outlined, color: Colors.white),
+                      onPressed: () => _showVideoQuality(item),
+                    )),
                   Positioned(
                     top: 14, left: 14,
                     child: Container(
