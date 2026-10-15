@@ -46,8 +46,10 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
     super.dispose();
   }
 
-  double _number(TextEditingController controller) =>
-      double.tryParse(controller.text.trim().replaceAll(',', '.')) ?? 0;
+  double _number(TextEditingController controller) {
+    final parsed = double.tryParse(controller.text.trim().replaceAll(',', '.'));
+    return parsed != null && parsed.isFinite ? parsed : 0;
+  }
 
   String _money(double value) =>
       '${value.toStringAsFixed(2)} $_currency';
