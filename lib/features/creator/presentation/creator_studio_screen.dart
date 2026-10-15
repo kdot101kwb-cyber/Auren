@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../services/creator/creator_studio_repository.dart';
 import 'creator_growth_screen.dart';
@@ -23,6 +27,9 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
     'ألعاب', 'تعليمي', 'رياضة', 'منوعات',
   ];
   bool _publishing = false;
+  XFile? _pickedVideo;
+  double? _uploadProgress;
+  static const int _maxShortBytes = 25 * 1024 * 1024;
   Future<AurenCreatorStats>? _stats;
 
   String? get _uid => FirebaseAuth.instance.currentUser?.uid;
@@ -40,15 +47,98 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
     super.dispose();
   }
 
+  Future<void> _pickShortVideo() async {
+    try {
+      final picked = await ImagePicker().pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 3),
+      );
+      if (picked == null || !mounted) return;
+      final size = await File(picked.path).length();
+      if (size > _maxShortBytes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حجم الفيديو يجب ألا يتجاوز 25 ميغابايت حالياً.')),
+        );
+        return;
+      }
+      final mimeType = picked.mimeType ?? '';
+      if (mimeType.isNotEmpty && !mimeType.startsWith('video/')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('الملف المحدد ليس فيديو صالحاً.')),
+        );
+        return;
+      }
+      setState(() {
+        _pickedVideo = picked;
+        _mediaType = 'video';
+        _media.clear();
+        _uploadProgress = null;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر اختيار الفيديو: $e')),
+        );
+      }
+    }
+  }
+
+  Future<String> _uploadShortVideo(String uid) async {
+    final picked = _pickedVideo;
+    if (picked == null) return _media.text.trim();
+    final file = File(picked.path);
+    final size = await file.length();
+    if (size <= 0 || size > _maxShortBytes) {
+      throw ArgumentError('حجم الفيديو يجب أن يكون بين 1 بايت و25 ميغابايت.');
+    }
+
+    final extension = picked.name.contains('.')
+        ? picked.name.split('.').last.toLowerCase()
+        : 'mp4';
+    final fallbackMime = switch (extension) {
+      'mov' => 'video/quicktime',
+      'webm' => 'video/webm',
+      '3gp' => 'video/3gpp',
+      _ => 'video/mp4',
+    };
+    final suppliedMime = picked.mimeType ?? '';
+    final contentType = suppliedMime.startsWith('video/')
+        ? suppliedMime
+        : fallbackMime;
+    final objectName = 'short_${DateTime.now().microsecondsSinceEpoch}.$extension';
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('users/$uid/media/shorts/$objectName');
+    final task = ref.putFile(
+      file,
+      SettableMetadata(contentType: contentType),
+    );
+    await for (final snapshot in task.snapshotEvents) {
+      if (mounted) {
+        setState(() {
+          _uploadProgress = snapshot.totalBytes == 0
+              ? 0
+              : snapshot.bytesTransferred / snapshot.totalBytes;
+        });
+      }
+    }
+    return ref.getDownloadURL();
+  }
+
   Future<void> _publish() async {
     final uid = _uid;
     if (uid == null || _publishing) return;
     setState(() => _publishing = true);
     try {
+      var mediaUrl = _media.text.trim();
+      if (_contentType == 'short' && _pickedVideo != null) {
+        mediaUrl = await _uploadShortVideo(uid);
+        _media.text = mediaUrl;
+      }
       await _repo.publish(
         uid: uid,
         text: _text.text,
-        mediaUrl: _media.text,
+        mediaUrl: mediaUrl,
         mediaType: _mediaType,
         contentType: _contentType,
         category: _category,
@@ -57,6 +147,8 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
       _text.clear();
       _media.clear();
       _tags.clear();
+      _pickedVideo = null;
+      _uploadProgress = null;
       _refreshStats();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_contentType == 'short'
@@ -142,6 +234,40 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
               }),
             ),
             const SizedBox(height: 8),
+            if (_contentType == 'short') ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _publishing ? null : _pickShortVideo,
+                  icon: const Icon(Icons.video_library_outlined),
+                  label: Text(_pickedVideo == null
+                      ? 'اختيار فيديو من الجهاز'
+                      : 'تغيير الفيديو المحدد'),
+                ),
+              ),
+              if (_pickedVideo != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    '${_pickedVideo!.name} • ${(File(_pickedVideo!.path).lengthSync() / (1024 * 1024)).toStringAsFixed(1)} MB',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              const Padding(
+                padding: EdgeInsets.only(top: 4, bottom: 8),
+                child: Text(
+                  'فيديو حتى 3 دقائق و25 ميغابايت. يمكنك أيضاً لصق رابط فيديو جاهز أدناه.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ),
+              if (_uploadProgress != null) ...[
+                LinearProgressIndicator(value: _uploadProgress),
+                const SizedBox(height: 4),
+                Text('رفع الفيديو: ${(_uploadProgress! * 100).round()}%'),
+                const SizedBox(height: 8),
+              ],
+            ],
             TextField(
               controller: _media,
               decoration: InputDecoration(
