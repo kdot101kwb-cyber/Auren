@@ -88,6 +88,7 @@ class _AurenEventsScreenState extends State<AurenEventsScreen> {
     try {
       final status = await _repository.register(eventId: event.id, userId: uid);
       if (!mounted) return;
+      setState(() {});
       _message(status == AurenEventRsvpStatus.going ? 'تم تسجيلك كمشارك.'
         : status == AurenEventRsvpStatus.waitlisted ? 'اكتملت السعة؛ أُضيف اسمك إلى قائمة الانتظار.'
         : 'تسجيلك محفوظ.');
@@ -182,8 +183,12 @@ class _AurenEventsScreenState extends State<AurenEventsScreen> {
                                 );
                               }
                               if (status == AurenEventRsvpStatus.cancelled) {
-                                return const Chip(
-                                  label: Text('تم إلغاء التسجيل'),
+                                return FilledButton.tonalIcon(
+                                  onPressed: event.isUpcoming
+                                      ? () => _register(event)
+                                      : null,
+                                  icon: const Icon(Icons.how_to_reg_outlined),
+                                  label: const Text('إعادة التسجيل'),
                                 );
                               }
                               return FilledButton.tonalIcon(
