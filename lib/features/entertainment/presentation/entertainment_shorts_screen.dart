@@ -34,6 +34,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   bool pureEntertainment = true;
   bool _dataSaverMode = false;
   final Map<String, String> _qualityUrls = {};
+  final Map<String, int> _playbackGeneration = {};
   final Map<String, AurenEntertainmentItem> _itemsById = {};
   final Map<String, DateTime> _startedAt = {};
   final follows = FollowRepository();
@@ -64,10 +65,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       return;
     }
     _preparing.add(item.id);
+    final generation = _playbackGeneration[item.id] ?? 0;
     final c = VideoPlayerController.networkUrl(Uri.parse(selectedUrl));
     try {
       await c.initialize();
-      if (!mounted || !_retainedControllerIds.contains(item.id)) {
+      if (!mounted || !_retainedControllerIds.contains(item.id) || generation != (_playbackGeneration[item.id] ?? 0) || selectedUrl != _effectiveVideoUrl(item)) {
         await c.dispose();
         return;
       }
