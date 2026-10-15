@@ -9,28 +9,9 @@ const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {randomUUID} = require('node:crypto');
+const {parseFirebaseStorageUrl} = require('./shorts_transcoder_utils');
 
 const db = getFirestore();
-
-function parseFirebaseStorageUrl(value) {
-  let url;
-  try {
-    url = new URL(String(value || ''));
-  } catch (_) {
-    return null;
-  }
-  if (url.hostname !== 'firebasestorage.googleapis.com') return null;
-  const match = url.pathname.match(/^\/v0\/b\/([^/]+)\/o\/(.+)$/);
-  if (!match) return null;
-  try {
-    return {
-      bucketName: decodeURIComponent(match[1]),
-      objectPath: decodeURIComponent(match[2]),
-    };
-  } catch (_) {
-    return null;
-  }
-}
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
@@ -170,4 +151,3 @@ exports.transcodePublishedAurenShort = onDocumentCreated({
   }
 });
 
-module.exports.parseFirebaseStorageUrl = parseFirebaseStorageUrl;
