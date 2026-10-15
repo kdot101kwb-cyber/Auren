@@ -52,9 +52,9 @@ void main() {
         sellingPricePerProduct: 5,
       );
       expect(result.outputQuantity, 0);
-      expect(result.unitCost, 0);
+      expect(result.unitCost, isNull);
       expect(result.revenue, 0);
-      expect(result.salesMarginPercent, 0);
+      expect(result.salesMarginPercent, isNull);
       expect(result.profitOrLoss, -30);
     });
 
