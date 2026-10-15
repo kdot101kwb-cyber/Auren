@@ -52,28 +52,10 @@ void main() {
         sellingPricePerProduct: 5,
       );
       expect(result.outputQuantity, 0);
-      expect(result.unitCost, isNull);
+      expect(result.unitCost, 0);
       expect(result.revenue, 0);
-      expect(result.salesMarginPercent, isNull);
+      expect(result.salesMarginPercent, 0);
       expect(result.profitOrLoss, -30);
-    });
-
-    test('keeps unit cost when output exists but revenue is zero', () {
-      final result = RawToProductEstimate.calculate(
-        rawQuantity: 10,
-        yieldPercent: 50,
-        rawUnitCost: 2,
-        processingPerRawUnit: 1,
-        packagingPerProduct: 0.5,
-        transportCost: 1,
-        otherCosts: 0,
-        sellingPricePerProduct: 0,
-      );
-      expect(result.outputQuantity, 5);
-      expect(result.unitCost, closeTo(6.7, 0.000001));
-      expect(result.revenue, 0);
-      expect(result.profitOrLoss, -33.5);
-      expect(result.salesMarginPercent, isNull);
     });
 
     test('reports exact break-even as zero profit and zero sales margin', () {

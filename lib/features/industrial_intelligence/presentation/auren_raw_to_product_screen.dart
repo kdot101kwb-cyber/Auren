@@ -356,7 +356,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                     _result(l.total, _money(totalCosts), emphasized: true),
                     _result(
                       l.unit,
-                      outputQty > 0
+                      costPerProduct != null
                           ? _money(costPerProduct)
                           : l.unitUnavailable,
                     ),
@@ -364,7 +364,9 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                     _result(l.profit, _money(profit), emphasized: true),
                     _result(
                       l.margin,
-                      revenue > 0 ? '${margin.toStringAsFixed(1)}%' : l.marginUnavailable,
+                      margin != null
+                          ? '${margin.toStringAsFixed(1)}%'
+                          : l.marginUnavailable,
                     ),
                     const SizedBox(height: 8),
                     Text(

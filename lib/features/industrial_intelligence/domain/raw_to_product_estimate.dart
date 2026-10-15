@@ -8,11 +8,8 @@ class RawToProductEstimate {
   final double totalCost;
   final double revenue;
   final double profitOrLoss;
-  /// Null when there is no usable output to calculate a per-unit cost.
-  final double? unitCost;
-
-  /// Null when there is no revenue against which to calculate a sales margin.
-  final double? salesMarginPercent;
+  final double unitCost;
+  final double salesMarginPercent;
 
   const RawToProductEstimate({
     required this.outputQuantity,
@@ -62,10 +59,9 @@ class RawToProductEstimate {
         rawAndProcessingCost + packagingCost + transportAndOtherCost;
     final revenue = outputQuantity * sellingPricePerProduct;
     final profitOrLoss = revenue - totalCost;
-    final double? unitCost =
-        outputQuantity > 0 ? totalCost / outputQuantity : null;
-    final double? salesMarginPercent =
-        revenue > 0 ? profitOrLoss / revenue * 100 : null;
+    final unitCost = outputQuantity > 0 ? totalCost / outputQuantity : 0.0;
+    final salesMarginPercent =
+        revenue > 0 ? profitOrLoss / revenue * 100 : 0.0;
 
     final outputs = [
       outputQuantity,
@@ -75,8 +71,8 @@ class RawToProductEstimate {
       totalCost,
       revenue,
       profitOrLoss,
-      if (unitCost != null) unitCost,
-      if (salesMarginPercent != null) salesMarginPercent,
+      unitCost,
+      salesMarginPercent,
     ];
     if (outputs.any((value) => !value.isFinite)) {
       throw ArgumentError('The estimate exceeds supported numeric limits.');
