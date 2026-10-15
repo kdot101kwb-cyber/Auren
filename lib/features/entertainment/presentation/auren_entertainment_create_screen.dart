@@ -17,14 +17,20 @@ class AurenEntertainmentCreateScreen extends StatefulWidget {
 class _AurenEntertainmentCreateScreenState
     extends State<AurenEntertainmentCreateScreen> {
   final _promptController = TextEditingController();
+  final _tagsController = TextEditingController();
   String _mode = 'أغنية';
   String _mood = 'سينمائي';
   String _length = 'متوسط';
+  String _shortCategory = 'حسب مزاج المستخدم';
+
+  static const _shortCategories = <String>['حسب مزاج المستخدم', 'كرتون', 'كوميديا', 'فلوقات', 'موسيقى', 'ألعاب', 'تعليمي', 'رياضة', 'منوعات'];
+  List<String> get _tags => _tagsController.text.split(RegExp(r'[,،#\\s]+')).map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toSet().take(20).toList();
 
   static const _modes = <String, IconData>{
     'أغنية': Icons.music_note_rounded,
     'قصة': Icons.auto_stories_rounded,
     'فيديو': Icons.movie_creation_rounded,
+    'شورت': Icons.smart_display_rounded,
     'فيلم': Icons.local_movies_rounded,
     'مسلسل': Icons.live_tv_rounded,
     'بودكاست': Icons.podcasts_rounded,
@@ -52,6 +58,8 @@ class _AurenEntertainmentCreateScreenState
         return 'مسلسل أصلي من موسم واحد عن أربعة أصدقاء يطلقون مشروعاً صغيراً ويتعاملون مع تحديات المدينة.';
       case 'فيديو':
         return 'فيديو قصير يحكي فكرة ملهمة بصرياً.';
+      case 'شورت':
+        return 'شورت عمودي سريع وممتع بفكرة واضحة ونهاية جذابة.';
       case 'بودكاست':
         return 'حلقة عن قصة نجاح شاب بدأ من الصفر.';
       default:
@@ -90,9 +98,9 @@ class _AurenEntertainmentCreateScreenState
     final idea = _idea.isEmpty ? _exampleFor(_mode) : _idea;
     try {
       if (_editingDraftId == null) {
-        _editingDraftId = await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: idea);
+        _editingDraftId = await EntertainmentRepository().saveEntertainmentDraft(uid, mode: _mode, mood: _mood, length: _length, idea: idea, category: _shortCategory, tags: _tags);
       } else {
-        await EntertainmentRepository().updateEntertainmentDraft(uid, _editingDraftId!, mode: _mode, mood: _mood, length: _length, idea: idea);
+        await EntertainmentRepository().updateEntertainmentDraft(uid, _editingDraftId!, mode: _mode, mood: _mood, length: _length, idea: idea, category: _shortCategory, tags: _tags);
       }
       if (mounted) {
         setState(() {});
@@ -152,6 +160,8 @@ class _AurenEntertainmentCreateScreenState
       if (_modes.containsKey(draft['mode']?.toString())) _mode = draft['mode'].toString();
       if (_moods.contains(draft['mood']?.toString())) _mood = draft['mood'].toString();
       if (_lengths.contains(draft['length']?.toString())) _length = draft['length'].toString();
+      if (_shortCategories.contains(draft['category']?.toString())) _shortCategory = draft['category'].toString();
+      _tagsController.text = (draft['tags'] is List ? (draft['tags'] as List).join(', ') : '').toString();
       _promptController.text = draft['idea']?.toString() ?? '';
     });
   }
@@ -169,6 +179,7 @@ class _AurenEntertainmentCreateScreenState
   @override
   void dispose() {
     _promptController.dispose();
+    _tagsController.dispose();
     super.dispose();
   }
 
@@ -249,6 +260,19 @@ class _AurenEntertainmentCreateScreenState
             selected: {_length},
             onSelectionChanged: (v) => setState(() => _length = v.first),
           ),
+          if (_mode == 'شورت' || _mode == 'فيديو') ...[
+            const SizedBox(height: 22),
+            const Text('تصنيف الشورت', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 9),
+            Wrap(spacing: 8, runSpacing: 8, children: _shortCategories.map((category) => ChoiceChip(
+              label: Text(category), selected: _shortCategory == category,
+              onSelected: (_) => setState(() => _shortCategory = category),
+            )).toList()),
+            const SizedBox(height: 12),
+            TextField(controller: _tagsController, maxLength: 240,
+              decoration: const InputDecoration(labelText: 'الوسوم (افصل بينها بفواصل)', hintText: 'ضحك، كرتون، يوميات', border: OutlineInputBorder()),
+            ),
+          ],
           const SizedBox(height: 22),
           TextField(
             controller: _promptController,
