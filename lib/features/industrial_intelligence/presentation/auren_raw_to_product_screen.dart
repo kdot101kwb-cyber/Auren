@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../domain/manufacturing_route_catalog.dart';
 import '../domain/raw_to_product_estimate.dart';
+import 'raw_to_product_strings.dart';
 
 /// A planning calculator only: values are supplied by the user and are not
 /// live market quotes, certified engineering estimates, or financial advice.
@@ -22,8 +23,8 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
   final _transport = TextEditingController(text: '100');
   final _otherCosts = TextEditingController(text: '50');
   final _sellingPrice = TextEditingController(text: '3');
-  final _rawName = TextEditingController(text: 'المادة الخام');
-  final _productName = TextEditingController(text: 'المنتج النهائي');
+  final _rawName = TextEditingController();
+  final _productName = TextEditingController();
   String _currency = 'USD';
   String _routeId = 'cotton-to-garment';
 
@@ -91,10 +92,10 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
         validator: (value) {
           final parsed = _parseAmount(value ?? '');
           if (parsed == null || !parsed.isFinite) {
-            return 'أدخل رقماً صحيحاً';
+            return RawToProductStrings(Localizations.localeOf(context).languageCode).invalid;
           }
-          if (min != null && parsed < min) return 'القيمة يجب ألا تقل عن $min';
-          if (max != null && parsed > max) return 'القيمة يجب ألا تزيد عن $max';
+          if (min != null && parsed < min) return RawToProductStrings(Localizations.localeOf(context).languageCode).min(min);
+          if (max != null && parsed > max) return RawToProductStrings(Localizations.localeOf(context).languageCode).max(max);
           return null;
         },
         onChanged: (_) => setState(() {}),
@@ -112,7 +113,9 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
           border: const OutlineInputBorder(),
         ),
         validator: (value) =>
-            value == null || value.trim().isEmpty ? 'هذا الحقل مطلوب' : null,
+            value == null || value.trim().isEmpty
+                ? RawToProductStrings(Localizations.localeOf(context).languageCode).required
+                : null,
         onChanged: (_) => setState(() {}),
       ),
     );
@@ -143,6 +146,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
   @override
   Widget build(BuildContext context) {
     final selectedRoute = ManufacturingRouteCatalog.findById(_routeId)!;
+    final l = RawToProductStrings(Localizations.localeOf(context).languageCode);
     final estimate = RawToProductEstimate.calculate(
       rawQuantity: _number(_rawQuantity),
       yieldPercent: _number(_yieldPercent),
@@ -164,7 +168,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('من الخام إلى المنتج'),
+        title: Text(l.title),
       ),
       body: Form(
         key: _formKey,
@@ -178,26 +182,25 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'خطّط لسلسلة التصنيع',
+                      l.plan,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'أدخل بياناتك لمقارنة تكلفة تحويل الخام إلى منتج نهائي. '
-                      'النتائج تقديرية وتعتمد بالكامل على الأرقام التي تدخلها.',
+                      l.intro,
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: _currency,
                       decoration: const InputDecoration(
-                        labelText: 'عملة الحساب',
+                        labelText: l.currency,
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'USD', child: Text('USD — دولار')),
-                        DropdownMenuItem(value: 'SDG', child: Text('SDG — جنيه سوداني')),
-                        DropdownMenuItem(value: 'EUR', child: Text('EUR — يورو')),
-                        DropdownMenuItem(value: 'SAR', child: Text('SAR — ريال سعودي')),
+                        DropdownMenuItem(value: 'USD', child: Text('USD')),
+                        DropdownMenuItem(value: 'SDG', child: Text('SDG')),
+                        DropdownMenuItem(value: 'EUR', child: Text('EUR')),
+                        DropdownMenuItem(value: 'SAR', child: Text('SAR')),
                       ],
                       onChanged: (value) {
                         if (value != null) setState(() => _currency = value);
@@ -214,23 +217,23 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('مسار التصنيع المقترح', style: Theme.of(context).textTheme.titleLarge),
+                    Text(l.route, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     const Text(
-                      'اختر مثالاً لتسلسل المراحل. هذه مسارات إرشادية وليست تعليمات تشغيل أو اعتماداً هندسياً.',
+                      l.routeHelp,
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: _routeId,
                       isExpanded: true,
                       decoration: const InputDecoration(
-                        labelText: 'نوع سلسلة التصنيع',
+                        labelText: l.routeType,
                         border: OutlineInputBorder(),
                       ),
                       items: ManufacturingRouteCatalog.routes.map((route) =>
                         DropdownMenuItem<String>(
                           value: route.id,
-                          child: Text('${route.rawMaterial} ← ${route.finalProduct}', overflow: TextOverflow.ellipsis),
+                          child: Text(l.routeName(route.id), overflow: TextOverflow.ellipsis),
                         ),
                       ).toList(),
                       onChanged: (value) {
@@ -239,13 +242,14 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                         if (route == null) return;
                         setState(() {
                           _routeId = value;
-                          _rawName.text = route.rawMaterial;
-                          _productName.text = route.finalProduct;
+                          final names = l.routeName(value).split('→');
+                          _rawName.text = names.first.trim();
+                          _productName.text = names.length > 1 ? names.last.trim() : l.routeName(value);
                         });
                       },
                     ),
                     const SizedBox(height: 8),
-                    Text(selectedRoute.overview),
+                    Text(l.stageHelp),
                     const SizedBox(height: 12),
                     ...selectedRoute.stages.asMap().entries.map((entry) {
                       final index = entry.key;
@@ -264,12 +268,12 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(stage.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  Text(l.stageName(index), style: const TextStyle(fontWeight: FontWeight.w600)),
                                   const SizedBox(height: 2),
-                                  Text(stage.purpose),
+                                  Text(l.stageHelp),
                                   const SizedBox(height: 3),
                                   Text(
-                                    "الناتج المعتاد: ${stage.typicalOutputs.join('، ')}",
+                                    '${l.expected}: ${l.routeName(selectedRoute.id).split('→').last.trim()}',
                                     style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
@@ -280,9 +284,9 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                       );
                     }),
                     const Divider(),
-                    Text('قبل البدء', style: Theme.of(context).textTheme.titleMedium),
+                    Text(l.before, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 6),
-                    ...selectedRoute.prerequisites.map((item) => Padding(
+                    ...l.prerequisites.map((item) => Padding(
                       padding: const EdgeInsets.only(bottom: 5),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,24 +302,24 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('١. المادة الخام والمنتج', style: Theme.of(context).textTheme.titleMedium),
+            Text('1. ${l.raw} & ${l.product}', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 10),
-            _textField(_rawName, 'اسم المادة الخام'),
-            _textField(_productName, 'اسم المنتج النهائي'),
-            _numberField(_rawQuantity, 'كمية الخام', helper: 'بوحدة قياس واحدة مثل كجم', min: 0.000001),
-            _numberField(_yieldPercent, 'نسبة التحويل إلى منتج صالح (%)', min: 0, max: 100),
+            _textField(_rawName, l.rawName),
+            _textField(_productName, l.productName),
+            _numberField(_rawQuantity, l.rawQty, helper: l.qtyHelp, min: 0.000001),
+            _numberField(_yieldPercent, l.yield, min: 0, max: 100),
             const SizedBox(height: 8),
-            Text('٢. تكاليف الإنتاج', style: Theme.of(context).textTheme.titleMedium),
+            Text(l.costs, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 10),
-            _numberField(_rawUnitCost, 'تكلفة وحدة الخام', min: 0),
-            _numberField(_processingPerRawUnit, 'المعالجة لكل وحدة خام', min: 0),
-            _numberField(_packagingPerProduct, 'التغليف لكل وحدة منتج', min: 0),
-            _numberField(_transport, 'النقل والشحن إجمالاً', min: 0),
-            _numberField(_otherCosts, 'تكاليف أخرى إجمالاً', min: 0),
+            _numberField(_rawUnitCost, l.rawCost, min: 0),
+            _numberField(_processingPerRawUnit, l.processing, min: 0),
+            _numberField(_packagingPerProduct, l.packaging, min: 0),
+            _numberField(_transport, l.transport, min: 0),
+            _numberField(_otherCosts, l.other, min: 0),
             const SizedBox(height: 8),
-            Text('٣. البيع والنتيجة', style: Theme.of(context).textTheme.titleMedium),
+            Text(l.sales, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 10),
-            _numberField(_sellingPrice, 'سعر بيع وحدة المنتج', min: 0),
+            _numberField(_sellingPrice, l.price, min: 0),
             FilledButton.icon(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
@@ -324,7 +328,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                 }
               },
               icon: const Icon(Icons.calculate_outlined),
-              label: const Text('احسب خطة التصنيع'),
+              label: Text(l.calculate),
             ),
             const SizedBox(height: 16),
             Card(
@@ -333,33 +337,31 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('النتيجة التقديرية', style: Theme.of(context).textTheme.titleLarge),
+                    Text(l.result, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
-                    _result('المادة الخام', _rawName.text),
-                    _result('المنتج النهائي', _productName.text),
-                    _result('الكمية المتوقعة بعد التحويل', outputQty.toStringAsFixed(2)),
+                    _result(l.raw, _rawName.text.isEmpty ? l.raw : _rawName.text),
+                    _result(l.product, _productName.text.isEmpty ? l.product : _productName.text),
+                    _result(l.output, outputQty.toStringAsFixed(2)),
                     const Divider(),
-                    _result('تكلفة الخام والمعالجة', _money(rawCosts)),
-                    _result('تكلفة التغليف', _money(packagingCosts)),
-                    _result('النقل والتكاليف الأخرى', _money(_number(_transport) + _number(_otherCosts))),
-                    _result('إجمالي تكلفة الإنتاج', _money(totalCosts), emphasized: true),
+                    _result(l.rawProcessingCost, _money(rawCosts)),
+                    _result(l.packagingCost, _money(packagingCosts)),
+                    _result(l.transportOther, _money(_number(_transport) + _number(_otherCosts))),
+                    _result(l.total, _money(totalCosts), emphasized: true),
                     _result(
-                      'تكلفة الوحدة النهائية',
+                      l.unit,
                       outputQty > 0
                           ? _money(costPerProduct)
-                          : 'غير متاحة لعدم وجود إنتاج صالح',
+                          : l.unitUnavailable,
                     ),
-                    _result('إيرادات البيع المتوقعة', _money(revenue)),
-                    _result('الربح أو الخسارة التقديرية', _money(profit), emphasized: true),
+                    _result(l.revenue, _money(revenue)),
+                    _result(l.profit, _money(profit), emphasized: true),
                     _result(
-                      'هامش الربح من المبيعات',
-                      revenue > 0 ? '${margin.toStringAsFixed(1)}%' : 'غير متاح لعدم وجود إيرادات',
+                      l.margin,
+                      revenue > 0 ? '${margin.toStringAsFixed(1)}%' : l.marginUnavailable,
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'تنبيه: لا تشمل هذه الحسبة الضرائب أو التمويل أو تغير الأسعار '
-                      'إلا إذا أُدخلت ضمن التكاليف الأخرى. تحقق من جودة الخام '
-                      'والهدر والمواصفات والأسعار الفعلية قبل اتخاذ قرار استثماري.',
+                      l.warning,
                       style: TextStyle(fontSize: 12),
                     ),
                   ],
