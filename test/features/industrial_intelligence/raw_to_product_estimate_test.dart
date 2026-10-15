@@ -17,6 +17,8 @@ void main() {
       expect(result.outputQuantity, 850);
       expect(result.rawAndProcessingCost, 1400);
       expect(result.packagingCost, 170);
+      expect(result.transportCost, 100);
+      expect(result.otherCosts, 50);
       expect(result.transportAndOtherCost, 150);
       expect(result.totalCost, 1720);
       expect(result.revenue, 2550);
