@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/random_group_connect_service.dart';
 import '../../messenger/presentation/messenger_screen.dart';
@@ -50,7 +51,7 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
       if (mounted) {
         setState(() => submitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر الانضمام للانتظار: $error')),
+          SnackBar(content: Text('تعذر الانضمام للانتظار: ${_friendlyError(error)}')),
         );
       }
     }
@@ -78,7 +79,7 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر تكوين المجموعة: $error')),
+          SnackBar(content: Text('تعذر تكوين المجموعة: ${_friendlyError(error)}')),
         );
       }
     } finally {
@@ -180,6 +181,25 @@ class _AurenRandomGroupConnectScreenState extends State<AurenRandomGroupConnectS
         ],
       ),
     );
+  }
+
+  String _friendlyError(Object error) {
+    if (error is FirebaseFunctionsException) {
+      switch (error.code) {
+        case 'unauthenticated':
+          return 'سجّل الدخول من جديد وحاول مرة أخرى.';
+        case 'failed-precondition':
+          return 'أحد الطلبات لم يعد متاحاً أو توجد إعدادات تمنع تكوين المجموعة. حدّث البحث وحاول مجدداً.';
+        case 'unavailable':
+        case 'deadline-exceeded':
+          return 'الاتصال بالخدمة غير مستقر. تحقق من الإنترنت وحاول مرة أخرى.';
+        case 'invalid-argument':
+          return 'بيانات المجموعة غير مكتملة أو غير صالحة.';
+        default:
+          return 'حصلت مشكلة مؤقتة. حاول مرة أخرى لاحقاً.';
+      }
+    }
+    return 'حصلت مشكلة غير متوقعة. حاول مرة أخرى.';
   }
 
   Widget _f(TextEditingController controller, String label) => Padding(
