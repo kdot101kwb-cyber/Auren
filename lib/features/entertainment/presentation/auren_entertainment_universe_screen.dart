@@ -8,7 +8,6 @@ import 'auren_anime_world_screen.dart';
 import 'auren_entertainment_create_screen.dart';
 import 'auren_gaming_screen.dart';
 import 'auren_podcasts_screen.dart';
-import 'auren_videos_screen.dart';
 import 'entertainment_detail_screen.dart';
 import 'entertainment_shorts_screen.dart';
 import 'watch_together_screen.dart';
