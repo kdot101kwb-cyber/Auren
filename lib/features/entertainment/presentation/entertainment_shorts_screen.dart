@@ -27,6 +27,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   int active = 0;
   String? uid;
   String mood = 'تسلية';
+  String shortCategory = 'الكل';
   bool pureEntertainment = true;
   final Map<String, DateTime> _startedAt = {};
   final follows = FollowRepository();
@@ -34,6 +35,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   Stream<Set<String>>? _savedStream;
 
   static const moods = <String>['تسلية', 'ضحك', 'موسيقى', 'أفلام', 'Gaming', 'اكتشاف'];
+  static const shortCategories = <String>['الكل', 'كرتون', 'كوميديا', 'فلوقات', 'سوداني', 'موسيقى', 'ألعاب'];
 
   @override
   void initState() {
@@ -269,6 +271,32 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     );
   }
 
+  bool _matchesCategory(AurenEntertainmentItem item) {
+    if (shortCategory == 'الكل') return true;
+    final haystack = '${item.title} ${item.description} ${item.genres.join(' ')} ${item.language} ${item.country}'.toLowerCase();
+    final keywords = switch (shortCategory) {
+      'كرتون' => ['كرتون', 'رسوم متحركة', 'انيميشن', 'animation', 'cartoon', 'toon'],
+      'كوميديا' => ['ضحك', 'كوميديا', 'مضحك', 'نكت', 'funny', 'comedy', 'humor'],
+      'فلوقات' => ['فلوق', 'يومياتي', 'vlog', 'daily life'],
+      'سوداني' => ['سوداني', 'السودان', 'sudan', 'sudanese', 'khartoum'],
+      'موسيقى' => ['موسيقى', 'اغنية', 'أغنية', 'music', 'song', 'singing'],
+      'ألعاب' => ['ألعاب', 'لعبة', 'قيم', 'gaming', 'game', 'gameplay'],
+      _ => const <String>[],
+    };
+    return keywords.any(haystack.contains);
+  }
+
+  void _changeShortCategory(String value) {
+    if (value == shortCategory) return;
+    for (final controller in controllers.values) {
+      controller.pause();
+    }
+    setState(() {
+      shortCategory = value;
+      active = 0;
+    });
+  }
+
   Widget _buildShortsBody(
     BuildContext context,
     List<AurenEntertainmentItem> items,
@@ -281,16 +309,57 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     if (error != null) {
       return Center(child: Text('Could not load Shorts: $error'));
     }
-          if (items.isEmpty) {
-            return const Center(child: Text('لا توجد Shorts متاحة حالياً.'));
-          }
+    final visibleItems = items.where(_matchesCategory).toList();
+    if (visibleItems.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.video_library_outlined, size: 44),
+              const SizedBox(height: 12),
+              Text(shortCategory == 'الكل'
+                  ? 'لا توجد Shorts متاحة حالياً.'
+                  : 'ما لقينا شورتات في تصنيف "$shortCategory" حالياً.'),
+              const SizedBox(height: 12),
+              if (shortCategory != 'الكل')
+                OutlinedButton(
+                  onPressed: () => _changeShortCategory('الكل'),
+                  child: const Text('عرض كل الشورتات'),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
 
-          return PageView.builder(
-            scrollDirection: Axis.vertical,
-            itemCount: items.length,
-            onPageChanged: (i) => _onPage(i, items),
+    return Column(
+      children: [
+        SizedBox(
+          height: 48,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            scrollDirection: Axis.horizontal,
+            itemCount: shortCategories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
-              final item = items[index];
+              final category = shortCategories[index];
+              return ChoiceChip(
+                label: Text(category),
+                selected: shortCategory == category,
+                onSelected: (_) => _changeShortCategory(category),
+              );
+            },
+          ),
+        ),
+        Expanded(
+          child: PageView.builder(
+            scrollDirection: Axis.vertical,
+            itemCount: visibleItems.length,
+            onPageChanged: (i) => _onPage(i, visibleItems),
+            itemBuilder: (context, index) {
+              final item = visibleItems[index];
               _prepare(item);
               final c = controllers[item.id];
 
@@ -489,6 +558,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                 ],
               );
             },
-          );
+          ),
+        ),
+      ],
+    );
   }
 }
