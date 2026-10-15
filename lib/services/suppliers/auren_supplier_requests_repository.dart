@@ -9,7 +9,10 @@ class AurenSupplierRequest {
     supplierName:(d['supplierName']??d['supplierId']??'').toString(),supplierId:d['supplierId']?.toString()??'',
     product:d['product']?.toString()??'',quantity:d['quantity']?.toString()??'',message:d['message']?.toString()??'',
     currency:d['currency']?.toString()??'',matchFlowId:d['matchFlowId']?.toString()??'',lastError:d['lastError']?.toString()??'',
-    externalDispatch:d['externalDispatch']==true,retryCount:int.tryParse(d['retryCount']?.toString()??'0')??0);
+    externalDispatch:d['externalDispatch']==true,
+    // Keep the UI's retry affordance aligned with the documented 0–5 retry range.
+    // Backend callable functions remain authoritative for retry permission.
+    retryCount:(int.tryParse(d['retryCount']?.toString()??'0')??0).clamp(0, 5) as int);
   String get title=>type=='rfq'?(product.isEmpty?'طلب عرض سعر':product):'طلب تواصل';
 }
 class AurenSupplierRequestsRepository {
