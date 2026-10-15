@@ -65,7 +65,7 @@ void main() {
         rawUnitCost: 2,
         processingPerRawUnit: 1,
         packagingPerProduct: 0.5,
-        transportCost: 20,
+        transportCost: 1,
         otherCosts: 0,
         sellingPricePerProduct: 4.375,
       );
