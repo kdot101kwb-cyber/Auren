@@ -186,13 +186,11 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      l.intro,
-                    ),
+                    Text(l.intro),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: _currency,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: l.currency,
                         border: OutlineInputBorder(),
                       ),
@@ -219,14 +217,12 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                   children: [
                     Text(l.route, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
-                    const Text(
-                      l.routeHelp,
-                    ),
+                    Text(l.routeHelp),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: _routeId,
                       isExpanded: true,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: l.routeType,
                         border: OutlineInputBorder(),
                       ),
@@ -253,7 +249,6 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                     const SizedBox(height: 12),
                     ...selectedRoute.stages.asMap().entries.map((entry) {
                       final index = entry.key;
-                      final stage = entry.value;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Row(
@@ -356,9 +351,9 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                       revenue > 0 ? '${margin.toStringAsFixed(1)}%' : l.marginUnavailable,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       l.warning,
-                      style: TextStyle(fontSize: 12),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ],
                 ),
