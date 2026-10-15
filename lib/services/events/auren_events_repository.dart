@@ -64,6 +64,73 @@ class AurenEventsRepository {
     });
   }
 
+  /// Returns the current user's RSVP status, or null when they have not registered.
+  Future<AurenEventRsvpStatus?> getRegistrationStatus({
+    required String eventId,
+    required String userId,
+  }) async {
+    if (eventId.trim().isEmpty || userId.trim().isEmpty) {
+      throw ArgumentError('معرّف الفعالية والمستخدم مطلوبان.');
+    }
+    final snapshot = await _events
+        .doc(eventId)
+        .collection('attendees')
+        .doc(userId)
+        .get();
+    if (!snapshot.exists) return null;
+    return _statusFromString(snapshot.data()?['status'] as String?);
+  }
+
+  /// Cancels the current RSVP and decrements the confirmed count atomically
+  /// when the attendee previously held a confirmed place.
+  Future<AurenEventRsvpStatus> cancelRegistration({
+    required String eventId,
+    required String userId,
+  }) async {
+    if (eventId.trim().isEmpty || userId.trim().isEmpty) {
+      throw ArgumentError('معرّف الفعالية والمستخدم مطلوبان.');
+    }
+    final eventRef = _events.doc(eventId);
+    final attendeeRef = eventRef.collection('attendees').doc(userId);
+    return _db.runTransaction<AurenEventRsvpStatus>((transaction) async {
+      final eventSnapshot = await transaction.get(eventRef);
+      if (!eventSnapshot.exists || eventSnapshot.data() == null) {
+        throw StateError('الفعالية غير موجودة.');
+      }
+      final attendeeSnapshot = await transaction.get(attendeeRef);
+      if (!attendeeSnapshot.exists || attendeeSnapshot.data() == null) {
+        throw StateError('لا يوجد تسجيل لإلغائه.');
+      }
+      final attendee = attendeeSnapshot.data()!;
+      final currentStatus = _statusFromString(attendee['status'] as String?);
+      if (currentStatus == AurenEventRsvpStatus.cancelled) return currentStatus;
+      if (currentStatus != AurenEventRsvpStatus.going &&
+          currentStatus != AurenEventRsvpStatus.waitlisted) {
+        throw StateError('حالة التسجيل الحالية لا تسمح بالإلغاء.');
+      }
+      final event = _fromMap(eventSnapshot.id, eventSnapshot.data()!);
+      if (!DateTime.now().isBefore(event.startsAt)) {
+        throw StateError('لا يمكن إلغاء التسجيل بعد بدء الفعالية.');
+      }
+      if (currentStatus == AurenEventRsvpStatus.going) {
+        final count =
+            (eventSnapshot.data()!['confirmedCount'] as num?)?.toInt() ?? 0;
+        if (count <= 0) {
+          throw StateError('عدد المشاركين المؤكدين غير متسق؛ تعذر الإلغاء.');
+        }
+        transaction.update(eventRef, {
+          'confirmedCount': count - 1,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      transaction.update(attendeeRef, {
+        'status': 'cancelled',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return AurenEventRsvpStatus.cancelled;
+    });
+  }
+
   AurenEvent _fromMap(String id, Map<String, dynamic> data) {
     final start = data['startsAt']; final end = data['endsAt'];
     if (start is! Timestamp || end is! Timestamp) throw const FormatException('Invalid event timestamps.');
