@@ -113,6 +113,8 @@ class _AurenPhoneDiscoveryScreenState extends State<AurenPhoneDiscoveryScreen> {
       await user.linkWithCredential(credential);
     }
     await _auth.currentUser?.getIdToken(true);
+    _phone.clear();
+    _code.clear();
     if (mounted) setState(() { _busy = false; _status = 'تم التحقق من رقمك. يمكنك الآن البحث ومزامنة جهات الاتصال.'; });
   }
 
