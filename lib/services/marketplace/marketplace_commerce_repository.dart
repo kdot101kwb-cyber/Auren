@@ -31,38 +31,65 @@ class MarketplaceCommerceRepository {
     for(final d in snap.docs){final x=d.data();if(x['status']=='cancelled') continue; final total=(x['totalMinor'] as num?)?.toInt()??0; gross+=total; commission+=(total*5/100).round(); count++;}
     return {'orders':count,'grossMinor':gross,'commissionMinor':commission,'netMinor':gross-commission};
   }
-  Future<void> updateOrderStatus(String id,String status) async {
-    const allowed={'pending','confirmed','processing','shipped','delivered','cancelled'};
-    if(!allowed.contains(status)) throw ArgumentError('حالة طلب غير صالحة');
-    final ref=orders.doc(id);
-    final snap=await ref.get();
-    if(!snap.exists||snap.data()==null) throw StateError('الطلب غير موجود');
-    final order=snap.data()!;
-    final currentStatus=order['status']?.toString() ?? 'pending';
-    const transitions={
-      'pending': {'confirmed','cancelled'},
-      'confirmed': {'processing','cancelled'},
-      'processing': {'shipped','cancelled'},
-      'shipped': {'delivered'},
-      'delivered': <String>{},
-      'cancelled': <String>{},
+  Future<void> updateOrderStatus(String id, String status) async {
+    const allowed = {
+      'pending',
+      'confirmed',
+      'processing',
+      'shipped',
+      'delivered',
+      'cancelled',
     };
-    if(status!=currentStatus && !(transitions[currentStatus] ?? const <String>{}).contains(status)) throw StateError('انتقال حالة الطلب غير مسموح');
-    final notificationRef=db.collection('marketplace_notifications').doc();
-    final batch=db.batch();
-    batch.update(ref,{'status':status,'deliveryStatus':status,'updatedAt':FieldValue.serverTimestamp(),'statusUpdatedAt':FieldValue.serverTimestamp()});
-    batch.set(notificationRef,{
-      'recipientUid':order['buyerId'],
-      'actorUid':order['sellerId'],
-      'orderId':id,
-      'type':'order_status',
-      'title':'تحديث الطلب',
-      'body':'تم تحديث حالة الطلب إلى $status',
-      'createdAt':FieldValue.serverTimestamp(),
-      'read':false,
+    if (!allowed.contains(status)) {
+      throw ArgumentError('حالة طلب غير صالحة');
+    }
+
+    final ref = orders.doc(id);
+    final notificationRef = db.collection('marketplace_notifications').doc();
+    await db.runTransaction((transaction) async {
+      final snap = await transaction.get(ref);
+      if (!snap.exists || snap.data() == null) {
+        throw StateError('الطلب غير موجود');
+      }
+
+      final order = snap.data()!;
+      final currentStatus = order['status']?.toString() ?? 'pending';
+      if (status == currentStatus) {
+        // A repeated request is idempotent: do not emit duplicate notifications.
+        return;
+      }
+
+      const transitions = <String, Set<String>>{
+        'pending': {'confirmed', 'cancelled'},
+        'confirmed': {'processing', 'cancelled'},
+        'processing': {'shipped', 'cancelled'},
+        'shipped': {'delivered'},
+        'delivered': <String>{},
+        'cancelled': <String>{},
+      };
+      if (!(transitions[currentStatus] ?? const <String>{}).contains(status)) {
+        throw StateError('انتقال حالة الطلب غير مسموح');
+      }
+
+      transaction.update(ref, {
+        'status': status,
+        'deliveryStatus': status,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'statusUpdatedAt': FieldValue.serverTimestamp(),
+      });
+      transaction.set(notificationRef, {
+        'recipientUid': order['buyerId'],
+        'actorUid': order['sellerId'],
+        'orderId': id,
+        'type': 'order_status',
+        'title': 'تحديث الطلب',
+        'body': 'تم تحديث حالة الطلب إلى $status',
+        'createdAt': FieldValue.serverTimestamp(),
+        'read': false,
+      });
     });
-    await batch.commit();
   }
+
   Future<void> attachShipment({required String orderId,required String providerId,String? shipmentId,String? trackingNumber,String? trackingUrl,DateTime? estimatedDeliveryAt}) async {
     final ref=orders.doc(orderId);
     final snap=await ref.get();
