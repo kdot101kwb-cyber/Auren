@@ -94,6 +94,21 @@ class _AurenEventsScreenState extends State<AurenEventsScreen> {
     } catch (error) { _message('تعذر التسجيل: $error'); }
   }
 
+  Future<void> _cancelRegistration(AurenEvent event) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      _message('سجّل الدخول لإدارة تسجيلك.');
+      return;
+    }
+    try {
+      await _repository.cancelRegistration(eventId: event.id, userId: uid);
+      _message('تم إلغاء تسجيلك.');
+      if (mounted) setState(() {});
+    } catch (error) {
+      _message('تعذر إلغاء التسجيل: $error');
+    }
+  }
+
   void _message(String value) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value))); }
   String _dateLabel(DateTime date) { final d = date.toLocal(); return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}'; }
 
@@ -125,9 +140,62 @@ class _AurenEventsScreenState extends State<AurenEventsScreen> {
               const SizedBox(height: 8), Text('البداية: ${_dateLabel(event.startsAt)}'), Text('النهاية: ${_dateLabel(event.endsAt)}'),
               if (event.locationLabel != null) Text('المكان: ${event.locationLabel}'),
               if (event.capacity != null) Text('السعة: ${event.capacity} مشارك'),
-              const SizedBox(height: 8), Align(alignment: AlignmentDirectional.centerEnd,
-                child: FilledButton.tonalIcon(onPressed: event.hostId == uid || !event.isUpcoming ? null : () => _register(event),
-                  icon: const Icon(Icons.how_to_reg_outlined), label: const Text('سجّل للمشاركة'))),
+              const SizedBox(height: 8),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: uid == null
+                    ? FilledButton.tonalIcon(
+                        onPressed: event.hostId == uid || !event.isUpcoming
+                            ? null
+                            : () => _register(event),
+                        icon: const Icon(Icons.how_to_reg_outlined),
+                        label: const Text('سجّل للمشاركة'),
+                      )
+                    : event.hostId == uid
+                        ? const Chip(label: Text('أنت منظّم الفعالية'))
+                        : FutureBuilder<AurenEventRsvpStatus?>(
+                            future: _repository.getRegistrationStatus(
+                              eventId: event.id,
+                              userId: uid,
+                            ),
+                            builder: (context, registrationSnapshot) {
+                              if (registrationSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const OutlinedButton(
+                                  onPressed: null,
+                                  child: Text('جارٍ التحقق من التسجيل...'),
+                                );
+                              }
+                              final status = registrationSnapshot.data;
+                              if (status == AurenEventRsvpStatus.going ||
+                                  status == AurenEventRsvpStatus.waitlisted) {
+                                return FilledButton.tonalIcon(
+                                  onPressed: event.isUpcoming
+                                      ? () => _cancelRegistration(event)
+                                      : null,
+                                  icon: const Icon(Icons.event_busy_outlined),
+                                  label: Text(
+                                    status == AurenEventRsvpStatus.going
+                                        ? 'إلغاء التسجيل'
+                                        : 'الانسحاب من قائمة الانتظار',
+                                  ),
+                                );
+                              }
+                              if (status == AurenEventRsvpStatus.cancelled) {
+                                return const Chip(
+                                  label: Text('تم إلغاء التسجيل'),
+                                );
+                              }
+                              return FilledButton.tonalIcon(
+                                onPressed: event.isUpcoming
+                                    ? () => _register(event)
+                                    : null,
+                                icon: const Icon(Icons.how_to_reg_outlined),
+                                label: const Text('سجّل للمشاركة'),
+                              );
+                            },
+                          ),
+              ),
             ])));
           });
       }),
