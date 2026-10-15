@@ -127,7 +127,7 @@ class _AurenCreatorStudioScreenState extends State<AurenCreatorStudioScreen> {
           Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Publish', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
-            TextField(controller: _text, minLines: 4, maxLines: 8, maxLength: 4000, decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'اكتب فكرة، قصة، إعلان، فيديو أو محتوى لجمهورك...')),
+            TextField(controller: _text, minLines: 4, maxLines: 8, maxLength: _contentType == 'short' ? 3000 : 4000, decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'اكتب فكرة، قصة، إعلان، فيديو أو محتوى لجمهورك...')),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: _contentType,
