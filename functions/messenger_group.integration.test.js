@@ -66,6 +66,20 @@ test('random-group requests are private and cannot be deleted or forged by clien
   await assertSucceeds(ownerDb.doc('random_group_connect/private-request').get());
   await assertFails(otherDb.doc('random_group_connect/private-request').get());
   await assertFails(ownerDb.doc('random_group_connect/private-request').delete());
+  await assertFails(ownerDb.doc('random_group_connect/forged-owner').set({
+    uid: 'somebody-else',
+    country: 'SD',
+    language: 'ar',
+    interest: 'learning',
+    goal: 'discussion',
+    groupSize: 3,
+    status: 'waiting',
+    createdAt: firebase.firestore.Timestamp.now(),
+  }));
+  await assertFails(ownerDb.doc('random_group_connect/private-request').update({
+    status: 'cancelled',
+    uid: 'request-outsider',
+  }));
   await assertFails(ownerDb.doc('random_groups/client-forged').set({
     memberUids: ['request-owner', 'request-outsider', 'third-person'],
     size: 3,
