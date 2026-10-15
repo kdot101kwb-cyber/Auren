@@ -239,7 +239,7 @@ test('random connect requests: only waiting requests or involved users are reada
   await assertSucceeds(peer.doc('random_connect/matched-private').get());
 });
 
-test('random group requests: only waiting requests or the owner are readable', async () => {
+test('random group requests: only the owner can read full request details', async () => {
   await seedSocialRequest('random_group_connect', 'group-waiting', {
     uid: 'group-owner', status: 'waiting', groupSize: 4,
   });
@@ -249,7 +249,52 @@ test('random group requests: only waiting requests or the owner are readable', a
   const stranger = testEnv.authenticatedContext('group-stranger').firestore();
   const owner = testEnv.authenticatedContext('group-owner').firestore();
 
-  await assertSucceeds(stranger.doc('random_group_connect/group-waiting').get());
+  await assertFails(stranger.doc('random_group_connect/group-waiting').get());
   await assertFails(stranger.doc('random_group_connect/grouped-private').get());
   await assertSucceeds(owner.doc('random_group_connect/grouped-private').get());
+});
+
+
+test('clients cannot create random groups by forging a member list', async () => {
+  const db = testEnv.authenticatedContext('group-forger').firestore();
+  await assertFails(db.doc('random_groups/forged-group').set({
+    memberUids: ['group-forger', 'victim-one', 'victim-two'],
+    size: 3,
+    status: 'active',
+    createdAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
+test('clients cannot mark someone else grouped or claim their request', async () => {
+  await seedSocialRequest('random_group_connect', 'group-owned-waiting', {
+    uid: 'group-owner', status: 'waiting', groupSize: 3,
+    country: 'SD', language: 'ar', interest: 'tech', goal: 'social group',
+    createdAt: firebase.firestore.Timestamp.now(),
+  });
+  const stranger = testEnv.authenticatedContext('group-stranger').firestore();
+  const owner = testEnv.authenticatedContext('group-owner').firestore();
+  await assertFails(stranger.doc('random_group_connect/group-owned-waiting').update({
+    status: 'grouped', groupId: 'forged', matchedAt: firebase.firestore.Timestamp.now(),
+  }));
+  await assertFails(owner.doc('random_group_connect/group-owned-waiting').update({
+    status: 'grouped', groupId: 'forged', matchedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
+
+test('request owner can cancel a waiting request but cannot rewrite matching fields', async () => {
+  await seedSocialRequest('random_group_connect', 'group-cancel-waiting', {
+    uid: 'group-cancel-owner', status: 'waiting', groupSize: 3,
+    country: 'SD', language: 'ar', interest: 'tech', goal: 'social group',
+    createdAt: firebase.firestore.Timestamp.now(),
+  });
+  const owner = testEnv.authenticatedContext('group-cancel-owner').firestore();
+  await assertSucceeds(owner.doc('random_group_connect/group-cancel-waiting').update({status: 'cancelled'}));
+  await seedSocialRequest('random_group_connect', 'group-no-forged-match', {
+    uid: 'group-cancel-owner', status: 'waiting', groupSize: 3,
+    country: 'SD', language: 'ar', interest: 'tech', goal: 'social group',
+    createdAt: firebase.firestore.Timestamp.now(),
+  });
+  await assertFails(owner.doc('random_group_connect/group-no-forged-match').update({
+    status: 'cancelled', groupId: 'forged',
+  }));
 });
