@@ -74,6 +74,15 @@ test('confirmed attendee can cancel only with the matching count decrement', asy
   }));
 });
 
+test('an already-confirmed attendee cannot increment the confirmed count again', async () => {
+  await seedEvent('double-increment', [{userId: 'attendee-repeat', status: 'going'}]);
+  const db = dbFor('attendee-repeat');
+  await assertFails(db.doc('events/double-increment').update({
+    confirmedCount: 2,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }));
+});
+
 test('confirmed count cannot be decremented without cancelling the attendee', async () => {
   await seedEvent('count-only', [{userId: 'attendee-b', status: 'going'}]);
   const db = dbFor('attendee-b');
