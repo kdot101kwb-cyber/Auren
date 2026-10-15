@@ -319,6 +319,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     setState(() {
       shortCategory = value;
       active = 0;
+      _activeItemId = null;
     });
   }
 
