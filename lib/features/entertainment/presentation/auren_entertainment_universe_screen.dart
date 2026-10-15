@@ -185,6 +185,24 @@ class AurenEntertainmentUniverseScreen extends StatelessWidget {
                   .where((item) => item.title.trim().isNotEmpty)
                   .toList()
                 ..sort((a, b) => a.id.compareTo(b.id));
+              // Rotate the starting item once per day without changing the catalog
+              // or promising that new content is published every day.
+              final discoverItems = items.isEmpty
+                  ? items
+                  : <AurenEntertainmentItem>[
+                      ...items.skip(
+                        DateTime.now()
+                                .difference(DateTime(2024, 1, 1))
+                                .inDays %
+                            items.length,
+                      ),
+                      ...items.take(
+                        DateTime.now()
+                                .difference(DateTime(2024, 1, 1))
+                                .inDays %
+                            items.length,
+                      ),
+                    ];
               if (items.isEmpty) {
                 return const Card(
                   child: Padding(
@@ -194,7 +212,7 @@ class AurenEntertainmentUniverseScreen extends StatelessWidget {
                 );
               }
               return Column(
-                children: items.take(5).map((item) {
+                children: discoverItems.take(5).map((item) {
                   return Card(
                     clipBehavior: Clip.antiAlias,
                     child: ListTile(
