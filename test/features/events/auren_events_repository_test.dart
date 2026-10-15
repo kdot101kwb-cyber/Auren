@@ -58,4 +58,54 @@ void main() {
     final event = (await firestore.collection('events').doc(id).get()).data()!;
     expect(event['confirmedCount'], 1);
   });
+
+  test('cancelling a confirmed RSVP decrements the count exactly once', () async {
+    final start = DateTime.now().add(const Duration(days: 2));
+    final id = await repository.create(
+      ownerId: 'host-1',
+      title: 'Cancellation meetup',
+      description: '',
+      startsAt: start,
+      endsAt: start.add(const Duration(hours: 2)),
+      capacity: 2,
+    );
+    await repository.register(eventId: id, userId: 'user-1');
+
+    expect(
+      await repository.cancelRegistration(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.cancelled,
+    );
+    expect(
+      await repository.cancelRegistration(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.cancelled,
+    );
+    final event = (await firestore.collection('events').doc(id).get()).data()!;
+    expect(event['confirmedCount'], 0);
+    expect(
+      await repository.getRegistrationStatus(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.cancelled,
+    );
+  });
+
+  test('cancelling a waitlisted RSVP does not change confirmed count', () async {
+    final start = DateTime.now().add(const Duration(days: 2));
+    final id = await repository.create(
+      ownerId: 'host-1',
+      title: 'Waitlist meetup',
+      description: '',
+      startsAt: start,
+      endsAt: start.add(const Duration(hours: 2)),
+      capacity: 1,
+    );
+    await repository.register(eventId: id, userId: 'user-1');
+    await repository.register(eventId: id, userId: 'user-2');
+
+    expect(
+      await repository.cancelRegistration(eventId: id, userId: 'user-2'),
+      AurenEventRsvpStatus.cancelled,
+    );
+    final event = (await firestore.collection('events').doc(id).get()).data()!;
+    expect(event['confirmedCount'], 1);
+  });
+
 }
