@@ -1,0 +1,61 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:auren/features/events/domain/auren_event.dart';
+import 'package:auren/services/events/auren_events_repository.dart';
+
+void main() {
+  late FakeFirebaseFirestore firestore;
+  late AurenEventsRepository repository;
+
+  setUp(() {
+    firestore = FakeFirebaseFirestore();
+    repository = AurenEventsRepository(firestore: firestore);
+  });
+
+  test('creates and streams public events', () async {
+    final start = DateTime.now().add(const Duration(days: 2));
+    final id = await repository.create(
+      ownerId: 'host-1',
+      title: 'Community meetup',
+      description: 'Meet local builders',
+      startsAt: start,
+      endsAt: start.add(const Duration(hours: 2)),
+      locationLabel: 'Community hall',
+      capacity: 25,
+    );
+
+    final events = await repository.watchPublicEvents().first;
+    expect(events, hasLength(1));
+    expect(events.single.id, id);
+    expect(events.single.title, 'Community meetup');
+    expect(events.single.capacity, 25);
+  });
+
+  test('RSVP capacity decisions are idempotent per user', () async {
+    final start = DateTime.now().add(const Duration(days: 2));
+    final id = await repository.create(
+      ownerId: 'host-1',
+      title: 'Small meetup',
+      description: '',
+      startsAt: start,
+      endsAt: start.add(const Duration(hours: 2)),
+      capacity: 1,
+    );
+
+    expect(
+      await repository.register(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.going,
+    );
+    expect(
+      await repository.register(eventId: id, userId: 'user-1'),
+      AurenEventRsvpStatus.going,
+    );
+    expect(
+      await repository.register(eventId: id, userId: 'user-2'),
+      AurenEventRsvpStatus.waitlisted,
+    );
+    final event = (await firestore.collection('events').doc(id).get()).data()!;
+    expect(event['confirmedCount'], 1);
+  });
+}
