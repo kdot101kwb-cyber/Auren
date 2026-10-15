@@ -95,6 +95,32 @@ test('waitlisted attendee can cancel without changing confirmed count', async ()
   }));
 });
 
+test('cancelled attendee can re-register when the count is incremented atomically', async () => {
+  await seedEvent('reregister-atomic', [{userId: 'attendee-r', status: 'cancelled'}]);
+  const db = dbFor('attendee-r');
+  const event = db.doc('events/reregister-atomic');
+  const attendee = db.doc('events/reregister-atomic/attendees/attendee-r');
+  await assertSucceeds(db.runTransaction(async (tx) => {
+    tx.update(event, {
+      confirmedCount: 1,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    tx.update(attendee, {
+      status: 'going',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  }));
+});
+
+test('cancelled attendee cannot re-register without a matching count increment', async () => {
+  await seedEvent('reregister-count-only', [{userId: 'attendee-s', status: 'cancelled'}]);
+  const db = dbFor('attendee-s');
+  await assertFails(db.doc('events/reregister-count-only/attendees/attendee-s').update({
+    status: 'going',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }));
+});
+
 test('attendee cannot promote themselves by changing RSVP to going', async () => {
   await seedEvent('self-promote', [
     {userId: 'attendee-e', status: 'going'},
