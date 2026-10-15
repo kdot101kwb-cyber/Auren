@@ -32,6 +32,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   String mood = 'تسلية';
   String shortCategory = 'الكل';
   bool pureEntertainment = true;
+  bool _dataSaverMode = false;
   final Map<String, DateTime> _startedAt = {};
   final follows = FollowRepository();
   final Set<String> _tracked = {};
@@ -92,7 +93,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   void _retainControllersFor(int index, List<AurenEntertainmentItem> items) {
     final keep = <String>{items[index].id};
-    if (index + 1 < items.length) keep.add(items[index + 1].id);
+    if (!_dataSaverMode && index + 1 < items.length) keep.add(items[index + 1].id);
     _retainedControllerIds
       ..clear()
       ..addAll(keep);
@@ -124,7 +125,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         controllers[nextItem.id]?.play();
       }
     });
-    if (index + 1 < items.length) _prepare(items[index + 1]);
+    if (!_dataSaverMode && index + 1 < items.length) _prepare(items[index + 1]);
   }
 
   void _showMoods() {
@@ -140,6 +141,17 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
               const Text('شنو مزاجك الآن؟',
                   style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('توفير البيانات'),
+                subtitle: const Text('إيقاف تجهيز الشورت التالي مسبقاً لتقليل استهلاك الإنترنت والذاكرة'),
+                value: _dataSaverMode,
+                onChanged: (value) {
+                  setState(() => _dataSaverMode = value);
+                  final current = active;
+                  if (current >= 0) _retainControllersFor(current, const <AurenEntertainmentItem>[]);
+                },
+              ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('تسلية فقط'),
@@ -421,7 +433,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     if (index == active) {
                       _retainControllersFor(index, visibleItems);
                       _prepare(item);
-                    } else if (index == active + 1) {
+                    } else if (!_dataSaverMode && index == active + 1) {
                       _retainedControllerIds.add(item.id);
                       _prepare(item);
                     }
