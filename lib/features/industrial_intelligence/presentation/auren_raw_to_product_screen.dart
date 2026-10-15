@@ -242,7 +242,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                         if (route == null) return;
                         setState(() {
                           _routeId = value;
-                          final names = l.routeName(value).split('→');
+                          final names = l.routeName(value).split(RegExp('[←→]'));
                           _rawName.text = names.first.trim();
                           _productName.text = names.length > 1 ? names.last.trim() : l.routeName(value);
                         });
