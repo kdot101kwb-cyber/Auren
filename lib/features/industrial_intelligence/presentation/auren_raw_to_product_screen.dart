@@ -63,7 +63,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
     var normalized = _normalizeDigits(value)
         .replaceAll('\u066B', '.')
         .replaceAll('\u066C', ',')
-        .replaceAll(RegExp(r'[\\s\\u00A0\\u202F]'), '');
+        .replaceAll(RegExp(r'[\s\u00A0\u202F]'), '');
     if (RegExp(r'^\d{1,3}(,\d{3})+(\.\d+)?$').hasMatch(normalized)) {
       normalized = normalized.replaceAll(',', '');
     } else if (normalized.contains(',') && !normalized.contains('.')) {
