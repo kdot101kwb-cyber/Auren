@@ -218,10 +218,21 @@ class AurenEntertainmentUniverseScreen extends StatelessWidget {
                     clipBehavior: Clip.antiAlias,
                     child: ListTile(
                       leading: item.imageUrl.isEmpty
-                          ? const CircleAvatar(child: Icon(Icons.play_arrow_rounded))
+                          ? const CircleAvatar(
+                              child: Icon(Icons.play_arrow_rounded),
+                            )
                           : CircleAvatar(
-                              backgroundImage: NetworkImage(item.imageUrl),
-                              onBackgroundImageError: (_, __) {},
+                              child: ClipOval(
+                                child: Image.network(
+                                  item.imageUrl,
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.play_arrow_rounded,
+                                  ),
+                                ),
+                              ),
                             ),
                       title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                       subtitle: Text(
