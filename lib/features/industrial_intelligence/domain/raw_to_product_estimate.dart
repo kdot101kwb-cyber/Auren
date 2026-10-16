@@ -54,7 +54,9 @@ class RawToProductEstimate {
       throw ArgumentError.value(yieldPercent, 'yieldPercent', 'Must be between 0 and 100.');
     }
 
-    final outputQuantity = rawQuantity * yieldPercent / 100;
+    // Scale the percentage first to avoid overflowing the intermediate product
+    // when a very large raw quantity has a valid finite output.
+    final outputQuantity = rawQuantity * (yieldPercent / 100);
     final rawAndProcessingCost =
         rawQuantity * (rawUnitCost + processingPerRawUnit);
     final packagingCost = outputQuantity * packagingPerProduct;
