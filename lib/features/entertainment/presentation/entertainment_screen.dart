@@ -698,10 +698,20 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   children: [
                     Text(e['title']?.toString() ?? 'محتوى', maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w700)),
+                    if ((e['type'] ?? '').toString().trim().isNotEmpty)
+                      Text(e['type'].toString(), maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall),
                     const Spacer(),
                     LinearProgressIndicator(value: progress),
                     const SizedBox(height: 6),
-                    Text('${(progress * 100).round()}% مكتمل', style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      durationSeconds > 0
+                          ? '${(progress * 100).round()}% • متبقي ${((durationSeconds - positionSeconds).clamp(0, durationSeconds) / 60).ceil()} دقيقة'
+                          : '${(progress * 100).round()}% مكتمل',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 )),
               )));
