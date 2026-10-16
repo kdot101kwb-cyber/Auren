@@ -544,12 +544,13 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                         onPressed: () async {
                           final text = controller.text.trim();
                           if (text.isEmpty) return;
+                          final commentMood = mood;
                           try {
                             await repo.addShortComment(
                               uid!,
                               item.id,
                               text,
-                              mood: mood,
+                              mood: commentMood,
                             );
                             if (sheetContext.mounted) controller.clear();
                           } catch (_) {
