@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auren/core/i18n/auren_localizations.dart';
 import 'package:auren/features/industrial_intelligence/presentation/raw_to_product_strings.dart';
-import 'package:auren/features/industrial_intelligence/presentation/auren_raw_to_product_screen.dart';
+import 'package:auren/features/industrial_intelligence/presentation/raw_to_product_number_parser.dart';
 
 void main() {
   group('RawToProductNumberParser', () {
