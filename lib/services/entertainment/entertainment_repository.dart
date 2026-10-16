@@ -827,8 +827,9 @@ class EntertainmentRepository {
       db.collection('entertainment_items').doc(itemId).collection('likes').doc(uid)
           .snapshots().map((d) => d.exists);
 
-  Stream<List<AurenEntertainmentItem>> watchSavedItems(String uid) =>
-      db.collection('users').doc(uid).collection('savedEntertainment').snapshots()
+  Stream<List<AurenEntertainmentItem>> watchSavedItems(String uid) {
+    if (uid.trim().isEmpty) return Stream.value(const <AurenEntertainmentItem>[]);
+    return db.collection('users').doc(uid).collection('savedEntertainment').snapshots()
           .asyncMap((s) async {
         final out = <AurenEntertainmentItem>[];
         for (final d in s.docs) {
