@@ -297,21 +297,24 @@ class EntertainmentRepository {
     String itemId, {
     required String action,
     required String mood,
-  }) =>
-      db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId).set({
-        'itemId': itemId,
-        'lastActionAt': FieldValue.serverTimestamp(),
-        'mood': mood,
-        'likes': FieldValue.increment(action == 'like' ? 1 : action == 'unlike' ? -1 : 0),
-        'saves': FieldValue.increment(action == 'save' ? 1 : action == 'unsave' ? -1 : 0),
-        'skips': FieldValue.increment(action == 'skip' ? 1 : 0),
-      }, SetOptions(merge: true)).then((_) =>
-          db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId)
-              .collection('actions').add({
-                'action': action,
-                'mood': mood,
-                'createdAt': FieldValue.serverTimestamp(),
-              }));
+  }) async {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return;
+    final signal = db.collection('users').doc(uid)
+        .collection('entertainmentSignals').doc(itemId);
+    await signal.set({
+      'itemId': itemId,
+      'lastActionAt': FieldValue.serverTimestamp(),
+      'mood': mood,
+      'likes': FieldValue.increment(action == 'like' ? 1 : action == 'unlike' ? -1 : 0),
+      'saves': FieldValue.increment(action == 'save' ? 1 : action == 'unsave' ? -1 : 0),
+      'skips': FieldValue.increment(action == 'skip' ? 1 : 0),
+    }, SetOptions(merge: true));
+    await signal.collection('actions').add({
+      'action': action,
+      'mood': mood,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
 
 
   /// Playback signals are private to the user and power Music/Audio recommendations.
