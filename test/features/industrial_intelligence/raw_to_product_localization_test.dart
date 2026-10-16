@@ -30,6 +30,9 @@ void main() {
       expect(RawToProductNumberParser.parse('12.3.4'), isNull);
       expect(RawToProductNumberParser.parse('123abc'), isNull);
       expect(RawToProductNumberParser.parse('1,,234'), isNull);
+      expect(RawToProductNumberParser.parse('1 2'), isNull);
+      expect(RawToProductNumberParser.parse('1 23'), isNull);
+      expect(RawToProductNumberParser.parse('12 3456'), isNull);
     });
 
     test('documents comma-only ambiguity as thousands for three-digit groups', () {
