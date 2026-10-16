@@ -35,6 +35,22 @@ void main() {
       expect(RawToProductNumberParser.parse('SDG 123'), isNull);
     });
 
+    test('parses mixed Arabic and Latin digits with explicit decimal separators', () {
+      expect(RawToProductNumberParser.parse('١2٣٫٤5'), 123.45);
+      expect(RawToProductNumberParser.parse('۱۲3,۴5'), 123.45);
+    });
+
+    test('accepts decimal values with a leading or trailing decimal point', () {
+      expect(RawToProductNumberParser.parse('.5'), 0.5);
+      expect(RawToProductNumberParser.parse('12.'), 12);
+      expect(RawToProductNumberParser.parse('٠٫٥'), 0.5);
+    });
+
+    test('rejects values that overflow to a non-finite double', () {
+      expect(RawToProductNumberParser.parse('1e9999'), isNull);
+      expect(RawToProductNumberParser.parse('-1e9999'), isNull);
+    });
+
     test('rejects punctuation-only and sign-only input', () {
       expect(RawToProductNumberParser.parse(','), isNull);
       expect(RawToProductNumberParser.parse('.'), isNull);
