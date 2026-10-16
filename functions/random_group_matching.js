@@ -47,15 +47,18 @@ exports.listAurenRandomGroupCandidates = onCall(
     const uid = requireUid(request);
     const requestId = clean(request.data?.requestId);
     const groupSize = request.data?.groupSize;
-    const language = clean(request.data?.language, 40);
     validateSize(groupSize);
     if (!requestId) throw new HttpsError('invalid-argument', 'requestId is required.');
 
     const ownSnap = await requests.doc(requestId).get();
     const own = ownSnap.data();
-    if (!ownSnap.exists || own?.uid !== uid || own?.status !== 'waiting' || own?.groupSize !== groupSize) {
+    if (!ownSnap.exists || own?.uid !== uid || own?.status !== 'waiting' ||
+        own?.groupSize !== groupSize || !clean(own?.language, 40)) {
       throw new HttpsError('failed-precondition', 'Your waiting request is not available.');
     }
+    // Never trust the caller-supplied language: derive it from the owner's
+    // private waiting request so clients cannot query candidates across languages.
+    const language = clean(own.language, 40);
 
     const snap = await requests.where('status', '==', 'waiting')
       .where('groupSize', '==', groupSize).limit(40).get();
