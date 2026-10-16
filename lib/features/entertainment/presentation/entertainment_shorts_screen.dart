@@ -571,6 +571,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    final activeItem = _activeItemId == null ? null : _itemsById[_activeItemId];
+    if (activeItem != null) unawaited(_trackView(activeItem));
     final remainingControllers = controllers.values.toList();
     controllers.clear();
     for (final controller in remainingControllers) {
