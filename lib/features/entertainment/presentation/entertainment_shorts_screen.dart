@@ -275,6 +275,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   void _onPage(int index, List<AurenEntertainmentItem> items) {
+    // A stream refresh can invalidate a PageView callback queued for the old
+    // item count. Ignore stale indices rather than indexing outside the feed.
+    if (index < 0 || index >= items.length) return;
     // Feed snapshots can reorder or replace items while a page is visible.
     // Track the item that was actually active, not whichever item now occupies
     // the previous numeric index in the refreshed list.
