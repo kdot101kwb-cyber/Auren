@@ -241,7 +241,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           uid!,
           item.id,
           action: 'skip',
-          mood: mood,
+          mood: viewMood,
         );
       }
     } catch (_) {
