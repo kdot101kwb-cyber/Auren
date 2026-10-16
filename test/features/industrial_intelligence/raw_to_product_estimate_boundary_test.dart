@@ -25,6 +25,20 @@ void main() {
       );
     }
 
+    test('calculates output, total cost, profit, and margin consistently', () {
+      final estimate = calculate();
+
+      expect(estimate.outputQuantity, 5);
+      expect(estimate.rawAndProcessingCost, 30);
+      expect(estimate.packagingCost, 2.5);
+      expect(estimate.transportAndOtherCost, 5);
+      expect(estimate.totalCost, 37.5);
+      expect(estimate.revenue, 25);
+      expect(estimate.profitOrLoss, -12.5);
+      expect(estimate.unitCost, 7.5);
+      expect(estimate.salesMarginPercent, -50);
+    });
+
     test('zero yield produces zero output and leaves unit metrics undefined', () {
       final estimate = calculate(yieldPercent: 0);
 
