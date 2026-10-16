@@ -430,10 +430,20 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       if (activeController != null &&
           activeController.value.isInitialized &&
           mounted) {
-        activeController.play().catchError((Object _) {
-          if (mounted && activeId != null) {
-            setState(() => _failedControllerIds.add(activeId));
+        activeController.play().catchError((Object _) async {
+          // A failed resume must not leave a broken controller available for
+          // the next page build or a later lifecycle transition.
+          if (activeId != null &&
+              identical(controllers[activeId], activeController)) {
+            controllers.remove(activeId);
           }
+          if (activeId != null) _failedControllerIds.add(activeId);
+          try {
+            await activeController.dispose();
+          } catch (_) {
+            // The native player may already have released its resources.
+          }
+          if (mounted) setState(() {});
         });
       }
     }
