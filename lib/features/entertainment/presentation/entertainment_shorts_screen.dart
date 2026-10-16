@@ -144,12 +144,21 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     _failedControllerIds.remove(item.id);
     final old = controllers.remove(item.id);
     if (old != null) {
-      await old.pause();
-      await old.dispose();
+      // Cleanup errors should never prevent a retry from starting.
+      try {
+        await old.pause();
+      } catch (_) {
+        // The native player may already be in an error state.
+      }
+      try {
+        await old.dispose();
+      } catch (_) {
+        // Continue with a fresh controller even if disposal fails.
+      }
     }
     if (!mounted) return;
     setState(() {});
-    _prepare(item);
+    await _prepare(item);
   }
 
   Future<void> _trackView(AurenEntertainmentItem item, {bool completed = false}) async {
