@@ -209,9 +209,21 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
                   future: uid == null ? Future.value(null) : repo.getWatchProgress(uid, item.id),
                   builder: (context, progressSnapshot) {
                     final data = progressSnapshot.data;
-                    final seconds = (data?['positionSeconds'] as num?)?.toInt() ?? 0;
-                    final progress = ((data?['progress'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
-                    final hasResume = seconds >= 5 && progress > 0 && progress < 1;
+                    final seconds = ((data?['positionSeconds'] as num?) ??
+                            (data?['lastPositionSeconds'] as num?) ??
+                            0)
+                        .toInt()
+                        .clamp(0, 2147483647);
+                    final durationSeconds =
+                        ((data?['durationSeconds'] as num?) ?? 0).toInt();
+                    final rawProgress = data?['progress'] as num?;
+                    final progress = (rawProgress?.toDouble() ??
+                            (durationSeconds > 0 ? seconds / durationSeconds : 0.0))
+                        .clamp(0.0, 1.0);
+                    final hasResume = seconds >= 5 &&
+                        (durationSeconds <= 0 || seconds < durationSeconds) &&
+                        progress > 0 &&
+                        progress < 0.95;
                     final resume = Duration(seconds: seconds);
                     return FilledButton.icon(
                       onPressed: _starting ? null : () => _openPlayer(item.mediaUrl, item, resume: hasResume ? resume : null),
