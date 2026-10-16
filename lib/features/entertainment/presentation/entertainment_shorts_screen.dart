@@ -25,6 +25,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   final repo = EntertainmentRepository();
   final controllers = <String, VideoPlayerController>{};
   final Set<String> _preparing = {};
+  final Set<String> _failedControllerIds = {};
   final Set<String> _retainedControllerIds = {};
   String? _activeItemId;
   int active = 0;
@@ -74,6 +75,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       return;
     }
     _preparing.add(item.id);
+    _failedControllerIds.remove(item.id);
     final generation = _playbackGeneration[item.id] ?? 0;
     final c = VideoPlayerController.networkUrl(Uri.parse(selectedUrl));
     try {
@@ -84,6 +86,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       }
       c.setLooping(true);
       controllers[item.id] = c;
+      _failedControllerIds.remove(item.id);
       setState(() {});
       // Only the currently visible short may start playback. Prefetching the next
       // item must never start audio/video behind the active page.
@@ -96,8 +99,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       // disposed instance; a later page visit can prepare a fresh one.
       if (identical(controllers[item.id], c)) {
         controllers.remove(item.id);
-        if (mounted) setState(() {});
       }
+      _failedControllerIds.add(item.id);
+      if (mounted) setState(() {});
       await c.dispose();
     } finally {
       _preparing.remove(item.id);
@@ -108,6 +112,19 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         _prepare(item);
       }
     }
+  }
+
+  Future<void> _retryPreparation(AurenEntertainmentItem item) async {
+    _playbackGeneration[item.id] = (_playbackGeneration[item.id] ?? 0) + 1;
+    _failedControllerIds.remove(item.id);
+    final old = controllers.remove(item.id);
+    if (old != null) {
+      await old.pause();
+      await old.dispose();
+    }
+    if (!mounted) return;
+    setState(() {});
+    _prepare(item);
   }
 
   Future<void> _trackView(AurenEntertainmentItem item, {bool completed = false}) async {
@@ -535,6 +552,23 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                           height: c.value.size.height,
                           child: VideoPlayer(c),
                         ),
+                      ),
+                    )
+                  else if (_failedControllerIds.contains(item.id))
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.wifi_off, color: Colors.white70, size: 36),
+                          const SizedBox(height: 8),
+                          const Text('تعذّر تشغيل الفيديو', style: TextStyle(color: Colors.white)),
+                          const SizedBox(height: 8),
+                          FilledButton.icon(
+                            onPressed: () => _retryPreparation(item),
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('إعادة المحاولة'),
+                          ),
+                        ],
                       ),
                     )
                   else
