@@ -127,6 +127,34 @@ void main() {
     expect(await repository.watchItem('missing-item').first, isNull);
   });
 
+  test('clamps watch history progress to valid playback bounds', () async {
+    final item = makeItem();
+    await repository.recordWatchProgress(
+      'user-1', item,
+      seconds: 140,
+      durationSeconds: 100,
+      completed: false,
+    );
+
+    final doc = await firestore.collection('users').doc('user-1')
+        .collection('watchHistory').doc('item-1').get();
+    final data = doc.data()!;
+    expect(data['lastPositionSeconds'], 100);
+    expect(data['durationSeconds'], 100);
+    expect(data['progress'], 1.0);
+
+    await repository.recordWatchProgress(
+      'user-1', item,
+      seconds: -10,
+      durationSeconds: 100,
+      completed: false,
+    );
+    final rewound = await firestore.collection('users').doc('user-1')
+        .collection('watchHistory').doc('item-1').get();
+    expect(rewound.data()?['lastPositionSeconds'], 0);
+    expect(rewound.data()?['progress'], 0.0);
+  });
+
   test('records watch history progress with episode metadata', () async {
     final item = makeItem();
     await repository.recordWatchProgress(
