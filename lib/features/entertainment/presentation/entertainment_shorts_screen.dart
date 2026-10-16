@@ -987,6 +987,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                               icon: Icon(s.data == true ? Icons.favorite : Icons.favorite_border),
                               onPressed: () async {
                                 final next = !(s.data == true);
+                                final actionMood = mood;
                                 try {
                                   await repo.toggleShortLike(uid!, item.id, next);
                                 } catch (_) {
