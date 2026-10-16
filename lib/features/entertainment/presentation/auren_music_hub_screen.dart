@@ -12,6 +12,7 @@ import 'auren_music_queue_screen.dart';
 import 'auren_smart_music_screen.dart';
 import 'auren_saved_music_screen.dart';
 import 'auren_music_collection_screen.dart';
+import 'auren_rap_arena_screen.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 
 class AurenMusicHubScreen extends StatefulWidget {
@@ -391,6 +392,9 @@ class _AurenMusicHubState extends State<AurenMusicHubScreen> {
               'Smart Music',
               'ساعدني في إنشاء أغنية أصلية: فكرة، كلمات، بنية وموسيقى مناسبة، بدون تقليد صوت فنان حقيقي.',
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSmartMusicScreen()))),
+          _action(context, Icons.mic_external_on_rounded, 'Rap Arena', 'Freestyle & Battles',
+              'ساعدني في تحدي راب أصلي وتطوير أسلوبي بدون تقليد فنان حقيقي.',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRapArenaScreen()))),
           _action(context, Icons.radio, 'Radio', 'محطات واكتشاف',
               'اقترح لي تجربة Radio مناسبة لذوقي ووقتي.',
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenRadioScreen()))),
