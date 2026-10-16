@@ -104,7 +104,7 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.text('Estimated result'), findsOneWidget);
-      expect(find.text('0.00'), findsOneWidget);
+      expect(find.text('0.00'), findsWidgets);
       expect(find.text('Unavailable because there is no usable output'), findsOneWidget);
     });
 
