@@ -19,6 +19,24 @@ void main() {
       expect(RawToProductNumberParser.parse('1\u00A0234,56'), 1234.56);
     });
 
+    test('handles grouped thousands without changing digit values', () {
+      expect(RawToProductNumberParser.parse('1,234,567'), 1234567);
+      expect(RawToProductNumberParser.parse('١٬٢٣٤٬٥٦٧'), 1234567);
+      expect(RawToProductNumberParser.parse('1\u202F234,56'), 1234.56);
+    });
+
+    test('does not silently accept malformed grouping or trailing text', () {
+      expect(RawToProductNumberParser.parse('1,23,4'), isNull);
+      expect(RawToProductNumberParser.parse('12.3.4'), isNull);
+      expect(RawToProductNumberParser.parse('123abc'), isNull);
+      expect(RawToProductNumberParser.parse('1,,234'), isNull);
+    });
+
+    test('documents comma-only ambiguity as thousands for three-digit groups', () {
+      expect(RawToProductNumberParser.parse('1,234'), 1234);
+      expect(RawToProductNumberParser.parse('12,34'), 12.34);
+    });
+
     test('rejects malformed and non-finite values', () {
       expect(RawToProductNumberParser.parse('١٢x'), isNull);
       expect(RawToProductNumberParser.parse('NaN'), isNull);
