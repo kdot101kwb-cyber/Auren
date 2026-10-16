@@ -460,7 +460,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         onTap: () async {
           try {
             await Clipboard.setData(ClipboardData(text: item.mediaUrl));
-            unawaited(_trackShareAction(item));
+            unawaited(_trackShareAction(item, actionMood: mood));
             if (sheet.mounted) Navigator.pop(sheet);
           } catch (_) {
             if (sheet.mounted) {
