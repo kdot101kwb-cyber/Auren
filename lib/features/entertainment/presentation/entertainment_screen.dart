@@ -677,7 +677,13 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, i) {
               final e = entries[i];
-              final progress = ((e['progress'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
+              final positionSeconds = (e['positionSeconds'] as num?)?.toInt() ??
+                  (e['lastPositionSeconds'] as num?)?.toInt() ?? 0;
+              final durationSeconds = (e['durationSeconds'] as num?)?.toInt() ?? 0;
+              final storedProgress = (e['progress'] as num?)?.toDouble();
+              final progress = (storedProgress ??
+                      (durationSeconds > 0 ? positionSeconds / durationSeconds : 0.0))
+                  .clamp(0.0, 1.0);
               return SizedBox(width: 210, child: Card(child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => Navigator.push(context, MaterialPageRoute(
