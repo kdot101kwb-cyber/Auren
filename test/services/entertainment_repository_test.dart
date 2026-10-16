@@ -19,9 +19,10 @@ void main() {
     int episode = 1,
     int order = 0,
     String visibility = 'public',
+    String? title,
   }) async {
     await firestore.collection('entertainment_items').doc(id).set({
-      'title': 'Episode $id',
+      'title': title ?? 'Episode $id',
       'type': 'Episode',
       'visibility': visibility,
       if (seriesId != null) 'seriesId': seriesId,
@@ -69,6 +70,18 @@ void main() {
 
     expect(episodes.map((item) => item.id).toList(),
         ['number-first', 'order-first', 'order-second']);
+  });
+
+  test('uses title and id as stable ordering fallbacks', () async {
+    await addEpisode('z-id', seriesId: 'series-1', title: 'Same title');
+    await addEpisode('a-id', parentSeriesId: 'series-1', title: 'Same title');
+    await addEpisode('beta', seriesId: 'series-1', title: 'Beta');
+
+    final episodes = await repository.watchSeriesEpisodes('series-1')
+        .firstWhere((items) => items.length == 3);
+
+    expect(episodes.map((item) => item.id).toList(),
+        ['beta', 'a-id', 'z-id']);
   });
 
   test('returns an empty stream for a blank series id', () async {
