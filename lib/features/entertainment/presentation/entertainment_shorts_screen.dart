@@ -248,10 +248,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   void _onPage(int index, List<AurenEntertainmentItem> items) {
     if (active < items.length) _trackView(items[active]);
-    for (final controller in controllers.values) {
-      unawaited(_pauseControllerSafely(controller));
-    }
     final nextItem = items[index];
+    // Do not race a pause against playback when the next Short was prefetched.
+    for (final entry in controllers.entries) {
+      if (entry.key == nextItem.id) continue;
+      unawaited(_pauseControllerSafely(entry.value));
+    }
     _retainControllersFor(index, items);
     setState(() {
       active = index;
