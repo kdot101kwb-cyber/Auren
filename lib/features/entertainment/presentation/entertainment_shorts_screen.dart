@@ -391,7 +391,24 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     }
     if (!mounted) return;
     await showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (sheet) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      ListTile(leading: const Icon(Icons.link), title: const Text('نسخ رابط المحتوى'), onTap: () async { await Clipboard.setData(ClipboardData(text: item.mediaUrl)); if (sheet.mounted) Navigator.pop(sheet); }),
+      ListTile(
+        leading: const Icon(Icons.link),
+        title: const Text('نسخ رابط المحتوى'),
+        onTap: () async {
+          try {
+            await Clipboard.setData(ClipboardData(text: item.mediaUrl));
+            if (sheet.mounted) Navigator.pop(sheet);
+          } catch (_) {
+            if (sheet.mounted) {
+              ScaffoldMessenger.of(sheet).showSnackBar(
+                const SnackBar(
+                  content: Text('تعذّر نسخ الرابط. حاول مرة أخرى.'),
+                ),
+              );
+            }
+          }
+        },
+      ),
       ListTile(leading: const Icon(Icons.send_outlined), title: const Text('مشاركة داخل AUREN'), onTap: () { Navigator.pop(sheet); Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد مشاركة هذا المحتوى داخل AUREN: '+item.title+'\n'+item.mediaUrl))); }),
     ])));
   }
