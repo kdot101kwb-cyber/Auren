@@ -65,6 +65,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
+        key: ValueKey<String>(label),
         controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         decoration: InputDecoration(
@@ -90,6 +91,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
+        key: ValueKey<String>(label),
         controller: controller,
         decoration: InputDecoration(
           labelText: label,
