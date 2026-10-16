@@ -708,6 +708,7 @@ class EntertainmentRepository {
   }
 
   Stream<List<Map<String, dynamic>>> watchContinueWatching(String uid) {
+    if (uid.trim().isEmpty) return Stream.value(const <Map<String, dynamic>>[]);
     return db.collection('users').doc(uid).collection('continueWatching')
         .orderBy('updatedAt', descending: true).limit(20).snapshots()
         .map((s) => s.docs.map((d) => {'id': d.id, ...d.data()}).toList());
