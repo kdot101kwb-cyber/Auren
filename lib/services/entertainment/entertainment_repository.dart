@@ -270,6 +270,7 @@ class EntertainmentRepository {
       toggleShortLike(uid, itemId, liked);
 
   Future<void> toggleShortLike(String uid, String itemId, bool liked) async {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return;
     final ref = db.collection('entertainment_items').doc(itemId).collection('likes').doc(uid);
     if (liked) {
       await ref.set({'uid': uid, 'createdAt': FieldValue.serverTimestamp()});
