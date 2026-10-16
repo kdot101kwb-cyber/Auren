@@ -808,9 +808,13 @@ class EntertainmentRepository {
   }
 
 
-  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>> > watchShortComments(String itemId) =>
-      db.collection('entertainment_items').doc(itemId).collection('comments')
-          .orderBy('createdAt', descending: true).limit(100).snapshots().map((s) => s.docs);
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> watchShortComments(String itemId) {
+    if (itemId.trim().isEmpty) {
+      return Stream.value(const <QueryDocumentSnapshot<Map<String, dynamic>>>[]);
+    }
+    return db.collection('entertainment_items').doc(itemId).collection('comments')
+        .orderBy('createdAt', descending: true).limit(100).snapshots().map((s) => s.docs);
+  }
 
   Future<void> addShortComment(String uid, String itemId, String text, {String mood = 'تسلية'}) async {
     final value = text.trim();
