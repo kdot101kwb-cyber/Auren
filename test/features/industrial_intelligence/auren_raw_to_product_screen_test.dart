@@ -114,6 +114,32 @@ void main() {
       expect(find.text('Unavailable because there is no usable output'), findsOneWidget);
     });
 
+    testWidgets('selecting a route fills its raw and finished product names',
+        (tester) async {
+      await tester.pumpWidget(_app());
+      final selector = find.byKey(
+        const ValueKey<String>('manufacturing-route-selector'),
+      );
+      await tester.scrollUntilVisible(
+        selector,
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(selector);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sesame → tahini').last);
+      await tester.pumpAndSettle();
+
+      final rawField = tester.widget<TextFormField>(
+        find.byKey(const ValueKey<String>('Raw material name')),
+      );
+      final productField = tester.widget<TextFormField>(
+        find.byKey(const ValueKey<String>('Finished product name')),
+      );
+      expect(rawField.controller?.text, 'Sesame');
+      expect(productField.controller?.text, 'tahini');
+    });
+
     testWidgets('shows an estimate for valid default inputs', (tester) async {
       await tester.pumpWidget(_app());
       await tester.scrollUntilVisible(
