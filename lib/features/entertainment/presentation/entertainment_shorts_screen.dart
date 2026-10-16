@@ -840,7 +840,16 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                               onPressed: () async {
                                 final next = !(s.data == true);
                                 await repo.toggleShortLike(uid!, item.id, next);
-                                await repo.trackShortAction(uid!, item.id, action: next ? 'like' : 'unlike', mood: mood);
+                                try {
+                                  await repo.trackShortAction(
+                                    uid!,
+                                    item.id,
+                                    action: next ? 'like' : 'unlike',
+                                    mood: mood,
+                                  );
+                                } catch (_) {
+                                  // A like should not appear to fail because analytics are offline.
+                                }
                               },
                                                           ),
                           ),
@@ -859,10 +868,18 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                 onPressed: () async {
                                   if (isSaved) {
                                     await repo.unsave(uid!, item.id);
-                                    await repo.trackShortAction(uid!, item.id, action: 'unsave', mood: mood);
                                   } else {
                                     await repo.save(uid!, item.id);
-                                    await repo.trackShortAction(uid!, item.id, action: 'save', mood: mood);
+                                  }
+                                  try {
+                                    await repo.trackShortAction(
+                                      uid!,
+                                      item.id,
+                                      action: isSaved ? 'unsave' : 'save',
+                                      mood: mood,
+                                    );
+                                  } catch (_) {
+                                    // Saving content must work independently of analytics.
                                   }
                                 },
                               );
