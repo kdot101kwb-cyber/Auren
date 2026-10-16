@@ -414,6 +414,14 @@ void main() {
     expect(actions.docs.single.data()['action'], 'comment');
   });
 
+  test('ignores Short like writes with blank identifiers', () async {
+    await repository.toggleShortLike('', 'short-1', true);
+    await repository.toggleShortLike('user-1', '  ', true);
+
+    final items = await firestore.collection('entertainment_items').get();
+    expect(items.docs, isEmpty);
+  });
+
   test('updates the like stream when a Short is liked and unliked', () async {
     final liked = repository.watchLiked('user-1', 'short-1');
     expect(await liked.first, isFalse);
