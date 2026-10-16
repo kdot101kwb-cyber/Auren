@@ -369,20 +369,6 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
   double _number(TextEditingController controller) =>
       _parseAmount(controller.text) ?? 0;
 }
-).hasMatch(normalized)) {
-      normalized = normalized.replaceAll(',', '');
-    } else if (normalized.contains(',') && !normalized.contains('.')) {
-      normalized = normalized.replaceAll(',', '.');
-    }
-    final parsed = double.tryParse(normalized);
-    return parsed != null && parsed.isFinite ? parsed : null;
-  }
-}
-
-import '../domain/manufacturing_route_catalog.dart';
-import '../domain/raw_to_product_estimate.dart';
-import 'raw_to_product_strings.dart';
-import 'raw_to_product_stage_strings.dart';
 
 /// A planning calculator only: values are supplied by the user and are not
 /// live market quotes, certified engineering estimates, or financial advice.
