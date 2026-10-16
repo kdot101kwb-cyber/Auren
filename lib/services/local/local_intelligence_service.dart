@@ -40,6 +40,7 @@ class AurenLocalIntelligenceService {
     var hasSecond = false;
     var firstDone = false;
     var secondDone = false;
+    var closing = false;
 
     void emitIfReady() {
       if (hasFirst && hasSecond && !controller.isClosed) {
@@ -47,13 +48,23 @@ class AurenLocalIntelligenceService {
       }
     }
 
-    void closeIfDone() {
+    Future<void> closeIfDone() async {
       final sourceCannotProducePair =
           (firstDone && !hasFirst) || (secondDone && !hasSecond);
-      if ((sourceCannotProducePair || (firstDone && secondDone)) &&
-          !controller.isClosed) {
-        controller.close();
+      if (closing ||
+          controller.isClosed ||
+          !(sourceCannotProducePair || (firstDone && secondDone))) {
+        return;
       }
+
+      closing = true;
+      if (firstDone && !hasFirst) {
+        await secondSubscription?.cancel();
+      }
+      if (secondDone && !hasSecond) {
+        await firstSubscription?.cancel();
+      }
+      await controller.close();
     }
 
     controller = StreamController<(A, B)>(
