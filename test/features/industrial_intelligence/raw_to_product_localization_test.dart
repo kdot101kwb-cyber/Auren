@@ -1,8 +1,32 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auren/core/i18n/auren_localizations.dart';
 import 'package:auren/features/industrial_intelligence/presentation/raw_to_product_strings.dart';
+import 'package:auren/features/industrial_intelligence/presentation/auren_raw_to_product_screen.dart';
 
 void main() {
+  group('RawToProductNumberParser', () {
+    test('parses Arabic digits with Arabic thousands and decimal separators', () {
+      expect(RawToProductNumberParser.parse('١٬٢٣٤٫٥'), 1234.5);
+    });
+
+    test('parses Persian digits and decimal separator', () {
+      expect(RawToProductNumberParser.parse('۱۲۳٫۷۵'), 123.75);
+    });
+
+    test('accepts grouped thousands and decimal input with whitespace', () {
+      expect(RawToProductNumberParser.parse('1,234.56'), 1234.56);
+      expect(RawToProductNumberParser.parse('1 234,56'), 1234.56);
+      expect(RawToProductNumberParser.parse('1\u00A0234,56'), 1234.56);
+    });
+
+    test('rejects malformed and non-finite values', () {
+      expect(RawToProductNumberParser.parse('١٢x'), isNull);
+      expect(RawToProductNumberParser.parse('NaN'), isNull);
+      expect(RawToProductNumberParser.parse('Infinity'), isNull);
+      expect(RawToProductNumberParser.parse(''), isNull);
+    });
+  });
+
   group('RawToProductStrings', () {
     test('provides planner translations for every supported app locale', () {
       for (final locale in AurenLocalizations.supportedLocales) {
