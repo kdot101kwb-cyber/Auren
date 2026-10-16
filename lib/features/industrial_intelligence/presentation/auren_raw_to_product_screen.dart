@@ -188,6 +188,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                     Text(l.routeHelp),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
+                      key: const ValueKey<String>('manufacturing-route-selector'),
                       value: _routeId,
                       isExpanded: true,
                       decoration: InputDecoration(
