@@ -60,6 +60,14 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     return _qualityUrls[item.id] ?? item.mediaUrl;
   }
 
+  Future<void> _disposeControllerSafely(VideoPlayerController controller) async {
+    try {
+      await controller.dispose();
+    } catch (_) {
+      // Native players can already be released after a platform error.
+    }
+  }
+
   Future<void> _prepare(AurenEntertainmentItem item) async {
     final selectedUrl = _effectiveVideoUrl(item);
     final existingController = controllers[item.id];
@@ -106,7 +114,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     try {
       await c.initialize();
       if (!mounted || !_retainedControllerIds.contains(item.id) || generation != (_playbackGeneration[item.id] ?? 0) || selectedUrl != _effectiveVideoUrl(item)) {
-        await c.dispose();
+        await _disposeControllerSafely(c);
         return;
       }
       c.setLooping(true);
@@ -127,7 +135,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       }
       _failedControllerIds.add(item.id);
       if (mounted) setState(() {});
-      await c.dispose();
+      await _disposeControllerSafely(c);
     } finally {
       _preparing.remove(item.id);
       if (mounted &&
