@@ -190,6 +190,19 @@ void main() {
     expect(progress.docs, isEmpty);
   });
 
+  test('clears a generated-series episode progress record', () async {
+    await repository.saveSeriesWatchProgress(
+      'user-1', 'job-1', 2,
+      positionSeconds: 15,
+      durationSeconds: 90,
+      title: 'Episode Two',
+    );
+    expect(await repository.getSeriesWatchProgress('user-1', 'job-1', 2), isNotNull);
+
+    await repository.clearSeriesWatchProgress('user-1', 'job-1', 2);
+    expect(await repository.getSeriesWatchProgress('user-1', 'job-1', 2), isNull);
+  });
+
   test('stores and clamps generated-series episode progress', () async {
     await repository.saveSeriesWatchProgress(
       'user-1', 'job-1', 3,
