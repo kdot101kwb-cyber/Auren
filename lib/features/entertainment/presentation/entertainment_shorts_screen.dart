@@ -422,8 +422,18 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                 child: StreamBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
                   stream: repo.watchShortComments(item.id),
                   builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Text('تعذّر تحميل التعليقات. حاول لاحقاً.'),
+                      );
+                    }
                     final comments = snapshot.data ?? const [];
-                    if (comments.isEmpty) return const Center(child: Text('كن أول من يعلّق 👋'));
+                    if (comments.isEmpty) {
+                      return const Center(child: Text('كن أول من يعلّق 👋'));
+                    }
                     return ListView.builder(
                       itemCount: comments.length,
                       itemBuilder: (_, i) {
