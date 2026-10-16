@@ -216,5 +216,23 @@ void main() {
       await first.close();
       await second.close();
     });
+    test('cancels the first source when the second completes empty', () async {
+      var firstCancelled = false;
+      final first = StreamController<int>(onCancel: () {
+        firstCancelled = true;
+      });
+      var completed = false;
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first.stream,
+        Stream<String>.empty(),
+      ).listen((_) {}, onDone: () => completed = true);
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(completed, isTrue);
+      expect(firstCancelled, isTrue);
+      await subscription.cancel();
+      await first.close();
+    });
   });
 }
