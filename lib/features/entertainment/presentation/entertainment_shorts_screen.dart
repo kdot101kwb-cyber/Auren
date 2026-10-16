@@ -42,6 +42,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   final Map<String, DateTime> _startedAt = {};
   final follows = FollowRepository();
   final Set<String> _tracked = {};
+  final Set<String> _tracking = {};
   Stream<Set<String>>? _savedStream;
 
   static const moods = <String>['تسلية', 'ضحك', 'موسيقى', 'أفلام', 'Gaming', 'اكتشاف'];
