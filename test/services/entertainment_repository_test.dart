@@ -296,6 +296,25 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('aggregates Short actions and preserves action history', () async {
+    await repository.trackShortAction('user-1', 'short-1', action: 'like', mood: 'ضحك');
+    await repository.trackShortAction('user-1', 'short-1', action: 'save', mood: 'ضحك');
+    await repository.trackShortAction('user-1', 'short-1', action: 'skip', mood: 'موسيقى');
+
+    final signal = await firestore.collection('users').doc('user-1')
+        .collection('entertainmentSignals').doc('short-1').get();
+    final data = signal.data()!;
+    expect(data['likes'], 1);
+    expect(data['saves'], 1);
+    expect(data['skips'], 1);
+    expect(data['mood'], 'موسيقى');
+
+    final actions = await signal.reference.collection('actions').get();
+    expect(actions.docs, hasLength(3));
+    expect(actions.docs.map((doc) => doc.data()['action']).toSet(),
+        {'like', 'save', 'skip'});
+  });
+
   test('aggregates Short watch time, views, and completions', () async {
     await repository.trackShortView(
       'user-1', 'short-1', seconds: 7, completed: false, mood: 'تسلية');
