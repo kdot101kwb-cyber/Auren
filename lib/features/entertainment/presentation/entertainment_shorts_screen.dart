@@ -453,13 +453,23 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                         onPressed: () async {
                           final text = controller.text.trim();
                           if (text.isEmpty) return;
-                          await repo.addShortComment(
-                            uid!,
-                            item.id,
-                            text,
-                            mood: mood,
-                          );
-                          if (sheetContext.mounted) controller.clear();
+                          try {
+                            await repo.addShortComment(
+                              uid!,
+                              item.id,
+                              text,
+                              mood: mood,
+                            );
+                            if (sheetContext.mounted) controller.clear();
+                          } catch (_) {
+                            if (sheetContext.mounted) {
+                              ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تعذّر إرسال التعليق. حاول مرة أخرى.'),
+                                ),
+                              );
+                            }
+                          }
                         },
                       ),
                     ],
