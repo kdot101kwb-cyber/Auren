@@ -152,7 +152,14 @@ void main() {
         label: 'نسبة التحويل إلى منتج صالح (%)',
         value: '١٠٠٫٠١',
       );
-      await tester.tap(find.text('احسب خطة التصنيع'));
+      final calculate = find.text('احسب خطة التصنيع');
+      final scrollable = find.byType(Scrollable).first;
+      for (var attempt = 0; attempt < 24 && calculate.evaluate().isEmpty; attempt++) {
+        await tester.drag(scrollable, const Offset(0, -350));
+        await tester.pumpAndSettle();
+      }
+      expect(calculate, findsOneWidget);
+      await tester.tap(calculate);
       await tester.pumpAndSettle();
 
       expect(find.text('القيمة يجب ألا تزيد عن 100'), findsOneWidget);
