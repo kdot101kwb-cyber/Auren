@@ -104,6 +104,70 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
     }
   }
 
+  Widget _buildEpisodesSection(
+    BuildContext context,
+    AurenEntertainmentItem item,
+    EntertainmentRepository repo,
+  ) {
+    if (item.type != 'Global Series' && item.seriesId.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final seriesId = item.seriesId.isNotEmpty ? item.seriesId : item.id;
+    return StreamBuilder<List<AurenEntertainmentItem>>(
+      stream: repo.watchSeriesEpisodes(seriesId),
+      builder: (context, snapshot) {
+        if (snapshot.hasError || snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox.shrink();
+        }
+        final episodes = snapshot.data ?? const <AurenEntertainmentItem>[];
+        if (episodes.isEmpty) return const SizedBox.shrink();
+        final currentIndex = episodes.indexWhere((episode) => episode.id == item.id);
+        final nextIndex = currentIndex >= 0 ? currentIndex + 1 : -1;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 22),
+            Text('المواسم والحلقات', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            if (nextIndex >= 0 && nextIndex < episodes.length)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: episodes[nextIndex].id)),
+                  ),
+                  icon: const Icon(Icons.skip_next_rounded),
+                  label: Text('الحلقة التالية: ${episodes[nextIndex].title}'),
+                ),
+              ),
+            ...episodes.map((episode) {
+              final isCurrent = episode.id == item.id;
+              final season = episode.seasonNumber > 0 ? 'الموسم ${episode.seasonNumber}' : 'الموسم غير محدد';
+              final episodeNumber = episode.episodeNumber > 0 ? ' • الحلقة ${episode.episodeNumber}' : '';
+              return Card(
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Text(episode.episodeNumber > 0 ? '${episode.episodeNumber}' : '▶'),
+                  ),
+                  title: Text(episode.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: Text('$season$episodeNumber'),
+                  trailing: isCurrent
+                      ? const Icon(Icons.equalizer_rounded)
+                      : const Icon(Icons.chevron_right_rounded),
+                  onTap: isCurrent ? null : () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => AurenEntertainmentDetailScreen(itemId: episode.id)),
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -178,6 +242,7 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
               Text(item.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Text(item.description, style: Theme.of(context).textTheme.bodyLarge),
+              _buildEpisodesSection(context, item, repo),
               if (item.type == 'Global Series' && (item.source.isNotEmpty || item.isCatalogOnly || item.licenseNote.isNotEmpty || item.hasExternalSource)) ...[
                 const SizedBox(height: 16),
                 Card(
