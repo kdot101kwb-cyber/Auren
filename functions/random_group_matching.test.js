@@ -49,6 +49,8 @@ test('trusted callable endpoints validate membership, block state and request li
   assert.match(source, /status !== 'waiting'/);
   assert.match(source, /const language = clean\(own\.language, 40\)/);
   assert.doesNotMatch(source, /const language = clean\(request\.data\?\.language/);
+  assert.match(source, /\.where\('language', '==', language\)/);
+  assert.match(source, /All selected requests must use the same language/);
   assert.match(source, /tx\.update\(ref, \{/);
   assert.match(source, /readBlockedPairs\(tx, memberUids\)/);
 });
