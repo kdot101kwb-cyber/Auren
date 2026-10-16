@@ -460,6 +460,9 @@ class EntertainmentRepository {
   }
 
   Future<void> clearSeriesWatchProgress(String uid, String jobId, int episodeNumber) {
+    if (uid.trim().isEmpty || jobId.trim().isEmpty || episodeNumber < 1) {
+      return Future<void>.value();
+    }
     return db.collection('users').doc(uid).collection('seriesWatchProgress')
         .doc('job_${jobId}_ep_${episodeNumber}').delete();
   }
