@@ -429,6 +429,17 @@ void main() {
     expect(await becomesUnliked, isFalse);
   });
 
+  test('ignores save and unsave calls with blank identifiers', () async {
+    await repository.save('', 'item-1');
+    await repository.save('user-1', '  ');
+    await repository.unsave('', 'item-1');
+    await repository.unsave('user-1', '  ');
+
+    final saved = await firestore.collection('users').doc('user-1')
+        .collection('savedEntertainment').get();
+    expect(saved.docs, isEmpty);
+  });
+
   test('shows only public items in saved entertainment', () async {
     await firestore.collection('entertainment_items').doc('public-item').set({
       'title': 'Public item', 'type': 'Movie', 'visibility': 'public',
