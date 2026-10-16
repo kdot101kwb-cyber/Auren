@@ -18,7 +18,7 @@ test('education enrollment rules require published canonical courses', () => {
 
 test('education enrollment completion is derived from completed lessons', () => {
   assert.match(rules, /(?:request\.resource\.data|requestData\(\))\.completedLessons == get\([\s\S]*?lessonCount/);
-  assert.match(rules, /(?:request\.resource\.data|requestData\(\))\.status == 'completed'/);
+  assert.match(rules, /status\s*==\s*\(\s*(?:request\.resource\.data|requestData\(\))\.completedLessons\s*==\s*get\([\s\S]*?lessonCount[\s\S]*?\?\s*'completed'\s*:\s*'active'\s*\)/);
   assert.match(rules, /(?:request\.resource\.data|requestData\(\))\.status == 'active'/);
   assert.match(rules, /(?:request\.resource\.data|requestData\(\))\.progress < 100/);
   assert.match(rules, /(?:request\.resource\.data|requestData\(\))\.progress == 100/);
