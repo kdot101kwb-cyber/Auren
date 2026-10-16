@@ -258,6 +258,21 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('aggregates Short watch time, views, and completions', () async {
+    await repository.trackShortView(
+      'user-1', 'short-1', seconds: 7, completed: false, mood: 'تسلية');
+    await repository.trackShortView(
+      'user-1', 'short-1', seconds: 8, completed: true, mood: 'موسيقى');
+
+    final signal = await firestore.collection('users').doc('user-1')
+        .collection('entertainmentSignals').doc('short-1').get();
+    final data = signal.data()!;
+    expect(data['watchSeconds'], 15);
+    expect(data['views'], 2);
+    expect(data['completions'], 1);
+    expect(data['mood'], 'موسيقى');
+  });
+
   test('does not write Short action analytics for blank identifiers', () async {
     await repository.trackShortAction('', 'short-1', action: 'like', mood: 'تسلية');
     await repository.trackShortAction('user-1', '  ', action: 'save', mood: 'تسلية');
