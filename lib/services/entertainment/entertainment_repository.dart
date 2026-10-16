@@ -628,6 +628,35 @@ class EntertainmentRepository {
   }
 
 
+  /// Watches public episode records linked to a parent series.
+  /// Sorting is client-side to avoid requiring a composite Firestore index.
+  Stream<List<AurenEntertainmentItem>> watchSeriesEpisodes(String seriesId) {
+    final id = seriesId.trim();
+    if (id.isEmpty) return Stream.value(const <AurenEntertainmentItem>[]);
+
+    return db.collection('entertainment_items')
+        .where('visibility', isEqualTo: 'public')
+        .where('seriesId', isEqualTo: id)
+        .limit(100)
+        .snapshots()
+        .map((snapshot) {
+      final episodes = snapshot.docs
+          .map((doc) => AurenEntertainmentItem.fromMap(doc.id, doc.data()))
+          .toList()
+        ..sort((a, b) {
+          final season = a.seasonNumber.compareTo(b.seasonNumber);
+          if (season != 0) return season;
+          final aOrder = a.episodeOrder > 0 ? a.episodeOrder : a.episodeNumber;
+          final bOrder = b.episodeOrder > 0 ? b.episodeOrder : b.episodeNumber;
+          final episode = aOrder.compareTo(bOrder);
+          if (episode != 0) return episode;
+          final title = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+          return title != 0 ? title : a.id.compareTo(b.id);
+        });
+      return episodes;
+    });
+  }
+
   Stream<List<Map<String, dynamic>>> watchContinueWatching(String uid) {
     return db.collection('users').doc(uid).collection('continueWatching')
         .orderBy('updatedAt', descending: true).limit(20).snapshots()
