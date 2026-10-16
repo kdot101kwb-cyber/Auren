@@ -657,6 +657,12 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: repo.watchContinueWatching(uid),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('تعذّر تحميل قائمة متابعة المشاهدة حالياً.'),
+          );
+        }
         final entries = snapshot.data ?? const <Map<String, dynamic>>[];
         if (entries.isEmpty) return const SizedBox.shrink();
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
