@@ -258,6 +258,17 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('streams watch history after playback starts', () async {
+    final future = repository.watchHistory('user-1')
+        .firstWhere((entries) => entries.any((entry) => entry['itemId'] == 'item-1'));
+    await repository.recordWatchStarted('user-1', makeItem());
+
+    final entries = await future;
+    expect(entries.single['itemId'], 'item-1');
+    expect(entries.single['title'], 'Test item');
+    expect(entries.single['views'], 1);
+  });
+
   test('returns an empty stream for a blank series id', () async {
     expect(await repository.watchSeriesEpisodes('  ').first, isEmpty);
   });
