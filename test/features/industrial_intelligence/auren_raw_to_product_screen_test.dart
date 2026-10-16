@@ -46,6 +46,16 @@ void main() {
       await _expectInvalid(tester);
     });
 
+    testWidgets('hides estimate when a required numeric input is empty', (tester) async {
+      await tester.pumpWidget(_app());
+      await _enterField(
+        tester,
+        label: 'Selling price per product',
+        value: '',
+      );
+      await _expectInvalid(tester);
+    });
+
     testWidgets('hides estimate when raw quantity is zero', (tester) async {
       await tester.pumpWidget(_app());
       await _enterField(
