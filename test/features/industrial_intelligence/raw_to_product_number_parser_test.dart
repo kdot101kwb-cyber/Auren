@@ -22,6 +22,11 @@ void main() {
       expect(RawToProductNumberParser.parse('1,234.5'), 1234.5);
     });
 
+    test('preserves explicit plus and minus signs for later validation', () {
+      expect(RawToProductNumberParser.parse('+12.5'), 12.5);
+      expect(RawToProductNumberParser.parse('-12.5'), -12.5);
+    });
+
     test('rejects malformed grouping and non-finite values', () {
       expect(RawToProductNumberParser.parse('1 2'), isNull);
       expect(RawToProductNumberParser.parse('12 34'), isNull);
