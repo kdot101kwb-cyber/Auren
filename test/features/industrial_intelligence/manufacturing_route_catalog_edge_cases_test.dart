@@ -63,6 +63,33 @@ void main() {
       }
     });
 
+    test('raw material and final product lookup trims surrounding whitespace', () {
+      for (final route in ManufacturingRouteCatalog.routes) {
+        expect(
+          ManufacturingRouteCatalog.findByRawMaterial('  ${route.rawMaterial}  '),
+          same(route),
+          reason: 'Whitespace-trimmed raw material lookup for ${route.id}',
+        );
+        expect(
+          ManufacturingRouteCatalog.findByRawMaterial('  ${route.finalProduct}  '),
+          same(route),
+          reason: 'Whitespace-trimmed final product lookup for ${route.id}',
+        );
+      }
+    });
+
+    test('raw material and final product labels are unique for reliable lookup', () {
+      final rawMaterials = ManufacturingRouteCatalog.routes
+          .map((route) => route.rawMaterial.trim().toLowerCase())
+          .toList();
+      final finalProducts = ManufacturingRouteCatalog.routes
+          .map((route) => route.finalProduct.trim().toLowerCase())
+          .toList();
+
+      expect(rawMaterials.toSet().length, rawMaterials.length);
+      expect(finalProducts.toSet().length, finalProducts.length);
+    });
+
     test('route ID lookup trims whitespace and ignores case', () {
       expect(ManufacturingRouteCatalog.findById(' SESAME-TO-TAHINI ')?.id,
           'sesame-to-tahini');
