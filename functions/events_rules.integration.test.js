@@ -150,3 +150,16 @@ test('attendee cannot cancel another user RSVP', async () => {
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   }));
 });
+
+test('event owner cannot save an invalid start/end schedule', async () => {
+  await seedEvent('invalid-schedule-update', []);
+  const db = dbFor('event-host');
+  const event = db.doc('events/invalid-schedule-update');
+  const snapshot = await event.get();
+  const startsAt = snapshot.data().startsAt;
+  await assertFails(event.update({
+    startsAt,
+    endsAt: firebase.firestore.Timestamp.fromMillis(startsAt.toMillis() - 1000),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }));
+});
