@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +67,17 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     } catch (_) {
       // Native players can already be released after a platform error.
     }
+  }
+
+  Future<void> _pauseAndDisposeControllerSafely(
+    VideoPlayerController controller,
+  ) async {
+    try {
+      await controller.pause();
+    } catch (_) {
+      // A failed native player must not prevent resource cleanup.
+    }
+    await _disposeControllerSafely(controller);
   }
 
   Future<void> _prepare(AurenEntertainmentItem item) async {
@@ -212,15 +224,14 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     for (final id in controllers.keys.toList()) {
       if (keep.contains(id)) continue;
       final controller = controllers.remove(id)!;
-      controller.pause();
-      controller.dispose();
+      unawaited(_pauseAndDisposeControllerSafely(controller));
     }
   }
 
   void _onPage(int index, List<AurenEntertainmentItem> items) {
     if (active < items.length) _trackView(items[active]);
-    for (final c in controllers.values) {
-      c.pause();
+    for (final controller in controllers.values) {
+      unawaited(_pauseAndDisposeControllerSafely(controller).then((_) {}));
     }
     final nextItem = items[index];
     _retainControllersFor(index, items);
@@ -297,8 +308,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     for (final id in controllers.keys.toList()) {
                       if (id == keepId) continue;
                       final controller = controllers.remove(id)!;
-                      controller.pause();
-                      controller.dispose();
+                      unawaited(
+                        _pauseAndDisposeControllerSafely(controller),
+                      );
                     }
                     _retainedControllerIds
                       ..clear()
