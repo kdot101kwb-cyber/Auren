@@ -97,7 +97,7 @@ void main() {
       expect(result.totalCost, 0);
       expect(result.revenue, 0);
       expect(result.profitOrLoss, 0);
-      expect(result.unitCost, isNull);
+      expect(result.unitCost, 0);
       expect(result.salesMarginPercent, isNull);
     });
 
