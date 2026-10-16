@@ -420,6 +420,10 @@ void main() {
     expect(entries.single['views'], 1);
   });
 
+  test('returns an empty Short comments stream for a blank item id', () async {
+    expect(await repository.watchShortComments('  ').first, isEmpty);
+  });
+
   test('returns an empty saved entertainment stream for a blank user id', () async {
     expect(await repository.watchSavedItems(' ').first, isEmpty);
   });
