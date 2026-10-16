@@ -302,11 +302,19 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     if (choices.length < 2 || !mounted) return;
     await showModalBottomSheet<void>(context: context, showDragHandle: true,
       builder: (sheetContext) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const ListTile(leading: Icon(Icons.high_quality_outlined), title: Text('جودة الفيديو'), subtitle: Text('الخيارات المتاحة لهذا الفيديو')),
+        ListTile(
+          leading: const Icon(Icons.high_quality_outlined),
+          title: const Text('جودة الفيديو'),
+          subtitle: Text(_dataSaverMode
+              ? 'توفير البيانات مفعّل؛ أوقفه لاختيار جودة أعلى'
+              : 'الخيارات المتاحة لهذا الفيديو'),
+        ),
         for (final choice in choices) ListTile(
           leading: Icon(_effectiveVideoUrl(item) == choice.$2 ? Icons.radio_button_checked : Icons.radio_button_off),
           title: Text(choice.$1),
+          enabled: !_dataSaverMode || choice.$2 == item.mediaUrlLow.trim(),
           onTap: () async {
+            if (_dataSaverMode && choice.$2 != item.mediaUrlLow.trim()) return;
             Navigator.pop(sheetContext);
             if ((_qualityUrls[item.id] ?? item.mediaUrl) == choice.$2) return;
             _qualityUrls[item.id] = choice.$2;
