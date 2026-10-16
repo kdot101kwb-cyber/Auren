@@ -368,6 +368,30 @@ void main() {
       await second.close();
     });
 
+    test('keeps the last first-source value after it completes', () async {
+      final second = StreamController<String>();
+      final values = <(int, String)>[];
+      final reached = Completer<void>();
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        Stream<int>.fromIterable([2, 3]),
+        second.stream,
+      ).listen((value) {
+        values.add(value);
+        if (values.length == 2 && !reached.isCompleted) reached.complete();
+      });
+
+      await Future<void>.delayed(Duration.zero);
+      second.add('ready');
+      await reached.future;
+      second.add('updated');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(values, [(3, 'ready'), (3, 'updated')]);
+
+      await subscription.cancel();
+      await second.close();
+    });
+
     test('forwards errors from the second source too', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
