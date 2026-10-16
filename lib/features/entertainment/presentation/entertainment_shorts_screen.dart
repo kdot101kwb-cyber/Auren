@@ -219,11 +219,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final viewMood = mood;
     final naturallyCompleted = controller != null && controller.value.isInitialized && controller.value.duration.inMilliseconds > 0 &&
         controller.value.position.inMilliseconds >= (controller.value.duration.inMilliseconds * 0.9).round();
-    // Wall-clock time includes pauses and background time. Prefer the player's
-    // position so engagement signals reflect media actually watched.
+    // Wall-clock time includes pauses, loading delays, and background time.
+    // Only report watch duration when the player can provide its real position;
+    // otherwise report zero rather than inventing engagement time.
     final seconds = controller != null && controller.value.isInitialized
         ? controller.value.position.inSeconds
-        : (started == null ? 0 : DateTime.now().difference(started).inSeconds);
+        : 0;
     try {
       await repo.trackShortView(
         uid!,
