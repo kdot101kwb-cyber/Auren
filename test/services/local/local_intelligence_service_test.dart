@@ -198,5 +198,23 @@ void main() {
       await subscription.cancel();
       await second.close();
     });
+    test('forwards errors from a source without closing immediately', () async {
+      final first = StreamController<int>();
+      final second = StreamController<String>();
+      final receivedError = Completer<Object>();
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first.stream,
+        second.stream,
+      ).listen((_) {}, onError: (Object error) {
+        if (!receivedError.isCompleted) receivedError.complete(error);
+      });
+
+      first.addError(StateError('source failed'));
+      expect(await receivedError.future, isA<StateError>());
+
+      await subscription.cancel();
+      await first.close();
+      await second.close();
+    });
   });
 }
