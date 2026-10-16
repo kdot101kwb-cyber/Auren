@@ -313,7 +313,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                 title: const Text('توفير البيانات'),
                 subtitle: const Text('إيقاف تجهيز الشورت التالي مسبقاً لتقليل استهلاك الإنترنت والذاكرة'),
                 value: _dataSaverMode,
-                onChanged: (value) {
+                onChanged: (value) async {
                   final keepId = _activeItemId;
                   if (keepId != null) {
                     _playbackGeneration[keepId] = (_playbackGeneration[keepId] ?? 0) + 1;
