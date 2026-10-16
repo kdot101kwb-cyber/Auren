@@ -254,8 +254,16 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
             _qualityUrls[item.id] = choice.$2;
             _playbackGeneration[item.id] = (_playbackGeneration[item.id] ?? 0) + 1;
             final old = controllers.remove(item.id);
-            if (old != null) { old.pause(); old.dispose(); }
-            _prepare(item);
+            if (old != null) {
+              try {
+                await old.pause();
+              } catch (_) {
+                // Continue switching quality if the old player has failed.
+              }
+              await _disposeControllerSafely(old);
+            }
+            if (!mounted) return;
+            await _prepare(item);
           },
         ),
       ])));
