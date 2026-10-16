@@ -199,9 +199,24 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         controller.value.position.inMilliseconds >= (controller.value.duration.inMilliseconds * 0.9).round();
     final seconds = started == null ? 0 : DateTime.now().difference(started).inSeconds;
     _tracked.add(item.id);
-    await repo.trackShortView(uid!, item.id, seconds: seconds, completed: completed || naturallyCompleted, mood: mood);
-    if (seconds < 3) {
-      await repo.trackShortAction(uid!, item.id, action: 'skip', mood: mood);
+    try {
+      await repo.trackShortView(
+        uid!,
+        item.id,
+        seconds: seconds,
+        completed: completed || naturallyCompleted,
+        mood: mood,
+      );
+      if (seconds < 3) {
+        await repo.trackShortAction(
+          uid!,
+          item.id,
+          action: 'skip',
+          mood: mood,
+        );
+      }
+    } catch (_) {
+      // Analytics failures must not break vertical scrolling or playback.
     }
   }
 
