@@ -185,6 +185,25 @@ void main() {
       );
     });
 
+    test('does not overflow a valid maximum finite quantity at 100 percent yield', () {
+      final result = RawToProductEstimate.calculate(
+        rawQuantity: double.maxFinite,
+        yieldPercent: 100,
+        rawUnitCost: 0,
+        processingPerRawUnit: 0,
+        packagingPerProduct: 0,
+        transportCost: 0,
+        otherCosts: 0,
+        sellingPricePerProduct: 0,
+      );
+
+      expect(result.outputQuantity, double.maxFinite);
+      expect(result.totalCost, 0);
+      expect(result.revenue, 0);
+      expect(result.unitCost, isNull);
+      expect(result.salesMarginPercent, isNull);
+    });
+
     test('rejects negative, non-finite and out-of-range inputs', () {
       final base = <String, double>{
         'rawQuantity': 1,
