@@ -40,6 +40,17 @@ void main() {
       }
     });
 
+    test('raw material lookup accepts route IDs without case sensitivity', () {
+      expect(
+        ManufacturingRouteCatalog.findByRawMaterial('SESAME-TO-TAHINI')?.id,
+        'sesame-to-tahini',
+      );
+      expect(
+        ManufacturingRouteCatalog.findByRawMaterial('  cotton-to-garment  ')?.id,
+        'cotton-to-garment',
+      );
+    });
+
     test('raw material lookup rejects empty and unknown input safely', () {
       expect(ManufacturingRouteCatalog.findByRawMaterial(''), isNull);
       expect(ManufacturingRouteCatalog.findByRawMaterial('   '), isNull);
