@@ -261,7 +261,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         for (final choice in choices) ListTile(
           leading: Icon((_qualityUrls[item.id] ?? item.mediaUrl) == choice.$2 ? Icons.radio_button_checked : Icons.radio_button_off),
           title: Text(choice.$1),
-          onTap: () {
+          onTap: () async {
             Navigator.pop(sheetContext);
             if ((_qualityUrls[item.id] ?? item.mediaUrl) == choice.$2) return;
             _qualityUrls[item.id] = choice.$2;
