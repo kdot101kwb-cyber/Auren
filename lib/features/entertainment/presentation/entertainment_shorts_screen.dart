@@ -903,10 +903,20 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                   size: 32,
                                 ),
                                 onPressed: () async {
-                                  if (isSaved) {
-                                    await repo.unsave(uid!, item.id);
-                                  } else {
-                                    await repo.save(uid!, item.id);
+                                  try {
+                                    if (isSaved) {
+                                      await repo.unsave(uid!, item.id);
+                                    } else {
+                                      await repo.save(uid!, item.id);
+                                    }
+                                  } catch (_) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('تعذّر تحديث المحفوظات. حاول مرة أخرى.'),
+                                      ),
+                                    );
+                                    return;
                                   }
                                   try {
                                     await repo.trackShortAction(
