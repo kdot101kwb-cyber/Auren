@@ -818,7 +818,7 @@ class EntertainmentRepository {
 
   Future<void> addShortComment(String uid, String itemId, String text, {String mood = 'تسلية'}) async {
     final value = text.trim();
-    if (value.isEmpty || value.length > 1000) return;
+    if (uid.trim().isEmpty || itemId.trim().isEmpty || value.isEmpty || value.length > 1000) return;
     await db.collection('entertainment_items').doc(itemId).collection('comments').add({
       'uid': uid,
       'text': value,
