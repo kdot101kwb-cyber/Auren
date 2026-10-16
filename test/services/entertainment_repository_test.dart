@@ -258,6 +258,22 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('trims Short comments and records comment analytics', () async {
+    await repository.addShortComment('user-1', 'short-1', '  Nice clip  ', mood: 'ضحك');
+
+    final comments = await firestore.collection('entertainment_items')
+        .doc('short-1').collection('comments').get();
+    expect(comments.docs, hasLength(1));
+    expect(comments.docs.single.data()['text'], 'Nice clip');
+    expect(comments.docs.single.data()['uid'], 'user-1');
+
+    final signal = await firestore.collection('users').doc('user-1')
+        .collection('entertainmentSignals').doc('short-1').get();
+    expect(signal.data()?['mood'], 'ضحك');
+    final actions = await signal.reference.collection('actions').get();
+    expect(actions.docs.single.data()['action'], 'comment');
+  });
+
   test('updates the like stream when a Short is liked and unliked', () async {
     final liked = repository.watchLiked('user-1', 'short-1');
     expect(await liked.first, isFalse);
