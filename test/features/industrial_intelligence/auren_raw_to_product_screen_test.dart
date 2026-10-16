@@ -13,12 +13,7 @@ Future<void> _enterField(
   required String label,
   required String value,
 }) async {
-  final field = find.byWidgetPredicate(
-    (widget) =>
-        widget is TextFormField &&
-        widget.decoration.labelText == label,
-    description: 'TextFormField with label "$label"',
-  );
+  final field = find.byKey(ValueKey<String>(label));
   expect(field, findsOneWidget, reason: 'Field label: $label');
   await tester.scrollUntilVisible(
     field,
