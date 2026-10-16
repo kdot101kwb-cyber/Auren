@@ -686,8 +686,13 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
                   .clamp(0.0, 1.0);
               return SizedBox(width: 210, child: Card(child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => AurenEntertainmentDetailScreen(itemId: e['id'].toString()))),
+                onTap: () {
+                  final itemId = (e['id'] ?? e['itemId']).toString().trim();
+                  if (itemId.isEmpty) return;
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => AurenEntertainmentDetailScreen(itemId: itemId),
+                  ));
+                },
                 child: Padding(padding: const EdgeInsets.all(10), child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
