@@ -629,20 +629,27 @@ class EntertainmentRepository {
 
 
   /// Watches public episode records linked to a parent series.
-  /// Sorting is client-side to avoid requiring a composite Firestore index.
+  /// Queries both supported relationship fields, then de-duplicates and sorts
+  /// locally so legacy parentSeriesId records remain visible without a
+  /// composite Firestore index.
   Stream<List<AurenEntertainmentItem>> watchSeriesEpisodes(String seriesId) {
     final id = seriesId.trim();
     if (id.isEmpty) return Stream.value(const <AurenEntertainmentItem>[]);
 
-    return db.collection('entertainment_items')
-        .where('visibility', isEqualTo: 'public')
-        .where('seriesId', isEqualTo: id)
-        .limit(100)
-        .snapshots()
-        .map((snapshot) {
-      final episodes = snapshot.docs
-          .map((doc) => AurenEntertainmentItem.fromMap(doc.id, doc.data()))
-          .toList()
+    final controller = StreamController<List<AurenEntertainmentItem>>();
+    List<AurenEntertainmentItem>? bySeriesId;
+    List<AurenEntertainmentItem>? byParentSeriesId;
+    Object? firstError;
+    StackTrace? firstStackTrace;
+    var completedStreams = 0;
+
+    void emitIfReady() {
+      if (bySeriesId == null || byParentSeriesId == null) return;
+      final unique = <String, AurenEntertainmentItem>{};
+      for (final item in [...bySeriesId!, ...byParentSeriesId!]) {
+        unique[item.id] = item;
+      }
+      final episodes = unique.values.toList()
         ..sort((a, b) {
           final season = a.seasonNumber.compareTo(b.seasonNumber);
           if (season != 0) return season;
@@ -653,8 +660,49 @@ class EntertainmentRepository {
           final title = a.title.toLowerCase().compareTo(b.title.toLowerCase());
           return title != 0 ? title : a.id.compareTo(b.id);
         });
-      return episodes;
-    });
+      controller.add(episodes);
+    }
+
+    final subscriptions = <StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>[];
+    void onError(Object error, StackTrace stackTrace) {
+      firstError ??= error;
+      firstStackTrace ??= stackTrace;
+      completedStreams++;
+      if (completedStreams == 2 && bySeriesId == null && byParentSeriesId == null) {
+        controller.addError(firstError!, firstStackTrace);
+      }
+    }
+
+    subscriptions.add(db.collection('entertainment_items')
+        .where('visibility', isEqualTo: 'public')
+        .where('seriesId', isEqualTo: id)
+        .limit(100)
+        .snapshots()
+        .listen((snapshot) {
+      bySeriesId = snapshot.docs
+          .map((doc) => AurenEntertainmentItem.fromMap(doc.id, doc.data()))
+          .toList();
+      emitIfReady();
+    }, onError: onError));
+
+    subscriptions.add(db.collection('entertainment_items')
+        .where('visibility', isEqualTo: 'public')
+        .where('parentSeriesId', isEqualTo: id)
+        .limit(100)
+        .snapshots()
+        .listen((snapshot) {
+      byParentSeriesId = snapshot.docs
+          .map((doc) => AurenEntertainmentItem.fromMap(doc.id, doc.data()))
+          .toList();
+      emitIfReady();
+    }, onError: onError));
+
+    controller.onCancel = () async {
+      for (final subscription in subscriptions) {
+        await subscription.cancel();
+      }
+    };
+    return controller.stream;
   }
 
   Stream<List<Map<String, dynamic>>> watchContinueWatching(String uid) {
