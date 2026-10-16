@@ -147,6 +147,23 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     }
   }
 
+  Future<void> _togglePlayback(AurenEntertainmentItem item, VideoPlayerController controller) async {
+    try {
+      if (controller.value.isPlaying) {
+        await controller.pause();
+      } else {
+        await controller.play();
+      }
+    } catch (_) {
+      if (identical(controllers[item.id], controller)) {
+        controllers.remove(item.id);
+      }
+      _failedControllerIds.add(item.id);
+      await _disposeControllerSafely(controller);
+      if (mounted) setState(() {});
+    }
+  }
+
   Future<void> _retryPreparation(AurenEntertainmentItem item) async {
     _playbackGeneration[item.id] = (_playbackGeneration[item.id] ?? 0) + 1;
     _failedControllerIds.remove(item.id);
@@ -631,8 +648,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                 children: [
                   if (c != null && c.value.isInitialized)
                     GestureDetector(
-                      onTap: () => setState(() =>
-                          c.value.isPlaying ? c.pause() : c.play()),
+                      onTap: () => _togglePlayback(item, c),
                       child: FittedBox(
                         fit: BoxFit.cover,
                         child: SizedBox(
