@@ -21,6 +21,18 @@ void main() {
       }
     });
 
+    test('keeps all five planned manufacturing routes available', () {
+      final ids = ManufacturingRouteCatalog.routes.map((route) => route.id).toSet();
+      expect(ids, containsAll({
+        'cotton-to-garment',
+        'sesame-to-tahini',
+        'peanut-to-peanut-butter',
+        'hides-to-leather-goods',
+        'iron-to-fabricated-products',
+      }));
+      expect(ids, hasLength(5));
+    });
+
     test('finds a route by identifier', () {
       expect(
         ManufacturingRouteCatalog.findById('sesame-to-tahini')?.finalProduct,
