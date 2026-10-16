@@ -112,6 +112,28 @@ void main() {
         ['episode-1', 'episode-2']);
   });
 
+  test('records watch history progress with episode metadata', () async {
+    final item = makeItem();
+    await repository.recordWatchProgress(
+      'user-1', item,
+      seconds: 25,
+      durationSeconds: 100,
+      completed: false,
+    );
+
+    final doc = await firestore.collection('users').doc('user-1')
+        .collection('watchHistory').doc('item-1').get();
+    final data = doc.data()!;
+    expect(data['itemId'], 'item-1');
+    expect(data['seriesId'], 'series-1');
+    expect(data['seasonNumber'], 1);
+    expect(data['episodeNumber'], 2);
+    expect(data['lastPositionSeconds'], 25);
+    expect(data['durationSeconds'], 100);
+    expect(data['progress'], 0.25);
+    expect(data['completed'], isFalse);
+  });
+
   test('clears Continue Watching when playback reaches completion threshold', () async {
     final item = makeItem();
     final ref = firestore.collection('users').doc('user-1')
