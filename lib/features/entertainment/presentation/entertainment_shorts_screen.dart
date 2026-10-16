@@ -690,6 +690,28 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     return keywords.any(haystack.contains);
   }
 
+  void _pruneFeedMetadata(Set<String> feedIds) {
+    // Keep metadata for the current feed and in-flight work only. Without this,
+    // a long session with changing feed snapshots can retain every old item ID.
+    final playbackIds = <String>{
+      ...feedIds,
+      ..._preparing,
+      ..._retainedControllerIds,
+      if (_activeItemId != null) _activeItemId!,
+    };
+    final itemIds = <String>{
+      ...feedIds,
+      ..._preparing,
+      ..._tracking,
+      if (_activeItemId != null) _activeItemId!,
+    };
+
+    _itemsById.removeWhere((id, _) => !itemIds.contains(id));
+    _qualityUrls.removeWhere((id, _) => !playbackIds.contains(id));
+    _playbackGeneration.removeWhere((id, _) => !playbackIds.contains(id));
+    _failedControllerIds.removeWhere((id) => !playbackIds.contains(id));
+  }
+
   void _changeShortCategory(String value) {
     if (value == shortCategory) return;
     // Changing the feed is still the end of the currently visible Short.
@@ -738,6 +760,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       _itemsById[item.id] = item;
     }
     final visibleItems = items.where(_matchesCategory).toList();
+    _pruneFeedMetadata(items.map((item) => item.id).toSet());
 
     return Column(
       children: [
