@@ -131,7 +131,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         await _disposeControllerSafely(c);
         return;
       }
-      c.setLooping(true);
+      await c.setLooping(true);
       controllers[item.id] = c;
       _failedControllerIds.remove(item.id);
       setState(() {});
