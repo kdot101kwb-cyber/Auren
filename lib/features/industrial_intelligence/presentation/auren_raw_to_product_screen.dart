@@ -130,24 +130,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
   Widget build(BuildContext context) {
     final selectedRoute = ManufacturingRouteCatalog.findById(_routeId)!;
     final l = RawToProductStrings(Localizations.localeOf(context).languageCode);
-    final estimate = RawToProductEstimate.calculate(
-      rawQuantity: _number(_rawQuantity),
-      yieldPercent: _number(_yieldPercent),
-      rawUnitCost: _number(_rawUnitCost),
-      processingPerRawUnit: _number(_processingPerRawUnit),
-      packagingPerProduct: _number(_packagingPerProduct),
-      transportCost: _number(_transport),
-      otherCosts: _number(_otherCosts),
-      sellingPricePerProduct: _number(_sellingPrice),
-    );
-    final outputQty = estimate.outputQuantity;
-    final rawCosts = estimate.rawAndProcessingCost;
-    final packagingCosts = estimate.packagingCost;
-    final totalCosts = estimate.totalCost;
-    final revenue = estimate.revenue;
-    final profit = estimate.profitOrLoss;
-    final margin = estimate.salesMarginPercent;
-    final costPerProduct = estimate.unitCost;
+    final estimate = _estimateOrNull();
 
     return Scaffold(
       appBar: AppBar(
@@ -320,7 +303,15 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
               label: Text(l.calculate),
             ),
             const SizedBox(height: 16),
-            Card(
+            if (estimate == null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(l.invalid),
+                ),
+              )
+            else
+              Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -330,25 +321,25 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                     const SizedBox(height: 8),
                     _result(l.raw, _rawName.text.isEmpty ? l.raw : _rawName.text),
                     _result(l.product, _productName.text.isEmpty ? l.product : _productName.text),
-                    _result(l.output, outputQty.toStringAsFixed(2)),
+                    _result(l.output, estimate.outputQuantity.toStringAsFixed(2)),
                     const Divider(),
-                    _result(l.rawProcessingCost, _money(rawCosts)),
-                    _result(l.packagingCost, _money(packagingCosts)),
+                    _result(l.rawProcessingCost, _money(estimate.rawAndProcessingCost)),
+                    _result(l.packagingCost, _money(estimate.packagingCost)),
                     _result(l.transport, _money(estimate.transportCost)),
                     _result(l.other, _money(estimate.otherCosts)),
-                    _result(l.total, _money(totalCosts), emphasized: true),
+                    _result(l.total, _money(estimate.totalCost), emphasized: true),
                     _result(
                       l.unit,
-                      costPerProduct != null
-                          ? _money(costPerProduct)
+                      estimate.unitCost != null
+                          ? _money(estimate.unitCost!)
                           : l.unitUnavailable,
                     ),
-                    _result(l.revenue, _money(revenue)),
-                    _result(l.profit, _money(profit), emphasized: true),
+                    _result(l.revenue, _money(estimate.revenue)),
+                    _result(l.profit, _money(estimate.profitOrLoss), emphasized: true),
                     _result(
                       l.margin,
-                      margin != null
-                          ? '${margin.toStringAsFixed(1)}%'
+                      estimate.salesMarginPercent != null
+                          ? '${estimate.salesMarginPercent!.toStringAsFixed(1)}%'
                           : l.marginUnavailable,
                     ),
                     const SizedBox(height: 8),
@@ -366,6 +357,45 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
     );
   }
 
-  double _number(TextEditingController controller) =>
-      _parseAmount(controller.text) ?? 0;
+  RawToProductEstimate? _estimateOrNull() {
+    final rawQuantity = _parseAmount(_rawQuantity.text);
+    final yieldPercent = _parseAmount(_yieldPercent.text);
+    final rawUnitCost = _parseAmount(_rawUnitCost.text);
+    final processingPerRawUnit = _parseAmount(_processingPerRawUnit.text);
+    final packagingPerProduct = _parseAmount(_packagingPerProduct.text);
+    final transportCost = _parseAmount(_transport.text);
+    final otherCosts = _parseAmount(_otherCosts.text);
+    final sellingPricePerProduct = _parseAmount(_sellingPrice.text);
+    final values = [
+      rawQuantity,
+      yieldPercent,
+      rawUnitCost,
+      processingPerRawUnit,
+      packagingPerProduct,
+      transportCost,
+      otherCosts,
+      sellingPricePerProduct,
+    ];
+    if (values.any((value) => value == null || !value.isFinite || value < 0) ||
+        rawQuantity! <= 0 ||
+        yieldPercent! > 100) {
+      return null;
+    }
+
+    try {
+      return RawToProductEstimate.calculate(
+        rawQuantity: rawQuantity,
+        yieldPercent: yieldPercent,
+        rawUnitCost: rawUnitCost!,
+        processingPerRawUnit: processingPerRawUnit!,
+        packagingPerProduct: packagingPerProduct!,
+        transportCost: transportCost!,
+        otherCosts: otherCosts!,
+        sellingPricePerProduct: sellingPricePerProduct!,
+      );
+    } on ArgumentError {
+      // Keep incomplete or out-of-range estimates out of the results panel.
+      return null;
+    }
+  }
 }
