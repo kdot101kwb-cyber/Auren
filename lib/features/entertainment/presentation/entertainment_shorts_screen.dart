@@ -216,6 +216,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     }
     final started = _startedAt[item.id];
     final controller = controllers[item.id];
+    final viewMood = mood;
     final naturallyCompleted = controller != null && controller.value.isInitialized && controller.value.duration.inMilliseconds > 0 &&
         controller.value.position.inMilliseconds >= (controller.value.duration.inMilliseconds * 0.9).round();
     // Wall-clock time includes pauses and background time. Prefer the player's
