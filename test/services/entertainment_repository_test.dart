@@ -112,6 +112,19 @@ void main() {
         ['episode-1', 'episode-2']);
   });
 
+  test('clears Continue Watching when playback reaches completion threshold', () async {
+    final item = makeItem();
+    final ref = firestore.collection('users').doc('user-1')
+        .collection('continueWatching').doc('item-1');
+    await repository.saveWatchProgress(
+      'user-1', item, const Duration(seconds: 40), const Duration(seconds: 100));
+    expect((await ref.get()).exists, isTrue);
+
+    await repository.saveWatchProgress(
+      'user-1', item, const Duration(seconds: 95), const Duration(seconds: 100));
+    expect((await ref.get()).exists, isFalse);
+  });
+
   test('saves episode context and normalized Continue Watching progress', () async {
     final item = makeItem();
     await repository.saveWatchProgress(
