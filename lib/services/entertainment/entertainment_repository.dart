@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../core/models/entertainment.dart';
@@ -639,10 +640,6 @@ class EntertainmentRepository {
     final controller = StreamController<List<AurenEntertainmentItem>>();
     List<AurenEntertainmentItem>? bySeriesId;
     List<AurenEntertainmentItem>? byParentSeriesId;
-    Object? firstError;
-    StackTrace? firstStackTrace;
-    var completedStreams = 0;
-
     void emitIfReady() {
       if (bySeriesId == null || byParentSeriesId == null) return;
       final unique = <String, AurenEntertainmentItem>{};
@@ -664,15 +661,6 @@ class EntertainmentRepository {
     }
 
     final subscriptions = <StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>[];
-    void onError(Object error, StackTrace stackTrace) {
-      firstError ??= error;
-      firstStackTrace ??= stackTrace;
-      completedStreams++;
-      if (completedStreams == 2 && bySeriesId == null && byParentSeriesId == null) {
-        controller.addError(firstError!, firstStackTrace);
-      }
-    }
-
     subscriptions.add(db.collection('entertainment_items')
         .where('visibility', isEqualTo: 'public')
         .where('seriesId', isEqualTo: id)
@@ -683,7 +671,10 @@ class EntertainmentRepository {
           .map((doc) => AurenEntertainmentItem.fromMap(doc.id, doc.data()))
           .toList();
       emitIfReady();
-    }, onError: onError));
+    }, onError: (Object error, StackTrace stackTrace) {
+      bySeriesId = const <AurenEntertainmentItem>[];
+      emitIfReady();
+    }));
 
     subscriptions.add(db.collection('entertainment_items')
         .where('visibility', isEqualTo: 'public')
@@ -695,7 +686,10 @@ class EntertainmentRepository {
           .map((doc) => AurenEntertainmentItem.fromMap(doc.id, doc.data()))
           .toList();
       emitIfReady();
-    }, onError: onError));
+    }, onError: (Object error, StackTrace stackTrace) {
+      byParentSeriesId = const <AurenEntertainmentItem>[];
+      emitIfReady();
+    }));
 
     controller.onCancel = () async {
       for (final subscription in subscriptions) {
