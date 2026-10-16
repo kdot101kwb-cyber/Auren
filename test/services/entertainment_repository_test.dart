@@ -258,6 +258,21 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('updates the like stream when a Short is liked and unliked', () async {
+    final liked = repository.watchLiked('user-1', 'short-1');
+    expect(await liked.first, isFalse);
+
+    final becomesLiked = repository.watchLiked('user-1', 'short-1')
+        .firstWhere((value) => value);
+    await repository.toggleLike('user-1', 'short-1', true);
+    expect(await becomesLiked, isTrue);
+
+    final becomesUnliked = repository.watchLiked('user-1', 'short-1')
+        .firstWhere((value) => !value);
+    await repository.toggleLike('user-1', 'short-1', false);
+    expect(await becomesUnliked, isFalse);
+  });
+
   test('shows only public items in saved entertainment', () async {
     await firestore.collection('entertainment_items').doc('public-item').set({
       'title': 'Public item', 'type': 'Movie', 'visibility': 'public',
