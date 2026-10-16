@@ -274,7 +274,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   void _onPage(int index, List<AurenEntertainmentItem> items) {
-    if (active < items.length) _trackView(items[active]);
+    // Feed snapshots can reorder or replace items while a page is visible.
+    // Track the item that was actually active, not whichever item now occupies
+    // the previous numeric index in the refreshed list.
+    final previousItem = _activeItemId == null
+        ? (active < items.length ? items[active] : null)
+        : _itemsById[_activeItemId];
+    if (previousItem != null && previousItem.id != items[index].id) {
+      unawaited(_trackView(previousItem));
+    }
     final nextItem = items[index];
     // Do not race a pause against playback when the next Short was prefetched.
     for (final entry in controllers.entries) {
