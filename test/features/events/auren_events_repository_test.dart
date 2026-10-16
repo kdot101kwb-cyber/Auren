@@ -32,6 +32,60 @@ void main() {
     expect(events.single.capacity, 25);
   });
 
+
+  test('public event stream excludes past events and sorts upcoming events', () async {
+    final now = DateTime.now();
+    final later = now.add(const Duration(days: 4));
+    final earlier = now.add(const Duration(days: 2));
+    await repository.create(
+      ownerId: 'host-1',
+      title: 'Later meetup',
+      description: '',
+      startsAt: later,
+      endsAt: later.add(const Duration(hours: 1)),
+    );
+    await repository.create(
+      ownerId: 'host-1',
+      title: 'Earlier meetup',
+      description: '',
+      startsAt: earlier,
+      endsAt: earlier.add(const Duration(hours: 1)),
+    );
+    await firestore.collection('events').doc('past-event').set({
+      'ownerId': 'host-1',
+      'title': 'Past meetup',
+      'description': '',
+      'startsAt': earlier.subtract(const Duration(days: 5)),
+      'endsAt': earlier.subtract(const Duration(days: 5)).add(const Duration(hours: 1)),
+      'capacity': null,
+      'confirmedCount': 0,
+      'visibility': 'public',
+    });
+
+    final events = await repository.watchPublicEvents().first;
+    expect(events.map((event) => event.title).toList(),
+        ['Earlier meetup', 'Later meetup']);
+  });
+
+  test('public event stream rejects non-integer capacity in stored data', () async {
+    final start = DateTime.now().add(const Duration(days: 2));
+    await firestore.collection('events').doc('bad-capacity').set({
+      'ownerId': 'host-1',
+      'title': 'Malformed capacity',
+      'description': '',
+      'startsAt': start,
+      'endsAt': start.add(const Duration(hours: 1)),
+      'capacity': 1.5,
+      'confirmedCount': 0,
+      'visibility': 'public',
+    });
+
+    await expectLater(
+      repository.watchPublicEvents().first,
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('RSVP capacity decisions are idempotent per user', () async {
     final start = DateTime.now().add(const Duration(days: 2));
     final id = await repository.create(
