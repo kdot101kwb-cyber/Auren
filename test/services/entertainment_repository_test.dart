@@ -112,6 +112,23 @@ void main() {
         ['episode-1', 'episode-2']);
   });
 
+  test('saves episode context and normalized Continue Watching progress', () async {
+    final item = makeItem();
+    await repository.saveWatchProgress(
+      'user-1', item, const Duration(seconds: 40), const Duration(seconds: 100));
+
+    final doc = await firestore.collection('users').doc('user-1')
+        .collection('continueWatching').doc('item-1').get();
+    final data = doc.data()!;
+    expect(data['itemId'], 'item-1');
+    expect(data['seriesId'], 'series-1');
+    expect(data['seasonNumber'], 1);
+    expect(data['episodeNumber'], 2);
+    expect(data['positionSeconds'], 40);
+    expect(data['durationSeconds'], 100);
+    expect(data['progress'], 0.4);
+  });
+
   test('does not write watch progress when uid or item id is blank', () async {
     await repository.saveWatchProgress(
       '', makeItem(), const Duration(seconds: 10), const Duration(seconds: 100));
