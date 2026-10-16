@@ -1004,7 +1004,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                     uid!,
                                     item.id,
                                     action: next ? 'like' : 'unlike',
-                                    mood: mood,
+                                    mood: actionMood,
                                   );
                                 } catch (_) {
                                   // A like should not appear to fail because analytics are offline.
