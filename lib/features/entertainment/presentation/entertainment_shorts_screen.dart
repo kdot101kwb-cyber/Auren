@@ -295,7 +295,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final choices = <(String, String)>[
       ('توفير البيانات', item.mediaUrlLow), ('متوسطة', item.mediaUrlMedium),
       ('عالية', item.mediaUrlHigh), ('الأصلية', item.mediaUrl),
-    ].where((choice) {
+    ].map((choice) => (choice.$1, choice.$2.trim())).where((choice) {
       final uri = Uri.tryParse(choice.$2.trim());
       return uri != null && (uri.scheme == 'https' || uri.scheme == 'http') && uri.host.isNotEmpty;
     }).toList();
