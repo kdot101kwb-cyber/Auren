@@ -296,6 +296,15 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('does not write music action analytics for blank identifiers', () async {
+    await repository.trackMusicAction('', 'music-1', action: 'like', contentType: 'track');
+    await repository.trackMusicAction('user-1', '  ', action: 'save', contentType: 'track');
+
+    final signals = await firestore.collection('users').doc('user-1')
+        .collection('entertainmentSignals').get();
+    expect(signals.docs, isEmpty);
+  });
+
   test('guards music playback analytics and clamps negative watch time', () async {
     await repository.trackMusicPlayback(
       '', 'music-1', seconds: 10, completed: false, contentType: 'track', countPlay: true);
