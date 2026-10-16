@@ -304,7 +304,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       builder: (sheetContext) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
         const ListTile(leading: Icon(Icons.high_quality_outlined), title: Text('جودة الفيديو'), subtitle: Text('الخيارات المتاحة لهذا الفيديو')),
         for (final choice in choices) ListTile(
-          leading: Icon((_qualityUrls[item.id] ?? item.mediaUrl) == choice.$2 ? Icons.radio_button_checked : Icons.radio_button_off),
+          leading: Icon(_effectiveVideoUrl(item) == choice.$2 ? Icons.radio_button_checked : Icons.radio_button_off),
           title: Text(choice.$1),
           onTap: () async {
             Navigator.pop(sheetContext);
