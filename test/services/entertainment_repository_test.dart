@@ -218,6 +218,16 @@ void main() {
     expect(progress.docs, isEmpty);
   });
 
+  test('ignores invalid generated-series progress deletion inputs', () async {
+    await repository.clearSeriesWatchProgress('', 'job-1', 1);
+    await repository.clearSeriesWatchProgress('user-1', '  ', 1);
+    await repository.clearSeriesWatchProgress('user-1', 'job-1', 0);
+
+    final records = await firestore.collection('users').doc('user-1')
+        .collection('seriesWatchProgress').get();
+    expect(records.docs, isEmpty);
+  });
+
   test('clears a generated-series episode progress record', () async {
     await repository.saveSeriesWatchProgress(
       'user-1', 'job-1', 2,
