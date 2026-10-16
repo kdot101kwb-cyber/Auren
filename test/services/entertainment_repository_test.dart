@@ -1,4 +1,5 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:auren/core/models/entertainment.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auren/services/entertainment/entertainment_repository.dart';
 
@@ -32,6 +33,20 @@ void main() {
       'episodeOrder': order,
     });
   }
+
+  AurenEntertainmentItem makeItem({String id = 'item-1', String title = 'Test item'}) =>
+      AurenEntertainmentItem(
+        id: id,
+        title: title,
+        type: 'Episode',
+        description: '',
+        imageUrl: 'https://example.com/poster.jpg',
+        mediaUrl: 'https://example.com/video.mp4',
+        mediaKind: 'video',
+        seriesId: 'series-1',
+        seasonNumber: 1,
+        episodeNumber: 2,
+      );
 
   test('loads public episodes linked through either series field in order', () async {
     await addEpisode('late', seriesId: 'series-1', season: 2, episode: 1);
@@ -95,6 +110,17 @@ void main() {
     final episodes = await future;
     expect(episodes.map((item) => item.id).toList(),
         ['episode-1', 'episode-2']);
+  });
+
+  test('does not write watch progress when uid or item id is blank', () async {
+    await repository.saveWatchProgress(
+      '', makeItem(), const Duration(seconds: 10), const Duration(seconds: 100));
+    await repository.saveWatchProgress(
+      'user-1', makeItem(id: ''), const Duration(seconds: 10), const Duration(seconds: 100));
+
+    final progress = await firestore.collection('users').doc('user-1')
+        .collection('continueWatching').get();
+    expect(progress.docs, isEmpty);
   });
 
   test('returns an empty stream for a blank series id', () async {
