@@ -258,6 +258,18 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('rejects empty and oversized Short comments', () async {
+    await repository.addShortComment('user-1', 'short-1', '   ');
+    await repository.addShortComment('user-1', 'short-1', 'x' * 1001);
+
+    final comments = await firestore.collection('entertainment_items')
+        .doc('short-1').collection('comments').get();
+    expect(comments.docs, isEmpty);
+    final signal = await firestore.collection('users').doc('user-1')
+        .collection('entertainmentSignals').doc('short-1').get();
+    expect(signal.exists, isFalse);
+  });
+
   test('trims Short comments and records comment analytics', () async {
     await repository.addShortComment('user-1', 'short-1', '  Nice clip  ', mood: 'ضحك');
 
