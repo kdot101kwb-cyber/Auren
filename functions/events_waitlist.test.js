@@ -137,6 +137,19 @@ test('the same trigger retry cannot promote a second attendee', async () => {
   assert.equal(attendeeMap.get('second').status, 'waitlisted');
 });
 
+test('does not promote when the event start timestamp is invalid', async () => {
+  const invalid = makeFakeDb({
+    event: {startsAt: 'not-a-timestamp', confirmedCount: 0, capacity: 1},
+    attendees: [{userId: 'next', status: 'waitlisted', updatedAt: stamp(100)}],
+  });
+  assert.deepEqual(await _test.promoteNextWaitlisted({
+    db: invalid.db, eventId: 'event-1', triggerId: 'invalid-start', now: 1000,
+    serverTimestamp: () => stamp(300),
+  }), {status: 'event_started'});
+  assert.equal(invalid.eventData.confirmedCount, 0);
+  assert.equal(invalid.attendeeMap.get('next').status, 'waitlisted');
+});
+
 test('does not promote when the event started or has no free capacity', async () => {
   const attendees = [{userId: 'next', status: 'waitlisted', updatedAt: stamp(100)}];
   const started = makeFakeDb({
