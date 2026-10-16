@@ -61,7 +61,8 @@ exports.listAurenRandomGroupCandidates = onCall(
     const language = clean(own.language, 40);
 
     const snap = await requests.where('status', '==', 'waiting')
-      .where('groupSize', '==', groupSize).limit(40).get();
+      .where('groupSize', '==', groupSize)
+      .where('language', '==', language).limit(40).get();
     const candidates = await Promise.all(snap.docs.map(async (doc) => {
       const data = doc.data();
       const candidateUid = clean(data.uid);
@@ -125,6 +126,10 @@ exports.formAurenRandomGroup = onCall(
       }
       if (data.some((item) => item?.status !== 'waiting' || item?.groupSize !== groupSize)) {
         throw new HttpsError('failed-precondition', 'A selected request has already been claimed.');
+      }
+      const language = clean(data[0]?.language, 40);
+      if (!language || data.some((item) => clean(item?.language, 40) !== language)) {
+        throw new HttpsError('failed-precondition', 'All selected requests must use the same language.');
       }
       if (await readBlockedPairs(tx, memberUids)) {
         throw new HttpsError('failed-precondition', 'A selected member has blocked another group member.');
