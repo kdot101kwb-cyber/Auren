@@ -137,5 +137,21 @@ void main() {
       await first.close();
       await second.close();
     });
+
+    test('closes when a source completes before emitting', () async {
+      final first = Stream<int>.empty();
+      final second = StreamController<String>();
+      var completed = false;
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first,
+        second.stream,
+      ).listen((_) {}, onDone: () => completed = true);
+
+      await Future<void>.delayed(Duration.zero);
+      expect(completed, isTrue);
+
+      await subscription.cancel();
+      await second.close();
+    });
   });
 }
