@@ -675,6 +675,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   void _changeShortCategory(String value) {
     if (value == shortCategory) return;
+    // Changing the feed is still the end of the currently visible Short.
+    // Record its playback before the controller is disposed, just as paging does.
+    final currentId = _activeItemId;
+    final currentItem = currentId == null ? null : _itemsById[currentId];
+    if (currentItem != null) unawaited(_trackView(currentItem));
     _retainedControllerIds.clear();
     final oldControllers = controllers.values.toList();
     controllers.clear();
