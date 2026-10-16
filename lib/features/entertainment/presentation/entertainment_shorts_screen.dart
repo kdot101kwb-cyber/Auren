@@ -1046,7 +1046,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                       uid!,
                                       item.id,
                                       action: isSaved ? 'unsave' : 'save',
-                                      mood: mood,
+                                      mood: actionMood,
                                     );
                                   } catch (_) {
                                     // Saving content must work independently of analytics.
