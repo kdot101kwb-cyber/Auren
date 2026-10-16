@@ -998,7 +998,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     ),
                   ),
 
-                  if ([item.mediaUrlLow, item.mediaUrlMedium, item.mediaUrlHigh].where((url) => url.trim().isNotEmpty).length > 0)
+                  if ([item.mediaUrlLow, item.mediaUrlMedium, item.mediaUrlHigh]
+                      .any(_isHttpVideoUrl))
                     Positioned(top: 8, right: 8, child: IconButton(
                       tooltip: 'جودة الفيديو',
                       icon: const Icon(Icons.high_quality_outlined, color: Colors.white),
