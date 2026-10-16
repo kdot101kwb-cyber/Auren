@@ -103,11 +103,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
             controllers.remove(item.id);
           }
           _failedControllerIds.add(item.id);
-          try {
-            await existingController.dispose();
-          } catch (_) {
-            // The plugin may already have disposed the controller.
-          }
+          await _disposeControllerSafely(existingController);
           if (mounted) setState(() {});
         }
       }
