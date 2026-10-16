@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "auren-90ccc"
+    "default": "auren-90ccc",
+    "staging": "auren-staging"
   }
 }
