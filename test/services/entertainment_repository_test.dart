@@ -84,6 +84,19 @@ void main() {
         ['beta', 'a-id', 'z-id']);
   });
 
+  test('updates the episode list when a linked episode is added', () async {
+    await addEpisode('episode-1', seriesId: 'series-live');
+
+    final future = repository.watchSeriesEpisodes('series-live')
+        .firstWhere((items) => items.length == 2);
+
+    await addEpisode('episode-2', parentSeriesId: 'series-live', episode: 2);
+
+    final episodes = await future;
+    expect(episodes.map((item) => item.id).toList(),
+        ['episode-1', 'episode-2']);
+  });
+
   test('returns an empty stream for a blank series id', () async {
     expect(await repository.watchSeriesEpisodes('  ').first, isEmpty);
   });
