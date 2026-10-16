@@ -312,9 +312,13 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         for (final choice in choices) ListTile(
           leading: Icon(_effectiveVideoUrl(item) == choice.$2 ? Icons.radio_button_checked : Icons.radio_button_off),
           title: Text(choice.$1),
-          enabled: !_dataSaverMode || choice.$2 == item.mediaUrlLow.trim(),
+          enabled: !_dataSaverMode ||
+              !_isHttpVideoUrl(item.mediaUrlLow) ||
+              choice.$2 == item.mediaUrlLow.trim(),
           onTap: () async {
-            if (_dataSaverMode && choice.$2 != item.mediaUrlLow.trim()) return;
+            if (_dataSaverMode &&
+                _isHttpVideoUrl(item.mediaUrlLow) &&
+                choice.$2 != item.mediaUrlLow.trim()) return;
             Navigator.pop(sheetContext);
             if ((_qualityUrls[item.id] ?? item.mediaUrl) == choice.$2) return;
             _qualityUrls[item.id] = choice.$2;
