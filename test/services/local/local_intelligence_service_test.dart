@@ -138,9 +138,12 @@ void main() {
       await second.close();
     });
 
-    test('closes when a source completes before emitting', () async {
+    test('cancels the other source when one completes empty', () async {
       final first = Stream<int>.empty();
-      final second = StreamController<String>();
+      var secondCancelled = false;
+      final second = StreamController<String>(onCancel: () {
+        secondCancelled = true;
+      });
       var completed = false;
       final subscription = AurenLocalIntelligenceService.combineLatest2(
         first,
@@ -149,6 +152,7 @@ void main() {
 
       await Future<void>.delayed(Duration.zero);
       expect(completed, isTrue);
+      expect(secondCancelled, isTrue);
 
       await subscription.cancel();
       await second.close();
