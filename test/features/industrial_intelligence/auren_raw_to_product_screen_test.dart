@@ -14,12 +14,16 @@ Future<void> _enterField(
   required String value,
 }) async {
   final field = find.byKey(ValueKey<String>(label));
+  final scrollable = find.byType(Scrollable).first;
+
+  // ListView builds distant children lazily, so the keyed field may not exist
+  // until scrolling brings its section into the viewport.
+  for (var attempt = 0; attempt < 24 && field.evaluate().isEmpty; attempt++) {
+    await tester.drag(scrollable, const Offset(0, -350));
+    await tester.pumpAndSettle();
+  }
   expect(field, findsOneWidget, reason: 'Field label: $label');
-  await tester.scrollUntilVisible(
-    field,
-    250,
-    scrollable: find.byType(Scrollable).first,
-  );
+  await tester.ensureVisible(field);
   await tester.enterText(field, value);
   await tester.pump();
 }
