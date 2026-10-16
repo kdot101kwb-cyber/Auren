@@ -71,6 +71,43 @@ void main() {
       await _expectInvalid(tester);
     });
 
+    testWidgets('hides estimate when a cost is negative', (tester) async {
+      await tester.pumpWidget(_app());
+      await _enterField(
+        tester,
+        label: 'Processing cost per raw unit',
+        value: '-0.01',
+      );
+      await _expectInvalid(tester);
+    });
+
+    testWidgets('hides estimate when selling price is malformed', (tester) async {
+      await tester.pumpWidget(_app());
+      await _enterField(
+        tester,
+        label: 'Selling price per product',
+        value: '3.2oops',
+      );
+      await _expectInvalid(tester);
+    });
+
+    testWidgets('allows zero yield and displays zero output safely', (tester) async {
+      await tester.pumpWidget(_app());
+      await _enterField(
+        tester,
+        label: 'Usable product yield (%)',
+        value: '0',
+      );
+      await tester.scrollUntilVisible(
+        find.text('Estimated result'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Estimated result'), findsOneWidget);
+      expect(find.text('0.00'), findsOneWidget);
+      expect(find.text('Not available'), findsWidgets);
+    });
+
     testWidgets('shows an estimate for valid default inputs', (tester) async {
       await tester.pumpWidget(_app());
       await tester.scrollUntilVisible(
