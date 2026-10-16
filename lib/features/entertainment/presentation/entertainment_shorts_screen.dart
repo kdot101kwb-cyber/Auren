@@ -308,10 +308,14 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                   if (activeItem != null) {
                     final controller = controllers.remove(activeItem.id);
                     if (controller != null) {
-                      controller.pause();
-                      controller.dispose();
+                      try {
+                        await controller.pause();
+                      } catch (_) {
+                        // A stale player must not block data-saver switching.
+                      }
+                      await _disposeControllerSafely(controller);
                     }
-                    _prepare(activeItem);
+                    if (mounted) await _prepare(activeItem);
                   }
                 },
               ),
