@@ -161,14 +161,22 @@ class AurenEventsRepository {
     final start = data['startsAt']; final end = data['endsAt'];
     if (start is! Timestamp || end is! Timestamp) throw const FormatException('Invalid event timestamps.');
     final rawCapacity = data['capacity'];
+    if (rawCapacity != null && rawCapacity is! int) {
+      throw const FormatException('Invalid event capacity.');
+    }
     final rawVisibility = data['visibility'];
+    final visibility = switch (rawVisibility) {
+      'public' => AurenEventVisibility.public,
+      'followers' => AurenEventVisibility.followers,
+      'inviteOnly' => AurenEventVisibility.inviteOnly,
+      _ => throw const FormatException('Invalid event visibility.'),
+    };
     return AurenEvent(
       id: id, hostId: data['ownerId']?.toString() ?? '',
       title: data['title']?.toString() ?? '', description: data['description']?.toString() ?? '',
       locationLabel: data['locationLabel']?.toString(), startsAt: start.toDate(), endsAt: end.toDate(),
-      capacity: rawCapacity is num ? rawCapacity.toInt() : null,
-      visibility: rawVisibility == 'inviteOnly' ? AurenEventVisibility.inviteOnly
-          : rawVisibility == 'followers' ? AurenEventVisibility.followers : AurenEventVisibility.public,
+      capacity: rawCapacity as int?,
+      visibility: visibility,
     );
   }
 
