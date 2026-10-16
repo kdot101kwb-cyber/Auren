@@ -253,8 +253,10 @@ class ManufacturingRouteCatalog {
   ];
 
   static ManufacturingRoute? findById(String id) {
+    final query = id.trim().toLowerCase();
+    if (query.isEmpty) return null;
     for (final route in routes) {
-      if (route.id == id) return route;
+      if (route.id.toLowerCase() == query) return route;
     }
     return null;
   }
