@@ -458,8 +458,17 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         leading: const Icon(Icons.link),
         title: const Text('نسخ رابط المحتوى'),
         onTap: () async {
+          final shareUrl = item.mediaUrl.trim();
+          if (!_isHttpVideoUrl(shareUrl)) {
+            if (sheet.mounted) {
+              ScaffoldMessenger.of(sheet).showSnackBar(
+                const SnackBar(content: Text('رابط المحتوى غير صالح للمشاركة.')),
+              );
+            }
+            return;
+          }
           try {
-            await Clipboard.setData(ClipboardData(text: item.mediaUrl));
+            await Clipboard.setData(ClipboardData(text: shareUrl));
             unawaited(_trackShareAction(item, actionMood: mood));
             if (sheet.mounted) Navigator.pop(sheet);
           } catch (_) {
