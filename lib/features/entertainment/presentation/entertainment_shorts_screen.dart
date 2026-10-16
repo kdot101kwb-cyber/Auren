@@ -63,11 +63,25 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final existingController = controllers[item.id];
     if (existingController != null) {
       // Reuse an already prepared controller and start it only when its page
-      // is active. This avoids duplicate play() calls after initialization.
+      // is active. A play failure must not leave a broken controller in the map.
       if (_activeItemId == item.id &&
           existingController.value.isInitialized &&
           !existingController.value.isPlaying) {
-        await existingController.play();
+        try {
+          await existingController.play();
+          _failedControllerIds.remove(item.id);
+        } catch (_) {
+          if (identical(controllers[item.id], existingController)) {
+            controllers.remove(item.id);
+          }
+          _failedControllerIds.add(item.id);
+          try {
+            await existingController.dispose();
+          } catch (_) {
+            // The plugin may already have disposed the controller.
+          }
+          if (mounted) setState(() {});
+        }
       }
       return;
     }
