@@ -726,6 +726,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                     final item = visibleItems[index];
                     if (index == active && _activeItemId == null) {
                       _activeItemId = item.id;
+                      _startedAt.putIfAbsent(item.id, DateTime.now);
                     }
                     if (index == active) {
                       _retainControllersFor(index, visibleItems);
