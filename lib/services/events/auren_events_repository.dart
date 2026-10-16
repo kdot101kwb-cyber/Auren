@@ -8,11 +8,14 @@ class AurenEventsRepository {
   CollectionReference<Map<String, dynamic>> get _events => _db.collection('events');
 
   Stream<List<AurenEvent>> watchPublicEvents() => _events
-      .where('visibility', isEqualTo: 'public').limit(100).snapshots().map((snapshot) {
-        final items = snapshot.docs.map((doc) => _fromMap(doc.id, doc.data())).toList()
-          ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
-        return items;
-      });
+      .where('visibility', isEqualTo: 'public')
+      .where('startsAt', isGreaterThanOrEqualTo: Timestamp.now())
+      .orderBy('startsAt')
+      .limit(100)
+      .snapshots()
+      .map((snapshot) => snapshot.docs
+          .map((doc) => _fromMap(doc.id, doc.data()))
+          .toList());
 
   Future<String> create({
     required String ownerId, required String title, required String description,
