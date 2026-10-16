@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { _test } = require('./events_waitlist');
 
-function makeFakeDb({event, attendees = []}) {
+function makeFakeDb({event, attendees = [], eventExists = true}) {
   const attendeeMap = new Map(attendees.map((item) => [item.userId, {...item}]));
   const markerMap = new Map();
   const eventData = {...event};
@@ -40,7 +40,7 @@ function makeFakeDb({event, attendees = []}) {
       const tx = {
         async get(ref) {
           if (ref.kind === 'event') {
-            return {exists: true, data: () => eventData};
+            return {exists: eventExists, data: () => eventData};
           }
           if (ref.kind === 'marker') {
             return {exists: markerMap.has(ref.id), data: () => markerMap.get(ref.id)};
@@ -166,4 +166,44 @@ test('does not promote when the event started or has no free capacity', async ()
     db: full.db, eventId: 'event-1', triggerId: 't2', now: 1000,
     serverTimestamp: () => stamp(300),
   }), {status: 'no_capacity'});
+});
+
+
+test('does not promote when the event document is missing', async () => {
+  const missing = makeFakeDb({
+    event: {startsAt: stamp(5000), confirmedCount: 0, capacity: 1},
+    attendees: [{userId: 'next', status: 'waitlisted', updatedAt: stamp(100)}],
+    eventExists: false,
+  });
+  assert.deepEqual(await _test.promoteNextWaitlisted({
+    db: missing.db, eventId: 'event-1', triggerId: 'missing-event', now: 1000,
+    serverTimestamp: () => stamp(300),
+  }), {status: 'event_missing'});
+  assert.equal(missing.eventData.confirmedCount, 0);
+  assert.equal(missing.attendeeMap.get('next').status, 'waitlisted');
+});
+
+test('does not promote when the confirmed count is invalid', async () => {
+  const invalid = makeFakeDb({
+    event: {startsAt: stamp(5000), confirmedCount: -1, capacity: 2},
+    attendees: [{userId: 'next', status: 'waitlisted', updatedAt: stamp(100)}],
+  });
+  assert.deepEqual(await _test.promoteNextWaitlisted({
+    db: invalid.db, eventId: 'event-1', triggerId: 'invalid-count', now: 1000,
+    serverTimestamp: () => stamp(300),
+  }), {status: 'invalid_count'});
+  assert.equal(invalid.attendeeMap.get('next').status, 'waitlisted');
+});
+
+test('does not create a promotion marker when no attendee is waitlisted', async () => {
+  const empty = makeFakeDb({
+    event: {startsAt: stamp(5000), confirmedCount: 0, capacity: 2},
+    attendees: [{userId: 'already-cancelled', status: 'cancelled', updatedAt: stamp(100)}],
+  });
+  assert.deepEqual(await _test.promoteNextWaitlisted({
+    db: empty.db, eventId: 'event-1', triggerId: 'no-waitlist', now: 1000,
+    serverTimestamp: () => stamp(300),
+  }), {status: 'no_waitlisted_attendee'});
+  assert.equal(empty.markerMap.has('no-waitlist'), false);
+  assert.equal(empty.eventData.confirmedCount, 0);
 });
