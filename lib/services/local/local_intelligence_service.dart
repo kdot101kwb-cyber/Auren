@@ -48,7 +48,10 @@ class AurenLocalIntelligenceService {
     }
 
     void closeIfDone() {
-      if (firstDone && secondDone && !controller.isClosed) {
+      final sourceCannotProducePair =
+          (firstDone && !hasFirst) || (secondDone && !hasSecond);
+      if ((sourceCannotProducePair || (firstDone && secondDone)) &&
+          !controller.isClosed) {
         controller.close();
       }
     }
