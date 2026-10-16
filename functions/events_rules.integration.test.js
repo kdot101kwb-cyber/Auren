@@ -151,6 +151,24 @@ test('attendee cannot cancel another user RSVP', async () => {
   }));
 });
 
+
+test('event owner updates reject invalid visibility, oversized title, and zero capacity', async () => {
+  await seedEvent('invalid-owner-fields', []);
+  const event = dbFor('event-host').doc('events/invalid-owner-fields');
+  await assertFails(event.update({
+    visibility: 'secret-everyone',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }));
+  await assertFails(event.update({
+    title: 'x'.repeat(121),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }));
+  await assertFails(event.update({
+    capacity: 0,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }));
+});
+
 test('event owner cannot save an invalid start/end schedule', async () => {
   await seedEvent('invalid-schedule-update', []);
   const db = dbFor('event-host');
