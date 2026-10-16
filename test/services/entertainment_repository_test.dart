@@ -420,6 +420,10 @@ void main() {
     expect(entries.single['views'], 1);
   });
 
+  test('returns an empty Continue Watching stream for a blank user id', () async {
+    expect(await repository.watchContinueWatching('  ').first, isEmpty);
+  });
+
   test('returns an empty stream for a blank series id', () async {
     expect(await repository.watchSeriesEpisodes('  ').first, isEmpty);
   });
