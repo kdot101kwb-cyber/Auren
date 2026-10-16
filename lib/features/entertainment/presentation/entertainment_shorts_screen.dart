@@ -421,19 +421,22 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   String? _creatorId(AurenEntertainmentItem item) => item.creatorId.isEmpty ? null : item.creatorId;
 
-  Future<void> _shareItem(AurenEntertainmentItem item) async {
-    if (uid != null) {
-      try {
-        await repo.trackShortAction(
-          uid!,
-          item.id,
-          action: 'share',
-          mood: mood,
-        );
-      } catch (_) {
-        // Sharing should remain available if analytics are temporarily offline.
-      }
+  Future<void> _trackShareAction(AurenEntertainmentItem item) async {
+    final viewerId = uid;
+    if (viewerId == null) return;
+    try {
+      await repo.trackShortAction(
+        viewerId,
+        item.id,
+        action: 'share',
+        mood: mood,
+      );
+    } catch (_) {
+      // Sharing should remain available if analytics are temporarily offline.
     }
+  }
+
+  Future<void> _shareItem(AurenEntertainmentItem item) async {
     if (!mounted) return;
     await showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (sheet) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
       ListTile(
@@ -442,6 +445,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         onTap: () async {
           try {
             await Clipboard.setData(ClipboardData(text: item.mediaUrl));
+            unawaited(_trackShareAction(item));
             if (sheet.mounted) Navigator.pop(sheet);
           } catch (_) {
             if (sheet.mounted) {
@@ -454,7 +458,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           }
         },
       ),
-      ListTile(leading: const Icon(Icons.send_outlined), title: const Text('مشاركة داخل AUREN'), onTap: () { Navigator.pop(sheet); Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد مشاركة هذا المحتوى داخل AUREN: '+item.title+'\n'+item.mediaUrl))); }),
+      ListTile(leading: const Icon(Icons.send_outlined), title: const Text('مشاركة داخل AUREN'), onTap: () { unawaited(_trackShareAction(item)); Navigator.pop(sheet); Navigator.push(context, MaterialPageRoute(builder: (_) => MessengerScreen(initialPrompt: 'أريد مشاركة هذا المحتوى داخل AUREN: '+item.title+'\n'+item.mediaUrl))); }),
     ])));
   }
 
