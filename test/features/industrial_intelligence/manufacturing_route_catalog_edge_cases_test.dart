@@ -40,6 +40,19 @@ void main() {
       }
     });
 
+    test('route ID lookup trims whitespace and ignores case', () {
+      expect(ManufacturingRouteCatalog.findById(' SESAME-TO-TAHINI ')?.id,
+          'sesame-to-tahini');
+      expect(ManufacturingRouteCatalog.findById('COTTON-TO-GARMENT')?.id,
+          'cotton-to-garment');
+    });
+
+    test('route ID lookup rejects blank and unknown identifiers safely', () {
+      expect(ManufacturingRouteCatalog.findById(''), isNull);
+      expect(ManufacturingRouteCatalog.findById('  \t '), isNull);
+      expect(ManufacturingRouteCatalog.findById('not-a-route'), isNull);
+    });
+
     test('raw material lookup accepts route IDs without case sensitivity', () {
       expect(
         ManufacturingRouteCatalog.findByRawMaterial('SESAME-TO-TAHINI')?.id,
