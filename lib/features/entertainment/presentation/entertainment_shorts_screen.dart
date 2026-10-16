@@ -1025,6 +1025,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                   size: 32,
                                 ),
                                 onPressed: () async {
+                                  final actionMood = mood;
                                   try {
                                     if (isSaved) {
                                       await repo.unsave(uid!, item.id);
