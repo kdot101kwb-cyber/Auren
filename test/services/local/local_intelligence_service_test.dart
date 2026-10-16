@@ -342,6 +342,32 @@ void main() {
       await second.close();
     });
 
+    test('emits repeated values from a source as separate updates', () async {
+      final first = StreamController<int>();
+      final second = StreamController<String>();
+      final values = <(int, String)>[];
+      final reached = Completer<void>();
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first.stream,
+        second.stream,
+      ).listen((value) {
+        values.add(value);
+        if (values.length == 2 && !reached.isCompleted) reached.complete();
+      });
+
+      first.add(1);
+      second.add('ready');
+      await Future<void>.delayed(Duration.zero);
+      first.add(1);
+      await reached.future;
+
+      expect(values, [(1, 'ready'), (1, 'ready')]);
+
+      await subscription.cancel();
+      await first.close();
+      await second.close();
+    });
+
     test('forwards errors from the second source too', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
