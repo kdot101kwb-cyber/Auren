@@ -87,7 +87,16 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       }
       return;
     }
-    if (_preparing.contains(item.id) || selectedUrl.trim().isEmpty) {
+    if (_preparing.contains(item.id)) {
+      return;
+    }
+    final parsedUrl = Uri.tryParse(selectedUrl.trim());
+    if (parsedUrl == null ||
+        !parsedUrl.hasAuthority ||
+        parsedUrl.host.isEmpty ||
+        (parsedUrl.scheme != 'https' && parsedUrl.scheme != 'http')) {
+      _failedControllerIds.add(item.id);
+      if (mounted) setState(() {});
       return;
     }
     _preparing.add(item.id);
