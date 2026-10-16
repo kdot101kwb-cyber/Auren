@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../../core/models/business.dart';
 import '../../../core/models/opportunity.dart';
 
@@ -21,11 +24,86 @@ class AurenLocalIntelligenceService {
   AurenLocalIntelligenceService({FirebaseFirestore? firestore})
       : db = firestore ?? FirebaseFirestore.instance;
 
-  /// Matches only the location fields the user supplied.
+  /// Emits whenever either input stream changes, after both have emitted once.
   ///
-  /// When both city and country are supplied, both must match. This avoids
-  /// blank stored fields matching an omitted filter and leaking unrelated
-  /// businesses or opportunities into local results.
+  /// Both subscriptions are cancelled when the returned stream is cancelled.
+  static Stream<(A, B)> combineLatest2<A, B>(
+    Stream<A> first,
+    Stream<B> second,
+  ) {
+    late StreamController<(A, B)> controller;
+    StreamSubscription<A>? firstSubscription;
+    StreamSubscription<B>? secondSubscription;
+    A? latestFirst;
+    B? latestSecond;
+    var hasFirst = false;
+    var hasSecond = false;
+    var firstDone = false;
+    var secondDone = false;
+    var closing = false;
+
+    void emitIfReady() {
+      if (hasFirst && hasSecond && !controller.isClosed) {
+        controller.add((latestFirst as A, latestSecond as B));
+      }
+    }
+
+    Future<void> closeIfDone() async {
+      final sourceCannotProducePair =
+          (firstDone && !hasFirst) || (secondDone && !hasSecond);
+      if (closing ||
+          controller.isClosed ||
+          !(sourceCannotProducePair || (firstDone && secondDone))) {
+        return;
+      }
+
+      closing = true;
+      if (firstDone && !hasFirst) {
+        await secondSubscription?.cancel();
+      }
+      if (secondDone && !hasSecond) {
+        await firstSubscription?.cancel();
+      }
+      await controller.close();
+    }
+
+    controller = StreamController<(A, B)>(
+      onListen: () {
+        firstSubscription = first.listen(
+          (value) {
+            latestFirst = value;
+            hasFirst = true;
+            emitIfReady();
+          },
+          onError: controller.addError,
+          onDone: () {
+            firstDone = true;
+            closeIfDone();
+          },
+        );
+        secondSubscription = second.listen(
+          (value) {
+            latestSecond = value;
+            hasSecond = true;
+            emitIfReady();
+          },
+          onError: controller.addError,
+          onDone: () {
+            secondDone = true;
+            closeIfDone();
+          },
+        );
+      },
+      onCancel: () async {
+        await firstSubscription?.cancel();
+        await secondSubscription?.cancel();
+      },
+    );
+    return controller.stream;
+  }
+
+  /// Matches only location fields supplied by the user.
+  /// If both city and country are supplied, both must match.
   static bool locationMatches({
     required String city,
     required String country,
@@ -38,7 +116,6 @@ class AurenLocalIntelligenceService {
 
     final actualCity = candidateCity.trim().toLowerCase();
     final actualCountry = candidateCountry.trim().toLowerCase();
-
     final cityMatches =
         requestedCity.isEmpty || actualCity == requestedCity;
     final countryMatches =
@@ -72,8 +149,8 @@ class AurenLocalIntelligenceService {
         .limit(100)
         .snapshots();
 
-    return businessQuery.asyncMap((businessSnapshot) async {
-      final opportunitySnapshot = await opportunityQuery.first;
+    return combineLatest2(businessQuery, opportunityQuery).map((snapshots) {
+      final (businessSnapshot, opportunitySnapshot) = snapshots;
       final businesses = businessSnapshot.docs
           .map((doc) => AurenBusiness.fromMap(doc.id, doc.data()))
           .where((business) => locationMatches(
@@ -94,6 +171,7 @@ class AurenLocalIntelligenceService {
               ))
           .take(30)
           .toList();
+
       return AurenLocalSnapshot(
         city: c,
         country: co,
