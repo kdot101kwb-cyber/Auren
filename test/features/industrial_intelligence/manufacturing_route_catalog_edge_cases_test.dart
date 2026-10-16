@@ -10,6 +10,7 @@ void main() {
         expect(route.rawMaterial.trim(), isNotEmpty, reason: route.id);
         expect(route.finalProduct.trim(), isNotEmpty, reason: route.id);
         expect(route.prerequisites, isNotEmpty, reason: route.id);
+        expect(route.stages, isNotEmpty, reason: 'Route must contain at least one stage: ${route.id}');
         expect(
           route.prerequisites.every((item) => item.trim().isNotEmpty),
           isTrue,
