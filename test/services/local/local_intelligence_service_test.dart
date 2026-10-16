@@ -177,5 +177,26 @@ void main() {
       expect(values, [(3, 'ready')]);
       await subscription.cancel();
     });
+    test('keeps the last value from a source that completes', () async {
+      final second = StreamController<String>();
+      final values = <(int, String)>[];
+      final reached = Completer<void>();
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        Stream<int>.value(7),
+        second.stream,
+      ).listen((value) {
+        values.add(value);
+        if (values.length == 2 && !reached.isCompleted) reached.complete();
+      });
+
+      second.add('first');
+      await Future<void>.delayed(Duration.zero);
+      second.add('second');
+      await reached.future;
+
+      expect(values, [(7, 'first'), (7, 'second')]);
+      await subscription.cancel();
+      await second.close();
+    });
   });
 }
