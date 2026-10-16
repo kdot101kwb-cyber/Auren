@@ -146,7 +146,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
         ],
       ),
       body: StreamBuilder<List<AurenEntertainmentItem>>(
-        stream: repo.watchItems(type: type),
+        // Keep the complete catalog available to series shelves and seed-state
+        // detection even when the user filters the main browse list by type.
+        stream: repo.watchItems(),
         builder: (context, s) {
           if (s.hasError) {
             return const Center(child: Text('تعذر تحميل المحتوى حالياً. حاول مرة أخرى.'));
