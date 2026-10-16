@@ -190,6 +190,21 @@ void main() {
     expect(progress.docs, isEmpty);
   });
 
+  test('records a watch start with episode context', () async {
+    await repository.recordWatchStarted('user-1', makeItem());
+
+    final doc = await firestore.collection('users').doc('user-1')
+        .collection('watchHistory').doc('item-1').get();
+    final data = doc.data()!;
+    expect(data['itemId'], 'item-1');
+    expect(data['title'], 'Test item');
+    expect(data['type'], 'Episode');
+    expect(data['seriesId'], 'series-1');
+    expect(data['seasonNumber'], 1);
+    expect(data['episodeNumber'], 2);
+    expect(data['views'], 1);
+  });
+
   test('streams Continue Watching records when progress is saved', () async {
     final future = repository.watchContinueWatching('user-1')
         .firstWhere((entries) => entries.any((entry) => entry['itemId'] == 'item-1'));
