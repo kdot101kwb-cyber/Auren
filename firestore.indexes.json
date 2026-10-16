@@ -265,6 +265,10 @@
         {
           "fieldPath": "groupSize",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "language",
+          "order": "ASCENDING"
         }
       ]
     }
