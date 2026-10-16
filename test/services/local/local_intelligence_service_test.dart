@@ -64,28 +64,30 @@ void main() {
   });
 
   group('AurenLocalIntelligenceService.combineLatest2', () {
-    test('emits again when the second stream changes', () async {
+    test('emits again when either stream changes', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
       final values = <(int, String)>[];
-      final firstPair = Completer<void>();
-      final secondPair = Completer<void>();
+      final pairCountReached = Completer<void>();
       final subscription = AurenLocalIntelligenceService.combineLatest2(
         first.stream,
         second.stream,
       ).listen((value) {
         values.add(value);
-        if (values.length == 1 && !firstPair.isCompleted) firstPair.complete();
-        if (values.length == 2 && !secondPair.isCompleted) secondPair.complete();
+        if (values.length == 3 && !pairCountReached.isCompleted) {
+          pairCountReached.complete();
+        }
       });
 
       first.add(1);
       second.add('initial');
-      await firstPair.future;
+      await Future<void>.delayed(Duration.zero);
+      first.add(2);
+      await Future<void>.delayed(Duration.zero);
       second.add('updated');
-      await secondPair.future;
+      await pairCountReached.future;
 
-      expect(values, [(1, 'initial'), (1, 'updated')]);
+      expect(values, [(1, 'initial'), (2, 'initial'), (2, 'updated')]);
 
       await subscription.cancel();
       await first.close();
