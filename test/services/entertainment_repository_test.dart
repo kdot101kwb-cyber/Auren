@@ -420,6 +420,10 @@ void main() {
     expect(entries.single['views'], 1);
   });
 
+  test('returns an empty saved entertainment stream for a blank user id', () async {
+    expect(await repository.watchSavedItems(' ').first, isEmpty);
+  });
+
   test('returns an empty watch history stream for a blank user id', () async {
     expect(await repository.watchHistory('').first, isEmpty);
   });
