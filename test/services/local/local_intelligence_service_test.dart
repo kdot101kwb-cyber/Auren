@@ -392,6 +392,28 @@ void main() {
       await second.close();
     });
 
+    test('cancels both sources before any values are emitted', () async {
+      var firstCancelled = false;
+      var secondCancelled = false;
+      final first = StreamController<int>(onCancel: () {
+        firstCancelled = true;
+      });
+      final second = StreamController<String>(onCancel: () {
+        secondCancelled = true;
+      });
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first.stream,
+        second.stream,
+      ).listen((_) {});
+
+      await subscription.cancel();
+
+      expect(firstCancelled, isTrue);
+      expect(secondCancelled, isTrue);
+      await first.close();
+      await second.close();
+    });
+
     test('forwards errors from the second source too', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
