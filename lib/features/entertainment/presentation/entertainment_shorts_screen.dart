@@ -193,7 +193,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   Future<void> _trackView(AurenEntertainmentItem item, {bool completed = false}) async {
-    if (uid == null || _tracked.contains(item.id)) return;
+    if (uid == null ||
+        _tracked.contains(item.id) ||
+        !_tracking.add(item.id)) {
+      return;
+    }
     final started = _startedAt[item.id];
     final controller = controllers[item.id];
     final naturallyCompleted = controller != null && controller.value.isInitialized && controller.value.duration.inMilliseconds > 0 &&
