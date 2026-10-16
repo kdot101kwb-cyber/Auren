@@ -306,6 +306,42 @@ void main() {
       await second.close();
     });
 
+    test('forwards errors before both sources have emitted', () async {
+      final first = StreamController<int>();
+      final second = StreamController<String>();
+      final receivedError = Completer<void>();
+      final reachedPair = Completer<void>();
+      final values = <(int, String)>[];
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first.stream,
+        second.stream,
+      ).listen(
+        values.add,
+        onError: (Object error) {
+          if (!receivedError.isCompleted) receivedError.complete();
+        },
+      );
+
+      first.addError(StateError('before initial value'));
+      await receivedError.future;
+      first.add(5);
+      second.add('ready');
+      await Future<void>.delayed(Duration.zero);
+      if (values.isNotEmpty && !reachedPair.isCompleted) reachedPair.complete();
+      // Wait for delivery without depending on the source error closing the stream.
+      if (!reachedPair.isCompleted) {
+        first.add(6);
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      expect(values, isNotEmpty);
+      expect(values.first, (5, 'ready'));
+
+      await subscription.cancel();
+      await first.close();
+      await second.close();
+    });
+
     test('forwards errors from the second source too', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
