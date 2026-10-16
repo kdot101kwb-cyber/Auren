@@ -698,7 +698,19 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       return const Center(child: CircularProgressIndicator());
     }
     if (error != null) {
-      return Center(child: Text('Could not load Shorts: $error'));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_outlined, size: 40),
+              const SizedBox(height: 12),
+              const Text('تعذّر تحميل الشورتات حالياً. تحقق من الاتصال وحاول مرة أخرى.'),
+            ],
+          ),
+        ),
+      );
     }
     for (final item in items) {
       _itemsById[item.id] = item;
