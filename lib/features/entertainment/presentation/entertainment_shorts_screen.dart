@@ -433,7 +433,10 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   String? _creatorId(AurenEntertainmentItem item) => item.creatorId.isEmpty ? null : item.creatorId;
 
-  Future<void> _trackShareAction(AurenEntertainmentItem item) async {
+  Future<void> _trackShareAction(
+    AurenEntertainmentItem item, {
+    required String actionMood,
+  }) async {
     final viewerId = uid;
     if (viewerId == null) return;
     try {
@@ -441,7 +444,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         viewerId,
         item.id,
         action: 'share',
-        mood: mood,
+        mood: actionMood,
       );
     } catch (_) {
       // Sharing should remain available if analytics are temporarily offline.
