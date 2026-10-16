@@ -75,7 +75,7 @@ void main() {
       await tester.pumpWidget(_app());
       await _enterField(
         tester,
-        label: 'Processing cost per raw unit',
+        label: 'Processing per raw unit',
         value: '-0.01',
       );
       await _expectInvalid(tester);
@@ -105,7 +105,7 @@ void main() {
       );
       expect(find.text('Estimated result'), findsOneWidget);
       expect(find.text('0.00'), findsOneWidget);
-      expect(find.text('Not available'), findsWidgets);
+      expect(find.text('Unavailable because there is no usable output'), findsOneWidget);
     });
 
     testWidgets('shows an estimate for valid default inputs', (tester) async {
