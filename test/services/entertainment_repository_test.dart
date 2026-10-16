@@ -190,6 +190,24 @@ void main() {
     expect(progress.docs, isEmpty);
   });
 
+  test('stores and clamps generated-series episode progress', () async {
+    await repository.saveSeriesWatchProgress(
+      'user-1', 'job-1', 3,
+      positionSeconds: 140,
+      durationSeconds: 100,
+      title: 'Episode Three',
+      videoUrl: 'https://example.com/episode-3.mp4',
+    );
+
+    final progress = await repository.getSeriesWatchProgress('user-1', 'job-1', 3);
+    expect(progress, isNotNull);
+    expect(progress!['episodeNumber'], 3);
+    expect(progress['title'], 'Episode Three');
+    expect(progress['positionSeconds'], 100);
+    expect(progress['progress'], 1.0);
+    expect(progress['completed'], isFalse);
+  });
+
   test('returns null for missing watch progress and the saved record otherwise', () async {
     expect(await repository.getWatchProgress('user-1', 'item-1'), isNull);
 
