@@ -183,14 +183,18 @@ class EntertainmentRepository {
       db.collection('users').doc(uid).collection('savedEntertainment').snapshots()
           .map((s) => s.docs.map((d) => d.id).toSet());
 
-  Future<void> save(String uid, String itemId) =>
-      db.collection('users').doc(uid).collection('savedEntertainment').doc(itemId).set({
-        'itemId': itemId,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+  Future<void> save(String uid, String itemId) {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return Future<void>.value();
+    return db.collection('users').doc(uid).collection('savedEntertainment').doc(itemId).set({
+      'itemId': itemId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
 
-  Future<void> unsave(String uid, String itemId) =>
-      db.collection('users').doc(uid).collection('savedEntertainment').doc(itemId).delete();
+  Future<void> unsave(String uid, String itemId) {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return Future<void>.value();
+    return db.collection('users').doc(uid).collection('savedEntertainment').doc(itemId).delete();
+  }
 
   Future<Set<String>> getLikedPodcastEpisodeIds(String uid) async {
     final snap = await db.collection('users').doc(uid).collection('podcastLikes').get();
