@@ -827,9 +827,11 @@ class EntertainmentRepository {
     await trackShortAction(uid, itemId, action: 'comment', mood: mood);
   }
 
-  Stream<bool> watchLiked(String uid, String itemId) =>
-      db.collection('entertainment_items').doc(itemId).collection('likes').doc(uid)
-          .snapshots().map((d) => d.exists);
+  Stream<bool> watchLiked(String uid, String itemId) {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return Stream.value(false);
+    return db.collection('entertainment_items').doc(itemId).collection('likes').doc(uid)
+        .snapshots().map((d) => d.exists);
+  }
 
   Stream<List<AurenEntertainmentItem>> watchSavedItems(String uid) {
     if (uid.trim().isEmpty) return Stream.value(const <AurenEntertainmentItem>[]);
