@@ -124,11 +124,13 @@ void main() {
       final selector = find.byKey(
         const ValueKey<String>('manufacturing-route-selector'),
       );
-      await tester.scrollUntilVisible(
-        selector,
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
+      final scrollable = find.byType(Scrollable).first;
+      for (var attempt = 0; attempt < 24 && selector.evaluate().isEmpty; attempt++) {
+        await tester.drag(scrollable, const Offset(0, -350));
+        await tester.pumpAndSettle();
+      }
+      expect(selector, findsOneWidget);
+      await tester.ensureVisible(selector);
       await tester.tap(selector);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sesame → tahini').last);
