@@ -257,6 +257,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       ..clear()
       ..addAll(keep);
 
+    // Watch timers are only needed for the visible item and its prefetch.
+    // Pruning them prevents guest/long-scroll sessions from growing forever.
+    for (final id in _startedAt.keys.toList()) {
+      if (!keep.contains(id)) _startedAt.remove(id);
+    }
+
     // Keep at most the visible Short and its next item initialized. This bounds
     // decoder/memory use on lower-end Android devices while preserving prefetch.
     for (final id in controllers.keys.toList()) {
