@@ -270,6 +270,42 @@ void main() {
       await second.close();
     });
 
+    test('retains latest values after a source error', () async {
+      final first = StreamController<int>();
+      final second = StreamController<String>();
+      final values = <(int, String)>[];
+      final receivedError = Completer<void>();
+      final updatedPair = Completer<void>();
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first.stream,
+        second.stream,
+      ).listen(
+        (value) {
+          values.add(value);
+          if (values.length == 2 && !updatedPair.isCompleted) {
+            updatedPair.complete();
+          }
+        },
+        onError: (Object error) {
+          if (!receivedError.isCompleted) receivedError.complete();
+        },
+      );
+
+      first.add(4);
+      second.add('initial');
+      await Future<void>.delayed(Duration.zero);
+      first.addError(StateError('temporary'));
+      await receivedError.future;
+      second.add('updated');
+      await updatedPair.future;
+
+      expect(values, [(4, 'initial'), (4, 'updated')]);
+
+      await subscription.cancel();
+      await first.close();
+      await second.close();
+    });
+
     test('forwards errors from the second source too', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
