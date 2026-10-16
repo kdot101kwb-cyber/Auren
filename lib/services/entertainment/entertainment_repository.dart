@@ -762,6 +762,8 @@ class EntertainmentRepository {
     required bool completed,
   }) async {
     if (uid.isEmpty || item.id.isEmpty) return;
+    final safeDuration = durationSeconds.clamp(0, 2147483647);
+    final safeSeconds = seconds.clamp(0, safeDuration > 0 ? safeDuration : 2147483647);
     await db.collection('users').doc(uid).collection('watchHistory').doc(item.id).set({
       'itemId': item.id,
       'title': item.title,
@@ -772,9 +774,9 @@ class EntertainmentRepository {
       'episodeOrder': item.episodeOrder,
       'imageUrl': item.imageUrl,
       'mediaUrl': item.mediaUrl,
-      'lastPositionSeconds': seconds,
-      'durationSeconds': durationSeconds,
-      'progress': durationSeconds > 0 ? (seconds / durationSeconds).clamp(0.0, 1.0) : 0.0,
+      'lastPositionSeconds': safeSeconds,
+      'durationSeconds': safeDuration,
+      'progress': safeDuration > 0 ? (safeSeconds / safeDuration).clamp(0.0, 1.0) : 0.0,
       'completed': completed,
       'lastWatchedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
