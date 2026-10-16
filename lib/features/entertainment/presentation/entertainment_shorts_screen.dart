@@ -21,11 +21,12 @@ class AurenEntertainmentShortsScreen extends StatefulWidget {
   State<AurenEntertainmentShortsScreen> createState() => _AurenEntertainmentShortsState();
 }
 
-class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScreen> {
+class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScreen> with WidgetsBindingObserver {
   final repo = EntertainmentRepository();
   final controllers = <String, VideoPlayerController>{};
   final Set<String> _preparing = {};
   final Set<String> _failedControllerIds = {};
+  bool _resumeAfterLifecycle = false;
   final Set<String> _retainedControllerIds = {};
   String? _activeItemId;
   int active = 0;
@@ -48,6 +49,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) _savedStream = repo.watchSavedIds(uid!);
   }
@@ -385,7 +387,43 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      final activeController =
+          _activeItemId == null ? null : controllers[_activeItemId];
+      _resumeAfterLifecycle =
+          activeController != null &&
+          activeController.value.isInitialized &&
+          activeController.value.isPlaying;
+      for (final controller in controllers.values) {
+        controller.pause();
+      }
+      return;
+    }
+
+    if (state == AppLifecycleState.resumed && _resumeAfterLifecycle) {
+      _resumeAfterLifecycle = false;
+      final activeId = _activeItemId;
+      final activeController =
+          activeId == null ? null : controllers[activeId];
+      if (activeController != null &&
+          activeController.value.isInitialized &&
+          mounted) {
+        activeController.play().catchError((Object _) {
+          if (mounted && activeId != null) {
+            setState(() => _failedControllerIds.add(activeId));
+          }
+        });
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final c in controllers.values) c.dispose();
     super.dispose();
   }
