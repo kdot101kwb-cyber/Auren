@@ -212,6 +212,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         mood: mood,
       );
       _tracked.add(item.id);
+      _startedAt.remove(item.id);
+      // Bound in-memory view history for long scrolling sessions.
+      if (_tracked.length > 500) _tracked.remove(_tracked.first);
       if (seconds < 3) {
         await repo.trackShortAction(
           uid!,
