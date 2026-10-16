@@ -8,43 +8,76 @@ Widget _app() => const MaterialApp(
       home: AurenRawToProductScreen(),
     );
 
+Future<void> _enterField(
+  WidgetTester tester, {
+  required String label,
+  required String value,
+}) async {
+  final labelFinder = find.text(label);
+  await tester.scrollUntilVisible(
+    labelFinder,
+    250,
+    scrollable: find.byType(Scrollable).first,
+  );
+  final field = find.ancestor(
+    of: labelFinder,
+    matching: find.byType(TextFormField),
+  );
+  expect(field, findsOneWidget, reason: 'Field label: $label');
+  await tester.enterText(field, value);
+  await tester.pump();
+}
+
+Future<void> _expectInvalid(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.text('Enter a valid number'),
+    250,
+    scrollable: find.byType(Scrollable).first,
+  );
+  expect(find.text('Enter a valid number'), findsOneWidget);
+  expect(find.text('Estimated result'), findsNothing);
+}
+
 void main() {
   group('AurenRawToProductScreen input validation', () {
-    testWidgets('shows no estimate for malformed numeric input', (tester) async {
+    testWidgets('hides estimate for malformed numeric input', (tester) async {
       await tester.pumpWidget(_app());
-
-      await tester.enterText(find.byType(TextFormField).at(2), '12abc');
-      await tester.pump();
-
-      expect(find.text('Enter a valid number'), findsOneWidget);
-      expect(find.text('Estimated result'), findsNothing);
+      await _enterField(
+        tester,
+        label: 'Raw material quantity',
+        value: '12abc',
+      );
+      await _expectInvalid(tester);
     });
 
-    testWidgets('shows no estimate when raw quantity is zero', (tester) async {
+    testWidgets('hides estimate when raw quantity is zero', (tester) async {
       await tester.pumpWidget(_app());
-
-      await tester.enterText(find.byType(TextFormField).at(2), '0');
-      await tester.pump();
-
-      expect(find.text('Enter a valid number'), findsOneWidget);
-      expect(find.text('Estimated result'), findsNothing);
+      await _enterField(
+        tester,
+        label: 'Raw material quantity',
+        value: '0',
+      );
+      await _expectInvalid(tester);
     });
 
-    testWidgets('shows no estimate when yield exceeds one hundred percent',
+    testWidgets('hides estimate when yield exceeds one hundred percent',
         (tester) async {
       await tester.pumpWidget(_app());
-
-      await tester.enterText(find.byType(TextFormField).at(3), '100.01');
-      await tester.pump();
-
-      expect(find.text('Enter a valid number'), findsOneWidget);
-      expect(find.text('Estimated result'), findsNothing);
+      await _enterField(
+        tester,
+        label: 'Usable product yield (%)',
+        value: '100.01',
+      );
+      await _expectInvalid(tester);
     });
 
-    testWidgets('keeps a valid estimate visible for valid inputs',
-        (tester) async {
+    testWidgets('shows an estimate for valid default inputs', (tester) async {
       await tester.pumpWidget(_app());
-
+      await tester.scrollUntilVisible(
+        find.text('Estimated result'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Estimated result'), findsOneWidget);
       expect(find.text('Enter a valid number'), findsNothing);
     });
