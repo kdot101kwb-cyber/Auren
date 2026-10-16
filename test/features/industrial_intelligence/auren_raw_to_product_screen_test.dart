@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auren/features/industrial_intelligence/presentation/auren_raw_to_product_screen.dart';
 
-Widget _app() => const MaterialApp(
-      locale: Locale('en'),
-      supportedLocales: [Locale('en'), Locale('ar')],
-      home: AurenRawToProductScreen(),
+Widget _app({Locale locale = const Locale('en')}) => MaterialApp(
+      locale: locale,
+      supportedLocales: const [Locale('en'), Locale('ar')],
+      home: const AurenRawToProductScreen(),
     );
 
 Future<void> _enterField(
@@ -142,6 +142,21 @@ void main() {
       );
       expect(rawField.controller?.text, 'Sesame');
       expect(productField.controller?.text, 'tahini');
+    });
+
+    testWidgets('Arabic digits are validated with Arabic error messages',
+        (tester) async {
+      await tester.pumpWidget(_app(locale: const Locale('ar')));
+      await _enterField(
+        tester,
+        label: 'نسبة التحويل إلى منتج صالح (%)',
+        value: '١٠٠٫٠١',
+      );
+      await tester.tap(find.text('احسب خطة التصنيع'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('القيمة يجب ألا تزيد عن 100'), findsOneWidget);
+      expect(find.text('النتيجة التقديرية'), findsNothing);
     });
 
     testWidgets('shows an estimate for valid default inputs', (tester) async {
