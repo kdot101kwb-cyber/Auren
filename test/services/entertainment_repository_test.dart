@@ -190,6 +190,17 @@ void main() {
     expect(progress.docs, isEmpty);
   });
 
+  test('returns null for missing watch progress and the saved record otherwise', () async {
+    expect(await repository.getWatchProgress('user-1', 'item-1'), isNull);
+
+    await repository.saveWatchProgress(
+      'user-1', makeItem(), const Duration(seconds: 30), const Duration(seconds: 120));
+    final progress = await repository.getWatchProgress('user-1', 'item-1');
+    expect(progress, isNotNull);
+    expect(progress!['positionSeconds'], 30);
+    expect(progress['durationSeconds'], 120);
+  });
+
   test('records a watch start with episode context', () async {
     await repository.recordWatchStarted('user-1', makeItem());
 
