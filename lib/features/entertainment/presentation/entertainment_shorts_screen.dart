@@ -203,7 +203,6 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final naturallyCompleted = controller != null && controller.value.isInitialized && controller.value.duration.inMilliseconds > 0 &&
         controller.value.position.inMilliseconds >= (controller.value.duration.inMilliseconds * 0.9).round();
     final seconds = started == null ? 0 : DateTime.now().difference(started).inSeconds;
-    _tracked.add(item.id);
     try {
       await repo.trackShortView(
         uid!,
@@ -212,6 +211,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         completed: completed || naturallyCompleted,
         mood: mood,
       );
+      _tracked.add(item.id);
       if (seconds < 3) {
         await repo.trackShortAction(
           uid!,
@@ -222,6 +222,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       }
     } catch (_) {
       // Analytics failures must not break vertical scrolling or playback.
+    } finally {
+      _tracking.remove(item.id);
     }
   }
 
