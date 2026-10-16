@@ -69,14 +69,20 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     }
   }
 
-  Future<void> _pauseAndDisposeControllerSafely(
+  Future<void> _pauseControllerSafely(
     VideoPlayerController controller,
   ) async {
     try {
       await controller.pause();
     } catch (_) {
-      // A failed native player must not prevent resource cleanup.
+      // A failed native player must not interrupt page/lifecycle changes.
     }
+  }
+
+  Future<void> _pauseAndDisposeControllerSafely(
+    VideoPlayerController controller,
+  ) async {
+    await _pauseControllerSafely(controller);
     await _disposeControllerSafely(controller);
   }
 
@@ -231,7 +237,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   void _onPage(int index, List<AurenEntertainmentItem> items) {
     if (active < items.length) _trackView(items[active]);
     for (final controller in controllers.values) {
-      unawaited(_pauseAndDisposeControllerSafely(controller).then((_) {}));
+      unawaited(_pauseControllerSafely(controller));
     }
     final nextItem = items[index];
     _retainControllersFor(index, items);
@@ -466,7 +472,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           activeController.value.isInitialized &&
           activeController.value.isPlaying;
       for (final controller in controllers.values) {
-        controller.pause();
+        unawaited(_pauseControllerSafely(controller));
       }
       return;
     }
@@ -501,7 +507,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    for (final c in controllers.values) c.dispose();
+    final remainingControllers = controllers.values.toList();
+    controllers.clear();
+    for (final controller in remainingControllers) {
+      unawaited(_disposeControllerSafely(controller));
+    }
     super.dispose();
   }
 
@@ -573,11 +583,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   void _changeShortCategory(String value) {
     if (value == shortCategory) return;
     _retainedControllerIds.clear();
-    for (final controller in controllers.values) {
-      controller.pause();
-      controller.dispose();
-    }
+    final oldControllers = controllers.values.toList();
     controllers.clear();
+    for (final controller in oldControllers) {
+      unawaited(_pauseAndDisposeControllerSafely(controller));
+    }
     setState(() {
       shortCategory = value;
       active = 0;
