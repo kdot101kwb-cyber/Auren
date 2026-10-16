@@ -184,16 +184,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final old = controllers.remove(item.id);
     if (old != null) {
       // Cleanup errors should never prevent a retry from starting.
-      try {
-        await old.pause();
-      } catch (_) {
-        // The native player may already be in an error state.
-      }
-      try {
-        await old.dispose();
-      } catch (_) {
-        // Continue with a fresh controller even if disposal fails.
-      }
+      await _pauseAndDisposeControllerSafely(old);
     }
     if (!mounted) return;
     setState(() {});
