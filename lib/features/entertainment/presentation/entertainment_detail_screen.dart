@@ -116,8 +116,23 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
     return StreamBuilder<List<AurenEntertainmentItem>>(
       stream: repo.watchSeriesEpisodes(seriesId),
       builder: (context, snapshot) {
-        if (snapshot.hasError || snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: Card(
+              child: ListTile(
+                leading: Icon(Icons.cloud_off_outlined),
+                title: Text('تعذر تحميل قائمة الحلقات'),
+                subtitle: Text('تحقق من الاتصال وحاول فتح الصفحة مرة أخرى.'),
+              ),
+            ),
+          );
         }
         final episodes = snapshot.data ?? const <AurenEntertainmentItem>[];
         if (episodes.isEmpty) return const SizedBox.shrink();
@@ -151,11 +166,16 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
             ...episodes.map((episode) {
               final isCurrent = episode.id == item.id;
               final season = episode.seasonNumber > 0 ? 'الموسم ${episode.seasonNumber}' : 'الموسم غير محدد';
-              final episodeNumber = episode.episodeNumber > 0 ? ' • الحلقة ${episode.episodeNumber}' : '';
+              final displayEpisodeNumber = episode.episodeNumber > 0
+                  ? episode.episodeNumber
+                  : episode.episodeOrder;
+              final episodeNumber = displayEpisodeNumber > 0
+                  ? ' • الحلقة $displayEpisodeNumber'
+                  : '';
               return Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    child: Text(episode.episodeNumber > 0 ? '${episode.episodeNumber}' : '▶'),
+                    child: Text(displayEpisodeNumber > 0 ? '$displayEpisodeNumber' : '▶'),
                   ),
                   title: Text(episode.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                   subtitle: Text('$season$episodeNumber'),
