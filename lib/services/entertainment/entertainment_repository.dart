@@ -280,8 +280,9 @@ class EntertainmentRepository {
     required int seconds,
     required bool completed,
     required String mood,
-  }) =>
-      db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId).set({
+  }) {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return Future<void>.value();
+    return db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId).set({
         'itemId': itemId,
         'lastViewedAt': FieldValue.serverTimestamp(),
         'watchSeconds': FieldValue.increment(seconds),
@@ -289,6 +290,7 @@ class EntertainmentRepository {
         'completions': FieldValue.increment(completed ? 1 : 0),
         'mood': mood,
       }, SetOptions(merge: true));
+  }
 
   Future<void> trackShortAction(
     String uid,
