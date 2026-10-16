@@ -348,6 +348,18 @@ void main() {
     expect(signals.docs, isEmpty);
   });
 
+  test('rejects Short comments with blank user or item identifiers', () async {
+    await repository.addShortComment('', 'short-1', 'Valid text');
+    await repository.addShortComment('user-1', '  ', 'Valid text');
+
+    final comments = await firestore.collection('entertainment_items')
+        .doc('short-1').collection('comments').get();
+    expect(comments.docs, isEmpty);
+    final signals = await firestore.collection('users').doc('user-1')
+        .collection('entertainmentSignals').get();
+    expect(signals.docs, isEmpty);
+  });
+
   test('rejects empty and oversized Short comments', () async {
     await repository.addShortComment('user-1', 'short-1', '   ');
     await repository.addShortComment('user-1', 'short-1', 'x' * 1001);
