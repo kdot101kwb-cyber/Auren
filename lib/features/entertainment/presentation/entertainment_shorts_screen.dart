@@ -56,10 +56,26 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     if (uid != null) _savedStream = repo.watchSavedIds(uid!);
   }
 
+  bool _isHttpVideoUrl(String value) {
+    final uri = Uri.tryParse(value.trim());
+    return uri != null &&
+        uri.hasAuthority &&
+        uri.host.isNotEmpty &&
+        (uri.scheme == 'https' || uri.scheme == 'http');
+  }
+
   String _effectiveVideoUrl(AurenEntertainmentItem item) {
     final lowUrl = item.mediaUrlLow.trim();
-    if (_dataSaverMode && lowUrl.isNotEmpty) return lowUrl;
-    return _qualityUrls[item.id] ?? item.mediaUrl;
+    if (_dataSaverMode && _isHttpVideoUrl(lowUrl)) return lowUrl;
+
+    final selectedUrl = _qualityUrls[item.id]?.trim();
+    if (selectedUrl != null && _isHttpVideoUrl(selectedUrl)) {
+      return selectedUrl;
+    }
+
+    // Bad optional quality metadata must not prevent playback when the primary
+    // media URL is valid.
+    return item.mediaUrl.trim();
   }
 
   Future<void> _disposeControllerSafely(VideoPlayerController controller) async {
