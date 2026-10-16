@@ -263,7 +263,8 @@ class ManufacturingRouteCatalog {
     final query = value.trim().toLowerCase();
     if (query.isEmpty) return null;
     for (final route in routes) {
-      if (route.rawMaterial.toLowerCase() == query ||
+      if (route.id.toLowerCase() == query ||
+          route.rawMaterial.toLowerCase() == query ||
           route.finalProduct.toLowerCase() == query) {
         return route;
       }
