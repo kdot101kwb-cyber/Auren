@@ -13,17 +13,18 @@ Future<void> _enterField(
   required String label,
   required String value,
 }) async {
-  final labelFinder = find.text(label);
+  final field = find.byWidgetPredicate(
+    (widget) =>
+        widget is TextFormField &&
+        widget.decoration.labelText == label,
+    description: 'TextFormField with label "$label"',
+  );
+  expect(field, findsOneWidget, reason: 'Field label: $label');
   await tester.scrollUntilVisible(
-    labelFinder,
+    field,
     250,
     scrollable: find.byType(Scrollable).first,
   );
-  final field = find.ancestor(
-    of: labelFinder,
-    matching: find.byType(TextFormField),
-  );
-  expect(field, findsOneWidget, reason: 'Field label: $label');
   await tester.enterText(field, value);
   await tester.pump();
 }
