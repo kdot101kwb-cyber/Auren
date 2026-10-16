@@ -377,7 +377,18 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   String? _creatorId(AurenEntertainmentItem item) => item.creatorId.isEmpty ? null : item.creatorId;
 
   Future<void> _shareItem(AurenEntertainmentItem item) async {
-    if (uid != null) await repo.trackShortAction(uid!, item.id, action: 'share', mood: mood);
+    if (uid != null) {
+      try {
+        await repo.trackShortAction(
+          uid!,
+          item.id,
+          action: 'share',
+          mood: mood,
+        );
+      } catch (_) {
+        // Sharing should remain available if analytics are temporarily offline.
+      }
+    }
     if (!mounted) return;
     await showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (sheet) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
       ListTile(leading: const Icon(Icons.link), title: const Text('نسخ رابط المحتوى'), onTap: () async { await Clipboard.setData(ClipboardData(text: item.mediaUrl)); if (sheet.mounted) Navigator.pop(sheet); }),
