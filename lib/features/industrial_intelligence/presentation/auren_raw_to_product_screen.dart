@@ -20,8 +20,18 @@ class RawToProductNumberParser {
     var normalized = _normalizeDigits(value)
         .replaceAll('٫', '.')
         .replaceAll('٬', ',')
-        .replaceAll(RegExp(r'[\\s\\u00A0\\u202F]'), '');
-    if (RegExp(r'^\\d{1,3}(,\\d{3})+(\\.\\d+)?import '../domain/manufacturing_route_catalog.dart';
+        .replaceAll(RegExp(r'[\s\u00A0\u202F]'), '');
+    if (RegExp(r'^\d{1,3}(,\d{3})+(\.\d+)?$').hasMatch(normalized)) {
+      normalized = normalized.replaceAll(',', '');
+    } else if (normalized.contains(',') && !normalized.contains('.')) {
+      normalized = normalized.replaceAll(',', '.');
+    }
+    final parsed = double.tryParse(normalized);
+    return parsed != null && parsed.isFinite ? parsed : null;
+  }
+}
+
+import '../domain/manufacturing_route_catalog.dart';
 import '../domain/raw_to_product_estimate.dart';
 import 'raw_to_product_strings.dart';
 import 'raw_to_product_stage_strings.dart';
