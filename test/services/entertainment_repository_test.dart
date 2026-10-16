@@ -420,6 +420,11 @@ void main() {
     expect(entries.single['views'], 1);
   });
 
+  test('returns false from the like stream for blank identifiers', () async {
+    expect(await repository.watchLiked('', 'short-1').first, isFalse);
+    expect(await repository.watchLiked('user-1', '  ').first, isFalse);
+  });
+
   test('returns an empty Short comments stream for a blank item id', () async {
     expect(await repository.watchShortComments('  ').first, isEmpty);
   });
