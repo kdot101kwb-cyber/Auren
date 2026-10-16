@@ -345,6 +345,7 @@ class EntertainmentRepository {
     required String action,
     required String contentType,
   }) async {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return;
     final ref = db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId);
     await ref.set({
       'itemId': itemId,
