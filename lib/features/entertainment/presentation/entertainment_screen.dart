@@ -663,7 +663,10 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
             child: Text('تعذّر تحميل قائمة متابعة المشاهدة حالياً.'),
           );
         }
-        final entries = snapshot.data ?? const <Map<String, dynamic>>[];
+        final entries = (snapshot.data ?? const <Map<String, dynamic>>[])
+            .where((entry) =>
+                (entry['id'] ?? entry['itemId'] ?? '').toString().trim().isNotEmpty)
+            .toList();
         if (entries.isEmpty) return const SizedBox.shrink();
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('Continue Watching', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
