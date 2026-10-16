@@ -230,7 +230,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         item.id,
         seconds: seconds,
         completed: completed || naturallyCompleted,
-        mood: mood,
+        mood: viewMood,
       );
       _tracked.add(item.id);
       _startedAt.remove(item.id);
