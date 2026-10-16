@@ -112,6 +112,21 @@ void main() {
         ['episode-1', 'episode-2']);
   });
 
+  test('watchItem exposes public items but hides private or missing items', () async {
+    await firestore.collection('entertainment_items').doc('public-item').set({
+      'title': 'Public episode', 'type': 'Episode', 'visibility': 'public',
+    });
+    await firestore.collection('entertainment_items').doc('private-item').set({
+      'title': 'Private episode', 'type': 'Episode', 'visibility': 'private',
+    });
+
+    final publicItem = await repository.watchItem('public-item')
+        .firstWhere((item) => item != null);
+    expect(publicItem!.title, 'Public episode');
+    expect(await repository.watchItem('private-item').first, isNull);
+    expect(await repository.watchItem('missing-item').first, isNull);
+  });
+
   test('records watch history progress with episode metadata', () async {
     final item = makeItem();
     await repository.recordWatchProgress(
