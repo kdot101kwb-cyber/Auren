@@ -218,7 +218,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final controller = controllers[item.id];
     final naturallyCompleted = controller != null && controller.value.isInitialized && controller.value.duration.inMilliseconds > 0 &&
         controller.value.position.inMilliseconds >= (controller.value.duration.inMilliseconds * 0.9).round();
-    final seconds = started == null ? 0 : DateTime.now().difference(started).inSeconds;
+    // Wall-clock time includes pauses and background time. Prefer the player's
+    // position so engagement signals reflect media actually watched.
+    final seconds = controller != null && controller.value.isInitialized
+        ? controller.value.position.inSeconds
+        : (started == null ? 0 : DateTime.now().difference(started).inSeconds);
     try {
       await repo.trackShortView(
         uid!,
