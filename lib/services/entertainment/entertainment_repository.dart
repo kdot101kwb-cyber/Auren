@@ -326,12 +326,14 @@ class EntertainmentRepository {
     required String contentType,
     bool countPlay = false,
   }) async {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return;
     if (seconds <= 0 && !completed && !countPlay) return;
+    final safeSeconds = seconds < 0 ? 0 : seconds;
     await db.collection('users').doc(uid).collection('entertainmentSignals').doc(itemId).set({
       'itemId': itemId,
       'contentType': contentType,
       'lastPlayedAt': FieldValue.serverTimestamp(),
-      'watchSeconds': FieldValue.increment(seconds),
+      'watchSeconds': FieldValue.increment(safeSeconds),
       'plays': FieldValue.increment(countPlay ? 1 : 0),
       'completions': FieldValue.increment(completed ? 1 : 0),
     }, SetOptions(merge: true));
