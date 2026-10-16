@@ -28,7 +28,10 @@ async function promoteNextWaitlisted({db, eventId, triggerId, now = Date.now(), 
     const eventSnapshot = await transaction.get(eventRef);
     if (!eventSnapshot.exists) return {status: 'event_missing'};
     const event = eventSnapshot.data() || {};
-    if (timestampMillis(event.startsAt) <= now) return {status: 'event_started'};
+    const startsAtMillis = timestampMillis(event.startsAt);
+    if (!Number.isFinite(startsAtMillis) || startsAtMillis <= now) {
+      return {status: 'event_started'};
+    }
     const count = Number.isInteger(event.confirmedCount) ? event.confirmedCount : -1;
     if (count < 0) return {status: 'invalid_count'};
     if (event.capacity != null &&
