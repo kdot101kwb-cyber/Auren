@@ -190,6 +190,17 @@ void main() {
     expect(progress.docs, isEmpty);
   });
 
+  test('streams Continue Watching records when progress is saved', () async {
+    final future = repository.watchContinueWatching('user-1')
+        .firstWhere((entries) => entries.any((entry) => entry['itemId'] == 'item-1'));
+    await repository.saveWatchProgress(
+      'user-1', makeItem(), const Duration(seconds: 20), const Duration(seconds: 100));
+
+    final entries = await future;
+    expect(entries.single['itemId'], 'item-1');
+    expect(entries.single['positionSeconds'], 20);
+  });
+
   test('returns an empty stream for a blank series id', () async {
     expect(await repository.watchSeriesEpisodes('  ').first, isEmpty);
   });
