@@ -157,6 +157,7 @@ void main() {
       await subscription.cancel();
       await second.close();
     });
+
     test('closes after both sources finish', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
@@ -177,6 +178,7 @@ void main() {
       expect(values, [(3, 'ready')]);
       await subscription.cancel();
     });
+
     test('keeps the last value from a source that completes', () async {
       final second = StreamController<String>();
       final values = <(int, String)>[];
@@ -198,6 +200,7 @@ void main() {
       await subscription.cancel();
       await second.close();
     });
+
     test('forwards errors from a source without closing immediately', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
@@ -216,6 +219,7 @@ void main() {
       await first.close();
       await second.close();
     });
+
     test('cancels the first source when the second completes empty', () async {
       var firstCancelled = false;
       final first = StreamController<int>(onCancel: () {
@@ -234,6 +238,7 @@ void main() {
       await subscription.cancel();
       await first.close();
     });
+
     test('continues emitting after a source error', () async {
       final first = StreamController<int>();
       final second = StreamController<String>();
@@ -260,6 +265,25 @@ void main() {
       await reachedValue.future;
 
       expect(values, [(9, 'recovered')]);
+      await subscription.cancel();
+      await first.close();
+      await second.close();
+    });
+
+    test('forwards errors from the second source too', () async {
+      final first = StreamController<int>();
+      final second = StreamController<String>();
+      final receivedError = Completer<Object>();
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first.stream,
+        second.stream,
+      ).listen((_) {}, onError: (Object error) {
+        if (!receivedError.isCompleted) receivedError.complete(error);
+      });
+
+      second.addError(ArgumentError('second source failed'));
+      expect(await receivedError.future, isA<ArgumentError>());
+
       await subscription.cancel();
       await first.close();
       await second.close();
