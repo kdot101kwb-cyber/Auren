@@ -451,8 +451,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                       IconButton(
                         icon: const Icon(Icons.send),
                         onPressed: () async {
-                          await repo.addShortComment(uid!, item.id, controller.text, mood: mood);
-                          controller.clear();
+                          final text = controller.text.trim();
+                          if (text.isEmpty) return;
+                          await repo.addShortComment(
+                            uid!,
+                            item.id,
+                            text,
+                            mood: mood,
+                          );
+                          if (sheetContext.mounted) controller.clear();
                         },
                       ),
                     ],
