@@ -258,6 +258,24 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('shows only public items in saved entertainment', () async {
+    await firestore.collection('entertainment_items').doc('public-item').set({
+      'title': 'Public item', 'type': 'Movie', 'visibility': 'public',
+    });
+    await firestore.collection('entertainment_items').doc('private-item').set({
+      'title': 'Private item', 'type': 'Movie', 'visibility': 'private',
+    });
+    await firestore.collection('users').doc('user-1')
+        .collection('savedEntertainment').doc('public-item').set({'itemId': 'public-item'});
+    await firestore.collection('users').doc('user-1')
+        .collection('savedEntertainment').doc('private-item').set({'itemId': 'private-item'});
+    await firestore.collection('users').doc('user-1')
+        .collection('savedEntertainment').doc('missing-item').set({'itemId': 'missing-item'});
+
+    final items = await repository.watchSavedItems('user-1').first;
+    expect(items.map((item) => item.id).toList(), ['public-item']);
+  });
+
   test('streams watch history after playback starts', () async {
     final future = repository.watchHistory('user-1')
         .firstWhere((entries) => entries.any((entry) => entry['itemId'] == 'item-1'));
