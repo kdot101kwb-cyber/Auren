@@ -40,6 +40,28 @@ void main() {
       }
     });
 
+    test('route IDs are unique regardless of letter case', () {
+      final normalizedIds = ManufacturingRouteCatalog.routes
+          .map((route) => route.id.trim().toLowerCase())
+          .toList();
+      expect(normalizedIds.toSet().length, normalizedIds.length);
+    });
+
+    test('every route can be found by its raw material and final product', () {
+      for (final route in ManufacturingRouteCatalog.routes) {
+        expect(
+          ManufacturingRouteCatalog.findByRawMaterial(route.rawMaterial),
+          same(route),
+          reason: 'Raw material lookup for ${route.id}',
+        );
+        expect(
+          ManufacturingRouteCatalog.findByRawMaterial(route.finalProduct),
+          same(route),
+          reason: 'Final product lookup for ${route.id}',
+        );
+      }
+    });
+
     test('route ID lookup trims whitespace and ignores case', () {
       expect(ManufacturingRouteCatalog.findById(' SESAME-TO-TAHINI ')?.id,
           'sesame-to-tahini');
