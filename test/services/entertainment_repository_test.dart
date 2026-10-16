@@ -296,6 +296,23 @@ void main() {
     expect(entries.single['positionSeconds'], 20);
   });
 
+  test('guards music playback analytics and clamps negative watch time', () async {
+    await repository.trackMusicPlayback(
+      '', 'music-1', seconds: 10, completed: false, contentType: 'track', countPlay: true);
+    await repository.trackMusicPlayback(
+      'user-1', '  ', seconds: 10, completed: false, contentType: 'track', countPlay: true);
+    await repository.trackMusicPlayback(
+      'user-1', 'music-1', seconds: -10, completed: true, contentType: 'track', countPlay: true);
+
+    final signals = await firestore.collection('users').doc('user-1')
+        .collection('entertainmentSignals').get();
+    expect(signals.docs, hasLength(1));
+    final data = signals.docs.single.data();
+    expect(data['watchSeconds'], 0);
+    expect(data['plays'], 1);
+    expect(data['completions'], 1);
+  });
+
   test('aggregates Short actions and preserves action history', () async {
     await repository.trackShortAction('user-1', 'short-1', action: 'like', mood: 'ضحك');
     await repository.trackShortAction('user-1', 'short-1', action: 'save', mood: 'ضحك');
