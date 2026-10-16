@@ -2,13 +2,14 @@ class AurenEntertainmentItem {
   final String id, title, type, description, imageUrl, mediaUrl, mediaKind, creatorId, channelId, country, language, year, trailerUrl, artistName, albumName, source, sourceUrl, licenseNote, issn, mediaUrlLow, mediaUrlMedium, mediaUrlHigh;
   final List<String> genres, tags;
   final String category;
-  final int seasons, episodes;
+  final String seriesId, nextEpisodeId;
+  final int seasons, episodes, seasonNumber, episodeNumber, episodeOrder;
   const AurenEntertainmentItem({
     required this.id, required this.title, required this.type,
     required this.description, required this.imageUrl,
     required this.mediaUrl, required this.mediaKind,
     this.creatorId = '', this.channelId = '', this.country = '', this.language = '', this.year = '',
-    this.genres = const [], this.tags = const [], this.category = '', this.seasons = 0, this.episodes = 0, this.trailerUrl = '', this.artistName = '', this.albumName = '', this.source = '', this.sourceUrl = '', this.licenseNote = '', this.issn = '', this.mediaUrlLow = '', this.mediaUrlMedium = '', this.mediaUrlHigh = '',
+    this.genres = const [], this.tags = const [], this.category = '', this.seasons = 0, this.episodes = 0, this.seriesId = '', this.seasonNumber = 0, this.episodeNumber = 0, this.episodeOrder = 0, this.nextEpisodeId = '', this.trailerUrl = '', this.artistName = '', this.albumName = '', this.source = '', this.sourceUrl = '', this.licenseNote = '', this.issn = '', this.mediaUrlLow = '', this.mediaUrlMedium = '', this.mediaUrlHigh = '',
   });
 
   bool get isVideo => mediaKind == 'video' || mediaUrl.toLowerCase().endsWith('.mp4') || mediaUrl.toLowerCase().contains('.m3u8');
@@ -37,5 +38,10 @@ class AurenEntertainmentItem {
     tags: ((d['tags'] as List?)?.whereType<String>().take(20).toList() ?? const []),
     category: (d['category'] ?? d['contentCategory'] ?? '').toString(),
     seasons: (d['seasons'] as num?)?.toInt() ?? 0, episodes: (d['episodes'] as num?)?.toInt() ?? 0,
+    seriesId: (d['seriesId'] ?? d['parentSeriesId'] ?? '').toString(),
+    seasonNumber: (d['seasonNumber'] as num?)?.toInt() ?? 0,
+    episodeNumber: (d['episodeNumber'] as num?)?.toInt() ?? 0,
+    episodeOrder: (d['episodeOrder'] as num?)?.toInt() ?? 0,
+    nextEpisodeId: (d['nextEpisodeId'] ?? '').toString(),
   );
 }
