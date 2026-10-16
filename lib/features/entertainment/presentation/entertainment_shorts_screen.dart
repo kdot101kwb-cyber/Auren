@@ -305,7 +305,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         ListTile(
           leading: const Icon(Icons.high_quality_outlined),
           title: const Text('جودة الفيديو'),
-          subtitle: Text(_dataSaverMode
+          subtitle: Text(_dataSaverMode &&
+                  _isHttpVideoUrl(item.mediaUrlLow)
               ? 'توفير البيانات مفعّل؛ أوقفه لاختيار جودة أعلى'
               : 'الخيارات المتاحة لهذا الفيديو'),
         ),
