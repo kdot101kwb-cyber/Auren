@@ -866,7 +866,17 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                               icon: Icon(s.data == true ? Icons.favorite : Icons.favorite_border),
                               onPressed: () async {
                                 final next = !(s.data == true);
-                                await repo.toggleShortLike(uid!, item.id, next);
+                                try {
+                                  await repo.toggleShortLike(uid!, item.id, next);
+                                } catch (_) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('تعذّر تحديث الإعجاب. حاول مرة أخرى.'),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 try {
                                   await repo.trackShortAction(
                                     uid!,
