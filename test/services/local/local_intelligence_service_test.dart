@@ -234,5 +234,35 @@ void main() {
       await subscription.cancel();
       await first.close();
     });
+    test('continues emitting after a source error', () async {
+      final first = StreamController<int>();
+      final second = StreamController<String>();
+      final values = <(int, String)>[];
+      final receivedError = Completer<void>();
+      final reachedValue = Completer<void>();
+      final subscription = AurenLocalIntelligenceService.combineLatest2(
+        first.stream,
+        second.stream,
+      ).listen(
+        (value) {
+          values.add(value);
+          if (!reachedValue.isCompleted) reachedValue.complete();
+        },
+        onError: (Object error) {
+          if (!receivedError.isCompleted) receivedError.complete();
+        },
+      );
+
+      first.addError(StateError('temporary'));
+      await receivedError.future;
+      first.add(9);
+      second.add('recovered');
+      await reachedValue.future;
+
+      expect(values, [(9, 'recovered')]);
+      await subscription.cancel();
+      await first.close();
+      await second.close();
+    });
   });
 }
