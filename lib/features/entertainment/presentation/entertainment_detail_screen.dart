@@ -122,7 +122,14 @@ class _AurenEntertainmentDetailState extends State<AurenEntertainmentDetailScree
         final episodes = snapshot.data ?? const <AurenEntertainmentItem>[];
         if (episodes.isEmpty) return const SizedBox.shrink();
         final currentIndex = episodes.indexWhere((episode) => episode.id == item.id);
-        final nextIndex = currentIndex >= 0 ? currentIndex + 1 : -1;
+        final explicitNextIndex = item.nextEpisodeId.isEmpty
+            ? -1
+            : episodes.indexWhere((episode) => episode.id == item.nextEpisodeId);
+        final nextIndex = explicitNextIndex >= 0
+            ? explicitNextIndex
+            : currentIndex >= 0
+                ? currentIndex + 1
+                : -1;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
