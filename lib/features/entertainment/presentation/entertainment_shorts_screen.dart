@@ -1187,7 +1187,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                 final next = !(s.data == true);
                                 final actionMood = mood;
                                 try {
-                                  await repo.toggleShortLike(uid!, item.id, next);
+                                  await repo.toggleShortLikeWithMood(
+                                    uid!,
+                                    item.id,
+                                    next,
+                                    mood: actionMood,
+                                  );
                                 } catch (_) {
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1195,17 +1200,6 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                       content: Text('تعذّر تحديث الإعجاب. حاول مرة أخرى.'),
                                     ),
                                   );
-                                  return;
-                                }
-                                try {
-                                  await repo.trackShortAction(
-                                    uid!,
-                                    item.id,
-                                    action: next ? 'like' : 'unlike',
-                                    mood: actionMood,
-                                  );
-                                } catch (_) {
-                                  // A like should not appear to fail because analytics are offline.
                                 }
                               },
                                                           ),
@@ -1225,11 +1219,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                 onPressed: () async {
                                   final actionMood = mood;
                                   try {
-                                    if (isSaved) {
-                                      await repo.unsave(uid!, item.id);
-                                    } else {
-                                      await repo.save(uid!, item.id);
-                                    }
+                                    await repo.setShortSaved(
+                                      uid!,
+                                      item.id,
+                                      saved: !isSaved,
+                                      mood: actionMood,
+                                    );
                                   } catch (_) {
                                     if (!context.mounted) return;
                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1237,17 +1232,6 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                                         content: Text('تعذّر تحديث المحفوظات. حاول مرة أخرى.'),
                                       ),
                                     );
-                                    return;
-                                  }
-                                  try {
-                                    await repo.trackShortAction(
-                                      uid!,
-                                      item.id,
-                                      action: isSaved ? 'unsave' : 'save',
-                                      mood: actionMood,
-                                    );
-                                  } catch (_) {
-                                    // Saving content must work independently of analytics.
                                   }
                                 },
                               );
