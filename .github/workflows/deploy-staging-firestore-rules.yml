@@ -157,7 +157,72 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-staging-service-account.json
         run: |
           set -eu
+          AUTH_CHECK_DIR="${RUNNER_TEMP}/firebase-auth-check"
+          export NODE_PATH="$AUTH_CHECK_DIR/node_modules"
+          export RULES_BASELINE="${RUNNER_TEMP}/firestore-ruleset-baseline.json"
+          node <<'NODE'
+          const fs = require('fs');
+          const { GoogleAuth } = require('google-auth-library');
+          (async () => {
+            const auth = new GoogleAuth({
+              keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+              scopes: ['https://www.googleapis.com/auth/cloud-platform']
+            });
+            const client = await auth.getClient();
+            const response = await client.request({
+              url: 'https://firebaserules.googleapis.com/v1/projects/auren-staging/rulesets?pageSize=100',
+              method: 'GET'
+            });
+            fs.writeFileSync(process.env.RULES_BASELINE, JSON.stringify((response.data.rulesets || []).map((item) => item.name)));
+          })().catch((error) => {
+            console.error('Could not snapshot existing staging rulesets before deployment:', error.message);
+            process.exit(1);
+          });
+          NODE
+          set +e
           npx --yes firebase-tools@15.34.0 deploy --only firestore:rules --project auren-staging --non-interactive
+          DEPLOY_STATUS=$?
+          set -e
+          if [ "$DEPLOY_STATUS" -eq 0 ]; then
+            exit 0
+          fi
+          echo "Firebase CLI deployment failed; checking for the specific existing-release 409 condition."
+          node <<'NODE'
+          const fs = require('fs');
+          const { GoogleAuth } = require('google-auth-library');
+          (async () => {
+            const auth = new GoogleAuth({
+              keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+              scopes: ['https://www.googleapis.com/auth/cloud-platform']
+            });
+            const client = await auth.getClient();
+            const before = new Set(JSON.parse(fs.readFileSync(process.env.RULES_BASELINE, 'utf8')));
+            const response = await client.request({
+              url: 'https://firebaserules.googleapis.com/v1/projects/auren-staging/rulesets?pageSize=100',
+              method: 'GET'
+            });
+            const created = (response.data.rulesets || []).filter((item) => !before.has(item.name));
+            if (created.length !== 1) {
+              throw new Error(`Expected exactly one new ruleset from this failed deployment; found ${created.length}. Refusing to change the active release.`);
+            }
+            const rulesetName = created[0].name;
+            if (!rulesetName || !rulesetName.startsWith('projects/auren-staging/rulesets/')) {
+              throw new Error('New ruleset did not belong to auren-staging; refusing to change the active release.');
+            }
+            await client.request({
+              url: 'https://firebaserules.googleapis.com/v1/projects/auren-staging/releases/cloud.firestore?updateMask=rulesetName',
+              method: 'PATCH',
+              data: {
+                name: 'projects/auren-staging/releases/cloud.firestore',
+                rulesetName
+              }
+            });
+            console.log('Recovered the existing staging Firestore release by updating it to the ruleset created in this deployment.');
+          })().catch((error) => {
+            console.error('Automatic recovery was not applied; active Firestore release was not intentionally changed by this recovery step:', error.message);
+            process.exit(1);
+          });
+          NODE
 
       - name: Remove temporary credentials
         if: always()
