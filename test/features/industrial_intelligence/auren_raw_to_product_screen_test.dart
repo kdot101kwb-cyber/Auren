@@ -11,7 +11,7 @@ Widget _app({Locale locale = const Locale('en')}) => MaterialApp(
 Finder _formScrollable() => find.descendant(
       of: find.byType(ListView).first,
       matching: find.byType(Scrollable),
-    );
+    ).first;
 
 Future<void> _enterField(
   WidgetTester tester, {
