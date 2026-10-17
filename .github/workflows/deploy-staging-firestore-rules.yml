@@ -109,7 +109,12 @@ jobs:
               process.exit(1);
             }
           }
-          key = key.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+          // Normalize common secret-editor copy formats before validating the PEM.
+          key = key.replace(/\\\\r\\\\n/g, '\n').replace(/\\\\n/g, '\n').replace(/\\n/g, '\n').replace(/\\r\\n/g, '\n').replace(/\\r/g, '\n').trim();
+          // If the user pasted the private_key field with JSON quotes/commas,
+          // retain only the PEM block; never log the credential itself.
+          const pemMatch = key.match(/-----BEGIN PRIVATE KEY-----[\\s\\S]*?-----END PRIVATE KEY-----/);
+          if (pemMatch) key = pemMatch[0].trim();
           try {
             key = crypto.createPrivateKey(key).export({ type: 'pkcs8', format: 'pem' }).toString();
           } catch (_) {
