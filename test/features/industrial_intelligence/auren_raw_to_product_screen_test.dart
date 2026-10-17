@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auren/features/industrial_intelligence/presentation/auren_raw_to_product_screen.dart';
 
 Widget _app({Locale locale = const Locale('en')}) => MaterialApp(
       locale: locale,
       supportedLocales: const [Locale('en'), Locale('ar')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: const AurenRawToProductScreen(),
     );
 
-Finder _formScrollable() => find.descendant(
-      of: find.byType(ListView).first,
-      matching: find.byType(Scrollable),
-    ).first;
+Finder _formScrollable() => find.byType(Scrollable).first;
 
 Future<void> _enterField(
   WidgetTester tester, {
@@ -117,7 +120,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Estimated result'),
         250,
-        scrollable: find.byType(ListView).first,
+        scrollable: _formScrollable(),
       );
       expect(find.text('Estimated result'), findsOneWidget);
       expect(find.text('0.00'), findsWidgets);
@@ -161,7 +164,7 @@ void main() {
         value: '١٠٠٫٠١',
       );
       final calculate = find.text('احسب خطة التصنيع');
-      final scrollable = find.byType(ListView).first;
+      final scrollable = _formScrollable();
       for (var attempt = 0; attempt < 24 && calculate.evaluate().isEmpty; attempt++) {
         await tester.drag(scrollable, const Offset(0, -350));
         await tester.pumpAndSettle();
