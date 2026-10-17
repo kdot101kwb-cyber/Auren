@@ -7,6 +7,8 @@ on:
       - "firebase.json"
       - "firestore.indexes.json"
       - "functions/*rules*"
+      - "functions/profile_privacy.integration.test.js"
+      - "functions/migrate_public_profile_modes.js"
       - ".github/workflows/firestore-rules-validation.yml"
   workflow_dispatch:
 
@@ -34,7 +36,9 @@ jobs:
       - name: Install rules test dependencies
         working-directory: functions
         run: npm install --no-audit --no-fund
+      - name: Validate profile backfill script and safety tests
+        run: node --check functions/migrate_public_profile_modes.js && node --test functions/migrate_public_profile_modes.test.js
       - name: Compile rules and run authorization integration tests in isolated emulator
         run: >-
           firebase emulators:exec --only firestore --project demo-auren-rules
-          "node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/education_rules.integration.test.js"
+          "node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/education_rules.integration.test.js functions/profile_privacy.integration.test.js"

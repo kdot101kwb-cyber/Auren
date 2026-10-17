@@ -109,6 +109,22 @@ class AurenProfileModeData {
     );
   }
 
+  AurenProfileModeData copyWithDiscoverable(bool value) => AurenProfileModeData(
+        mode: mode,
+        headline: headline,
+        bio: bio,
+        skills: skills,
+        interests: interests,
+        links: links,
+        goals: goals,
+        languages: languages,
+        services: services,
+        achievements: achievements,
+        discoverable: value,
+        showContact: showContact,
+        updatedAt: updatedAt,
+      );
+
   Map<String, dynamic> toMap() => {
         'mode': mode.id,
         'headline': headline,
@@ -155,18 +171,43 @@ class AurenProfileModeService {
     return AurenProfileModeX.fromId(doc.data()?['activeMode'] as String?);
   }
 
-  Future<void> setActiveMode(String uid, AurenProfileMode mode) {
-    _uid(uid);
-    return _settings(uid).set({
-        'activeMode': mode.id,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+  Future<void> setActiveMode(String uid, AurenProfileMode mode) async {
+    final userId = _uid(uid);
+    final modeDoc = await _modes(userId).doc(mode.id).get();
+    final discoverable = modeDoc.exists && modeDoc.data()?['discoverable'] == true;
+    final batch = _db.batch();
+    batch.set(_settings(userId), {
+      'activeMode': mode.id,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    batch.set(_db.collection('users').doc(userId)
+        .collection('public_profile_settings').doc('current'), {
+      'activeMode': mode.id,
+      'discoverable': discoverable,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
   }
 
   Stream<AurenProfileModeData> watch(String uid, AurenProfileMode mode) =>
       _modes(uid).doc(mode.id).snapshots().map((doc) => doc.exists
           ? AurenProfileModeData.fromDoc(doc)
           : AurenProfileModeData.empty(mode));
+
+  /// Read the sanitized profile projection that is safe to expose to other users.
+  Stream<AurenProfileModeData> watchPublic(String uid, AurenProfileMode mode) =>
+      _db.collection('users').doc(_uid(uid))
+          .collection('public_profile_modes').doc(mode.id).snapshots().map(
+            (doc) => doc.exists
+                ? AurenProfileModeData.fromDoc(doc)
+                : AurenProfileModeData.empty(mode).copyWithDiscoverable(false),
+          );
+
+  Stream<AurenProfileMode> watchPublicActiveMode(String uid) =>
+      _db.collection('users').doc(_uid(uid))
+          .collection('public_profile_settings').doc('current').snapshots().map(
+            (doc) => AurenProfileModeX.fromId(doc.data()?['activeMode'] as String?),
+          );
 
   Future<AurenProfileModeData> get(
     String uid,
@@ -193,7 +234,7 @@ class AurenProfileModeService {
     required bool discoverable,
     required bool showContact,
   }) async {
-    _uid(uid);
+    final userId = _uid(uid);
 
     String clean(String value, int max) {
       final trimmed = value.trim();
@@ -231,7 +272,13 @@ class AurenProfileModeService {
       throw ArgumentError('أضف معلومة واحدة على الأقل للملف.');
     }
 
-    await _modes(uid).doc(mode.id).set({
+    final privateRef = _modes(userId).doc(mode.id);
+    final publicRef = _db.collection('users').doc(userId)
+        .collection('public_profile_modes').doc(mode.id);
+    final activeSettings = await _settings(userId).get();
+    final isActiveMode = activeSettings.data()?['activeMode'] == mode.id;
+    final batch = _db.batch();
+    batch.set(privateRef, {
       'mode': mode.id,
       'headline': h,
       'bio': b,
@@ -246,5 +293,32 @@ class AurenProfileModeService {
       'showContact': showContact,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    if (discoverable) {
+      batch.set(publicRef, {
+        'mode': mode.id,
+        'headline': h,
+        'bio': b,
+        'skills': cleanedSkills,
+        'interests': cleanedInterests,
+        'goals': cleanedGoals,
+        'languages': cleanedLanguages,
+        'services': cleanedServices,
+        'achievements': cleanedAchievements,
+        'discoverable': true,
+        'showContact': showContact,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      batch.delete(publicRef);
+    }
+    if (isActiveMode) {
+      batch.set(_db.collection('users').doc(userId)
+          .collection('public_profile_settings').doc('current'), {
+        'activeMode': mode.id,
+        'discoverable': discoverable,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
   }
 }

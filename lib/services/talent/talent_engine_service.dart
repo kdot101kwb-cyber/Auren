@@ -22,7 +22,7 @@ class AurenTalentEngineService {
     const profilePageSize=500;
     DocumentSnapshot<Map<String,dynamic>>? lastProfileDoc;
     do {
-      Query<Map<String,dynamic>> profileQuery=_db.collectionGroup('profile_modes')
+      Query<Map<String,dynamic>> profileQuery=_db.collectionGroup('public_profile_modes')
           .where('discoverable',isEqualTo:true)
           .limit(profilePageSize);
       if(lastProfileDoc!=null) profileQuery=profileQuery.startAfterDocument(lastProfileDoc!);
@@ -98,7 +98,7 @@ class AurenTalentEngineService {
     DocumentSnapshot<Map<String, dynamic>>? lastProfileDoc;
     do {
       Query<Map<String, dynamic>> profileQuery = _db
-          .collectionGroup('profile_modes')
+          .collectionGroup('public_profile_modes')
           .where('discoverable', isEqualTo: true)
           .limit(profilePageSize);
       if (lastProfileDoc != null) {
