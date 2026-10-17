@@ -41,13 +41,23 @@ class AurenContentPlatformService {
     return r.id;
   }
 
+  bool _isHttpUrl(String value) {
+    final uri = Uri.tryParse(value.trim());
+    return uri != null &&
+        uri.hasAuthority &&
+        uri.host.isNotEmpty &&
+        (uri.scheme == 'https' || uri.scheme == 'http');
+  }
+
   Future<String> publishVideo({required String uid,required String channelId,required String title,required String description,required String mediaUrl,String imageUrl='',String type='Video'}) async {
-    final cleanTitle=title.trim(), cleanDescription=description.trim(), cleanUrl=mediaUrl.trim();
-    if(uid.isEmpty||channelId.isEmpty||cleanTitle.isEmpty||cleanTitle.length>160||cleanDescription.length>3000||cleanUrl.isEmpty||cleanUrl.length>2000) throw ArgumentError('بيانات الفيديو غير صالحة.');
+    final cleanTitle=title.trim(), cleanDescription=description.trim(), cleanUrl=mediaUrl.trim(), cleanImage=imageUrl.trim(), cleanType=type.trim().isEmpty?'Video':type.trim();
+    if(uid.trim().isEmpty||channelId.trim().isEmpty||cleanTitle.isEmpty||cleanTitle.length>160||cleanDescription.length>3000||cleanUrl.length>2000||!_isHttpUrl(cleanUrl)||cleanImage.length>2000||(cleanImage.isNotEmpty&&!_isHttpUrl(cleanImage))||!['Video','Short'].contains(cleanType)) {
+      throw ArgumentError('أدخل عنواناً صالحاً ورابط فيديو HTTP/HTTPS ونوع محتوى صحيحاً.');
+    }
     final channel=await _db.collection('content_channels').doc(channelId).get();
     if(!channel.exists || channel.data()?['ownerId']!=uid) throw StateError('القناة لا تخص هذا الحساب.');
     final ref=_db.collection('entertainment_items').doc();
-    await ref.set({'title':cleanTitle,'description':cleanDescription,'mediaUrl':cleanUrl,'mediaKind':'video','imageUrl':imageUrl.trim(),'type':type.trim().isEmpty?'Video':type.trim(),'creatorId':uid,'channelId':channelId,'visibility':'public','createdAt':FieldValue.serverTimestamp()});
+    await ref.set({'title':cleanTitle,'description':cleanDescription,'mediaUrl':cleanUrl,'mediaKind':'video','imageUrl':cleanImage,'type':cleanType,'creatorId':uid,'channelId':channelId,'visibility':'public','createdAt':FieldValue.serverTimestamp()});
     return ref.id;
   }
 
