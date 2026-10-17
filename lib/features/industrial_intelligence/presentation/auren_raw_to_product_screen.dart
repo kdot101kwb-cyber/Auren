@@ -142,11 +142,13 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
+        child: SingleChildScrollView(
           key: const ValueKey<String>('raw-to-product-form-list'),
           controller: _formScrollController,
           padding: const EdgeInsets.all(16),
-          children: [
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -358,7 +360,8 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
