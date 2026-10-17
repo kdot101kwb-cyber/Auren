@@ -14,9 +14,6 @@ Widget _app({Locale locale = const Locale('en')}) => MaterialApp(
       home: const AurenRawToProductScreen(),
     );
 
-// The form's ListView creates the first Scrollable in this screen.
-Finder _formScrollable() => find.byType(Scrollable).first;
-
 Future<void> _enterField(
   WidgetTester tester, {
   required String label,
@@ -35,10 +32,23 @@ Future<void> _scrollToBuilt(
   Finder target, {
   bool towardTop = false,
 }) async {
-  final listView = find.byType(ListView).first;
-  final delta = towardTop ? const Offset(0, 350) : const Offset(0, -350);
-  for (var attempt = 0; attempt < 24 && target.evaluate().isEmpty; attempt++) {
-    await tester.drag(listView, delta);
+  final listFinder = find.byKey(
+    const ValueKey<String>('raw-to-product-form-list'),
+  );
+  final list = tester.widget<ListView>(listFinder);
+  final controller = list.controller;
+  expect(controller, isNotNull, reason: 'The form must expose its scroll controller');
+  await tester.pumpAndSettle();
+
+  for (var attempt = 0; attempt < 30 && target.evaluate().isEmpty; attempt++) {
+    final position = controller!.position;
+    final current = position.pixels;
+    final step = (position.viewportDimension * 0.7).clamp(200.0, 500.0);
+    final next = towardTop
+        ? (current - step).clamp(0.0, position.maxScrollExtent)
+        : (current + step).clamp(0.0, position.maxScrollExtent);
+    if (next == current) break;
+    controller.jumpTo(next);
     await tester.pumpAndSettle();
   }
 }
@@ -131,11 +141,7 @@ void main() {
       final selector = find.byKey(
         const ValueKey<String>('manufacturing-route-selector'),
       );
-      final scrollable = _formScrollable();
-      for (var attempt = 0; attempt < 24 && selector.evaluate().isEmpty; attempt++) {
-        await tester.drag(scrollable, const Offset(0, -350));
-        await tester.pumpAndSettle();
-      }
+      await _scrollToBuilt(tester, selector);
       expect(selector, findsOneWidget);
       await tester.ensureVisible(selector);
       await tester.tap(selector);
