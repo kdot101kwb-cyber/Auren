@@ -333,7 +333,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                 _isHttpVideoUrl(item.mediaUrlLow) &&
                 choice.$2 != item.mediaUrlLow.trim()) return;
             Navigator.pop(sheetContext);
-            if ((_qualityUrls[item.id] ?? item.mediaUrl).trim() == choice.$2) return;
+            if (_effectiveVideoUrl(item) == choice.$2) return;
             _qualityUrls[item.id] = choice.$2;
             _playbackGeneration[item.id] = (_playbackGeneration[item.id] ?? 0) + 1;
             final old = controllers.remove(item.id);
