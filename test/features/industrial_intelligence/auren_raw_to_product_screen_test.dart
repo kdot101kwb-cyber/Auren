@@ -14,7 +14,10 @@ Widget _app({Locale locale = const Locale('en')}) => MaterialApp(
       home: const AurenRawToProductScreen(),
     );
 
-Finder _formScrollable() => find.byType(Scrollable).first;
+Finder _formScrollable() => find.ancestor(
+      of: find.byType(ListView).first,
+      matching: find.byType(Scrollable),
+    ).first;
 
 Future<void> _enterField(
   WidgetTester tester, {
@@ -173,7 +176,7 @@ void main() {
       await tester.tap(calculate);
       await tester.pumpAndSettle();
 
-      expect(find.text('القيمة يجب ألا تزيد عن 100'), findsOneWidget);
+      expect(find.text('القيمة يجب ألا تزيد عن 100.0'), findsOneWidget);
       expect(find.text('النتيجة التقديرية'), findsNothing);
     });
 
@@ -182,7 +185,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Estimated result'),
         250,
-        scrollable: find.byType(ListView).first,
+        scrollable: _formScrollable(),
       );
       expect(find.text('Estimated result'), findsOneWidget);
       expect(find.text('Enter a valid number'), findsNothing);
