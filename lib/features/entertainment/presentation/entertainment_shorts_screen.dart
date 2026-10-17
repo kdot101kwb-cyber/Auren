@@ -37,6 +37,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   String shortCategory = 'الكل';
   bool pureEntertainment = true;
   bool _dataSaverMode = false;
+  bool _muted = false;
   final Map<String, String> _qualityUrls = {};
   final Map<String, int> _playbackGeneration = {};
   final Map<String, AurenEntertainmentItem> _itemsById = {};
@@ -119,6 +120,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           existingController.value.isInitialized &&
           !existingController.value.isPlaying) {
         try {
+          await existingController.setVolume(_muted ? 0.0 : 1.0);
           await existingController.play();
           // A swipe can happen while the native play call is awaiting. Do not
           // let a late completion keep audio running behind the visible Short.
@@ -171,6 +173,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         return;
       }
       await c.setLooping(true);
+      await c.setVolume(_muted ? 0.0 : 1.0);
       // Re-check after every awaited native-player operation. The feed,
       // category, selected quality, or retained window may have changed while
       // setLooping was pending.
@@ -218,6 +221,25 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
               selectedUrl != _effectiveVideoUrl(latestItem))) {
         _prepare(latestItem);
       }
+    }
+  }
+
+  Future<void> _toggleMute(
+    AurenEntertainmentItem item,
+    VideoPlayerController? controller,
+  ) async {
+    final nextMuted = !_muted;
+    setState(() => _muted = nextMuted);
+    if (controller == null || !controller.value.isInitialized) return;
+    try {
+      await controller.setVolume(nextMuted ? 0.0 : 1.0);
+    } catch (_) {
+      // Mute is a preference for subsequent players too; don't break playback
+      // if a native player is already shutting down during a swipe.
+      if (!mounted || !identical(controllers[item.id], controller)) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذّر تغيير صوت الفيديو حالياً.')),
+      );
     }
   }
 
@@ -1221,6 +1243,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                             tooltip: 'AUREN',
                             onPressed: () => _showAurenActions(item),
                           ),
+                        IconButton(
+                          tooltip: _muted ? 'تشغيل الصوت' : 'كتم الصوت',
+                          icon: Icon(
+                            _muted ? Icons.volume_off : Icons.volume_up,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                          onPressed: () => _toggleMute(item, c),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.share, color: Colors.white, size: 30),
                           onPressed: () => _shareItem(item),
