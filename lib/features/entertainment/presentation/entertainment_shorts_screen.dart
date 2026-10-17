@@ -656,7 +656,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       final activeController =
           _activeItemId == null ? null : controllers[_activeItemId];
       _appIsForeground = false;
-      _resumeAfterLifecycle =
+      // Flutter may emit inactive/hidden/paused in sequence. Preserve the
+      // original resume intent across those intermediate notifications.
+      _resumeAfterLifecycle = _resumeAfterLifecycle ||
           (activeController != null &&
               activeController.value.isInitialized &&
               activeController.value.isPlaying) ||
