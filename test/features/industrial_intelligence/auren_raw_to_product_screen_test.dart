@@ -14,7 +14,7 @@ Widget _app({Locale locale = const Locale('en')}) => MaterialApp(
       home: const AurenRawToProductScreen(),
     );
 
-Finder _formScrollable() => find.ancestor(
+Finder _formScrollable() => find.descendant(
       of: find.byType(ListView).first,
       matching: find.byType(Scrollable),
     ).first;
