@@ -35,22 +35,24 @@ Future<void> _scrollToBuilt(
   final listFinder = find.byKey(
     const ValueKey<String>('raw-to-product-form-list'),
   );
-  final list = tester.widget<ListView>(listFinder);
-  final controller = list.controller;
+  final scrollView = tester.widget<SingleChildScrollView>(listFinder);
+  final controller = scrollView.controller;
   expect(controller, isNotNull, reason: 'The form must expose its scroll controller');
   await tester.pumpAndSettle();
 
-  for (var attempt = 0; attempt < 30 && target.evaluate().isEmpty; attempt++) {
-    final position = controller!.position;
-    final current = position.pixels;
-    final step = (position.viewportDimension * 0.7).clamp(200.0, 500.0);
-    final next = towardTop
-        ? (current - step).clamp(0.0, position.maxScrollExtent)
-        : (current + step).clamp(0.0, position.maxScrollExtent);
-    if (next == current) break;
-    controller.jumpTo(next);
+  if (target.evaluate().isNotEmpty) {
+    await tester.ensureVisible(target);
     await tester.pumpAndSettle();
+    return;
   }
+  final position = controller!.position;
+  final destination = towardTop ? 0.0 : position.maxScrollExtent;
+  await controller.animateTo(
+    destination,
+    duration: const Duration(milliseconds: 250),
+    curve: Curves.easeInOut,
+  );
+  await tester.pumpAndSettle();
 }
 
 Future<void> _expectInvalid(WidgetTester tester) async {
