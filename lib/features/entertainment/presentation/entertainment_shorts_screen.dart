@@ -118,6 +118,14 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           !existingController.value.isPlaying) {
         try {
           await existingController.play();
+          // A swipe can happen while the native play call is awaiting. Do not
+          // let a late completion keep audio running behind the visible Short.
+          if (!mounted ||
+              _activeItemId != item.id ||
+              !identical(controllers[item.id], existingController)) {
+            await _pauseControllerSafely(existingController);
+            return;
+          }
           _failedControllerIds.remove(item.id);
         } catch (_) {
           final isCurrentController =
@@ -161,6 +169,16 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         return;
       }
       await c.setLooping(true);
+      // Re-check after every awaited native-player operation. The feed,
+      // category, selected quality, or retained window may have changed while
+      // setLooping was pending.
+      if (!mounted ||
+          !_retainedControllerIds.contains(item.id) ||
+          generation != (_playbackGeneration[item.id] ?? 0) ||
+          selectedUrl != _effectiveVideoUrl(item)) {
+        await _disposeControllerSafely(c);
+        return;
+      }
       controllers[item.id] = c;
       _failedControllerIds.remove(item.id);
       setState(() {});
