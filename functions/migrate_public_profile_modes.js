@@ -25,6 +25,15 @@ function boundedList(value, maxItems, maxLength) {
     .slice(0, maxItems);
 }
 
+function validateProjectId(projectId) {
+  if (!projectId || projectId.startsWith('--')) {
+    throw new Error('Pass an explicit Firebase project with --project <project-id>; no project will be inferred.');
+  }
+  if (!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(projectId)) {
+    throw new Error('Invalid Firebase project ID format.');
+  }
+}
+
 function publicProjection(data, modeId) {
   return {
     mode: modeId,
@@ -43,12 +52,7 @@ function publicProjection(data, modeId) {
 }
 
 async function main() {
-  if (!PROJECT_ID || PROJECT_ID.startsWith('--')) {
-    throw new Error('Pass an explicit Firebase project with --project <project-id>; no project will be inferred.');
-  }
-  if (!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(PROJECT_ID)) {
-    throw new Error('Invalid Firebase project ID format.');
-  }
+  validateProjectId(PROJECT_ID);
   const hasDefaultApp = getApps().some((app) => app.name === '[DEFAULT]');
   if (!hasDefaultApp) {
     initializeApp({ credential: applicationDefault(), projectId: PROJECT_ID });
@@ -146,7 +150,11 @@ async function main() {
   }, null, 2) + '\n');
 }
 
-main().catch((error) => {
-  process.stderr.write('Profile projection backfill failed: ' + error.message + '\n');
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    process.stderr.write('Profile projection backfill failed: ' + error.message + '\n');
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { boundedText, boundedList, publicProjection, validateProjectId };
