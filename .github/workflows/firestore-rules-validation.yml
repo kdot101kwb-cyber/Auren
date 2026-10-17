@@ -36,6 +36,8 @@ jobs:
       - name: Install rules test dependencies
         working-directory: functions
         run: npm install --no-audit --no-fund
+      - name: Validate profile backfill script and safety tests
+        run: node --check functions/migrate_public_profile_modes.js && node --test functions/migrate_public_profile_modes.test.js
       - name: Compile rules and run authorization integration tests in isolated emulator
         run: >-
           firebase emulators:exec --only firestore --project demo-auren-rules
