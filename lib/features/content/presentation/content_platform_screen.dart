@@ -145,15 +145,20 @@ class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>
     final title=TextEditingController(),description=TextEditingController(),media=TextEditingController(),image=TextEditingController();
     String channelId=mine.first.id;
     String contentType='Short';
+    String contentCategory='كوميديا';
+    final selectedMoods=<String>{'تسلية'};
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(title:const Text('نشر محتوى'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
       DropdownButtonFormField<String>(initialValue:channelId,items:mine.map((c)=>DropdownMenuItem(value:c.id,child:Text(c.name))).toList(),onChanged:(v){if(v!=null)setDialog(()=>channelId=v);},decoration:const InputDecoration(labelText:'القناة')),
       DropdownButtonFormField<String>(initialValue:contentType,items:const [DropdownMenuItem(value:'Short',child:Text('Short عمودي')),DropdownMenuItem(value:'Video',child:Text('فيديو عادي'))],onChanged:(v){if(v!=null)setDialog(()=>contentType=v);},decoration:const InputDecoration(labelText:'نوع المحتوى')),
+      DropdownButtonFormField<String>(initialValue:contentCategory,items:const [DropdownMenuItem(value:'عام',child:Text('عام')),DropdownMenuItem(value:'كرتون',child:Text('كرتون')),DropdownMenuItem(value:'كوميديا',child:Text('كوميديا')),DropdownMenuItem(value:'فلوقات',child:Text('فلوقات')),DropdownMenuItem(value:'موسيقى',child:Text('موسيقى')),DropdownMenuItem(value:'ألعاب',child:Text('ألعاب'))],onChanged:(v){if(v!=null)setDialog(()=>contentCategory=v);},decoration:const InputDecoration(labelText:'التصنيف')),
+      const Align(alignment:Alignment.centerRight,child:Padding(padding:EdgeInsets.only(top:12,bottom:4),child:Text('مزاج الشورت'))),
+      StatefulBuilder(builder:(context,setMoodState)=>Wrap(spacing:6,runSpacing:4,children:['تسلية','ضحك','موسيقى','أفلام','Gaming','اكتشاف'].map((value)=>ChoiceChip(label:Text(value),selected:selectedMoods.contains(value),onSelected:(selected){setDialog(()=>setMoodState((){if(selected){selectedMoods.add(value);}else if(selectedMoods.length>1){selectedMoods.remove(value);}}));})).toList())),
       TextField(controller:title,maxLength:160,decoration:const InputDecoration(labelText:'العنوان')),
       TextField(controller:description,maxLength:3000,maxLines:3,decoration:const InputDecoration(labelText:'الوصف')),
       TextField(controller:media,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'رابط الفيديو HTTPS/HTTP (MP4 أو M3U8)')),
       TextField(controller:image,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'رابط الصورة المصغرة (اختياري)'))
     ])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),ElevatedButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('نشر'))])));
     if(ok!=true)return;
-    try{await AurenContentPlatformService.instance.publishVideo(uid:uid,channelId:channelId,title:title.text,description:description.text,mediaUrl:media.text,imageUrl:image.text,type:contentType);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(contentType=='Short'?'تم نشر الـShort 🔥':'تم نشر الفيديو 🔥')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}
+    try{await AurenContentPlatformService.instance.publishVideo(uid:uid,channelId:channelId,title:title.text,description:description.text,mediaUrl:media.text,imageUrl:image.text,type:contentType,category:contentCategory,moods:selectedMoods.toList());if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(contentType=='Short'?'تم نشر الـShort 🔥':'تم نشر الفيديو 🔥')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}
   }
 }
