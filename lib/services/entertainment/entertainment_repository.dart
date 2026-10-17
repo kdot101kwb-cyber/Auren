@@ -269,14 +269,95 @@ class EntertainmentRepository {
   Future<void> toggleLike(String uid, String itemId, bool liked) =>
       toggleShortLike(uid, itemId, liked);
 
-  Future<void> toggleShortLike(String uid, String itemId, bool liked) async {
+  Future<void> toggleShortLike(String uid, String itemId, bool liked) =>
+      toggleShortLikeWithMood(uid, itemId, liked, mood: 'تسلية');
+
+  /// Saves or unsaves a Short and updates its private recommendation signal
+  /// atomically, preventing duplicate taps from inflating save counts.
+  Future<void> setShortSaved(
+    String uid,
+    String itemId, {
+    required bool saved,
+    required String mood,
+  }) async {
     if (uid.trim().isEmpty || itemId.trim().isEmpty) return;
-    final ref = db.collection('entertainment_items').doc(itemId).collection('likes').doc(uid);
-    if (liked) {
-      await ref.set({'uid': uid, 'createdAt': FieldValue.serverTimestamp()});
-    } else {
-      await ref.delete();
-    }
+    final savedRef = db.collection('users').doc(uid)
+        .collection('savedEntertainment').doc(itemId);
+    final signalRef = db.collection('users').doc(uid)
+        .collection('entertainmentSignals').doc(itemId);
+    final actionRef = signalRef.collection('actions').doc();
+
+    await db.runTransaction((transaction) async {
+      final savedSnapshot = await transaction.get(savedRef);
+      final signalSnapshot = await transaction.get(signalRef);
+      if (savedSnapshot.exists == saved) return;
+
+      if (saved) {
+        transaction.set(savedRef, {
+          'itemId': itemId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        transaction.delete(savedRef);
+      }
+
+      final signal = signalSnapshot.data() ?? <String, dynamic>{};
+      final previousSaves = (signal['saves'] as num?)?.toInt() ?? 0;
+      transaction.set(signalRef, {
+        'itemId': itemId,
+        'lastActionAt': FieldValue.serverTimestamp(),
+        'mood': mood,
+        'saves': (previousSaves + (saved ? 1 : -1)).clamp(0, 1 << 31),
+      }, SetOptions(merge: true));
+      transaction.set(actionRef, {
+        'action': saved ? 'save' : 'unsave',
+        'mood': mood,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  Future<void> toggleShortLikeWithMood(
+    String uid,
+    String itemId,
+    bool liked, {
+    required String mood,
+  }) async {
+    if (uid.trim().isEmpty || itemId.trim().isEmpty) return;
+    final likeRef = db.collection('entertainment_items').doc(itemId)
+        .collection('likes').doc(uid);
+    final signalRef = db.collection('users').doc(uid)
+        .collection('entertainmentSignals').doc(itemId);
+    final actionRef = signalRef.collection('actions').doc();
+
+    await db.runTransaction((transaction) async {
+      final likeSnapshot = await transaction.get(likeRef);
+      final signalSnapshot = await transaction.get(signalRef);
+      if (likeSnapshot.exists == liked) return;
+
+      if (liked) {
+        transaction.set(likeRef, {
+          'uid': uid,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        transaction.delete(likeRef);
+      }
+
+      final signal = signalSnapshot.data() ?? <String, dynamic>{};
+      final previousLikes = (signal['likes'] as num?)?.toInt() ?? 0;
+      transaction.set(signalRef, {
+        'itemId': itemId,
+        'lastActionAt': FieldValue.serverTimestamp(),
+        'mood': mood,
+        'likes': (previousLikes + (liked ? 1 : -1)).clamp(0, 1 << 31),
+      }, SetOptions(merge: true));
+      transaction.set(actionRef, {
+        'action': liked ? 'like' : 'unlike',
+        'mood': mood,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    });
   }
 
   Future<void> trackShortView(
