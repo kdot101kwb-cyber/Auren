@@ -164,14 +164,20 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         await c.play();
       }
     } catch (_) {
-      // Initialization or playback can fail after the controller was inserted
-      // into the map. Remove only this controller so the UI cannot reuse a
-      // disposed instance; a later page visit can prepare a fresh one.
-      if (identical(controllers[item.id], c)) {
+      // Only surface a failure if this request still belongs to the current
+      // item generation. A stale initialization must not poison a replacement.
+      final isCurrentGeneration =
+          generation == (_playbackGeneration[item.id] ?? 0) &&
+          selectedUrl == _effectiveVideoUrl(item);
+      final isCurrentController = identical(controllers[item.id], c);
+      if (isCurrentController) {
         controllers.remove(item.id);
       }
-      _failedControllerIds.add(item.id);
-      if (mounted) setState(() {});
+      final shouldShowFailure = isCurrentGeneration &&
+          _retainedControllerIds.contains(item.id) &&
+          (isCurrentController || controllers[item.id] == null);
+      if (shouldShowFailure) _failedControllerIds.add(item.id);
+      if (mounted && shouldShowFailure) setState(() {});
       await _disposeControllerSafely(c);
     } finally {
       _preparing.remove(item.id);
