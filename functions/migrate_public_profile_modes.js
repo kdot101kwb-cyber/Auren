@@ -53,7 +53,7 @@ async function main() {
     initializeApp({ credential: applicationDefault(), projectId: PROJECT_ID });
   }
   const db = getFirestore();
-  const actualProjectId = db.app.options.projectId;
+  const actualProjectId = getApps()[0]?.options?.projectId;
   if (actualProjectId !== PROJECT_ID) {
     throw new Error(`Firebase project mismatch: requested ${PROJECT_ID}, initialized ${actualProjectId || 'unknown'}.`);
   }
