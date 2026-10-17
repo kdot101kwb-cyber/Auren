@@ -191,6 +191,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       // item must never start audio/video behind the active page.
       if (_appIsForeground && _activeItemId == item.id) {
         await c.play();
+        // A swipe/background transition may happen while native play is
+        // pending. Re-check after the await so a stale controller cannot
+        // continue playing behind the newly active Short.
+        if (!mounted ||
+            !_appIsForeground ||
+            _activeItemId != item.id ||
+            !identical(controllers[item.id], c)) {
+          await _pauseControllerSafely(c);
+        }
       }
     } catch (_) {
       // Only surface a failure if this request still belongs to the current
@@ -718,25 +727,32 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       if (activeController != null &&
           activeController.value.isInitialized &&
           mounted) {
-        activeController.play().catchError((Object _) async {
-          // A failed resume must not leave a broken controller available for
-          // the next page build or a later lifecycle transition.
-          final isCurrentController = activeId != null &&
-              identical(controllers[activeId], activeController);
-          if (isCurrentController) {
-            controllers.remove(activeId);
-            _failedControllerIds.add(activeId);
-          }
-          try {
-            await activeController.dispose();
-          } catch (_) {
-            // The native player may already have released its resources.
-          }
-          // A late failure from an old controller must not refresh or mark the
-          // replacement controller as failed.
-          if (mounted && isCurrentController) setState(() {});
-        });
+        unawaited(_resumeControllerSafely(activeId, activeController));
       }
+    }
+  }
+
+  Future<void> _resumeControllerSafely(
+    String activeId,
+    VideoPlayerController controller,
+  ) async {
+    try {
+      await controller.setVolume(_muted ? 0.0 : 1.0);
+      await controller.play();
+      if (!mounted ||
+          !_appIsForeground ||
+          _activeItemId != activeId ||
+          !identical(controllers[activeId], controller)) {
+        await _pauseControllerSafely(controller);
+      }
+    } catch (_) {
+      final isCurrentController = identical(controllers[activeId], controller);
+      if (isCurrentController) {
+        controllers.remove(activeId);
+        _failedControllerIds.add(activeId);
+      }
+      await _disposeControllerSafely(controller);
+      if (mounted && isCurrentController) setState(() {});
     }
   }
 
