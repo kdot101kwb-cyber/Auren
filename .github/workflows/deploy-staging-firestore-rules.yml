@@ -81,14 +81,22 @@ jobs:
           umask 077
           node <<'NODE'
           const fs = require('fs');
+          const crypto = require('crypto');
           const email = process.env.FIREBASE_STAGING_CLIENT_EMAIL;
-          const key = process.env.FIREBASE_STAGING_PRIVATE_KEY.replace(/\\n/g, '\n');
+          let key = process.env.FIREBASE_STAGING_PRIVATE_KEY.trim();
           if (email !== 'auren-staging-rules-deployer@auren-staging.iam.gserviceaccount.com') {
             console.error('Refusing deployment: service account email is not the approved staging deployer.');
             process.exit(1);
           }
-          if (!key.includes('-----BEGIN PRIVATE KEY-----') || !key.includes('-----END PRIVATE KEY-----')) {
-            console.error('Refusing deployment: private key format is invalid.');
+          // Accept PEM pasted with escaped newlines or wrapped in quotes, then canonicalize it.
+          if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+            key = key.slice(1, -1);
+          }
+          key = key.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+          try {
+            key = crypto.createPrivateKey(key).export({ type: 'pkcs8', format: 'pem' }).toString();
+          } catch (_) {
+            console.error('Refusing deployment: FIREBASE_STAGING_PRIVATE_KEY is not a valid PEM private key. Update that GitHub secret with the full private_key value from the staging service-account JSON; preserve the PEM header/footer and newlines (or use literal \\n separators). Do not paste the key into logs or chat.');
             process.exit(1);
           }
           fs.writeFileSync(process.env.RUNNER_TEMP + '/firebase-staging-service-account.json', JSON.stringify({
