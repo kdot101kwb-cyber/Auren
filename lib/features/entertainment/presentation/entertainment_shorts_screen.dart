@@ -466,7 +466,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                   label: Text(value),
                   selected: value == mood,
                   onSelected: (_) {
-                    setState(() => mood = value);
+                    _changeMood(value);
                     Navigator.pop(context);
                   },
                 )).toList(),
@@ -823,6 +823,36 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     _failedControllerIds.removeWhere((id) => !playbackIds.contains(id));
   }
 
+  void _changeMood(String value) {
+    if (value == mood) return;
+    final currentId = _activeItemId;
+    final currentItem = currentId == null ? null : _itemsById[currentId];
+    if (currentItem != null) unawaited(_trackView(currentItem));
+
+    // Mood changes replace the feed stream and may change its ranking. Tear
+    // down old playback before the new stream can reuse the same page index.
+    final invalidatedIds = <String>{
+      ...controllers.keys,
+      ..._preparing,
+      ..._retainedControllerIds,
+    };
+    for (final id in invalidatedIds) {
+      _playbackGeneration[id] = (_playbackGeneration[id] ?? 0) + 1;
+    }
+    final oldControllers = controllers.values.toList();
+    controllers.clear();
+    _retainedControllerIds.clear();
+    for (final controller in oldControllers) {
+      unawaited(_pauseAndDisposeControllerSafely(controller));
+    }
+    _resumeAfterLifecycle = false;
+    setState(() {
+      mood = value;
+      active = 0;
+      _activeItemId = null;
+    });
+  }
+
   void _changeShortCategory(String value) {
     if (value == shortCategory) return;
     // Changing the feed is still the end of the currently visible Short.
@@ -938,7 +968,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
               : PageView.builder(
                   // Recreate the pager when the category changes so its internal
                   // page position cannot point at an item from the previous feed.
-                  key: ValueKey<String>('shorts-$shortCategory'),
+                  key: ValueKey<String>('shorts-$shortCategory-$mood'),
                   scrollDirection: Axis.vertical,
                   itemCount: visibleItems.length,
                   onPageChanged: (i) => _onPage(i, visibleItems),
