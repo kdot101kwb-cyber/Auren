@@ -2,7 +2,7 @@
 
 // One-time backfill for legacy profile modes.
 // Dry-run by default. Pass --apply only after reviewing the reported counts.
-const { initializeApp, getApps, applicationDefault } = require('firebase-admin/app');
+const { initializeApp, getApp, getApps, applicationDefault } = require('firebase-admin/app');
 const { getFirestore, FieldPath, FieldValue } = require('firebase-admin/firestore');
 
 const APPLY = process.argv.includes('--apply');
@@ -49,14 +49,18 @@ async function main() {
   if (!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(PROJECT_ID)) {
     throw new Error('Invalid Firebase project ID format.');
   }
-  if (!getApps().length) {
+  const hasDefaultApp = getApps().some((app) => app.name === '[DEFAULT]');
+  if (!hasDefaultApp) {
     initializeApp({ credential: applicationDefault(), projectId: PROJECT_ID });
   }
-  const db = getFirestore();
-  const actualProjectId = getApps()[0]?.options?.projectId;
+  // Validate the exact default app used by getFirestore(), not an arbitrary
+  // named app that may have been initialized earlier in a shared process.
+  const app = getApp();
+  const actualProjectId = app.options.projectId;
   if (actualProjectId !== PROJECT_ID) {
     throw new Error(`Firebase project mismatch: requested ${PROJECT_ID}, initialized ${actualProjectId || 'unknown'}.`);
   }
+  const db = getFirestore(app);
   const counts = { scanned: 0, wouldPublish: 0, wouldRemove: 0, skippedInvalidPath: 0, changed: 0 };
   let cursor = null;
 
