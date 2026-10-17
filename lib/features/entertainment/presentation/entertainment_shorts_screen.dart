@@ -44,6 +44,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   final Set<String> _tracked = {};
   final Set<String> _tracking = {};
   Stream<Set<String>>? _savedStream;
+  int _feedRetryGeneration = 0;
 
   static const moods = <String>['تسلية', 'ضحك', 'موسيقى', 'أفلام', 'Gaming', 'اكتشاف'];
   static const shortCategories = <String>['حسب مزاجي', 'الكل', 'كرتون', 'كوميديا', 'فلوقات', 'موسيقى', 'ألعاب'];
@@ -659,6 +660,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     super.dispose();
   }
 
+  void _retryFeedLoad() {
+    if (!mounted) return;
+    setState(() => _feedRetryGeneration++);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -676,6 +682,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       ),
       body: uid == null
           ? StreamBuilder<List<AurenEntertainmentItem>>(
+              key: ValueKey('shorts-feed-$_feedRetryGeneration'),
               stream: repo.watchShorts(mood: mood),
               builder: (context, snapshot) => _buildShortsBody(
                 context,
@@ -685,10 +692,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
               ),
             )
           : StreamBuilder<Set<String>>(
+              key: ValueKey('shorts-blocked-$_feedRetryGeneration'),
               stream: AurenSafetyRepository().watchBlockedIds(uid!),
               builder: (context, blockedSnapshot) {
                 final blockedIds = blockedSnapshot.data ?? const <String>{};
                 return StreamBuilder<List<AurenEntertainmentItem>>(
+                  key: ValueKey('shorts-personalized-$_feedRetryGeneration'),
                   stream: repo.watchPersonalizedShorts(
                     uid!,
                     mood: mood,
@@ -785,6 +794,12 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
               const Icon(Icons.cloud_off_outlined, size: 40),
               const SizedBox(height: 12),
               const Text('تعذّر تحميل الشورتات حالياً. تحقق من الاتصال وحاول مرة أخرى.'),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: _retryFeedLoad,
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة'),
+              ),
             ],
           ),
         ),
