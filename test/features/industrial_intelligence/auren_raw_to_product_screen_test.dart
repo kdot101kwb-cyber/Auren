@@ -8,20 +8,25 @@ Widget _app({Locale locale = const Locale('en')}) => MaterialApp(
       home: const AurenRawToProductScreen(),
     );
 
+Finder _formScrollable() => find.descendant(
+      of: find.byType(ListView).first,
+      matching: find.byType(Scrollable),
+    );
+
 Future<void> _enterField(
   WidgetTester tester, {
   required String label,
   required String value,
 }) async {
   final field = find.byKey(ValueKey<String>(label));
-  final listView = find.byType(ListView).first;
+  final scrollable = _formScrollable();
 
   // Ask the test framework to advance the actual form list until the lazy
   // child is built; other scrollables may belong to dropdown overlays.
   await tester.scrollUntilVisible(
     field,
     250,
-    scrollable: listView,
+    scrollable: scrollable,
   );
   expect(field, findsOneWidget, reason: 'Field label: $label');
   await tester.ensureVisible(field);
@@ -33,7 +38,7 @@ Future<void> _expectInvalid(WidgetTester tester) async {
   await tester.scrollUntilVisible(
     find.text('Enter a valid number'),
     250,
-    scrollable: find.byType(ListView).first,
+    scrollable: _formScrollable(),
   );
   expect(find.text('Enter a valid number'), findsOneWidget);
   expect(find.text('Estimated result'), findsNothing);
@@ -125,7 +130,7 @@ void main() {
       final selector = find.byKey(
         const ValueKey<String>('manufacturing-route-selector'),
       );
-      final scrollable = find.byType(ListView).first;
+      final scrollable = _formScrollable();
       for (var attempt = 0; attempt < 24 && selector.evaluate().isEmpty; attempt++) {
         await tester.drag(scrollable, const Offset(0, -350));
         await tester.pumpAndSettle();
