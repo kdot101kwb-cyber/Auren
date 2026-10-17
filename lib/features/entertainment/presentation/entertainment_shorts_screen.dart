@@ -184,11 +184,16 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       await _disposeControllerSafely(c);
     } finally {
       _preparing.remove(item.id);
+      // A stale preparation can finish after a feed/category refresh. If this
+      // item is still retained, prepare the latest feed model for its ID rather
+      // than retrying with the old item's metadata.
+      final latestItem = _itemsById[item.id];
       if (mounted &&
+          latestItem != null &&
           _retainedControllerIds.contains(item.id) &&
           (generation != (_playbackGeneration[item.id] ?? 0) ||
-              selectedUrl != _effectiveVideoUrl(item))) {
-        _prepare(item);
+              selectedUrl != _effectiveVideoUrl(latestItem))) {
+        _prepare(latestItem);
       }
     }
   }
