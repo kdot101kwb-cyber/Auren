@@ -677,6 +677,22 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
 
   void _retryFeedLoad() {
     if (!mounted) return;
+    // Stop old playback before rebuilding the feed subscription; otherwise a
+    // controller from the failed feed could keep audio playing behind the
+    // loading/error screen.
+    final oldControllers = controllers.entries.toList();
+    for (final entry in oldControllers) {
+      _playbackGeneration[entry.key] =
+          (_playbackGeneration[entry.key] ?? 0) + 1;
+    }
+    controllers.clear();
+    _retainedControllerIds.clear();
+    _activeItemId = null;
+    _resumeAfterLifecycle = false;
+    active = 0;
+    for (final entry in oldControllers) {
+      unawaited(_pauseAndDisposeControllerSafely(entry.value));
+    }
     setState(() => _feedRetryGeneration++);
   }
 
