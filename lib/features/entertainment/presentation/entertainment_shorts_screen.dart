@@ -244,11 +244,27 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   Future<void> _togglePlayback(AurenEntertainmentItem item, VideoPlayerController controller) async {
+    // A delayed tap callback from a page that is no longer visible must not
+    // start audio behind the active Short.
+    if (!mounted ||
+        _activeItemId != item.id ||
+        !_appIsForeground ||
+        !identical(controllers[item.id], controller) ||
+        !controller.value.isInitialized) {
+      return;
+    }
     try {
       if (controller.value.isPlaying) {
         await controller.pause();
       } else {
         await controller.play();
+        // The user can swipe away while the platform play call is pending.
+        if (!mounted ||
+            _activeItemId != item.id ||
+            !_appIsForeground ||
+            !identical(controllers[item.id], controller)) {
+          await _pauseControllerSafely(controller);
+        }
       }
     } catch (_) {
       final isCurrentController =
