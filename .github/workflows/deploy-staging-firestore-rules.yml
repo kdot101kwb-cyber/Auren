@@ -1,18 +1,26 @@
 name: Deploy Firestore Rules (STAGING ONLY)
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/deploy-staging-firestore-rules.yml"
+      - "firestore.rules"
+      - "firebase.json"
+      - "functions/package.json"
+      - "functions/package-lock.json"
+      - "functions/*_rules.integration.test.js"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: firestore-rules-staging-deploy
+  group: firestore-rules-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
-  deploy-staging-rules:
-    name: Validate and deploy rules to auren-staging only
+  validate-rules:
+    name: Validate Firestore rules in isolated emulator
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -42,6 +50,24 @@ jobs:
           firebase emulators:exec --only firestore --project demo-auren-rules
           "node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/education_rules.integration.test.js"
 
+  deploy-staging-rules:
+    name: Deploy rules to auren-staging only
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate-rules
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
       - name: Validate staging credentials and prepare temporary service account
         env:
           FIREBASE_STAGING_CLIENT_EMAIL: ${{ secrets.FIREBASE_STAGING_CLIENT_EMAIL }}
@@ -61,7 +87,7 @@ jobs:
             console.error('Refusing deployment: service account email is not the approved staging deployer.');
             process.exit(1);
           }
-          if (!key.includes('BEGIN PRIVATE KEY') || !key.includes('END PRIVATE KEY')) {
+          if (!key.includes('-----BEGIN PRIVATE KEY-----') || !key.includes('-----END PRIVATE KEY-----')) {
             console.error('Refusing deployment: private key format is invalid.');
             process.exit(1);
           }
