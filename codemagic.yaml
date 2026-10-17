@@ -32,3 +32,23 @@ workflows:
     artifacts:
       - build/**/outputs/**/*.apk
       - build/**/outputs/**/*.aab
+
+  deploy_staging_firestore_rules:
+    name: Deploy Firestore Rules (STAGING ONLY)
+    instance_type: linux_x2
+    environment:
+      node: 22
+      groups:
+        - firebase_staging_deployer
+    scripts:
+      - name: Validate staging-only service account
+        script: |
+          set -eu
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            echo "Missing secret FIREBASE_SERVICE_ACCOUNT in group firebase_staging_deployer."
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$CM_BUILD_DIR/firebase-staging-service-account.json"
+          node -e 'const fs=require("fs"); const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if (p.project_id !== "auren-staging") { console.error("Refusing deployment: service-account project_id must be auren-staging."); process.exit(1); } if (!p.client_email || !p.private_key) { console.error("Service-account JSON is missing required fields."); process.exit(1); }' "$CM_BUILD_DIR/firebase-staging-service-account.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$CM_BUILD_DIR/firebase-staging-service-account.json"
+          npx --yes firebase-tools deploy --only firestore:rules --project auren-staging
