@@ -725,7 +725,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       final activeId = _activeItemId;
       final activeController =
           activeId == null ? null : controllers[activeId];
-      if (activeController != null &&
+      if (activeId != null &&
+          activeController != null &&
           activeController.value.isInitialized &&
           mounted) {
         unawaited(_resumeControllerSafely(activeId, activeController));
