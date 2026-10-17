@@ -49,15 +49,17 @@ class AurenContentPlatformService {
         (uri.scheme == 'https' || uri.scheme == 'http');
   }
 
-  Future<String> publishVideo({required String uid,required String channelId,required String title,required String description,required String mediaUrl,String imageUrl='',String type='Video'}) async {
-    final cleanTitle=title.trim(), cleanDescription=description.trim(), cleanUrl=mediaUrl.trim(), cleanImage=imageUrl.trim(), cleanType=type.trim().isEmpty?'Video':type.trim();
-    if(uid.trim().isEmpty||channelId.trim().isEmpty||cleanTitle.isEmpty||cleanTitle.length>160||cleanDescription.length>3000||cleanUrl.length>2000||!_isHttpUrl(cleanUrl)||cleanImage.length>2000||(cleanImage.isNotEmpty&&!_isHttpUrl(cleanImage))||!['Video','Short'].contains(cleanType)) {
+  Future<String> publishVideo({required String uid,required String channelId,required String title,required String description,required String mediaUrl,String imageUrl='',String type='Video',String category='',List<String> moods=const ['تسلية']}) async {
+    final cleanTitle=title.trim(), cleanDescription=description.trim(), cleanUrl=mediaUrl.trim(), cleanImage=imageUrl.trim(), cleanType=type.trim().isEmpty?'Video':type.trim(), cleanCategory=category.trim();
+    const allowedMoods=['تسلية','ضحك','موسيقى','أفلام','Gaming','اكتشاف'];
+    final cleanMoods=moods.map((value)=>value.trim()).where((value)=>allowedMoods.contains(value)).toSet().toList();
+    if(uid.trim().isEmpty||channelId.trim().isEmpty||cleanTitle.isEmpty||cleanTitle.length>160||cleanDescription.length>3000||cleanUrl.length>2000||!_isHttpUrl(cleanUrl)||cleanImage.length>2000||(cleanImage.isNotEmpty&&!_isHttpUrl(cleanImage))||!['Video','Short'].contains(cleanType)||cleanCategory.length>80||cleanMoods.isEmpty||cleanMoods.length>6||cleanMoods.length!=moods.map((value)=>value.trim()).toSet().length) {
       throw ArgumentError('أدخل عنواناً صالحاً ورابط فيديو HTTP/HTTPS ونوع محتوى صحيحاً.');
     }
     final channel=await _db.collection('content_channels').doc(channelId).get();
     if(!channel.exists || channel.data()?['ownerId']!=uid) throw StateError('القناة لا تخص هذا الحساب.');
     final ref=_db.collection('entertainment_items').doc();
-    await ref.set({'title':cleanTitle,'description':cleanDescription,'mediaUrl':cleanUrl,'mediaKind':'video','imageUrl':cleanImage,'type':cleanType,'creatorId':uid,'channelId':channelId,'visibility':'public','createdAt':FieldValue.serverTimestamp()});
+    await ref.set({'title':cleanTitle,'description':cleanDescription,'mediaUrl':cleanUrl,'mediaKind':'video','imageUrl':cleanImage,'type':cleanType,'category':cleanCategory,'moods':cleanMoods,'creatorId':uid,'channelId':channelId,'visibility':'public','createdAt':FieldValue.serverTimestamp()});
     return ref.id;
   }
 
