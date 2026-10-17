@@ -145,16 +145,8 @@ void main() {
 
       final rawFinder = find.byKey(const ValueKey<String>('Raw material name'));
       final productFinder = find.byKey(const ValueKey<String>('Finished product name'));
-      await tester.scrollUntilVisible(
-        rawFinder,
-        250,
-        scrollable: _formScrollable(),
-      );
-      await tester.scrollUntilVisible(
-        productFinder,
-        250,
-        scrollable: _formScrollable(),
-      );
+      await _scrollToBuilt(tester, rawFinder, towardTop: true);
+      await _scrollToBuilt(tester, productFinder, towardTop: true);
       final rawField = tester.widget<TextFormField>(rawFinder);
       final productField = tester.widget<TextFormField>(productFinder);
       expect(rawField.controller?.text, 'Sesame');
