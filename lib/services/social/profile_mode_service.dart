@@ -109,6 +109,22 @@ class AurenProfileModeData {
     );
   }
 
+  AurenProfileModeData copyWithDiscoverable(bool value) => AurenProfileModeData(
+        mode: mode,
+        headline: headline,
+        bio: bio,
+        skills: skills,
+        interests: interests,
+        links: links,
+        goals: goals,
+        languages: languages,
+        services: services,
+        achievements: achievements,
+        discoverable: value,
+        showContact: showContact,
+        updatedAt: updatedAt,
+      );
+
   Map<String, dynamic> toMap() => {
         'mode': mode.id,
         'headline': headline,
