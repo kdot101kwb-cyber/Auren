@@ -192,12 +192,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         await controller.play();
       }
     } catch (_) {
-      if (identical(controllers[item.id], controller)) {
+      final isCurrentController =
+          identical(controllers[item.id], controller);
+      if (isCurrentController) {
         controllers.remove(item.id);
+        _failedControllerIds.add(item.id);
       }
-      _failedControllerIds.add(item.id);
       await _disposeControllerSafely(controller);
-      if (mounted) setState(() {});
+      // Ignore a late error from a controller already replaced or disposed.
+      if (mounted && isCurrentController) setState(() {});
     }
   }
 
