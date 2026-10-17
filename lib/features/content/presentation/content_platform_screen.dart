@@ -144,11 +144,16 @@ class _AurenContentPlatformScreenState extends State<AurenContentPlatformScreen>
     if(mine.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('أنشئ قناة أولاً.')));return;}
     final title=TextEditingController(),description=TextEditingController(),media=TextEditingController(),image=TextEditingController();
     String channelId=mine.first.id;
-    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(title:const Text('نشر فيديو'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+    String contentType='Short';
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(title:const Text('نشر محتوى'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
       DropdownButtonFormField<String>(initialValue:channelId,items:mine.map((c)=>DropdownMenuItem(value:c.id,child:Text(c.name))).toList(),onChanged:(v){if(v!=null)setDialog(()=>channelId=v);},decoration:const InputDecoration(labelText:'القناة')),
-      TextField(controller:title,decoration:const InputDecoration(labelText:'العنوان')),TextField(controller:description,decoration:const InputDecoration(labelText:'الوصف')),TextField(controller:media,decoration:const InputDecoration(labelText:'رابط الفيديو MP4/M3U8')),TextField(controller:image,decoration:const InputDecoration(labelText:'رابط الصورة المصغرة'))
+      DropdownButtonFormField<String>(initialValue:contentType,items:const [DropdownMenuItem(value:'Short',child:Text('Short عمودي')),DropdownMenuItem(value:'Video',child:Text('فيديو عادي'))],onChanged:(v){if(v!=null)setDialog(()=>contentType=v);},decoration:const InputDecoration(labelText:'نوع المحتوى')),
+      TextField(controller:title,maxLength:160,decoration:const InputDecoration(labelText:'العنوان')),
+      TextField(controller:description,maxLength:3000,maxLines:3,decoration:const InputDecoration(labelText:'الوصف')),
+      TextField(controller:media,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'رابط الفيديو HTTPS/HTTP (MP4 أو M3U8)')),
+      TextField(controller:image,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'رابط الصورة المصغرة (اختياري)'))
     ])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),ElevatedButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('نشر'))])));
     if(ok!=true)return;
-    try{await AurenContentPlatformService.instance.publishVideo(uid:uid,channelId:channelId,title:title.text,description:description.text,mediaUrl:media.text,imageUrl:image.text);if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم نشر الفيديو 🔥')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}
+    try{await AurenContentPlatformService.instance.publishVideo(uid:uid,channelId:channelId,title:title.text,description:description.text,mediaUrl:media.text,imageUrl:image.text,type:contentType);if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(contentType=='Short'?'تم نشر الـShort 🔥':'تم نشر الفيديو 🔥')));}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString())));}
   }
 }
