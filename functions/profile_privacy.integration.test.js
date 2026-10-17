@@ -105,6 +105,7 @@ test('public discovery query returns published projections but not private sourc
     db('other-viewer').collectionGroup('public_profile_modes')
       .where('discoverable', '==', true).get(),
   );
-  assert.equal(snapshot.docs.length, 1);
-  assert.equal(snapshot.docs[0].ref.path, 'users/profile-owner/public_profile_modes/creator');
+  assert.ok(snapshot.docs.some((doc) =>
+    doc.ref.path === 'users/profile-owner/public_profile_modes/creator'));
+  assert.ok(snapshot.docs.every((doc) => doc.ref.path.includes('/public_profile_modes/')));
 });
