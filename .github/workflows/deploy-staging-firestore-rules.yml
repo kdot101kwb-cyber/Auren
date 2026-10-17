@@ -100,12 +100,32 @@ jobs:
           }), { mode: 0o600 });
           NODE
 
-      - name: Verify Firebase CLI can authenticate with staging service account
+      - name: Verify staging service-account authentication without listing projects
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-staging-service-account.json
         run: |
           set -eu
-          npx --yes firebase-tools projects:list --json >/dev/null
+          AUTH_CHECK_DIR="${RUNNER_TEMP}/firebase-auth-check"
+          mkdir -p "$AUTH_CHECK_DIR"
+          npm install --prefix "$AUTH_CHECK_DIR" --no-audit --no-fund google-auth-library
+          NODE_PATH="$AUTH_CHECK_DIR/node_modules" node <<'NODE'
+          const { GoogleAuth } = require('google-auth-library');
+          (async () => {
+            const auth = new GoogleAuth({
+              keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+              scopes: ['https://www.googleapis.com/auth/cloud-platform']
+            });
+            const client = await auth.getClient();
+            const token = await client.getAccessToken();
+            if (!token || !token.token) {
+              throw new Error('Google authentication did not return an access token.');
+            }
+            console.log('Staging service-account authentication succeeded; access token withheld.');
+          })().catch((error) => {
+            console.error('Staging service-account authentication failed:', error.message);
+            process.exit(1);
+          });
+          NODE
 
       - name: Deploy Firestore rules to staging only
         env:
