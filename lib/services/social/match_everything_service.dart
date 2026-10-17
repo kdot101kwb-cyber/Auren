@@ -109,7 +109,7 @@ class AurenMatchEverythingService {
     AurenIntentSignals signals,
   ) async {
     try {
-      final snapshot = await _db.collectionGroup('profile_modes')
+      final snapshot = await _db.collectionGroup('public_profile_modes')
           .where('discoverable', isEqualTo: true)
           .limit(_candidateLimit(limit))
           .get();
