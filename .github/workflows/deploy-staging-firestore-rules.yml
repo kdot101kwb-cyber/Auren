@@ -39,7 +39,7 @@ jobs:
           node-version: "22"
 
       - name: Install Firebase CLI
-        run: npm install --global firebase-tools
+        run: npm install --global firebase-tools@15.34.0
 
       - name: Install rules test dependencies
         working-directory: functions
@@ -66,7 +66,7 @@ jobs:
           node-version: "22"
 
       - name: Install Firebase CLI
-        run: npm install --global firebase-tools
+        run: npm install --global firebase-tools@15.34.0
 
       - name: Validate staging credentials and prepare temporary service account
         env:
@@ -132,7 +132,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-staging-service-account.json
         run: |
           set -eu
-          npx --yes firebase-tools deploy --only firestore:rules --project auren-staging
+          npx --yes firebase-tools@15.34.0 deploy --only firestore:rules --project auren-staging --non-interactive
 
       - name: Remove temporary credentials
         if: always()
