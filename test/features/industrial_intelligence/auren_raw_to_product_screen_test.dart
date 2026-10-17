@@ -23,27 +23,28 @@ Future<void> _enterField(
   required String value,
 }) async {
   final field = find.byKey(ValueKey<String>(label));
-  final scrollable = _formScrollable();
-
-  // Move the form's ListView directly. scrollUntilVisible can fail before
-  // the lazy child is built when its Scrollable finder resolves to no element.
-  final listView = find.byType(ListView).first;
-  for (var attempt = 0; attempt < 24 && field.evaluate().isEmpty; attempt++) {
-    await tester.drag(listView, const Offset(0, -350));
-    await tester.pumpAndSettle();
-  }
+  await _scrollToBuilt(tester, field);
   expect(field, findsOneWidget, reason: 'Field label: $label');
   await tester.ensureVisible(field);
   await tester.enterText(field, value);
   await tester.pump();
 }
 
+Future<void> _scrollToBuilt(
+  WidgetTester tester,
+  Finder target, {
+  bool towardTop = false,
+}) async {
+  final listView = find.byType(ListView).first;
+  final delta = towardTop ? const Offset(0, 350) : const Offset(0, -350);
+  for (var attempt = 0; attempt < 24 && target.evaluate().isEmpty; attempt++) {
+    await tester.drag(listView, delta);
+    await tester.pumpAndSettle();
+  }
+}
+
 Future<void> _expectInvalid(WidgetTester tester) async {
-  await tester.scrollUntilVisible(
-    find.text('Enter a valid number'),
-    250,
-    scrollable: _formScrollable(),
-  );
+  await _scrollToBuilt(tester, find.text('Enter a valid number'));
   expect(find.text('Enter a valid number'), findsOneWidget);
   expect(find.text('Estimated result'), findsNothing);
 }
@@ -118,11 +119,7 @@ void main() {
         label: 'Usable product yield (%)',
         value: '0',
       );
-      await tester.scrollUntilVisible(
-        find.text('Estimated result'),
-        250,
-        scrollable: _formScrollable(),
-      );
+      await _scrollToBuilt(tester, find.text('Estimated result'));
       expect(find.text('Estimated result'), findsOneWidget);
       expect(find.text('0.00'), findsWidgets);
       expect(find.text('Unavailable because there is no usable output'), findsOneWidget);
@@ -173,21 +170,17 @@ void main() {
         value: '١٠٠٫٠١',
       );
       final calculate = find.text('احسب خطة التصنيع');
-      final listView = find.byType(ListView).first;
-      for (var attempt = 0; attempt < 24 && calculate.evaluate().isEmpty; attempt++) {
-        await tester.drag(listView, const Offset(0, -350));
-        await tester.pumpAndSettle();
-      }
+      await _scrollToBuilt(tester, calculate);
       expect(calculate, findsOneWidget);
       await tester.tap(calculate);
       await tester.pumpAndSettle();
 
       // Validation text belongs to the yield field; bring it back into the
       // built viewport before asserting against the lazy ListView child.
-      await tester.scrollUntilVisible(
+      await _scrollToBuilt(
+        tester,
         find.byKey(const ValueKey<String>('نسبة التحويل إلى منتج صالح (%)')),
-        250,
-        scrollable: _formScrollable(),
+        towardTop: true,
       );
       expect(find.text('القيمة يجب ألا تزيد عن 100.0'), findsOneWidget);
       expect(find.text('النتيجة التقديرية'), findsNothing);
@@ -195,11 +188,7 @@ void main() {
 
     testWidgets('shows an estimate for valid default inputs', (tester) async {
       await tester.pumpWidget(_app());
-      await tester.scrollUntilVisible(
-        find.text('Estimated result'),
-        250,
-        scrollable: _formScrollable(),
-      );
+      await _scrollToBuilt(tester, find.text('Estimated result'));
       expect(find.text('Estimated result'), findsOneWidget);
       expect(find.text('Enter a valid number'), findsNothing);
     });
