@@ -7,6 +7,8 @@ on:
       - "firebase.json"
       - "firestore.indexes.json"
       - "functions/*rules*"
+      - "functions/profile_privacy.integration.test.js"
+      - "functions/migrate_public_profile_modes.js"
       - ".github/workflows/firestore-rules-validation.yml"
   workflow_dispatch:
 
