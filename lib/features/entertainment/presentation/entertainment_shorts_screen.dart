@@ -117,12 +117,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           await existingController.play();
           _failedControllerIds.remove(item.id);
         } catch (_) {
-          if (identical(controllers[item.id], existingController)) {
+          final isCurrentController =
+              identical(controllers[item.id], existingController);
+          if (isCurrentController) {
             controllers.remove(item.id);
+            _failedControllerIds.add(item.id);
           }
-          _failedControllerIds.add(item.id);
           await _disposeControllerSafely(existingController);
-          if (mounted) setState(() {});
+          // Ignore late playback errors from controllers that are no longer active.
+          if (mounted && isCurrentController) setState(() {});
         }
       }
       return;
