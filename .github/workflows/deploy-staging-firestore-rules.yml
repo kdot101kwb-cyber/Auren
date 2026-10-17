@@ -12,17 +12,35 @@ concurrency:
 
 jobs:
   deploy-staging-rules:
-    name: Deploy rules to auren-staging only
+    name: Validate and deploy rules to auren-staging only
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Install rules test dependencies
+        working-directory: functions
+        run: npm install --no-audit --no-fund
+
+      - name: Compile rules and run authorization integration tests in isolated emulator
+        run: >-
+          firebase emulators:exec --only firestore --project demo-auren-rules
+          "node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/education_rules.integration.test.js"
 
       - name: Validate staging credentials and prepare temporary service account
         env:
@@ -55,9 +73,6 @@ jobs:
             token_uri: 'https://oauth2.googleapis.com/token'
           }), { mode: 0o600 });
           NODE
-
-      - name: Install Firebase CLI
-        run: npm install --global firebase-tools
 
       - name: Deploy Firestore rules to staging only
         env:
