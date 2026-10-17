@@ -14,14 +14,15 @@ Future<void> _enterField(
   required String value,
 }) async {
   final field = find.byKey(ValueKey<String>(label));
-  final scrollable = find.byType(Scrollable).first;
+  final listView = find.byType(ListView).first;
 
-  // ListView builds distant children lazily, so the keyed field may not exist
-  // until scrolling brings its section into the viewport.
-  for (var attempt = 0; attempt < 24 && field.evaluate().isEmpty; attempt++) {
-    await tester.drag(scrollable, const Offset(0, -350));
-    await tester.pumpAndSettle();
-  }
+  // Ask the test framework to advance the actual form list until the lazy
+  // child is built; other scrollables may belong to dropdown overlays.
+  await tester.scrollUntilVisible(
+    field,
+    250,
+    scrollable: listView,
+  );
   expect(field, findsOneWidget, reason: 'Field label: $label');
   await tester.ensureVisible(field);
   await tester.enterText(field, value);
@@ -32,7 +33,7 @@ Future<void> _expectInvalid(WidgetTester tester) async {
   await tester.scrollUntilVisible(
     find.text('Enter a valid number'),
     250,
-    scrollable: find.byType(Scrollable).first,
+    scrollable: find.byType(ListView).first,
   );
   expect(find.text('Enter a valid number'), findsOneWidget);
   expect(find.text('Estimated result'), findsNothing);
@@ -111,7 +112,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Estimated result'),
         250,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: find.byType(ListView).first,
       );
       expect(find.text('Estimated result'), findsOneWidget);
       expect(find.text('0.00'), findsWidgets);
@@ -124,7 +125,7 @@ void main() {
       final selector = find.byKey(
         const ValueKey<String>('manufacturing-route-selector'),
       );
-      final scrollable = find.byType(Scrollable).first;
+      final scrollable = find.byType(ListView).first;
       for (var attempt = 0; attempt < 24 && selector.evaluate().isEmpty; attempt++) {
         await tester.drag(scrollable, const Offset(0, -350));
         await tester.pumpAndSettle();
@@ -155,7 +156,7 @@ void main() {
         value: '١٠٠٫٠١',
       );
       final calculate = find.text('احسب خطة التصنيع');
-      final scrollable = find.byType(Scrollable).first;
+      final scrollable = find.byType(ListView).first;
       for (var attempt = 0; attempt < 24 && calculate.evaluate().isEmpty; attempt++) {
         await tester.drag(scrollable, const Offset(0, -350));
         await tester.pumpAndSettle();
@@ -173,7 +174,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text('Estimated result'),
         250,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: find.byType(ListView).first,
       );
       expect(find.text('Estimated result'), findsOneWidget);
       expect(find.text('Enter a valid number'), findsNothing);
