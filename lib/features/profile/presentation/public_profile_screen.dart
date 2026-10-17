@@ -231,11 +231,15 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
           ),
           const SizedBox(height: 20),
           StreamBuilder<AurenProfileMode>(
-            stream: profileModes.watchPublicActiveMode(widget.profile.uid),
+            stream: own
+                ? profileModes.watchActiveMode(widget.profile.uid)
+                : profileModes.watchPublicActiveMode(widget.profile.uid),
             builder: (context, modeSnapshot) {
               final mode = modeSnapshot.data ?? AurenProfileMode.personal;
               return StreamBuilder<AurenProfileModeData>(
-                stream: profileModes.watchPublic(widget.profile.uid, mode),
+                stream: own
+                    ? profileModes.watch(widget.profile.uid, mode)
+                    : profileModes.watchPublic(widget.profile.uid, mode),
                 builder: (context, snapshot) {
                   final data = snapshot.data;
                   if (data == null || !data.discoverable) return const SizedBox.shrink();
