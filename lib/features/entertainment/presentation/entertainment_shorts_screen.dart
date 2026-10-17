@@ -724,6 +724,10 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     }
     controllers.clear();
     _retainedControllerIds.clear();
+    // A feed-level retry is an explicit retry for failed Shorts too; otherwise
+    // their cached failure state would suppress preparation in the new stream.
+    _failedControllerIds.clear();
+    _startedAt.clear();
     _activeItemId = null;
     _resumeAfterLifecycle = false;
     active = 0;
