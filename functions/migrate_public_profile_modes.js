@@ -6,6 +6,8 @@ const { initializeApp, getApps, applicationDefault } = require('firebase-admin/a
 const { getFirestore, FieldPath, FieldValue } = require('firebase-admin/firestore');
 
 const APPLY = process.argv.includes('--apply');
+const projectFlag = process.argv.indexOf('--project');
+const PROJECT_ID = projectFlag >= 0 ? process.argv[projectFlag + 1] : null;
 const PAGE_SIZE = 200;
 const VALID_MODES = new Set(['personal', 'creator', 'professional', 'business']);
 
@@ -41,10 +43,20 @@ function publicProjection(data, modeId) {
 }
 
 async function main() {
+  if (!PROJECT_ID || PROJECT_ID.startsWith('--')) {
+    throw new Error('Pass an explicit Firebase project with --project <project-id>; no project will be inferred.');
+  }
+  if (!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(PROJECT_ID)) {
+    throw new Error('Invalid Firebase project ID format.');
+  }
   if (!getApps().length) {
-    initializeApp({ credential: applicationDefault() });
+    initializeApp({ credential: applicationDefault(), projectId: PROJECT_ID });
   }
   const db = getFirestore();
+  const actualProjectId = db.app.options.projectId;
+  if (actualProjectId !== PROJECT_ID) {
+    throw new Error(`Firebase project mismatch: requested ${PROJECT_ID}, initialized ${actualProjectId || 'unknown'}.`);
+  }
   const counts = { scanned: 0, wouldPublish: 0, wouldRemove: 0, skippedInvalidPath: 0, changed: 0 };
   let cursor = null;
 
@@ -122,6 +134,7 @@ async function main() {
   }
 
   process.stdout.write(JSON.stringify({
+    projectId: PROJECT_ID,
     mode: APPLY ? 'apply' : 'dry-run',
     note: APPLY ? 'Public projections updated; review counts and application logs.' :
       'No writes performed. Re-run with --apply to perform the backfill.',
