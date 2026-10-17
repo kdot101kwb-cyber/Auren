@@ -13,10 +13,10 @@ This script migrates legacy `users/{uid}/profile_modes/{mode}` documents into th
 
 ## Run
 
-From the `functions` directory, configure Application Default Credentials for the intended Firebase project and run:
+From the `functions` directory, configure Application Default Credentials, then pass the intended Firebase project explicitly. The script refuses to infer a project from local defaults:
 
 ```sh
-node migrate_public_profile_modes.js
+node migrate_public_profile_modes.js --project auren-staging
 ```
 
 Only after reviewing the dry-run counts and confirming the target project, execute:
