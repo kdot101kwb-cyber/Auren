@@ -209,7 +209,7 @@ class AurenProfileModeService {
     required bool discoverable,
     required bool showContact,
   }) async {
-    _uid(uid);
+    final userId = _uid(uid);
 
     String clean(String value, int max) {
       final trimmed = value.trim();
