@@ -799,12 +799,24 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final currentId = _activeItemId;
     final currentItem = currentId == null ? null : _itemsById[currentId];
     if (currentItem != null) unawaited(_trackView(currentItem));
+    // Invalidate in-flight preparations as well as mounted controllers.
+    // If the user switches categories quickly and the same item appears again,
+    // an old initialization must not attach itself to the new feed session.
+    final invalidatedIds = <String>{
+      ...controllers.keys,
+      ..._preparing,
+      ..._retainedControllerIds,
+    };
+    for (final id in invalidatedIds) {
+      _playbackGeneration[id] = (_playbackGeneration[id] ?? 0) + 1;
+    }
     _retainedControllerIds.clear();
     final oldControllers = controllers.values.toList();
     controllers.clear();
     for (final controller in oldControllers) {
       unawaited(_pauseAndDisposeControllerSafely(controller));
     }
+    _resumeAfterLifecycle = false;
     setState(() {
       shortCategory = value;
       active = 0;
