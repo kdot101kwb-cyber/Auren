@@ -101,7 +101,7 @@ class AurenAdaptiveDiscoveryService {
     );
 
     final snapshot = await _db
-        .collectionGroup('profile_modes')
+        .collectionGroup('public_profile_modes')
         .where('discoverable', isEqualTo: true)
         .limit(limit.clamp(1, 50).toInt())
         .get();
