@@ -125,6 +125,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
           // A swipe can happen while the native play call is awaiting. Do not
           // let a late completion keep audio running behind the visible Short.
           if (!mounted ||
+              !_appIsForeground ||
               _activeItemId != item.id ||
               !identical(controllers[item.id], existingController)) {
             await _pauseControllerSafely(existingController);
