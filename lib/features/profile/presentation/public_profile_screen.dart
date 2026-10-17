@@ -231,11 +231,11 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
           ),
           const SizedBox(height: 20),
           StreamBuilder<AurenProfileMode>(
-            stream: profileModes.watchActiveMode(widget.profile.uid),
+            stream: profileModes.watchPublicActiveMode(widget.profile.uid),
             builder: (context, modeSnapshot) {
               final mode = modeSnapshot.data ?? AurenProfileMode.personal;
               return StreamBuilder<AurenProfileModeData>(
-                stream: profileModes.watch(widget.profile.uid, mode),
+                stream: profileModes.watchPublic(widget.profile.uid, mode),
                 builder: (context, snapshot) {
                   final data = snapshot.data;
                   if (data == null || !data.discoverable) return const SizedBox.shrink();
@@ -359,7 +359,7 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                       label: const Text('Ask AUREN'),
                     ),
                     StreamBuilder<AurenProfileMode>(
-                      stream: profileModes.watchActiveMode(widget.profile.uid),
+                      stream: profileModes.watchPublicActiveMode(widget.profile.uid),
                       builder: (context, modeSnapshot) {
                         if (modeSnapshot.data != AurenProfileMode.creator) {
                           return const SizedBox.shrink();
