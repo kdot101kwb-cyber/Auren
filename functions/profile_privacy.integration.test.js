@@ -109,3 +109,42 @@ test('public discovery query returns published projections but not private sourc
     doc.ref.path === 'users/profile-owner/public_profile_modes/creator'));
   assert.ok(snapshot.docs.every((doc) => doc.ref.path.includes('/public_profile_modes/')));
 });
+
+
+test('public active-mode settings are readable only while discoverable', async () => {
+  await seed('users/profile-owner/public_profile_settings/current', {
+    activeMode: 'professional',
+    discoverable: true,
+    updatedAt: firebase.firestore.Timestamp.now(),
+  });
+  const visible = await assertSucceeds(
+    db('other-viewer').doc('users/profile-owner/public_profile_settings/current').get(),
+  );
+  assert.equal(visible.data().activeMode, 'professional');
+
+  await seed('users/hidden-owner/public_profile_settings/current', {
+    activeMode: 'personal',
+    discoverable: false,
+    updatedAt: firebase.firestore.Timestamp.now(),
+  });
+  await assertFails(
+    db('other-viewer').doc('users/hidden-owner/public_profile_settings/current').get(),
+  );
+  await assertSucceeds(
+    db('hidden-owner').doc('users/hidden-owner/public_profile_settings/current').get(),
+  );
+});
+
+test('only the profile owner may write public active-mode settings', async () => {
+  const settings = {
+    activeMode: 'creator',
+    discoverable: true,
+    updatedAt: firebase.firestore.Timestamp.now(),
+  };
+  await assertFails(
+    db('attacker').doc('users/profile-owner/public_profile_settings/current').set(settings),
+  );
+  await assertSucceeds(
+    db('profile-owner').doc('users/profile-owner/public_profile_settings/current').set(settings),
+  );
+});
