@@ -14,10 +14,8 @@ Widget _app({Locale locale = const Locale('en')}) => MaterialApp(
       home: const AurenRawToProductScreen(),
     );
 
-Finder _formScrollable() => find.descendant(
-      of: find.byType(ListView).first,
-      matching: find.byType(Scrollable),
-    ).first;
+// The form's ListView creates the first Scrollable in this screen.
+Finder _formScrollable() => find.byType(Scrollable).first;
 
 Future<void> _enterField(
   WidgetTester tester, {
@@ -148,12 +146,20 @@ void main() {
       await tester.tap(find.text('Sesame → tahini').last);
       await tester.pumpAndSettle();
 
-      final rawField = tester.widget<TextFormField>(
-        find.byKey(const ValueKey<String>('Raw material name')),
+      final rawFinder = find.byKey(const ValueKey<String>('Raw material name'));
+      final productFinder = find.byKey(const ValueKey<String>('Finished product name'));
+      await tester.scrollUntilVisible(
+        rawFinder,
+        250,
+        scrollable: _formScrollable(),
       );
-      final productField = tester.widget<TextFormField>(
-        find.byKey(const ValueKey<String>('Finished product name')),
+      await tester.scrollUntilVisible(
+        productFinder,
+        250,
+        scrollable: _formScrollable(),
       );
+      final rawField = tester.widget<TextFormField>(rawFinder);
+      final productField = tester.widget<TextFormField>(productFinder);
       expect(rawField.controller?.text, 'Sesame');
       expect(productField.controller?.text, 'tahini');
     });
