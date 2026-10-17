@@ -105,6 +105,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   Future<void> _prepare(AurenEntertainmentItem item) async {
+    // Do not start network/player work for a Short that has already left the
+    // retained window (for example, after a category change or a slow retry).
+    if (!mounted || !_retainedControllerIds.contains(item.id)) return;
     final selectedUrl = _effectiveVideoUrl(item);
     final existingController = controllers[item.id];
     if (existingController != null) {
@@ -219,16 +222,21 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   }
 
   Future<void> _retryPreparation(AurenEntertainmentItem item) async {
-    _playbackGeneration[item.id] = (_playbackGeneration[item.id] ?? 0) + 1;
-    _failedControllerIds.remove(item.id);
-    final old = controllers.remove(item.id);
+    final itemId = item.id;
+    _playbackGeneration[itemId] = (_playbackGeneration[itemId] ?? 0) + 1;
+    _failedControllerIds.remove(itemId);
+    final old = controllers.remove(itemId);
     if (old != null) {
       // Cleanup errors should never prevent a retry from starting.
       await _pauseAndDisposeControllerSafely(old);
     }
-    if (!mounted) return;
+    if (!mounted || !_retainedControllerIds.contains(itemId)) return;
     setState(() {});
-    await _prepare(item);
+    // A feed refresh may replace metadata while disposal is awaiting. Retry
+    // only the latest model and only while this item is still in the feed.
+    final latestItem = _itemsById[itemId];
+    if (latestItem == null || !_retainedControllerIds.contains(itemId)) return;
+    await _prepare(latestItem);
   }
 
   Future<void> _trackView(AurenEntertainmentItem item, {bool completed = false}) async {
