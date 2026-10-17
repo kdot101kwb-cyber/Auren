@@ -681,9 +681,15 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     // controller from the failed feed could keep audio playing behind the
     // loading/error screen.
     final oldControllers = controllers.entries.toList();
-    for (final entry in oldControllers) {
-      _playbackGeneration[entry.key] =
-          (_playbackGeneration[entry.key] ?? 0) + 1;
+    // Invalidate both mounted controllers and preparations that have not yet
+    // produced a controller. The latter may otherwise finish after the retry.
+    final invalidatedIds = <String>{
+      ...controllers.keys,
+      ..._preparing,
+      ..._retainedControllerIds,
+    };
+    for (final id in invalidatedIds) {
+      _playbackGeneration[id] = (_playbackGeneration[id] ?? 0) + 1;
     }
     controllers.clear();
     _retainedControllerIds.clear();
