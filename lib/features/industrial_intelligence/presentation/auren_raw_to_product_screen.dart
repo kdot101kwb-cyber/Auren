@@ -18,6 +18,7 @@ class AurenRawToProductScreen extends StatefulWidget {
 
 class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _formScrollController = ScrollController();
   final _rawQuantity = TextEditingController(text: '1000');
   final _yieldPercent = TextEditingController(text: '85');
   final _rawUnitCost = TextEditingController(text: '1');
@@ -47,6 +48,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
     ]) {
       controller.dispose();
     }
+    _formScrollController.dispose();
     super.dispose();
   }
 
@@ -141,6 +143,8 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
+          key: const ValueKey<String>('raw-to-product-form-list'),
+          controller: _formScrollController,
           padding: const EdgeInsets.all(16),
           children: [
             Card(
