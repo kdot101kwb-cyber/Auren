@@ -1,0 +1,71 @@
+name: Deploy Firestore Rules (STAGING ONLY)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firestore-rules-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging-rules:
+    name: Deploy rules to auren-staging only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate staging credentials and prepare temporary service account
+        env:
+          FIREBASE_STAGING_CLIENT_EMAIL: ${{ secrets.FIREBASE_STAGING_CLIENT_EMAIL }}
+          FIREBASE_STAGING_PRIVATE_KEY: ${{ secrets.FIREBASE_STAGING_PRIVATE_KEY }}
+        run: |
+          set -eu
+          if [ -z "${FIREBASE_STAGING_CLIENT_EMAIL:-}" ] || [ -z "${FIREBASE_STAGING_PRIVATE_KEY:-}" ]; then
+            echo "Missing GitHub Actions secrets FIREBASE_STAGING_CLIENT_EMAIL and/or FIREBASE_STAGING_PRIVATE_KEY."
+            exit 1
+          fi
+          umask 077
+          node <<'NODE'
+          const fs = require('fs');
+          const email = process.env.FIREBASE_STAGING_CLIENT_EMAIL;
+          const key = process.env.FIREBASE_STAGING_PRIVATE_KEY;
+          if (email !== 'auren-staging-rules-deployer@auren-staging.iam.gserviceaccount.com') {
+            console.error('Refusing deployment: service account email is not the approved staging deployer.');
+            process.exit(1);
+          }
+          if (!key.includes('BEGIN PRIVATE KEY') || !key.includes('END PRIVATE KEY')) {
+            console.error('Refusing deployment: private key format is invalid.');
+            process.exit(1);
+          }
+          fs.writeFileSync(process.env.RUNNER_TEMP + '/firebase-staging-service-account.json', JSON.stringify({
+            type: 'service_account',
+            project_id: 'auren-staging',
+            client_email: email,
+            private_key: key,
+            token_uri: 'https://oauth2.googleapis.com/token'
+          }), { mode: 0o600 });
+          NODE
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Deploy Firestore rules to staging only
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-staging-service-account.json
+        run: |
+          set -eu
+          npx --yes firebase-tools deploy --only firestore:rules --project auren-staging
+
+      - name: Remove temporary credentials
+        if: always()
+        run: rm -f "${{ runner.temp }}/firebase-staging-service-account.json"
