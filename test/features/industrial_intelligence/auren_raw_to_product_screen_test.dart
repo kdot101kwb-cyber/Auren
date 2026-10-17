@@ -25,13 +25,13 @@ Future<void> _enterField(
   final field = find.byKey(ValueKey<String>(label));
   final scrollable = _formScrollable();
 
-  // Ask the test framework to advance the actual form list until the lazy
-  // child is built; other scrollables may belong to dropdown overlays.
-  await tester.scrollUntilVisible(
-    field,
-    250,
-    scrollable: scrollable,
-  );
+  // Move the form's ListView directly. scrollUntilVisible can fail before
+  // the lazy child is built when its Scrollable finder resolves to no element.
+  final listView = find.byType(ListView).first;
+  for (var attempt = 0; attempt < 24 && field.evaluate().isEmpty; attempt++) {
+    await tester.drag(listView, const Offset(0, -350));
+    await tester.pumpAndSettle();
+  }
   expect(field, findsOneWidget, reason: 'Field label: $label');
   await tester.ensureVisible(field);
   await tester.enterText(field, value);
@@ -173,15 +173,22 @@ void main() {
         value: '١٠٠٫٠١',
       );
       final calculate = find.text('احسب خطة التصنيع');
-      final scrollable = _formScrollable();
+      final listView = find.byType(ListView).first;
       for (var attempt = 0; attempt < 24 && calculate.evaluate().isEmpty; attempt++) {
-        await tester.drag(scrollable, const Offset(0, -350));
+        await tester.drag(listView, const Offset(0, -350));
         await tester.pumpAndSettle();
       }
       expect(calculate, findsOneWidget);
       await tester.tap(calculate);
       await tester.pumpAndSettle();
 
+      // Validation text belongs to the yield field; bring it back into the
+      // built viewport before asserting against the lazy ListView child.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey<String>('نسبة التحويل إلى منتج صالح (%)')),
+        250,
+        scrollable: _formScrollable(),
+      );
       expect(find.text('القيمة يجب ألا تزيد عن 100.0'), findsOneWidget);
       expect(find.text('النتيجة التقديرية'), findsNothing);
     });
