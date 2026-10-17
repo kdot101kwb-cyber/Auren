@@ -28,6 +28,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   final Set<String> _preparing = {};
   final Set<String> _failedControllerIds = {};
   bool _resumeAfterLifecycle = false;
+  bool _appIsForeground = true;
   final Set<String> _retainedControllerIds = {};
   String? _activeItemId;
   int active = 0;
@@ -113,7 +114,8 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     if (existingController != null) {
       // Reuse an already prepared controller and start it only when its page
       // is active. A play failure must not leave a broken controller in the map.
-      if (_activeItemId == item.id &&
+      if (_appIsForeground &&
+          _activeItemId == item.id &&
           existingController.value.isInitialized &&
           !existingController.value.isPlaying) {
         try {
@@ -184,7 +186,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       setState(() {});
       // Only the currently visible short may start playback. Prefetching the next
       // item must never start audio/video behind the active page.
-      if (_activeItemId == item.id) {
+      if (_appIsForeground && _activeItemId == item.id) {
         await c.play();
       }
     } catch (_) {
@@ -653,16 +655,21 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         state == AppLifecycleState.hidden) {
       final activeController =
           _activeItemId == null ? null : controllers[_activeItemId];
+      _appIsForeground = false;
       _resumeAfterLifecycle =
-          activeController != null &&
-          activeController.value.isInitialized &&
-          activeController.value.isPlaying;
+          (activeController != null &&
+              activeController.value.isInitialized &&
+              activeController.value.isPlaying) ||
+          (_activeItemId != null && _preparing.contains(_activeItemId));
       for (final controller in controllers.values) {
         unawaited(_pauseControllerSafely(controller));
       }
       return;
     }
 
+    if (state == AppLifecycleState.resumed) {
+      _appIsForeground = true;
+    }
     if (state == AppLifecycleState.resumed && _resumeAfterLifecycle) {
       _resumeAfterLifecycle = false;
       final activeId = _activeItemId;
