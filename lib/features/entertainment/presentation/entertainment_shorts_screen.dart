@@ -126,6 +126,11 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       }
       return;
     }
+    // A failed item stays in its explicit retry state until the user retries.
+    // build() can call _prepare repeatedly, so do not create an automatic retry loop.
+    if (_failedControllerIds.contains(item.id)) {
+      return;
+    }
     if (_preparing.contains(item.id)) {
       return;
     }
