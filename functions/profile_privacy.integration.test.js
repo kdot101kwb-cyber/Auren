@@ -148,3 +148,39 @@ test('only the profile owner may write public active-mode settings', async () =>
     db('profile-owner').doc('users/profile-owner/public_profile_settings/current').set(settings),
   );
 });
+
+test('owner cannot create a public projection marked undiscoverable', async () => {
+  await assertFails(
+    db('profile-owner').doc('users/profile-owner/public_profile_modes/personal').set(
+      publishedProfile('personal', { discoverable: false }),
+    ),
+  );
+});
+
+test('public projection writes reject unexpected fields and invalid mode IDs', async () => {
+  await assertFails(
+    db('profile-owner').doc('users/profile-owner/public_profile_modes/professional').set(
+      publishedProfile('professional', { phoneNumber: '+000000000' }),
+    ),
+  );
+  await assertFails(
+    db('profile-owner').doc('users/profile-owner/public_profile_modes/admin').set(
+      publishedProfile('admin'),
+    ),
+  );
+});
+
+test('public profile settings reject extra fields and invalid active modes', async () => {
+  const ref = db('profile-owner').doc('users/profile-owner/public_profile_settings/current');
+  await assertFails(ref.set({
+    activeMode: 'professional',
+    discoverable: true,
+    privateEmail: 'private@example.invalid',
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+  await assertFails(ref.set({
+    activeMode: 'admin',
+    discoverable: true,
+    updatedAt: firebase.firestore.Timestamp.now(),
+  }));
+});
