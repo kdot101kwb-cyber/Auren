@@ -38,7 +38,7 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
           const email = process.env.FIREBASE_STAGING_CLIENT_EMAIL;
-          const key = process.env.FIREBASE_STAGING_PRIVATE_KEY;
+          const key = process.env.FIREBASE_STAGING_PRIVATE_KEY.replace(/\\n/g, '\n');
           if (email !== 'auren-staging-rules-deployer@auren-staging.iam.gserviceaccount.com') {
             console.error('Refusing deployment: service account email is not the approved staging deployer.');
             process.exit(1);
