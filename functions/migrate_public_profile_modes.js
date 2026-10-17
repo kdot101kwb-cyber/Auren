@@ -58,7 +58,7 @@ async function main() {
     cursor = page.docs[page.docs.length - 1];
     counts.scanned += page.size;
 
-    const batch = db.batch();
+    let batch = db.batch();
     let writes = 0;
     for (const doc of page.docs) {
       const parts = doc.ref.path.split('/');
@@ -111,6 +111,7 @@ async function main() {
         await batch.commit();
         counts.changed += writes;
         writes = 0;
+        batch = db.batch();
       }
     }
     if (APPLY && writes > 0) {
