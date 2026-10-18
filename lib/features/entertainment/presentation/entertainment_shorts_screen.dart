@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
@@ -594,6 +595,60 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
     final creatorId = _creatorId(item);
     if (creatorId == null) return;
     Navigator.push(context, MaterialPageRoute(builder: (_) => AurenProfileScreen(userId: creatorId)));
+  }
+
+  Future<void> _deleteOwnShort(AurenEntertainmentItem item) async {
+    if (uid == null || item.creatorId != uid) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف الشورت؟'),
+        content: const Text('سيختفي هذا الشورت من الخلاصة. لا يمكن التراجع عن الحذف.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('entertainment_items')
+          .doc(item.id)
+          .delete();
+
+      _playbackGeneration[item.id] = (_playbackGeneration[item.id] ?? 0) + 1;
+      final controller = controllers.remove(item.id);
+      if (controller != null) {
+        await _pauseAndDisposeControllerSafely(controller);
+      }
+      _itemsById.remove(item.id);
+      _retainedControllerIds.remove(item.id);
+
+      // External media URLs are not owned by Firebase Storage; cleanup is
+      // best-effort after the public Firestore record has been removed.
+      try {
+        await FirebaseStorage.instance.refFromURL(item.mediaUrl).delete();
+      } catch (_) {
+        // The record is already gone; an external URL needs no Storage delete.
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حذف الشورت.')),
+      );
+      _retryFeedLoad();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذّر حذف الشورت. حاول مرة أخرى.')),
+      );
+    }
   }
 
   void _showComments(AurenEntertainmentItem item) {
@@ -1219,13 +1274,19 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                         ? IconButton(
                             tooltip: 'Safety',
                             icon: const Icon(Icons.more_horiz, color: Colors.white, size: 30),
-                            onPressed: () => AurenSafetyActionsSheet.show(
-                              context,
-                              uid: uid!,
-                              targetUid: _creatorId(item)!,
-                              contentId: item.id,
-                              contentType: 'short',
-                            ),
+                            onPressed: () {
+                              if (_creatorId(item) == uid) {
+                                _deleteOwnShort(item);
+                              } else {
+                                AurenSafetyActionsSheet.show(
+                                  context,
+                                  uid: uid!,
+                                  targetUid: _creatorId(item)!,
+                                  contentId: item.id,
+                                  contentType: 'short',
+                                );
+                              }
+                            },
                           )
                         : const SizedBox.shrink(),
                   ),
