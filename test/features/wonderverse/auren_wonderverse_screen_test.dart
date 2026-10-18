@@ -8,14 +8,34 @@ void main() {
     expect(find.text('WONDERVERSE'), findsOneWidget);
     expect(find.text('عوالم أُورِن'), findsOneWidget);
     expect(find.text('بوابات العوالم'), findsOneWidget);
-    for (final title in ['حضارة في دقيقة', 'اللغز الذي لا يملكه أحد', 'تأثير الفراشة', 'مختبر المخلوقات', 'مصنع الخيال', 'العوالم المتوازية']) {
+
+    final scrollable = find.byType(Scrollable).first;
+    for (final title in [
+      'حضارة في دقيقة',
+      'اللغز الذي لا يملكه أحد',
+      'تأثير الفراشة',
+      'مختبر المخلوقات',
+      'مصنع الخيال',
+      'العوالم المتوازية',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(title),
+        250,
+        scrollable: scrollable,
+      );
       expect(find.text(title), findsOneWidget);
     }
   });
 
   testWidgets('butterfly experience changes the story based on a choice', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenWonderverseScreen()));
-    await tester.tap(find.text('تأثير الفراشة'));
+    final butterfly = find.text('تأثير الفراشة');
+    await tester.scrollUntilVisible(
+      butterfly,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(butterfly);
     await tester.pumpAndSettle();
 
     expect(find.text('الفصل الأول: دقيقة واحدة'), findsOneWidget);
@@ -32,8 +52,15 @@ void main() {
 
   testWidgets('portal opens a detail page and returns to the portal list', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenWonderverseScreen()));
-    await tester.tap(find.text('اللغز الذي لا يملكه أحد'));
+    final mystery = find.text('اللغز الذي لا يملكه أحد');
+    await tester.scrollUntilVisible(
+      mystery,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(mystery);
     await tester.pumpAndSettle();
+
     expect(find.text('المرحلة التأسيسية'), findsOneWidget);
     expect(find.text('المجتمع كله يجمع خيوط اللغز.'), findsOneWidget);
     await tester.tap(find.text('العودة إلى العوالم'));
