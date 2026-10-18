@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
+import '../short_upload_policy.dart';
+
 /// Direct device-to-AUREN publishing for vertical Shorts.
 class AurenShortUploadScreen extends StatefulWidget {
   const AurenShortUploadScreen({super.key});
@@ -17,26 +19,10 @@ class AurenShortUploadScreen extends StatefulWidget {
 }
 
 class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
-  static const _maxBytes = 25 * 1024 * 1024;
-  static const _maxDuration = Duration(seconds: 180);
-  static const _categories = <String>[
-    'كرتون',
-    'كوميديا',
-    'فلوقات',
-    'موسيقى',
-    'ألعاب',
-    'تعليمي',
-    'رياضة',
-    'منوعات',
-  ];
-  static const _moods = <String>[
-    'تسلية',
-    'ضحك',
-    'موسيقى',
-    'أفلام',
-    'Gaming',
-    'اكتشاف',
-  ];
+  static const _maxBytes = AurenShortUploadPolicy.maxBytes;
+  static const _maxDuration = AurenShortUploadPolicy.maxDuration;
+  static const _categories = AurenShortUploadPolicy.categories;
+  static const _moods = AurenShortUploadPolicy.moods;
 
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -59,7 +45,7 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
       if (selected == null || !mounted) return;
 
       final extension = selected.name.split('.').last.toLowerCase();
-      if (extension != 'mp4') {
+      if (!AurenShortUploadPolicy.isMp4FileName(selected.name)) {
         setState(() {
           _error = 'اختار فيديو بصيغة MP4 عشان يشتغل على أكبر عدد من الأجهزة.';
           _video = null;
@@ -68,7 +54,7 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
       }
 
       final bytes = await selected.length();
-      if (bytes <= 0 || bytes > _maxBytes) {
+      if (!AurenShortUploadPolicy.isValidFileSize(bytes)) {
         setState(() {
           _error = 'حجم الفيديو لازم يكون أكبر من صفر وأقل من 25 ميجابايت.';
           _video = null;
@@ -79,7 +65,7 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
       final controller = VideoPlayerController.file(File(selected.path));
       try {
         await controller.initialize();
-        if (controller.value.duration > _maxDuration) {
+        if (!AurenShortUploadPolicy.isValidDuration(controller.value.duration)) {
           if (mounted) {
             setState(() {
               _error = 'مدة الشورت لازم تكون 3 دقائق أو أقل.';
@@ -118,12 +104,20 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
       setState(() => _error = 'اختار فيديو MP4 أولاً.');
       return;
     }
-    if (title.isEmpty || title.length > 160) {
-      setState(() => _error = 'اكتب عنواناً من 1 إلى 160 حرفاً.');
+    final titleError = AurenShortUploadPolicy.validateTitle(title);
+    if (titleError != null) {
+      setState(() => _error = titleError);
       return;
     }
-    if (description.length > 3000) {
-      setState(() => _error = 'الوصف أطول من الحد المسموح (3000 حرف).');
+    final descriptionError =
+        AurenShortUploadPolicy.validateDescription(description);
+    if (descriptionError != null) {
+      setState(() => _error = descriptionError);
+      return;
+    }
+    if (!AurenShortUploadPolicy.isAllowedCategory(_category) ||
+        !AurenShortUploadPolicy.isAllowedMood(_mood)) {
+      setState(() => _error = 'اختار تصنيفاً ومزاجاً من الخيارات المتاحة.');
       return;
     }
 
