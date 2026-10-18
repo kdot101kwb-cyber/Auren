@@ -129,12 +129,11 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
     final storage = FirebaseStorage.instance;
     final itemRef = db.collection('entertainment_items').doc();
     final objectRef = storage.ref('shorts/${user.uid}/${itemRef.id}.mp4');
-    UploadTask? task;
     StreamSubscription<TaskSnapshot>? progressSubscription;
     var uploaded = false;
 
     try {
-      task = objectRef.putFile(
+      final task = objectRef.putFile(
         File(video.path),
         SettableMetadata(contentType: 'video/mp4', customMetadata: {
           'ownerUid': user.uid,
