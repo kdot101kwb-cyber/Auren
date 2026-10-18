@@ -658,7 +658,13 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
     }
 
     match /content_channels/{channelId} {
-      allow read: if request.auth != null && resource.data.public == true;
+      // Owners can inspect their own channel; authenticated get requests for
+      // missing channel IDs are allowed so the publisher can create one safely.
+      allow get: if request.auth != null
+        && (!exists(/databases/$(database)/documents/content_channels/$(channelId))
+          || resource.data.public == true
+          || resource.data.ownerId == request.auth.uid);
+      allow list: if request.auth != null && resource.data.public == true;
       allow create: if request.auth != null && requestData().ownerId == request.auth.uid
         && requestData().name is string && requestData().name.size() > 0 && requestData().name.size() <= 100
         && requestData().description is string && requestData().description.size() <= 1000
