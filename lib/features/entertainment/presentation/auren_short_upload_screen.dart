@@ -261,6 +261,8 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
                 ),
                 SizedBox(height: 4),
                 Text('MP4 • حتى 3 دقائق • حتى 25 ميجابايت'),
+                SizedBox(height: 8),
+                Text('تنبيه: بعد النشر سيكون الشورت عاماً ويمكن للآخرين مشاهدته ومشاركة رابطه.'),
               ],
             ),
           ),
