@@ -159,6 +159,54 @@ jobs:
           set -eu
           npx --yes firebase-tools@15.34.0 deploy --only firestore:rules --project auren-staging --non-interactive
 
+      - name: Measure deployed Firestore executable size (staging only)
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-staging-service-account.json
+        run: |
+          set -eu
+          SIZE_CHECK_DIR="${RUNNER_TEMP}/firebase-size-check"
+          mkdir -p "$SIZE_CHECK_DIR"
+          npm install --prefix "$SIZE_CHECK_DIR" --no-audit --no-fund google-auth-library
+          NODE_PATH="$SIZE_CHECK_DIR/node_modules" node <<'NODE'
+          const { GoogleAuth } = require('google-auth-library');
+
+          (async () => {
+            const auth = new GoogleAuth({
+              keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+              scopes: ['https://www.googleapis.com/auth/cloud-platform']
+            });
+            const client = await auth.getClient();
+            const token = await client.getAccessToken();
+            if (!token || !token.token) {
+              throw new Error('Google authentication did not return an access token.');
+            }
+
+            const response = await fetch(
+              'https://firebaserules.googleapis.com/v1/projects/auren-staging/releases/cloud.firestore:getExecutable',
+              { headers: { Authorization: `Bearer ${token.token}` } }
+            );
+            if (!response.ok) {
+              throw new Error(`Could not fetch deployed staging executable: HTTP ${response.status} ${await response.text()}`);
+            }
+
+            const result = await response.json();
+            if (typeof result.executable !== 'string' || !result.executable.length) {
+              throw new Error('Firebase Rules API returned no executable bytes.');
+            }
+            const sizeBytes = Buffer.from(result.executable, 'base64').length;
+            const limitBytes = 256000;
+            console.log(`STAGING_FIRESTORE_EXECUTABLE_SIZE_BYTES=${sizeBytes}`);
+            console.log(`STAGING_FIRESTORE_EXECUTABLE_LIMIT_BYTES=${limitBytes}`);
+            if (sizeBytes >= limitBytes) {
+              throw new Error(`Compiled Firestore executable is ${sizeBytes} bytes; expected less than ${limitBytes} bytes.`);
+            }
+            console.log('Compiled Firestore executable is below the Firebase limit.');
+          })().catch((error) => {
+            console.error('Failed to measure deployed staging Firestore executable:', error.message);
+            process.exit(1);
+          });
+          NODE
+
       - name: Remove temporary credentials
         if: always()
         run: rm -f "${{ runner.temp }}/firebase-staging-service-account.json"
