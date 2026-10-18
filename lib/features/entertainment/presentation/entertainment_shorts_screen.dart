@@ -1197,7 +1197,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                             Flexible(child: InkWell(onTap: () => _showCreator(item), child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)))),
                             const SizedBox(width: 10),
                             if (me == null)
-                              const OutlinedButton.icon(
+                              OutlinedButton.icon(
                                 onPressed: null,
                                 icon: Icon(Icons.person_add, size: 16),
                                 label: Text('Follow'),
