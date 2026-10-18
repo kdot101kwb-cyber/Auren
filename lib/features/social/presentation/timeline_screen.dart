@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/auren_nebula_tokens.dart';
 import 'package:flutter/services.dart';
 import '../../../core/models/post.dart';
 import '../../../core/models/user_profile.dart';
@@ -32,8 +33,12 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
     final uid = auth.currentUserId;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AurenNebulaTokens.midnight : AurenNebulaTokens.lightCanvas,
       appBar: AppBar(
-        title: const Text('AUREN Pulse'),
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.auto_awesome, color: AurenNebulaTokens.violet, size: 22), SizedBox(width: 8), Text('AUREN Pulse', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.4))]),
         actions: [
           IconButton(
             tooltip: 'Find people',
@@ -381,6 +386,9 @@ class _PulseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = PostRepository();
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark ? AurenNebulaTokens.surface : Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? AurenNebulaTokens.outline : Theme.of(context).dividerColor.withValues(alpha: 0.45))),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
