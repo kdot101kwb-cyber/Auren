@@ -52,19 +52,19 @@ void main() {
       expect(AurenShortUploadPolicy.validateTitle('  عنوان  '), isNull);
       expect(AurenShortUploadPolicy.validateTitle('   '), isNotNull);
       expect(
-        AurenShortUploadPolicy.validateTitle('a' * 160),
+        AurenShortUploadPolicy.validateTitle(List.filled(160, 'a').join()),
         isNull,
       );
       expect(
-        AurenShortUploadPolicy.validateTitle('a' * 161),
+        AurenShortUploadPolicy.validateTitle(List.filled(161, 'a').join()),
         isNotNull,
       );
       expect(
-        AurenShortUploadPolicy.validateDescription('a' * 3000),
+        AurenShortUploadPolicy.validateDescription(List.filled(3000, 'a').join()),
         isNull,
       );
       expect(
-        AurenShortUploadPolicy.validateDescription('a' * 3001),
+        AurenShortUploadPolicy.validateDescription(List.filled(3001, 'a').join()),
         isNotNull,
       );
     });
