@@ -210,11 +210,13 @@ jobs:
               throw new Error('New ruleset did not belong to auren-staging; refusing to change the active release.');
             }
             await client.request({
-              url: 'https://firebaserules.googleapis.com/v1/projects/auren-staging/releases/cloud.firestore?updateMask=rulesetName',
+              url: 'https://firebaserules.googleapis.com/v1/projects/auren-staging/releases/cloud.firestore?updateMask=release.rulesetName',
               method: 'PATCH',
               data: {
-                name: 'projects/auren-staging/releases/cloud.firestore',
-                rulesetName
+                release: {
+                  name: 'projects/auren-staging/releases/cloud.firestore',
+                  rulesetName
+                }
               }
             });
             console.log('Recovered the existing staging Firestore release by updating it to the ruleset created in this deployment.');
