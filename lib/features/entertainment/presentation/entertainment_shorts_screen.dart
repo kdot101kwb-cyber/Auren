@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:flutter/services.dart';
+import 'auren_short_upload_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import '../../search/presentation/global_search_screen.dart';
 import '../../talent/presentation/talent_screen.dart';
@@ -810,6 +811,23 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
         backgroundColor: Colors.black,
         title: Text(pureEntertainment ? 'AUREN Shorts • تسلية' : 'AUREN Shorts'),
         actions: [
+          IconButton(
+            tooltip: 'نشر شورت',
+            icon: const Icon(Icons.add_box_outlined),
+            onPressed: uid == null
+                ? null
+                : () async {
+                    final published = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AurenShortUploadScreen(),
+                      ),
+                    );
+                    if (published == true && mounted) {
+                      _retryFeedLoad();
+                    }
+                  },
+          ),
           IconButton(
             tooltip: 'مزاجي',
             icon: const Icon(Icons.tune),
