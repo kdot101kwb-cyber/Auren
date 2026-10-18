@@ -1141,14 +1141,38 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
                             const SizedBox(width: 8),
                             Flexible(child: InkWell(onTap: () => _showCreator(item), child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold)))),
                             const SizedBox(width: 10),
-                            StreamBuilder<bool>(
-                              stream: follows.watchFollowing(me ?? '', _creatorId(item)!),
-                              builder: (context, f) => OutlinedButton.icon(
-                                onPressed: me == null ? null : () => follows.toggle(me, _creatorId(item)!, f.data == true),
-                                icon: Icon(f.data == true ? Icons.check : Icons.person_add, size: 16),
-                                label: Text(f.data == true ? 'Following' : 'Follow'),
+                            if (me == null)
+                              const OutlinedButton.icon(
+                                onPressed: null,
+                                icon: Icon(Icons.person_add, size: 16),
+                                label: Text('Follow'),
+                              )
+                            else
+                              StreamBuilder<bool>(
+                                stream: follows.watchFollowing(
+                                  me,
+                                  _creatorId(item)!,
+                                ),
+                                builder: (context, following) =>
+                                    OutlinedButton.icon(
+                                  onPressed: () => follows.toggle(
+                                    me,
+                                    _creatorId(item)!,
+                                    following.data == true,
+                                  ),
+                                  icon: Icon(
+                                    following.data == true
+                                        ? Icons.check
+                                        : Icons.person_add,
+                                    size: 16,
+                                  ),
+                                  label: Text(
+                                    following.data == true
+                                        ? 'Following'
+                                        : 'Follow',
+                                  ),
+                                ),
                               ),
-                            ),
                           ]);
                         },
                       ),
