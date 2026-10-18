@@ -69,6 +69,19 @@ void main() {
       );
     });
 
+    test('normalizes and limits discovery tags', () {
+      expect(
+        AurenShortUploadPolicy.parseTags('كرتون، #ضحك funny funny'),
+        <String>['كرتون', 'ضحك', 'funny'],
+      );
+      expect(AurenShortUploadPolicy.parseTags(' , #  '), isEmpty);
+      final tags = AurenShortUploadPolicy.parseTags(
+        List.generate(25, (index) => 'tag$index').join(' '),
+      );
+      expect(tags, hasLength(20));
+      expect(tags.toSet(), hasLength(20));
+    });
+
     test('accepts only Firestore-approved categories and moods', () {
       expect(
         AurenShortUploadPolicy.isAllowedCategory('كوميديا'),
