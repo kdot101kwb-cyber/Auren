@@ -160,16 +160,16 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
       final downloadUrl = await objectRef.getDownloadURL();
 
       final channelRef = db.collection('content_channels').doc(user.uid);
+      final displayName = user.displayName?.trim() ?? '';
       final channel = await channelRef.get();
       if (!channel.exists) {
         await channelRef.set({
           'ownerId': user.uid,
-          'name': (user.displayName?.trim().isNotEmpty == true)
-              ? user.displayName!.trim().substring(
-                  0,
-                  user.displayName!.trim().length.clamp(1, 100),
-                )
-              : 'قناة AUREN',
+          'name': displayName.isEmpty
+              ? 'قناة AUREN'
+              : (displayName.length > 100
+                  ? displayName.substring(0, 100)
+                  : displayName),
           'description': 'قناة منشئ محتوى على AUREN.',
           'subscribers': 0,
           'public': true,
