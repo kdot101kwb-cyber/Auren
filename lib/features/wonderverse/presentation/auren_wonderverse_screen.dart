@@ -5,12 +5,12 @@ class AurenWonderverseScreen extends StatelessWidget {
   const AurenWonderverseScreen({super.key});
 
   static const experiences = <_WonderExperience>[
-    _WonderExperience('one-minute-civilization', 'حضارة في دقيقة', 'ابنوا حضارة جماعية بقرارات صغيرة.', 'ابدأوا من جزيرة فارغة. كل مشارك يضيف قراراً، والقرارات تغيّر شكل الحضارة وقوانينها.', Icons.location_city_rounded, Color(0xFF8B5CF6), 'تجربة جماعية'),
-    _WonderExperience('mystery-no-owner', 'اللغز الذي لا يملكه أحد', 'المجتمع كله يجمع خيوط اللغز.', 'اكتشفوا الأدلة على مراحل، شاركوا النظريات، وصوّتوا على التفسير قبل كشف النتيجة.', Icons.manage_search_rounded, Color(0xFF06B6D4), 'لغز المجتمع'),
-    _WonderExperience('butterfly-engine', 'تأثير الفراشة', 'اختيار صغير يغيّر مسار العالم.', 'جرّب قراراً داخل قصة متفرعة وشاهد كيف تتغيّر الأحداث. أعد التجربة لاكتشاف مسارات أخرى.', Icons.bubble_chart_rounded, Color(0xFFF59E0B), 'قصة تفاعلية'),
-    _WonderExperience('creature-lab', 'مختبر المخلوقات', 'صمّموا كائناً بلمسات متعددة.', 'كل مشارك يضيف صفة أو قدرة أو موطناً، ثم يظهر سجل بمساهمات المشاركين.', Icons.pets_rounded, Color(0xFFEC4899), 'إبداع مشترك'),
-    _WonderExperience('wonder-lab', 'مصنع الخيال', 'حوّل فكرة غريبة إلى تجربة.', 'ابدأ بفكرة، أضف قيداً إبداعياً، ثم حوّلها إلى تحدٍّ أو مشهد أو عالم صغير.', Icons.auto_awesome_rounded, Color(0xFF10B981), 'اصنع تجربة'),
-    _WonderExperience('parallel-worlds', 'العوالم المتوازية', 'اكتشف نسخاً مختلفة من الأحداث.', 'غيّر تفصيلاً واحداً في موقف خيالي واستكشف عالماً بديلاً بنتائج وقواعد مختلفة.', Icons.public_rounded, Color(0xFF60A5FA), 'عوالم بديلة'),
+    _WonderExperience('حضارة في دقيقة', 'ابنوا حضارة جماعية بقرارات صغيرة.', 'ابدأوا من جزيرة فارغة. كل مشارك يضيف قراراً، والقرارات تغيّر شكل الحضارة وقوانينها.', Icons.location_city_rounded, Color(0xFF8B5CF6), 'تجربة جماعية'),
+    _WonderExperience('اللغز الذي لا يملكه أحد', 'المجتمع كله يجمع خيوط اللغز.', 'اكتشفوا الأدلة على مراحل، شاركوا النظريات، وصوّتوا على التفسير قبل كشف النتيجة.', Icons.manage_search_rounded, Color(0xFF06B6D4), 'لغز المجتمع'),
+    _WonderExperience('تأثير الفراشة', 'اختيار صغير يغيّر مسار العالم.', 'جرّب قراراً داخل قصة متفرعة وشاهد كيف تتغيّر الأحداث. أعد التجربة لاكتشاف مسارات أخرى.', Icons.bubble_chart_rounded, Color(0xFFF59E0B), 'قصة تفاعلية'),
+    _WonderExperience('مختبر المخلوقات', 'صمّموا كائناً بلمسات متعددة.', 'كل مشارك يضيف صفة أو قدرة أو موطناً، ثم يظهر سجل بمساهمات المشاركين.', Icons.pets_rounded, Color(0xFFEC4899), 'إبداع مشترك'),
+    _WonderExperience('مصنع الخيال', 'حوّل فكرة غريبة إلى تجربة.', 'ابدأ بفكرة، أضف قيداً إبداعياً، ثم حوّلها إلى تحدٍّ أو مشهد أو عالم صغير.', Icons.auto_awesome_rounded, Color(0xFF10B981), 'اصنع تجربة'),
+    _WonderExperience('العوالم المتوازية', 'اكتشف نسخاً مختلفة من الأحداث.', 'غيّر تفصيلاً واحداً في موقف خيالي واستكشف عالماً بديلاً بنتائج وقواعد مختلفة.', Icons.public_rounded, Color(0xFF60A5FA), 'عوالم بديلة'),
   ];
 
   @override
@@ -169,8 +169,8 @@ class _WonderExperienceDetail extends StatelessWidget {
 }
 
 class _WonderExperience {
-  const _WonderExperience(this.id, this.title, this.subtitle, this.description, this.icon, this.color, this.label);
-  final String id, title, subtitle, description, label;
+  const _WonderExperience(this.title, this.subtitle, this.description, this.icon, this.color, this.label);
+  final String title, subtitle, description, label;
   final IconData icon;
   final Color color;
 }
