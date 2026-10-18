@@ -179,14 +179,19 @@ jobs:
             process.exit(1);
           });
           NODE
+          DEPLOY_LOG="${RUNNER_TEMP}/firebase-staging-rules-deploy.log"
           set +e
-          npx --yes firebase-tools@15.34.0 deploy --only firestore:rules --project auren-staging --non-interactive
-          DEPLOY_STATUS=$?
+          npx --yes firebase-tools@15.34.0 deploy --only firestore:rules --project auren-staging --non-interactive 2>&1 | tee "$DEPLOY_LOG"
+          DEPLOY_STATUS=${PIPESTATUS[0]}
           set -e
           if [ "$DEPLOY_STATUS" -eq 0 ]; then
             exit 0
           fi
-          echo "Firebase CLI deployment failed; checking for the specific existing-release 409 condition."
+          if ! grep -Fq 'HTTP Error: 409, Release projects/auren-staging/releases/cloud.firestore already exists.' "$DEPLOY_LOG"; then
+            echo "Deployment failed for a different reason; refusing automatic release recovery."
+            exit "$DEPLOY_STATUS"
+          fi
+          echo "Confirmed the known existing-release 409; checking for exactly one new staging ruleset."
           node <<'NODE'
           const fs = require('fs');
           const { GoogleAuth } = require('google-auth-library');
