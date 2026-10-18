@@ -45,4 +45,12 @@ class AurenShortUploadPolicy {
       categories.contains(category);
 
   static bool isAllowedMood(String mood) => moods.contains(mood);
+
+  static List<String> parseTags(String input) => input
+      .split(RegExp(r'[,،#\\s]+'))
+      .map((tag) => tag.trim())
+      .where((tag) => tag.isNotEmpty)
+      .toSet()
+      .take(20)
+      .toList();
 }
