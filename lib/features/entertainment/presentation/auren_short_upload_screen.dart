@@ -25,6 +25,7 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
 
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _tagsController = TextEditingController();
   final _picker = ImagePicker();
 
   XFile? _video;
@@ -93,6 +94,7 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
     final video = _video;
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
+    final tags = AurenShortUploadPolicy.parseTags(_tagsController.text);
 
     if (user == null) {
       setState(() => _error = 'سجّل الدخول أولاً عشان تنشر شورت.');
@@ -186,7 +188,7 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
         'publishedAt': FieldValue.serverTimestamp(),
         'category': _category,
         'contentCategory': _category,
-        'tags': <String>[],
+        'tags': tags,
         'genres': <String>[_category],
         'language': 'ar',
         'country': '',
@@ -230,6 +232,7 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _tagsController.dispose();
     super.dispose();
   }
 
@@ -301,6 +304,17 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
               labelText: 'الوصف (اختياري)',
               border: OutlineInputBorder(),
               alignLabelWithHint: true,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _tagsController,
+            maxLength: 500,
+            decoration: const InputDecoration(
+              labelText: 'وسوم تساعد الناس يلقوا الشورت',
+              hintText: 'كرتون، ضحك، تحدي',
+              helperText: 'افصل بين الوسوم بمسافة أو فاصلة أو #',
+              border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
