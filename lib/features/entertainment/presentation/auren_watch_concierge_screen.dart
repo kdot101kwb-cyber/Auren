@@ -67,7 +67,7 @@ class _AurenWatchConciergeScreenState extends State<AurenWatchConciergeScreen> {
     if (h != null) parsed = (int.tryParse(h.group(1)!) ?? 1) * 60;
     if (h == null && m != null) parsed = int.tryParse(m.group(1)!);
     if (parsed != null && mounted) {
-      final next = parsed!.clamp(10, 240);
+      final next = parsed.clamp(10, 240);
       if (next != _minutes) setState(() => _minutes = next);
     }
   }
