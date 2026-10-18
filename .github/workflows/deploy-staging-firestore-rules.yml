@@ -215,7 +215,7 @@ jobs:
               throw new Error('New ruleset did not belong to auren-staging; refusing to change the active release.');
             }
             await client.request({
-              url: 'https://firebaserules.googleapis.com/v1/projects/auren-staging/releases/cloud.firestore?updateMask=release.rulesetName',
+              url: 'https://firebaserules.googleapis.com/v1/projects/auren-staging/releases/cloud.firestore?updateMask=ruleset_name',
               method: 'PATCH',
               data: {
                 release: {
