@@ -50,7 +50,7 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
   int _feedRetryGeneration = 0;
 
   static const moods = <String>['تسلية', 'ضحك', 'موسيقى', 'أفلام', 'Gaming', 'اكتشاف'];
-  static const shortCategories = <String>['حسب مزاجي', 'الكل', 'كرتون', 'كوميديا', 'فلوقات', 'موسيقى', 'ألعاب'];
+  static const shortCategories = <String>['حسب مزاجي', 'الكل', 'كرتون', 'كوميديا', 'فلوقات', 'موسيقى', 'ألعاب', 'تعليمي', 'رياضة', 'منوعات'];
 
   @override
   void initState() {
@@ -883,6 +883,9 @@ class _AurenEntertainmentShortsState extends State<AurenEntertainmentShortsScree
       'فلوقات' => ['فلوق', 'يومياتي', 'vlog', 'daily life'],
       'موسيقى' => ['موسيقى', 'اغنية', 'أغنية', 'music', 'song', 'singing'],
       'ألعاب' => ['ألعاب', 'لعبة', 'قيم', 'gaming', 'game', 'gameplay'],
+      'تعليمي' => ['تعليمي', 'شرح', 'درس', 'تعلم', 'tutorial', 'education', 'learn'],
+      'رياضة' => ['رياضة', 'رياضي', 'كرة', 'football', 'sports', 'workout'],
+      'منوعات' => ['منوعات', 'متنوع', 'variety', 'mix'],
       _ => const <String>[],
     };
     return keywords.any(haystack.contains);
