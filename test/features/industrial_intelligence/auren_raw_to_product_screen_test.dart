@@ -38,11 +38,13 @@ Future<void> _scrollToBuilt(
   final scrollView = tester.widget<SingleChildScrollView>(listFinder);
   final controller = scrollView.controller;
   expect(controller, isNotNull, reason: 'The form must expose its scroll controller');
-  await tester.pumpAndSettle();
+  // TextField's blinking cursor can keep pumpAndSettle alive indefinitely.
+  // The form is eager (SingleChildScrollView + Column), so use bounded pumps.
+  await tester.pump();
 
   if (target.evaluate().isNotEmpty) {
     await tester.ensureVisible(target);
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
     return;
   }
   final position = controller!.position;
@@ -52,7 +54,7 @@ Future<void> _scrollToBuilt(
     duration: const Duration(milliseconds: 250),
     curve: Curves.easeInOut,
   );
-  await tester.pumpAndSettle();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 Future<void> _expectInvalid(WidgetTester tester) async {
