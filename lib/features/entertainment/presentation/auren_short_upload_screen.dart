@@ -19,7 +19,6 @@ class AurenShortUploadScreen extends StatefulWidget {
 }
 
 class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
-  static const _maxBytes = AurenShortUploadPolicy.maxBytes;
   static const _maxDuration = AurenShortUploadPolicy.maxDuration;
   static const _categories = AurenShortUploadPolicy.categories;
   static const _moods = AurenShortUploadPolicy.moods;
@@ -44,7 +43,6 @@ class _AurenShortUploadScreenState extends State<AurenShortUploadScreen> {
       );
       if (selected == null || !mounted) return;
 
-      final extension = selected.name.split('.').last.toLowerCase();
       if (!AurenShortUploadPolicy.isMp4FileName(selected.name)) {
         setState(() {
           _error = 'اختار فيديو بصيغة MP4 عشان يشتغل على أكبر عدد من الأجهزة.';
