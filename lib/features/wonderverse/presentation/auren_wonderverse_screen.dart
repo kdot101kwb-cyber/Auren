@@ -155,6 +155,10 @@ class _WonderExperienceDetail extends StatelessWidget {
         Text(experience.title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
         const SizedBox(height: 12),
         Text(experience.description, style: theme.textTheme.bodyLarge?.copyWith(height: 1.6)),
+        if (experience.title == 'تأثير الفراشة') ...[
+          const SizedBox(height: 20),
+          const _ButterflyChoice(),
+        ],
         const SizedBox(height: 24),
         const Card(child: ListTile(
           leading: Icon(Icons.construction_outlined),
@@ -173,4 +177,71 @@ class _WonderExperience {
   final String title, subtitle, description, label;
   final IconData icon;
   final Color color;
+}
+
+class _ButterflyChoice extends StatefulWidget {
+  const _ButterflyChoice();
+
+  @override
+  State<_ButterflyChoice> createState() => _ButterflyChoiceState();
+}
+
+class _ButterflyChoiceState extends State<_ButterflyChoice> {
+  String? _choice;
+
+  static const _outcomes = <String, String>{
+    'help': 'تأخرت الحافلة، لكنك ساعدت طفلاً في الوصول إلى المكتبة. هناك تعرّفت على مخترعة غيّرت مستقبل المدينة.',
+    'continue': 'وصلت في الموعد، وقدّمت عرضك بنجاح. لكن رسالة مجهولة وصلت بعد العرض وفتحت مساراً جديداً للقصة.',
+    'investigate': 'اتبعت أثر الرسالة إلى محطة قديمة، واكتشفت خريطة لمدينة لم تظهر على أي سجل.',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('الفصل الأول: دقيقة واحدة', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          const Text('وجدت رسالة غريبة قبل موعد مهم. ماذا ستفعل؟'),
+          const SizedBox(height: 12),
+          for (final choice in const [
+            ('help', 'تساعد شخصاً يحتاجك'),
+            ('continue', 'تواصل طريقك إلى الموعد'),
+            ('investigate', 'تتبع مصدر الرسالة'),
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: OutlinedButton(
+                onPressed: () => setState(() => _choice = choice.$1),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  side: BorderSide(color: _choice == choice.$1 ? theme.colorScheme.primary : theme.colorScheme.outlineVariant),
+                ),
+                child: Row(children: [
+                  Expanded(child: Text(choice.$2)),
+                  if (_choice == choice.$1) const Icon(Icons.check_circle_rounded),
+                ]),
+              ),
+            ),
+          if (_choice != null) ...[
+            const Divider(height: 24),
+            Text('أثر اختيارك', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text(_outcomes[_choice]!, style: theme.textTheme.bodyMedium?.copyWith(height: 1.5)),
+            const SizedBox(height: 8),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _choice = null),
+                icon: const Icon(Icons.replay_rounded),
+                label: const Text('جرّب اختياراً آخر'),
+              ),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
 }
