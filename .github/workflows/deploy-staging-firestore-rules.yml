@@ -9,6 +9,16 @@ on:
       - "functions/package.json"
       - "functions/package-lock.json"
       - "functions/*_rules.integration.test.js"
+  push:
+    branches:
+      - "chore/measure-staging-firestore-executable-size"
+    paths:
+      - ".github/workflows/deploy-staging-firestore-rules.yml"
+      - "firestore.rules"
+      - "firebase.json"
+      - "functions/package.json"
+      - "functions/package-lock.json"
+      - "functions/*_rules.integration.test.js"
   workflow_dispatch:
 
 permissions:
@@ -52,7 +62,7 @@ jobs:
 
   deploy-staging-rules:
     name: Deploy rules to auren-staging only
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     needs: validate-rules
     runs-on: ubuntu-24.04
     timeout-minutes: 15
