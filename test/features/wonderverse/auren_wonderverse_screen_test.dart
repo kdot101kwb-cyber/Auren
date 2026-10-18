@@ -13,6 +13,23 @@ void main() {
     }
   });
 
+  testWidgets('butterfly experience changes the story based on a choice', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenWonderverseScreen()));
+    await tester.tap(find.text('تأثير الفراشة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('الفصل الأول: دقيقة واحدة'), findsOneWidget);
+    expect(find.text('أثر اختيارك'), findsNothing);
+    await tester.tap(find.text('تساعد شخصاً يحتاجك'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('أثر اختيارك'), findsOneWidget);
+    expect(find.textContaining('مخترعة غيّرت مستقبل المدينة.'), findsOneWidget);
+    await tester.tap(find.text('جرّب اختياراً آخر'));
+    await tester.pumpAndSettle();
+    expect(find.text('أثر اختيارك'), findsNothing);
+  });
+
   testWidgets('portal opens a detail page and returns to the portal list', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenWonderverseScreen()));
     await tester.tap(find.text('اللغز الذي لا يملكه أحد'));
