@@ -36,44 +36,35 @@ Future<void> _scrollToBuilt(
     const ValueKey<String>('raw-to-product-form-list'),
   );
   final scrollView = tester.widget<SingleChildScrollView>(listFinder);
-  final controller = scrollView.controller;
-  expect(controller, isNotNull, reason: 'The form must expose its scroll controller');
-  // TextField's blinking cursor can keep pumpAndSettle alive indefinitely.
-  // The form is eager (SingleChildScrollView + Column), so use bounded pumps.
+  final controller = scrollView.controller!;
   await tester.pump();
 
-  if (target.evaluate().isNotEmpty) {
-    // ensureVisible may wait for a scroll animation whose frames are not
-    // advanced while the future is awaited. Start it, pump the animation,
-    // then await completion to avoid hanging widget tests.
-    final ensureVisible = tester.ensureVisible(target);
-    // First pump starts the ticker; the next advances the scroll animation.
+  // First move to an end so lazy scroll children can be built if necessary.
+  if (target.evaluate().isEmpty) {
+    controller.jumpTo(
+      towardTop ? 0.0 : controller.position.maxScrollExtent,
+    );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    await ensureVisible;
-    await tester.pump();
-    return;
   }
-  final position = controller!.position;
-  final destination = towardTop ? 0.0 : position.maxScrollExtent;
-  // Jump instead of animating: these tests need deterministic access to
-  // off-screen fields, not a simulated user scroll animation.
-  controller.jumpTo(destination);
-  await tester.pump();
-  // A lazy child may only exist after the scroll position changes.
-  if (target.evaluate().isNotEmpty) {
-    final rect = tester.getRect(target.first);
-    final viewportRect = tester.getRect(listFinder);
-    if (rect.top < viewportRect.top || rect.bottom > viewportRect.bottom) {
-      final delta = rect.bottom > viewportRect.bottom
-          ? rect.bottom - viewportRect.bottom
-          : rect.top - viewportRect.top;
-      final nextOffset = (controller.offset + delta)
-          .clamp(0.0, controller.position.maxScrollExtent)
-          .toDouble();
-      controller.jumpTo(nextOffset);
-      await tester.pump();
-    }
+  if (target.evaluate().isEmpty) return;
+
+  // Position the target using geometry and jumpTo. Avoid ensureVisible and
+  // animated scrolling, which can deadlock or throw when finders are not
+  // unique and are unnecessary for widget-test setup.
+  final targetRect = tester.getRect(target.first);
+  final viewportRect = tester.getRect(listFinder);
+  double delta = 0;
+  if (targetRect.bottom > viewportRect.bottom) {
+    delta = targetRect.bottom - viewportRect.bottom;
+  } else if (targetRect.top < viewportRect.top) {
+    delta = targetRect.top - viewportRect.top;
+  }
+  if (delta != 0) {
+    final nextOffset = (controller.offset + delta)
+        .clamp(0.0, controller.position.maxScrollExtent)
+        .toDouble();
+    controller.jumpTo(nextOffset);
+    await tester.pump();
   }
 }
 
