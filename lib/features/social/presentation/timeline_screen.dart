@@ -674,10 +674,33 @@ class _MixAudioAttachmentState extends State<_MixAudioAttachment> {
                   if (!_loading)
                     StreamBuilder<Duration>(
                       stream: _player.positionStream,
-                      builder: (context, snapshot) => Text(
-                        _formatAudioDuration(snapshot.data ?? Duration.zero),
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
+                      builder: (context, snapshot) {
+                        final position = snapshot.data ?? Duration.zero;
+                        final duration = _player.duration ?? Duration.zero;
+                        final maxMs = duration.inMilliseconds.toDouble();
+                        final positionMs = position.inMilliseconds
+                            .clamp(0, duration.inMilliseconds)
+                            .toDouble();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Slider(
+                              min: 0,
+                              max: maxMs > 0 ? maxMs : 1,
+                              value: maxMs > 0 ? positionMs : 0,
+                              onChanged: maxMs > 0
+                                  ? (value) => _player.seek(
+                                        Duration(milliseconds: value.round()),
+                                      )
+                                  : null,
+                            ),
+                            Text(
+                              '${_formatAudioDuration(position)} / ${_formatAudioDuration(duration)}',
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                 ],
               ),
