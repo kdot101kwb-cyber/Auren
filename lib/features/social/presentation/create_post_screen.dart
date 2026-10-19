@@ -110,6 +110,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
     }
 
     setState(() => saving = true);
+    String? uploadedPath;
     try {
       var mediaUrl = typedUrl;
       var mediaType = typedUrl.isEmpty ? 'none' : 'image';
@@ -126,6 +127,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
           folder: 'pulse',
         );
         mediaUrl = uploaded.downloadUrl;
+        uploadedPath = uploaded.path;
         mediaType = mime.startsWith('video/') ? 'video' : 'image';
       }
 
@@ -156,6 +158,13 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
       _notice('Your post is live in AUREN Pulse.');
       Navigator.pop(context);
     } catch (_) {
+      if (uploadedPath != null) {
+        try {
+          await mediaService.delete(uid, uploadedPath);
+        } catch (_) {
+          // Keep the original publish error; storage cleanup can be retried separately.
+        }
+      }
       if (mounted) {
         _notice('Could not publish your post. Check your connection and try again.');
       }
