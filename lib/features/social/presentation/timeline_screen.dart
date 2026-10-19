@@ -409,7 +409,7 @@ class _Signal extends StatelessWidget { final IconData icon; final int value; fi
 
 class _MixMediaTile extends StatelessWidget {
   final Map<String, String> item;
-  const _MixMediaTile({required this.item});
+  const _MixMediaTile({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -825,7 +825,12 @@ class _PulseCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
               child: Column(
-                children: post.mixItems.map((item) => _MixMediaTile(item: item)).toList(),
+                children: post.mixItems
+                    .map((item) => _MixMediaTile(
+                          key: ValueKey('${item['type']}:${item['url']}'),
+                          item: item,
+                        ))
+                    .toList(),
               ),
             )
           else if (post.mediaUrl.isNotEmpty && post.mediaType == 'image')
