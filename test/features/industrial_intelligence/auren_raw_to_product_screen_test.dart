@@ -22,7 +22,6 @@ Future<void> _enterField(
   final field = find.byKey(ValueKey<String>(label));
   await _scrollToBuilt(tester, field);
   expect(field, findsOneWidget, reason: 'Field label: $label');
-  await tester.ensureVisible(field);
   await tester.enterText(field, value);
   await tester.pump();
 }
@@ -147,7 +146,6 @@ void main() {
       );
       await _scrollToBuilt(tester, selector);
       expect(selector, findsOneWidget);
-      await tester.ensureVisible(selector);
       await tester.tap(selector);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Sesame → tahini').last);
