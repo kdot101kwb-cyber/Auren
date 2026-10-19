@@ -413,49 +413,283 @@ class _MixMediaTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final type = item['type'] ?? 'link';
     final url = item['url'] ?? '';
-    if (type == 'image') {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: AspectRatio(
-            aspectRatio: 16 / 10,
-            child: Image.network(
-              url,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const SizedBox(
-                height: 120,
-                child: Center(child: Icon(Icons.broken_image_outlined, size: 40)),
-              ),
-              loadingBuilder: (context, child, progress) =>
-                  progress == null ? child : const SizedBox(
-                    height: 120,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-            ),
-          ),
+    final uri = Uri.tryParse(url);
+    if (uri == null || !{'http', 'https'}.contains(uri.scheme.toLowerCase()) || uri.host.isEmpty) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.link_off),
+          title: Text('Unavailable attachment'),
+          subtitle: Text('This media link is invalid.'),
         ),
       );
     }
-    final details = switch (type) {
-      'video' => ('Video attachment', Icons.play_circle_outline),
-      'audio' => ('Audio attachment', Icons.graphic_eq),
-      _ => ('Open shared link', Icons.open_in_new),
-    };
+
+    switch (type) {
+      case 'image':
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const ColoredBox(
+                  color: Colors.black12,
+                  child: Center(child: Icon(Icons.broken_image_outlined, size: 40)),
+                ),
+                loadingBuilder: (context, child, progress) => progress == null
+                    ? child
+                    : const SizedBox(
+                        height: 160,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+              ),
+            ),
+          ),
+        );
+      case 'video':
+        return _MixVideoAttachment(url: url);
+      case 'audio':
+        return _MixAudioAttachment(url: url);
+      default:
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.open_in_new)),
+            title: const Text('Open shared link'),
+            subtitle: Text(url, maxLines: 2, overflow: TextOverflow.ellipsis),
+            trailing: const Icon(Icons.arrow_outward),
+            onTap: () async {
+              if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Could not open this link.')),
+                );
+              }
+            },
+          ),
+        );
+    }
+  }
+}
+
+class _MixVideoAttachment extends StatefulWidget {
+  final String url;
+  const _MixVideoAttachment({required this.url});
+
+  @override
+  State<_MixVideoAttachment> createState() => _MixVideoAttachmentState();
+}
+
+class _MixVideoAttachmentState extends State<_MixVideoAttachment> {
+  late final VideoPlayerController _controller;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _controller.initialize().then((_) {
+      if (mounted) setState(() {});
+    }).catchError((Object error) {
+      if (mounted) setState(() => _error = error);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.videocam_off_outlined),
+          title: Text('Video unavailable'),
+          subtitle: Text('Check the media URL or try again later.'),
+        ),
+      );
+    }
+    if (!_controller.value.isInitialized) {
+      return const Card(
+        child: SizedBox(
+          height: 150,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
     return Card(
+      clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(child: Icon(details.$2)),
-        title: Text(details.$1),
-        subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
-        trailing: const Icon(Icons.arrow_outward),
-        onTap: () async {
-          final uri = Uri.tryParse(url);
-          if (uri == null || !{'http', 'https'}.contains(uri.scheme.toLowerCase())) return;
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: _controller.value.aspectRatio > 0
+                ? _controller.value.aspectRatio
+                : 16 / 9,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(_controller),
+                IconButton.filledTonal(
+                  tooltip: _controller.value.isPlaying ? 'Pause video' : 'Play video',
+                  onPressed: () => setState(() {
+                    _controller.value.isPlaying
+                        ? _controller.pause()
+                        : _controller.play();
+                  }),
+                  icon: Icon(
+                    _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                    size: 34,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          VideoProgressIndicator(_controller, allowScrubbing: true),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.videocam_outlined, size: 18),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('Video')),
+                Text(
+                  _controller.value.isPlaying ? 'Playing' : 'Tap to play',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
+  }
+}
+
+class _MixAudioAttachment extends StatefulWidget {
+  final String url;
+  const _MixAudioAttachment({required this.url});
+
+  @override
+  State<_MixAudioAttachment> createState() => _MixAudioAttachmentState();
+}
+
+class _MixAudioAttachmentState extends State<_MixAudioAttachment> {
+  late final AudioPlayer _player;
+  Object? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      await _player.setUrl(widget.url);
+    } catch (error) {
+      _error = error;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.audio_file_outlined),
+          title: Text('Audio unavailable'),
+          subtitle: Text('Check the media URL or try again later.'),
+        ),
+      );
+    }
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          children: [
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              StreamBuilder<PlayerState>(
+                stream: _player.playerStateStream,
+                builder: (context, snapshot) {
+                  final playing = snapshot.data?.playing ?? false;
+                  return IconButton(
+                    tooltip: playing ? 'Pause audio' : 'Play audio',
+                    onPressed: () async {
+                      try {
+                        if (playing) {
+                          await _player.pause();
+                        } else {
+                          await _player.play();
+                        }
+                      } catch (error) {
+                        if (mounted) setState(() => _error = error);
+                      }
+                    },
+                    icon: Icon(playing ? Icons.pause_circle : Icons.play_circle),
+                    iconSize: 34,
+                  );
+                },
+              ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Audio', style: TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    widget.url,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  if (!_loading)
+                    StreamBuilder<Duration>(
+                      stream: _player.positionStream,
+                      builder: (context, snapshot) => Text(
+                        _formatAudioDuration(snapshot.data ?? Duration.zero),
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatAudioDuration(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 }
 
