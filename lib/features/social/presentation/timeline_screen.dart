@@ -825,12 +825,14 @@ class _PulseCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
               child: Column(
-                children: post.mixItems
-                    .map((item) => _MixMediaTile(
-                          key: ValueKey('$index:${item['type']}:${item['url']}'),
-                          item: item,
-                        ))
-                    .toList(),
+                children: post.mixItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  return _MixMediaTile(
+                    key: ValueKey('$index:${item['type']}:${item['url']}'),
+                    item: item,
+                  );
+                }).toList(),
               ),
             )
           else if (post.mediaUrl.isNotEmpty && post.mediaType == 'image')
