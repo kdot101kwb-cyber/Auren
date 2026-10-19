@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/post.dart';
 import '../../../core/models/user_profile.dart';
 import '../../profile/presentation/public_profile_screen.dart';
@@ -8,6 +9,7 @@ import '../../../services/social/post_repository.dart';
 import '../../../services/social/safety_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
+import 'living_mix_screen.dart';
 import 'edit_post_screen.dart';
 import 'saved_pulse_screen.dart';
 import 'user_search_screen.dart';
@@ -100,7 +102,7 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                     : allPosts.where((p) => p.contentType == selectedType).toList();
                 final opportunities = allPosts.where((p) => p.contentType == 'opportunity').length;
                 final projects = allPosts.where((p) => p.contentType == 'project').length;
-                final types = const [('all', 'All'), ('moment', 'Moments'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
+                final types = const [('all', 'All'), ('moment', 'Moments'), ('living', 'Living'), ('mix', 'Mix Posts'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
                   itemCount: posts.length + 5,
@@ -200,9 +202,9 @@ class _MomentsStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     const items = [
       ('Create', Icons.add),
-      ('Now', Icons.bolt),
-      ('Nearby', Icons.location_on_outlined),
-      ('Projects', Icons.rocket_launch_outlined),
+      ('Living', Icons.bolt),
+      ('Mix Post', Icons.dashboard_customize_outlined),
+      ('Now', Icons.explore_outlined),
       ('People', Icons.people_outline),
     ];
     return SizedBox(
@@ -239,6 +241,12 @@ class _MomentsStrip extends StatelessWidget {
     switch (item) {
       case 'Create':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCreatePostScreen()));
+        break;
+      case 'Living':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenLivingMixComposerScreen(initialFormat: 'living')));
+        break;
+      case 'Mix Post':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenLivingMixComposerScreen(initialFormat: 'mix')));
         break;
       case 'People':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenUserSearchScreen()));
@@ -351,6 +359,10 @@ class _PulseCard extends StatelessWidget {
     switch (post.contentType) {
       case 'opportunity':
         return 'Opportunity';
+      case 'living':
+        return 'Living Moment';
+      case 'mix':
+        return 'Mix Post';
       case 'project':
         return 'Project';
       case 'question':
@@ -366,6 +378,10 @@ class _PulseCard extends StatelessWidget {
     switch (post.contentType) {
       case 'opportunity':
         return Icons.work_outline;
+      case 'living':
+        return Icons.bolt;
+      case 'mix':
+        return Icons.dashboard_customize_outlined;
       case 'project':
         return Icons.rocket_launch_outlined;
       case 'question':
@@ -440,6 +456,8 @@ class _PulseCard extends StatelessWidget {
               ],
             ),
           ),
+          if (post.contentType == 'living')
+            _LivingMomentSummary(post: post, uid: uid),
           if (post.mediaUrl.isNotEmpty)
             AspectRatio(
               aspectRatio: 16 / 10,
@@ -459,6 +477,8 @@ class _PulseCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: Text(post.text),
             ),
+          if (post.contentType == 'mix' && post.mixBlocks.isNotEmpty)
+            _MixPostBlocks(blocks: post.mixBlocks),
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 2, 8, 8),
             child: Row(
@@ -654,6 +674,157 @@ class _PulseCard extends StatelessWidget {
     );
   }
 
+}
+
+class _LivingMomentSummary extends StatelessWidget {
+  final AurenPost post;
+  final String uid;
+  const _LivingMomentSummary({required this.post, required this.uid});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: .45),
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: .18)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(post.livingStatus == 'completed' ? Icons.check_circle : Icons.sensors,
+                  color: post.livingStatus == 'completed' ? Colors.green : Theme.of(context).colorScheme.primary,
+                  size: 18),
+              const SizedBox(width: 7),
+              Expanded(child: Text(post.livingStatus == 'completed' ? 'Moment completed' : 'Living Moment • evolving',
+                  style: const TextStyle(fontWeight: FontWeight.w800))),
+              if (post.livingStatus != 'completed' && post.authorId == uid)
+                TextButton.icon(
+                  onPressed: () => _addUpdate(context),
+                  icon: const Icon(Icons.add, size: 17),
+                  label: const Text('Update'),
+                ),
+            ]),
+            if (post.livingSummary.isNotEmpty) ...[
+              const SizedBox(height: 5),
+              Text(post.livingSummary),
+            ],
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: PostRepository().watchLivingUpdates(post.id),
+              builder: (context, snapshot) {
+                final updates = snapshot.data ?? const <Map<String, dynamic>>[];
+                if (updates.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 7),
+                    child: Text('The story is just beginning. Add updates as it unfolds.',
+                        style: TextStyle(fontSize: 12)),
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    Text('${updates.length} recent updates', style: Theme.of(context).textTheme.labelMedium),
+                    for (final update in updates.take(3))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 7),
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Container(width: 7, height: 7, margin: const EdgeInsets.only(top: 6),
+                              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle)),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(update['text']?.toString() ?? '', maxLines: 3, overflow: TextOverflow.ellipsis)),
+                        ]),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      );
+
+  Future<void> _addUpdate(BuildContext context) async {
+    final controller = TextEditingController();
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Update this moment'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 1000,
+          maxLines: 4,
+          decoration: const InputDecoration(hintText: 'What changed? What happened next?', border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text.trim()), child: const Text('Add update')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || value.trim().isEmpty || !context.mounted) return;
+    try {
+      await PostRepository().addLivingUpdate(post.id, authorId: uid, text: value);
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Moment updated.')));
+    } catch (error) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not add update: $error')));
+    }
+  }
+}
+
+class _MixPostBlocks extends StatelessWidget {
+  final List<Map<String, dynamic>> blocks;
+  const _MixPostBlocks({required this.blocks});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: blocks.map((block) {
+            final type = block['type']?.toString() ?? 'text';
+            final value = block['value']?.toString() ?? '';
+            if (value.isEmpty) return const SizedBox.shrink();
+            if (type == 'image') {
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.network(value, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const ListTile(leading: Icon(Icons.broken_image_outlined), title: Text('Image unavailable')),
+                    loadingBuilder: (context, child, progress) => progress == null ? child : const SizedBox(height: 90, child: Center(child: CircularProgressIndicator())),
+                  ),
+                ),
+              );
+            }
+            final icon = type == 'audio' ? Icons.graphic_eq : type == 'link' ? Icons.link : Icons.notes;
+            return Card(
+              margin: const EdgeInsets.only(top: 8),
+              child: ListTile(
+                leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+                title: Text(type == 'audio' ? 'Audio clip' : type == 'link' ? 'Open link' : 'Note'),
+                subtitle: Text(value, maxLines: type == 'text' ? 5 : 2, overflow: TextOverflow.ellipsis),
+                onTap: type == 'link' || type == 'audio' ? () => _openBlock(context, value) : null,
+              ),
+            );
+          }).toList(growable: false),
+        ),
+      );
+
+  Future<void> _openBlock(BuildContext context, String value) async {
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasScheme || !['http', 'https'].contains(uri.scheme)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('This link is not valid.')));
+      return;
+    }
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open this link.')));
+    }
+  }
 }
 
 class _PulseCoreFiveCard extends StatelessWidget {
