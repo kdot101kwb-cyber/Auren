@@ -25,6 +25,38 @@ class PostRepository {
     'searchText': post.text.trim().toLowerCase(),
   });
 
+
+  CollectionReference<Map<String, dynamic>> _livingUpdates(String postId) =>
+      _posts.doc(postId).collection('updates');
+
+  Stream<List<Map<String, dynamic>>> watchLivingUpdates(String postId) =>
+      _livingUpdates(postId)
+          .orderBy('createdAt', descending: true)
+          .limit(10)
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((doc) => <String, dynamic>{'id': doc.id, ...doc.data()})
+              .toList(growable: false));
+
+  Future<void> addLivingUpdate(
+    String postId, {
+    required String authorId,
+    required String text,
+  }) async {
+    final value = text.trim();
+    if (value.isEmpty) throw ArgumentError.value(text, 'text', 'Update cannot be empty.');
+    if (value.length > 1000) throw ArgumentError.value(text, 'text', 'Update must be at most 1000 characters.');
+    final post = await _posts.doc(postId).get();
+    if (!post.exists || post.data()?['contentType'] != 'living') {
+      throw StateError('Living Moment not found.');
+    }
+    await _livingUpdates(postId).add({
+      'authorId': authorId,
+      'text': value,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> toggleLike(String postId, String uid, bool liked) async {
     final ref = _posts.doc(postId);
     final like = ref.collection('likes').doc(uid);
