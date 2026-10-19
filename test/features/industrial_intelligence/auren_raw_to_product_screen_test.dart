@@ -20,7 +20,7 @@ Future<void> _enterField(
   required String value,
 }) async {
   final field = find.byKey(ValueKey<String>(label));
-  await tester.pump();
+  await _scrollToBuilt(tester, field);
   expect(field, findsOneWidget, reason: 'Field label: $label');
   // enterText handles bringing an off-screen editable field into view.
   await tester.enterText(field, value);
@@ -56,16 +56,25 @@ Future<void> _scrollToBuilt(
   }
   final position = controller!.position;
   final destination = towardTop ? 0.0 : position.maxScrollExtent;
-  final scrollAnimation = controller.animateTo(
-    destination,
-    duration: const Duration(milliseconds: 250),
-    curve: Curves.easeInOut,
-  );
-  // Advance the fake clock while the animation is in flight; awaiting the
-  // animation before pumping leaves widget tests waiting forever.
+  // Jump instead of animating: these tests need deterministic access to
+  // off-screen fields, not a simulated user scroll animation.
+  controller.jumpTo(destination);
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 300));
-  await scrollAnimation;
+  // A lazy child may only exist after the scroll position changes.
+  if (target.evaluate().isNotEmpty) {
+    final rect = tester.getRect(target.first);
+    final viewportRect = tester.getRect(listFinder);
+    if (rect.top < viewportRect.top || rect.bottom > viewportRect.bottom) {
+      final delta = rect.bottom > viewportRect.bottom
+          ? rect.bottom - viewportRect.bottom
+          : rect.top - viewportRect.top;
+      final nextOffset = (controller.offset + delta)
+          .clamp(0.0, controller.position.maxScrollExtent)
+          .toDouble();
+      controller.jumpTo(nextOffset);
+      await tester.pump();
+    }
+  }
 }
 
 Future<void> _expectInvalid(WidgetTester tester) async {
