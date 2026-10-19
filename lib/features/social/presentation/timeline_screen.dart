@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../../../core/theme/auren_nebula_tokens.dart';
 import 'package:flutter/services.dart';
 import '../../../core/models/post.dart';
@@ -449,19 +450,22 @@ class _PulseCard extends StatelessWidget {
             ),
           ),
           if (post.mediaUrl.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 10,
-              child: Image.network(
-                post.mediaUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const ColoredBox(
-                  color: Colors.black26,
-                  child: Center(child: Icon(Icons.broken_image_outlined, size: 42)),
+            if (post.mediaType == 'video')
+              _PulseVideo(url: post.mediaUrl)
+            else
+              AspectRatio(
+                aspectRatio: 16 / 10,
+                child: Image.network(
+                  post.mediaUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const ColoredBox(
+                    color: Colors.black26,
+                    child: Center(child: Icon(Icons.broken_image_outlined, size: 42)),
+                  ),
+                  loadingBuilder: (context, child, progress) =>
+                      progress == null ? child : const Center(child: CircularProgressIndicator()),
                 ),
-                loadingBuilder: (context, child, progress) =>
-                    progress == null ? child : const Center(child: CircularProgressIndicator()),
               ),
-            ),
           if (post.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
@@ -662,6 +666,108 @@ class _PulseCard extends StatelessWidget {
     );
   }
 
+}
+
+
+class _PulseVideo extends StatefulWidget {
+  final String url;
+  const _PulseVideo({required this.url});
+
+  @override
+  State<_PulseVideo> createState() => _PulseVideoState();
+}
+
+class _PulseVideoState extends State<_PulseVideo> {
+  late final VideoPlayerController _controller;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _controller.initialize().then((_) {
+      if (mounted) setState(() {});
+    }).catchError((_) {
+      if (mounted) setState(() => _failed = true);
+    });
+    _controller.addListener(_onVideoChanged);
+  }
+
+  void _onVideoChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onVideoChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) {
+      return const AspectRatio(
+        aspectRatio: 16 / 10,
+        child: ColoredBox(
+          color: Colors.black12,
+          child: Center(child: Icon(Icons.videocam_off_outlined, size: 42)),
+        ),
+      );
+    }
+    if (!_controller.value.isInitialized) {
+      return const AspectRatio(
+        aspectRatio: 16 / 10,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return AspectRatio(
+      aspectRatio: _controller.value.aspectRatio > 0
+          ? _controller.value.aspectRatio
+          : 16 / 10,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          VideoPlayer(_controller),
+          Material(
+            color: Colors.black26,
+            child: InkWell(
+              onTap: () {
+                if (_controller.value.isPlaying) {
+                  _controller.pause();
+                } else {
+                  _controller.play();
+                }
+              },
+              child: Center(
+                child: Icon(
+                  _controller.value.isPlaying
+                      ? Icons.pause_circle_filled_rounded
+                      : Icons.play_circle_fill_rounded,
+                  color: Colors.white,
+                  size: 58,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 8,
+            right: 8,
+            bottom: 8,
+            child: VideoProgressIndicator(
+              _controller,
+              allowScrubbing: true,
+              colors: const VideoProgressColors(
+                playedColor: AurenNebulaTokens.violet,
+                bufferedColor: Colors.white54,
+                backgroundColor: Colors.white24,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PulseCoreFiveCard extends StatelessWidget {
