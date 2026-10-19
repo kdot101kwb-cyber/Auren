@@ -29,7 +29,33 @@ class RawToProductNumberParser {
       normalized = normalized.replaceAll(whitespace, '');
     }
 
-    if (RegExp(r'^\d{1,3}(,\d{3})+(\.\d+)?$').hasMatch(normalized)) {
+    final commaDecimalWithDotGrouping =
+        RegExp(r'^\d{1,3}(\.\d{3})+,\d+
+
+    final parsed = double.tryParse(normalized);
+    return parsed != null && parsed.isFinite ? parsed : null;
+  }
+}
+);
+    final commaThousandsWithDotDecimal =
+        RegExp(r'^\d{1,3}(,\d{3})+\.\d+
+
+    final parsed = double.tryParse(normalized);
+    return parsed != null && parsed.isFinite ? parsed : null;
+  }
+}
+);
+    if (commaDecimalWithDotGrouping.hasMatch(normalized)) {
+      // Accept the common European convention, e.g. 1.234,56.
+      normalized = normalized.replaceAll('.', '').replaceAll(',', '.');
+    } else if (commaThousandsWithDotDecimal.hasMatch(normalized) ||
+        RegExp(r'^\d{1,3}(,\d{3})+
+
+    final parsed = double.tryParse(normalized);
+    return parsed != null && parsed.isFinite ? parsed : null;
+  }
+}
+).hasMatch(normalized)) {
       normalized = normalized.replaceAll(',', '');
     } else if (normalized.contains(',') && !normalized.contains('.')) {
       normalized = normalized.replaceAll(',', '.');
