@@ -14,7 +14,14 @@ void main() {
       expect(find.text('Evidence-aware verification'), findsOneWidget);
       expect(find.text('Report suspicious activity'), findsOneWidget);
       expect(find.text('Personal safety controls'), findsOneWidget);
-      expect(find.text('Safer opportunities and commerce'), findsOneWidget);
+
+      final saferCommerce = find.text('Safer opportunities and commerce');
+      await tester.scrollUntilVisible(
+        saferCommerce,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(saferCommerce, findsOneWidget);
     });
 
     testWidgets('does not present an unvalidated public trust score',
@@ -23,10 +30,15 @@ void main() {
         const MaterialApp(home: AurenTrustIntelligenceScreen()),
       );
 
-      expect(
-        find.textContaining('No public trust score is shown in this initial release.'),
-        findsOneWidget,
+      final noPublicScore = find.textContaining(
+        'No public trust score is shown in this initial release.',
       );
+      await tester.scrollUntilVisible(
+        noPublicScore,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(noPublicScore, findsOneWidget);
     });
   });
 }
