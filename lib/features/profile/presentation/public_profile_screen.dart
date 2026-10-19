@@ -352,10 +352,27 @@ class _AurenPublicProfileScreenState extends State<AurenPublicProfileScreen> {
                 }
                 return Column(
                   children: [
-                    FilledButton.tonalIcon(
-                      onPressed: messaging ? null : () => _message(me),
-                      icon: const Icon(Icons.chat_bubble_outline),
-                      label: Text(messaging ? 'Opening…' : 'Message'),
+                    StreamBuilder<AurenProfileMode>(
+                      stream: profileModes.watchPublicActiveMode(widget.profile.uid),
+                      builder: (context, modeSnapshot) {
+                        final mode = modeSnapshot.data;
+                        if (mode == null) return const SizedBox.shrink();
+                        return StreamBuilder<AurenProfileModeData>(
+                          stream: profileModes.watchPublic(widget.profile.uid, mode),
+                          builder: (context, profileSnapshot) {
+                            // Direct messaging from the public profile follows
+                            // the owner's explicit contact-visibility setting.
+                            if (profileSnapshot.data?.showContact != true) {
+                              return const SizedBox.shrink();
+                            }
+                            return FilledButton.tonalIcon(
+                              onPressed: messaging ? null : () => _message(me),
+                              icon: const Icon(Icons.chat_bubble_outline),
+                              label: Text(messaging ? 'Opening…' : 'Message'),
+                            );
+                          },
+                        );
+                      },
                     ),
                     FilledButton.tonalIcon(
                       onPressed: _askAuren,
