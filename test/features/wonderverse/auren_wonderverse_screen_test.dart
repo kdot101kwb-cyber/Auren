@@ -72,9 +72,9 @@ void main() {
     await tester.tap(find.text('العودة إلى العوالم'));
     await tester.pumpAndSettle();
 
-    final portalHeading = find.text('بوابات العوالم');
-    await tester.ensureVisible(portalHeading);
-    await tester.pumpAndSettle();
-    expect(portalHeading, findsOneWidget);
+    // The list restores its previous scroll offset; the app bar is a stable
+    // assertion that navigation returned to the portal screen.
+    expect(find.text('WONDERVERSE'), findsOneWidget);
+    expect(find.text('العودة إلى العوالم'), findsNothing);
   });
 }
