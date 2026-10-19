@@ -52,6 +52,8 @@ Future<void> _scrollToBuilt(
     // advanced while the future is awaited. Start it, pump the animation,
     // then await completion to avoid hanging widget tests.
     final ensureVisible = tester.ensureVisible(target);
+    // First pump starts the ticker; the next advances the scroll animation.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await ensureVisible;
     await tester.pump();
