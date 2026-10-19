@@ -101,17 +101,17 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                     : allPosts.where((p) => p.contentType == selectedType).toList();
                 final opportunities = allPosts.where((p) => p.contentType == 'opportunity').length;
                 final projects = allPosts.where((p) => p.contentType == 'project').length;
-                final types = const [('all', 'All'), ('moment', 'Moments'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
+                final types = const [('all', 'All'), ('moment', 'Moments'), ('mix', 'Mix Posts'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
-                  itemCount: posts.length + 6,
+                  itemCount: posts.isEmpty ? 7 : posts.length + 6,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
                     if (i == 0) return _PulseCoreFiveCard(uid: uid);
                     if (i == 1) return const _MomentsStrip();
                     if (i == 2) return const _LivingMixIntro();
                     if (i == 3) return _SportsPulseCard(uid: uid);
-                    if (i == 4) return _PulseFilterBar(types: const [('all', 'All'), ('moment', 'Moments'), ('mix', 'Mix Posts'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')], selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
+                    if (i == 4) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
                     if (i == 5) return _PulseSignals(opportunities: opportunities, projects: projects);
                     if (posts.isEmpty) return const _EmptyPulse();
                     return _PulseCard(post: posts[i - 6], uid: uid);
