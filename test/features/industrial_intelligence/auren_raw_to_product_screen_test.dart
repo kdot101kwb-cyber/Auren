@@ -95,7 +95,7 @@ void main() {
       await tester.pumpWidget(_app());
       await _enterField(
         tester,
-        label: 'Selling price per product',
+        label: 'Selling price per product unit',
         value: '',
       );
       await _expectInvalid(tester);
@@ -136,7 +136,7 @@ void main() {
       await tester.pumpWidget(_app());
       await _enterField(
         tester,
-        label: 'Selling price per product',
+        label: 'Selling price per product unit',
         value: '3.2oops',
       );
       await _expectInvalid(tester);
