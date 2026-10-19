@@ -3,6 +3,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:auren/features/wonderverse/presentation/auren_wonderverse_screen.dart';
 
 void main() {
+  Future<void> openPortal(WidgetTester tester, String title) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenWonderverseScreen()));
+    final portal = find.text(title);
+    await tester.scrollUntilVisible(
+      portal,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final tile = find.ancestor(of: portal, matching: find.byType(InkWell)).first;
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('Wonderverse renders six experience portals', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenWonderverseScreen()));
     expect(find.text('WONDERVERSE'), findsOneWidget);
@@ -28,38 +41,24 @@ void main() {
   });
 
   testWidgets('butterfly experience changes the story based on a choice', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: AurenWonderverseScreen()));
-    final butterfly = find.text('تأثير الفراشة');
-    await tester.scrollUntilVisible(
-      butterfly,
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(butterfly);
-    await tester.pumpAndSettle();
+    await openPortal(tester, 'تأثير الفراشة');
 
     expect(find.text('الفصل الأول: دقيقة واحدة'), findsOneWidget);
     expect(find.text('أثر اختيارك'), findsNothing);
+    await tester.ensureVisible(find.text('تساعد شخصاً يحتاجك'));
     await tester.tap(find.text('تساعد شخصاً يحتاجك'));
     await tester.pumpAndSettle();
 
     expect(find.text('أثر اختيارك'), findsOneWidget);
     expect(find.textContaining('مخترعة غيّرت مستقبل المدينة.'), findsOneWidget);
+    await tester.ensureVisible(find.text('جرّب اختياراً آخر'));
     await tester.tap(find.text('جرّب اختياراً آخر'));
     await tester.pumpAndSettle();
     expect(find.text('أثر اختيارك'), findsNothing);
   });
 
   testWidgets('portal opens a detail page and returns to the portal list', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: AurenWonderverseScreen()));
-    final mystery = find.text('اللغز الذي لا يملكه أحد');
-    await tester.scrollUntilVisible(
-      mystery,
-      250,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(mystery);
-    await tester.pumpAndSettle();
+    await openPortal(tester, 'اللغز الذي لا يملكه أحد');
 
     expect(find.text('المرحلة التأسيسية'), findsOneWidget);
     expect(find.text('المجتمع كله يجمع خيوط اللغز.'), findsOneWidget);
