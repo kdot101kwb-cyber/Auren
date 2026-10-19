@@ -94,3 +94,29 @@ test('signed-in users can read updates, but unauthenticated users cannot', async
   await assertFails(testEnv.unauthenticatedContext().firestore()
     .doc('posts/living-read/moment_updates/seeded').get());
 });
+
+
+test('update author can edit only the text field', async () => {
+  await seedPost('living-edit');
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('posts/living-edit/moment_updates/editable').set(
+      updateData('moment-owner'),
+    );
+  });
+  const ownerRef = updateRef('moment-owner', 'living-edit', 'editable');
+  await assertSucceeds(ownerRef.update({ text: 'A clearer update' }));
+  await assertFails(ownerRef.update({ authorId: 'intruder' }));
+  await assertFails(updateRef('intruder', 'living-edit', 'editable')
+    .update({ text: 'Hijacked update' }));
+});
+
+test('only the update author can delete a moment update', async () => {
+  await seedPost('living-delete');
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('posts/living-delete/moment_updates/removable').set(
+      updateData('moment-owner'),
+    );
+  });
+  await assertFails(updateRef('intruder', 'living-delete', 'removable').delete());
+  await assertSucceeds(updateRef('moment-owner', 'living-delete', 'removable').delete());
+});
