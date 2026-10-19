@@ -204,13 +204,18 @@ jobs:
               throw new Error('Firebase Rules API returned no executable bytes.');
             }
             const sizeBytes = Buffer.from(result.executable, 'base64').length;
-            const limitBytes = 256000;
+            const budgetBytes = 240000;
+            const firebaseLimitBytes = 256000;
             console.log(`STAGING_FIRESTORE_EXECUTABLE_SIZE_BYTES=${sizeBytes}`);
-            console.log(`STAGING_FIRESTORE_EXECUTABLE_LIMIT_BYTES=${limitBytes}`);
-            if (sizeBytes >= limitBytes) {
-              throw new Error(`Compiled Firestore executable is ${sizeBytes} bytes; expected less than ${limitBytes} bytes.`);
+            console.log(`STAGING_FIRESTORE_EXECUTABLE_BUDGET_BYTES=${budgetBytes}`);
+            console.log(`STAGING_FIRESTORE_EXECUTABLE_LIMIT_BYTES=${firebaseLimitBytes}`);
+            if (sizeBytes >= firebaseLimitBytes) {
+              throw new Error(`Compiled Firestore executable is ${sizeBytes} bytes; Firebase limit is ${firebaseLimitBytes} bytes.`);
             }
-            console.log('Compiled Firestore executable is below the Firebase limit.');
+            if (sizeBytes >= budgetBytes) {
+              throw new Error(`Compiled Firestore executable is ${sizeBytes} bytes; exceeds the safer project budget of ${budgetBytes} bytes. Reduce the rules size before merging.`);
+            }
+            console.log('Compiled Firestore executable is below the safer project budget and Firebase limit.');
           })().catch((error) => {
             console.error('Failed to measure deployed staging Firestore executable:', error.message);
             process.exit(1);
