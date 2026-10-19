@@ -2,6 +2,7 @@ class AurenPost {
   final String id, authorId, text, mediaUrl, mediaType, contentType, contextLabel, actionLabel, communityId;
   final DateTime createdAt;
   final int likes, comments;
+  final List<Map<String, String>> mixItems;
 
   const AurenPost({
     required this.id,
@@ -16,6 +17,7 @@ class AurenPost {
     this.communityId = '',
     this.likes = 0,
     this.comments = 0,
+    this.mixItems = const [],
   });
 
   Map<String, dynamic> toMap() => {
@@ -30,6 +32,7 @@ class AurenPost {
         'createdAt': createdAt.toUtc().toIso8601String(),
         'likes': likes,
         'comments': comments,
+        if (mixItems.isNotEmpty) 'mixItems': mixItems,
       };
 
   factory AurenPost.fromMap(String id, Map<String, dynamic> m) => AurenPost(
@@ -46,5 +49,10 @@ class AurenPost {
             DateTime.tryParse(m['createdAt']?.toString() ?? '') ?? DateTime.now(),
         likes: (m['likes'] as num?)?.toInt() ?? 0,
         comments: (m['comments'] as num?)?.toInt() ?? 0,
+        mixItems: (m['mixItems'] as List<dynamic>? ?? const [])
+            .whereType<Map>()
+            .map((item) => item.map((key, value) => MapEntry(key.toString(), value.toString())))
+            .where((item) => (item['url'] ?? '').trim().isNotEmpty)
+            .toList(),
       );
 }
