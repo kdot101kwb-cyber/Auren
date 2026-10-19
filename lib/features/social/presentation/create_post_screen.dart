@@ -15,6 +15,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
   final mediaController = TextEditingController();
   bool saving = false;
   String contentType = 'moment';
+  String mediaType = 'image';
 
   final types = const {
     'moment': 'Moment',
@@ -38,7 +39,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
           authorId: uid,
           text: text,
           mediaUrl: mediaUrl,
-          mediaType: mediaUrl.isEmpty ? 'none' : 'image',
+          mediaType: mediaUrl.isEmpty ? 'none' : mediaType,
           contentType: contentType,
           contextLabel: contentType == 'opportunity'
               ? 'Open for collaboration'
@@ -112,6 +113,22 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
                 prefixIcon: Icon(Icons.link),
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: mediaType,
+              decoration: const InputDecoration(
+                labelText: 'Media type',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'image', child: Text('Image')),
+                DropdownMenuItem(value: 'video', child: Text('Video')),
+                DropdownMenuItem(value: 'audio', child: Text('Audio')),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => mediaType = value);
+              },
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
