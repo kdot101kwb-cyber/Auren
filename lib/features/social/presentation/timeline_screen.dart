@@ -10,6 +10,7 @@ import '../../../services/social/safety_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
 import 'edit_post_screen.dart';
+import 'living_moment_updates_screen.dart';
 import 'saved_pulse_screen.dart';
 import 'user_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
@@ -615,6 +616,21 @@ class _PulseCard extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.forum_outlined),
                 ),
+                if (post.contextLabel.startsWith('Living Moment'))
+                  IconButton(
+                    tooltip: 'Follow moment updates',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AurenLivingMomentUpdatesScreen(
+                          postId: post.id,
+                          ownerId: post.authorId,
+                          currentUid: uid,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.timeline),
+                  ),
                 StreamBuilder<bool>(
                   stream: repo.watchSaved(post.id, uid),
                   builder: (context, s) {
