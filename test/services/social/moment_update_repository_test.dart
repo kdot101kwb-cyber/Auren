@@ -56,8 +56,12 @@ void main() {
       expect(update.text, 'A new milestone');
       expect(update.createdAt, isNull);
     });
-    test('watch returns updates ordered newest first and capped at 50', () async {
-      final updates = firestore.collection('posts').doc('post_feed')
+
+    test('watch returns updates ordered newest first and capped at 50',
+        () async {
+      final updates = firestore
+          .collection('posts')
+          .doc('post_feed')
           .collection('moment_updates');
       for (var i = 0; i < 55; i++) {
         await updates.doc('update_$i').set({
@@ -75,46 +79,19 @@ void main() {
     });
 
     test('delete removes only the requested update document', () async {
-      final updates = firestore.collection('posts').doc('post_delete')
+      final updates = firestore
+          .collection('posts')
+          .doc('post_delete')
           .collection('moment_updates');
       await updates.doc('keep').set({'authorId': 'owner_1', 'text': 'Keep'});
-      await updates.doc('remove').set({'authorId': 'owner_1', 'text': 'Remove'});
+      await updates
+          .doc('remove')
+          .set({'authorId': 'owner_1', 'text': 'Remove'});
 
       await repository.delete(postId: 'post_delete', updateId: 'remove');
 
       expect((await updates.doc('remove').get()).exists, isFalse);
       expect((await updates.doc('keep').get()).exists, isTrue);
     });
-
   });
 }
-
-    test('watch returns updates ordered newest first and capped at 50', () async {
-      final post = firestore.collection('posts').doc('post_feed');
-      final updates = post.collection('moment_updates');
-      for (var i = 0; i < 55; i++) {
-        await updates.doc('update_$i').set({
-          'authorId': 'owner_1',
-          'text': 'Update $i',
-          'createdAt': DateTime.utc(2026, 1, 1).add(Duration(minutes: i)),
-        });
-      }
-
-      final result = await repository.watch('post_feed').first;
-
-      expect(result, hasLength(50));
-      expect(result.first.text, 'Update 54');
-      expect(result.last.text, 'Update 5');
-    });
-
-    test('delete removes only the requested update document', () async {
-      final updates = firestore.collection('posts').doc('post_delete')
-          .collection('moment_updates');
-      await updates.doc('keep').set({'authorId': 'owner_1', 'text': 'Keep'});
-      await updates.doc('remove').set({'authorId': 'owner_1', 'text': 'Remove'});
-
-      await repository.delete(postId: 'post_delete', updateId: 'remove');
-
-      expect((await updates.doc('remove').get()).exists, isFalse);
-      expect((await updates.doc('keep').get()).exists, isTrue);
-    });
