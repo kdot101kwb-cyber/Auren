@@ -20,8 +20,9 @@ Future<void> _enterField(
   required String value,
 }) async {
   final field = find.byKey(ValueKey<String>(label));
-  await _scrollToBuilt(tester, field);
+  await tester.pump();
   expect(field, findsOneWidget, reason: 'Field label: $label');
+  // enterText handles bringing an off-screen editable field into view.
   await tester.enterText(field, value);
   await tester.pump();
 }
@@ -72,8 +73,9 @@ Future<void> _expectInvalid(WidgetTester tester) async {
   await _scrollToBuilt(tester, calculate);
   await tester.tap(calculate);
   await tester.pump();
-  await _scrollToBuilt(tester, find.text('Enter a valid number'));
-  expect(find.text('Enter a valid number'), findsOneWidget);
+  // Several invalid fields can display the same validation message.
+  // Avoid ensureVisible on a non-unique text finder.
+  expect(find.text('Enter a valid number'), findsWidgets);
   expect(find.text('Estimated result'), findsNothing);
 }
 
