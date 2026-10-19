@@ -219,6 +219,71 @@ class AurenProfileModeService {
         : AurenProfileModeData.empty(mode);
   }
 
+  /// Updates privacy flags without requiring the user to fill out an otherwise-empty profile.
+  /// Private source and the sanitized public projection are changed in one batch.
+  Future<void> updatePrivacy({
+    required String uid,
+    required AurenProfileMode mode,
+    required bool discoverable,
+    required bool showContact,
+  }) async {
+    final userId = _uid(uid);
+    final privateRef = _modes(userId).doc(mode.id);
+    final publicRef = _db.collection('users').doc(userId)
+        .collection('public_profile_modes').doc(mode.id);
+    final existing = await privateRef.get();
+    final data = existing.data() ?? <String, dynamic>{};
+
+    final privateData = <String, dynamic>{
+      ...data,
+      'mode': mode.id,
+      'headline': (data['headline'] as String? ?? '').trim(),
+      'bio': (data['bio'] as String? ?? '').trim(),
+      'skills': data['skills'] is List ? data['skills'] : <String>[],
+      'interests': data['interests'] is List ? data['interests'] : <String>[],
+      'links': data['links'] is List ? data['links'] : <String>[],
+      'goals': data['goals'] is List ? data['goals'] : <String>[],
+      'languages': data['languages'] is List ? data['languages'] : <String>[],
+      'services': data['services'] is List ? data['services'] : <String>[],
+      'achievements': data['achievements'] is List ? data['achievements'] : <String>[],
+      'discoverable': discoverable,
+      'showContact': showContact,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    final batch = _db.batch();
+    batch.set(privateRef, privateData);
+    if (discoverable) {
+      batch.set(publicRef, {
+        'mode': mode.id,
+        'headline': privateData['headline'],
+        'bio': privateData['bio'],
+        'skills': privateData['skills'],
+        'interests': privateData['interests'],
+        'goals': privateData['goals'],
+        'languages': privateData['languages'],
+        'services': privateData['services'],
+        'achievements': privateData['achievements'],
+        'discoverable': true,
+        'showContact': showContact,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      batch.delete(publicRef);
+    }
+
+    final activeSettings = await _settings(userId).get();
+    if (activeSettings.data()?['activeMode'] == mode.id) {
+      batch.set(_db.collection('users').doc(userId)
+          .collection('public_profile_settings').doc('current'), {
+        'activeMode': mode.id,
+        'discoverable': discoverable,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+  }
+
   Future<void> save({
     required String uid,
     required AurenProfileMode mode,
