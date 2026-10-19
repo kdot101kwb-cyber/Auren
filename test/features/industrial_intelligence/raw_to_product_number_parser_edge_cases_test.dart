@@ -17,6 +17,11 @@ void main() {
       expect(RawToProductNumberParser.parse('1\u202F234\u202F567٫٨٩'), 1234567.89);
     });
 
+    test('parses European dot-thousands and comma-decimal notation', () {
+      expect(RawToProductNumberParser.parse('1.234,56'), 1234.56);
+      expect(RawToProductNumberParser.parse('1.234.567,89'), 1234567.89);
+    });
+
     test('rejects malformed comma groups instead of guessing a value', () {
       expect(RawToProductNumberParser.parse('12,34,567'), isNull);
       expect(RawToProductNumberParser.parse('1,23,456'), isNull);
