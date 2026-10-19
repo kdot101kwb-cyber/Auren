@@ -22,7 +22,13 @@ Future<void> _enterField(
   final field = find.byKey(ValueKey<String>(label));
   await _scrollToBuilt(tester, field);
   expect(field, findsOneWidget, reason: 'Field label: $label');
-  await tester.enterText(field, value);
+  if (value.isEmpty) {
+    // Avoid entering an empty string through the test text-input channel;
+    // clearing the controller exercises the same empty-value validation.
+    tester.widget<TextFormField>(field).controller!.clear();
+  } else {
+    await tester.enterText(field, value);
+  }
   await tester.pump();
 }
 
