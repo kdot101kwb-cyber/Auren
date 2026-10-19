@@ -22,13 +22,7 @@ Future<void> _enterField(
   final field = find.byKey(ValueKey<String>(label));
   await _scrollToBuilt(tester, field);
   expect(field, findsOneWidget, reason: 'Field label: $label');
-  if (value.isEmpty) {
-    // Avoid entering an empty string through the test text-input channel;
-    // clearing the controller exercises the same empty-value validation.
-    tester.widget<TextFormField>(field).controller!.clear();
-  } else {
-    await tester.enterText(field, value);
-  }
+  await tester.enterText(field, value);
   await tester.pump();
 }
 
@@ -61,15 +55,23 @@ Future<void> _scrollToBuilt(
   }
   final position = controller!.position;
   final destination = towardTop ? 0.0 : position.maxScrollExtent;
-  await controller.animateTo(
+  final scrollAnimation = controller.animateTo(
     destination,
     duration: const Duration(milliseconds: 250),
     curve: Curves.easeInOut,
   );
+  // Advance the fake clock while the animation is in flight; awaiting the
+  // animation before pumping leaves widget tests waiting forever.
+  await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
+  await scrollAnimation;
 }
 
 Future<void> _expectInvalid(WidgetTester tester) async {
+  final calculate = find.text('Calculate manufacturing plan');
+  await _scrollToBuilt(tester, calculate);
+  await tester.tap(calculate);
+  await tester.pump();
   await _scrollToBuilt(tester, find.text('Enter a valid number'));
   expect(find.text('Enter a valid number'), findsOneWidget);
   expect(find.text('Estimated result'), findsNothing);
