@@ -827,7 +827,7 @@ class _PulseCard extends StatelessWidget {
               child: Column(
                 children: post.mixItems
                     .map((item) => _MixMediaTile(
-                          key: ValueKey('${item['type']}:${item['url']}'),
+                          key: ValueKey('$index:${item['type']}:${item['url']}'),
                           item: item,
                         ))
                     .toList(),
