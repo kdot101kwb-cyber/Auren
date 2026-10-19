@@ -5,6 +5,7 @@ import '../../../services/users/user_repository.dart';
 import '../../../services/social/follow_repository.dart';
 import 'social_graph_screen.dart';
 import 'ai_profile_screen.dart';
+import 'security_profile_screen.dart';
 import '../../../core/i18n/auren_localizations.dart';
 
 class AurenProfileScreen extends StatelessWidget {
@@ -39,6 +40,7 @@ class AurenProfileScreen extends StatelessWidget {
               const SizedBox(height: 18),
               Card(child: ListTile(leading: const Icon(Icons.edit), title: Text(AurenLocalizations.of(context).editProfile), onTap: () => showDialog(context: context, builder: (_) => _EditNameDialog(uid: uid, current: p.displayName)))),
               Card(child: ListTile(leading: const Icon(Icons.auto_awesome), title: Text(AurenLocalizations.of(context).aiProfile), subtitle: Text(AurenLocalizations.of(context).profileModes), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAiProfileScreen())))),
+              Card(child: ListTile(leading: const Icon(Icons.shield_outlined), title: const Text('Security Profile'), subtitle: const Text('تحكم في ظهور ملفاتك ومعلومات التواصل.'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSecurityProfileScreen())))),
               Card(child: ListTile(leading: const Icon(Icons.people_outline), title: Text(AurenLocalizations.of(context).socialGraph), subtitle: Text(AurenLocalizations.of(context).socialGraphDescription), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AurenSocialGraphScreen(uid: uid))))),
               Card(child: ListTile(leading: const Icon(Icons.share_outlined), title: Text(AurenLocalizations.of(context).shareProfile), subtitle: Text(AurenLocalizations.of(context).shareProfileDescription), onTap: () async {
                 final link = 'https://auren.app/u/$uid';
