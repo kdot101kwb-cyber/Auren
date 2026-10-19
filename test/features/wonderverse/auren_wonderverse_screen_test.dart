@@ -70,8 +70,13 @@ void main() {
       findsOneWidget,
     );
     final backButton = find.text('العودة إلى العوالم');
-    await tester.ensureVisible(backButton);
-    await tester.pumpAndSettle();
+    // The detail page uses a lazy ListView, so the button may not exist in
+    // the widget tree until the detail route is scrolled far enough.
+    await tester.scrollUntilVisible(
+      backButton,
+      250,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(backButton);
     await tester.pumpAndSettle();
 
