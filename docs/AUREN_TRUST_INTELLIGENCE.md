@@ -14,11 +14,12 @@ These must be reused and hardened rather than duplicated. The current trust-sign
 
 ## Initial delivery scope
 1. Provide a clear Trust & Safety Center explaining what signals mean, what users can do, and how to report/block suspicious activity.
-2. Reuse existing report/block and verification flows.
-3. Establish explainable trust indicators with provenance, timestamps, and explicit limitations; do not show a numeric score until its inputs, abuse resistance, and rules are validated.
-4. Treat reports as unverified allegations, not proof. Protect reporters and subjects from retaliation and brigading.
-5. Define server-owned review states and audit history before using trust indicators to gate financial or high-impact actions.
-6. Add unit and Firestore rules tests; verify privacy boundaries and authorization.
+2. Link the center to the existing people-search flow so users can reach profile-level safety actions without creating a second reporting/blocking implementation.
+3. Explain the difference between profile claims, submitted evidence, user reports, and automated signals in user-facing guidance.
+4. Establish explainable trust indicators with provenance, timestamps, and explicit limitations; do not show a numeric score until its inputs, abuse resistance, and rules are validated.
+5. Treat reports as unverified allegations, not proof. Protect reporters and subjects from retaliation and brigading.
+6. Define server-owned review states and audit history before using trust indicators to gate financial or high-impact actions.
+7. Add unit and Firestore rules tests; verify privacy boundaries and authorization.
 
 ## Non-goals for the first slice
 - No automatic public accusation or public fraud label.
