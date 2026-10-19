@@ -690,16 +690,10 @@ class _PulseVideoState extends State<_PulseVideo> {
     }).catchError((_) {
       if (mounted) setState(() => _failed = true);
     });
-    _controller.addListener(_onVideoChanged);
-  }
-
-  void _onVideoChanged() {
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_onVideoChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -733,11 +727,13 @@ class _PulseVideoState extends State<_PulseVideo> {
             color: Colors.black26,
             child: InkWell(
               onTap: () {
-                if (_controller.value.isPlaying) {
-                  _controller.pause();
-                } else {
-                  _controller.play();
-                }
+                setState(() {
+                  if (_controller.value.isPlaying) {
+                    _controller.pause();
+                  } else {
+                    _controller.play();
+                  }
+                });
               },
               child: Center(
                 child: Icon(
