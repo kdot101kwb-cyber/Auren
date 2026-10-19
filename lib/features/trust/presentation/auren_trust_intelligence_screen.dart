@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../social/presentation/user_search_screen.dart';
 
 /// The user-facing entry point for AUREN's shared trust and safety principles.
 /// This first slice deliberately avoids inventing a numeric reputation score:
@@ -94,6 +95,52 @@ class AurenTrustIntelligenceScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('Take action', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.manage_search_outlined),
+              title: const Text('Find a person'),
+              subtitle: const Text(
+                'Open people search to review profiles. Use the existing report or block controls on relevant profiles or content.',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AurenUserSearchScreen(),
+                ),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.fact_check_outlined),
+              title: const Text('How to read trust signals'),
+              subtitle: const Text(
+                'A profile claim is not independently verified evidence. A user report is an allegation for review, not a finding.',
+              ),
+              trailing: const Icon(Icons.info_outline),
+              onTap: () => showDialog<void>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Read trust signals carefully'),
+                  content: const Text(
+                    'Profile claims describe what someone says about themselves. '
+                    'Submitted evidence may support a claim but is not an official approval by itself. '
+                    'Reports are unverified until reviewed. Automated signals can be incomplete or wrong. '
+                    'Do not treat any single signal as proof of wrongdoing or a guarantee of safety.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('Got it'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
