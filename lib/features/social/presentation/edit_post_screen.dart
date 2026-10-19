@@ -45,28 +45,7 @@ class _AurenEditPostScreenState extends State<AurenEditPostScreen> {
     if (url.isEmpty) return 'none';
     if (url == widget.post.mediaUrl) return widget.post.mediaType;
     final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
-    if (RegExp(r'\\.(mp4|mov|webm|m4v|avi|mkv)
-        appBar: AppBar(
-          title: const Text('Edit Pulse post'),
-          actions: [
-            TextButton(onPressed: saving ? null : save, child: Text(saving ? 'Saving…' : 'Save')),
-          ],
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextField(controller: textController, maxLines: 8, maxLength: 2200, decoration: const InputDecoration(labelText: 'Post', border: OutlineInputBorder())),
-            const SizedBox(height: 12),
-            TextField(controller: mediaController, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Media URL', border: OutlineInputBorder())),
-            const SizedBox(height: 16),
-            FilledButton.icon(onPressed: saving ? null : save, icon: const Icon(Icons.save_outlined), label: const Text('Save changes')),
-          ],
-        ),
-      );
-
-  @override
-  void dispose() { textController.dispose(); mediaController.dispose(); super.dispose(); }
-}).hasMatch(path)) {
+    if (RegExp(r'\.(mp4|mov|webm|m4v|avi|mkv)$').hasMatch(path)) {
       return 'video';
     }
     return 'image';
@@ -77,21 +56,47 @@ class _AurenEditPostScreenState extends State<AurenEditPostScreen> {
         appBar: AppBar(
           title: const Text('Edit Pulse post'),
           actions: [
-            TextButton(onPressed: saving ? null : save, child: Text(saving ? 'Saving…' : 'Save')),
+            TextButton(
+              onPressed: saving ? null : save,
+              child: Text(saving ? 'Saving…' : 'Save'),
+            ),
           ],
         ),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextField(controller: textController, maxLines: 8, maxLength: 2200, decoration: const InputDecoration(labelText: 'Post', border: OutlineInputBorder())),
+            TextField(
+              controller: textController,
+              maxLines: 8,
+              maxLength: 2200,
+              decoration: const InputDecoration(
+                labelText: 'Post',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: mediaController, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Media URL', border: OutlineInputBorder())),
+            TextField(
+              controller: mediaController,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'Media URL',
+                border: OutlineInputBorder(),
+              ),
+            ),
             const SizedBox(height: 16),
-            FilledButton.icon(onPressed: saving ? null : save, icon: const Icon(Icons.save_outlined), label: const Text('Save changes')),
+            FilledButton.icon(
+              onPressed: saving ? null : save,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Save changes'),
+            ),
           ],
         ),
       );
 
   @override
-  void dispose() { textController.dispose(); mediaController.dispose(); super.dispose(); }
+  void dispose() {
+    textController.dispose();
+    mediaController.dispose();
+    super.dispose();
+  }
 }
