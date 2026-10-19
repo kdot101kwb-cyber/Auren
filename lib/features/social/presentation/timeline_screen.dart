@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/post.dart';
 import '../../../core/models/user_profile.dart';
 import '../../profile/presentation/public_profile_screen.dart';
@@ -103,16 +104,17 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                 final types = const [('all', 'All'), ('moment', 'Moments'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
-                  itemCount: posts.length + 5,
+                  itemCount: posts.length + 6,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
                     if (i == 0) return _PulseCoreFiveCard(uid: uid);
                     if (i == 1) return const _MomentsStrip();
-                    if (i == 2) return _SportsPulseCard(uid: uid);
-                    if (i == 3) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
-                    if (i == 4) return _PulseSignals(opportunities: opportunities, projects: projects);
+                    if (i == 2) return const _LivingMixIntro();
+                    if (i == 3) return _SportsPulseCard(uid: uid);
+                    if (i == 4) return _PulseFilterBar(types: const [('all', 'All'), ('moment', 'Moments'), ('mix', 'Mix Posts'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')], selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
+                    if (i == 5) return _PulseSignals(opportunities: opportunities, projects: projects);
                     if (posts.isEmpty) return const _EmptyPulse();
-                    return _PulseCard(post: posts[i - 5], uid: uid);
+                    return _PulseCard(post: posts[i - 6], uid: uid);
 
                   },
                 );
@@ -255,6 +257,67 @@ class _MomentsStrip extends StatelessWidget {
 }
 
 
+class _LivingMixIntro extends StatelessWidget {
+  const _LivingMixIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [colors.primaryContainer, colors.surfaceContainerHighest],
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.bolt, color: colors.primary, size: 26),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('Living Moments + Mix Posts',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
+              const Icon(Icons.auto_awesome),
+            ]),
+            const SizedBox(height: 8),
+            const Text('A moment can keep evolving. A post can combine words with images, video, audio and links — all in one place.'),
+            const SizedBox(height: 14),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              _formatPill(context, Icons.timeline, 'Updates over time'),
+              _formatPill(context, Icons.dashboard_customize_outlined, 'Mixed media'),
+              _formatPill(context, Icons.people_outline, 'Community first'),
+            ]),
+            const SizedBox(height: 12),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AurenCreatePostScreen()),
+                ),
+                icon: const Icon(Icons.add),
+                label: const Text('Create a moment'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _formatPill(BuildContext context, IconData icon, String label) => Chip(
+        avatar: Icon(icon, size: 16),
+        label: Text(label),
+        visualDensity: VisualDensity.compact,
+      );
+}
+
 class _SportsPulseCard extends StatelessWidget {
   final String uid;
   const _SportsPulseCard({required this.uid});
@@ -341,6 +404,60 @@ class _PulseSignals extends StatelessWidget { final int opportunities; final int
 
 class _Signal extends StatelessWidget { final IconData icon; final int value; final String label; const _Signal({required this.icon, required this.value, required this.label}); @override Widget build(BuildContext context) => Column(children: [Icon(icon, size: 20), const SizedBox(height: 4), Text('$value', style: const TextStyle(fontWeight: FontWeight.w900)), Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall)]); }
 
+class _MixMediaTile extends StatelessWidget {
+  final Map<String, String> item;
+  const _MixMediaTile({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final type = item['type'] ?? 'link';
+    final url = item['url'] ?? '';
+    if (type == 'image') {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: AspectRatio(
+            aspectRatio: 16 / 10,
+            child: Image.network(
+              url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox(
+                height: 120,
+                child: Center(child: Icon(Icons.broken_image_outlined, size: 40)),
+              ),
+              loadingBuilder: (context, child, progress) =>
+                  progress == null ? child : const SizedBox(
+                    height: 120,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+            ),
+          ),
+        ),
+      );
+    }
+    final details = switch (type) {
+      'video' => ('Video attachment', Icons.play_circle_outline),
+      'audio' => ('Audio attachment', Icons.graphic_eq),
+      _ => ('Open shared link', Icons.open_in_new),
+    };
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(child: Icon(details.$2)),
+        title: Text(details.$1),
+        subtitle: Text(url, maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: const Icon(Icons.arrow_outward),
+        onTap: () async {
+          final uri = Uri.tryParse(url);
+          if (uri == null || !{'http', 'https'}.contains(uri.scheme.toLowerCase())) return;
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        },
+      ),
+    );
+  }
+}
+
 class _PulseCard extends StatelessWidget {
   final AurenPost post;
   final String uid;
@@ -357,6 +474,8 @@ class _PulseCard extends StatelessWidget {
         return 'Question';
       case 'idea':
         return 'Idea';
+      case 'mix':
+        return 'Mix Post';
       default:
         return 'Moment';
     }
@@ -372,6 +491,8 @@ class _PulseCard extends StatelessWidget {
         return Icons.help_outline;
       case 'idea':
         return Icons.lightbulb_outline;
+      case 'mix':
+        return Icons.dashboard_customize_outlined;
       default:
         return Icons.bolt;
     }
@@ -440,7 +561,14 @@ class _PulseCard extends StatelessWidget {
               ],
             ),
           ),
-          if (post.mediaUrl.isNotEmpty)
+          if (post.mixItems.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+              child: Column(
+                children: post.mixItems.map((item) => _MixMediaTile(item: item)).toList(),
+              ),
+            )
+          else if (post.mediaUrl.isNotEmpty && post.mediaType == 'image')
             AspectRatio(
               aspectRatio: 16 / 10,
               child: Image.network(
@@ -453,7 +581,9 @@ class _PulseCard extends StatelessWidget {
                 loadingBuilder: (context, child, progress) =>
                     progress == null ? child : const Center(child: CircularProgressIndicator()),
               ),
-            ),
+            )
+          else if (post.mediaUrl.isNotEmpty)
+            _MixMediaTile(item: {'type': post.mediaType, 'url': post.mediaUrl}),
           if (post.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
