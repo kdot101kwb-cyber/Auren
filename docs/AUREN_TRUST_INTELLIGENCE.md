@@ -12,6 +12,9 @@ Build a shared, explainable trust and safety layer for AUREN social, commerce, o
 
 These must be reused and hardened rather than duplicated. The current trust-signal client service accepts labels and types directly; signals such as identity verification must never be treated as authoritative merely because a client wrote them. Authoritative verification and scoring need trusted server-side provenance.
 
+## Security audit note
+The current `firestore.rules` file has no explicit `trust_signals` subcollection rule, and no recursive wildcard grant was found in the audited rules text. Treat the trust-signal client service as unavailable to ordinary clients unless emulator/integration tests confirm the intended authorization; do not solve this by adding broad client read/write access. If the feature is enabled later, define a narrowly scoped rule set and server-owned provenance fields first. In particular, a client must not be able to create an `identity_verified` signal that appears authoritative.
+
 ## Initial delivery scope
 1. Provide a clear Trust & Safety Center explaining what signals mean, what users can do, and how to report/block suspicious activity.
 2. Link the center to the existing people-search flow so users can reach profile-level safety actions without creating a second reporting/blocking implementation.
