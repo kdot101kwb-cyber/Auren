@@ -61,7 +61,6 @@ class _AurenSecurityProfileScreenState extends State<AurenSecurityProfileScreen>
       );
       if (!mounted) return;
       setState(() {
-        _values[mode] = current.copyWithDiscoverable(nextDiscoverable);
         _values[mode] = AurenProfileModeData(
           mode: current.mode,
           headline: current.headline,
@@ -149,8 +148,8 @@ class _AurenSecurityProfileScreenState extends State<AurenSecurityProfileScreen>
           ),
           SwitchListTile(
             secondary: const Icon(Icons.contact_mail_outlined),
-            title: const Text('السماح بإظهار وسيلة التواصل'),
-            subtitle: const Text('يتحكم في خيار التواصل العام المدعوم في هذا الوضع.'),
+            title: const Text('السماح بالرسائل المباشرة'),
+            subtitle: const Text('عند التفعيل يظهر زر Message في الملف العام لهذا الوضع.'),
             value: value.showContact,
             onChanged: saving || _savingMode != null ? null : (v) => _update(mode, showContact: v),
           ),
