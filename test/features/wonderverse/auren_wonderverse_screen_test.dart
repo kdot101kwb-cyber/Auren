@@ -71,6 +71,10 @@ void main() {
     );
     await tester.tap(find.text('العودة إلى العوالم'));
     await tester.pumpAndSettle();
-    expect(find.text('بوابات العوالم'), findsOneWidget);
+
+    final portalHeading = find.text('بوابات العوالم');
+    await tester.ensureVisible(portalHeading);
+    await tester.pumpAndSettle();
+    expect(portalHeading, findsOneWidget);
   });
 }
