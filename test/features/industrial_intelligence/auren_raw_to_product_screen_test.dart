@@ -48,8 +48,13 @@ Future<void> _scrollToBuilt(
   await tester.pump();
 
   if (target.evaluate().isNotEmpty) {
-    await tester.ensureVisible(target);
+    // ensureVisible may wait for a scroll animation whose frames are not
+    // advanced while the future is awaited. Start it, pump the animation,
+    // then await completion to avoid hanging widget tests.
+    final ensureVisible = tester.ensureVisible(target);
     await tester.pump(const Duration(milliseconds: 300));
+    await ensureVisible;
+    await tester.pump();
     return;
   }
   final position = controller!.position;
