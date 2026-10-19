@@ -12,6 +12,8 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     final tile = find.ancestor(of: portal, matching: find.byType(InkWell)).first;
+    await tester.ensureVisible(tile);
+    await tester.pumpAndSettle();
     await tester.tap(tile);
     await tester.pumpAndSettle();
   }
@@ -61,7 +63,12 @@ void main() {
     await openPortal(tester, 'اللغز الذي لا يملكه أحد');
 
     expect(find.text('المرحلة التأسيسية'), findsOneWidget);
-    expect(find.text('المجتمع كله يجمع خيوط اللغز.'), findsOneWidget);
+    expect(
+      find.text(
+        'اكتشفوا الأدلة على مراحل، شاركوا النظريات، وصوّتوا على التفسير قبل كشف النتيجة.',
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.text('العودة إلى العوالم'));
     await tester.pumpAndSettle();
     expect(find.text('بوابات العوالم'), findsOneWidget);
