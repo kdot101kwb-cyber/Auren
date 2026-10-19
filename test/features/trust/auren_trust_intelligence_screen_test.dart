@@ -24,6 +24,29 @@ void main() {
       expect(saferCommerce, findsOneWidget);
     });
 
+    testWidgets('explains how to interpret claims, evidence, and reports',
+        (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: AurenTrustIntelligenceScreen()),
+      );
+
+      final guidance = find.text('How to read trust signals');
+      await tester.scrollUntilVisible(
+        guidance,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(guidance);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Read trust signals carefully'), findsOneWidget);
+      expect(
+        find.textContaining('Reports are unverified until reviewed.'),
+        findsOneWidget,
+      );
+      expect(find.text('Got it'), findsOneWidget);
+    });
+
     testWidgets('does not present an unvalidated public trust score',
         (tester) async {
       await tester.pumpWidget(
