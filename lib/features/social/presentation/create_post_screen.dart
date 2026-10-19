@@ -28,7 +28,19 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
     final text = textController.text.trim();
     final mediaUrl = mediaController.text.trim();
     final uid = FirebaseAurenAuthService().currentUserId;
-    if ((text.isEmpty && mediaUrl.isEmpty) || uid == null || saving) return;
+    if (saving) return;
+    if (text.isEmpty && mediaUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Write something or add a media link first.')),
+      );
+      return;
+    }
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to publish a post.')),
+      );
+      return;
+    }
 
     setState(() => saving = true);
     try {
@@ -57,7 +69,18 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
           createdAt: DateTime.now(),
         ),
       );
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your post is live in AUREN Pulse.')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not publish your post. Please try again.')),
+        );
+      }
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -66,7 +89,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('Create in Pulse'),
+          title: const Text('Create a post'),
           actions: [
             TextButton(
               onPressed: saving ? null : save,
@@ -77,7 +100,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text('What do you want to move forward?',
+            const Text('What would you like to share?',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 12),
             Wrap(
@@ -98,7 +121,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
               maxLines: 7,
               maxLength: 2200,
               decoration: const InputDecoration(
-                hintText: 'Share the idea, ask the question, show the project…',
+                hintText: 'Write a post, share a thought, ask a question, or start an idea…',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -117,7 +140,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
             FilledButton.icon(
               onPressed: saving ? null : save,
               icon: const Icon(Icons.rocket_launch_outlined),
-              label: Text(saving ? 'Publishing…' : 'Put it in Pulse'),
+              label: Text(saving ? 'Publishing…' : 'Publish post'),
             ),
           ],
         ),
