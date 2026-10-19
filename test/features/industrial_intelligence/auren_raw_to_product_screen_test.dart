@@ -19,7 +19,7 @@ Future<void> _enterField(
   required String label,
   required String value,
 }) async {
-  final field = find.byKey(ValueKey<String>(label));
+  final field = find.byKey(ValueKey<String>(label), skipOffstage: false);
   await _scrollToBuilt(tester, field);
   expect(field, findsOneWidget, reason: 'Field label: $label');
   // enterText handles bringing an off-screen editable field into view.
