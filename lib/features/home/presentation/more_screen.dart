@@ -23,6 +23,7 @@ import 'core_ten_screen.dart';
 import 'core_five_next_screen.dart';
 import 'systems_47_screen.dart';
 import '../../suppliers/presentation/auren_supplier_requests_screen.dart';
+import '../../wonderverse/presentation/auren_wonderverse_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -58,6 +59,16 @@ class AurenMoreScreen extends StatelessWidget {
         const SizedBox(height: 6),
         const Text('كل مسارات AUREN في مكان واحد — واختر كيف تريد أن تبدأ.'),
         const SizedBox(height: 18),
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.auto_awesome_rounded)),
+            title: const Text('AUREN WONDERVERSE — عوالم أُورِن'),
+            subtitle: const Text('عوالم تفاعلية، ألغاز جماعية وتجارب خيال متجددة.'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWonderverseScreen())),
+          ),
+        ),
         Card(child: ListTile(
           leading: const Icon(Icons.local_shipping_outlined),
           title: const Text('طلبات الموردين'),
