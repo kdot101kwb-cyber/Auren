@@ -4967,3 +4967,6 @@ Object.assign(module.exports, require('./personal_ai_life_engine'));
 
 // Global business data ingestion and source-provenance normalization.
 Object.assign(module.exports, require('./global_business_data'));
+
+// Privacy-preserving phone-number discovery for Messenger.
+Object.assign(module.exports, require('./phone_discovery'));
