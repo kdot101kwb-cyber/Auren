@@ -14,12 +14,16 @@ class _AurenEditPostScreenState extends State<AurenEditPostScreen> {
   late final TextEditingController textController;
   late final TextEditingController mediaController;
   bool saving = false;
+  late String mediaType;
 
   @override
   void initState() {
     super.initState();
     textController = TextEditingController(text: widget.post.text);
     mediaController = TextEditingController(text: widget.post.mediaUrl);
+    mediaType = const {'image', 'video', 'audio'}.contains(widget.post.mediaType)
+        ? widget.post.mediaType
+        : 'image';
   }
 
   Future<void> save() async {
@@ -29,7 +33,12 @@ class _AurenEditPostScreenState extends State<AurenEditPostScreen> {
     if (text.isEmpty && mediaUrl.isEmpty) return;
     setState(() => saving = true);
     try {
-      await PostRepository().updateContent(widget.post.id, text: text, mediaUrl: mediaUrl);
+      await PostRepository().updateContent(
+        widget.post.id,
+        text: text,
+        mediaUrl: mediaUrl,
+        mediaType: mediaType,
+      );
       if (mounted) Navigator.pop(context);
     } finally {
       if (mounted) setState(() => saving = false);
@@ -50,6 +59,22 @@ class _AurenEditPostScreenState extends State<AurenEditPostScreen> {
             TextField(controller: textController, maxLines: 8, maxLength: 2200, decoration: const InputDecoration(labelText: 'Post', border: OutlineInputBorder())),
             const SizedBox(height: 12),
             TextField(controller: mediaController, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Media URL', border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: mediaType,
+              decoration: const InputDecoration(
+                labelText: 'Media type',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'image', child: Text('Image')),
+                DropdownMenuItem(value: 'video', child: Text('Video')),
+                DropdownMenuItem(value: 'audio', child: Text('Audio')),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => mediaType = value);
+              },
+            ),
             const SizedBox(height: 16),
             FilledButton.icon(onPressed: saving ? null : save, icon: const Icon(Icons.save_outlined), label: const Text('Save changes')),
           ],
