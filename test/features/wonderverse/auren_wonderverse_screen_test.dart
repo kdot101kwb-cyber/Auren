@@ -69,7 +69,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    await tester.tap(find.text('العودة إلى العوالم'));
+    final backButton = find.text('العودة إلى العوالم');
+    await tester.ensureVisible(backButton);
+    await tester.pumpAndSettle();
+    await tester.tap(backButton);
     await tester.pumpAndSettle();
 
     // The list restores its previous scroll offset; the app bar is a stable
