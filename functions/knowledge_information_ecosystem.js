@@ -14,7 +14,7 @@ function requireUid(request) {
   return uid;
 }
 function clean(value, max = MAX_TEXT) {
-  return String(value ?? '').replace(/\\s+/g, ' ').trim().slice(0, max);
+  return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 function required(value, label, max = MAX_TEXT) {
   const result = clean(value, max);
