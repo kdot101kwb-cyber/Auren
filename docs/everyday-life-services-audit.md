@@ -12,17 +12,24 @@ Working branch: `feat/everyday-life-services`.
 - **Home Management:** no dedicated home-management system was found in the initial search. The roadmap includes Food / Home Essentials, which must be checked before choosing a final scope.
 - **Travel Companion:** a Travel system is already listed in `docs/AUREN_47_SYSTEMS_10_BATCHES.md`; avoid creating a duplicate travel shell. Trip itinerary functionality requires a deeper audit before selection.
 
-## Initial implementation slice
+## Initial implementation slices
 
-Added a pure, UI-independent appointment draft model and lifecycle policy. It validates required fields, time ranges, past dates, bounded notes, and legal status transitions. It explicitly does not contact providers or claim that a booking is confirmed.
+1. **Appointment & Booking (draft-only foundation):** Added a pure, UI-independent appointment draft model and lifecycle policy. It validates required fields, time ranges, past dates, bounded notes, and legal status transitions. It does not contact providers or claim that a booking is confirmed.
+2. **Home Management (inventory/restock foundation):** Added household item validation, threshold-based low-stock detection, and deterministic restock-list sorting. It does not persist inventory, place orders, or claim supplier availability.
 
 ## Verification status
 
 - Source added: yes.
-- Automated tests authored: yes, in `test/services/everyday/appointment_draft_service_test.dart`.
+- Automated tests authored: yes, in `test/services/everyday/appointment_draft_service_test.dart` and `test/services/everyday/household_inventory_service_test.dart`.
 - Tests executed in this environment: no; the GitHub connector cannot run Flutter locally.
-- Firestore persistence, owner authorization rules, UI, and provider adapters: not implemented in this slice.
-- Therefore this is a **partial foundation**, not a completed appointment system.
+- Firestore persistence, owner authorization rules, UI, and provider adapters: not implemented in these slices.
+- Therefore both are **partial foundations**, not completed user-facing systems.
+
+## Remaining non-duplicate candidates (pending deeper audit)
+
+3. **Household maintenance & recurring chores:** keep distinct from inventory/restock; inspect existing reminders/notifications before selection.
+4. **Errands / service-request tracking:** only select if not already covered by existing opportunity, marketplace, and local-intelligence flows.
+5. **Trip itinerary & checklist:** Travel already exists as a roadmap domain, so implement only a verified missing subflow rather than a new Travel shell.
 
 ## Next audit targets
 
