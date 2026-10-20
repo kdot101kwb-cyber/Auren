@@ -1,0 +1,431 @@
+import 'package:flutter/material.dart';
+
+import '../domain/manufacturing_route_catalog.dart';
+import '../domain/raw_to_product_estimate.dart';
+import 'raw_to_product_strings.dart';
+import 'raw_to_product_stage_strings.dart';
+import 'raw_to_product_number_parser.dart';
+
+/// A planning calculator only: values are supplied by the user and are not
+/// live market quotes, certified engineering estimates, or financial advice.
+class AurenRawToProductScreen extends StatefulWidget {
+  const AurenRawToProductScreen({super.key});
+
+  @override
+  State<AurenRawToProductScreen> createState() =>
+      _AurenRawToProductScreenState();
+}
+
+class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _formScrollController = ScrollController();
+  final _rawQuantity = TextEditingController(text: '1000');
+  final _yieldPercent = TextEditingController(text: '85');
+  final _rawUnitCost = TextEditingController(text: '1');
+  final _processingPerRawUnit = TextEditingController(text: '0.4');
+  final _packagingPerProduct = TextEditingController(text: '0.2');
+  final _transport = TextEditingController(text: '100');
+  final _otherCosts = TextEditingController(text: '50');
+  final _sellingPrice = TextEditingController(text: '3');
+  final _rawName = TextEditingController();
+  final _productName = TextEditingController();
+  String _currency = 'USD';
+  String _routeId = 'cotton-to-garment';
+  bool _initializedRouteNames = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initializedRouteNames) return;
+    final l = RawToProductStrings(
+      Localizations.localeOf(context).languageCode,
+    );
+    final names = l.routeName(_routeId).split(RegExp('[←→]'));
+    _rawName.text = names.first.trim();
+    _productName.text = names.length > 1 ? names.last.trim() : l.routeName(_routeId);
+    _initializedRouteNames = true;
+  }
+
+  @override
+  void dispose() {
+    for (final controller in [
+      _rawQuantity,
+      _yieldPercent,
+      _rawUnitCost,
+      _processingPerRawUnit,
+      _packagingPerProduct,
+      _transport,
+      _otherCosts,
+      _sellingPrice,
+      _rawName,
+      _productName,
+    ]) {
+      controller.dispose();
+    }
+    _formScrollController.dispose();
+    super.dispose();
+  }
+
+  double? _parseAmount(String value) => RawToProductNumberParser.parse(value);
+
+  String _money(double value) =>
+      '${value.toStringAsFixed(2)} $_currency';
+
+  Widget _numberField(
+    TextEditingController controller,
+    String label, {
+    String? helper,
+    double? min,
+    double? max,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        key: ValueKey<String>(label),
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          labelText: label,
+          helperText: helper,
+          border: const OutlineInputBorder(),
+        ),
+        validator: (value) {
+          final parsed = _parseAmount(value ?? '');
+          if (parsed == null || !parsed.isFinite) {
+            return RawToProductStrings(Localizations.localeOf(context).languageCode).invalid;
+          }
+          if (min != null && parsed < min) return RawToProductStrings(Localizations.localeOf(context).languageCode).min(min);
+          if (max != null && parsed > max) return RawToProductStrings(Localizations.localeOf(context).languageCode).max(max);
+          return null;
+        },
+        onChanged: (_) => setState(() {}),
+      ),
+    );
+  }
+
+  Widget _textField(TextEditingController controller, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        key: ValueKey<String>(label),
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        validator: (value) =>
+            value == null || value.trim().isEmpty
+                ? RawToProductStrings(Localizations.localeOf(context).languageCode).required
+                : null,
+        onChanged: (_) => setState(() {}),
+      ),
+    );
+  }
+
+  Widget _result(String label, String value, {bool emphasized = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontWeight: emphasized ? FontWeight.bold : FontWeight.w500,
+                fontSize: emphasized ? 17 : 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedRoute = ManufacturingRouteCatalog.findById(_routeId)!;
+    final l = RawToProductStrings(Localizations.localeOf(context).languageCode);
+    final estimate = _estimateOrNull();
+    // The catalog currently provides route-specific prerequisites in Arabic;
+    // other locales use the translated general checklist rather than showing
+    // untranslated Arabic safety notes.
+    final prerequisites = Localizations.localeOf(context).languageCode == 'ar'
+        ? selectedRoute.prerequisites
+        : l.prerequisites;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l.title),
+      ),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          key: const ValueKey<String>('raw-to-product-form-list'),
+          controller: _formScrollController,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l.plan,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(l.intro),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _currency,
+                      decoration: InputDecoration(
+                        labelText: l.currency,
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'USD', child: Text('USD')),
+                        DropdownMenuItem(value: 'SDG', child: Text('SDG')),
+                        DropdownMenuItem(value: 'EUR', child: Text('EUR')),
+                        DropdownMenuItem(value: 'SAR', child: Text('SAR')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setState(() => _currency = value);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.route, style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(l.routeHelp),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      key: const ValueKey<String>('manufacturing-route-selector'),
+                      value: _routeId,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l.routeType,
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ManufacturingRouteCatalog.routes.map((route) =>
+                        DropdownMenuItem<String>(
+                          value: route.id,
+                          child: Text(l.routeName(route.id), overflow: TextOverflow.ellipsis),
+                        ),
+                      ).toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        final route = ManufacturingRouteCatalog.findById(value);
+                        if (route == null) return;
+                        setState(() {
+                          _routeId = value;
+                          final names = l.routeName(value).split(RegExp('[←→]'));
+                          _rawName.text = names.first.trim();
+                          _productName.text = names.length > 1 ? names.last.trim() : l.routeName(value);
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(l.stageHelp),
+                    const SizedBox(height: 12),
+                    ...selectedRoute.stages.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              child: Text('${index + 1}', style: const TextStyle(fontSize: 12)),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    RawToProductStageStrings.name(
+                                      selectedRoute.id,
+                                      index,
+                                      Localizations.localeOf(context).languageCode,
+                                      l.stageName(index),
+                                    ),
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    RawToProductStageStrings.purpose(
+                                      selectedRoute.id,
+                                      index,
+                                      Localizations.localeOf(context).languageCode,
+                                      l.stageHelp,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Divider(),
+                    Text(l.before, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 6),
+                    ...prerequisites.map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 5),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.checklist_outlined, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(item)),
+                        ],
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('1. ${l.raw} & ${l.product}', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 10),
+            _textField(_rawName, l.rawName),
+            _textField(_productName, l.productName),
+            _numberField(_rawQuantity, l.rawQty, helper: l.qtyHelp, min: 0.000001),
+            _numberField(_yieldPercent, l.yield, min: 0, max: 100),
+            const SizedBox(height: 8),
+            Text(l.costs, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 10),
+            _numberField(_rawUnitCost, l.rawCost, min: 0),
+            _numberField(_processingPerRawUnit, l.processing, min: 0),
+            _numberField(_packagingPerProduct, l.packaging, min: 0),
+            _numberField(_transport, l.transport, min: 0),
+            _numberField(_otherCosts, l.other, min: 0),
+            const SizedBox(height: 8),
+            Text(l.sales, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 10),
+            _numberField(_sellingPrice, l.price, min: 0),
+            FilledButton.icon(
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  FocusScope.of(context).unfocus();
+                  setState(() {});
+                }
+              },
+              icon: const Icon(Icons.calculate_outlined),
+              label: Text(l.calculate),
+            ),
+            const SizedBox(height: 16),
+            if (estimate == null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(l.invalid),
+                ),
+              )
+            else
+              Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.result, style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    _result(l.raw, _rawName.text.isEmpty ? l.raw : _rawName.text),
+                    _result(l.product, _productName.text.isEmpty ? l.product : _productName.text),
+                    _result(l.output, estimate.outputQuantity.toStringAsFixed(2)),
+                    const Divider(),
+                    _result(l.rawProcessingCost, _money(estimate.rawAndProcessingCost)),
+                    _result(l.packagingCost, _money(estimate.packagingCost)),
+                    _result(l.transport, _money(estimate.transportCost)),
+                    _result(l.other, _money(estimate.otherCosts)),
+                    _result(l.total, _money(estimate.totalCost), emphasized: true),
+                    _result(
+                      l.unit,
+                      estimate.unitCost != null
+                          ? _money(estimate.unitCost!)
+                          : l.unitUnavailable,
+                    ),
+                    _result(l.revenue, _money(estimate.revenue)),
+                    _result(l.profit, _money(estimate.profitOrLoss), emphasized: true),
+                    _result(
+                      l.margin,
+                      estimate.salesMarginPercent != null
+                          ? '${estimate.salesMarginPercent!.toStringAsFixed(1)}%'
+                          : l.marginUnavailable,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l.warning,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  RawToProductEstimate? _estimateOrNull() {
+    final rawQuantity = _parseAmount(_rawQuantity.text);
+    final yieldPercent = _parseAmount(_yieldPercent.text);
+    final rawUnitCost = _parseAmount(_rawUnitCost.text);
+    final processingPerRawUnit = _parseAmount(_processingPerRawUnit.text);
+    final packagingPerProduct = _parseAmount(_packagingPerProduct.text);
+    final transportCost = _parseAmount(_transport.text);
+    final otherCosts = _parseAmount(_otherCosts.text);
+    final sellingPricePerProduct = _parseAmount(_sellingPrice.text);
+    final values = [
+      rawQuantity,
+      yieldPercent,
+      rawUnitCost,
+      processingPerRawUnit,
+      packagingPerProduct,
+      transportCost,
+      otherCosts,
+      sellingPricePerProduct,
+    ];
+    if (values.any((value) => value == null || !value.isFinite || value < 0) ||
+        rawQuantity! <= 0 ||
+        yieldPercent! > 100) {
+      return null;
+    }
+
+    try {
+      return RawToProductEstimate.calculate(
+        rawQuantity: rawQuantity,
+        yieldPercent: yieldPercent,
+        rawUnitCost: rawUnitCost!,
+        processingPerRawUnit: processingPerRawUnit!,
+        packagingPerProduct: packagingPerProduct!,
+        transportCost: transportCost!,
+        otherCosts: otherCosts!,
+        sellingPricePerProduct: sellingPricePerProduct!,
+      );
+    } on ArgumentError {
+      // Keep incomplete or out-of-range estimates out of the results panel.
+      return null;
+    }
+  }
+}
