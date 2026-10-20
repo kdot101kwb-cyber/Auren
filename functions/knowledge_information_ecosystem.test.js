@@ -5,6 +5,8 @@ const path = require('node:path');
 
 const source = fs.readFileSync(path.join(__dirname, 'knowledge_information_ecosystem.js'), 'utf8');
 const indexSource = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
+const screenSource = fs.readFileSync(path.join(__dirname, '..', 'lib', 'features', 'knowledge', 'presentation', 'knowledge_information_screen.dart'), 'utf8');
+const serviceSource = fs.readFileSync(path.join(__dirname, '..', 'lib', 'services', 'knowledge', 'knowledge_information_service.dart'), 'utf8');
 
 test('five distinct authenticated Knowledge & Information systems are callable', () => {
   for (const name of [
@@ -42,4 +44,22 @@ test('user data is scoped under the authenticated user and bounded', () => {
 test('all five systems expose bounded authenticated list operations', () => {
   assert.equal((source.match(/action === 'list'/g) || []).length, 5);
   assert.match(source, /orderBy\('updatedAt', 'desc'\)\.limit\(50\)/);
+});
+
+test('Flutter workspace exposes five distinct tools and client adapters', () => {
+  assert.match(screenSource, /DefaultTabController/);
+  assert.match(screenSource, /TabBarView/);
+  for (const method of [
+    'captureKnowledge',
+    'saveEvidence',
+    'saveSourceProfile',
+    'saveReadingQueueItem',
+    'saveGlossaryEntry',
+    'listKnowledge',
+    'listEvidence',
+    'listSourceProfiles',
+    'listReadingQueue',
+    'listGlossary',
+  ]) assert.match(serviceSource, new RegExp(method));
+  assert.match(screenSource, /AurenKnowledgeInformationScreen/);
 });
