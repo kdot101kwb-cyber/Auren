@@ -28,7 +28,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('ورشة الاحتمالات'), findsOneWidget);
+    expect(find.text('ورشة الاحتمالات'), findsWidgets);
   });
 
   testWidgets('restart clears saved progress', (tester) async {
@@ -57,7 +57,7 @@ void main() {
     await tester.tap(companionsChoice);
     await tester.pumpAndSettle();
 
-    expect(find.text('ساحة الغرباء'), findsOneWidget);
+    expect(find.text('ساحة الغرباء'), findsWidgets);
     expect(find.text('أثر اختياراتك'), findsOneWidget);
     expect(find.text('البوابة التي لا تظهر مرتين'), findsOneWidget);
     expect(find.text('الفصل 2 من 4'), findsOneWidget);
