@@ -31,6 +31,20 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
   final _productName = TextEditingController();
   String _currency = 'USD';
   String _routeId = 'cotton-to-garment';
+  bool _initializedRouteNames = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initializedRouteNames) return;
+    final l = RawToProductStrings(
+      Localizations.localeOf(context).languageCode,
+    );
+    final names = l.routeName(_routeId).split(RegExp('[←→]'));
+    _rawName.text = names.first.trim();
+    _productName.text = names.length > 1 ? names.last.trim() : l.routeName(_routeId);
+    _initializedRouteNames = true;
+  }
 
   @override
   void dispose() {
