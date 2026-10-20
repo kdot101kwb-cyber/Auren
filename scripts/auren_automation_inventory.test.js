@@ -54,5 +54,7 @@ test('report labels its limits and does not dump scanned source', () => {
 });
 
 test('escapes untrusted values before writing Markdown table cells', () => {
-  assert.equal(escapeMarkdownCell('workflow\\\\name|break\nnext'), 'workflow\\\\\\\\name\\\\|break next');
+  assert.equal(escapeMarkdownCell('a|b'), 'a\\|b');
+  assert.equal(escapeMarkdownCell('a\\\\b'), 'a\\\\\\\\b');
+  assert.equal(escapeMarkdownCell('first\nsecond'), 'first second');
 });
