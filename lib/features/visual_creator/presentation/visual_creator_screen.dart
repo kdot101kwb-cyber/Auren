@@ -189,10 +189,11 @@ class _AurenVisualCreatorScreenState extends State<AurenVisualCreatorScreen> {
   }
 
   void _moveLayer(VisualLayer layer, int direction) {
+    final reordered = reorderVisualLayers(_layers, layer.id, direction);
     setState(() {
       _layers
         ..clear()
-        ..addAll(reorderVisualLayers(_layers, layer.id, direction));
+        ..addAll(reordered);
       _selectedId = layer.id;
     });
   }
