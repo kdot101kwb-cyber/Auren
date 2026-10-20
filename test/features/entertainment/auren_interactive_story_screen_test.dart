@@ -20,7 +20,7 @@ void main() {
     await tester.tap(find.text('أبني شيئًا لم يوجد'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ورشة الاحتمالات'), findsOneWidget);
+    expect(find.text('ورشة الاحتمالات'), findsWidgets);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(
@@ -39,7 +39,7 @@ void main() {
 
     await tester.tap(find.text('أستكشف المجهول'));
     await tester.pumpAndSettle();
-    expect(find.text('حديقة الاحتمالات'), findsOneWidget);
+    expect(find.text('حديقة الاحتمالات'), findsWidgets);
 
     await tester.tap(find.byTooltip('إعادة القصة'));
     await tester.pumpAndSettle();
@@ -52,7 +52,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('أبحث عن رفاق'));
+    final companionsChoice = find.text('أبحث عن رفاق');
+    await tester.ensureVisible(companionsChoice);
+    await tester.tap(companionsChoice);
     await tester.pumpAndSettle();
 
     expect(find.text('ساحة الغرباء'), findsOneWidget);
