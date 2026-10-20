@@ -163,6 +163,7 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
         && requestData().memberIds is list
         && requestData().memberIds.size() >= 1
         && sizeAtMost(requestData().memberIds,10000)
+        && requestData().memberIds.toSet().size() == requestData().memberIds.size()
         && requestData().memberCount == requestData().memberIds.size()
         && (
           (resource.data.visibility == 'public'
@@ -229,6 +230,7 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
         && requestData().createdAt == resource.data.createdAt
         && requestData().volunteerIds is list
         && sizeAtMost(requestData().volunteerIds,10000)
+        && requestData().volunteerIds.toSet().size() == requestData().volunteerIds.size()
         && requestData().volunteerIds.hasAll(resource.data.volunteerIds)
         && requestData().volunteerIds.size() == resource.data.volunteerIds.size() + 1
         && request.auth.uid in requestData().volunteerIds
