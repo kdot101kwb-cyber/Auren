@@ -800,6 +800,9 @@ class _PulseMediaPreviewState extends State<PulseMediaPreview> {
                     if (playing) {
                       await player.pause();
                     } else {
+                      if (state?.processingState == ProcessingState.completed) {
+                        await player.seek(Duration.zero);
+                      }
                       await player.play();
                     }
                   } catch (error) {
