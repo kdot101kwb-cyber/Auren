@@ -8,6 +8,7 @@ import '../../../core/theme/auren_nebula_tokens.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/media/auren_media_service.dart';
 import '../../../services/social/post_repository.dart';
+import '../utils/post_media_type.dart';
 
 class AurenCreatePostScreen extends StatefulWidget {
   const AurenCreatePostScreen({super.key});
@@ -89,14 +90,6 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
     return types[extension] ?? 'application/octet-stream';
   }
 
-  String _mediaTypeFromUrl(String url) {
-    final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
-    if (RegExp(r'\.(mp4|mov|webm|m4v|avi|mkv)$').hasMatch(path)) {
-      return 'video';
-    }
-    return 'image';
-  }
-
   Future<void> save() async {
     final text = textController.text.trim();
     final typedUrl = mediaController.text.trim();
@@ -121,7 +114,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
     String? uploadedPath;
     try {
       var mediaUrl = typedUrl;
-      var mediaType = typedUrl.isEmpty ? 'none' : _mediaTypeFromUrl(typedUrl);
+      var mediaType = postMediaTypeFromUrl(typedUrl);
 
       final file = selectedMedia;
       if (file != null) {
