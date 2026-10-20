@@ -4990,7 +4990,7 @@ exports.translateAurenText = require('firebase-functions/v2/https').onCall(
       throw new HttpsError('unauthenticated', 'Sign in required.');
     }
     const text = String(request.data?.text ?? '').trim();
-    const sourceLanguage = String(request.data?.sourceLanguage || 'auto').trim().slice(0, 24);
+    const sourceLanguage = String(request.data?.sourceLanguage || 'auto').trim().slice(0, 24) || 'auto';
     const targetLanguage = String(request.data?.targetLanguage || '').trim().slice(0, 24);
     const context = String(request.data?.context || '').trim().slice(0, 500);
     if (!text || text.length > 12000 || !targetLanguage) {
