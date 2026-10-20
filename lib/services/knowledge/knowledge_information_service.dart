@@ -37,6 +37,20 @@ class KnowledgeInformationService {
     return result.data.map((key, value) => MapEntry(key.toString(), value));
   }
 
+  Future<List<Map<String, dynamic>>> _list(String callable) async {
+    final result = await _call(callable, {'action': 'list'});
+    final items = result['items'];
+    if (items is! List) return const [];
+    return items.whereType<Map>().map((item) =>
+        item.map((key, value) => MapEntry(key.toString(), value))).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> listKnowledge() => _list('captureAurenKnowledgeItem');
+  Future<List<Map<String, dynamic>>> listEvidence() => _list('saveAurenEvidenceRecord');
+  Future<List<Map<String, dynamic>>> listSourceProfiles() => _list('saveAurenSourceProfile');
+  Future<List<Map<String, dynamic>>> listReadingQueue() => _list('upsertAurenReadingQueueItem');
+  Future<List<Map<String, dynamic>>> listGlossary() => _list('saveAurenGlossaryEntry');
+
   Future<Map<String, dynamic>> captureKnowledge({
     required String title,
     String body = '',
