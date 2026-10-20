@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:auren/features/everyday_life/presentation/household_inventory_screen.dart';
 import 'package:auren/services/auth/auth_service.dart';
+import 'package:auren/services/everyday/household_inventory_service.dart';
 import 'package:auren/services/everyday/household_inventory_store.dart';
 
 class _FakeAuthService implements AurenAuthService {
