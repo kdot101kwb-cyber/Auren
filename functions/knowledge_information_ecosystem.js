@@ -2,36 +2,24 @@
 
 const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
+const {
+  MAX_TITLE,
+  MAX_TEXT,
+  clean,
+  required,
+  safeUrls,
+  boundedUniqueStrings,
+  normalizeQueueStatus,
+  normalizePriority,
+  normalizeEvidenceVerdict,
+} = require('./knowledge_information_validation');
 
 const db = getFirestore();
-const MAX_TITLE = 180;
-const MAX_TEXT = 6000;
-const MAX_URLS = 12;
 
 function requireUid(request) {
   const uid = String(request.auth?.uid || '').trim();
   if (!uid) throw new HttpsError('unauthenticated', 'Sign in required.');
   return uid;
-}
-function clean(value, max = MAX_TEXT) {
-  return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
-}
-function required(value, label, max = MAX_TEXT) {
-  const result = clean(value, max);
-  if (!result) throw new HttpsError('invalid-argument', label + ' is required.');
-  return result;
-}
-function safeUrls(value) {
-  if (!Array.isArray(value)) return [];
-  return [...new Set(value.slice(0, MAX_URLS).map((item) => {
-    const raw = clean(item, 2000);
-    try {
-      const url = new URL(raw);
-      if (!['https:', 'http:'].includes(url.protocol)) return '';
-      if (url.username || url.password) return '';
-      return url.toString();
-    } catch (_) { return ''; }
-  }).filter(Boolean))];
 }
 function userCollection(uid, name) {
   return db.collection('users').doc(uid).collection(name);
@@ -51,8 +39,7 @@ exports.captureAurenKnowledgeItem = onCall({region: 'us-central1'}, async (reque
   if (!body && !sourceUrl) throw new HttpsError('invalid-argument', 'Provide body text or a valid HTTP(S) source URL.');
   const ref = userCollection(uid, 'knowledgeInbox').doc();
   await ref.set({
-    title, body, sourceUrl, tags: Array.isArray(request.data?.tags)
-      ? [...new Set(request.data.tags.map((tag) => clean(tag, 40)).filter(Boolean))].slice(0, 12) : [],
+    title, body, sourceUrl, tags: boundedUniqueStrings(request.data?.tags, 12, 40),
     status: 'inbox', capturedAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(), schemaVersion: 1,
   });
@@ -66,8 +53,7 @@ exports.saveAurenEvidenceRecord = onCall({region: 'us-central1'}, async (request
   const claim = required(request.data?.claim, 'claim', 1200);
   const sources = safeUrls(request.data?.sourceUrls);
   if (!sources.length) throw new HttpsError('invalid-argument', 'At least one valid source URL is required.');
-  const verdict = ['unverified', 'supported', 'disputed', 'mixed'].includes(request.data?.verdict)
-    ? request.data.verdict : 'unverified';
+  const verdict = normalizeEvidenceVerdict(request.data?.verdict);
   const ref = userCollection(uid, 'evidenceVault').doc();
   await ref.set({claim, sourceUrls: sources, verdict, notes: clean(request.data?.notes, 3000),
     createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), schemaVersion: 1});
@@ -104,11 +90,23 @@ exports.upsertAurenReadingQueueItem = onCall({region: 'us-central1'}, async (req
   const title = required(request.data?.title, 'title', MAX_TITLE);
   const url = safeUrls([request.data?.url])[0] || '';
   if (!url) throw new HttpsError('invalid-argument', 'A valid HTTP(S) URL is required.');
-  const status = ['to_read', 'reading', 'read'].includes(request.data?.status) ? request.data.status : 'to_read';
+  const status = normalizeQueueStatus(request.data?.status);
   const ref = id && !id.includes('/') ? userCollection(uid, 'researchReadingQueue').doc(id) : userCollection(uid, 'researchReadingQueue').doc();
-  await ref.set({title, url, status, priority: ['low', 'normal', 'high'].includes(request.data?.priority) ? request.data.priority : 'normal',
-    notes: clean(request.data?.notes, 2000), updatedAt: FieldValue.serverTimestamp(),
-    createdAt: FieldValue.serverTimestamp(), schemaVersion: 1}, {merge: true});
+  await db.runTransaction(async (transaction) => {
+    const existing = await transaction.get(ref);
+    const payload = {
+      title,
+      url,
+      status,
+      priority: normalizePriority(request.data?.priority),
+      notes: clean(request.data?.notes, 2000),
+      updatedAt: FieldValue.serverTimestamp(),
+      schemaVersion: 1,
+    };
+    // Preserve the original creation time when an existing queue item is edited.
+    if (!existing.exists) payload.createdAt = FieldValue.serverTimestamp();
+    transaction.set(ref, payload, {merge: true});
+  });
   return {id: ref.id, status};
 });
 
@@ -122,8 +120,7 @@ exports.saveAurenGlossaryEntry = onCall({region: 'us-central1'}, async (request)
   const targetLanguage = required(request.data?.targetLanguage, 'targetLanguage', 24);
   const ref = userCollection(uid, 'languageGlossary').doc();
   await ref.set({sourceTerm, translatedTerm, sourceLanguage, targetLanguage,
-    context: clean(request.data?.context, 1200), alternatives: Array.isArray(request.data?.alternatives)
-      ? [...new Set(request.data.alternatives.map((v) => clean(v, 240)).filter(Boolean))].slice(0, 8) : [],
+    context: clean(request.data?.context, 1200), alternatives: boundedUniqueStrings(request.data?.alternatives, 8, 240),
     createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(), schemaVersion: 1});
   return {id: ref.id, status: 'saved'};
 });
