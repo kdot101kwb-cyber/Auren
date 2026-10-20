@@ -4,6 +4,7 @@ import '../../knowledge/presentation/auren_knowledge_hub_screen.dart';
 import '../../knowledge_notebook/presentation/auren_knowledge_notebook_screen.dart';
 import '../../language_bridge/presentation/auren_language_bridge_screen.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../source_registry/presentation/auren_source_registry_screen.dart';
 
 /// Research workspace that routes each task to AUREN's existing assistant.
 class AurenResearchDeskScreen extends StatefulWidget {
@@ -120,6 +121,20 @@ class _AurenResearchDeskScreenState extends State<AurenResearchDeskScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => const AurenKnowledgeNotebookScreen(),
+                ),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.source_outlined)),
+              title: const Text('AUREN Source Registry'),
+              subtitle: const Text('احفظ روابط البحث وتابع حالة مراجعتها.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AurenSourceRegistryScreen(),
                 ),
               ),
             ),
