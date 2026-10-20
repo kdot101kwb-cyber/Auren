@@ -52,12 +52,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final companionsChoice = find.text('أبحث عن رفاق');
-    await tester.ensureVisible(companionsChoice);
-    await tester.tap(companionsChoice);
+    final buildChoice = find.text('أبني شيئًا لم يوجد');
+    await tester.ensureVisible(buildChoice);
+    await tester.tap(buildChoice);
     await tester.pumpAndSettle();
 
-    expect(find.text('ساحة الغرباء'), findsWidgets);
+    expect(find.text('ورشة الاحتمالات'), findsWidgets);
     expect(find.text('أثر اختياراتك'), findsOneWidget);
     expect(find.text('البوابة التي لا تظهر مرتين'), findsOneWidget);
     expect(find.text('الفصل 2 من 4'), findsOneWidget);
