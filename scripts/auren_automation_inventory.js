@@ -17,6 +17,25 @@ function scalar(v) {
   const s=String(v||'').trim();
   return s.length>1 && ((s[0]==='"'&&s.at(-1)==='"')||(s[0]==="'"&&s.at(-1)==="'")) ? s.slice(1,-1) : s;
 }
+function stripYamlComment(line) {
+  let quote = null;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quote === '"') {
+      if (ch === '\\\\') { i++; continue; }
+      if (ch === '"') quote = null;
+      continue;
+    }
+    if (quote === "'") {
+      if (ch === "'" && line[i + 1] === "'") { i++; continue; }
+      if (ch === "'") quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
+    if (ch === '#' && (i === 0 || /\\s/.test(line[i - 1]))) return line.slice(0, i).trimEnd();
+  }
+  return line;
+}
 function parseWorkflow(file, source) {
   const lines=source.split(/\r?\n/), name=scalar(source.match(/^name:\s*(.*?)\s*$/m)?.[1]||path.basename(file));
   const triggers=new Set(), oi=lines.findIndex(l=>/^(?:on|"on"|'on')\s*:\s*/.test(l));
@@ -30,7 +49,7 @@ function parseWorkflow(file, source) {
       if(indent===2){const m=l.match(/^\s{2}([A-Za-z_][\w-]*)\s*:/);if(m)triggers.add(m[1]);}
     }
   }
-  const activeSource=lines.filter(l=>!l.trim().startsWith('#')).join('\n');
+  const activeSource=lines.map(stripYamlComment).join('\n');
   const cron=[...activeSource.matchAll(/\bcron\s*:\s*(['"])(.*?)\1/g)].map(m=>m[2].trim()).filter(Boolean);
   const explicitPermissions=/^permissions\s*:/m.test(source), concurrency=/^concurrency\s*:/m.test(source);
   const staging=/staging/i.test(`${file} ${name}`), deploys=[], findings=[];
