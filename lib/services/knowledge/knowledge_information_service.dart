@@ -22,6 +22,7 @@ class KnowledgeInformationService {
     final uri = Uri.tryParse(clean);
     if (uri == null ||
         !uri.hasAuthority ||
+        uri.host.isEmpty ||
         !{'http', 'https'}.contains(uri.scheme.toLowerCase()) ||
         uri.userInfo.isNotEmpty) {
       throw ArgumentError('URL must be a valid HTTP(S) address without credentials.');
