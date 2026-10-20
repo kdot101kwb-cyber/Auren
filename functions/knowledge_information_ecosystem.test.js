@@ -21,6 +21,9 @@ test('five distinct authenticated Knowledge & Information systems are callable',
     assert.match(source, /requireUid\(request\)/);
   }
   assert.match(indexSource, /knowledge_information_ecosystem/);
+  assert.match(indexSource, /exports\.translateAurenText/);
+  assert.match(indexSource, /AUREN Language Bridge/);
+  assert.match(indexSource, /text\.length > 12000/);
 });
 
 test('URL intake rejects non-HTTP schemes and embedded credentials', () => {
@@ -57,6 +60,8 @@ test('Flutter workspace exposes five distinct tools and client adapters', () => 
     'saveSourceProfile',
     'saveReadingQueueItem',
     'saveGlossaryEntry',
+    'translateText',
+    'removeReadingQueueItem',
     'listKnowledge',
     'listEvidence',
     'listSourceProfiles',
@@ -64,4 +69,6 @@ test('Flutter workspace exposes five distinct tools and client adapters', () => 
     'listGlossary',
   ]) assert.match(serviceSource, new RegExp(method));
   assert.match(screenSource, /AurenKnowledgeInformationScreen/);
+  assert.match(screenSource, /kind: 'translation'/);
+  assert.match(screenSource, /PopupMenuButton<String>/);
 });
