@@ -67,7 +67,7 @@ void main() {
       );
 
       expect(find.byKey(const Key('overall-health-status')), findsOneWidget);
-      expect(find.text('Degraded'), findsOneWidget);
+      expect(find.text('Degraded'), findsNWidgets(2));
       expect(find.text('Database'), findsOneWidget);
       expect(find.text('Worker'), findsOneWidget);
       expect(find.text('Read-only probe passed'), findsOneWidget);
