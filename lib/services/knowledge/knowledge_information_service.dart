@@ -130,6 +130,36 @@ class KnowledgeInformationService {
     });
   }
 
+  Future<Map<String, dynamic>> translateText({
+    required String text,
+    required String targetLanguage,
+    String sourceLanguage = 'auto',
+    String context = '',
+  }) {
+    final cleanText = requiredText(text, 'text', 12000);
+    final target = requiredText(targetLanguage, 'targetLanguage', 24);
+    final source = requiredText(sourceLanguage, 'sourceLanguage', 24);
+    if (source.toLowerCase() == target.toLowerCase() && source != 'auto') {
+      throw ArgumentError('Source and target languages must differ.');
+    }
+    return _call('translateAurenText', {
+      'text': cleanText,
+      'sourceLanguage': source,
+      'targetLanguage': target,
+      'context': context.trim().length > 500
+          ? context.trim().substring(0, 500)
+          : context.trim(),
+    });
+  }
+
+  Future<Map<String, dynamic>> removeReadingQueueItem({
+    required String id,
+  }) =>
+      _call('upsertAurenReadingQueueItem', {
+        'action': 'remove',
+        'id': requiredText(id, 'id', 128),
+      });
+
   Future<Map<String, dynamic>> saveGlossaryEntry({
     required String sourceTerm,
     required String translatedTerm,
