@@ -38,3 +38,8 @@ test('user data is scoped under the authenticated user and bounded', () => {
   assert.match(source, /MAX_TEXT = 6000/);
   assert.match(source, /MAX_URLS = 12/);
 });
+
+test('all five systems expose bounded authenticated list operations', () => {
+  assert.equal((source.match(/action === 'list'/g) || []).length, 5);
+  assert.match(source, /orderBy\('updatedAt', 'desc'\)\.limit\(50\)/);
+});
