@@ -49,6 +49,54 @@ void main() {
     );
   });
 
+  test('club membership is idempotent and members can leave', () async {
+    final clubId = await service.createClub(
+      name: 'Chess',
+      description: '',
+      category: 'Games',
+    );
+    final otherMemberService = AurenCollaborationService(
+      db: firestore,
+      auth: MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'member-b'),
+      ),
+    );
+
+    await otherMemberService.joinClub(clubId);
+    await otherMemberService.joinClub(clubId);
+    var snapshot =
+        await firestore.collection('community_clubs').doc(clubId).get();
+    expect(snapshot.data()?['memberIds'], ['member-a', 'member-b']);
+    expect(snapshot.data()?['memberCount'], 2);
+
+    await otherMemberService.leaveClub(clubId);
+    snapshot = await firestore.collection('community_clubs').doc(clubId).get();
+    expect(snapshot.data()?['memberIds'], ['member-a']);
+    expect(snapshot.data()?['memberCount'], 1);
+  });
+
+  test('cause volunteer registration is idempotent', () async {
+    final causeId = await service.createCause(
+      title: 'Tree planting',
+      description: 'Plant trees together.',
+      category: 'Environment',
+    );
+    final otherMemberService = AurenCollaborationService(
+      db: firestore,
+      auth: MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'member-b'),
+      ),
+    );
+
+    await otherMemberService.volunteerForCause(causeId);
+    await otherMemberService.volunteerForCause(causeId);
+    final snapshot =
+        await firestore.collection('volunteer_causes').doc(causeId).get();
+    expect(snapshot.data()?['volunteerIds'], ['member-a', 'member-b']);
+  });
+
   test('space creation starts with a single owner member', () async {
     final id = await service.createSpace(
       title: 'Community garden',
