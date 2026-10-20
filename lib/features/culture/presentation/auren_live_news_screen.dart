@@ -161,7 +161,7 @@ class _AurenLiveNewsScreenState extends State<AurenLiveNewsScreen> {
             children: [
               for (var index = 0; index < _topics.length; index++)
                 ChoiceChip(
-                  label: Text(_topics[index].label),
+                  label: Row(\n                    mainAxisSize: MainAxisSize.min,\n                    children: [\n                      Icon(_topics[index].icon, size: 18),\n                      const SizedBox(width: 6),\n                      Text(_topics[index].label),\n                    ],\n                  ),
                   selected: _selectedTopic == index,
                   onSelected: _loading
                       ? null
