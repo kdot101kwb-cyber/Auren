@@ -39,6 +39,16 @@ class AurenHouseholdItem {
     if (notes.length > 1000) return 'Notes are too long.';
     return null;
   }
+
+  AurenHouseholdItem copyWith({double? quantity}) => AurenHouseholdItem(
+    id: id,
+    name: name,
+    category: category,
+    quantity: quantity ?? this.quantity,
+    lowStockThreshold: lowStockThreshold,
+    unit: unit,
+    notes: notes,
+  );
 }
 
 /// Pure local calculation; no supplier or delivery service is contacted.
@@ -49,4 +59,55 @@ class AurenHouseholdRestockPlanner {
     Iterable<AurenHouseholdItem> items,
   ) => items.where((item) => item.validate() == null && item.needsRestock).toList()
     ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+}
+
+/// A local stock adjustment. It is not persisted and never places an order.
+enum AurenStockMovementType { restock, consume }
+
+@immutable
+class AurenHouseholdStockMovement {
+  final String id;
+  final String itemId;
+  final AurenStockMovementType type;
+  final double amount;
+  final String note;
+  final DateTime occurredAt;
+
+  const AurenHouseholdStockMovement({
+    required this.id,
+    required this.itemId,
+    required this.type,
+    required this.amount,
+    required this.occurredAt,
+    this.note = '',
+  });
+
+  String? validate() {
+    if (id.trim().isEmpty) return 'Movement id is required.';
+    if (itemId.trim().isEmpty) return 'Item id is required.';
+    if (!amount.isFinite || amount <= 0) {
+      return 'Movement amount must be finite and greater than zero.';
+    }
+    if (note.length > 500) return 'Movement note is too long.';
+    return null;
+  }
+
+  /// Returns an updated immutable item; callers decide whether/how to persist it.
+  AurenHouseholdItem applyTo(AurenHouseholdItem item) {
+    final movementIssue = validate();
+    if (movementIssue != null) throw ArgumentError(movementIssue);
+    final itemIssue = item.validate();
+    if (itemIssue != null) throw ArgumentError(itemIssue);
+    if (item.id != itemId) {
+      throw ArgumentError('Movement item id does not match the supplied item.');
+    }
+
+    final nextQuantity = type == AurenStockMovementType.restock
+        ? item.quantity + amount
+        : item.quantity - amount;
+    if (!nextQuantity.isFinite || nextQuantity < 0) {
+      throw StateError('Stock movement would produce an invalid quantity.');
+    }
+    return item.copyWith(quantity: nextQuantity);
+  }
 }
