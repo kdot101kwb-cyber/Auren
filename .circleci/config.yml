@@ -179,21 +179,21 @@ jobs:
             fi
             echo "Firestore Rules source-size guard passed."
       - run:
-          name: Run Firestore Action Rules emulator gate
+          name: Run Firestore Action and Community Rules emulator gate
           command: |
             set -e
             if ! java -version >/dev/null 2>&1; then
               sudo apt-get update
               sudo apt-get install -y openjdk-21-jre-headless
             fi
-            npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore "node --test functions/action_rules.integration.test.js" 2>&1 | tee firestore_action_rules.log
+            npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore "node --test functions/action_rules.integration.test.js functions/community_collaboration_rules.integration.test.js" 2>&1 | tee firestore_rules_integration.log
             status=${PIPESTATUS[0]}
-            echo "firestore_action_rules_exit_code=${status}" >> firestore_action_rules.log
+            echo "firestore_rules_integration_exit_code=${status}" >> firestore_rules_integration.log
             exit ${status}
       - store_artifacts:
           path: functions/functions_test.log
       - store_artifacts:
-          path: firestore_action_rules.log
+          path: firestore_rules_integration.log
 
   action_executor_tests:
     docker:
