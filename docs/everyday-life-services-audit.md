@@ -29,12 +29,13 @@ Working branch: `feat/everyday-life-services`.
 ## Remaining non-duplicate candidates (pending deeper audit)
 
 3. **Trip itinerary planning (partial foundation):** added `AurenTripStop` validation, deterministic stop ordering, remaining-stop filtering, and completion progress in `lib/services/everyday/trip_itinerary_service.dart`. It does not book anything or persist trips.
-4. **Household maintenance planning:** now has a small, reminder-independent task/log model; recurring notifications remain out of scope to avoid duplicating `ReminderService`.
+4. **Household maintenance planning:** now has a reminder-independent task/log model and guarded status transitions; recurring notifications remain out of scope to avoid duplicating `ReminderService`.
+5. **Errands / service-request tracking (audit result):** do not add a generic second task system yet. `DailyPlanService` already tracks ordered, completable tasks; `RoutineService`, `CalendarService`, and `ReminderService` cover scheduled personal activity; `AurenTransportService` covers ride requests; marketplace/order flows cover commerce; and `AurenSupplierRequestsRepository` covers supplier-contact/RFQ drafts. A separate generic errands queue would overlap these without a verified distinct user journey. Revisit only with a clearly scoped gap (for example, a cross-domain checklist that references existing records rather than copying them).
 5. **Errands / service-request tracking:** still only a candidate; avoid overlap with opportunity, marketplace, and local-intelligence flows.
 
 ## Next audit targets
 
 1. Inspect Travel, Stay/booking, Food/Home Essentials, Transport, and offline-navigation implementations (initial inspection confirms separate Food and Transport services and existing calendar/reminder services).
 2. Confirm current auth/repository conventions and explicit Firestore rules before adding persistence.
-3. Select the remaining non-duplicate systems only after that inspection.
+3. Do not create a generic errands/service-request tracker unless a distinct workflow is demonstrated; prefer linking existing task, calendar, transport, commerce, and supplier records.
 4. Run targeted Flutter tests and analyze in CI; keep this branch unmerged pending review.
