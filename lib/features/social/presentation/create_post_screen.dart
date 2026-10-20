@@ -45,7 +45,11 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
     final text = textController.text.trim();
     var mediaUrl = mediaController.text.trim();
     final uid = FirebaseAurenAuthService().currentUserId;
-    if ((text.isEmpty && mediaUrl.isEmpty) || uid == null || saving) return;
+    if ((text.isEmpty && mediaUrl.isEmpty && selectedMedia == null) ||
+        uid == null ||
+        saving) {
+      return;
+    }
 
     setState(() => saving = true);
     try {
