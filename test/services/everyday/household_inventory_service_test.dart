@@ -66,4 +66,23 @@ void main() {
     expect(() => movement(amount: 3).applyTo(item('rice', 'Rice', 2, 1)),
       throwsStateError);
   });
+
+  test('ledger replays movements by time and rejects duplicate ids', () {
+    final initial = item('rice', 'Rice', 2, 1);
+    final laterConsume = AurenHouseholdStockMovement(
+      id: 'm2', itemId: 'rice', type: AurenStockMovementType.consume,
+      amount: 1, occurredAt: DateTime(2026, 10, 22),
+    );
+    final earlierRestock = AurenHouseholdStockMovement(
+      id: 'm1', itemId: 'rice', type: AurenStockMovementType.restock,
+      amount: 4, occurredAt: DateTime(2026, 10, 21),
+    );
+
+    expect(AurenHouseholdStockLedger.replay(
+      initial, [laterConsume, earlierRestock],
+    ).quantity, 5);
+    expect(() => AurenHouseholdStockLedger.replay(
+      initial, [earlierRestock, earlierRestock],
+    ), throwsArgumentError);
+  });
 }
