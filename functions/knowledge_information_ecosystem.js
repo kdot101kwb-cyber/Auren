@@ -36,10 +36,15 @@ function safeUrls(value) {
 function userCollection(uid, name) {
   return db.collection('users').doc(uid).collection(name);
 }
+async function listUserItems(uid, name) {
+  const snapshot = await userCollection(uid, name).orderBy('updatedAt', 'desc').limit(50).get();
+  return {items: snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}))};
+}
 
 // 1. Knowledge Inbox: capture a note or URL with provenance for later review.
 exports.captureAurenKnowledgeItem = onCall({region: 'us-central1'}, async (request) => {
   const uid = requireUid(request);
+  if (request.data?.action === 'list') return listUserItems(uid, 'knowledgeInbox');
   const title = required(request.data?.title, 'title', MAX_TITLE);
   const body = clean(request.data?.body, MAX_TEXT);
   const sourceUrl = safeUrls([request.data?.sourceUrl])[0] || '';
@@ -57,6 +62,7 @@ exports.captureAurenKnowledgeItem = onCall({region: 'us-central1'}, async (reque
 // 2. Evidence Vault: keep a claim separate from the sources that support or dispute it.
 exports.saveAurenEvidenceRecord = onCall({region: 'us-central1'}, async (request) => {
   const uid = requireUid(request);
+  if (request.data?.action === 'list') return listUserItems(uid, 'evidenceVault');
   const claim = required(request.data?.claim, 'claim', 1200);
   const sources = safeUrls(request.data?.sourceUrls);
   if (!sources.length) throw new HttpsError('invalid-argument', 'At least one valid source URL is required.');
@@ -71,6 +77,7 @@ exports.saveAurenEvidenceRecord = onCall({region: 'us-central1'}, async (request
 // 3. Source Provenance: save a source profile without claiming that its trustworthiness is verified.
 exports.saveAurenSourceProfile = onCall({region: 'us-central1'}, async (request) => {
   const uid = requireUid(request);
+  if (request.data?.action === 'list') return listUserItems(uid, 'sourceProfiles');
   const url = safeUrls([request.data?.url])[0];
   if (!url) throw new HttpsError('invalid-argument', 'A valid HTTP(S) source URL is required.');
   const label = required(request.data?.label || new URL(url).hostname, 'label', MAX_TITLE);
@@ -86,6 +93,7 @@ exports.saveAurenSourceProfile = onCall({region: 'us-central1'}, async (request)
 // 4. Research Reading Queue: organize sources by priority and progress.
 exports.upsertAurenReadingQueueItem = onCall({region: 'us-central1'}, async (request) => {
   const uid = requireUid(request);
+  if (request.data?.action === 'list') return listUserItems(uid, 'researchReadingQueue');
   const action = request.data?.action === 'remove' ? 'remove' : 'save';
   const id = clean(request.data?.id, 128);
   if (action === 'remove') {
@@ -107,6 +115,7 @@ exports.upsertAurenReadingQueueItem = onCall({region: 'us-central1'}, async (req
 // 5. Language Bridge Glossary: retain user-curated terms and context across languages.
 exports.saveAurenGlossaryEntry = onCall({region: 'us-central1'}, async (request) => {
   const uid = requireUid(request);
+  if (request.data?.action === 'list') return listUserItems(uid, 'languageGlossary');
   const sourceTerm = required(request.data?.sourceTerm, 'sourceTerm', 240);
   const translatedTerm = required(request.data?.translatedTerm, 'translatedTerm', 240);
   const sourceLanguage = required(request.data?.sourceLanguage, 'sourceLanguage', 24);
