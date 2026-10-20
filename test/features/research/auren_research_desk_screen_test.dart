@@ -9,6 +9,7 @@ void main() {
     );
 
     expect(find.text('AUREN Research Desk'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
     for (final tool in [
       'Research Brief',
       'Compare Sources',
@@ -23,7 +24,6 @@ void main() {
       );
       expect(find.text(tool), findsOneWidget);
     }
-    expect(find.byType(TextField), findsOneWidget);
   });
 
   testWidgets('Research Desk explains source verification limits', (tester) async {
