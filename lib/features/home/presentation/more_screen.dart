@@ -25,6 +25,7 @@ import 'systems_47_screen.dart';
 import '../../suppliers/presentation/auren_supplier_requests_screen.dart';
 import '../../document_studio/presentation/document_studio_screen.dart';
 import '../../creative_projects/presentation/creative_projects_screen.dart';
+import '../../visual_creator/presentation/visual_creator_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -101,6 +102,13 @@ class AurenMoreScreen extends StatelessWidget {
           subtitle: const Text('ارجع للمحتوى الذي حفظته.'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedPulseScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.palette_outlined),
+          title: const Text('AUREN Visual Creator'),
+          subtitle: const Text('صمّم غلافاً أو منشوراً باستخدام النصوص والأشكال والطبقات.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenVisualCreatorScreen())),
         )),
         Card(child: ListTile(
           leading: const Icon(Icons.workspaces_outline),
