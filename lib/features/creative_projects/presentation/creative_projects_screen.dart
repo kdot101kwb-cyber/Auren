@@ -144,7 +144,7 @@ class _AurenCreativeProjectsScreenState extends State<AurenCreativeProjectsScree
                     decoration: const InputDecoration(labelText: 'الهدف والخطة', border: OutlineInputBorder())),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<CreativeProjectStatus>(
-                  value: status,
+                  initialValue: status,
                   decoration: const InputDecoration(labelText: 'الحالة', border: OutlineInputBorder()),
                   items: CreativeProjectStatus.values.map((s) => DropdownMenuItem(value: s, child: Text(_statusLabel(s)))).toList(),
                   onChanged: (value) { if (value != null) setSheetState(() => status = value); },
