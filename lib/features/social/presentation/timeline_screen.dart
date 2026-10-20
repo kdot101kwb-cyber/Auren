@@ -33,6 +33,23 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
   final ScrollController _scrollController = ScrollController();
   String selectedType = 'all';
   bool _resumeAttempted = false;
+  double _lastSavedOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_persistScrollOffset);
+  }
+
+  void _persistScrollOffset() {
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    if ((offset - _lastSavedOffset).abs() < 80) return;
+    _lastSavedOffset = offset;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setDouble(_resumeOffsetKey, offset);
+    });
+  }
 
   @override
   void dispose() {
