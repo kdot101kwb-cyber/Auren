@@ -9,10 +9,19 @@ void main() {
     );
 
     expect(find.text('AUREN Knowledge Hub'), findsOneWidget);
-    expect(find.text('Science & Technology'), findsOneWidget);
-    expect(find.text('Business & Economics'), findsOneWidget);
-    expect(find.text('History & Society'), findsOneWidget);
-    expect(find.text('Practical Skills'), findsOneWidget);
-    expect(find.text('Sudan & Africa'), findsOneWidget);
+    for (final domain in [
+      'Science & Technology',
+      'Business & Economics',
+      'History & Society',
+      'Practical Skills',
+      'Sudan & Africa',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(domain),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(domain), findsOneWidget);
+    }
   });
 }
