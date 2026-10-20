@@ -40,7 +40,7 @@ class AurenActionExecutorHealthService {
           .get(uri, headers: const {'accept': 'application/json'})
           .timeout(timeout);
       final finishedAt = _clock();
-      final durationMs = finishedAt.difference(startedAt).inMilliseconds.clamp(0, 1 << 31);
+      final durationMs = finishedAt.difference(startedAt).inMilliseconds.clamp(0, 1 << 31).toInt();
       if (response.bodyBytes.length > _maxResponseBytes) {
         return _unknown(finishedAt, durationMs, 'Health response exceeded size limit');
       }
