@@ -189,32 +189,10 @@ class _AurenVisualCreatorScreenState extends State<AurenVisualCreatorScreen> {
   }
 
   void _moveLayer(VisualLayer layer, int direction) {
-    final ordered = _layers.toList()..sort((a, b) => a.order.compareTo(b.order));
-    final index = ordered.indexWhere((item) => item.id == layer.id);
-    final target = index + direction;
-    if (index < 0 || target < 0 || target >= ordered.length) return;
-    final moving = ordered[index];
-    ordered[index] = ordered[target];
-    ordered[target] = moving;
     setState(() {
       _layers
         ..clear()
-        ..addAll([
-          for (var i = 0; i < ordered.length; i++)
-            VisualLayer(
-              id: ordered[i].id,
-              kind: ordered[i].kind,
-              x: ordered[i].x,
-              y: ordered[i].y,
-              width: ordered[i].width,
-              height: ordered[i].height,
-              order: i,
-              visible: ordered[i].visible,
-              locked: ordered[i].locked,
-              assetUri: ordered[i].assetUri,
-              text: ordered[i].text,
-            ),
-        ]);
+        ..addAll(reorderVisualLayers(_layers, layer.id, direction));
       _selectedId = layer.id;
     });
   }
