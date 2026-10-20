@@ -6,8 +6,10 @@ function rel(root,file){return path.relative(root,file).split(path.sep).join('/'
 function escapeMarkdownCell(value){return String(value).replace(/\\/g,'\\\\').replace(/\|/g,'\\|').replace(/[\r\n]+/g,' ');}
 function inventory(root){
  const workflows=walk(path.join(root,'.github','workflows'),f=>/\.ya?ml$/i.test(f)).map(file=>{
-  const s=fs.readFileSync(file,'utf8'),jobs=[...s.matchAll(/^\s{2}([A-Za-z0-9_-]+):\s*$/gm)].map(m=>m[1]).filter(n=>!['on','permissions','concurrency','env','defaults'].includes(n)),triggers=[];
-  const lines=s.split(/\r?\n/), onIndex=lines.findIndex(line=>/^(?:on|['"]on['"]):\s*$/.test(line));
+  const s=fs.readFileSync(file,'utf8'),lines=s.split(/\r?\n/),jobs=[],triggers=[];
+  const jobsIndex=lines.findIndex(line=>/^jobs:\s*$/.test(line));
+  if(jobsIndex>=0){for(let i=jobsIndex+1;i<lines.length;i++){const line=lines[i];if(line.trim()&&!/^\s/.test(line)&&!/^\s*#/.test(line))break;const match=line.match(/^  ([A-Za-z0-9_-]+):\s*$/);if(match)jobs.push(match[1]);}}
+  const onIndex=lines.findIndex(line=>/^(?:on|['"]on['"]):\s*$/.test(line));
   if(onIndex>=0){for(let i=onIndex+1;i<lines.length;i++){const line=lines[i];if(line.trim()&&!/^\s/.test(line)&&!/^\s*#/.test(line))break;const match=line.match(/^\s{2}([A-Za-z0-9_-]+):/);if(match)triggers.push(match[1]);}}
   const deployCommands=[];const workflowLines=s.split(/\r?\n/);
   for(let i=0;i<workflowLines.length;i++){
