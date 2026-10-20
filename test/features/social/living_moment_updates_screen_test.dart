@@ -41,6 +41,27 @@ void main() {
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
 
+    testWidgets('owner can publish an update and it is persisted',
+        (tester) async {
+      await pumpScreen(tester, ownerId: 'owner_1', currentUid: 'owner_1');
+
+      await tester.tap(find.text('Add the first update'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField),
+          '  We reached the next milestone  ');
+      await tester.tap(find.text('Add update').last);
+      await tester.pumpAndSettle();
+
+      final saved = await firestore
+          .collection('posts')
+          .doc('moment_1')
+          .collection('moment_updates')
+          .get();
+      expect(saved.docs, hasLength(1));
+      expect(saved.docs.single.data()['authorId'], 'owner_1');
+      expect(saved.docs.single.data()['text'], 'We reached the next milestone');
+    });
+
     testWidgets('non-owner can read the timeline but cannot publish',
         (tester) async {
       await pumpScreen(tester, ownerId: 'owner_1', currentUid: 'viewer_1');
