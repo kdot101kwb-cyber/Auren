@@ -58,3 +58,22 @@ test('escapes untrusted values before writing Markdown table cells', () => {
   assert.equal(escapeMarkdownCell('a\\\\b'), 'a\\\\\\\\b');
   assert.equal(escapeMarkdownCell('first\nsecond'), 'first second');
 });
+
+test('detects aliased scheduled exports and multiline deploy commands', () => {
+  const root = fixture();
+  fs.writeFileSync(path.join(root, 'functions/nested/alias.js'), [
+    "const { onSchedule } = require('firebase-functions/scheduler');",
+    'const cleanupTask = onSchedule({ schedule: "every day" }, async () => {});',
+    'exports.cleanupTask = cleanupTask;'
+  ].join('\\n'));
+  fs.writeFileSync(path.join(root, '.github/workflows/deploy.yml'), [
+    'name: Deploy', 'on:', '  workflow_dispatch:', 'jobs:', '  deploy:', '    steps:',
+    '      - name: Deploy staging',
+    '        run: |',
+    '          firebase deploy',
+    '            --project auren-staging'
+  ].join('\\n'));
+  const result = inventory(root);
+  assert.ok(result.scheduledFunctions.some(item => item.name === 'cleanupTask'));
+  assert.equal(result.workflows[0].deployCommands[0].safety, 'explicit-project');
+});
