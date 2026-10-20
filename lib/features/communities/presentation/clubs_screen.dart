@@ -172,10 +172,12 @@ class _AurenClubsScreenState extends State<AurenClubsScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         isThreeLine: true,
-                        trailing: FilledButton.tonal(
-                          onPressed: () => _toggleMembership(club),
-                          child: Text(joined ? 'مغادرة' : 'انضمام'),
-                        ),
+                        trailing: club.ownerId == _service.uid
+                            ? const Chip(label: Text('المالك'))
+                            : FilledButton.tonal(
+                                onPressed: () => _toggleMembership(club),
+                                child: Text(joined ? 'مغادرة' : 'انضمام'),
+                              ),
                       ),
                     );
                   },
