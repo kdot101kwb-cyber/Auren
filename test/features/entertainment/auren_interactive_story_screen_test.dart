@@ -85,4 +85,29 @@ void main() {
     expect(find.text('الفصل 2 من 4'), findsOneWidget);
   });
 
+
+  testWidgets('restart clears saved progress after reopening the story', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenInteractiveStoryScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('أستكشف المجهول'));
+    await tester.pumpAndSettle();
+    expect(find.text('حديقة الاحتمالات'), findsWidgets);
+
+    await tester.tap(find.byTooltip('إعادة القصة'));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenInteractiveStoryScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('البوابة التي لا تظهر مرتين'), findsOneWidget);
+    expect(find.text('أثر اختياراتك'), findsNothing);
+    expect(find.text('حديقة الاحتمالات'), findsNothing);
+  });
+
 }
