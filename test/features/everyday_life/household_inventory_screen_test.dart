@@ -58,7 +58,7 @@ void main() {
     expect(find.text('0'), findsNWidgets(2));
   });
 
-  testWidgets('creates an item and records a restock movement',
+  testWidgets('creates an item and records restock and consumption movements',
       (tester) async {
     await tester.pumpWidget(buildScreen());
     await tester.pumpAndSettle();
@@ -88,8 +88,19 @@ void main() {
     expect(find.textContaining('2.0 قطعة'), findsOneWidget);
     expect(find.text('سجل الحركة (1)'), findsOneWidget);
 
-    await tester.tap(find.text('سجل الحركة (1)'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'استهلاك'));
+    await tester.pumpAndSettle();
+    expect(find.text('تسجيل استهلاك'), findsOneWidget);
+
+    await tester.tap(find.text('تأكيد'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('1.0 قطعة'), findsOneWidget);
+    expect(find.text('سجل الحركة (2)'), findsOneWidget);
+
+    await tester.tap(find.text('سجل الحركة (2)'));
     await tester.pumpAndSettle();
     expect(find.text('إضافة: 1.0 قطعة'), findsOneWidget);
+    expect(find.text('استهلاك: 1.0 قطعة'), findsOneWidget);
   });
 }
