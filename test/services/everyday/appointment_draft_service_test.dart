@@ -37,7 +37,7 @@ void main() {
         .validate(now: fixedNow), isNull);
       final oversized = AurenAppointmentDraft(
         id: 'apt-2', title: 'Check-up', startsAt: DateTime(2026, 10, 21),
-        notes: 'x' * 2001,
+        notes: List.filled(2001, 'x').join(),
       );
       expect(oversized.validate(now: fixedNow), isNotNull);
     });
