@@ -237,6 +237,35 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
     }
   }
 
+  Future<void> _handleReadingAction(
+    Map<String, dynamic> item,
+    String action,
+  ) async {
+    final id = item['id']?.toString().trim() ?? '';
+    try {
+      if (action == 'remove') {
+        if (id.isEmpty) throw ArgumentError('Missing reading item id.');
+        await widget.service.removeReadingQueueItem(id: id);
+      } else {
+        await widget.service.saveReadingQueueItem(
+          id: id,
+          title: item['title']?.toString() ?? '',
+          url: item['url']?.toString() ?? '',
+          status: action,
+          priority: item['priority']?.toString() ?? 'normal',
+          notes: item['notes']?.toString() ?? '',
+        );
+      }
+      await _refresh();
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = error is ArgumentError
+            ? error.message.toString()
+            : 'تعذر تحديث قائمة القراءة. حاول مجدداً.');
+      }
+    }
+  }
+
   String _itemTitle(Map<String, dynamic> item) {
     for (final key in ['title', 'claim', 'label', 'sourceTerm']) {
       final value = item[key]?.toString().trim() ?? '';
@@ -303,6 +332,18 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
               title: Text(_itemTitle(item), maxLines: 2, overflow: TextOverflow.ellipsis),
               subtitle: Text(_itemSubtitle(item), maxLines: 3, overflow: TextOverflow.ellipsis),
               leading: const Icon(Icons.bookmark_outline),
+              trailing: widget.kind == 'reading'
+                  ? PopupMenuButton<String>(
+                      tooltip: 'إدارة حالة القراءة',
+                      onSelected: (value) => _handleReadingAction(item, value),
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(value: 'to_read', child: Text('لم أبدأ')),
+                        PopupMenuItem(value: 'reading', child: Text('قيد القراءة')),
+                        PopupMenuItem(value: 'read', child: Text('اكتملت القراءة')),
+                        PopupMenuItem(value: 'remove', child: Text('حذف من القائمة')),
+                      ],
+                    )
+                  : null,
             ),
           )),
         ],
