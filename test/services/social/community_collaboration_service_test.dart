@@ -17,6 +17,17 @@ void main() {
     service = AurenCollaborationService(db: firestore, auth: auth);
   });
 
+  test('signed-out service exposes no current UID and guards required UID', () {
+    final signedOutService = AurenCollaborationService(
+      db: firestore,
+      auth: MockFirebaseAuth(signedIn: false),
+    );
+
+    expect(signedOutService.isSignedIn, isFalse);
+    expect(signedOutService.currentUid, isNull);
+    expect(() => signedOutService.uid, throwsStateError);
+  });
+
   test('club creation trims fields and starts with owner membership', () async {
     final id = await service.createClub(
       name: '  Readers  ',
