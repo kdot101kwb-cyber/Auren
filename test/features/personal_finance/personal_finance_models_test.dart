@@ -34,14 +34,8 @@ void main() {
 
   group('FinanceEntry validation', () {
     test('rejects empty identifiers and categories', () {
-      expect(
-        () => entry(id: ' '),
-        throwsArgumentError,
-      );
-      expect(
-        () => entry(category: ''),
-        throwsArgumentError,
-      );
+      expect(() => entry(id: ' '), throwsArgumentError);
+      expect(() => entry(category: ''), throwsArgumentError);
     });
 
     test('rejects non-positive and non-finite amounts', () {
@@ -61,8 +55,14 @@ void main() {
     });
 
     test('bounds optional notes', () {
-      expect(() => entry(note: 'x' * 501), throwsArgumentError);
-      expect(entry(note: 'x' * 500).note, hasLength(500));
+      expect(
+        () => entry(note: List.filled(501, 'x').join()),
+        throwsArgumentError,
+      );
+      expect(
+        entry(note: List.filled(500, 'x').join()).note,
+        hasLength(500),
+      );
     });
   });
 
