@@ -64,5 +64,35 @@ void main() {
       expect(noPublicScore, findsOneWidget);
     });
 
+    testWidgets('opens the people-search route from the trust center',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AurenTrustIntelligenceScreen(
+            peopleSearchBuilder: (_) => const _PeopleSearchTestScreen(),
+          ),
+        ),
+      );
+
+      final findPerson = find.text('Find a person');
+      await tester.scrollUntilVisible(
+        findPerson,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(findPerson);
+      await tester.pumpAndSettle();
+
+      expect(find.text('People search test destination'), findsOneWidget);
+    });
   });
+}
+
+class _PeopleSearchTestScreen extends StatelessWidget {
+  const _PeopleSearchTestScreen();
+
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+        body: Center(child: Text('People search test destination')),
+      );
 }

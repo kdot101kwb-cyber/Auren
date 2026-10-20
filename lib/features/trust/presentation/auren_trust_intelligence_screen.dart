@@ -5,7 +5,17 @@ import '../../social/presentation/user_search_screen.dart';
 /// This first slice deliberately avoids inventing a numeric reputation score:
 /// authoritative signals need trusted server-side provenance first.
 class AurenTrustIntelligenceScreen extends StatelessWidget {
-  const AurenTrustIntelligenceScreen({super.key});
+  const AurenTrustIntelligenceScreen({
+    super.key,
+    this.peopleSearchBuilder,
+  });
+
+  /// Allows the navigation contract to be tested without initializing the
+  /// Firebase-backed people-search screen. Production uses the existing screen.
+  final WidgetBuilder? peopleSearchBuilder;
+
+  Widget _buildPeopleSearch(BuildContext context) =>
+      const AurenUserSearchScreen();
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +121,7 @@ class AurenTrustIntelligenceScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => const AurenUserSearchScreen(),
+                  builder: peopleSearchBuilder ?? _buildPeopleSearch,
                 ),
               ),
             ),
