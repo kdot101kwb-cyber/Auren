@@ -65,6 +65,10 @@ void main() {
       throwsArgumentError);
     expect(() => movement(amount: 3).applyTo(item('rice', 'Rice', 2, 1)),
       throwsStateError);
+    expect(() => movement(
+      type: AurenStockMovementType.restock,
+      amount: double.maxFinite,
+    ).applyTo(item('rice', 'Rice', double.maxFinite, 1)), throwsStateError);
   });
 
   test('ledger replays movements by time and rejects duplicate ids', () {
@@ -84,5 +88,28 @@ void main() {
     expect(() => AurenHouseholdStockLedger.replay(
       initial, [earlierRestock, earlierRestock],
     ), throwsArgumentError);
+  });
+
+  test('ledger validates initial item even when there are no movements', () {
+    expect(
+      () => AurenHouseholdStockLedger.replay(item(' ', 'Rice', 2, 1), const []),
+      throwsArgumentError,
+    );
+  });
+
+  test('same-time movements use id ordering regardless of input order', () {
+    final initial = item('rice', 'Rice', 2, 1);
+    final timestamp = DateTime(2026, 10, 22);
+    final restock = AurenHouseholdStockMovement(
+      id: 'a-restock', itemId: 'rice', type: AurenStockMovementType.restock,
+      amount: 3, occurredAt: timestamp,
+    );
+    final consume = AurenHouseholdStockMovement(
+      id: 'z-consume', itemId: 'rice', type: AurenStockMovementType.consume,
+      amount: 1, occurredAt: timestamp,
+    );
+
+    expect(AurenHouseholdStockLedger.replay(initial, [consume, restock]).quantity, 4);
+    expect(AurenHouseholdStockLedger.replay(initial, [restock, consume]).quantity, 4);
   });
 }
