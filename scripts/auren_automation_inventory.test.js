@@ -118,6 +118,22 @@ jobs:
   }
 });
 
+test('escapes backslashes and pipes in Markdown table cells', () => {
+  const root = makeRepo();
+  try {
+    write(root, '.github/workflows/odd-name.yml', `name: Odd \\\\ path | label
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+`);
+    const report = renderMarkdown(buildInventory(root));
+    assert.match(report, /Odd \\\\\\\\ path \\| label/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('does not include environment values or secret-like test input in report', () => {
   const root = makeRepo();
   try {
