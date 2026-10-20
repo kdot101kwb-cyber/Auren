@@ -5,12 +5,14 @@ class AurenLivingMomentUpdatesScreen extends StatefulWidget {
   final String postId;
   final String ownerId;
   final String currentUid;
+  final MomentUpdateRepository? repository;
 
   const AurenLivingMomentUpdatesScreen({
     super.key,
     required this.postId,
     required this.ownerId,
     required this.currentUid,
+    this.repository,
   });
 
   @override
@@ -20,7 +22,8 @@ class AurenLivingMomentUpdatesScreen extends StatefulWidget {
 
 class _AurenLivingMomentUpdatesScreenState
     extends State<AurenLivingMomentUpdatesScreen> {
-  final MomentUpdateRepository _repository = MomentUpdateRepository();
+  late final MomentUpdateRepository _repository =
+      widget.repository ?? MomentUpdateRepository();
   bool _saving = false;
 
   Future<void> _addUpdate() async {
