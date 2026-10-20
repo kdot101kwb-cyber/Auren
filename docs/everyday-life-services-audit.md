@@ -15,25 +15,26 @@ Working branch: `feat/everyday-life-services`.
 ## Initial implementation slices
 
 1. **Appointment & Booking (draft-only foundation):** Added a pure, UI-independent appointment draft model and lifecycle policy. It validates required fields, time ranges, past dates, bounded notes, and legal status transitions. It does not contact providers or claim that a booking is confirmed.
-2. **Home Management (inventory/restock foundation):** Added household item validation, threshold-based low-stock detection, and deterministic restock-list sorting. It does not persist inventory, place orders, or claim supplier availability.
+2. **Home Essentials (inventory/restock foundation):** Added household item validation, threshold-based low-stock detection, and deterministic restock-list sorting. It does not persist inventory, place orders, or claim supplier availability.
+3. **Household maintenance planning (partial foundation):** Added maintenance-task validation, active-task ordering by due date, estimate totals, and a task status enum. This is a maintenance work log/planning model, not a reminder scheduler; it does not hire providers or persist records.
 
 ## Verification status
 
 - Source added: yes.
-- Automated tests authored: yes, in `test/services/everyday/appointment_draft_service_test.dart`, `test/services/everyday/household_inventory_service_test.dart`, and `test/services/everyday/trip_itinerary_service_test.dart`.
+- Automated tests authored: yes, in `test/services/everyday/appointment_draft_service_test.dart`, `test/services/everyday/household_inventory_service_test.dart`, `test/services/everyday/trip_itinerary_service_test.dart`, and `test/services/everyday/household_maintenance_service_test.dart`.
 - Tests executed in this environment: no; the GitHub connector cannot run Flutter locally.
 - Firestore persistence, owner authorization rules, UI, and provider adapters: not implemented in these slices.
-- Therefore all three are **partial foundations**, not completed user-facing systems.
+- Therefore all four are **partial foundations**, not completed user-facing systems.
 
 ## Remaining non-duplicate candidates (pending deeper audit)
 
 3. **Trip itinerary planning (partial foundation):** added `AurenTripStop` validation, deterministic stop ordering, remaining-stop filtering, and completion progress in `lib/services/everyday/trip_itinerary_service.dart`. It does not book anything or persist trips.
-4. **Household maintenance & recurring chores:** still only a candidate; reminders already exist, so inspect coverage before adding anything.
+4. **Household maintenance planning:** now has a small, reminder-independent task/log model; recurring notifications remain out of scope to avoid duplicating `ReminderService`.
 5. **Errands / service-request tracking:** still only a candidate; avoid overlap with opportunity, marketplace, and local-intelligence flows.
 
 ## Next audit targets
 
-1. Inspect Travel, Stay/booking, Food/Home Essentials, Transport, and offline-navigation implementations.
+1. Inspect Travel, Stay/booking, Food/Home Essentials, Transport, and offline-navigation implementations (initial inspection confirms separate Food and Transport services and existing calendar/reminder services).
 2. Confirm current auth/repository conventions and explicit Firestore rules before adding persistence.
 3. Select the remaining non-duplicate systems only after that inspection.
 4. Run targeted Flutter tests and analyze in CI; keep this branch unmerged pending review.
