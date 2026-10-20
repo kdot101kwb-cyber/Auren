@@ -138,6 +138,102 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
       allow delete: if isResourceOwner();
     }
 
+    // Small interest-based clubs, separate from broad topic communities.
+    match /community_clubs/{clubId} {
+      allow read: if isSignedIn() && resource.data.visibility == 'public';
+      allow create: if isRequestOwner()
+        && hasNameString() && nonEmptyStringAtMost(requestData().name,80)
+        && hasDescriptionString() && stringAtMost(requestData().description,500)
+        && nonEmptyStringAtMost(requestData().category,80)
+        && requestData().visibility == 'public'
+        && requestData().memberIds is list
+        && requestData().memberIds.size() == 1
+        && requestData().memberIds[0] == request.auth.uid
+        && requestData().memberCount == 1
+        && requestData().keys().hasOnly(['ownerId','name','description','category','visibility','memberIds','memberCount','createdAt'])
+        && hasCreatedAtTimestamp();
+      allow update: if isSignedIn()
+        && requestData().keys().hasOnly(['ownerId','name','description','category','visibility','memberIds','memberCount','createdAt'])
+        && requestData().ownerId == resource.data.ownerId
+        && requestData().name == resource.data.name
+        && requestData().description == resource.data.description
+        && requestData().category == resource.data.category
+        && requestData().visibility == resource.data.visibility
+        && requestData().createdAt == resource.data.createdAt
+        && requestData().memberIds is list
+        && requestData().memberIds.size() >= 1
+        && sizeAtMost(requestData().memberIds,10000)
+        && requestData().memberCount == requestData().memberIds.size()
+        && (
+          (!(request.auth.uid in resource.data.memberIds)
+            && request.auth.uid in requestData().memberIds
+            && requestData().memberIds.hasAll(resource.data.memberIds)
+            && requestData().memberIds.size() == resource.data.memberIds.size() + 1)
+          || (request.auth.uid in resource.data.memberIds
+            && request.auth.uid != resource.data.ownerId
+            && !(request.auth.uid in requestData().memberIds)
+            && resource.data.memberIds.hasAll(requestData().memberIds)
+            && requestData().memberIds.size() + 1 == resource.data.memberIds.size())
+        );
+      allow delete: if isResourceOwner();
+    }
+
+    // Owner-managed collaborative spaces; membership changes are explicit.
+    match /collaboration_spaces/{spaceId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.memberIds;
+      allow create: if isRequestOwner()
+        && nonEmptyStringAtMost(requestData().title,120)
+        && stringAtMost(requestData().description,2000)
+        && requestData().memberIds is list
+        && requestData().memberIds.size() == 1
+        && requestData().memberIds[0] == request.auth.uid
+        && requestData().keys().hasOnly(['ownerId','title','description','memberIds','createdAt'])
+        && hasCreatedAtTimestamp();
+      allow update: if isSignedIn()
+        && requestData().keys().hasOnly(['ownerId','title','description','memberIds','createdAt'])
+        && requestData().ownerId == resource.data.ownerId
+        && requestData().title == resource.data.title
+        && requestData().description == resource.data.description
+        && requestData().createdAt == resource.data.createdAt
+        && requestData().memberIds is list
+        && requestData().memberIds.size() <= 100
+        && requestData().memberIds.hasAll(resource.data.memberIds)
+        && requestData().memberIds.size() == resource.data.memberIds.size() + 1
+        && request.auth.uid == resource.data.ownerId;
+      allow delete: if isResourceOwner();
+    }
+
+    // Open volunteer causes; users may add only their own volunteer identity.
+    match /volunteer_causes/{causeId} {
+      allow read: if isSignedIn() && resource.data.status == 'open';
+      allow create: if isRequestOwner()
+        && nonEmptyStringAtMost(requestData().title,120)
+        && nonEmptyStringAtMost(requestData().description,2000)
+        && nonEmptyStringAtMost(requestData().category,80)
+        && requestData().status == 'open'
+        && requestData().volunteerIds is list
+        && requestData().volunteerIds.size() == 1
+        && requestData().volunteerIds[0] == request.auth.uid
+        && requestData().keys().hasOnly(['ownerId','title','description','category','status','volunteerIds','createdAt'])
+        && hasCreatedAtTimestamp();
+      allow update: if isSignedIn()
+        && requestData().keys().hasOnly(['ownerId','title','description','category','status','volunteerIds','createdAt'])
+        && requestData().ownerId == resource.data.ownerId
+        && requestData().title == resource.data.title
+        && requestData().description == resource.data.description
+        && requestData().category == resource.data.category
+        && requestData().status == resource.data.status
+        && resource.data.status == 'open'
+        && requestData().createdAt == resource.data.createdAt
+        && requestData().volunteerIds is list
+        && sizeAtMost(requestData().volunteerIds,10000)
+        && requestData().volunteerIds.hasAll(resource.data.volunteerIds)
+        && requestData().volunteerIds.size() == resource.data.volunteerIds.size() + 1
+        && request.auth.uid in requestData().volunteerIds
+        && !(request.auth.uid in resource.data.volunteerIds);
+      allow delete: if isResourceOwner();
+    }
+
     match /communities/{communityId} {
       allow read: if isSignedIn() && resource.data.visibility == 'public';
       allow create: if isRequestOwner()
