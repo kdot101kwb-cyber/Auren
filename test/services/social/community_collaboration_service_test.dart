@@ -150,6 +150,21 @@ void main() {
     expect(snapshot.data()?['memberCount'], 1);
   });
 
+  test('space invitations normalize member identifiers', () async {
+    final spaceId = await service.createSpace(
+      title: 'Design team',
+      description: 'Review designs together',
+    );
+
+    await service.inviteToSpace(
+      spaceId: spaceId,
+      memberUid: ' member-b ',
+    );
+    final snapshot =
+        await firestore.collection('collaboration_spaces').doc(spaceId).get();
+    expect(snapshot.data()?['memberIds'], ['member-a', 'member-b']);
+  });
+
   test('only the collaboration space owner can invite members', () async {
     final spaceId = await service.createSpace(
       title: 'Planning team',
