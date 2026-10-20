@@ -23,6 +23,10 @@ import 'core_ten_screen.dart';
 import 'core_five_next_screen.dart';
 import 'systems_47_screen.dart';
 import '../../suppliers/presentation/auren_supplier_requests_screen.dart';
+import '../../document_studio/presentation/document_studio_screen.dart';
+import '../../creative_projects/presentation/creative_projects_screen.dart';
+import '../../visual_creator/presentation/visual_creator_screen.dart';
+import '../../audio_workshop/presentation/audio_workshop_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -99,6 +103,34 @@ class AurenMoreScreen extends StatelessWidget {
           subtitle: const Text('ارجع للمحتوى الذي حفظته.'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedPulseScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.graphic_eq_outlined),
+          title: const Text('AUREN Audio Workshop'),
+          subtitle: const Text('سجّل صوتك واستخدم التحليل الصوتي المحلي الموجود.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAudioWorkshopScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.palette_outlined),
+          title: const Text('AUREN Visual Creator'),
+          subtitle: const Text('صمّم غلافاً أو منشوراً باستخدام النصوص والأشكال والطبقات.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenVisualCreatorScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.workspaces_outline),
+          title: const Text('AUREN Creative Projects'),
+          subtitle: const Text('نظّم مشاريعك الإبداعية وحالاتها وسجل التعديلات.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCreativeProjectsScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.description_outlined),
+          title: const Text('AUREN Document Studio'),
+          subtitle: const Text('اكتب المستندات والمسودات واحفظ مراجعاتها محلياً.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenDocumentStudioScreen())),
         )),
         ..._items.map((item) => Card(child: ListTile(
           leading: Icon(item.icon),
