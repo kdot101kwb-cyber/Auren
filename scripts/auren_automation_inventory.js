@@ -60,7 +60,7 @@ function buildInventory(root=process.cwd()){
   for(const f of scheduledFunctions)if(!f.schedule)findings.push({severity:'warning',code:'scheduled_function_missing_static_schedule',message:`${f.path}:${f.name} schedule could not be read statically.`});
   return {workflows,scheduledFunctions,firebaseDeployCommandCount:workflows.reduce((n,w)=>n+w.firebaseDeployCommands.length,0),findings,violations:findings.filter(f=>f.severity==='error'),warnings:findings.filter(f=>f.severity==='warning')};
 }
-function cell(v){return String(v??'—').replace(/\|/g,'\\|').replace(/\r?\n/g,' ');}
+function cell(v){return String(v??'—').replace(/\\/g,'\\\\').replace(/\|/g,'\\|').replace(/\r?\n/g,' ');}
 function renderMarkdown(x){
   const l=['# AUREN Automation Inventory','',`- GitHub Actions workflows: **${x.workflows.length}**`,`- Scheduled Cloud Functions: **${x.scheduledFunctions.length}**`,`- Firebase deploy commands: **${x.firebaseDeployCommandCount}**`,`- Safety violations: **${x.violations.length}**`,`- Review warnings: **${x.warnings.length}**`,'','## GitHub Actions workflows','','| Workflow | Triggers | Cron | Explicit permissions | Concurrency | Firebase targets |','|---|---|---|---|---|---|'];
   for(const w of x.workflows){const targets=w.firebaseDeployCommands.map(c=>c.targetProject||'MISSING').join(', ')||'—';l.push(`| ${cell(w.name)} (${cell(w.path)}) | ${cell(w.triggers.join(', ')||'unparsed')} | ${cell(w.cronSchedules.join('; ')||'—')} | ${w.explicitPermissions?'yes':'no'} | ${w.concurrencyConfigured?'yes':'no'} | ${cell(targets)} |`);}
