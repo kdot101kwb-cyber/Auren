@@ -305,7 +305,7 @@ class _AurenVisualCreatorScreenState extends State<AurenVisualCreatorScreen> {
                     setState(() => _selectedId = hit.isEmpty ? null : hit.first.id);
                   },
                   child: CustomPaint(
-                    painter: _VisualCanvasPainter(_layers, _selectedId),
+                    painter: _VisualCanvasPainter(List<VisualLayer>.of(_layers), _selectedId),
                     child: const SizedBox.expand(),
                   ),
                 ),
