@@ -151,6 +151,53 @@ class _AurenVisualCreatorScreenState extends State<AurenVisualCreatorScreen> {
     });
   }
 
+  Future<void> _editTextLayer(VisualLayer layer) async {
+    if (layer.kind != VisualLayerKind.text) return;
+    final controller = TextEditingController(text: layer.text ?? '');
+    final value = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تحرير النص'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 120,
+          decoration: const InputDecoration(hintText: 'عدّل النص على التصميم'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || value.isEmpty || !mounted) return;
+    setState(() {
+      final index = _layers.indexWhere((item) => item.id == layer.id);
+      if (index < 0) return;
+      _layers[index] = VisualLayer(
+        id: layer.id,
+        kind: layer.kind,
+        x: layer.x,
+        y: layer.y,
+        width: layer.width,
+        height: layer.height,
+        order: layer.order,
+        visible: layer.visible,
+        locked: layer.locked,
+        assetUri: layer.assetUri,
+        text: value,
+      );
+      _selectedId = layer.id;
+    });
+  }
+
   void _addShape() {
     setState(() {
       final order = _layers.length;
@@ -288,6 +335,12 @@ class _AurenVisualCreatorScreenState extends State<AurenVisualCreatorScreen> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (layer.kind == VisualLayerKind.text)
+                      IconButton(
+                        tooltip: 'تحرير النص',
+                        onPressed: () => _editTextLayer(layer),
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
                     IconButton(
                       tooltip: 'تقديم الطبقة',
                       onPressed: layer.order >= _layers.length - 1 ? null : () => _moveLayer(layer, 1),
