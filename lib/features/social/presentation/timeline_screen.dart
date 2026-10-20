@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/models/comment.dart';
+import '../../../services/social/comment_repository.dart';
 import '../../../core/models/post.dart';
 import '../../../core/models/user_profile.dart';
 import '../../profile/presentation/public_profile_screen.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
 import '../../../services/social/safety_repository.dart';
-import 'comments_screen.dart';
 import 'create_post_screen.dart';
 import 'edit_post_screen.dart';
 import 'saved_pulse_screen.dart';
@@ -24,7 +26,54 @@ class AurenTimelineScreen extends StatefulWidget {
 }
 
 class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
+  static const _resumeOffsetKey = 'auren_pulse_timeline_scroll_offset_v1';
+  final ScrollController _scrollController = ScrollController();
   String selectedType = 'all';
+  bool _resumeAttempted = false;
+  double _lastSavedOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_persistScrollOffset);
+  }
+
+  void _persistScrollOffset() {
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    if ((offset - _lastSavedOffset).abs() < 80) return;
+    _lastSavedOffset = offset;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setDouble(_resumeOffsetKey, offset);
+    });
+  }
+
+  @override
+  void dispose() {
+    if (_scrollController.hasClients) {
+      final offset = _scrollController.offset;
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setDouble(_resumeOffsetKey, offset);
+      });
+    }
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _resumeScrollPosition() async {
+    if (_resumeAttempted) return;
+    _resumeAttempted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || !_scrollController.hasClients) return;
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted || !_scrollController.hasClients) return;
+      final saved = prefs.getDouble(_resumeOffsetKey) ?? 0;
+      final position = _scrollController.position;
+      if (saved > 0 && position.hasContentDimensions) {
+        _scrollController.jumpTo(saved.clamp(0.0, position.maxScrollExtent).toDouble());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +150,10 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                 final opportunities = allPosts.where((p) => p.contentType == 'opportunity').length;
                 final projects = allPosts.where((p) => p.contentType == 'project').length;
                 final types = const [('all', 'All'), ('moment', 'Moments'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
+                _resumeScrollPosition();
                 return ListView.separated(
+                  controller: _scrollController,
+                  key: const PageStorageKey<String>('auren-pulse-feed'),
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
                   itemCount: posts.length + 5,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -476,14 +528,9 @@ class _PulseCard extends StatelessWidget {
                 ),
                 
                 IconButton(
-                  tooltip: 'Discuss',
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AurenCommentsScreen(postId: post.id),
-                    ),
-                  ),
-                  icon: const Icon(Icons.forum_outlined),
+                  tooltip: 'Quick reply',
+                  onPressed: () => _snapReply(context),
+                  icon: const Icon(Icons.reply_rounded),
                 ),
                 StreamBuilder<bool>(
                   stream: repo.watchSaved(post.id, uid),
@@ -534,6 +581,66 @@ class _PulseCard extends StatelessWidget {
       ),
     );
   }
+  Future<void> _snapReply(BuildContext context) async {
+    final controller = TextEditingController();
+    final text = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16, 16, 16, 16 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                maxLength: 2000,
+                minLines: 1,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: 'Write a quick reply…',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              tooltip: 'Send reply',
+              onPressed: () => Navigator.pop(sheetContext, controller.text.trim()),
+              icon: const Icon(Icons.send_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (text == null || text.isEmpty) return;
+    try {
+      await CommentRepository().create(AurenComment(
+        id: 'comment_${DateTime.now().microsecondsSinceEpoch}',
+        postId: post.id,
+        authorId: uid,
+        text: text,
+        createdAt: DateTime.now(),
+      ));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reply posted.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not send reply. Please try again.')),
+        );
+      }
+    }
+  }
+
   void _openEdit(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEditPostScreen(post: post)));
   }
