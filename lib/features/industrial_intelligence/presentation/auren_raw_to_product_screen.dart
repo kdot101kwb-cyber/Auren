@@ -149,6 +149,12 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
     final selectedRoute = ManufacturingRouteCatalog.findById(_routeId)!;
     final l = RawToProductStrings(Localizations.localeOf(context).languageCode);
     final estimate = _estimateOrNull();
+    // The catalog currently provides route-specific prerequisites in Arabic;
+    // other locales use the translated general checklist rather than showing
+    // untranslated Arabic safety notes.
+    final prerequisites = Localizations.localeOf(context).languageCode == 'ar'
+        ? selectedRoute.prerequisites
+        : l.prerequisites;
 
     return Scaffold(
       appBar: AppBar(
@@ -281,7 +287,7 @@ class _AurenRawToProductScreenState extends State<AurenRawToProductScreen> {
                     const Divider(),
                     Text(l.before, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 6),
-                    ...l.prerequisites.map((item) => Padding(
+                    ...prerequisites.map((item) => Padding(
                       padding: const EdgeInsets.only(bottom: 5),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
