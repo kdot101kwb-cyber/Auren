@@ -151,6 +151,61 @@ class _AurenInteractiveStoryScreenState
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'الفصل ${_history.length + 1} من 4',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                Text(
+                  isEnding ? 'اكتملت الرحلة' : 'رحلتك تتشكل بقراراتك',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: LinearProgressIndicator(
+                value: ((_history.length + 1) / 4).clamp(0.0, 1.0),
+                minHeight: 6,
+              ),
+            ),
+            if (_history.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'أثر اختياراتك',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final visitedId in [..._history, _nodeId])
+                    Chip(
+                      avatar: Icon(
+                        AurenInteractiveStory.node(visitedId).ending == null
+                            ? Icons.route_outlined
+                            : Icons.flag_outlined,
+                        size: 16,
+                      ),
+                      label: Text(
+                        AurenInteractiveStory.node(visitedId).title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 20),
             if (isEnding) ...[
               const ListTile(
