@@ -27,16 +27,16 @@ class _AurenLivingMomentUpdatesScreenState
   bool _saving = false;
 
   Future<void> _addUpdate() async {
-    final controller = TextEditingController();
+    var draftText = '';
     final text = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Add a moment update'),
         content: TextField(
-          controller: controller,
           autofocus: true,
           maxLength: 1200,
           maxLines: 5,
+          onChanged: (value) => draftText = value,
           decoration: const InputDecoration(
             hintText: 'What changed? Share the next part of the story…',
             border: OutlineInputBorder(),
@@ -48,14 +48,13 @@ class _AurenLivingMomentUpdatesScreenState
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            onPressed: () => Navigator.pop(dialogContext, draftText),
             child: const Text('Add update'),
           ),
         ],
       ),
     );
     final cleanText = text?.trim() ?? '';
-    controller.dispose();
     if (cleanText.isEmpty || !mounted) return;
 
     setState(() => _saving = true);
