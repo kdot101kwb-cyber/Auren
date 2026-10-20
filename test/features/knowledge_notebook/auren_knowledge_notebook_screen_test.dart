@@ -20,9 +20,10 @@ void main() {
     await tester.tap(find.text('ملاحظة جديدة'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'عنوان الملاحظة'), 'مصادر التصنيع');
+    final textFields = find.byType(TextField);
+    await tester.enterText(textFields.at(0), 'مصادر التصنيع');
     await tester.enterText(
-      find.widgetWithText(TextField, 'الفكرة أو المعلومة أو سؤال البحث'),
+      textFields.at(1),
       'تحقق من بيانات الصادرات الزراعية قبل المقارنة.',
     );
     await tester.tap(find.text('حفظ الملاحظة'));
