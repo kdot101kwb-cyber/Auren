@@ -121,7 +121,7 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
     String? uploadedPath;
     try {
       var mediaUrl = typedUrl;
-      var mediaType = typedUrl.isEmpty ? 'none' : 'image';
+      var mediaType = typedUrl.isEmpty ? 'none' : _mediaTypeFromUrl(typedUrl);
 
       final file = selectedMedia;
       if (file != null) {
