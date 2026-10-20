@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../services/auth/auth_service.dart';
 import '../../../services/everyday/household_inventory_service.dart';
@@ -18,7 +17,6 @@ class _AurenHouseholdInventoryScreenState
     extends State<AurenHouseholdInventoryScreen> {
   final _auth = FirebaseAurenAuthService();
   final _store = AurenHouseholdInventoryStore();
-  final _uuid = const Uuid();
   List<AurenHouseholdItem> _items = [];
   bool _loading = true;
   String? _error;
@@ -76,7 +74,7 @@ class _AurenHouseholdInventoryScreenState
             onPressed: () {
               if (!formKey.currentState!.validate()) return;
               final item = AurenHouseholdItem(
-                id: existing?.id ?? _uuid.v4(),
+                id: existing?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
                 name: name.text.trim(),
                 category: category.text.trim(),
                 quantity: double.parse(quantity.text.trim()),
@@ -162,7 +160,7 @@ class _AurenHouseholdInventoryScreenState
     if (uid == null) return;
     try {
       await _store.recordMovement(uid, AurenHouseholdStockMovement(
-        id: _uuid.v4(), itemId: item.id, type: type, amount: amount,
+        id: DateTime.now().microsecondsSinceEpoch.toString(), itemId: item.id, type: type, amount: amount,
         note: note, occurredAt: DateTime.now(),
       ));
       await _load();
