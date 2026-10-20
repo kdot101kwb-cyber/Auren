@@ -27,7 +27,7 @@ Working branch: `feat/everyday-life-services`.
 
 - Source added: yes.
 - Domain/store automated tests authored: `test/services/everyday/appointment_draft_service_test.dart`, `test/services/everyday/household_inventory_service_test.dart`, `test/services/everyday/household_inventory_store_test.dart`, `test/services/everyday/trip_itinerary_service_test.dart`, and `test/services/everyday/household_maintenance_service_test.dart`.
-- Inventory screen widget tests authored: `test/features/everyday_life/household_inventory_screen_test.dart` covers signed-out state, authenticated empty state, item creation, restock, and movement history rendering.
+- Inventory screen widget tests authored: `test/features/everyday_life/household_inventory_screen_test.dart` covers signed-out state, authenticated empty state, item creation, restock, consumption, and movement history rendering.
 - Inventory store tests cover UID isolation, blank UID rejection, invalid item rejection, metadata updates preserving quantity, movement persistence, duplicate movement rejection, over-consumption, and missing-item rejection.
 - Tests executed in this environment: no. No successful CI run was found for this branch at the latest check; the branch currently has no recorded GitHub Actions runs. Test source is not evidence that tests pass.
 - Firestore persistence, owner authorization rules, cloud sync, and provider adapters: not implemented. Device-local preferences are not encrypted and must not be represented as cloud-backed or tamper-proof data.
