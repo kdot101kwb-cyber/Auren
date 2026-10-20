@@ -217,6 +217,19 @@ void main() {
       );
     });
 
+    testWidgets('prepopulates default route names in Arabic', (tester) async {
+      await tester.pumpWidget(_app(locale: const Locale('ar')));
+      final rawFinder = find.byKey(const ValueKey<String>('اسم المادة الخام'));
+      final productFinder = find.byKey(const ValueKey<String>('اسم المنتج النهائي'));
+      await _scrollToBuilt(tester, rawFinder, towardTop: true);
+      await _scrollToBuilt(tester, productFinder, towardTop: true);
+      expect(tester.widget<TextFormField>(rawFinder).controller?.text, 'القطن');
+      expect(
+        tester.widget<TextFormField>(productFinder).controller?.text,
+        'الملابس القطنية',
+      );
+    });
+
     testWidgets('shows an estimate for valid default inputs', (tester) async {
       await tester.pumpWidget(_app());
       await _scrollToBuilt(tester, find.text('Estimated result'));
