@@ -11,8 +11,12 @@ class AurenCollaborationService {
       : _db = db ?? FirebaseFirestore.instance,
         _auth = auth ?? FirebaseAuth.instance;
 
+  bool get isSignedIn => _auth.currentUser != null;
+
+  String? get currentUid => _auth.currentUser?.uid;
+
   String get uid =>
-      _auth.currentUser?.uid ?? (throw StateError('Sign in required'));
+      currentUid ?? (throw StateError('Sign in required'));
 
   CollectionReference<Map<String, dynamic>> get _clubs =>
       _db.collection('community_clubs');
