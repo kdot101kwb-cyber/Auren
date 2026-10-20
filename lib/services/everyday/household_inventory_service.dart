@@ -111,3 +111,28 @@ class AurenHouseholdStockMovement {
     return item.copyWith(quantity: nextQuantity);
   }
 }
+
+/// Replays a validated movement history deterministically, without persistence.
+class AurenHouseholdStockLedger {
+  const AurenHouseholdStockLedger._();
+
+  static AurenHouseholdItem replay(
+    AurenHouseholdItem initial,
+    Iterable<AurenHouseholdStockMovement> movements,
+  ) {
+    final ordered = movements.toList()
+      ..sort((a, b) {
+        final byTime = a.occurredAt.compareTo(b.occurredAt);
+        return byTime != 0 ? byTime : a.id.compareTo(b.id);
+      });
+    final seenIds = <String>{};
+    var current = initial;
+    for (final movement in ordered) {
+      if (!seenIds.add(movement.id)) {
+        throw ArgumentError('Duplicate stock movement id: ${movement.id}.');
+      }
+      current = movement.applyTo(current);
+    }
+    return current;
+  }
+}
