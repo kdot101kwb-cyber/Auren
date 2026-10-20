@@ -223,10 +223,15 @@ class AurenHouseholdInventoryStore {
     Map<String, dynamic> json,
   ) {
     final typeName = json['type'] as String;
-    final type = AurenStockMovementType.values
-        .where((value) => value.name == typeName)
-        .firstOrNull;
-    if (type == null) throw const FormatException('Unknown stock movement type.');
+    final AurenStockMovementType type;
+    switch (typeName) {
+      case 'restock':
+        type = AurenStockMovementType.restock;
+      case 'consume':
+        type = AurenStockMovementType.consume;
+      default:
+        throw const FormatException('Unknown stock movement type.');
+    }
     return AurenHouseholdStockMovement(
       id: json['id'] as String,
       itemId: json['itemId'] as String,
