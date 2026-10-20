@@ -152,6 +152,17 @@ permissions:
   }
 });
 
+test('ignores cron declarations inside inline YAML comments', () => {
+  const workflow = parseWorkflow('.github/workflows/inline-comment.yml', `name: Inline Comment
+on:
+  workflow_dispatch: # schedule: - cron: '0 0 * * *'
+permissions:
+  contents: read
+`);
+  assert.deepEqual(workflow.cronSchedules, []);
+  assert.equal(workflow.findings.some((finding) => finding.code === 'scheduled_workflow_without_concurrency'), false);
+});
+
 test('ignores cron declarations inside full-line YAML comments', () => {
   const workflow = parseWorkflow('.github/workflows/commented.yml', `name: Commented
 on:
