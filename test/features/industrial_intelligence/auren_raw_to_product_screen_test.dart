@@ -230,6 +230,59 @@ void main() {
       );
     });
 
+    testWidgets('shows route-specific prerequisites in Arabic', (tester) async {
+      await tester.pumpWidget(_app(locale: const Locale('ar')));
+
+      expect(
+        find.text('تحديد درجة الألياف ومواصفات المنتج النهائي'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('تحقق من جودة الخام ومواصفات المنتج.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('uses translated general prerequisites outside Arabic', (tester) async {
+      await tester.pumpWidget(_app());
+
+      expect(
+        find.text('Verify raw material quality and product specifications.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('تحديد درجة الألياف ومواصفات المنتج النهائي'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('updates route-specific prerequisites when route changes', (tester) async {
+      await tester.pumpWidget(_app(locale: const Locale('ar')));
+
+      expect(
+        find.text('تحديد درجة الألياف ومواصفات المنتج النهائي'),
+        findsOneWidget,
+      );
+
+      final selector = find.byKey(
+        const ValueKey<String>('manufacturing-route-selector'),
+      );
+      await _scrollToBuilt(tester, selector);
+      await tester.tap(selector);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('السمسم ← الطحينة').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('اختبارات قبول الخام والشوائب والرطوبة والملوثات'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('تحديد درجة الألياف ومواصفات المنتج النهائي'),
+        findsNothing,
+      );
+    });
+
     testWidgets('shows an estimate for valid default inputs', (tester) async {
       await tester.pumpWidget(_app());
       await _scrollToBuilt(tester, find.text('Estimated result'));
