@@ -136,6 +136,64 @@ void main() {
     expect(snapshot.data()?['volunteerIds'], ['member-a']);
   });
 
+  test('club owner cannot leave their own club', () async {
+    final clubId = await service.createClub(
+      name: 'Owner club',
+      description: '',
+      category: 'Community',
+    );
+
+    await expectLater(service.leaveClub(clubId), throwsStateError);
+    final snapshot =
+        await firestore.collection('community_clubs').doc(clubId).get();
+    expect(snapshot.data()?['memberIds'], ['member-a']);
+    expect(snapshot.data()?['memberCount'], 1);
+  });
+
+  test('only the collaboration space owner can invite members', () async {
+    final spaceId = await service.createSpace(
+      title: 'Planning team',
+      description: 'Shared work',
+    );
+    final nonOwnerService = AurenCollaborationService(
+      db: firestore,
+      auth: MockFirebaseAuth(
+        signedIn: true,
+        mockUser: MockUser(uid: 'member-b'),
+      ),
+    );
+
+    await expectLater(
+      nonOwnerService.inviteToSpace(
+        spaceId: spaceId,
+        memberUid: 'member-c',
+      ),
+      throwsStateError,
+    );
+    final snapshot =
+        await firestore.collection('collaboration_spaces').doc(spaceId).get();
+    expect(snapshot.data()?['memberIds'], ['member-a']);
+  });
+
+  test('cause creation rejects empty descriptions and categories', () async {
+    await expectLater(
+      service.createCause(
+        title: 'Cleanup',
+        description: ' ',
+        category: 'Environment',
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      service.createCause(
+        title: 'Cleanup',
+        description: 'Help clean the park.',
+        category: ' ',
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('reports reuse existing reports collection schema', () async {
     final id = await service.reportCommunityContent(
       reportedUid: 'member-b',
