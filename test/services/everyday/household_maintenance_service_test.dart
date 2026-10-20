@@ -64,4 +64,36 @@ void main() {
     expect(updated.actualCostMinor, isNull);
     expect(updated.title, 'Repair');
   });
+
+  test('allows forward maintenance transitions and blocks reopening terminal tasks', () {
+    final planned = task('1', 'Fix tap');
+    final inProgress = AurenMaintenanceLifecycle.transition(
+      planned, AurenMaintenanceStatus.inProgress,
+    );
+    expect(inProgress.status, AurenMaintenanceStatus.inProgress);
+    final completed = AurenMaintenanceLifecycle.transition(
+      inProgress, AurenMaintenanceStatus.completed,
+    );
+    expect(completed.status, AurenMaintenanceStatus.completed);
+    expect(
+      () => AurenMaintenanceLifecycle.transition(
+        completed, AurenMaintenanceStatus.planned,
+      ),
+      throwsStateError,
+    );
+    final cancelled = AurenMaintenanceLifecycle.transition(
+      planned, AurenMaintenanceStatus.cancelled,
+    );
+    expect(cancelled.status, AurenMaintenanceStatus.cancelled);
+  });
+
+  test('rejects transitions from invalid task data', () {
+    expect(
+      () => AurenMaintenanceLifecycle.transition(
+        task(' ', 'Broken'), AurenMaintenanceStatus.completed,
+      ),
+      throwsArgumentError,
+    );
+  });
+
 }
