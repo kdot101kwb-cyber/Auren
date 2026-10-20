@@ -38,6 +38,16 @@ void main() {
     );
   }
 
+  Future<void> settleAfterDialog(WidgetTester tester) async {
+    await tester.pumpAndSettle();
+    // The screen keeps text controllers alive until the real dialog-dismissal
+    // delay completes; let that timer run outside the fake-async test zone.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 550)),
+    );
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('asks the user to sign in when no authenticated UID exists',
       (tester) async {
     await tester.pumpWidget(buildScreen(uid: null));
@@ -69,7 +79,7 @@ void main() {
     final itemNameField = find.byType(TextFormField).first;
     await tester.enterText(itemNameField, 'رز');
     await tester.tap(find.text('حفظ'));
-    await tester.pumpAndSettle();
+    await settleAfterDialog(tester);
 
     expect(find.text('رز'), findsOneWidget);
     expect(find.textContaining('1.0 قطعة'), findsOneWidget);
@@ -79,7 +89,7 @@ void main() {
     expect(find.text('إضافة كمية'), findsOneWidget);
 
     await tester.tap(find.text('تأكيد'));
-    await tester.pumpAndSettle();
+    await settleAfterDialog(tester);
 
     expect(find.textContaining('2.0 قطعة'), findsOneWidget);
     expect(find.text('سجل الحركة (1)'), findsOneWidget);
@@ -89,7 +99,7 @@ void main() {
     expect(find.text('تسجيل استهلاك'), findsOneWidget);
 
     await tester.tap(find.text('تأكيد'));
-    await tester.pumpAndSettle();
+    await settleAfterDialog(tester);
 
     expect(find.textContaining('1.0 قطعة'), findsOneWidget);
     expect(find.text('سجل الحركة (2)'), findsOneWidget);
@@ -153,7 +163,7 @@ void main() {
     expect(fields, findsNWidgets(6));
     await tester.enterText(fields.at(1), 'مطبخ البيت');
     await tester.tap(find.text('حفظ'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    await settleAfterDialog(tester);
 
     final saved = await store.loadItems('inventory-test-user');
     final rice = saved.singleWhere((item) => item.id == 'rice');
