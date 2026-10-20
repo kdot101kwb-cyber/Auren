@@ -68,6 +68,27 @@ void main() {
     expect(find.text('ورشة الاحتمالات'), findsNothing);
   });
 
+  testWidgets('back progress is restored after reopening the story', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenInteractiveStoryScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('أبني شيئًا لم يوجد'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ارجع خطوة'));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenInteractiveStoryScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('البوابة التي لا تظهر مرتين'), findsOneWidget);
+    expect(find.text('أثر اختياراتك'), findsNothing);
+  });
+
   testWidgets('shows the route trail as choices are made', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: AurenInteractiveStoryScreen()),
