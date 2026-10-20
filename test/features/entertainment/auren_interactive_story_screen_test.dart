@@ -46,4 +46,19 @@ void main() {
 
     expect(find.text('البوابة التي لا تظهر مرتين'), findsOneWidget);
   });
+  testWidgets('shows the route trail as choices are made', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenInteractiveStoryScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('أبحث عن رفاق'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ساحة الغرباء'), findsOneWidget);
+    expect(find.text('أثر اختياراتك'), findsOneWidget);
+    expect(find.text('البوابة التي لا تظهر مرتين'), findsOneWidget);
+    expect(find.text('الفصل 2 من 4'), findsOneWidget);
+  });
+
 }
