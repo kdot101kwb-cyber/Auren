@@ -11,7 +11,7 @@ function inventory(root){
   if(onIndex>=0){for(let i=onIndex+1;i<lines.length;i++){const line=lines[i];if(line.trim()&&!/^\s/.test(line)&&!/^\s*#/.test(line))break;const match=line.match(/^\s{2}([A-Za-z0-9_-]+):/);if(match)triggers.push(match[1]);}}
   const deployCommands=[];const workflowLines=s.split(/\r?\n/);
   for(let i=0;i<workflowLines.length;i++){
-   const line=workflowLines[i],runMatch=line.match(/^(\s*)run:\s*(.*)$/);
+   const line=workflowLines[i],runMatch=line.match(/^(\s*(?:-\s*)?)run:\s*(.*)$/);
    if(!runMatch)continue;
    const indent=runMatch[1].length;let command=runMatch[2].trim();
    if(command==='|'||command==='>'||command==='|-'||command==='|+'||command==='>-'||command==='>+'){
