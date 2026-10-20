@@ -23,6 +23,7 @@ import 'core_ten_screen.dart';
 import 'core_five_next_screen.dart';
 import 'systems_47_screen.dart';
 import '../../suppliers/presentation/auren_supplier_requests_screen.dart';
+import '../../document_studio/presentation/document_studio_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
@@ -99,6 +100,13 @@ class AurenMoreScreen extends StatelessWidget {
           subtitle: const Text('ارجع للمحتوى الذي حفظته.'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedPulseScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.description_outlined),
+          title: const Text('AUREN Document Studio'),
+          subtitle: const Text('اكتب المستندات والمسودات واحفظ مراجعاتها محلياً.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenDocumentStudioScreen())),
         )),
         ..._items.map((item) => Card(child: ListTile(
           leading: Icon(item.icon),
