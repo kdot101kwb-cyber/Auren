@@ -73,7 +73,7 @@ class KnowledgeInformationService {
       'claim': requiredText(claim, 'claim', 1200),
       'sourceUrls': sourceUrls.map(validHttpUrl).toSet().toList(),
       'verdict': verdict,
-      'notes': notes.trim().substring(0, notes.trim().length.clamp(0, 3000)),
+      'notes': notes.trim().length > 3000 ? notes.trim().substring(0, 3000) : notes.trim(),
     });
   }
 
