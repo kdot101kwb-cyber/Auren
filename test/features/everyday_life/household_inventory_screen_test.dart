@@ -99,4 +99,67 @@ void main() {
     expect(find.text('إضافة: 1.0 قطعة'), findsOneWidget);
     expect(find.text('استهلاك: 1.0 قطعة'), findsOneWidget);
   });
+  testWidgets('filters low stock and editing metadata preserves quantity',
+      (tester) async {
+    final store = AurenHouseholdInventoryStore();
+    await store.saveItem(
+      'inventory-test-user',
+      AurenHouseholdItem(
+        id: 'rice',
+        name: 'رز',
+        category: 'مطبخ',
+        quantity: 0.5,
+        lowStockThreshold: 1,
+        unit: 'كجم',
+      ),
+    );
+    await store.saveItem(
+      'inventory-test-user',
+      AurenHouseholdItem(
+        id: 'soap',
+        name: 'صابون',
+        category: 'تنظيف',
+        quantity: 4,
+        lowStockThreshold: 1,
+        unit: 'قطعة',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AurenHouseholdInventoryScreen(
+          authService: _FakeAuthService('inventory-test-user'),
+          store: store,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('رز'), findsOneWidget);
+    expect(find.text('صابون'), findsOneWidget);
+
+    await tester.tap(find.text('عرض العناصر التي وصلت لحد التنبيه فقط'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('رز'), findsOneWidget);
+    expect(find.text('صابون'), findsNothing);
+
+    await tester.tap(find.byTooltip('تحديث'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('تعديل'));
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextFormField);
+    expect(fields, findsNWidgets(6));
+    await tester.enterText(fields.at(1), 'مطبخ البيت');
+    await tester.tap(find.text('حفظ'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+
+    final saved = await store.loadItems('inventory-test-user');
+    final rice = saved.singleWhere((item) => item.id == 'rice');
+    expect(rice.category, 'مطبخ البيت');
+    expect(rice.quantity, 0.5);
+    expect(saved.singleWhere((item) => item.id == 'soap').quantity, 4);
+  });
+
 }
