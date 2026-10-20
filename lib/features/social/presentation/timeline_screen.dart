@@ -11,7 +11,6 @@ import '../../profile/presentation/public_profile_screen.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
 import '../../../services/social/safety_repository.dart';
-import 'comments_screen.dart';
 import 'create_post_screen.dart';
 import 'edit_post_screen.dart';
 import 'saved_pulse_screen.dart';
@@ -67,7 +66,7 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
       final saved = prefs.getDouble(_resumeOffsetKey) ?? 0;
       final max = _scrollController.position.maxScrollExtent;
       if (saved > 0 && max > 0) {
-        _scrollController.jumpTo(saved.clamp(0.0, max));
+        _scrollController.jumpTo(saved.clamp(0.0, max).toDouble());
       }
     });
   }
