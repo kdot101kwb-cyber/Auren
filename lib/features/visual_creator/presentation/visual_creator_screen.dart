@@ -188,6 +188,37 @@ class _AurenVisualCreatorScreenState extends State<AurenVisualCreatorScreen> {
     });
   }
 
+  void _moveLayer(VisualLayer layer, int direction) {
+    final ordered = _layers.toList()..sort((a, b) => a.order.compareTo(b.order));
+    final index = ordered.indexWhere((item) => item.id == layer.id);
+    final target = index + direction;
+    if (index < 0 || target < 0 || target >= ordered.length) return;
+    final moving = ordered[index];
+    ordered[index] = ordered[target];
+    ordered[target] = moving;
+    setState(() {
+      _layers
+        ..clear()
+        ..addAll([
+          for (var i = 0; i < ordered.length; i++)
+            VisualLayer(
+              id: ordered[i].id,
+              kind: ordered[i].kind,
+              x: ordered[i].x,
+              y: ordered[i].y,
+              width: ordered[i].width,
+              height: ordered[i].height,
+              order: i,
+              visible: ordered[i].visible,
+              locked: ordered[i].locked,
+              assetUri: ordered[i].assetUri,
+              text: ordered[i].text,
+            ),
+        ]);
+      _selectedId = layer.id;
+    });
+  }
+
   Future<void> _rename() async {
     final controller = TextEditingController(text: _name);
     final value = await showDialog<String>(
@@ -275,15 +306,30 @@ class _AurenVisualCreatorScreenState extends State<AurenVisualCreatorScreen> {
                 title: Text(layer.kind == VisualLayerKind.text ? layer.text ?? 'نص' : 'شكل'),
                 subtitle: Text(layer.visible ? 'ظاهر' : 'مخفي'),
                 onTap: () => setState(() => _selectedId = layer.id),
-                trailing: IconButton(
-                  tooltip: layer.visible ? 'إخفاء الطبقة' : 'إظهار الطبقة',
-                  onPressed: () => _toggleVisibility(layer),
-                  icon: Icon(layer.visible ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'تقديم الطبقة',
+                      onPressed: layer.order >= _layers.length - 1 ? null : () => _moveLayer(layer, 1),
+                      icon: const Icon(Icons.arrow_upward),
+                    ),
+                    IconButton(
+                      tooltip: 'تأخير الطبقة',
+                      onPressed: layer.order <= 0 ? null : () => _moveLayer(layer, -1),
+                      icon: const Icon(Icons.arrow_downward),
+                    ),
+                    IconButton(
+                      tooltip: layer.visible ? 'إخفاء الطبقة' : 'إظهار الطبقة',
+                      onPressed: () => _toggleVisibility(layer),
+                      icon: Icon(layer.visible ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    ),
+                  ],
                 ),
               ),
             )),
           const SizedBox(height: 8),
-          const Text('هذا محرر أولي محلي للنصوص والأشكال فقط؛ لا يتضمن توليد صور بالذكاء الاصطناعي أو استيراد الصور أو تصدير PNG بعد.',
+          const Text('هذا محرر محلي أولي للنصوص والأشكال مع ترتيب الطبقات؛ لا يتضمن توليد صور بالذكاء الاصطناعي أو استيراد الصور أو تصدير PNG بعد.',
               style: TextStyle(fontSize: 12)),
         ],
       ),
