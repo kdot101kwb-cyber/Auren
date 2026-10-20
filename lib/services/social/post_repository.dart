@@ -48,11 +48,16 @@ class PostRepository {
 
   Future<void> delete(String postId) => _posts.doc(postId).delete();
 
-  Future<void> updateContent(String postId, {required String text, required String mediaUrl}) =>
+  Future<void> updateContent(
+    String postId, {
+    required String text,
+    required String mediaUrl,
+    String mediaType = 'image',
+  }) =>
       _posts.doc(postId).update({
         'text': text,
         'mediaUrl': mediaUrl,
-        'mediaType': mediaUrl.isEmpty ? 'none' : 'image',
+        'mediaType': mediaUrl.isEmpty ? 'none' : mediaType,
         'searchText': text.toLowerCase(),
       });
 
