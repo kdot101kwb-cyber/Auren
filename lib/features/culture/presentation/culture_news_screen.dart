@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../knowledge/presentation/knowledge_information_screen.dart';
 
 class AurenCultureNewsScreen extends StatelessWidget {
   const AurenCultureNewsScreen({super.key});
@@ -30,6 +31,19 @@ class AurenCultureNewsScreen extends StatelessWidget {
           const SizedBox(height: 6),
           const Text('أخبار العالم + الثقافة + التراث في مساحة واحدة، مع AI يساعدك تفهم المحتوى دون تكرار أنظمة Education وTravel وLibrary.'),
           const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.hub_outlined)),
+              title: const Text('Knowledge & Information Workspace'),
+              subtitle: const Text('احفظ المعرفة، وثّق الأدلة، نظّم المصادر والقراءة والمصطلحات.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenKnowledgeInformationScreen()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Card(
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.auto_awesome)),
