@@ -75,7 +75,7 @@ class AurenActionExecutorHealthService {
   }
 
   int _elapsedMs(DateTime startedAt) =>
-      _clock().difference(startedAt).inMilliseconds.clamp(0, 1 << 31);
+      _clock().difference(startedAt).inMilliseconds.clamp(0, 1 << 31).toInt();
 
   AurenHealthSnapshot _unknown(
     DateTime checkedAt,
