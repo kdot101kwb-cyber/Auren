@@ -21,16 +21,23 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
   XFile? selectedMedia;
 
   Future<void> pickMedia(String type) async {
-    final picker = ImagePicker();
-    final picked = type == 'video'
-        ? await picker.pickVideo(source: ImageSource.gallery)
-        : await picker.pickImage(source: ImageSource.gallery);
-    if (picked == null || !mounted) return;
-    setState(() {
-      selectedMedia = picked;
-      mediaType = type;
-      mediaController.clear();
-    });
+    try {
+      final picker = ImagePicker();
+      final picked = type == 'video'
+          ? await picker.pickVideo(source: ImageSource.gallery)
+          : await picker.pickImage(source: ImageSource.gallery);
+      if (picked == null || !mounted) return;
+      setState(() {
+        selectedMedia = picked;
+        mediaType = type;
+        mediaController.clear();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not select media: $error')),
+      );
+    }
   }
 
   final types = const {
