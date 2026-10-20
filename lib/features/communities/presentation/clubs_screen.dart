@@ -93,7 +93,7 @@ class _AurenClubsScreenState extends State<AurenClubsScreen> {
 
   Future<void> _toggleMembership(AurenClub club) async {
     try {
-      final member = club.memberIds.contains(_service.uid);
+      final member = club.memberIds.contains(_service.currentUid);
       if (member) {
         await _service.leaveClub(club.id);
       } else {
@@ -159,7 +159,7 @@ class _AurenClubsScreenState extends State<AurenClubsScreen> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final club = clubs[index];
-                    final joined = club.memberIds.contains(_service.uid);
+                    final joined = club.memberIds.contains(_service.currentUid);
                     return Card(
                       child: ListTile(
                         leading: const CircleAvatar(
@@ -172,7 +172,7 @@ class _AurenClubsScreenState extends State<AurenClubsScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         isThreeLine: true,
-                        trailing: club.ownerId == _service.uid
+                        trailing: club.ownerId == _service.currentUid
                             ? const Chip(label: Text('المالك'))
                             : FilledButton.tonal(
                                 onPressed: () => _toggleMembership(club),
