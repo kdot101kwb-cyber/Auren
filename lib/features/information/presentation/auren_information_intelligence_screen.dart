@@ -147,7 +147,7 @@ class _AurenInformationIntelligenceScreenState extends State<AurenInformationInt
         _sourceChecks = next;
         _freshnessResult = checked == null
             ? 'الحالة: $status. أضف تاريخ آخر مراجعة للحصول على تقييم أدق.'
-            : 'الحالة: $status — مرّ ' + assessment.daysSinceCheck.toString() + ' يومًا منذ آخر مراجعة.';
+            : 'الحالة: $status — مرّ ' + (assessment.daysSinceCheck ?? 0).toString() + ' يومًا منذ آخر مراجعة.';
         _error = null;
       });
     } catch (error) {
@@ -332,7 +332,7 @@ class _AurenInformationIntelligenceScreenState extends State<AurenInformationInt
     _field(_previousText, 'نسخة الأساس', lines: 4),
     _field(_currentText, 'النص الحالي', lines: 4),
     Wrap(spacing: 8, runSpacing: 8, children: [
-      FilledButton.icon(onPressed: _compareRevisions, icon: const Icon(Icons.difference_outlined), label: const Text('مقارنة النسختين')),
+      FilledButton.icon(onPressed: _compareRevisions, icon: const Icon(Icons.difference), label: const Text('مقارنة النسختين')),
       OutlinedButton.icon(onPressed: _saveRevisionBaseline, icon: const Icon(Icons.save_outlined), label: const Text('حفظ الحالي كأساس')),
     ]),
     _output(_revisionOutput, title: 'ملخص التغييرات'),
@@ -350,8 +350,8 @@ class _AurenInformationIntelligenceScreenState extends State<AurenInformationInt
             Tab(icon: Icon(Icons.format_quote_outlined), text: 'الاستشهادات'),
             Tab(icon: Icon(Icons.notifications_active_outlined), text: 'متابعة المواضيع'),
             Tab(icon: Icon(Icons.fact_check_outlined), text: 'حداثة المصادر'),
-            Tab(icon: Icon(Icons.offline_pin_outlined), text: 'حزم دون اتصال'),
-            Tab(icon: Icon(Icons.difference_outlined), text: 'تاريخ المعرفة'),
+            Tab(icon: Icon(Icons.offline_pin), text: 'حزم دون اتصال'),
+            Tab(icon: Icon(Icons.difference), text: 'تاريخ المعرفة'),
           ],
         ),
       ),
