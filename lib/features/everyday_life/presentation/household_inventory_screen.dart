@@ -61,7 +61,7 @@ class _AurenHouseholdInventoryScreenState
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               _field(name, 'اسم العنصر'),
               _field(category, 'الفئة'),
-              _field(quantity, 'الكمية الحالية', numeric: true),
+              _field(quantity, 'الكمية الحالية', numeric: true, readOnly: existing != null),
               _field(threshold, 'حد التنبيه للمخزون', numeric: true),
               _field(unit, 'وحدة القياس'),
               _field(notes, 'ملاحظات', requiredField: false),
@@ -107,11 +107,12 @@ class _AurenHouseholdInventoryScreenState
   }
 
   Widget _field(TextEditingController controller, String label,
-      {bool numeric = false, bool requiredField = true}) {
+      {bool numeric = false, bool requiredField = true, bool readOnly = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextFormField(
         controller: controller,
+        readOnly: readOnly,
         keyboardType: numeric ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
         decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
         validator: (value) {
