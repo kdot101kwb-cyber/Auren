@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+import '../../../core/theme/auren_nebula_tokens.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/models/comment.dart';
+import '../../../services/social/comment_repository.dart';
 import '../../../core/models/post.dart';
 import '../../../core/models/user_profile.dart';
 import '../../profile/presentation/public_profile_screen.dart';
 import '../../../services/auth/auth_service.dart';
 import '../../../services/social/post_repository.dart';
 import '../../../services/social/safety_repository.dart';
-import 'comments_screen.dart';
 import 'create_post_screen.dart';
 import 'edit_post_screen.dart';
 import 'saved_pulse_screen.dart';
@@ -24,7 +28,48 @@ class AurenTimelineScreen extends StatefulWidget {
 }
 
 class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
+  static const _resumeOffsetKey = 'auren_pulse_timeline_scroll_offset_v1';
+  final ScrollController _scrollController = ScrollController();
   String selectedType = 'all';
+  bool _resumeAttempted = false;
+  double _lastSavedOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_persistScrollOffset);
+  }
+
+  void _persistScrollOffset() {
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    if ((offset - _lastSavedOffset).abs() < 80) return;
+    _lastSavedOffset = offset;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setDouble(_resumeOffsetKey, offset);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _resumeScrollPosition() async {
+    if (_resumeAttempted) return;
+    _resumeAttempted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || !_scrollController.hasClients) return;
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted || !_scrollController.hasClients) return;
+      final saved = prefs.getDouble(_resumeOffsetKey) ?? 0;
+      final max = _scrollController.position.maxScrollExtent;
+      if (saved > 0 && max > 0) {
+        _scrollController.jumpTo(saved.clamp(0.0, max).toDouble());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +77,12 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
     final uid = auth.currentUserId;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AurenNebulaTokens.midnight : AurenNebulaTokens.lightCanvas,
       appBar: AppBar(
-        title: const Text('AUREN Pulse'),
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.auto_awesome, color: AurenNebulaTokens.violet, size: 22), SizedBox(width: 8), Text('AUREN Pulse', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.4))]),
         actions: [
           IconButton(
             tooltip: 'Find people',
@@ -101,7 +150,10 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                 final opportunities = allPosts.where((p) => p.contentType == 'opportunity').length;
                 final projects = allPosts.where((p) => p.contentType == 'project').length;
                 final types = const [('all', 'All'), ('moment', 'Moments'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
+                _resumeScrollPosition();
                 return ListView.separated(
+                  controller: _scrollController,
+                  key: const PageStorageKey<String>('auren-pulse-feed'),
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
                   itemCount: posts.length + 5,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -381,6 +433,9 @@ class _PulseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final repo = PostRepository();
     return Card(
+      elevation: 0,
+      color: Theme.of(context).brightness == Brightness.dark ? AurenNebulaTokens.surface : Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? AurenNebulaTokens.outline : Theme.of(context).dividerColor.withValues(alpha: 0.45))),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,19 +496,22 @@ class _PulseCard extends StatelessWidget {
             ),
           ),
           if (post.mediaUrl.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 10,
-              child: Image.network(
-                post.mediaUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const ColoredBox(
-                  color: Colors.black26,
-                  child: Center(child: Icon(Icons.broken_image_outlined, size: 42)),
+            if (post.mediaType == 'video')
+              _PulseVideo(url: post.mediaUrl)
+            else
+              AspectRatio(
+                aspectRatio: 16 / 10,
+                child: Image.network(
+                  post.mediaUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const ColoredBox(
+                    color: Colors.black26,
+                    child: Center(child: Icon(Icons.broken_image_outlined, size: 42)),
+                  ),
+                  loadingBuilder: (context, child, progress) =>
+                      progress == null ? child : const Center(child: CircularProgressIndicator()),
                 ),
-                loadingBuilder: (context, child, progress) =>
-                    progress == null ? child : const Center(child: CircularProgressIndicator()),
               ),
-            ),
           if (post.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
@@ -477,13 +535,8 @@ class _PulseCard extends StatelessWidget {
                 
                 IconButton(
                   tooltip: 'Discuss',
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => AurenCommentsScreen(postId: post.id),
-                    ),
-                  ),
-                  icon: const Icon(Icons.forum_outlined),
+                  onPressed: () => _snapReply(context),
+                  icon: const Icon(Icons.reply_rounded),
                 ),
                 StreamBuilder<bool>(
                   stream: repo.watchSaved(post.id, uid),
@@ -534,6 +587,66 @@ class _PulseCard extends StatelessWidget {
       ),
     );
   }
+  Future<void> _snapReply(BuildContext context) async {
+    final controller = TextEditingController();
+    final text = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16, 16, 16, 16 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                maxLength: 2000,
+                minLines: 1,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: 'Write a quick reply…',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              tooltip: 'Send reply',
+              onPressed: () => Navigator.pop(sheetContext, controller.text.trim()),
+              icon: const Icon(Icons.send_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+    if (text == null || text.isEmpty) return;
+    try {
+      await CommentRepository().create(AurenComment(
+        id: 'comment_${DateTime.now().microsecondsSinceEpoch}',
+        postId: post.id,
+        authorId: uid,
+        text: text,
+        createdAt: DateTime.now(),
+      ));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reply posted.')),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not send reply. Please try again.')),
+        );
+      }
+    }
+  }
+
   void _openEdit(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => AurenEditPostScreen(post: post)));
   }
@@ -654,6 +767,104 @@ class _PulseCard extends StatelessWidget {
     );
   }
 
+}
+
+
+class _PulseVideo extends StatefulWidget {
+  final String url;
+  const _PulseVideo({required this.url});
+
+  @override
+  State<_PulseVideo> createState() => _PulseVideoState();
+}
+
+class _PulseVideoState extends State<_PulseVideo> {
+  late final VideoPlayerController _controller;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _controller.initialize().then((_) {
+      if (mounted) setState(() {});
+    }).catchError((_) {
+      if (mounted) setState(() => _failed = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) {
+      return const AspectRatio(
+        aspectRatio: 16 / 10,
+        child: ColoredBox(
+          color: Colors.black12,
+          child: Center(child: Icon(Icons.videocam_off_outlined, size: 42)),
+        ),
+      );
+    }
+    if (!_controller.value.isInitialized) {
+      return const AspectRatio(
+        aspectRatio: 16 / 10,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return AspectRatio(
+      aspectRatio: _controller.value.aspectRatio > 0
+          ? _controller.value.aspectRatio
+          : 16 / 10,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          VideoPlayer(_controller),
+          Material(
+            color: Colors.black26,
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  if (_controller.value.isPlaying) {
+                    _controller.pause();
+                  } else {
+                    _controller.play();
+                  }
+                });
+              },
+              child: Center(
+                child: Icon(
+                  _controller.value.isPlaying
+                      ? Icons.pause_circle_filled_rounded
+                      : Icons.play_circle_fill_rounded,
+                  color: Colors.white,
+                  size: 58,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 8,
+            right: 8,
+            bottom: 8,
+            child: VideoProgressIndicator(
+              _controller,
+              allowScrubbing: true,
+              colors: const VideoProgressColors(
+                playedColor: AurenNebulaTokens.violet,
+                bufferedColor: Colors.white54,
+                backgroundColor: Colors.white24,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PulseCoreFiveCard extends StatelessWidget {
