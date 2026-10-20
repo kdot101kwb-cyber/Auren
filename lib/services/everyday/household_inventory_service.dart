@@ -120,6 +120,9 @@ class AurenHouseholdStockLedger {
     AurenHouseholdItem initial,
     Iterable<AurenHouseholdStockMovement> movements,
   ) {
+    final initialIssue = initial.validate();
+    if (initialIssue != null) throw ArgumentError(initialIssue);
+
     final ordered = movements.toList()
       ..sort((a, b) {
         final byTime = a.occurredAt.compareTo(b.occurredAt);
