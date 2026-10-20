@@ -27,6 +27,37 @@ void main() {
     ), throwsArgumentError);
   });
 
+  test('reorders layers and normalizes z-order', () {
+    final layers = [
+      layer('back', 0),
+      layer('middle', 1),
+      layer('front', 2),
+    ];
+
+    final moved = reorderVisualLayers(layers, 'middle', 1);
+
+    expect(moved.map((item) => item.id), ['back', 'front', 'middle']);
+    expect(moved.map((item) => item.order), [0, 1, 2]);
+    expect(layers.map((item) => item.id), ['back', 'middle', 'front']);
+  });
+
+  test('keeps layer order unchanged when moving beyond either edge', () {
+    final layers = [layer('back', 0), layer('front', 1)];
+
+    expect(
+      reorderVisualLayers(layers, 'back', -1).map((item) => item.id),
+      ['back', 'front'],
+    );
+    expect(
+      reorderVisualLayers(layers, 'front', 1).map((item) => item.id),
+      ['back', 'front'],
+    );
+  });
+
+  test('rejects unsupported layer movement direction', () {
+    expect(() => reorderVisualLayers([layer('one', 0)], 'one', 0), throwsArgumentError);
+  });
+
   test('image and text layers require their content reference', () {
     expect(() => VisualLayer(
       id: 'image', kind: VisualLayerKind.image, x: 0, y: 0, width: 10, height: 10, order: 0,
