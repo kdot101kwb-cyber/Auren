@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:video_player/video_player.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/post.dart';
 import '../../../core/models/user_profile.dart';
 import '../../profile/presentation/public_profile_screen.dart';
@@ -9,6 +12,7 @@ import '../../../services/social/safety_repository.dart';
 import 'comments_screen.dart';
 import 'create_post_screen.dart';
 import 'edit_post_screen.dart';
+import 'living_moment_updates_screen.dart';
 import 'saved_pulse_screen.dart';
 import 'user_search_screen.dart';
 import '../../discover/presentation/discover_screen.dart';
@@ -100,19 +104,20 @@ class _AurenTimelineScreenState extends State<AurenTimelineScreen> {
                     : allPosts.where((p) => p.contentType == selectedType).toList();
                 final opportunities = allPosts.where((p) => p.contentType == 'opportunity').length;
                 final projects = allPosts.where((p) => p.contentType == 'project').length;
-                final types = const [('all', 'All'), ('moment', 'Moments'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
+                final types = const [('all', 'All'), ('moment', 'Moments'), ('mix', 'Mix Posts'), ('idea', 'Ideas'), ('question', 'Questions'), ('project', 'Projects'), ('opportunity', 'Opportunities')];
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 100),
-                  itemCount: posts.length + 5,
+                  itemCount: posts.isEmpty ? 7 : posts.length + 6,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) {
                     if (i == 0) return _PulseCoreFiveCard(uid: uid);
                     if (i == 1) return const _MomentsStrip();
-                    if (i == 2) return _SportsPulseCard(uid: uid);
-                    if (i == 3) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
-                    if (i == 4) return _PulseSignals(opportunities: opportunities, projects: projects);
+                    if (i == 2) return const _LivingMixIntro();
+                    if (i == 3) return _SportsPulseCard(uid: uid);
+                    if (i == 4) return _PulseFilterBar(types: types, selected: selectedType, onChanged: (value) => setState(() => selectedType = value));
+                    if (i == 5) return _PulseSignals(opportunities: opportunities, projects: projects);
                     if (posts.isEmpty) return const _EmptyPulse();
-                    return _PulseCard(post: posts[i - 5], uid: uid);
+                    return _PulseCard(post: posts[i - 6], uid: uid);
 
                   },
                 );
@@ -255,6 +260,67 @@ class _MomentsStrip extends StatelessWidget {
 }
 
 
+class _LivingMixIntro extends StatelessWidget {
+  const _LivingMixIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [colors.primaryContainer, colors.surfaceContainerHighest],
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.bolt, color: colors.primary, size: 26),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('Living Moments + Mix Posts',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
+              const Icon(Icons.auto_awesome),
+            ]),
+            const SizedBox(height: 8),
+            const Text('A moment can keep evolving. A post can combine words with images, video, audio and links — all in one place.'),
+            const SizedBox(height: 14),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              _formatPill(context, Icons.timeline, 'Updates over time'),
+              _formatPill(context, Icons.dashboard_customize_outlined, 'Mixed media'),
+              _formatPill(context, Icons.people_outline, 'Community first'),
+            ]),
+            const SizedBox(height: 12),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AurenCreatePostScreen()),
+                ),
+                icon: const Icon(Icons.add),
+                label: const Text('Create a moment'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _formatPill(BuildContext context, IconData icon, String label) => Chip(
+        avatar: Icon(icon, size: 16),
+        label: Text(label),
+        visualDensity: VisualDensity.compact,
+      );
+}
+
 class _SportsPulseCard extends StatelessWidget {
   final String uid;
   const _SportsPulseCard({required this.uid});
@@ -341,6 +407,317 @@ class _PulseSignals extends StatelessWidget { final int opportunities; final int
 
 class _Signal extends StatelessWidget { final IconData icon; final int value; final String label; const _Signal({required this.icon, required this.value, required this.label}); @override Widget build(BuildContext context) => Column(children: [Icon(icon, size: 20), const SizedBox(height: 4), Text('$value', style: const TextStyle(fontWeight: FontWeight.w900)), Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall)]); }
 
+class _MixMediaTile extends StatelessWidget {
+  final Map<String, String> item;
+  const _MixMediaTile({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final type = item['type'] ?? 'link';
+    final url = item['url'] ?? '';
+    final uri = Uri.tryParse(url);
+    if (uri == null || !{'http', 'https'}.contains(uri.scheme.toLowerCase()) || uri.host.isEmpty) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.link_off),
+          title: Text('Unavailable attachment'),
+          subtitle: Text('This media link is invalid.'),
+        ),
+      );
+    }
+
+    switch (type) {
+      case 'image':
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: AspectRatio(
+              aspectRatio: 16 / 10,
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const ColoredBox(
+                  color: Colors.black12,
+                  child: Center(child: Icon(Icons.broken_image_outlined, size: 40)),
+                ),
+                loadingBuilder: (context, child, progress) => progress == null
+                    ? child
+                    : const SizedBox(
+                        height: 160,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+              ),
+            ),
+          ),
+        );
+      case 'video':
+        return _MixVideoAttachment(url: url);
+      case 'audio':
+        return _MixAudioAttachment(url: url);
+      default:
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.open_in_new)),
+            title: const Text('Open shared link'),
+            subtitle: Text(url, maxLines: 2, overflow: TextOverflow.ellipsis),
+            trailing: const Icon(Icons.arrow_outward),
+            onTap: () async {
+              if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Could not open this link.')),
+                );
+              }
+            },
+          ),
+        );
+    }
+  }
+}
+
+class _MixVideoAttachment extends StatefulWidget {
+  final String url;
+  const _MixVideoAttachment({required this.url});
+
+  @override
+  State<_MixVideoAttachment> createState() => _MixVideoAttachmentState();
+}
+
+class _MixVideoAttachmentState extends State<_MixVideoAttachment> {
+  late final VideoPlayerController _controller;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+    _controller.initialize().then((_) {
+      if (mounted) setState(() {});
+    }).catchError((Object error) {
+      if (mounted) setState(() => _error = error);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.videocam_off_outlined),
+          title: Text('Video unavailable'),
+          subtitle: Text('Check the media URL or try again later.'),
+        ),
+      );
+    }
+    if (!_controller.value.isInitialized) {
+      return const Card(
+        child: SizedBox(
+          height: 150,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AspectRatio(
+            aspectRatio: _controller.value.aspectRatio > 0
+                ? _controller.value.aspectRatio
+                : 16 / 9,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                VideoPlayer(_controller),
+                IconButton.filledTonal(
+                  tooltip: _controller.value.isPlaying ? 'Pause video' : 'Play video',
+                  onPressed: () => setState(() {
+                    _controller.value.isPlaying
+                        ? _controller.pause()
+                        : _controller.play();
+                  }),
+                  icon: Icon(
+                    _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                    size: 34,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          VideoProgressIndicator(_controller, allowScrubbing: true),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.videocam_outlined, size: 18),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('Video')),
+                Text(
+                  _controller.value.isPlaying ? 'Playing' : 'Tap to play',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MixAudioAttachment extends StatefulWidget {
+  final String url;
+  const _MixAudioAttachment({required this.url});
+
+  @override
+  State<_MixAudioAttachment> createState() => _MixAudioAttachmentState();
+}
+
+class _MixAudioAttachmentState extends State<_MixAudioAttachment> {
+  late final AudioPlayer _player;
+  Object? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      await _player.setUrl(widget.url);
+    } catch (error) {
+      _error = error;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return const Card(
+        child: ListTile(
+          leading: Icon(Icons.audio_file_outlined),
+          title: Text('Audio unavailable'),
+          subtitle: Text('Check the media URL or try again later.'),
+        ),
+      );
+    }
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          children: [
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              StreamBuilder<PlayerState>(
+                stream: _player.playerStateStream,
+                builder: (context, snapshot) {
+                  final playing = snapshot.data?.playing ?? false;
+                  return IconButton(
+                    tooltip: playing ? 'Pause audio' : 'Play audio',
+                    onPressed: () async {
+                      try {
+                        if (playing) {
+                          await _player.pause();
+                        } else {
+                          await _player.play();
+                        }
+                      } catch (error) {
+                        if (mounted) setState(() => _error = error);
+                      }
+                    },
+                    icon: Icon(playing ? Icons.pause_circle : Icons.play_circle),
+                    iconSize: 34,
+                  );
+                },
+              ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Audio', style: TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    widget.url,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  if (!_loading)
+                    StreamBuilder<Duration>(
+                      stream: _player.positionStream,
+                      builder: (context, snapshot) {
+                        final position = snapshot.data ?? Duration.zero;
+                        final duration = _player.duration ?? Duration.zero;
+                        final maxMs = duration.inMilliseconds.toDouble();
+                        final positionMs = position.inMilliseconds
+                            .clamp(0, duration.inMilliseconds)
+                            .toDouble();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Slider(
+                              min: 0,
+                              max: maxMs > 0 ? maxMs : 1,
+                              value: maxMs > 0 ? positionMs : 0,
+                              onChanged: maxMs > 0
+                                  ? (value) => _player.seek(
+                                        Duration(milliseconds: value.round()),
+                                      )
+                                  : null,
+                            ),
+                            Text(
+                              '${_formatAudioDuration(position)} / ${_formatAudioDuration(duration)}',
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatAudioDuration(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+}
+
 class _PulseCard extends StatelessWidget {
   final AurenPost post;
   final String uid;
@@ -357,6 +734,8 @@ class _PulseCard extends StatelessWidget {
         return 'Question';
       case 'idea':
         return 'Idea';
+      case 'mix':
+        return 'Mix Post';
       default:
         return 'Moment';
     }
@@ -372,6 +751,8 @@ class _PulseCard extends StatelessWidget {
         return Icons.help_outline;
       case 'idea':
         return Icons.lightbulb_outline;
+      case 'mix':
+        return Icons.dashboard_customize_outlined;
       default:
         return Icons.bolt;
     }
@@ -440,7 +821,21 @@ class _PulseCard extends StatelessWidget {
               ],
             ),
           ),
-          if (post.mediaUrl.isNotEmpty)
+          if (post.mixItems.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+              child: Column(
+                children: post.mixItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  return _MixMediaTile(
+                    key: ValueKey('$index:${item['type']}:${item['url']}'),
+                    item: item,
+                  );
+                }).toList(),
+              ),
+            )
+          else if (post.mediaUrl.isNotEmpty && post.mediaType == 'image')
             AspectRatio(
               aspectRatio: 16 / 10,
               child: Image.network(
@@ -453,7 +848,9 @@ class _PulseCard extends StatelessWidget {
                 loadingBuilder: (context, child, progress) =>
                     progress == null ? child : const Center(child: CircularProgressIndicator()),
               ),
-            ),
+            )
+          else if (post.mediaUrl.isNotEmpty)
+            _MixMediaTile(item: {'type': post.mediaType, 'url': post.mediaUrl}),
           if (post.text.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
@@ -485,6 +882,21 @@ class _PulseCard extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.forum_outlined),
                 ),
+                if (post.contextLabel.startsWith('Living Moment'))
+                  IconButton(
+                    tooltip: 'Follow moment updates',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AurenLivingMomentUpdatesScreen(
+                          postId: post.id,
+                          ownerId: post.authorId,
+                          currentUid: uid,
+                        ),
+                      ),
+                    ),
+                    icon: const Icon(Icons.timeline),
+                  ),
                 StreamBuilder<bool>(
                   stream: repo.watchSaved(post.id, uid),
                   builder: (context, s) {
