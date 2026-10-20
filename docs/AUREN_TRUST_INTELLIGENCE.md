@@ -27,7 +27,7 @@ The current `firestore.rules` file has no explicit `trust_signals` subcollection
 ## Authorization regression coverage
 - Added `functions/trust_signals_rules.integration.test.js` to verify that owners, other signed-in users, and unauthenticated clients cannot read or mutate trust-signal documents under the current rules.
 - The client trust graph service no longer accepts `identity_verified` as a client-authored signal type. Authoritative identity verification must be created only by a trusted server/reviewer workflow.
-- Run with `npm run test:emulator` from `functions/` when the Firestore emulator is available. The test is committed; emulator execution and CI status must still be verified separately.
+- Run with `npm run test:emulator` from `functions/` when the Firestore emulator is available. The test is included in both the `functions/package.json` emulator suite and the Firestore Rules Validation workflow. For each revision, confirm the corresponding CI run before reporting validation status.
 
 ## Non-goals for the first slice
 - No automatic public accusation or public fraud label.
