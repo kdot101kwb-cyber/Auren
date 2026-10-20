@@ -36,6 +36,14 @@ class _AurenEditPostScreenState extends State<AurenEditPostScreen> {
         mediaType: _mediaTypeFor(mediaUrl),
       );
       if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save changes. Check your connection and try again.'),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => saving = false);
     }
