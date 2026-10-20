@@ -50,6 +50,13 @@ void main() {
     );
     expect(matches.map((match) => match.item.id), ['1', '2']);
     expect(matches.first.matchedTopics, ['Sudan']);
+    expect(
+      () => TopicWatchlistEngine.match(
+        topics: List<String>.filled(51, 'topic'),
+        items: const [InformationItem(id: '1', title: 'topic')],
+      ),
+      throwsArgumentError,
+    );
   });
 
   group('Source Freshness Radar', () {
@@ -118,6 +125,13 @@ void main() {
         ),
         throwsArgumentError,
       );
+      expect(
+        () => OfflineKnowledgePackPlanner.build(
+          items: const [KnowledgePackItem(id: 'long-title', title: 'T' * 181)],
+          now: now,
+        ),
+        throwsArgumentError,
+      );
     });
   });
 
@@ -127,5 +141,9 @@ void main() {
     expect(diff.addedLines, ['New source']);
     expect(diff.removedLines, ['Old source']);
     expect(KnowledgeRevisionLedger.compare('Same\nText', 'Same\nText').hasChanges, isFalse);
+    expect(
+      () => KnowledgeRevisionLedger.compare('x' * 50001, 'current'),
+      throwsArgumentError,
+    );
   });
 }
