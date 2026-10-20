@@ -20,7 +20,7 @@ class AurenKnowledgeInformationScreen extends StatelessWidget {
               Tab(icon: Icon(Icons.link_outlined), text: 'المصادر'),
               Tab(icon: Icon(Icons.menu_book_outlined), text: 'القراءة'),
               Tab(icon: Icon(Icons.translate_outlined), text: 'المصطلحات'),
-              Tab(icon: Icon(Icons.g_translate_outlined), text: 'ترجمة'),
+              Tab(icon: Icon(Icons.translate_outlined), text: 'ترجمة'),
             ],
           ),
         ),
