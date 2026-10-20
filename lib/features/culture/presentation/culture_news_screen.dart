@@ -43,7 +43,7 @@ class AurenCultureNewsScreen extends StatelessWidget {
           const SizedBox(height: 14),
           Card(
             child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.manage_search_outlined)),
+              leading: const CircleAvatar(child: Icon(Icons.manage_search)),
               title: const Text('أدوات المعلومات الذكية'),
               subtitle: const Text('تصدير الاستشهادات، متابعة المواضيع، مراجعة حداثة المصادر، تجهيز حزم دون اتصال، ومقارنة نسخ المعرفة.'),
               trailing: const Icon(Icons.chevron_right),
