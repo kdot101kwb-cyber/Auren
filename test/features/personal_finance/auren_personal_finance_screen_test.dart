@@ -47,7 +47,7 @@ void main() {
 
     expect(find.text('راتب'), findsOneWidget);
     expect(find.text('+1000.00 SDG'), findsOneWidget);
-    expect(find.text('1000.00 SDG'), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('finance-net'))).data, '1000.00 SDG');
   });
 
   testWidgets('rejects zero amount without closing the entry form', (tester) async {
