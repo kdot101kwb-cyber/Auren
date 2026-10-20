@@ -13,10 +13,11 @@ void main() {
     );
 
     test('formats APA, BibTeX, and RIS output', () {
-      expect(CitationExportStudio.format(record, CitationStyle.apa7),
-          'Ada Lovelace. (1843). Computing Notes. Example Press. https://example.org/notes');
-      expect(CitationExportStudio.format(record, CitationStyle.bibtex),
-          contains('@misc{lovelace1843,'));
+      expect(
+        CitationExportStudio.format(record, CitationStyle.apa7),
+        'Ada Lovelace. (1843). Computing Notes. Example Press. https://example.org/notes',
+      );
+      expect(CitationExportStudio.format(record, CitationStyle.bibtex), contains('@misc{lovelace1843,'));
       final ris = CitationExportStudio.format(record, CitationStyle.ris);
       expect(ris, contains('TY  - GEN'));
       expect(ris, contains('TI  - Computing Notes'));
@@ -32,10 +33,7 @@ void main() {
         throwsArgumentError,
       );
       expect(
-        () => CitationExportStudio.format(
-          const CitationRecord(title: ' ', url: ''),
-          CitationStyle.apa7,
-        ),
+        () => CitationExportStudio.format(const CitationRecord(title: ' ', url: ''), CitationStyle.apa7),
         throwsArgumentError,
       );
     });
@@ -58,35 +56,24 @@ void main() {
     final now = DateTime.utc(2026, 10, 20, 12);
 
     test('classifies unknown, fresh, review-soon, and stale sources', () {
+      expect(SourceFreshnessRadar.assess(lastCheckedAt: null, now: now).status, SourceFreshnessStatus.unknown);
       expect(
-        SourceFreshnessRadar.assess(lastCheckedAt: null, now: now).status,
-        SourceFreshnessStatus.unknown,
-      );
-      expect(
-        SourceFreshnessRadar.assess(
-          lastCheckedAt: now.subtract(const Duration(days: 2)), now: now,
-        ).status,
+        SourceFreshnessRadar.assess(lastCheckedAt: now.subtract(const Duration(days: 2)), now: now).status,
         SourceFreshnessStatus.fresh,
       );
       expect(
-        SourceFreshnessRadar.assess(
-          lastCheckedAt: now.subtract(const Duration(days: 14)), now: now,
-        ).status,
+        SourceFreshnessRadar.assess(lastCheckedAt: now.subtract(const Duration(days: 14)), now: now).status,
         SourceFreshnessStatus.reviewSoon,
       );
       expect(
-        SourceFreshnessRadar.assess(
-          lastCheckedAt: now.subtract(const Duration(days: 45)), now: now,
-        ).status,
+        SourceFreshnessRadar.assess(lastCheckedAt: now.subtract(const Duration(days: 45)), now: now).status,
         SourceFreshnessStatus.stale,
       );
     });
 
     test('rejects inverted freshness thresholds', () {
       expect(
-        () => SourceFreshnessRadar.assess(
-          lastCheckedAt: now, now: now, freshForDays: 20, staleAfterDays: 10,
-        ),
+        () => SourceFreshnessRadar.assess(lastCheckedAt: now, now: now, freshForDays: 20, staleAfterDays: 10),
         throwsArgumentError,
       );
     });
@@ -95,12 +82,7 @@ void main() {
   group('Offline Knowledge Pack Planner', () {
     final now = DateTime.utc(2026, 10, 20);
     const items = [
-      KnowledgePackItem(
-        id: 'note-1',
-        title: 'Water safety',
-        body: 'Keep clean water covered.',
-        sourceUrl: 'https://example.org/water',
-      ),
+      KnowledgePackItem(id: 'note-1', title: 'Water safety', body: 'Keep clean water covered.', sourceUrl: 'https://example.org/water'),
       KnowledgePackItem(id: 'note-2', title: 'Emergency contacts'),
     ];
 
@@ -113,16 +95,10 @@ void main() {
     });
 
     test('rejects empty, duplicate, unsafe, and oversized packs', () {
-      expect(
-        () => OfflineKnowledgePackPlanner.build(items: const [], now: now),
-        throwsArgumentError,
-      );
+      expect(() => OfflineKnowledgePackPlanner.build(items: const [], now: now), throwsArgumentError);
       expect(
         () => OfflineKnowledgePackPlanner.build(
-          items: const [
-            KnowledgePackItem(id: 'same', title: 'A'),
-            KnowledgePackItem(id: 'same', title: 'B'),
-          ],
+          items: const [KnowledgePackItem(id: 'same', title: 'A'), KnowledgePackItem(id: 'same', title: 'B')],
           now: now,
         ),
         throwsArgumentError,
@@ -146,16 +122,10 @@ void main() {
   });
 
   test('Knowledge Revision Ledger reports additions and removals', () {
-    final diff = KnowledgeRevisionLedger.compare(
-      'Title\nOld source\nKeep this',
-      'Title\nNew source\nKeep this',
-    );
+    final diff = KnowledgeRevisionLedger.compare('Title\nOld source\nKeep this', 'Title\nNew source\nKeep this');
     expect(diff.hasChanges, isTrue);
     expect(diff.addedLines, ['New source']);
     expect(diff.removedLines, ['Old source']);
-    expect(
-      KnowledgeRevisionLedger.compare('Same\nText', 'Same\nText').hasChanges,
-      isFalse,
-    );
+    expect(KnowledgeRevisionLedger.compare('Same\nText', 'Same\nText').hasChanges, isFalse);
   });
 }
