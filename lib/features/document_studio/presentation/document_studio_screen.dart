@@ -235,6 +235,63 @@ class _AurenDocumentStudioScreenState extends State<AurenDocumentStudioScreen> {
     }
   }
 
+  Future<void> _viewRevisions(AurenDocument document) async {
+    if (document.revisions.isEmpty) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('سجل تعديلات: ${document.title}'),
+        content: SizedBox(
+          width: 480,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: document.revisions.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final revision = document.revisions[
+                  document.revisions.length - 1 - index];
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(child: Text('${revision.number}')),
+                title: Text(revision.title),
+                subtitle: Text(
+                  '${revision.savedAt.toLocal()}\\n'
+                  '${revision.body.trim().isEmpty ? 'نسخة بلا نص' : revision.body.trim()}',
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                isThreeLine: true,
+                onTap: () => showDialog<void>(
+                  context: dialogContext,
+                  builder: (previewContext) => AlertDialog(
+                    title: Text('النسخة ${revision.number}: ${revision.title}'),
+                    content: SingleChildScrollView(
+                      child: SelectableText(
+                        revision.body.isEmpty ? 'هذه النسخة بلا نص.' : revision.body,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(previewContext),
+                        child: const Text('إغلاق'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _export(AurenDocument document) async {
     final text = '${document.title}\n\n${document.body}';
     try {
@@ -369,11 +426,14 @@ class _AurenDocumentStudioScreenState extends State<AurenDocumentStudioScreen> {
                             onSelected: (action) {
                               if (action == 'edit') _edit(existing: doc);
                               if (action == 'share') _export(doc);
+                              if (action == 'revisions') _viewRevisions(doc);
                               if (action == 'delete') _delete(doc);
                             },
                             itemBuilder: (_) => const [
                               PopupMenuItem(value: 'edit', child: Text('تحرير')),
                               PopupMenuItem(value: 'share', child: Text('مشاركة / تصدير النص')),
+                              if (doc.revisions.isNotEmpty)
+                                PopupMenuItem(value: 'revisions', child: Text('عرض سجل التعديلات')),
                               PopupMenuItem(value: 'delete', child: Text('حذف')),
                             ],
                           ),
