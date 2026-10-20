@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/post.dart';
 import '../../../services/social/post_repository.dart';
+import '../utils/post_media_type.dart';
 
 class AurenEditPostScreen extends StatefulWidget {
   final AurenPost post;
@@ -50,13 +51,8 @@ class _AurenEditPostScreenState extends State<AurenEditPostScreen> {
   }
 
   String _mediaTypeFor(String url) {
-    if (url.isEmpty) return 'none';
     if (url == widget.post.mediaUrl) return widget.post.mediaType;
-    final path = Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
-    if (RegExp(r'\.(mp4|mov|webm|m4v|avi|mkv)$').hasMatch(path)) {
-      return 'video';
-    }
-    return 'image';
+    return postMediaTypeFromUrl(url);
   }
 
   @override
