@@ -147,6 +147,10 @@ class _AurenHouseholdInventoryScreenState
         ],
       ),
     );
+    // showDialog completes when the route is popped, before its reverse
+    // transition has fully detached the TextFormFields. Keep their controllers
+    // alive until that transition finishes to avoid disposed-controller asserts.
+    await Future<void>.delayed(const Duration(milliseconds: 250));
     name.dispose();
     category.dispose();
     quantity.dispose();
@@ -256,6 +260,8 @@ class _AurenHouseholdInventoryScreenState
       ),
     );
     final note = noteController.text.trim();
+    // Keep controllers alive until the dialog's reverse transition completes.
+    await Future<void>.delayed(const Duration(milliseconds: 250));
     amountController.dispose();
     noteController.dispose();
     if (amount == null || !mounted) return;
