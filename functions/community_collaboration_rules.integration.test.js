@@ -93,6 +93,21 @@ test('club member can join, but cannot remove another member or leave as owner',
     memberIds: ['member-a'],
     memberCount: 1,
   }));
+
+  await seed('community_clubs/private-club', {
+    ownerId: 'private-owner',
+    name: 'Private group',
+    description: '',
+    category: 'Private',
+    visibility: 'private',
+    memberIds: ['private-owner'],
+    memberCount: 1,
+    createdAt: now,
+  });
+  await assertFails(dbFor('outsider').doc('community_clubs/private-club').update({
+    memberIds: ['private-owner', 'outsider'],
+    memberCount: 2,
+  }));
 });
 
 test('only the collaboration-space owner can add a member', async () => {
