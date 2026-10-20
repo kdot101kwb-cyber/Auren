@@ -17,6 +17,7 @@ import '../../payments/presentation/wallet_screen.dart';
 import '../../stay/presentation/stay_screen.dart';
 import '../../transport/presentation/transport_screen.dart';
 import '../../food/presentation/food_screen.dart';
+import '../../everyday_life/presentation/household_inventory_screen.dart';
 import '../../safety/presentation/offline_safety_screen.dart';
 import '../../travel/presentation/travel_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
@@ -45,6 +46,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Stay', 'فنادق وإقامات وحجوزات السفر', Icons.hotel_outlined),
     _DiscoverItem('Transport', 'تاكسي وتنقل داخل المدن', Icons.local_taxi_outlined),
     _DiscoverItem('Food + Home', 'طعام، بقالة ومستلزمات المنزل', Icons.restaurant_outlined),
+    _DiscoverItem('Household Inventory', 'تابع مخزون المنزل وسجّل الإضافة والاستهلاك', Icons.inventory_2_outlined),
     _DiscoverItem('Offline Safety', 'تنقل وأمان عند ضعف الإنترنت', Icons.shield_outlined),
     _DiscoverItem('Emergency Services', 'أرقام وخدمات الطوارئ الموثقة حسب المنطقة', Icons.emergency_outlined),
     _DiscoverItem('AUREN Content', 'قنوات ومحتوى ومتابعة صناع المحتوى', Icons.ondemand_video_outlined),
@@ -114,6 +116,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     if (item.title == 'Emergency Services') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEmergencyScreen())); return; }
     if (item.title == 'Offline Safety') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenOfflineSafetyScreen()));
+      return;
+    }
+    if (item.title == 'Household Inventory') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenHouseholdInventoryScreen()));
       return;
     }
     if (item.title == 'Food + Home') {
