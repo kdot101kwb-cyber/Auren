@@ -101,6 +101,17 @@ class _AurenCollaborationSpacesScreenState
 
   @override
   Widget build(BuildContext context) {
+    if (!_service.isSignedIn) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Collaboration Spaces')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('سجّل الدخول لعرض مساحات التعاون أو إنشاء مساحة.'),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Collaboration Spaces'),
         actions: [
