@@ -12,7 +12,20 @@ function inventory(root){
   const deployCommands=[];const workflowLines=s.split(/\r?\n/);for(let i=0;i<workflowLines.length;i++){if(!/\bfirebase\s+deploy\b/.test(workflowLines[i]))continue;let command=workflowLines[i],j=i+1;while(j<workflowLines.length&&/^\s+/.test(workflowLines[j])&&!/^\s+-\s/.test(workflowLines[j])&&!/^\s*[A-Za-z_-]+:\s*/.test(workflowLines[j])&&j<=i+20){command+=' '+workflowLines[j].trim();j++;}const p=command.match(/--project(?:=|\s+)([A-Za-z0-9._-]+)/);deployCommands.push({line:i+1,safety:!p?'missing-explicit-project':(/^auren-staging$/.test(p[1])?'explicit-project':'non-staging-target')});}
   return {path:rel(root,file),triggers:[...new Set(triggers)],jobs:[...new Set(jobs)],permissionsDeclared:/^permissions:/m.test(s),concurrencyDeclared:/^concurrency:/m.test(s),deployCommands};
  });
- const scheduledFunctions=walk(path.join(root,'functions'),f=>f.endsWith('.js')&&!f.endsWith('.test.js')).flatMap(file=>{const s=fs.readFileSync(file,'utf8'),out=[],declared=new Set();for(const re of [/exports\.([A-Za-z_$][\w$]*)\s*=\s*onSchedule\s*\(/g,/exports\.([A-Za-z_$][\w$]*)\s*=\s*functions\.pubsub\.schedule\s*\(/g,/exports\.([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*;/g,/module\.exports\s*=\s*\{([\s\S]*?)\}/g])for(const m of s.matchAll(re)){if(m.length===2){out.push({path:rel(root,file),name:m[1]});declared.add(m[1]);}else if(m.length===3){const name=m[1],value=m[2];if(/onSchedule|pubsub\.schedule/.test(value)){out.push({path:rel(root,file),name});declared.add(name);}else if(/^[A-Za-z_$][\w$]*$/.test(value)&&(s.includes('const '+value+' = onSchedule')||s.includes('const '+value+' = functions.pubsub.schedule'))){out.push({path:rel(root,file),name});declared.add(name);}}}for(const m of s.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:onSchedule|functions\.pubsub\.schedule)\s*\(/g)){const name=m[1];if(s.includes('exports.'+name+' = '+name)||s.includes('exports.'+name+'='+name)||s.includes('module.exports = { '+name)||s.includes('module.exports = {'+name)){if(!declared.has(name)){out.push({path:rel(root,file),name});declared.add(name);}}}return out;});
+ const scheduledFunctions=walk(path.join(root,'functions'),f=>f.endsWith('.js')&&!f.endsWith('.test.js')).flatMap(file=>{
+  const s=fs.readFileSync(file,'utf8'),out=[],declared=new Set();
+  const directPatterns=[
+   /exports\.([A-Za-z_$][\w$]*)\s*=\s*onSchedule\s*\(/g,
+   /exports\.([A-Za-z_$][\w$]*)\s*=\s*functions\.pubsub\.schedule\s*\(/g
+  ];
+  for(const re of directPatterns)for(const m of s.matchAll(re)){out.push({path:rel(root,file),name:m[1]});declared.add(m[1]);}
+  const aliases=new Map();
+  for(const m of s.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:onSchedule|functions\.pubsub\.schedule)\s*\(/g))aliases.set(m[1],true);
+  for(const m of s.matchAll(/exports\.([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*;/g)){
+   if(aliases.has(m[2])&&!declared.has(m[1])){out.push({path:rel(root,file),name:m[1]});declared.add(m[1]);}
+  }
+  return out;
+ });
  const unique=[...new Map(scheduledFunctions.map(x=>[x.path+':'+x.name,x])).values()].sort((a,b)=>(a.path+a.name).localeCompare(b.path+b.name)),findings=[];
  for(const w of workflows)for(const c of w.deployCommands)if(c.safety!=='explicit-project')findings.push({severity:'warning',code:c.safety,path:w.path,line:c.line,message:c.safety==='missing-explicit-project'?'Firebase deploy command has no explicit --project on the same line.':'Firebase deploy command explicitly targets a project other than auren-staging.'});
  return {generatedAt:new Date().toISOString(),workflows,scheduledFunctions:unique,findings};
