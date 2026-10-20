@@ -150,7 +150,8 @@ class AurenCollaborationService {
     required String memberUid,
   }) async {
     final actorUid = uid;
-    if (memberUid.trim().isEmpty || memberUid == actorUid) {
+    final cleanMemberUid = memberUid.trim();
+    if (cleanMemberUid.isEmpty || cleanMemberUid == actorUid) {
       throw ArgumentError('Choose another valid member.');
     }
     final ref = _spaces.doc(spaceId);
@@ -162,9 +163,9 @@ class AurenCollaborationService {
         throw StateError('Only the space owner can invite members.');
       }
       final members = List<String>.from(data['memberIds'] ?? const []);
-      if (members.contains(memberUid)) return;
+      if (members.contains(cleanMemberUid)) return;
       if (members.length >= 100) throw StateError('Space is full.');
-      members.add(memberUid);
+      members.add(cleanMemberUid);
       transaction.update(ref, {'memberIds': members});
     });
   }
