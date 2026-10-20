@@ -210,6 +210,44 @@ class _AurenCreativeProjectsScreenState extends State<AurenCreativeProjectsScree
     }
   }
 
+  Future<void> _showVersionHistory(AurenCreativeProject project) async {
+    final versions = [...project.versions]
+      ..sort((a, b) => b.number.compareTo(a.number));
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('سجل المشروع: ${project.title}'),
+        content: SizedBox(
+          width: 420,
+          child: versions.isEmpty
+              ? const Text('لا توجد مراجعات مسجلة لهذا المشروع حتى الآن.')
+              : ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: versions.length,
+                  separatorBuilder: (_, __) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final version = versions[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(child: Text('v${version.number}')),
+                      title: Text(version.summary),
+                      subtitle: Text(
+                        '${version.createdAt.toLocal().toString().split('.').first}',
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _delete(AurenCreativeProject project) async {
     final yes = await showDialog<bool>(
       context: context,
@@ -277,11 +315,13 @@ class _AurenCreativeProjectsScreenState extends State<AurenCreativeProjectsScree
                 trailing: PopupMenuButton<String>(
                   onSelected: (v) {
                     if (v == 'edit') _createOrEdit(project: p);
+                    if (v == 'history') _showVersionHistory(p);
                     if (v == 'delete') _delete(p);
                   },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('تحرير')),
-                    PopupMenuItem(value: 'delete', child: Text('حذف')),
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'edit', child: Text('تحرير')),
+                    const PopupMenuItem(value: 'history', child: Text('سجل المراجعات')),
+                    const PopupMenuItem(value: 'delete', child: Text('حذف')),
                   ],
                 ),
               ),
