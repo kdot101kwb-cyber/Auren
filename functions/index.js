@@ -4970,3 +4970,10 @@ Object.assign(module.exports, require('./global_business_data'));
 
 // Automatic low/medium renditions for eligible creator Shorts.
 Object.assign(module.exports, require('./shorts_transcoder'));
+
+// Knowledge & Information Ecosystem: five independent user-scoped capabilities.
+exports.captureAurenKnowledgeItem = require('./knowledge_information_ecosystem').captureAurenKnowledgeItem;
+exports.saveAurenEvidenceRecord = require('./knowledge_information_ecosystem').saveAurenEvidenceRecord;
+exports.saveAurenSourceProfile = require('./knowledge_information_ecosystem').saveAurenSourceProfile;
+exports.upsertAurenReadingQueueItem = require('./knowledge_information_ecosystem').upsertAurenReadingQueueItem;
+exports.saveAurenGlossaryEntry = require('./knowledge_information_ecosystem').saveAurenGlossaryEntry;
