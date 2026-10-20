@@ -26,7 +26,7 @@ test('discovers workflow metadata and scheduled exports', () => {
   const result = inventory(root);
   assert.equal(result.workflows.length, 1);
   assert.deepEqual(result.workflows[0].triggers, ['push', 'pull_request']);
-  assert.ok(result.workflows[0].jobs.includes('test'));
+  assert.deepEqual(result.workflows[0].jobs, ['test']);
   assert.equal(result.workflows[0].permissionsDeclared, true);
   assert.equal(result.workflows[0].concurrencyDeclared, true);
   assert.deepEqual(result.scheduledFunctions, [{ path: 'functions/nested/schedules.js', name: 'refreshCache' }]);
