@@ -13,6 +13,9 @@ class CitationExportStudio {
     final author = _clean(record.author);
     final year = _clean(record.year);
     final publisher = _clean(record.publisher);
+    if (title.length > 500 || author.length > 240 || year.length > 20 || publisher.length > 500) {
+      throw ArgumentError('Citation fields exceed their length limits.');
+    }
     final url = _safeUrl(record.url);
     switch (style) {
       case CitationStyle.apa7:
@@ -46,6 +49,7 @@ class CitationExportStudio {
   static String _safeUrl(String value) {
     final clean = _clean(value);
     if (clean.isEmpty) return '';
+    if (clean.length > 2000) throw ArgumentError('Source URL exceeds 2000 characters.');
     final uri = Uri.tryParse(clean);
     if (uri == null || !uri.hasAuthority || uri.host.isEmpty ||
         !{'http', 'https'}.contains(uri.scheme.toLowerCase()) || uri.userInfo.isNotEmpty) {
@@ -68,17 +72,21 @@ class TopicWatchMatch {
 
 class TopicWatchlistEngine {
   static List<TopicWatchMatch> match({required List<String> topics, required List<InformationItem> items}) {
+    if (topics.length > 50 || items.length > 100) {
+      throw ArgumentError('Topic matching is limited to 50 topics and 100 items.');
+    }
     final normalizedTopics = <String>[];
     final seenTopics = <String>{};
     for (final rawTopic in topics) {
       final topic = _clean(rawTopic);
+      if (topic.length > 80) throw ArgumentError('Topics are limited to 80 characters.');
       if (topic.isNotEmpty && seenTopics.add(topic.toLowerCase())) {
         normalizedTopics.add(topic);
       }
     }
     final matches = <TopicWatchMatch>[];
     for (final item in items) {
-      final searchable = (item.title + ' ' + item.summary).toLowerCase();
+      final searchable = (item.title + ' ' + item.summary).substring(0, (item.title.length + item.summary.length + 1).clamp(0, 12000)).toLowerCase();
       final hits = normalizedTopics.where((topic) => searchable.contains(topic.toLowerCase())).toList();
       if (hits.isNotEmpty) matches.add(TopicWatchMatch(item: item, matchedTopics: hits));
     }
@@ -136,7 +144,11 @@ class OfflineKnowledgePackPlanner {
     var estimatedBytes = 0;
     for (final item in items) {
       final id = _required(item.id, 'id');
-      _required(item.title, 'title');
+      final title = _required(item.title, 'title');
+      if (id.length > 128) throw ArgumentError('Item ids are limited to 128 characters.');
+      if (title.length > 180) throw ArgumentError('Item titles are limited to 180 characters.');
+      if (item.body.length > 20000) throw ArgumentError('Item bodies are limited to 20000 characters.');
+      if (item.sourceUrl.length > 2000) throw ArgumentError('Source URLs are limited to 2000 characters.');
       if (!ids.add(id)) throw ArgumentError('Duplicate item id: $id');
       final url = _clean(item.sourceUrl);
       if (url.isNotEmpty) CitationExportStudio._safeUrl(url);
@@ -155,6 +167,9 @@ class RevisionDiff {
 
 class KnowledgeRevisionLedger {
   static RevisionDiff compare(String previous, String current) {
+    if (previous.length > 50000 || current.length > 50000) {
+      throw ArgumentError('Revision text is limited to 50000 characters per version.');
+    }
     final oldLines = _lines(previous), newLines = _lines(current);
     final oldSet = oldLines.toSet(), newSet = newLines.toSet();
     return RevisionDiff(
