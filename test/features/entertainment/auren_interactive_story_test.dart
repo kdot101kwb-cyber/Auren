@@ -23,6 +23,32 @@ void main() {
       expect(connector.ending, AurenStoryEnding.connector);
     });
 
+    test('emotion realm offers creative and empathetic paths', () {
+      final realm = AurenInteractiveStory.choose('wilds', 'mirror');
+      expect(realm.id, 'emotion_realm');
+      expect(
+        AurenInteractiveStory.choose(realm.id, 'turn_emotion_into_art').ending,
+        AurenStoryEnding.creator,
+      );
+      expect(
+        AurenInteractiveStory.choose(realm.id, 'understand_others').ending,
+        AurenStoryEnding.connector,
+      );
+    });
+
+    test('city archive offers a privacy-respecting guardian ending', () {
+      final archive = AurenInteractiveStory.choose('plaza', 'secret');
+      expect(archive.id, 'city_archive');
+      expect(
+        AurenInteractiveStory.choose(archive.id, 'protect_stories').ending,
+        AurenStoryEnding.guardian,
+      );
+      expect(
+        AurenInteractiveStory.choose(archive.id, 'share_lessons').ending,
+        AurenStoryEnding.explorer,
+      );
+    });
+
     test('rejects unavailable choices instead of silently branching', () {
       expect(
         () => AurenInteractiveStory.choose('arrival', 'prototype'),
@@ -34,7 +60,10 @@ void main() {
       for (final nodeId in AurenInteractiveStory.nodeIds) {
         final node = AurenInteractiveStory.node(nodeId);
         for (final choice in node.choices) {
-          expect(AurenInteractiveStory.nodes.containsKey(choice.nextNodeId), isTrue);
+          expect(
+            AurenInteractiveStory.nodes.containsKey(choice.nextNodeId),
+            isTrue,
+          );
         }
       }
     });
