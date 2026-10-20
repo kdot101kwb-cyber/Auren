@@ -68,7 +68,14 @@ class TopicWatchMatch {
 
 class TopicWatchlistEngine {
   static List<TopicWatchMatch> match({required List<String> topics, required List<InformationItem> items}) {
-    final normalizedTopics = topics.map(_clean).where((v) => v.isNotEmpty).toSet().toList();
+    final normalizedTopics = <String>[];
+    final seenTopics = <String>{};
+    for (final rawTopic in topics) {
+      final topic = _clean(rawTopic);
+      if (topic.isNotEmpty && seenTopics.add(topic.toLowerCase())) {
+        normalizedTopics.add(topic);
+      }
+    }
     final matches = <TopicWatchMatch>[];
     for (final item in items) {
       final searchable = (item.title + ' ' + item.summary).toLowerCase();
