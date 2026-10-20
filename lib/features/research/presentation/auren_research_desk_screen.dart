@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../messenger/presentation/messenger_screen.dart';
 import '../../knowledge/presentation/auren_knowledge_hub_screen.dart';
+import '../../knowledge_notebook/presentation/auren_knowledge_notebook_screen.dart';
 import '../../language_bridge/presentation/auren_language_bridge_screen.dart';
+import '../../messenger/presentation/messenger_screen.dart';
 
 /// Research workspace that routes each task to AUREN's existing assistant.
 class AurenResearchDeskScreen extends StatefulWidget {
@@ -106,6 +107,20 @@ class _AurenResearchDeskScreenState extends State<AurenResearchDeskScreen> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AurenKnowledgeHubScreen()),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.menu_book_outlined)),
+              title: const Text('AUREN Knowledge Notebook'),
+              subtitle: const Text('احفظ أفكارك وملاحظاتك محلياً حتى دون اتصال.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AurenKnowledgeNotebookScreen(),
+                ),
               ),
             ),
           ),
