@@ -4,6 +4,11 @@ import 'package:auren/features/knowledge/presentation/auren_knowledge_hub_screen
 
 void main() {
   testWidgets('Knowledge Hub shows distinct learning domains', (tester) async {
+    tester.view.physicalSize = const Size(1200, 4000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       const MaterialApp(home: AurenKnowledgeHubScreen()),
     );
@@ -16,11 +21,6 @@ void main() {
       'Practical Skills',
       'Sudan & Africa',
     ]) {
-      await tester.scrollUntilVisible(
-        find.text(domain),
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
       expect(find.text(domain), findsOneWidget);
     }
   });
