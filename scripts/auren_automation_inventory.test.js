@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
-const { inventory, markdown } = require('./auren_automation_inventory');
+const { inventory, markdown, escapeMarkdownCell } = require('./auren_automation_inventory');
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'auren-inventory-'));
@@ -51,4 +51,8 @@ test('report labels its limits and does not dump scanned source', () => {
   const output = markdown(inventory(root));
   assert.match(output, /Static inspection only/);
   assert.doesNotMatch(output, /TOKEN_VALUE|SECRET_VALUE/);
+});
+
+test('escapes untrusted values before writing Markdown table cells', () => {
+  assert.equal(escapeMarkdownCell('workflow\\\\name|break\nnext'), 'workflow\\\\\\\\name\\\\|break next');
 });
