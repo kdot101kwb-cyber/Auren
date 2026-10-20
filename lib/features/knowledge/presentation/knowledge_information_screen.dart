@@ -8,7 +8,7 @@ class AurenKnowledgeInformationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = KnowledgeInformationService();
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('AUREN Knowledge'),
@@ -20,6 +20,7 @@ class AurenKnowledgeInformationScreen extends StatelessWidget {
               Tab(icon: Icon(Icons.link_outlined), text: 'المصادر'),
               Tab(icon: Icon(Icons.menu_book_outlined), text: 'القراءة'),
               Tab(icon: Icon(Icons.translate_outlined), text: 'المصطلحات'),
+              Tab(icon: Icon(Icons.g_translate_outlined), text: 'ترجمة'),
             ],
           ),
         ),
@@ -29,6 +30,7 @@ class AurenKnowledgeInformationScreen extends StatelessWidget {
           _KnowledgePane(kind: 'sources', service: service),
           _KnowledgePane(kind: 'reading', service: service),
           _KnowledgePane(kind: 'glossary', service: service),
+          _KnowledgePane(kind: 'translation', service: service),
         ]),
       ),
     );
@@ -52,6 +54,7 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
   String? _error;
   String _verdict = 'unverified';
   String _priority = 'normal';
+  String _translationResult = '';
 
   String _value(String key) => _controllers.putIfAbsent(key, TextEditingController.new).text;
   TextEditingController _controller(String key) =>
@@ -83,7 +86,8 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
       case 'evidence': return widget.service.listEvidence();
       case 'sources': return widget.service.listSourceProfiles();
       case 'reading': return widget.service.listReadingQueue();
-      default: return widget.service.listGlossary();
+      case 'glossary': return widget.service.listGlossary();
+      default: return Future.value(const <Map<String, dynamic>>[]);
     }
   }
 
@@ -136,6 +140,20 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
             notes: _value('notes'),
           );
           break;
+        case 'translation':
+          final result = await widget.service.translateText(
+            text: _value('translationText'),
+            sourceLanguage: _value('translationSource').trim().isEmpty
+                ? 'auto'
+                : _value('translationSource'),
+            targetLanguage: _value('translationTarget'),
+            context: _value('translationContext'),
+          );
+          if (mounted) {
+            setState(() => _translationResult =
+                result['translation']?.toString().trim() ?? '');
+          }
+          break;
         case 'glossary':
           await widget.service.saveGlossaryEntry(
             sourceTerm: _value('sourceTerm'),
@@ -147,11 +165,15 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
           );
           break;
       }
-      for (final controller in _controllers.values) {
-        controller.clear();
+      if (widget.kind != 'translation') {
+        for (final controller in _controllers.values) {
+          controller.clear();
+        }
+        await _refresh();
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم الحفظ.')),
+        );
       }
-      await _refresh();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الحفظ.')));
     } catch (error) {
       if (mounted) setState(() => _error = error is ArgumentError
           ? error.message.toString()
@@ -201,6 +223,13 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
               DropdownMenuItem(value: 'high', child: Text('عالية'))],
             onChanged: (value) { if (value != null) setState(() => _priority = value); }),
           const SizedBox(height: 10), _field('notes', 'ملاحظات', lines: 2)];
+      case 'translation':
+        return [
+          _field('translationText', 'النص المطلوب ترجمته *', lines: 4),
+          _field('translationSource', 'لغة المصدر (auto للكشف التلقائي)'),
+          _field('translationTarget', 'لغة الهدف * (مثلاً ar أو en)'),
+          _field('translationContext', 'السياق أو المصطلحات المتخصصة (اختياري)', lines: 2),
+        ];
       default:
         return [_field('sourceTerm', 'المصطلح الأصلي *'), _field('translatedTerm', 'الترجمة *'),
           _field('sourceLanguage', 'لغة المصدر (مثلاً ar) *'), _field('targetLanguage', 'لغة الهدف (مثلاً en) *'),
@@ -232,6 +261,8 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
       'evidence' => 'افصل الادعاء عن الأدلة',
       'sources' => 'سجّل مصدر المعلومة وحالته',
       'reading' => 'نظّم قراءاتك البحثية',
+      'translation' => 'ترجم النص مع الحفاظ على المعنى والسياق',
+      'glossary' => 'احتفظ بالمصطلحات عبر اللغات',
       _ => 'احتفظ بالمصطلحات عبر اللغات',
     };
     return ListView(
@@ -246,26 +277,35 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
           onPressed: _saving ? null : _save,
           icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.save_outlined),
-          label: Text(_saving ? 'جارٍ الحفظ...' : 'حفظ'),
+          label: Text(_saving ? 'جارٍ التنفيذ...' : (widget.kind == 'translation' ? 'ترجمة النص' : 'حفظ')),
         ),
         if (_error != null) Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
         ),
-        const SizedBox(height: 24),
-        Row(children: [
-          Expanded(child: Text('العناصر المحفوظة', style: Theme.of(context).textTheme.titleMedium)),
-          IconButton(onPressed: _loading ? null : _refresh, icon: const Icon(Icons.refresh), tooltip: 'تحديث'),
-        ]),
-        if (_loading) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
-        else if (_items.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('لا توجد عناصر محفوظة بعد.')))
-        else ..._items.map((item) => Card(
-          child: ListTile(
-            title: Text(_itemTitle(item), maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: Text(_itemSubtitle(item), maxLines: 3, overflow: TextOverflow.ellipsis),
-            leading: const Icon(Icons.bookmark_outline),
+        if (_translationResult.isNotEmpty && widget.kind == 'translation')
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SelectableText(_translationResult),
+            ),
           ),
-        )),
+        if (widget.kind != 'translation') ...[
+          const SizedBox(height: 24),
+          Row(children: [
+            Expanded(child: Text('العناصر المحفوظة', style: Theme.of(context).textTheme.titleMedium)),
+            IconButton(onPressed: _loading ? null : _refresh, icon: const Icon(Icons.refresh), tooltip: 'تحديث'),
+          ]),
+          if (_loading) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+          else if (_items.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('لا توجد عناصر محفوظة بعد.')))
+          else ..._items.map((item) => Card(
+            child: ListTile(
+              title: Text(_itemTitle(item), maxLines: 2, overflow: TextOverflow.ellipsis),
+              subtitle: Text(_itemSubtitle(item), maxLines: 3, overflow: TextOverflow.ellipsis),
+              leading: const Icon(Icons.bookmark_outline),
+            ),
+          )),
+        ],
       ],
     );
   }
