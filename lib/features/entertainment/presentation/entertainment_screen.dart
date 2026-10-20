@@ -13,6 +13,7 @@ import 'auren_watch_concierge_screen.dart';
 import 'watch_history_screen.dart';
 import 'watch_together_screen.dart';
 import 'auren_gaming_screen.dart';
+import 'auren_interactive_story_screen.dart';
 import 'auren_radio_screen.dart';
 import 'auren_podcasts_screen.dart';
 import 'auren_tv_screen.dart';
@@ -58,6 +59,7 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
     _EntertainmentAction(Icons.podcasts_rounded, 'Podcasts', 'Shows, episodes & audio discovery'),
     _EntertainmentAction(Icons.radio_rounded, 'Radio', 'Live radio and audio stations'),
     _EntertainmentAction(Icons.public_rounded, 'AUREN World', 'Explore interactive worlds'),
+    _EntertainmentAction(Icons.auto_awesome_motion_rounded, 'Parallel Story', 'Choose a path in a living story'),
     _EntertainmentAction(Icons.auto_awesome_rounded, 'Watch AI', 'Let AUREN choose what to watch'),
     _EntertainmentAction(Icons.menu_book_rounded, 'Library', 'Books, Manga & Anime'),
     _EntertainmentAction(Icons.animation_rounded, 'Anime World', 'Anime discovery & channels'),
@@ -765,6 +767,9 @@ class _EntertainmentState extends State<AurenAURENEntertainmentScreen> {
 
   void _openEntertainmentAction(BuildContext context, _EntertainmentAction action) {
     switch (action.title) {
+      case 'Parallel Story':
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenInteractiveStoryScreen()));
+        break;
       case 'Movies':
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenMoviesHubScreen()));
         break;
