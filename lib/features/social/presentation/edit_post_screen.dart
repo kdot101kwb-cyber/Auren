@@ -47,7 +47,7 @@ class _AurenEditPostScreenState extends State<AurenEditPostScreen> {
     if (saving) return;
     final text = textController.text.trim();
     var mediaUrl = mediaController.text.trim();
-    if (text.isEmpty && mediaUrl.isEmpty) return;
+    if (text.isEmpty && mediaUrl.isEmpty && selectedMedia == null) return;
     setState(() => saving = true);
     try {
       if (selectedMedia != null) {
