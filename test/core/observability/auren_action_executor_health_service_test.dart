@@ -89,7 +89,7 @@ void main() {
 
     test('rejects oversized response bodies', () async {
       final service = AurenActionExecutorHealthService(
-        client: MockClient((_) async => http.Response('x' * (17 * 1024), 200)),
+        client: MockClient((_) async => http.Response(List<String>.filled(17 * 1024, 'x').join(), 200)),
         endpoint: 'https://example.test/health',
         clock: () => checkedAt,
       );
