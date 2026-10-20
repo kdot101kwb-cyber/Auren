@@ -199,6 +199,7 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
         && requestData().memberIds is list
         && requestData().memberIds.size() <= 100
         && requestData().memberIds.hasAll(resource.data.memberIds)
+        && requestData().memberIds.toSet().size() == requestData().memberIds.size()
         && requestData().memberIds.size() == resource.data.memberIds.size() + 1
         && request.auth.uid == resource.data.ownerId;
       allow delete: if isResourceOwner();
