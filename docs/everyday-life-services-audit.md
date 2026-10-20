@@ -10,7 +10,7 @@ Working branch: `feat/everyday-life-services`.
 - **Personal Organization:** an existing foundation exists in `lib/services/personal_ai/auto_organize_service.dart` and `lib/features/personal_ai/presentation/auto_organize_screen.dart`. Treat it as reuse/integration work, not a new system.
 - **Appointments & Booking:** no appointment-specific service was found in repository code search. Existing stay listings/bookings are a separate accommodation domain; they are not general appointments.
 - **Home Management:** no dedicated home-management system was found in the initial search. The roadmap includes Food / Home Essentials, which must be checked before choosing a final scope.
-- **Travel Companion:** a Travel system is already listed in `docs/AUREN_47_SYSTEMS_10_BATCHES.md`; avoid creating a duplicate travel shell. Trip itinerary functionality requires a deeper audit before selection.
+- **Travel Companion:** a Travel system is already listed in `docs/AUREN_47_SYSTEMS_10_BATCHES.md`; avoid creating a duplicate travel shell. Trip itinerary was not found in the initial code search; a planning-only itinerary helper has now been added as a subflow, not a new Travel shell.
 
 ## Initial implementation slices
 
@@ -20,16 +20,16 @@ Working branch: `feat/everyday-life-services`.
 ## Verification status
 
 - Source added: yes.
-- Automated tests authored: yes, in `test/services/everyday/appointment_draft_service_test.dart` and `test/services/everyday/household_inventory_service_test.dart`.
+- Automated tests authored: yes, in `test/services/everyday/appointment_draft_service_test.dart`, `test/services/everyday/household_inventory_service_test.dart`, and `test/services/everyday/trip_itinerary_service_test.dart`.
 - Tests executed in this environment: no; the GitHub connector cannot run Flutter locally.
 - Firestore persistence, owner authorization rules, UI, and provider adapters: not implemented in these slices.
-- Therefore both are **partial foundations**, not completed user-facing systems.
+- Therefore all three are **partial foundations**, not completed user-facing systems.
 
 ## Remaining non-duplicate candidates (pending deeper audit)
 
-3. **Household maintenance & recurring chores:** keep distinct from inventory/restock; inspect existing reminders/notifications before selection.
-4. **Errands / service-request tracking:** only select if not already covered by existing opportunity, marketplace, and local-intelligence flows.
-5. **Trip itinerary & checklist:** Travel already exists as a roadmap domain, so implement only a verified missing subflow rather than a new Travel shell.
+3. **Trip itinerary planning (partial foundation):** added `AurenTripStop` validation, deterministic stop ordering, remaining-stop filtering, and completion progress in `lib/services/everyday/trip_itinerary_service.dart`. It does not book anything or persist trips.
+4. **Household maintenance & recurring chores:** still only a candidate; reminders already exist, so inspect coverage before adding anything.
+5. **Errands / service-request tracking:** still only a candidate; avoid overlap with opportunity, marketplace, and local-intelligence flows.
 
 ## Next audit targets
 
