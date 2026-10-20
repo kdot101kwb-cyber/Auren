@@ -94,7 +94,7 @@ class SourceFreshnessRadar {
     if (lastCheckedAt == null) {
       return const SourceFreshnessAssessment(status: SourceFreshnessStatus.unknown, daysSinceCheck: null, nextCheckAt: null);
     }
-    final days = now.difference(lastCheckedAt).inDays.clamp(0, 365000);
+    final days = now.difference(lastCheckedAt).inDays.clamp(0, 365000).toInt();
     final status = days <= freshForDays ? SourceFreshnessStatus.fresh : days <= staleAfterDays ? SourceFreshnessStatus.reviewSoon : SourceFreshnessStatus.stale;
     return SourceFreshnessAssessment(status: status, daysSinceCheck: days, nextCheckAt: lastCheckedAt.add(Duration(days: freshForDays + 1)));
   }
