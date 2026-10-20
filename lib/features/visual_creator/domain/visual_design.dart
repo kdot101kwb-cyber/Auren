@@ -75,3 +75,40 @@ class AurenVisualDesign {
       .toList()
     ..sort((a, b) => a.order.compareTo(b.order));
 }
+
+/// Returns a copy with the requested layer moved one position in z-order.
+/// Direction +1 brings the layer forward; -1 sends it backward.
+List<VisualLayer> reorderVisualLayers(
+  List<VisualLayer> layers,
+  String layerId,
+  int direction,
+) {
+  if (direction != -1 && direction != 1) {
+    throw ArgumentError.value(direction, 'direction', 'Must be -1 or 1.');
+  }
+  final ordered = layers.toList()..sort((a, b) => a.order.compareTo(b.order));
+  final index = ordered.indexWhere((layer) => layer.id == layerId);
+  final target = index + direction;
+  if (index < 0 || target < 0 || target >= ordered.length) {
+    return List.unmodifiable(ordered);
+  }
+  final moving = ordered[index];
+  ordered[index] = ordered[target];
+  ordered[target] = moving;
+  return List.unmodifiable([
+    for (var i = 0; i < ordered.length; i++)
+      VisualLayer(
+        id: ordered[i].id,
+        kind: ordered[i].kind,
+        x: ordered[i].x,
+        y: ordered[i].y,
+        width: ordered[i].width,
+        height: ordered[i].height,
+        order: i,
+        visible: ordered[i].visible,
+        locked: ordered[i].locked,
+        assetUri: ordered[i].assetUri,
+        text: ordered[i].text,
+      ),
+  ]);
+}
