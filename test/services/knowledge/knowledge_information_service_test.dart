@@ -6,7 +6,7 @@ void main() {
     test('required text normalizes whitespace and rejects empty values', () {
       expect(KnowledgeInformationService.requiredText('  A   source  ', 'title', 20), 'A source');
       expect(() => KnowledgeInformationService.requiredText(' ', 'title', 20), throwsArgumentError);
-      expect(() => KnowledgeInformationService.requiredText('x' * 21, 'title', 20), throwsArgumentError);
+      expect(() => KnowledgeInformationService.requiredText(List.filled(21, 'x').join(), 'title', 20), throwsArgumentError);
     });
 
     test('HTTP source URLs are required and credentials are rejected', () {
