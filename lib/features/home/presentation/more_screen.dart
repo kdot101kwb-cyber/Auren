@@ -26,6 +26,7 @@ import '../../suppliers/presentation/auren_supplier_requests_screen.dart';
 import '../../document_studio/presentation/document_studio_screen.dart';
 import '../../creative_projects/presentation/creative_projects_screen.dart';
 import '../../visual_creator/presentation/visual_creator_screen.dart';
+import '../../audio_workshop/presentation/audio_workshop_screen.dart';
 
 class AurenMoreScreen extends StatelessWidget {
   const AurenMoreScreen({super.key});
