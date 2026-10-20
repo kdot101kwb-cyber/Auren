@@ -203,6 +203,20 @@ void main() {
       expect(find.text('النتيجة التقديرية'), findsNothing);
     });
 
+    testWidgets('prepopulates names for the default manufacturing route',
+        (tester) async {
+      await tester.pumpWidget(_app());
+      final rawFinder = find.byKey(const ValueKey<String>('Raw material name'));
+      final productFinder = find.byKey(const ValueKey<String>('Finished product name'));
+      await _scrollToBuilt(tester, rawFinder, towardTop: true);
+      await _scrollToBuilt(tester, productFinder, towardTop: true);
+      expect(tester.widget<TextFormField>(rawFinder).controller?.text, 'Cotton');
+      expect(
+        tester.widget<TextFormField>(productFinder).controller?.text,
+        'cotton garments',
+      );
+    });
+
     testWidgets('shows an estimate for valid default inputs', (tester) async {
       await tester.pumpWidget(_app());
       await _scrollToBuilt(tester, find.text('Estimated result'));
