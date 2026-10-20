@@ -40,6 +40,25 @@ void main() {
     );
   });
 
+  test('retains asset checksum metadata on a project', () {
+    final asset = CreativeAssetReference(
+      id: 'asset-checksum',
+      name: 'Final artwork',
+      kind: CreativeAssetKind.image,
+      uri: 'local://final-artwork.png',
+      addedAt: createdAt,
+      contentType: 'image/png',
+      sizeBytes: 2048,
+      checksum: 'sha256:abc123',
+    );
+
+    final value = project(assets: [asset]);
+
+    expect(value.assets.single.checksum, 'sha256:abc123');
+    expect(value.assets.single.contentType, 'image/png');
+    expect(value.assets.single.sizeBytes, 2048);
+  });
+
   test('rejects blank project identity and title', () {
     expect(
       () => AurenCreativeProject(
