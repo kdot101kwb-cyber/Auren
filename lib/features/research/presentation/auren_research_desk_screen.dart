@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../knowledge/presentation/auren_knowledge_hub_screen.dart';
+import '../../language_bridge/presentation/auren_language_bridge_screen.dart';
 
 /// Research workspace that routes each task to AUREN's existing assistant.
 class AurenResearchDeskScreen extends StatefulWidget {
@@ -92,6 +94,31 @@ class _AurenResearchDeskScreenState extends State<AurenResearchDeskScreen> {
               hintText: 'مثال: فرص التصنيع الزراعي في السودان',
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.lightbulb_outline)),
+              title: const Text('AUREN Knowledge Hub'),
+              subtitle: const Text('استكشف مجالات المعرفة ومسارات التعلم.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenKnowledgeHubScreen()),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.translate_outlined)),
+              title: const Text('AUREN Language Bridge'),
+              subtitle: const Text('ترجمة النصوص وفهم المصطلحات والسياق.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenLanguageBridgeScreen()),
+              ),
             ),
           ),
           const SizedBox(height: 16),
