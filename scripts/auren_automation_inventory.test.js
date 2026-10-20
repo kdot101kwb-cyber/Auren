@@ -151,3 +151,16 @@ permissions:
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('ignores cron declarations inside full-line YAML comments', () => {
+  const workflow = parseWorkflow('.github/workflows/commented.yml', `name: Commented
+on:
+  workflow_dispatch:
+# schedule:
+#   - cron: '0 0 * * *'
+permissions:
+  contents: read
+`);
+  assert.deepEqual(workflow.cronSchedules, []);
+  assert.equal(workflow.findings.some((finding) => finding.code === 'scheduled_workflow_without_concurrency'), false);
+});
