@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:video_player/video_player.dart';
 import '../../../core/models/post.dart';
 import '../../../core/models/user_profile.dart';
 import '../../profile/presentation/public_profile_screen.dart';
@@ -441,18 +443,9 @@ class _PulseCard extends StatelessWidget {
             ),
           ),
           if (post.mediaUrl.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 10,
-              child: Image.network(
-                post.mediaUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const ColoredBox(
-                  color: Colors.black26,
-                  child: Center(child: Icon(Icons.broken_image_outlined, size: 42)),
-                ),
-                loadingBuilder: (context, child, progress) =>
-                    progress == null ? child : const Center(child: CircularProgressIndicator()),
-              ),
+            PulseMediaPreview(
+              mediaUrl: post.mediaUrl,
+              mediaType: post.mediaType,
             ),
           if (post.text.isNotEmpty)
             Padding(
@@ -654,6 +647,169 @@ class _PulseCard extends StatelessWidget {
     );
   }
 
+}
+
+
+class PulseMediaPreview extends StatefulWidget {
+  final String mediaUrl;
+  final String mediaType;
+
+  const PulseMediaPreview({
+    super.key,
+    required this.mediaUrl,
+    required this.mediaType,
+  });
+
+  @override
+  State<PulseMediaPreview> createState() => _PulseMediaPreviewState();
+}
+
+class _PulseMediaPreviewState extends State<PulseMediaPreview> {
+  VideoPlayerController? _videoController;
+  AudioPlayer? _audioPlayer;
+  bool _videoReady = false;
+  bool _audioReady = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeMedia();
+  }
+
+  Future<void> _initializeMedia() async {
+    try {
+      if (widget.mediaType == 'video') {
+        final controller =
+            VideoPlayerController.networkUrl(Uri.parse(widget.mediaUrl));
+        _videoController = controller;
+        await controller.initialize();
+        if (mounted) setState(() => _videoReady = true);
+      } else if (widget.mediaType == 'audio') {
+        final player = AudioPlayer();
+        _audioPlayer = player;
+        await player.setUrl(widget.mediaUrl);
+        if (mounted) setState(() => _audioReady = true);
+      }
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    _audioPlayer?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.mediaType == 'video') {
+      final controller = _videoController;
+      if (_error != null) return _mediaError();
+      if (!_videoReady || controller == null) {
+        return const AspectRatio(
+          aspectRatio: 16 / 10,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      return AspectRatio(
+        aspectRatio: controller.value.aspectRatio > 0
+            ? controller.value.aspectRatio
+            : 16 / 10,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            VideoPlayer(controller),
+            ValueListenableBuilder<VideoPlayerValue>(
+              valueListenable: controller,
+              builder: (context, value, _) => IconButton.filled(
+                onPressed: () {
+                  if (value.isPlaying) {
+                    controller.pause();
+                  } else {
+                    controller.play();
+                  }
+                },
+                iconSize: 34,
+                icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (widget.mediaType == 'audio') {
+      final player = _audioPlayer;
+      if (_error != null) return _mediaError();
+      if (!_audioReady || player == null) {
+        return const ListTile(
+          leading: Icon(Icons.audio_file_outlined),
+          title: Text('Loading audio…'),
+        );
+      }
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: StreamBuilder<PlayerState>(
+          stream: player.playerStateStream,
+          initialData: player.playerState,
+          builder: (context, snapshot) {
+            final state = snapshot.data;
+            final playing = state?.playing ?? false;
+            return ListTile(
+              leading: const Icon(Icons.audio_file_outlined, size: 32),
+              title: const Text('Audio post'),
+              subtitle: Text(state?.processingState == ProcessingState.completed
+                  ? 'Playback complete'
+                  : 'Tap to ${playing ? 'pause' : 'play'}'),
+              trailing: IconButton.filled(
+                onPressed: () async {
+                  try {
+                    if (playing) {
+                      await player.pause();
+                    } else {
+                      await player.play();
+                    }
+                  } catch (error) {
+                    if (mounted) setState(() => _error = error.toString());
+                  }
+                },
+                icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    return AspectRatio(
+      aspectRatio: 16 / 10,
+      child: Image.network(
+        widget.mediaUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const ColoredBox(
+          color: Colors.black26,
+          child: Center(child: Icon(Icons.broken_image_outlined, size: 42)),
+        ),
+        loadingBuilder: (context, child, progress) => progress == null
+            ? child
+            : const Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+
+  Widget _mediaError() => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Could not load media: $_error')),
+          ],
+        ),
+      );
 }
 
 class _PulseCoreFiveCard extends StatelessWidget {
