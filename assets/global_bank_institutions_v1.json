@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "catalog_status": "official_institution_entry_points",
+  "last_reviewed": "2026-10-10",
+  "disclaimer": "This directory lists official banking and financial-regulator entry points, not an endorsement or confirmation that a bank serves every user. Verify licensing, country availability, fees, account eligibility and current services directly with the institution or regulator.",
+  "institutions": [
+    {
+      "id": "central-bank-sudan",
+      "name": "Central Bank of Sudan",
+      "country": "Sudan",
+      "region": "Africa",
+      "kind": "central_bank_regulator",
+      "website": "https://cbos.gov.sd/",
+      "source_type": "official_regulator",
+      "status": "official_entry_point",
+      "note": "Use the official regulator source to verify current licensed institutions and notices. Website availability and specific service details should be checked directly."
+    },
+    {
+      "id": "afreximbank",
+      "name": "African Export-Import Bank (Afreximbank)",
+      "country": "Regional / Africa",
+      "region": "Africa",
+      "kind": "regional_development_finance",
+      "website": "https://www.afreximbank.com/",
+      "source_type": "official_financial_institution",
+      "status": "institution_information_only",
+      "note": "Regional trade and development finance institution; offerings may target banks, governments or eligible businesses rather than retail customers."
+    },
+    {
+      "id": "afdb",
+      "name": "African Development Bank Group",
+      "country": "Regional / Africa",
+      "region": "Africa",
+      "kind": "development_finance",
+      "website": "https://www.afdb.org/",
+      "source_type": "official_development_bank",
+      "status": "institution_information_only",
+      "note": "Development finance and project information; not a general personal bank account provider."
+    },
+    {
+      "id": "ecobank",
+      "name": "Ecobank Group",
+      "country": "Multiple African countries",
+      "region": "Africa",
+      "kind": "commercial_banking_group",
+      "website": "https://www.ecobank.com/",
+      "source_type": "official_bank",
+      "status": "country_availability_varies",
+      "note": "Services and legal entities vary by country. Confirm local presence and licensing on the official site."
+    },
+    {
+      "id": "standard-bank-group",
+      "name": "Standard Bank Group",
+      "country": "Multiple African countries",
+      "region": "Africa",
+      "kind": "commercial_banking_group",
+      "website": "https://www.standardbank.com/",
+      "source_type": "official_bank",
+      "status": "country_availability_varies",
+      "note": "Group presence does not imply every service is available in every country; check the relevant local entity."
+    },
+    {
+      "id": "eib",
+      "name": "European Investment Bank",
+      "country": "European Union / international",
+      "region": "Europe",
+      "kind": "development_finance",
+      "website": "https://www.eib.org/",
+      "source_type": "official_development_bank",
+      "status": "institution_information_only",
+      "note": "Primarily supports eligible projects through defined financing instruments and intermediaries; not a retail bank directory."
+    },
+    {
+      "id": "isdb",
+      "name": "Islamic Development Bank",
+      "country": "Member countries / international",
+      "region": "Global",
+      "kind": "development_finance",
+      "website": "https://www.isdb.org/",
+      "source_type": "official_development_bank",
+      "status": "institution_information_only",
+      "note": "Financing programs have specific country, project and institutional eligibility criteria."
+    },
+    {
+      "id": "world-bank-ifc",
+      "name": "International Finance Corporation (IFC)",
+      "country": "Global",
+      "region": "Global",
+      "kind": "private_sector_development_finance",
+      "website": "https://www.ifc.org/",
+      "source_type": "official_development_finance_institution",
+      "status": "institution_information_only",
+      "note": "Private-sector development finance; not a direct retail bank account or universal startup grant."
+    },
+    {
+      "id": "federal-reserve",
+      "name": "Federal Reserve",
+      "country": "United States",
+      "region": "North America",
+      "kind": "central_bank_regulator",
+      "website": "https://www.federalreserve.gov/",
+      "source_type": "official_regulator",
+      "status": "official_entry_point",
+      "note": "Official US central-bank information and regulatory resources; not a commercial bank offering."
+    },
+    {
+      "id": "bank-of-england",
+      "name": "Bank of England",
+      "country": "United Kingdom",
+      "region": "Europe",
+      "kind": "central_bank_regulator",
+      "website": "https://www.bankofengland.co.uk/",
+      "source_type": "official_regulator",
+      "status": "official_entry_point",
+      "note": "Official UK central-bank source; use the relevant regulator to verify any institution's authorization."
+    },
+    {
+      "id": "ecb",
+      "name": "European Central Bank",
+      "country": "Euro area",
+      "region": "Europe",
+      "kind": "central_bank_regulator",
+      "website": "https://www.ecb.europa.eu/",
+      "source_type": "official_regulator",
+      "status": "official_entry_point",
+      "note": "Official euro-area central-bank source; individual banking services are provided by separate licensed institutions."
+    },
+    {
+      "id": "bis",
+      "name": "Bank for International Settlements",
+      "country": "International",
+      "region": "Global",
+      "kind": "international_financial_institution",
+      "website": "https://www.bis.org/",
+      "source_type": "official_international_institution",
+      "status": "information_only",
+      "note": "International institution for central banks and financial stability; not a consumer or business retail bank."
+    }
+  ]
+}

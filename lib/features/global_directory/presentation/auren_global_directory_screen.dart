@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../business/presentation/business_screen.dart';
 import 'auren_start_business_screen.dart';
 import 'auren_finance_opportunities_screen.dart';
+import 'auren_global_banks_screen.dart';
 
 class AurenGlobalDirectoryScreen extends StatefulWidget {
   const AurenGlobalDirectoryScreen({super.key});
@@ -73,6 +74,16 @@ class _AurenGlobalDirectoryScreenState extends State<AurenGlobalDirectoryScreen>
             subtitle: const Text('دليل مؤسسات رسمية ومداخل البحث عن المنح والتمويل والمناقصات.'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenFinanceOpportunitiesScreen())),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.account_balance_outlined)),
+            title: const Text('دليل البنوك والمؤسسات المالية العالمي'),
+            subtitle: const Text('بحث حسب الدولة والمنطقة ونوع الجهة، مع روابط المصادر الرسمية.'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenGlobalBanksScreen())),
           ),
         ),
         const SizedBox(height: 24),
