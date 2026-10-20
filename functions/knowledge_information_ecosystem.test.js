@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const source = fs.readFileSync(path.join(__dirname, 'knowledge_information_ecosystem.js'), 'utf8');
+const validationSource = fs.readFileSync(path.join(__dirname, 'knowledge_information_validation.js'), 'utf8');
 const indexSource = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8');
 const screenSource = fs.readFileSync(path.join(__dirname, '..', 'lib', 'features', 'knowledge', 'presentation', 'knowledge_information_screen.dart'), 'utf8');
 const serviceSource = fs.readFileSync(path.join(__dirname, '..', 'lib', 'services', 'knowledge', 'knowledge_information_service.dart'), 'utf8');
@@ -23,22 +24,23 @@ test('five distinct authenticated Knowledge & Information systems are callable',
 });
 
 test('URL intake rejects non-HTTP schemes and embedded credentials', () => {
-  assert.match(source, /\['https:', 'http:'\]/);
-  assert.match(source, /url\.username \|\| url\.password/);
+  assert.match(validationSource, /\['https:', 'http:'\]/);
+  assert.match(validationSource, /url\.username \|\| url\.password/);
   assert.match(source, /At least one valid source URL is required/);
 });
 
 test('Evidence Vault does not silently declare claims verified', () => {
-  assert.match(source, /\['unverified', 'supported', 'disputed', 'mixed'\]/);
-  assert.match(source, /: 'unverified'/);
+  assert.match(validationSource, /\['unverified', 'supported', 'disputed', 'mixed'\]/);
+  assert.match(validationSource, /: 'unverified'/);
   assert.match(source, /verificationStatus: 'not_checked'/);
 });
 
 test('user data is scoped under the authenticated user and bounded', () => {
   assert.match(source, /collection\('users'\)\.doc\(uid\)\.collection\(name\)/);
-  assert.match(source, /MAX_TITLE = 180/);
-  assert.match(source, /MAX_TEXT = 6000/);
-  assert.match(source, /MAX_URLS = 12/);
+  assert.match(validationSource, /MAX_TITLE = 180/);
+  assert.match(validationSource, /MAX_TEXT = 6000/);
+  assert.match(validationSource, /MAX_URLS = 12/);
+  assert.match(source, /Preserve the original creation time/);
 });
 
 test('all five systems expose bounded authenticated list operations', () => {
