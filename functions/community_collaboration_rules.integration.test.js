@@ -139,3 +139,39 @@ test('volunteer can add only their own identity and cannot change cause metadata
     volunteerIds: ['cause-owner', 'volunteer-a', 'volunteer-b'],
   }));
 });
+
+test('reads require authentication and collaboration spaces require membership', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('community_clubs/read-club', {
+    ownerId: 'read-owner',
+    name: 'Public club',
+    description: '',
+    category: 'Books',
+    visibility: 'public',
+    memberIds: ['read-owner'],
+    memberCount: 1,
+    createdAt: now,
+  });
+  await seed('collaboration_spaces/private-space', {
+    ownerId: 'space-owner',
+    title: 'Private space',
+    description: '',
+    memberIds: ['space-owner'],
+    createdAt: now,
+  });
+  await seed('volunteer_causes/closed-cause', {
+    ownerId: 'cause-owner',
+    title: 'Closed cause',
+    description: 'No longer accepting volunteers',
+    category: 'Community',
+    status: 'closed',
+    volunteerIds: ['cause-owner'],
+    createdAt: now,
+  });
+
+  await assertSucceeds(dbFor('signed-user').doc('community_clubs/read-club').get());
+  await assertFails(testEnv.unauthenticatedContext().firestore().doc('community_clubs/read-club').get());
+  await assertFails(dbFor('outsider').doc('collaboration_spaces/private-space').get());
+  await assertSucceeds(dbFor('space-owner').doc('collaboration_spaces/private-space').get());
+  await assertFails(dbFor('signed-user').doc('volunteer_causes/closed-cause').get());
+});
