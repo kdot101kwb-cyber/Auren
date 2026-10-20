@@ -22,6 +22,10 @@ permissions:
   security-events: write
   actions: read
 
+concurrency:
+  group: auren-codeql-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: CodeQL
