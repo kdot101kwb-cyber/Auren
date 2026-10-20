@@ -16,7 +16,7 @@ Working branch: `feat/everyday-life-services`.
 ## Initial implementation slices
 
 1. **Appointment & Booking (draft-only foundation):** Added a pure, UI-independent appointment draft model and lifecycle policy. It validates required fields, time ranges, past dates, bounded notes, and legal status transitions. It does not contact providers or claim that a booking is confirmed.
-2. **Home Essentials (inventory/restock foundation):** Added household item validation, threshold-based low-stock detection, and deterministic restock-list sorting. A local stock movement policy now supports restock/consumption adjustments while rejecting mismatched item IDs, invalid amounts, overflow, and stock going below zero. It does not persist inventory, place orders, or claim supplier availability.
+2. **Home Essentials (inventory/restock foundation):** Added household item validation, threshold-based low-stock detection, and deterministic restock-list sorting. A local stock movement policy supports restock/consumption adjustments while rejecting mismatched item IDs, invalid amounts, overflow, and stock going below zero. Ledger replay sorts movements by timestamp and then ID, rejects duplicate movement IDs, and validates the initial item even for an empty history. Same-timestamp ordering is explicitly covered by tests. This remains pure calculation: no inventory persistence, order placement, or supplier-availability claim.
 3. **Household maintenance planning (partial foundation):** Added maintenance-task validation, active-task ordering by due date, estimate totals, and guarded status transitions. This is a maintenance work log/planning model, not a reminder scheduler; it does not hire providers or persist records.
 4. **Trip itinerary planning (partial foundation):** Added `AurenTripStop` validation, deterministic stop ordering, remaining-stop filtering, and completion progress. It does not book anything or persist trips.
 5. **Errands / service-request tracking (audit result):** Do not add a generic second task system yet. `DailyPlanService` already tracks ordered, completable tasks; `RoutineService`, `CalendarService`, and `ReminderService` cover scheduled personal activity; `AurenTransportService` covers ride requests; marketplace/order flows cover commerce; and `AurenSupplierRequestsRepository` covers supplier-contact/RFQ drafts. A separate generic errands queue would overlap these without a verified distinct user journey.
@@ -25,8 +25,9 @@ Working branch: `feat/everyday-life-services`.
 
 - Source added: yes.
 - Automated tests authored: yes, in `test/services/everyday/appointment_draft_service_test.dart`, `test/services/everyday/household_inventory_service_test.dart`, `test/services/everyday/trip_itinerary_service_test.dart`, and `test/services/everyday/household_maintenance_service_test.dart`.
-- Tests executed in this environment: no; the GitHub connector cannot run Flutter locally.
-- Firestore persistence, owner authorization rules, UI, and provider adapters: not implemented in these slices.
+- Inventory test coverage now includes initial-ledger validation on empty history, deterministic ordering for movements with equal timestamps, and numeric overflow rejection.
+- Tests executed in this environment: no; the GitHub connector cannot run Flutter locally. Test source is not evidence that tests pass.
+- Firestore persistence, owner authorization rules, UI, and provider adapters: not implemented in these slices. No dedicated household-inventory Firestore path was identified in the initial rule search; do not add persistence until its schema and owner-only access rules are reviewed together.
 - Therefore these are **partial foundations**, not completed user-facing systems.
 
 ## Next audit targets
