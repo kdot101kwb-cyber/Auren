@@ -429,12 +429,12 @@ class _AurenDocumentStudioScreenState extends State<AurenDocumentStudioScreen> {
                               if (action == 'revisions') _viewRevisions(doc);
                               if (action == 'delete') _delete(doc);
                             },
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'edit', child: Text('تحرير')),
-                              PopupMenuItem(value: 'share', child: Text('مشاركة / تصدير النص')),
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(value: 'edit', child: Text('تحرير')),
+                              const PopupMenuItem(value: 'share', child: Text('مشاركة / تصدير النص')),
                               if (doc.revisions.isNotEmpty)
-                                PopupMenuItem(value: 'revisions', child: Text('عرض سجل التعديلات')),
-                              PopupMenuItem(value: 'delete', child: Text('حذف')),
+                                const PopupMenuItem(value: 'revisions', child: Text('عرض سجل التعديلات')),
+                              const PopupMenuItem(value: 'delete', child: Text('حذف')),
                             ],
                           ),
                         ),
