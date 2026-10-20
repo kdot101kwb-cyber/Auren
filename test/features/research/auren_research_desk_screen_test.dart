@@ -9,11 +9,20 @@ void main() {
     );
 
     expect(find.text('AUREN Research Desk'), findsOneWidget);
-    expect(find.text('Research Brief'), findsOneWidget);
-    expect(find.text('Compare Sources'), findsOneWidget);
-    expect(find.text('Claim Check'), findsOneWidget);
-    expect(find.text('Language Bridge'), findsOneWidget);
-    expect(find.text('Citation Planner'), findsOneWidget);
+    for (final tool in [
+      'Research Brief',
+      'Compare Sources',
+      'Claim Check',
+      'Language Bridge',
+      'Citation Planner',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(tool),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(tool), findsOneWidget);
+    }
     expect(find.byType(TextField), findsOneWidget);
   });
 
