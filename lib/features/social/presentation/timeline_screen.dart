@@ -670,6 +670,7 @@ class _PulseMediaPreviewState extends State<PulseMediaPreview> {
   bool _videoReady = false;
   bool _audioReady = false;
   String? _error;
+  int _initializationToken = 0;
 
   @override
   void initState() {
@@ -682,6 +683,8 @@ class _PulseMediaPreviewState extends State<PulseMediaPreview> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.mediaUrl != widget.mediaUrl ||
         oldWidget.mediaType != widget.mediaType) {
+      // Invalidate pending async initialization before disposing old players.
+      _initializationToken++;
       _videoController?.dispose();
       _audioPlayer?.dispose();
       _videoController = null;
@@ -694,21 +697,32 @@ class _PulseMediaPreviewState extends State<PulseMediaPreview> {
   }
 
   Future<void> _initializeMedia() async {
+    final token = ++_initializationToken;
     try {
       if (widget.mediaType == 'video') {
         final controller =
             VideoPlayerController.networkUrl(Uri.parse(widget.mediaUrl));
         _videoController = controller;
         await controller.initialize();
-        if (mounted) setState(() => _videoReady = true);
+        if (!mounted || token != _initializationToken) {
+          await controller.dispose();
+          return;
+        }
+        setState(() => _videoReady = true);
       } else if (widget.mediaType == 'audio') {
         final player = AudioPlayer();
         _audioPlayer = player;
         await player.setUrl(widget.mediaUrl);
-        if (mounted) setState(() => _audioReady = true);
+        if (!mounted || token != _initializationToken) {
+          await player.dispose();
+          return;
+        }
+        setState(() => _audioReady = true);
       }
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      if (mounted && token == _initializationToken) {
+        setState(() => _error = error.toString());
+      }
     }
   }
 
