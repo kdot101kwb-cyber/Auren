@@ -4,7 +4,7 @@
 
 This package is a typed, dependency-free aggregation model for health checks. The `auren_health_endpoint_adapter.dart` adapter maps the existing action-executor `/health` response into a snapshot, but it does not make network requests, read Firestore, or inspect secrets.
 
-The action-executor adapter validates the expected service identifier and maps endpoint status plus AI/worker configuration flags. A configured URL or credentials are configuration signals only; they do not prove that a provider or worker is live. Other callers may pass results from authorized checks into `AurenHealthSnapshot`. Each check should contain:
+The action-executor adapter validates the expected service identifier and maps endpoint status plus AI/worker configuration flags. `AurenActionExecutorHealthService` can fetch the configured endpoint using `AUREN_ACTION_EXECUTOR_HEALTH_URL`; it requires HTTPS, uses a five-second default timeout, rejects responses larger than 16 KiB, and sends no Firebase token. A configured URL or credentials are configuration signals only; they do not prove that a provider or worker is live. Other callers may pass results from authorized checks into `AurenHealthSnapshot`. Each check should contain:
 - a stable, non-empty identifier unique within the snapshot;
 - a short label suitable for a developer-facing status page;
 - a status from `AurenHealthStatus`;
@@ -42,4 +42,4 @@ The tests cover empty snapshots, all-healthy snapshots, status precedence, count
 
 ## Follow-up work
 
-A production-ready observability feature still needs an approved transport to fetch the endpoint, timeouts, freshness/staleness policy, bounded safe event logging, retention rules, and an authenticated developer-facing view. No live provider probes or production deployment are included in this foundation.
+A production-ready observability feature still needs freshness/staleness policy, bounded safe event logging, retention rules, and an authenticated developer-facing view. The health endpoint itself remains a lightweight public deployment probe; do not treat it as a privileged developer API. No live provider probes or production deployment are included in this foundation.
