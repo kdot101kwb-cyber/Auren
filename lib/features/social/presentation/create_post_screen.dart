@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/models/post.dart';
 import '../../../services/auth/auth_service.dart';
+import '../../../services/media/auren_media_service.dart';
 import '../../../services/social/post_repository.dart';
 
 class AurenCreatePostScreen extends StatefulWidget {
@@ -16,6 +18,20 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
   bool saving = false;
   String contentType = 'moment';
   String mediaType = 'image';
+  XFile? selectedMedia;
+
+  Future<void> pickMedia(String type) async {
+    final picker = ImagePicker();
+    final picked = type == 'video'
+        ? await picker.pickVideo(source: ImageSource.gallery)
+        : await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null || !mounted) return;
+    setState(() {
+      selectedMedia = picked;
+      mediaType = type;
+      mediaController.clear();
+    });
+  }
 
   final types = const {
     'moment': 'Moment',
@@ -27,12 +43,24 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
 
   Future<void> save() async {
     final text = textController.text.trim();
-    final mediaUrl = mediaController.text.trim();
+    var mediaUrl = mediaController.text.trim();
     final uid = FirebaseAurenAuthService().currentUserId;
     if ((text.isEmpty && mediaUrl.isEmpty) || uid == null || saving) return;
 
     setState(() => saving = true);
     try {
+      if (selectedMedia != null) {
+        final file = selectedMedia!;
+        final result = await AurenMediaService().uploadBytes(
+          uid: uid,
+          bytes: await file.readAsBytes(),
+          fileName: file.name,
+          contentType: file.mimeType ??
+              (mediaType == 'video' ? 'video/mp4' : 'image/jpeg'),
+          folder: 'pulse',
+        );
+        mediaUrl = result.downloadUrl;
+      }
       await PostRepository().create(
         AurenPost(
           id: 'post_${DateTime.now().microsecondsSinceEpoch}',
@@ -59,6 +87,12 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
         ),
       );
       if (mounted) Navigator.pop(context);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not publish post: $error')),
+        );
+      }
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -104,11 +138,37 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: saving ? null : () => pickMedia('image'),
+                  icon: const Icon(Icons.image_outlined),
+                  label: const Text('Choose image'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: saving ? null : () => pickMedia('video'),
+                  icon: const Icon(Icons.video_library_outlined),
+                  label: const Text('Choose video'),
+                ),
+              ],
+            ),
+            if (selectedMedia != null) ...[
+              const SizedBox(height: 8),
+              Text('Selected: ${selectedMedia!.name}'),
+            ],
+            const SizedBox(height: 12),
             TextField(
               controller: mediaController,
+              onChanged: (value) {
+                if (value.trim().isNotEmpty && selectedMedia != null) {
+                  setState(() => selectedMedia = null);
+                }
+              },
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(
-                labelText: 'Media URL (optional)',
+                labelText: 'Media URL (optional; also supports audio links)',
                 hintText: 'https://…',
                 prefixIcon: Icon(Icons.link),
                 border: OutlineInputBorder(),
