@@ -11,9 +11,9 @@
 
 1. **AUREN Communities — existing foundation; do not rebuild.** Existing service/screens support public communities, membership, posts, and polls. Review remaining rule/UX gaps in a later pass.
 2. **AUREN Clubs & Circles — foundational data layer added.** New `community_clubs` collection and Discover-linked `Clubs & Circles` screen support public clubs, creation, owner membership, join/leave, and category-based discovery. Private/invite-only circles, roles, and activity scheduling remain.
-3. **AUREN Collaboration Spaces — foundational data layer added.** New `collaboration_spaces` collection supports owner-created spaces and owner-managed member invitations. Shared documents, tasks, comments, and activity history remain.
+3. **AUREN Collaboration Spaces — foundational data layer added.** New `collaboration_spaces` collection plus a Discover-linked screen support owner-created spaces and owner-managed invitations by user UID. Shared documents, tasks, comments, and activity history remain.
 4. **AUREN Community Governance — partial reuse.** Reports are submitted through the existing `reports` collection, avoiding a duplicate reporting pipeline. A moderator queue, case status transitions, sanctions, appeals, and audit history remain unimplemented.
-5. **AUREN Volunteer & Causes — foundational data layer added.** New `volunteer_causes` collection supports open causes, categories, and volunteer opt-in. Capacity management, organizer review, shifts, project tasks, and impact tracking remain.
+5. **AUREN Volunteer & Causes — foundational data layer added.** New `volunteer_causes` collection plus a Discover-linked directory screen support open causes and volunteer opt-in. Cause creation is currently service-supported but is not yet exposed in this first directory screen. Capacity management, organizer review, shifts, project tasks, and impact tracking remain.
 
 ## Changed files
 
@@ -29,4 +29,4 @@ The new service tests have been authored using the repository's existing `fake_c
 
 - Changes are isolated on `feat/community-collaboration-foundation`; no PR was merged and no production data was changed.
 - Before release, run `dart format`, `flutter analyze`, the focused test file, the full test suite, and Firestore emulator rules tests.
-- Complete the collaboration-space and volunteer-cause user flows after the service and security contract pass validation.
+- Add organizer-facing cause creation, then complete collaboration-space documents/tasks/comments and governance review workflows after the service and security contract pass validation.
