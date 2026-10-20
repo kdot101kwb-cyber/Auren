@@ -677,6 +677,22 @@ class _PulseMediaPreviewState extends State<PulseMediaPreview> {
     _initializeMedia();
   }
 
+  @override
+  void didUpdateWidget(covariant PulseMediaPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mediaUrl != widget.mediaUrl ||
+        oldWidget.mediaType != widget.mediaType) {
+      _videoController?.dispose();
+      _audioPlayer?.dispose();
+      _videoController = null;
+      _audioPlayer = null;
+      _videoReady = false;
+      _audioReady = false;
+      _error = null;
+      _initializeMedia();
+    }
+  }
+
   Future<void> _initializeMedia() async {
     try {
       if (widget.mediaType == 'video') {
