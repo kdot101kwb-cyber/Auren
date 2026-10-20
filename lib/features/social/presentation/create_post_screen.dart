@@ -62,6 +62,10 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
     try {
       if (selectedMedia != null) {
         final file = selectedMedia!;
+        final sizeBytes = await file.length();
+        if (sizeBytes > 25 * 1024 * 1024) {
+          throw ArgumentError('Media exceeds 25 MB MVP limit');
+        }
         final result = await AurenMediaService().uploadBytes(
           uid: uid,
           bytes: await file.readAsBytes(),
