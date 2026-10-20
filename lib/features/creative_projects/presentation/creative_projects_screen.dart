@@ -52,6 +52,7 @@ class _AurenCreativeProjectsScreenState extends State<AurenCreativeProjectsScree
                   addedAt: DateTime.parse(a['addedAt'] as String),
                   contentType: a['contentType'] as String?,
                   sizeBytes: a['sizeBytes'] as int?,
+                  checksum: a['checksum'] as String?,
                 ))
             .toList(),
         versions: (value['versions'] as List<dynamic>? ?? const [])
@@ -76,7 +77,7 @@ class _AurenCreativeProjectsScreenState extends State<AurenCreativeProjectsScree
         'assets': project.assets.map((a) => {
           'id': a.id, 'name': a.name, 'kind': a.kind.name, 'uri': a.uri,
           'addedAt': a.addedAt.toIso8601String(), 'contentType': a.contentType,
-          'sizeBytes': a.sizeBytes,
+          'sizeBytes': a.sizeBytes, 'checksum': a.checksum,
         }).toList(),
         'versions': project.versions.map((v) => {
           'number': v.number, 'summary': v.summary,
