@@ -86,7 +86,7 @@ class TopicWatchlistEngine {
     }
     final matches = <TopicWatchMatch>[];
     for (final item in items) {
-      final searchable = (item.title + ' ' + item.summary).substring(0, (item.title.length + item.summary.length + 1).clamp(0, 12000)).toLowerCase();
+      final searchable = (item.title + ' ' + item.summary).substring(0, (item.title.length + item.summary.length + 1).clamp(0, 12000).toInt()).toLowerCase();
       final hits = normalizedTopics.where((topic) => searchable.contains(topic.toLowerCase())).toList();
       if (hits.isNotEmpty) matches.add(TopicWatchMatch(item: item, matchedTopics: hits));
     }
