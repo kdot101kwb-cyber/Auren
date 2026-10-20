@@ -81,6 +81,14 @@ class _AurenInformationIntelligenceScreenState extends State<AurenInformationInt
   Future<void> _addTopic() async {
     final topic = _topicInput.text.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (topic.isEmpty) return;
+    if (topic.length > 80) {
+      setState(() => _error = 'الموضوع يجب ألا يتجاوز 80 حرفًا.');
+      return;
+    }
+    if (_topics.length >= 50) {
+      setState(() => _error = 'وصلت إلى الحد الأقصى: 50 موضوعًا.');
+      return;
+    }
     if (_topics.any((item) => item.toLowerCase() == topic.toLowerCase())) {
       setState(() => _error = 'الموضوع موجود بالفعل في قائمة المتابعة.');
       return;
@@ -122,6 +130,9 @@ class _AurenInformationIntelligenceScreenState extends State<AurenInformationInt
       final checked = dateText.isEmpty ? null : DateTime.tryParse(dateText);
       if (dateText.isNotEmpty && checked == null) {
         throw ArgumentError('اكتب التاريخ بصيغة YYYY-MM-DD.');
+      }
+      if (checked != null && checked.isAfter(DateTime.now().add(const Duration(days: 1)))) {
+        throw ArgumentError('تاريخ المراجعة لا يمكن أن يكون في المستقبل.');
       }
       final assessment = SourceFreshnessRadar.assess(
         lastCheckedAt: checked,
