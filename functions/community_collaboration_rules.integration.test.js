@@ -127,6 +127,15 @@ test('only the collaboration-space owner can add a member', async () => {
   await assertFails(dbFor('invitee').doc('collaboration_spaces/space-1').update({
     memberIds: ['space-owner', 'invitee', 'another-user'],
   }));
+
+  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    memberIds: ['space-owner', 'space-owner'],
+  }));
+
+  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    title: 'Hijacked title',
+    memberIds: ['space-owner', 'new-member'],
+  }));
 });
 
 test('volunteer can add only their own identity and cannot change cause metadata', async () => {
