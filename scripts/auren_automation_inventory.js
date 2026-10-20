@@ -6,8 +6,8 @@ function rel(root,file){return path.relative(root,file).split(path.sep).join('/'
 function inventory(root){
  const workflows=walk(path.join(root,'.github','workflows'),f=>/\.ya?ml$/i.test(f)).map(file=>{
   const s=fs.readFileSync(file,'utf8'),jobs=[...s.matchAll(/^\s{2}([A-Za-z0-9_-]+):\s*$/gm)].map(m=>m[1]).filter(n=>!['on','permissions','concurrency','env','defaults'].includes(n)),triggers=[];
-  const block=s.match(/^(?:on|['"]on['"]):\s*([\s\S]*?)(?=^[^\s#][^\n]*:\s*|\s*$)/m);
-  if(block){for(const m of block[1].matchAll(/^\s{2}([A-Za-z0-9_-]+):/gm))triggers.push(m[1]);if(!triggers.length&&block[1].trim())triggers.push(block[1].trim().split(/[\s#]/)[0]);}
+  const lines=s.split(/\r?\n/), onIndex=lines.findIndex(line=>/^(?:on|['"]on['"]):\s*$/.test(line));
+  if(onIndex>=0){for(let i=onIndex+1;i<lines.length;i++){const line=lines[i];if(line.trim()&&!/^\s/.test(line)&&!/^\s*#/.test(line))break;const match=line.match(/^\s{2}([A-Za-z0-9_-]+):/);if(match)triggers.push(match[1]);}}
   const deployCommands=[];s.split(/\r?\n/).forEach((line,i)=>{if(!/\bfirebase\s+deploy\b/.test(line))return;const p=line.trim().match(/--project(?:=|\s+)([A-Za-z0-9._-]+)/);deployCommands.push({line:i+1,safety:!p?'missing-explicit-project':(/^auren-staging$/.test(p[1])?'explicit-project':'non-staging-target')});});
   return {path:rel(root,file),triggers:[...new Set(triggers)],jobs:[...new Set(jobs)],permissionsDeclared:/^permissions:/m.test(s),concurrencyDeclared:/^concurrency:/m.test(s),deployCommands};
  });
