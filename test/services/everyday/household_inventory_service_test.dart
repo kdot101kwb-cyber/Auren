@@ -31,4 +31,39 @@ void main() {
     ]);
     expect(result.map((e) => e.name).toList(), ['Bread', 'Zaatar']);
   });
+
+  test('restock and consumption return updated immutable items', () {
+    final original = item('rice', 'Rice', 2, 1);
+    final restocked = AurenHouseholdStockMovement(
+      id: 'm1', itemId: 'rice', type: AurenStockMovementType.restock,
+      amount: 3, occurredAt: DateTime(2026, 10, 20),
+    ).applyTo(original);
+    expect(restocked.quantity, 5);
+    expect(original.quantity, 2);
+
+    final consumed = AurenHouseholdStockMovement(
+      id: 'm2', itemId: 'rice', type: AurenStockMovementType.consume,
+      amount: 1.5, occurredAt: DateTime(2026, 10, 21),
+    ).applyTo(restocked);
+    expect(consumed.quantity, 3.5);
+  });
+
+  test('rejects invalid movements, mismatched items, and consuming too much', () {
+    AurenHouseholdStockMovement movement({
+      String id = 'm1',
+      String itemId = 'rice',
+      double amount = 1,
+      AurenStockMovementType type = AurenStockMovementType.consume,
+    }) => AurenHouseholdStockMovement(
+      id: id, itemId: itemId, type: type, amount: amount,
+      occurredAt: DateTime(2026, 10, 20),
+    );
+
+    expect(movement(amount: 0).validate(), isNotNull);
+    expect(movement(amount: double.infinity).validate(), isNotNull);
+    expect(() => movement(itemId: 'other').applyTo(item('rice', 'Rice', 2, 1)),
+      throwsArgumentError);
+    expect(() => movement(amount: 3).applyTo(item('rice', 'Rice', 2, 1)),
+      throwsStateError);
+  });
 }
