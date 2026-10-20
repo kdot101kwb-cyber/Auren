@@ -74,9 +74,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('أبني شيئًا لم يوجد'));
+    final buildChoice = find.text('أبني شيئًا لم يوجد');
+    await tester.ensureVisible(buildChoice);
+    await tester.tap(buildChoice);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('ارجع خطوة'));
+
+    final backButton = find.text('ارجع خطوة');
+    await tester.ensureVisible(backButton);
+    await tester.tap(backButton);
     await tester.pumpAndSettle();
 
     await tester.pumpWidget(const SizedBox.shrink());
