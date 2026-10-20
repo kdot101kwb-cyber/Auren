@@ -15,14 +15,14 @@
 ## Initial non-duplication decisions
 
 1. **AUREN Studio:** treat the existing Creator Studio as the starting point; improve workflow orchestration only where the repository proves a gap.
-2. **AUREN Document Studio:** no dedicated editor was confirmed in the initial repository search. This branch now adds a local-only editor with title/body editing, search, delete, and revision snapshots; cloud sync and export remain out of scope.
+2. **AUREN Document Studio:** no dedicated editor was confirmed in the initial repository search. This branch now adds a local-only editor with title/body editing, search, delete, revision snapshots, and text sharing through the platform share sheet; cloud sync and rich-format export remain out of scope.
 3. **AUREN Visual Creator:** this branch now adds a small native canvas editor for text and shape layers, visibility, selection from the layer list, and local save/load. It does not claim image import, PNG export, or AI generation.
 4. **AUREN Audio Workshop:** recording/playback/FFT dependencies exist, but an integrated user-facing recording/edit/export workflow still needs verification.
 5. **AUREN Creative Projects:** this branch now adds a local project board for title, description, status, and revision notes, backed by the project domain model. Asset upload, collaboration, and cloud sync remain out of scope.
 
 ## Implemented in this branch so far
 
-- `lib/features/document_studio/presentation/document_studio_screen.dart`: local document drafts, search, editing, delete, and revision history.
+- `lib/features/document_studio/presentation/document_studio_screen.dart`: local document drafts, search, editing, delete, revision history, and share-sheet text export.
 - `lib/features/creative_projects/presentation/creative_projects_screen.dart`: local project planning/status board and revision notes.
 - `lib/features/visual_creator/presentation/visual_creator_screen.dart`: native text/shape canvas and local design save/load.
 - `lib/features/home/presentation/more_screen.dart`: navigation entries for the three new screens.
