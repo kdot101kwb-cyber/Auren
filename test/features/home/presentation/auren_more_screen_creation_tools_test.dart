@@ -7,26 +7,20 @@ void main() {
     testWidgets('exposes the distinct creation tools without replacing existing studio', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: AurenMoreScreen()));
 
-      final scrollable = find.byType(Scrollable).first;
-      for (final title in [
-        'AUREN Audio Workshop',
-        'AUREN Visual Creator',
-        'AUREN Creative Projects',
-        'AUREN Document Studio',
-      ]) {
-        await tester.scrollUntilVisible(
-          find.text(title),
-          300,
-          scrollable: scrollable,
-        );
-        expect(find.text(title), findsOneWidget);
+      expect(find.byType(ListView), findsOneWidget);
+      final list = find.byType(ListView).first;
+      for (var i = 0; i < 8; i++) {
+        await tester.drag(list, const Offset(0, -500));
+        await tester.pumpAndSettle();
       }
 
-      await tester.scrollUntilVisible(
-        find.text('Creator Studio'),
-        300,
-        scrollable: scrollable,
-      );
+      expect(find.text('AUREN Audio Workshop'), findsOneWidget);
+      expect(find.text('AUREN Visual Creator'), findsOneWidget);
+      expect(find.text('AUREN Creative Projects'), findsOneWidget);
+      expect(find.text('AUREN Document Studio'), findsOneWidget);
+
+      await tester.drag(list, const Offset(0, 500));
+      await tester.pumpAndSettle();
       expect(find.text('Creator Studio'), findsOneWidget);
     });
   });
