@@ -22,7 +22,7 @@ function stripYamlComment(line) {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i];
     if (quote === '"') {
-      if (ch === '\\\\') { i++; continue; }
+      if (ch === '\\') { i++; continue; }
       if (ch === '"') quote = null;
       continue;
     }
@@ -32,7 +32,7 @@ function stripYamlComment(line) {
       continue;
     }
     if (ch === '"' || ch === "'") { quote = ch; continue; }
-    if (ch === '#' && (i === 0 || /\\s/.test(line[i - 1]))) return line.slice(0, i).trimEnd();
+    if (ch === '#' && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i).trimEnd();
   }
   return line;
 }
