@@ -182,7 +182,7 @@ class _AurenLivingMomentUpdatesScreenState
                               Text(
                                 update.authorId == widget.ownerId
                                     ? 'Moment owner'
-                                    : 'Community update',
+                                    : 'Update author',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
                                 ),
