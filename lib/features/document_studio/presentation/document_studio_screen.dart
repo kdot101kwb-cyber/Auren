@@ -368,10 +368,12 @@ class _AurenDocumentStudioScreenState extends State<AurenDocumentStudioScreen> {
                           trailing: PopupMenuButton<String>(
                             onSelected: (action) {
                               if (action == 'edit') _edit(existing: doc);
+                              if (action == 'share') _export(doc);
                               if (action == 'delete') _delete(doc);
                             },
                             itemBuilder: (_) => const [
                               PopupMenuItem(value: 'edit', child: Text('تحرير')),
+                              PopupMenuItem(value: 'share', child: Text('مشاركة / تصدير النص')),
                               PopupMenuItem(value: 'delete', child: Text('حذف')),
                             ],
                           ),
