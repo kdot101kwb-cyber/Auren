@@ -105,6 +105,13 @@ class AurenMoreScreen extends StatelessWidget {
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSavedPulseScreen())),
         )),
         Card(child: ListTile(
+          leading: const Icon(Icons.graphic_eq_outlined),
+          title: const Text('AUREN Audio Workshop'),
+          subtitle: const Text('سجّل صوتك واستخدم التحليل الصوتي المحلي الموجود.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenAudioWorkshopScreen())),
+        )),
+        Card(child: ListTile(
           leading: const Icon(Icons.palette_outlined),
           title: const Text('AUREN Visual Creator'),
           subtitle: const Text('صمّم غلافاً أو منشوراً باستخدام النصوص والأشكال والطبقات.'),
