@@ -30,7 +30,8 @@ function parseWorkflow(file, source) {
       if(indent===2){const m=l.match(/^\s{2}([A-Za-z_][\w-]*)\s*:/);if(m)triggers.add(m[1]);}
     }
   }
-  const cron=[...source.matchAll(/\bcron\s*:\s*(['"])(.*?)\1/g)].map(m=>m[2].trim()).filter(Boolean);
+  const activeSource=lines.filter(l=>!l.trim().startsWith('#')).join('\n');
+  const cron=[...activeSource.matchAll(/\bcron\s*:\s*(['"])(.*?)\1/g)].map(m=>m[2].trim()).filter(Boolean);
   const explicitPermissions=/^permissions\s*:/m.test(source), concurrency=/^concurrency\s*:/m.test(source);
   const staging=/staging/i.test(`${file} ${name}`), deploys=[], findings=[];
   lines.forEach((line,i)=>{
