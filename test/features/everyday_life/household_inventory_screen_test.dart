@@ -66,11 +66,7 @@ void main() {
     await tester.tap(find.text('أضف أول عنصر'));
     await tester.pumpAndSettle();
 
-    final itemNameField = find.byWidgetPredicate(
-      (widget) =>
-          widget is TextFormField &&
-          widget.decoration?.labelText == 'اسم العنصر',
-    );
+    final itemNameField = find.byType(TextFormField).first;
     await tester.enterText(itemNameField, 'رز');
     await tester.tap(find.text('حفظ'));
     await tester.pumpAndSettle();
