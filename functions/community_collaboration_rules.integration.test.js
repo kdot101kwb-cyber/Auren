@@ -108,6 +108,21 @@ test('club member can join, but cannot remove another member or leave as owner',
     memberIds: ['private-owner', 'outsider'],
     memberCount: 2,
   }));
+
+  await seed('community_clubs/legacy-duplicate-members', {
+    ownerId: 'legacy-owner',
+    name: 'Legacy club',
+    description: '',
+    category: 'Books',
+    visibility: 'public',
+    memberIds: ['legacy-owner', 'legacy-member', 'legacy-member'],
+    memberCount: 3,
+    createdAt: now,
+  });
+  await assertFails(dbFor('new-member').doc('community_clubs/legacy-duplicate-members').update({
+    memberIds: ['legacy-owner', 'legacy-member', 'legacy-member', 'new-member'],
+    memberCount: 4,
+  }));
 });
 
 test('only the collaboration-space owner can add a member', async () => {
@@ -161,6 +176,19 @@ test('volunteer can add only their own identity and cannot change cause metadata
   await assertFails(dbFor('volunteer-b').doc('volunteer_causes/cause-1').update({
     title: 'Hijacked cause',
     volunteerIds: ['cause-owner', 'volunteer-a', 'volunteer-b'],
+  }));
+
+  await seed('volunteer_causes/legacy-duplicate-volunteers', {
+    ownerId: 'legacy-cause-owner',
+    title: 'Legacy cause',
+    description: 'Existing legacy record',
+    category: 'Community',
+    status: 'open',
+    volunteerIds: ['legacy-cause-owner', 'legacy-volunteer', 'legacy-volunteer'],
+    createdAt: now,
+  });
+  await assertFails(dbFor('new-volunteer').doc('volunteer_causes/legacy-duplicate-volunteers').update({
+    volunteerIds: ['legacy-cause-owner', 'legacy-volunteer', 'legacy-volunteer', 'new-volunteer'],
   }));
 });
 
