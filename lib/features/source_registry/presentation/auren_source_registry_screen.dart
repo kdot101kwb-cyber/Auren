@@ -68,76 +68,10 @@ class _AurenSourceRegistryScreenState extends State<AurenSourceRegistryScreen> {
   }
 
   Future<void> _addSource() async {
-    final titleController = TextEditingController();
-    final urlController = TextEditingController();
     final result = await showDialog<_RegisteredSource>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('إضافة مصدر'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                autofocus: true,
-                maxLength: 160,
-                decoration: const InputDecoration(
-                  labelText: 'اسم المصدر أو عنوان الصفحة',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: urlController,
-                keyboardType: TextInputType.url,
-                maxLength: 2048,
-                decoration: const InputDecoration(
-                  labelText: 'رابط المصدر',
-                  hintText: 'https://example.com/report',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'يُحفظ الرابط كما أدخلته. إضافته هنا لا تعني أنه موثوق أو تم التحقق منه.',
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final title = titleController.text.trim();
-              final rawUrl = urlController.text.trim();
-              final uri = Uri.tryParse(rawUrl);
-              final validUrl = uri != null &&
-                  (uri.scheme == 'https' || uri.scheme == 'http') &&
-                  uri.host.isNotEmpty;
-              if (title.isEmpty || !validUrl) return;
-              final now = DateTime.now().toUtc().toIso8601String();
-              Navigator.pop(
-                dialogContext,
-                _RegisteredSource(
-                  id: now,
-                  title: title,
-                  url: uri.toString(),
-                  status: _SourceStatus.needsReview,
-                  createdAt: now,
-                ),
-              );
-            },
-            child: const Text('حفظ المصدر'),
-          ),
-        ],
-      ),
+      builder: (_) => const _AddSourceDialog(),
     );
-    titleController.dispose();
-    urlController.dispose();
     if (result == null || !mounted) return;
     setState(() {
       _sources.insert(0, result);
@@ -384,6 +318,111 @@ class _RegisteredSource {
         orElse: () => _SourceStatus.needsReview,
       ),
       createdAt: json['createdAt'] as String? ?? '',
+    );
+  }
+}
+
+
+class _AddSourceDialog extends StatefulWidget {
+  const _AddSourceDialog();
+
+  @override
+  State<_AddSourceDialog> createState() => _AddSourceDialogState();
+}
+
+class _AddSourceDialogState extends State<_AddSourceDialog> {
+  final _titleController = TextEditingController();
+  final _urlController = TextEditingController();
+  String? _validationError;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final title = _titleController.text.trim();
+    final rawUrl = _urlController.text.trim();
+    final uri = Uri.tryParse(rawUrl);
+    final validUrl = uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+    if (title.isEmpty || !validUrl) {
+      setState(() {
+        _validationError = title.isEmpty
+            ? 'أدخل اسم المصدر أولاً.'
+            : 'أدخل رابطاً صحيحاً يبدأ بـ http:// أو https://.';
+      });
+      return;
+    }
+
+    final now = DateTime.now().toUtc().toIso8601String();
+    Navigator.pop(
+      context,
+      _RegisteredSource(
+        id: now,
+        title: title,
+        url: uri.toString(),
+        status: _SourceStatus.needsReview,
+        createdAt: now,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('إضافة مصدر'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _titleController,
+              autofocus: true,
+              maxLength: 160,
+              decoration: const InputDecoration(
+                labelText: 'اسم المصدر أو عنوان الصفحة',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _urlController,
+              keyboardType: TextInputType.url,
+              maxLength: 2048,
+              decoration: const InputDecoration(
+                labelText: 'رابط المصدر',
+                hintText: 'https://example.com/report',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            if (_validationError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _validationError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+            const SizedBox(height: 8),
+            const Text(
+              'يُحفظ الرابط كما أدخلته. إضافته هنا لا تعني أنه موثوق أو تم التحقق منه.',
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: const Text('حفظ المصدر'),
+        ),
+      ],
     );
   }
 }
