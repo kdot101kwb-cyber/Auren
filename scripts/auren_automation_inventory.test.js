@@ -70,8 +70,8 @@ test('detects aliased scheduled exports and multiline deploy commands', () => {
     'name: Deploy', 'on:', '  workflow_dispatch:', 'jobs:', '  deploy:', '    steps:',
     '      - name: Deploy staging',
     '        run: |',
-    '          firebase deploy',
-    '            --project auren-staging'
+    '          set -eu',
+    '          npx --yes firebase-tools@15.34.0 deploy --only firestore:rules --project auren-staging --non-interactive'
   ].join('\n'));
   const result = inventory(root);
   assert.ok(result.scheduledFunctions.some(item => item.name === 'cleanupTask'));
