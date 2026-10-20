@@ -186,9 +186,11 @@ class _AurenCreatePostScreenState extends State<AurenCreatePostScreen> {
                 DropdownMenuItem(value: 'video', child: Text('Video')),
                 DropdownMenuItem(value: 'audio', child: Text('Audio')),
               ],
-              onChanged: (value) {
-                if (value != null) setState(() => mediaType = value);
-              },
+              onChanged: selectedMedia != null
+                  ? null
+                  : (value) {
+                      if (value != null) setState(() => mediaType = value);
+                    },
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
