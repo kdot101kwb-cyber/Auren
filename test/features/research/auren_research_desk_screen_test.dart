@@ -4,6 +4,11 @@ import 'package:auren/features/research/presentation/auren_research_desk_screen.
 
 void main() {
   testWidgets('Research Desk exposes the five focused research tools', (tester) async {
+    tester.view.physicalSize = const Size(1200, 5000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       const MaterialApp(home: AurenResearchDeskScreen()),
     );
@@ -17,11 +22,6 @@ void main() {
       'Language Bridge',
       'Citation Planner',
     ]) {
-      await tester.scrollUntilVisible(
-        find.text(tool),
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
       expect(find.text(tool), findsOneWidget);
     }
   });
