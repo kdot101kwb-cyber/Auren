@@ -9,7 +9,19 @@ function inventory(root){
   const s=fs.readFileSync(file,'utf8'),jobs=[...s.matchAll(/^\s{2}([A-Za-z0-9_-]+):\s*$/gm)].map(m=>m[1]).filter(n=>!['on','permissions','concurrency','env','defaults'].includes(n)),triggers=[];
   const lines=s.split(/\r?\n/), onIndex=lines.findIndex(line=>/^(?:on|['"]on['"]):\s*$/.test(line));
   if(onIndex>=0){for(let i=onIndex+1;i<lines.length;i++){const line=lines[i];if(line.trim()&&!/^\s/.test(line)&&!/^\s*#/.test(line))break;const match=line.match(/^\s{2}([A-Za-z0-9_-]+):/);if(match)triggers.push(match[1]);}}
-  const deployCommands=[];const workflowLines=s.split(/\r?\n/);for(let i=0;i<workflowLines.length;i++){if(!/\bfirebase\s+deploy\b/.test(workflowLines[i]))continue;let command=workflowLines[i],j=i+1;while(j<workflowLines.length&&/^\s+/.test(workflowLines[j])&&!/^\s+-\s/.test(workflowLines[j])&&!/^\s*[A-Za-z_-]+:\s*/.test(workflowLines[j])&&j<=i+20){command+=' '+workflowLines[j].trim();j++;}const p=command.match(/--project(?:=|\s+)([A-Za-z0-9._-]+)/);deployCommands.push({line:i+1,safety:!p?'missing-explicit-project':(/^auren-staging$/.test(p[1])?'explicit-project':'non-staging-target')});}
+  const deployCommands=[];const workflowLines=s.split(/\r?\n/);
+  for(let i=0;i<workflowLines.length;i++){
+   const line=workflowLines[i],runMatch=line.match(/^(\s*)run:\s*(.*)$/);
+   if(!runMatch)continue;
+   const indent=runMatch[1].length;let command=runMatch[2].trim();
+   if(command==='|'||command==='>'||command==='|-'||command==='|+'||command==='>-'||command==='>+'){
+    command='';let j=i+1;
+    while(j<workflowLines.length){const next=workflowLines[j];if(next.trim()&&(/^\s*$/.test(next)||next.match(/^\s*/)[0].length>indent)){command+=' '+next.trim();j++;}else break;}
+   }
+   if(!/(?:\bfirebase\s+deploy\b|\bfirebase-tools(?:@[^\s]+)?\s+deploy\b)/.test(command))continue;
+   const p=command.match(/--project(?:=|\s+)([A-Za-z0-9._-]+)/);
+   deployCommands.push({line:i+1,safety:!p?'missing-explicit-project':(/^auren-staging$/.test(p[1])?'explicit-project':'non-staging-target')});
+  }
   return {path:rel(root,file),triggers:[...new Set(triggers)],jobs:[...new Set(jobs)],permissionsDeclared:/^permissions:/m.test(s),concurrencyDeclared:/^concurrency:/m.test(s),deployCommands};
  });
  const scheduledFunctions=walk(path.join(root,'functions'),f=>f.endsWith('.js')&&!f.endsWith('.test.js')).flatMap(file=>{
