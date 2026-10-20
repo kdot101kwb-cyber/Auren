@@ -180,9 +180,14 @@ class _AurenCreativeProjectsScreenState extends State<AurenCreativeProjectsScree
     if (project != null &&
         (project.title != updatedTitle || project.description != updatedDescription || project.status != status)) {
       final latest = versions.isEmpty ? 0 : versions.map((v) => v.number).reduce((a, b) => a > b ? a : b);
+      final changedFields = <String>[
+        if (project.title != updatedTitle) 'الاسم',
+        if (project.description != updatedDescription) 'الخطة',
+        if (project.status != status) 'الحالة',
+      ];
       versions.add(CreativeProjectVersion(
         number: latest + 1,
-        summary: 'Updated project details',
+        summary: 'تعديل: ${changedFields.join('، ')}',
         createdAt: now,
       ));
     }
