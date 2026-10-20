@@ -35,10 +35,10 @@ The overall status is intentionally conservative:
 Run the focused tests with:
 
 ```sh
-flutter test test/core/observability/auren_health_snapshot_test.dart
+flutter test test/core/observability/auren_health_snapshot_test.dart test/core/observability/auren_health_endpoint_adapter_test.dart test/core/observability/auren_action_executor_health_service_test.dart
 ```
 
-The tests cover empty snapshots, all-healthy snapshots, status precedence, counts, invalid input, duplicate IDs, and list immutability.
+The tests cover snapshot aggregation and immutability, expected service identity, missing configuration, endpoint failure precedence, HTTPS-only configuration, non-2xx responses, malformed and oversized payloads, and safe handling of unexpected response formats.
 
 ## Follow-up work
 
