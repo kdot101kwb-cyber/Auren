@@ -68,68 +68,10 @@ class _AurenKnowledgeNotebookScreenState
   }
 
   Future<void> _addEntry() async {
-    final titleController = TextEditingController();
-    final bodyController = TextEditingController();
     final result = await showDialog<_NotebookEntry>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('ملاحظة جديدة'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                autofocus: true,
-                maxLength: 100,
-                decoration: const InputDecoration(
-                  labelText: 'عنوان الملاحظة',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: bodyController,
-                minLines: 3,
-                maxLines: 7,
-                maxLength: 5000,
-                decoration: const InputDecoration(
-                  labelText: 'الفكرة أو المعلومة أو سؤال البحث',
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final title = titleController.text.trim();
-              final body = bodyController.text.trim();
-              if (title.isEmpty || body.isEmpty) return;
-              final now = DateTime.now().toUtc().toIso8601String();
-              Navigator.pop(
-                dialogContext,
-                _NotebookEntry(
-                  id: now,
-                  title: title,
-                  body: body,
-                  updatedAt: now,
-                ),
-              );
-            },
-            child: const Text('حفظ الملاحظة'),
-          ),
-        ],
-      ),
+      builder: (_) => const _NotebookEntryDialog(),
     );
-    titleController.dispose();
-    bodyController.dispose();
     if (result == null || !mounted) return;
     setState(() {
       _entries.insert(0, result);
@@ -269,6 +211,87 @@ class _NotebookEntry {
       title: json['title'] as String? ?? 'ملاحظة بدون عنوان',
       body: json['body'] as String? ?? '',
       updatedAt: json['updatedAt'] as String? ?? '',
+    );
+  }
+}
+
+
+class _NotebookEntryDialog extends StatefulWidget {
+  const _NotebookEntryDialog();
+
+  @override
+  State<_NotebookEntryDialog> createState() => _NotebookEntryDialogState();
+}
+
+class _NotebookEntryDialogState extends State<_NotebookEntryDialog> {
+  final _titleController = TextEditingController();
+  final _bodyController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final title = _titleController.text.trim();
+    final body = _bodyController.text.trim();
+    if (title.isEmpty || body.isEmpty) return;
+    final now = DateTime.now().toUtc().toIso8601String();
+    Navigator.pop(
+      context,
+      _NotebookEntry(
+        id: now,
+        title: title,
+        body: body,
+        updatedAt: now,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('ملاحظة جديدة'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _titleController,
+              autofocus: true,
+              maxLength: 100,
+              decoration: const InputDecoration(
+                labelText: 'عنوان الملاحظة',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _bodyController,
+              minLines: 3,
+              maxLines: 7,
+              maxLength: 5000,
+              decoration: const InputDecoration(
+                labelText: 'الفكرة أو المعلومة أو سؤال البحث',
+                alignLabelWithHint: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: const Text('حفظ الملاحظة'),
+        ),
+      ],
     );
   }
 }
