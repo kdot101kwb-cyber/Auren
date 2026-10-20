@@ -25,7 +25,7 @@ void main() {
     await tester.tap(find.text('تسجيل حركة'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('finance-entry-amount')), '250');
-    await tester.enterText(find.widgetWithText(TextFormField, 'التصنيف (مثلاً: طعام)'), 'طعام');
+    await tester.enterText(find.byType(TextFormField).at(1), 'طعام');
     await tester.tap(find.text('حفظ الحركة'));
     await tester.pumpAndSettle();
 
@@ -41,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('دخل'));
     await tester.enterText(find.byKey(const Key('finance-entry-amount')), '1000');
-    await tester.enterText(find.widgetWithText(TextFormField, 'التصنيف (مثلاً: طعام)'), 'راتب');
+    await tester.enterText(find.byType(TextFormField).at(1), 'راتب');
     await tester.tap(find.text('حفظ الحركة'));
     await tester.pumpAndSettle();
 
@@ -56,7 +56,7 @@ void main() {
     await tester.tap(find.text('تسجيل حركة'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('finance-entry-amount')), '0');
-    await tester.enterText(find.widgetWithText(TextFormField, 'التصنيف (مثلاً: طعام)'), 'طعام');
+    await tester.enterText(find.byType(TextFormField).at(1), 'طعام');
     await tester.tap(find.text('حفظ الحركة'));
     await tester.pumpAndSettle();
 
