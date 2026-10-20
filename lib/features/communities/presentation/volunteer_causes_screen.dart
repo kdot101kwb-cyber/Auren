@@ -144,7 +144,7 @@ class _AurenVolunteerCausesScreenState
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final cause = causes[index];
-              final joined = cause.volunteerIds.contains(_service.uid);
+              final joined = cause.volunteerIds.contains(_service.currentUid);
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.volunteer_activism_outlined),
@@ -157,7 +157,7 @@ class _AurenVolunteerCausesScreenState
                         cause.description,
                   ),
                   isThreeLine: true,
-                  trailing: cause.ownerId == _service.uid
+                  trailing: cause.ownerId == _service.currentUid
                       ? const Chip(label: Text('مبادرتك'))
                       : FilledButton.tonal(
                           onPressed: joined ? null : () => _volunteer(cause),
