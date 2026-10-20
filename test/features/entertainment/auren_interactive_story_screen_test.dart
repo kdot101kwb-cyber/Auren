@@ -46,6 +46,28 @@ void main() {
 
     expect(find.text('البوابة التي لا تظهر مرتين'), findsOneWidget);
   });
+  testWidgets('back returns to the previous story decision', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenInteractiveStoryScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    final buildChoice = find.text('أبني شيئًا لم يوجد');
+    await tester.ensureVisible(buildChoice);
+    await tester.tap(buildChoice);
+    await tester.pumpAndSettle();
+
+    expect(find.text('ورشة الاحتمالات'), findsWidgets);
+    final backButton = find.text('ارجع خطوة');
+    await tester.ensureVisible(backButton);
+    await tester.tap(backButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('البوابة التي لا تظهر مرتين'), findsOneWidget);
+    expect(find.text('أثر اختياراتك'), findsNothing);
+    expect(find.text('ورشة الاحتمالات'), findsNothing);
+  });
+
   testWidgets('shows the route trail as choices are made', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: AurenInteractiveStoryScreen()),
