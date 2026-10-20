@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../information/presentation/auren_information_intelligence_screen.dart';
 
 class AurenCultureNewsScreen extends StatelessWidget {
   const AurenCultureNewsScreen({super.key});
@@ -37,6 +38,19 @@ class AurenCultureNewsScreen extends StatelessWidget {
               subtitle: const Text('اطلب من AUREN ملخصًا شخصيًا للأخبار والثقافة والمعرفة.'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _ask(context, 'أنشئ لي موجزًا الآن عن أهم الأخبار والثقافة والمعرفة التي تستحق اهتمامي اليوم، مع مصادر وسبب اختيار كل موضوع.'),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.manage_search_outlined)),
+              title: const Text('أدوات المعلومات الذكية'),
+              subtitle: const Text('تصدير الاستشهادات، متابعة المواضيع، مراجعة حداثة المصادر، تجهيز حزم دون اتصال، ومقارنة نسخ المعرفة.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenInformationIntelligenceScreen()),
+              ),
             ),
           ),
           const SizedBox(height: 14),
