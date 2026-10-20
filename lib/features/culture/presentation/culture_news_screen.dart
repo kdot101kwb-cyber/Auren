@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
+import 'auren_live_news_screen.dart';
+import '../../research/presentation/auren_research_desk_screen.dart';
 
 class AurenCultureNewsScreen extends StatelessWidget {
   const AurenCultureNewsScreen({super.key});
@@ -37,6 +39,32 @@ class AurenCultureNewsScreen extends StatelessWidget {
               subtitle: const Text('اطلب من AUREN ملخصًا شخصيًا للأخبار والثقافة والمعرفة.'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _ask(context, 'أنشئ لي موجزًا الآن عن أهم الأخبار والثقافة والمعرفة التي تستحق اهتمامي اليوم، مع مصادر وسبب اختيار كل موضوع.'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.dynamic_feed_outlined)),
+              title: const Text('AUREN Live News'),
+              subtitle: const Text('عناوين وروابط أخبار مباشرة من مصادر خارجية.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenLiveNewsScreen()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.manage_search_outlined)),
+              title: const Text('AUREN Research Desk'),
+              subtitle: const Text('بحث منظم، مقارنة مصادر، فحص ادعاءات، ومراجع.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AurenResearchDeskScreen()),
+              ),
             ),
           ),
           const SizedBox(height: 14),
