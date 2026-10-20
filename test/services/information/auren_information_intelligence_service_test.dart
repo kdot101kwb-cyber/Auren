@@ -127,7 +127,7 @@ void main() {
       );
       expect(
         () => OfflineKnowledgePackPlanner.build(
-          items: const [KnowledgePackItem(id: 'long-title', title: 'T' * 181)],
+          items: const [KnowledgePackItem(id: 'long-title', title: List<String>.filled(181, 'T').join())],
           now: now,
         ),
         throwsArgumentError,
