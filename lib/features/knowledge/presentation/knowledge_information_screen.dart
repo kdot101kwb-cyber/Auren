@@ -63,13 +63,15 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.kind != 'translation') _refresh();
+    });
   }
 
   @override
   void didUpdateWidget(covariant _KnowledgePane oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.kind != widget.kind) _refresh();
+    if (oldWidget.kind != widget.kind && widget.kind != 'translation') _refresh();
   }
 
   @override
@@ -104,7 +106,11 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
   }
 
   Future<void> _save() async {
-    setState(() { _saving = true; _error = null; });
+    setState(() {
+      _saving = true;
+      _error = null;
+      if (widget.kind == 'translation') _translationResult = '';
+    });
     try {
       switch (widget.kind) {
         case 'knowledge':
@@ -177,7 +183,9 @@ class _KnowledgePaneState extends State<_KnowledgePane> {
     } catch (error) {
       if (mounted) setState(() => _error = error is ArgumentError
           ? error.message.toString()
-          : 'تعذر الحفظ. راجع البيانات والاتصال ثم حاول مجدداً.');
+          : widget.kind == 'translation'
+              ? 'تعذرت الترجمة. تحقق من إعدادات مزود الذكاء الاصطناعي والاتصال ثم حاول مجدداً.'
+              : 'تعذر الحفظ. راجع البيانات والاتصال ثم حاول مجدداً.');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
