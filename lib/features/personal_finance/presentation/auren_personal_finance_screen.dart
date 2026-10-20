@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../data/personal_finance_local_store.dart';
 import '../domain/personal_finance_models.dart';
 
-/// First interactive Personal Finance prototype. Entries remain in memory only.
+/// Personal Finance screen with encrypted, device-local persistence.
 class AurenPersonalFinanceScreen extends StatefulWidget {
-  const AurenPersonalFinanceScreen({super.key});
+  const AurenPersonalFinanceScreen({super.key, this.store});
+
+  final PersonalFinanceStore? store;
 
   @override
   State<AurenPersonalFinanceScreen> createState() =>
@@ -13,9 +16,59 @@ class AurenPersonalFinanceScreen extends StatefulWidget {
 
 class _AurenPersonalFinanceScreenState extends State<AurenPersonalFinanceScreen> {
   final List<FinanceEntry> _entries = [];
+  late final PersonalFinanceStore _store =
+      widget.store ?? SecurePersonalFinanceStore();
   String _currency = 'SDG';
   double _budgetLimit = 100000;
   int _nextId = 1;
+  bool _loading = true;
+  String? _storageError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedData();
+  }
+
+  Future<void> _loadSavedData() async {
+    try {
+      final snapshot = await _store.load();
+      if (!mounted) return;
+      if (snapshot != null) {
+        setState(() {
+          _entries
+            ..clear()
+            ..addAll(snapshot.entries);
+          _currency = snapshot.currency;
+          _budgetLimit = snapshot.budgetLimit;
+          _nextId = _entries.length + 1;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _storageError =
+            'تعذّر قراءة البيانات المحفوظة. لن نكتب فوقها تلقائياً.');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _persist() async {
+    if (_loading || _storageError != null) return;
+    try {
+      await _store.save(PersonalFinanceSnapshot(
+        entries: List.unmodifiable(_entries),
+        currency: _currency,
+        budgetLimit: _budgetLimit,
+      ));
+    } catch (_) {
+      if (mounted) {
+        setState(() => _storageError =
+            'تعذّر حفظ البيانات على الجهاز. احتفظ بنسخة قبل إغلاق الشاشة.');
+      }
+    }
+  }
 
   PersonalFinanceSummary get _summary => PersonalFinanceSummary.calculate(
         entries: _entries,
@@ -41,6 +94,7 @@ class _AurenPersonalFinanceScreenState extends State<AurenPersonalFinanceScreen>
         note: result.note,
       ));
     });
+    await _persist();
   }
 
   Future<void> _editBudget() async {
@@ -79,6 +133,7 @@ class _AurenPersonalFinanceScreenState extends State<AurenPersonalFinanceScreen>
     controller.dispose();
     if (!mounted || value == null) return;
     setState(() => _budgetLimit = value);
+    await _persist();
   }
 
   @override
@@ -95,9 +150,13 @@ class _AurenPersonalFinanceScreenState extends State<AurenPersonalFinanceScreen>
         icon: const Icon(Icons.add),
         label: const Text('تسجيل حركة'),
       ),
-      body: ListView(
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         children: [
+          if (_storageError != null)
+            Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_storageError!, style: TextStyle(color: theme.colorScheme.error)))),
           Card(
             clipBehavior: Clip.antiAlias,
             child: Container(
@@ -196,7 +255,7 @@ class _AurenPersonalFinanceScreenState extends State<AurenPersonalFinanceScreen>
               ),
             )),
           const SizedBox(height: 12),
-          const Text('ملاحظة: هذه نسخة أولية؛ الحركات محفوظة داخل الشاشة فقط ولن تبقى بعد إغلاقها.', style: TextStyle(fontSize: 12)),
+          const Text('بياناتك محفوظة محلياً على هذا الجهاز ومشفّرة؛ لا يوجد ربط مصرفي أو تحويل أموال.', style: TextStyle(fontSize: 12)),
         ],
       ),
     );
