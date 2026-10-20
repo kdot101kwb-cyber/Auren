@@ -11,8 +11,11 @@ void main() {
 
     test('HTTP source URLs are required and credentials are rejected', () {
       expect(KnowledgeInformationService.validHttpUrl('https://example.org/path'), 'https://example.org/path');
+      expect(KnowledgeInformationService.validHttpUrl('http://example.org'), 'http://example.org');
       expect(() => KnowledgeInformationService.validHttpUrl('javascript:alert(1)'), throwsArgumentError);
+      expect(() => KnowledgeInformationService.validHttpUrl('ftp://example.org/file'), throwsArgumentError);
       expect(() => KnowledgeInformationService.validHttpUrl('https://user:pass@example.org'), throwsArgumentError);
+      expect(() => KnowledgeInformationService.validHttpUrl('https://'), throwsArgumentError);
     });
   });
 }
