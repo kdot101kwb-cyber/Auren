@@ -18,6 +18,7 @@ class _AurenHouseholdInventoryScreenState
   final _auth = FirebaseAurenAuthService();
   final _store = AurenHouseholdInventoryStore();
   List<AurenHouseholdItem> _items = [];
+  List<AurenHouseholdStockMovement> _movements = [];
   bool _loading = true;
   String? _error;
   bool _lowStockOnly = false;
@@ -36,8 +37,13 @@ class _AurenHouseholdInventoryScreenState
     }
     setState(() { _loading = true; _error = null; });
     try {
-      final items = await _store.loadItems(uid);
-      if (mounted) setState(() { _items = items; _loading = false; });
+      final results = await Future.wait([
+        _store.loadItems(uid),
+        _store.loadMovements(uid),
+      ]);
+      final items = results[0] as List<AurenHouseholdItem>;
+      final movements = results[1] as List<AurenHouseholdStockMovement>;
+      if (mounted) setState(() { _items = items; _movements = movements; _loading = false; });
     } catch (error) {
       if (mounted) setState(() { _error = 'تعذّر تحميل المخزون: $error'; _loading = false; });
     }
@@ -242,6 +248,21 @@ class _AurenHouseholdInventoryScreenState
                               const SizedBox(width: 8),
                               Expanded(child: OutlinedButton.icon(onPressed: item.quantity <= 0 ? null : () => _moveStock(item, AurenStockMovementType.consume), icon: const Icon(Icons.remove), label: const Text('استهلاك'))),
                             ])),
+                            Builder(builder: (context) {
+                              final history = _movements.where((movement) => movement.itemId == item.id).toList()
+                                ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+                              if (history.isEmpty) return const SizedBox.shrink();
+                              return ExpansionTile(
+                                title: Text('سجل الحركة (' + history.length.toString() + ')'),
+                                leading: const Icon(Icons.history),
+                                children: history.take(5).map((movement) => ListTile(
+                                  dense: true,
+                                  leading: Icon(movement.type == AurenStockMovementType.restock ? Icons.add_circle_outline : Icons.remove_circle_outline),
+                                  title: Text((movement.type == AurenStockMovementType.restock ? 'إضافة: ' : 'استهلاك: ') + movement.amount.toString() + ' ' + item.unit),
+                                  subtitle: Text([movement.occurredAt.toLocal().toString().split('.').first, if (movement.note.trim().isNotEmpty) movement.note.trim()].join(' • ')),
+                                )).toList(),
+                              );
+                            }),
                           ])),
                         )),
                       const SizedBox(height: 12),
