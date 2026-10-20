@@ -2,12 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../services/auth/auth_service.dart';
 import '../domain/auren_document.dart';
 
 /// Offline-first document drafts stored on this device, scoped to the signed-in
-/// AUREN user. This screen does not imply cloud sync or file export.
+/// AUREN user. Export uses the platform share sheet; drafts remain local.
 class AurenDocumentStudioScreen extends StatefulWidget {
   const AurenDocumentStudioScreen({super.key});
 
@@ -234,6 +235,23 @@ class _AurenDocumentStudioScreenState extends State<AurenDocumentStudioScreen> {
     }
   }
 
+  Future<void> _export(AurenDocument document) async {
+    final text = '${document.title}\n\n${document.body}';
+    try {
+      await SharePlus.instance.share(ShareParams(
+        title: document.title,
+        subject: document.title,
+        text: text,
+      ));
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر مشاركة المستند: $error')),
+        );
+      }
+    }
+  }
+
   Future<void> _delete(AurenDocument document) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -361,7 +379,7 @@ class _AurenDocumentStudioScreenState extends State<AurenDocumentStudioScreen> {
                       )),
                 const SizedBox(height: 12),
                 const Text(
-                  'ملاحظة: المسودات محفوظة على هذا الجهاز فقط حالياً؛ المزامنة السحابية والتصدير ليست مفعّلتين بعد.',
+                  'ملاحظة: المسودات محفوظة على هذا الجهاز فقط حالياً؛ المزامنة السحابية غير مفعّلة؛ يمكن مشاركة نص المستند عبر قائمة المشاركة في الجهاز.',
                   style: TextStyle(fontSize: 12),
                 ),
               ],
