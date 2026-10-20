@@ -102,3 +102,40 @@ class AurenMaintenancePlanner {
     return total;
   }
 }
+
+
+/// Prevents accidental reopening or skipping maintenance task states.
+class AurenMaintenanceLifecycle {
+  const AurenMaintenanceLifecycle._();
+
+  static bool canTransition(
+    AurenMaintenanceStatus from,
+    AurenMaintenanceStatus to,
+  ) {
+    if (from == to) return true;
+    switch (from) {
+      case AurenMaintenanceStatus.planned:
+        return to == AurenMaintenanceStatus.inProgress ||
+            to == AurenMaintenanceStatus.completed ||
+            to == AurenMaintenanceStatus.cancelled;
+      case AurenMaintenanceStatus.inProgress:
+        return to == AurenMaintenanceStatus.completed ||
+            to == AurenMaintenanceStatus.cancelled;
+      case AurenMaintenanceStatus.completed:
+      case AurenMaintenanceStatus.cancelled:
+        return false;
+    }
+  }
+
+  static AurenMaintenanceTask transition(
+    AurenMaintenanceTask task,
+    AurenMaintenanceStatus next,
+  ) {
+    final issue = task.validate();
+    if (issue != null) throw ArgumentError(issue);
+    if (!canTransition(task.status, next)) {
+      throw StateError('Invalid maintenance status transition: ${task.status.name} -> ${next.name}.');
+    }
+    return task.copyWith(status: next);
+  }
+}
