@@ -173,4 +173,30 @@ void main() {
     expect(saved.singleWhere((item) => item.id == 'soap').quantity, 4);
   });
 
+  testWidgets('shows a recoverable error for malformed local data without overwriting it',
+      (tester) async {
+    const storageKey = 'auren_household_inventory_v1_dXNlci1B';
+    const corruptedValue = '{not valid JSON';
+    SharedPreferences.setMockInitialValues({
+      storageKey: corruptedValue,
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AurenHouseholdInventoryScreen(
+          authService: _FakeAuthService('user-A'),
+          store: AurenHouseholdInventoryStore(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('تعذّر تحميل المخزون:'), findsOneWidget);
+    expect(find.text('إعادة المحاولة'), findsOneWidget);
+
+    final preferences = await SharedPreferences.getInstance();
+    expect(preferences.getString(storageKey), corruptedValue);
+    expect(find.text('لسه ما أضفت أي عنصر'), findsNothing);
+  });
+
 }
