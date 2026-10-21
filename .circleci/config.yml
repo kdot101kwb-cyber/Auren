@@ -190,8 +190,22 @@ jobs:
             status=${PIPESTATUS[0]}
             echo "firestore_action_rules_exit_code=${status}" >> firestore_action_rules.log
             exit ${status}
+      - run:
+          name: Run Firestore Education Rules emulator gate
+          command: |
+            set -e
+            if ! java -version >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y openjdk-21-jre-headless
+            fi
+            npx --yes firebase-tools emulators:exec --project auren-emulator --only firestore "node --test functions/education_rules.integration.test.js" 2>&1 | tee firestore_education_rules.log
+            status=${PIPESTATUS[0]}
+            echo "firestore_education_rules_exit_code=${status}" >> firestore_education_rules.log
+            exit ${status}
       - store_artifacts:
           path: functions/functions_test.log
+      - store_artifacts:
+          path: firestore_education_rules.log
       - store_artifacts:
           path: firestore_action_rules.log
 
