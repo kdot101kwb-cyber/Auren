@@ -25,6 +25,8 @@ void main() {
     test('market observations require traceable source and date metadata', () {
       final observation = AgriculturalMarketObservation(commodity: 'sorghum', market: 'sample market', price: 120, currency: 'SDG', unit: 'sack', observedAt: DateTime.utc(2026, 10, 20), sourceName: 'Cooperative bulletin', sourceReference: 'bulletin-2026-10-20');
       expect(service.validateMarketObservation(observation).observedAt, DateTime.utc(2026, 10, 20));
+      expect(observation.isStale(DateTime.utc(2026, 10, 21)), isFalse);
+      expect(observation.isStale(DateTime.utc(2026, 11, 1)), isTrue);
       expect(() => service.validateMarketObservation(AgriculturalMarketObservation(commodity: 'sorghum', market: 'sample market', price: 120, currency: 'SDG', unit: 'sack', observedAt: DateTime.utc(2026, 10, 20), sourceName: '', sourceReference: '')), throwsArgumentError);
       expect(() => service.validateMarketObservation(AgriculturalMarketObservation(commodity: 'sorghum', market: 'sample market', price: -1, currency: 'SDG', unit: 'sack', observedAt: DateTime.utc(2026, 10, 20), sourceName: 'source', sourceReference: 'ref')), throwsArgumentError);
     });
