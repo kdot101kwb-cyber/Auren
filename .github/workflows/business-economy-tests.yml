@@ -1,0 +1,33 @@
+name: AUREN Business & Economy Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/auren-business-economy-mvp]
+
+permissions:
+  contents: read
+
+jobs:
+  business-economy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Format business and economy sources
+        run: dart format lib/features/business_economy test/features/business_economy
+      - name: Test business and economy logic
+        run: flutter test test/features/business_economy/business_economy_logic_test.dart
+      - name: Test business and economy screens
+        run: flutter test test/features/business_economy/business_economy_screen_test.dart
+      - name: Analyze business and economy
+        run: flutter analyze lib/features/business_economy
