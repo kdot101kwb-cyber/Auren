@@ -12,7 +12,7 @@ void main() {
     expect(find.text('مكتبتك المحلية'), findsOneWidget);
     await tester.tap(find.text('أنشئ خطة بدون إنترنت'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Build a useful skill'), findsOneWidget);
+    expect(find.text('Build a useful skill • 30 دقيقة'), findsOneWidget);
     expect(find.text('Review previous learning'), findsOneWidget);
     expect(find.text('Check understanding'), findsOneWidget);
   });
