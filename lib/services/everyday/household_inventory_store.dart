@@ -148,8 +148,9 @@ class AurenHouseholdInventoryStore {
   void _validateDocumentVersion(Map<String, dynamic> data) {
     // Documents written before versioning are treated as legacy v1. Never
     // rewrite an explicitly newer or malformed version with this older client.
+    if (!data.containsKey('version')) return;
     final version = data['version'];
-    if (version != null && (version is! int || version != 1)) {
+    if (version is! int || version != 1) {
       throw FormatException('Unsupported household inventory version: $version.');
     }
   }
