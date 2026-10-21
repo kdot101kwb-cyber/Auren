@@ -39,6 +39,32 @@ class AgricultureMarketPrice {
     required this.observedAt,
   });
 
+  DateTime? get parsedObservedAt {
+    final value = observedAt?.trim();
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
+  }
+
+  /// Price rows without a usable observation date cannot be called current.
+  bool isStaleAt(DateTime now, {Duration maxAge = const Duration(days: 7)}) {
+    final date = parsedObservedAt;
+    if (date == null) return true;
+    final age = now.toUtc().difference(date.toUtc());
+    return age.isNegative || age > maxAge;
+  }
+
+  /// A source label alone is not enough to trace a market observation.
+  bool get hasTraceableSource =>
+      source.trim().isNotEmpty &&
+      sourceUrl.trim().isNotEmpty &&
+      Uri.tryParse(sourceUrl.trim())?.hasScheme == true;
+
+  String freshnessLabelAt(DateTime now, {Duration maxAge = const Duration(days: 7)}) {
+    if (!hasTraceableSource) return 'مصدر السعر غير مكتمل';
+    if (parsedObservedAt == null) return 'تاريخ الرصد غير متوفر';
+    return isStaleAt(now, maxAge: maxAge) ? 'بيانات قديمة — تحقق محلياً' : 'تاريخ الرصد ضمن آخر 7 أيام';
+  }
+
   factory AgricultureMarketPrice.fromMap(Map<String, dynamic> d) {
     return AgricultureMarketPrice(
       id: (d['id'] ?? '').toString(),
