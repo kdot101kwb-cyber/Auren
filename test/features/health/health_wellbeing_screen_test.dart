@@ -77,4 +77,38 @@ void main() {
     );
     expect(find.textContaining('Ask provider'), findsOneWidget);
   });
+
+  testWidgets('local record deletion requires confirmation and clears only the active account', (tester) async {
+    final secure = MemorySecureStore();
+    final store = AurenWellbeingLocalStore(storage: secure);
+    await store.save('test-user', const AurenWellbeingData(
+      journal: [AurenWellnessEntry(id: 'j1', day: '2026-10-21', mood: 4, note: 'Private note')],
+    ));
+    await store.save('other-user', const AurenWellbeingData(
+      journal: [AurenWellnessEntry(id: 'j2', day: '2026-10-21', mood: 3, note: 'Other account')],
+    ));
+
+    await tester.pumpWidget(MaterialApp(
+      home: AurenHealthWellbeingScreen(userId: 'test-user', store: store),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Private note'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('حذف سجلات العافية المحلية'));
+    await tester.pumpAndSettle();
+    expect(find.text('حذف سجلات العافية المحلية؟'), findsOneWidget);
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+    expect((await store.load('test-user')).journal, hasLength(1));
+
+    await tester.tap(find.byTooltip('حذف سجلات العافية المحلية'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حذف محلياً'));
+    await tester.pumpAndSettle();
+
+    expect((await store.load('test-user')).journal, isEmpty);
+    expect((await store.load('other-user')).journal.single.note, 'Other account');
+    expect(find.textContaining('Private note'), findsNothing);
+  });
+
 }
