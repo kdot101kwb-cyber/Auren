@@ -49,14 +49,15 @@ class AurenTripItineraryPlanner {
     final valid = stops.where((stop) => stop.validate() == null).toList();
     valid.sort((a, b) {
       if (a.plannedAt == null && b.plannedAt == null) {
-        return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
       }
       if (a.plannedAt == null) return 1;
       if (b.plannedAt == null) return -1;
       final byTime = a.plannedAt!.compareTo(b.plannedAt!);
-      return byTime != 0
-          ? byTime
-          : a.title.toLowerCase().compareTo(b.title.toLowerCase());
+      if (byTime != 0) return byTime;
+      final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+      return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
     });
     return List.unmodifiable(valid);
   }
