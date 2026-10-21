@@ -16,7 +16,18 @@ void main() {
 
     expect(find.text('AUREN Business & Economy'), findsOneWidget);
     expect(find.text('Local Business OS'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Business Discovery'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Business Discovery'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Buyer–Seller Matching'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Buyer–Seller Matching'), findsOneWidget);
 
     await tester.scrollUntilVisible(
