@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auren/services/learning_skills/auren_offline_learning.dart';
 
@@ -27,13 +28,21 @@ void main() {
     await expectLater(offline.noteFor(' '), throwsArgumentError);
   });
   test('bounds note count to keep local storage predictable', () async {
-    final offline = AurenOfflineLearning(MemoryStore());
-    for (var i = 0; i < AurenOfflineLearning.maxNotes; i++) {
-      await offline.saveLesson(AurenOfflineLesson(id: 'lesson-$i', title: 'Lesson $i', content: 'text'));
-      await offline.saveNote('lesson-$i', 'note');
+    final store = MemoryStore();
+    // Seed the two bounded stores independently: the lesson limit is also 100,
+    // so adding an extra lesson through saveLesson would fail before note limits
+    // can be exercised.
+    final lessons = <String, Object?>{};
+    final notes = <String, String>{};
+    for (var i = 0; i <= AurenOfflineLearning.maxNotes; i++) {
+      final id = 'lesson-$i';
+      lessons[id] = AurenOfflineLesson(id: id, title: 'Lesson $i', content: 'text').toJson();
+      if (i < AurenOfflineLearning.maxNotes) notes[id] = 'note';
     }
-    await offline.saveLesson(const AurenOfflineLesson(id: 'lesson-over-limit', title: 'Overflow', content: 'text'));
-    await expectLater(offline.saveNote('lesson-over-limit', 'note'), throwsStateError);
+    store.values['auren_offline_learning_lessons_v1'] = jsonEncode(lessons);
+    store.values['auren_offline_learning_notes_v1'] = jsonEncode(notes);
+    final offline = AurenOfflineLearning(store);
+    await expectLater(offline.saveNote('lesson-${AurenOfflineLearning.maxNotes}', 'note'), throwsStateError);
   });
 
   test('rejects notes and progress for lessons outside the offline library', () async {
