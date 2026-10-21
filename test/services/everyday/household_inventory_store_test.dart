@@ -185,4 +185,23 @@ void main() {
     await expectLater(orphanStore.loadItems('user-A'), throwsFormatException);
   });
 
+
+  test('rejects missing or null document collections without overwriting data', () async {
+    const key = 'auren_household_inventory_v1_dXNlci1B';
+    final malformedDocuments = <String>[
+      jsonEncode({'version': 1, 'movements': []}),
+      jsonEncode({'version': 1, 'items': null, 'movements': []}),
+      jsonEncode({'version': 1, 'items': [], 'movements': null}),
+    ];
+
+    for (final raw in malformedDocuments) {
+      SharedPreferences.setMockInitialValues({key: raw});
+      final store = AurenHouseholdInventoryStore();
+      await expectLater(store.loadItems('user-A'), throwsFormatException);
+      await expectLater(store.saveItem('user-A', item()), throwsFormatException);
+      final preferences = await SharedPreferences.getInstance();
+      expect(preferences.getString(key), raw);
+    }
+  });
+
 }
