@@ -13,7 +13,7 @@ The repository tree search did not identify a clearly named Master Blueprint fil
 5. Farm Resource Planner: offline quantity/availability planning and shortage calculation, without invented unit costs.
 
 ## Integration and limitations
-The existing agriculture repository remains the Firestore/AI integration point. The new domain helper is dependency-free so draft planning can work offline and callers can add persistence incrementally. These records are not yet wired into a new screen or Firestore collections in this commit; no migration, rules deployment, external feed, paid API or release was performed.
+The existing agriculture repository remains the Firestore/AI integration point. The new domain helper is dependency-free so draft planning can work offline and callers can add persistence incrementally. The crop checklist and resource-shortage calculator are now exposed from the existing AgriTech quick-tools panel. Livestock animal records, feed plans, and pending schedules already have a separate dashboard/service. The new domain records are not yet persisted as their own Firestore collections, and farm-operation tasks still need a dedicated persisted task workflow. No migration, rules deployment, external feed, paid API or release was performed.
 
 ## Validation
-Run flutter test test/services/agriculture/farm_management_service_test.dart and flutter analyze. Results must be recorded from CI after the branch push; no test success is claimed by this document.
+Tests added: `test/services/agriculture/farm_management_service_test.dart`. CI checks for the latest UI integration commit were still pending at the time of this note; do not treat them as passed until the actual run completes. No local Flutter test run is claimed.
