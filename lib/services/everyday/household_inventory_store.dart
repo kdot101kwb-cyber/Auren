@@ -29,53 +29,23 @@ class AurenHouseholdInventoryStore {
 
   Future<List<AurenHouseholdItem>> loadItems(String uid) async {
     final prefs = await _preferences;
-    final raw = prefs.getString(_keyFor(uid));
-    if (raw == null || raw.isEmpty) return <AurenHouseholdItem>[];
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Stored household inventory has an invalid shape.');
-    }
-    final rawItems = decoded['items'];
-    if (rawItems is! List) {
-      throw const FormatException('Stored household inventory has no item list.');
-    }
-    final items = rawItems.map((entry) {
-      if (entry is! Map) {
-        throw const FormatException('Stored household item is invalid.');
-      }
-      final item = _itemFromJson(Map<String, dynamic>.from(entry));
-      final issue = item.validate();
-      if (issue != null) throw FormatException('Stored household item is invalid: $issue');
-      return item;
-    }).toList();
+    final data = _readDocument(prefs.getString(_keyFor(uid)));
+    final items = _itemsFromDocument(data);
+    final movements = _movementsFromDocument(data);
+    _validateDocument(items, movements);
     return List.unmodifiable(items);
   }
 
   Future<List<AurenHouseholdStockMovement>> loadMovements(String uid) async {
     final prefs = await _preferences;
-    final raw = prefs.getString(_keyFor(uid));
-    if (raw == null || raw.isEmpty) return <AurenHouseholdStockMovement>[];
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Stored household inventory has an invalid shape.');
-    }
-    final rawMovements = decoded['movements'] ?? const <dynamic>[];
-    if (rawMovements is! List) {
-      throw const FormatException('Stored household movement history is invalid.');
-    }
-    final movements = rawMovements.map((entry) {
-      if (entry is! Map) {
-        throw const FormatException('Stored household movement is invalid.');
-      }
-      final movement = _movementFromJson(Map<String, dynamic>.from(entry));
-      final issue = movement.validate();
-      if (issue != null) throw FormatException('Stored movement is invalid: $issue');
-      return movement;
-    }).toList()
-      ..sort((a, b) {
-        final time = a.occurredAt.compareTo(b.occurredAt);
-        return time != 0 ? time : a.id.compareTo(b.id);
-      });
+    final data = _readDocument(prefs.getString(_keyFor(uid)));
+    final items = _itemsFromDocument(data);
+    final movements = _movementsFromDocument(data);
+    _validateDocument(items, movements);
+    movements.sort((a, b) {
+      final time = a.occurredAt.compareTo(b.occurredAt);
+      return time != 0 ? time : a.id.compareTo(b.id);
+    });
     return List.unmodifiable(movements);
   }
 
@@ -88,6 +58,8 @@ class AurenHouseholdInventoryStore {
     final key = _keyFor(uid);
     final data = _readDocument(prefs.getString(key));
     final items = _itemsFromDocument(data);
+    final movements = _movementsFromDocument(data);
+    _validateDocument(items, movements);
     final index = items.indexWhere((existing) => existing.id == item.id);
     if (index == -1) {
       items.add(item);
@@ -102,7 +74,7 @@ class AurenHouseholdInventoryStore {
         notes: item.notes,
       );
     }
-    await _writeDocument(prefs, key, items, _movementsFromDocument(data));
+    await _writeDocument(prefs, key, items, movements);
   }
 
   /// Applies a stock movement and stores the resulting item plus audit entry
@@ -119,6 +91,7 @@ class AurenHouseholdInventoryStore {
     final data = _readDocument(prefs.getString(key));
     final items = _itemsFromDocument(data);
     final movements = _movementsFromDocument(data);
+    _validateDocument(items, movements);
     if (movements.any((existing) => existing.id == movement.id)) {
       throw ArgumentError('Duplicate stock movement id: ${movement.id}.');
     }
@@ -170,6 +143,30 @@ class AurenHouseholdInventoryStore {
       if (issue != null) throw FormatException('Stored movement is invalid: $issue');
       return movement;
     }).toList();
+  }
+
+  void _validateDocument(
+    List<AurenHouseholdItem> items,
+    List<AurenHouseholdStockMovement> movements,
+  ) {
+    final itemIds = <String>{};
+    for (final item in items) {
+      if (!itemIds.add(item.id)) {
+        throw FormatException('Duplicate household item id: ${item.id}.');
+      }
+    }
+
+    final movementIds = <String>{};
+    for (final movement in movements) {
+      if (!movementIds.add(movement.id)) {
+        throw FormatException('Duplicate stock movement id: ${movement.id}.');
+      }
+      if (!itemIds.contains(movement.itemId)) {
+        throw FormatException(
+          'Stock movement ${movement.id} references a missing item.',
+        );
+      }
+    }
   }
 
   Future<void> _writeDocument(
