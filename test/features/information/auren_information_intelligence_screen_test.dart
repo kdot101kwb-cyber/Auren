@@ -30,7 +30,9 @@ void main() {
     await tester.enterText(find.byWidgetPredicate(
       (widget) => widget is TextField && widget.decoration?.labelText == 'عنوان المصدر *',
     ), 'Test source');
-    await tester.tap(find.text('إنشاء الاستشهاد'));
+    final generateButton = find.text('إنشاء الاستشهاد');
+    await tester.ensureVisible(generateButton);
+    await tester.tap(generateButton);
     await tester.pumpAndSettle();
 
     expect(find.text('الاستشهاد الناتج'), findsOneWidget);
