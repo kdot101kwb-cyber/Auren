@@ -98,3 +98,6 @@ The following exact changed-file lists were compared after the initial review:
 - **PR #251 vs PR #248:** no path comparison has yet been completed in this pass. Their descriptions indicate related user journeys, but do not label them duplicates until exact changed paths and dependencies are compared.
 
 The audit document was updated to record these findings; no application source files, PR states, or deployment targets were changed.
+
+
+- **PR #248 vs PR #251:** the exact changed-path lists share only `lib/features/culture/presentation/culture_news_screen.dart`. PR #248 adds Research Desk, Knowledge Hub navigation, Language Bridge, Knowledge Notebook, Source Registry, and Live News presentation/tests; PR #251 adds a distinct Firestore-backed Knowledge & Information service, validation/rules, evidence/source provenance, and reading queue. This is **not a full duplicate**, but the shared Culture & News integration must be reconciled before both are merged. PR #248 targets `main`; PR #251 currently targets `feat/entertainment-universe-v1-plan`, so its base/dependency should be reviewed explicitly. Do not retarget or merge automatically.
