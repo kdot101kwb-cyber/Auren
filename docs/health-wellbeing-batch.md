@@ -32,4 +32,7 @@ Base: `main` at `c9167bcc83bbfc6fe18bcc94878f6b4580344507`.
 
 ## Verification status
 
-CI must be read from the exact workflow run/commit before claiming completion. Initial run `39647500601` failed: two tests exposed the reminder-time regular expression using an incorrect escape sequence. Subsequent commits fixed the regex and repaired a malformed method boundary found by formatter diagnostics. The latest run for the current head is [39647898176](https://github.com/kdot101kwb-cyber/Auren/actions/runs/39647898176), which was still in progress at the time of this update. Do not treat this batch as verified until that run (and any subsequent fixes) passes.
+- The initial workflow run `39647500601` failed on the reminder-time regular expression; a subsequent run `39647898176` failed because of a malformed method boundary. Both issues were corrected on this branch.
+- The current branch head at verification, `92a2b7a2afb3d2e8138f3fc4fdd5090b3b5ac072`, passed workflow run [39648583473](https://github.com/kdot101kwb-cyber/Auren/actions/runs/39648583473).
+- Confirmed successful steps: dependency resolution, formatting changed wellbeing sources, local wellbeing domain/storage tests, wellbeing screen tests, and targeted static analysis.
+- This is targeted verification, not a full-repository Flutter test/build. The separate repository-wide audit of other health-data upload paths remains outstanding.
