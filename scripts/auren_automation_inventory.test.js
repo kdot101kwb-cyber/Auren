@@ -82,7 +82,7 @@ test('detects scheduled exports in a common module.exports object literal', () =
     'const cleanupTask = onSchedule({ schedule: "every day" }, async () => {});',
     'const refreshTask = onSchedule({ schedule: "every 12 hours" }, async () => {});',
     'module.exports = { cleanupTask, refresh: refreshTask };'
-  ].join('\\n'));
+  ].join('\n'));
   const names = inventory(root).scheduledFunctions.map(item => item.name).sort();
   assert.deepEqual(names, ['cleanupTask', 'refresh']);
 });
