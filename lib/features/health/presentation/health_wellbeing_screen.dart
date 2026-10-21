@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../services/health/auren_wellbeing_local_store.dart';
 
@@ -26,7 +27,7 @@ class _AurenHealthWellbeingScreenState extends State<AurenHealthWellbeingScreen>
   bool _loading = true;
   String? _error;
 
-  String? get _uid => widget.userId;
+  String? get _uid => widget.userId ?? FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void initState() {
@@ -197,7 +198,7 @@ class _AurenHealthWellbeingScreenState extends State<AurenHealthWellbeingScreen>
     final updated = _data.fitnessGoals.map((g) => g.id == goal.id
       ? AurenFitnessGoal(
           id: g.id, title: g.title, weeklyTargetMinutes: g.weeklyTargetMinutes,
-          completedMinutes: (g.completedMinutes + minutes).clamp(0, 10080),
+          completedMinutes: (g.completedMinutes + minutes).clamp(0, 10080).toInt(),
           active: g.active,
         ) : g).toList();
     await _save(AurenWellbeingData(
