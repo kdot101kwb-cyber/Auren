@@ -104,6 +104,12 @@ test('club member can join, but cannot remove another member or leave as owner',
     memberCount: 99,
   }));
 
+  await assertFails(dbFor('member-a').doc('community_clubs/club-membership').update({
+    name: 'Renamed during leave',
+    memberIds: ['club-owner', 'member-b'],
+    memberCount: 2,
+  }));
+
   await assertSucceeds(dbFor('member-a').doc('community_clubs/club-membership').update({
     memberIds: ['club-owner', 'member-b'],
     memberCount: 2,
