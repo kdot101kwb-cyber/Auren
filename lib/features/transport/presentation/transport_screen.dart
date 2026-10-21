@@ -349,7 +349,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('موعد الصيانة YYYY-MM-DD (اختياري)', _maintenanceDue),
               Align(alignment: Alignment.centerRight, child: FilledButton(
                 onPressed: _loadingRecords ? null : _saveVehicle, child: const Text('إضافة مركبة'))),
-              _savedItems(_vehicles, 'لا توجد مركبات مسجلة.', _vehicleSummary,
+              _savedItems(_vehicles, 'لا توجد مركبات مسجلة.', _vehicleSummary),
             ],
           ),
           _section(

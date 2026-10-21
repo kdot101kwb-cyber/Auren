@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:auren/features/transport/domain/mobility_models.dart';
 import 'package:auren/features/transport/presentation/transport_screen.dart';
 
 void main() {
@@ -29,9 +30,9 @@ void main() {
     await tester.pumpAndSettle();
 
     Future<void> enter(String label, String value) async {
-      final field = field(label);
-      await tester.ensureVisible(field);
-      await tester.enterText(field, value);
+      final targetField = field(label);
+      await tester.ensureVisible(targetField);
+      await tester.enterText(targetField, value);
     }
 
     await enter('المسافة لكل رحلة (كم)', '100');
