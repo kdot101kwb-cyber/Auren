@@ -40,7 +40,7 @@ class FarmResourceNeed {
   const FarmResourceNeed({required this.name, required this.quantity, required this.unit, this.availableQuantity = 0});
   final String name, unit;
   final double quantity, availableQuantity;
-  double get shortage => (quantity - availableQuantity).clamp(0, double.infinity);
+  double get shortage => (quantity - availableQuantity).clamp(0, double.infinity).toDouble();
 }
 class FarmResourcePlan {
   const FarmResourcePlan(this.needs);
