@@ -26,4 +26,4 @@
 - `functions/package.json`: removed execution of the emulator-dependent community memory integration test from ordinary `npm test`; retained its syntax check. The emulator suite still runs it via `test:emulator`.
 - `.circleci/config.yml`: added `functions/community_memory_rules.integration.test.js` to the Firestore emulator gate alongside Action and Community Collaboration integration tests.
 - Latest checked CircleCI status for commit `50fe949721f8fc0170acd744010eb543b95e7188`: Functions tests, Action Executor tests, Plugin Worker tests, and Plugin Worker image checks reported success; Flutter CI was still pending at the time of this check.
-- This status check does not include emulator logs, so the success of the dedicated Firestore gate is not independently confirmed here. Do not claim all tests passed until the run and its logs are inspected.
+- The successful `functions_tests` CircleCI job includes the configured Firestore emulator gate, so that job passed for the checked commit. The raw emulator log and individual test counts were not retrieved; Flutter CI was still pending, so this is not an all-project green result.
