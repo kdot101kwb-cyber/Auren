@@ -15,6 +15,9 @@ const LOCK_MS = 6 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
 async function claimMusicTask() {
+  // Do not consume retry budget while deployment configuration is unavailable.
+  if (!String(REPLICATE_API_TOKEN.value() || '').trim() ||
+      !String(REPLICATE_MUSIC_MODEL_VERSION.value() || '').trim()) return null;
   const snap = await db.collectionGroup('productionTasks')
     .where('type', '==', 'music_generation')
     .where('status', 'in', ['generation', 'provider_pending', 'processing', 'waiting_provider'])
@@ -26,10 +29,11 @@ async function claimMusicTask() {
       const d = fresh.data() || {};
       if (!['generation','provider_pending','processing','waiting_provider'].includes(String(d.status || ''))) return false;
       if (Number(d.providerLockUntilMs || 0) > Date.now()) return false;
-      if (Number(d.generationAttempts || 0) >= MAX_ATTEMPTS) return false;
+      const stage = String(d.status || '');
+      if (stage !== 'waiting_provider' && Number(d.generationAttempts || 0) >= MAX_ATTEMPTS) return false;
       tx.update(item.ref, {
         status:'provider_pending',
-        generationAttempts:admin.firestore.FieldValue.increment(1),
+        ...(stage === 'waiting_provider' ? {} : {generationAttempts:admin.firestore.FieldValue.increment(1)}),
         providerLockUntilMs:Date.now()+LOCK_MS,
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       });
