@@ -7,6 +7,7 @@ on:
       - feat/everyday-life-services-core-v2
     paths:
       - "lib/features/everyday_life/**"
+      - "lib/features/discover/presentation/discover_screen.dart"
       - "lib/services/everyday/**"
       - "test/features/everyday_life/**"
       - "test/services/everyday/**"
@@ -58,5 +59,7 @@ jobs:
           flutter test test/services/everyday/home_utility_reading_store_test.dart
       - name: Test household inventory screen
         run: flutter test test/features/everyday_life/household_inventory_screen_test.dart
+      - name: Test everyday services hub screen
+        run: flutter test test/features/everyday_life/everyday_services_screen_test.dart
       - name: Analyze everyday-life implementation
-        run: flutter analyze lib/features/everyday_life lib/services/everyday
+        run: flutter analyze lib/features/everyday_life lib/features/discover/presentation/discover_screen.dart lib/services/everyday
