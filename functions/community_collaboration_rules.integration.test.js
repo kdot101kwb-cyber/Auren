@@ -94,6 +94,11 @@ test('club member can join, but cannot remove another member or leave as owner',
     memberCount: 1,
   }));
 
+  await assertSucceeds(dbFor('member-a').doc('community_clubs/club-membership').update({
+    memberIds: ['club-owner', 'member-b'],
+    memberCount: 2,
+  }));
+
   await seed('community_clubs/private-club', {
     ownerId: 'private-owner',
     name: 'Private group',
