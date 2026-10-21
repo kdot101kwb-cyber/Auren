@@ -86,3 +86,31 @@ test('bounds every user-controlled text field', () => {
   assert.equal(result.value.mood.length, LIMITS.mood);
   assert.equal(result.value.language.length, LIMITS.language);
 });
+
+test('rejects non-string prompt and metadata instead of coercing objects', () => {
+  for (const prompt of [{text: 'song'}, ['song'], 123, true]) {
+    const result = normalizeAurenMusicProductionRequest({prompt});
+    assert.equal(result.ok, false);
+    assert.match(result.message, /prompt must be a string/i);
+  }
+
+  for (const field of ['title', 'genre', 'mood', 'language']) {
+    const result = normalizeAurenMusicProductionRequest({
+      prompt: 'A new song',
+      [field]: {unexpected: 'object'},
+    });
+    assert.equal(result.ok, false);
+    assert.match(result.message, new RegExp(field + ' must be a string', 'i'));
+  }
+});
+
+test('rejects numeric strings and booleans for duration', () => {
+  for (const durationSeconds of ['30', true, {}, []]) {
+    const result = normalizeAurenMusicProductionRequest({
+      prompt: 'A new song',
+      durationSeconds,
+    });
+    assert.equal(result.ok, false);
+    assert.match(result.message, /finite number/i);
+  }
+});
