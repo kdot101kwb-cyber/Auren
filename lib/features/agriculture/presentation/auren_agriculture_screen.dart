@@ -150,6 +150,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
+            _toolButton(Icons.pets_outlined, 'سجل متابعة الحيوانات', _showLivestockCareLogTool),
             _toolButton(Icons.task_alt_outlined, 'مهام المزرعة', _showFarmOperationsTool),
             _toolButton(Icons.fact_check_outlined, 'إدارة حالة المهام', _manageFarmTasksTool),
             _toolButton(Icons.checklist_outlined, 'قائمة فحص المحصول', _showCropChecklistTool),
@@ -2293,6 +2294,48 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
   }
 
 
+  Future<void> _showLivestockCareLogTool() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.trim().isEmpty) {
+      await _showResult('سجل الثروة الحيوانية', 'سجّل الدخول لحفظ سجل المتابعة على حسابك.');
+      return;
+    }
+    final group = TextEditingController();
+    final observation = TextEditingController();
+    bool needsVet = false;
+    final input = await showDialog<(String, String, bool)>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, refreshDialog) => AlertDialog(
+          title: const Text('سجل متابعة الثروة الحيوانية'),
+          content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: group, decoration: const InputDecoration(labelText: 'نوع الحيوان / المجموعة')),
+            TextField(controller: observation, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'الملاحظة المرصودة')),
+            CheckboxListTile(contentPadding: EdgeInsets.zero, value: needsVet, onChanged: (value) => refreshDialog(() => needsVet = value ?? false), title: const Text('تحتاج مراجعة طبيب بيطري')),
+            const Text('هذا سجل ملاحظات فقط ولا يشخّص المرض أو يصف علاجاً.'),
+          ])),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+            FilledButton(onPressed: () {
+              if (group.text.trim().isEmpty || observation.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل مجموعة الحيوانات والملاحظة.')));
+                return;
+              }
+              Navigator.pop(dialogContext, (group.text.trim(), observation.text.trim(), needsVet));
+            }, child: const Text('حفظ السجل')),
+          ],
+        ),
+      ),
+    );
+    group.dispose(); observation.dispose();
+    if (!mounted || input == null) return;
+    try {
+      await _repo.saveLivestockCareLog(uid: uid, animalGroup: input.$1, observation: input.$2, observedAt: DateTime.now(), needsVeterinaryReview: input.$3);
+      await _showResult('سجل الثروة الحيوانية', input.$3 ? 'تم حفظ الملاحظة. يُرجى مراجعة طبيب بيطري.' : 'تم حفظ الملاحظة على حسابك.');
+    } catch (error) {
+      await _showResult('تعذر حفظ السجل', 'تحقق من الاتصال والصلاحيات ثم حاول مجدداً. التفاصيل: $error');
+    }
+  }
   Future<void> _manageFarmTasksTool() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || uid.trim().isEmpty) {
