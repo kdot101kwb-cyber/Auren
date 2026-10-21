@@ -200,8 +200,9 @@ class AurenHouseholdInventoryStore {
     'notes': item.notes,
   };
 
-  static AurenHouseholdItem _itemFromJson(Map<String, dynamic> json) =>
-      AurenHouseholdItem(
+  static AurenHouseholdItem _itemFromJson(Map<String, dynamic> json) {
+    try {
+      return AurenHouseholdItem(
         id: json['id'] as String,
         name: json['name'] as String,
         category: json['category'] as String,
@@ -210,6 +211,10 @@ class AurenHouseholdInventoryStore {
         unit: json['unit'] as String,
         notes: json['notes'] as String? ?? '',
       );
+    } on TypeError {
+      throw const FormatException('Stored household item has invalid field types.');
+    }
+  }
 
   static Map<String, dynamic> _movementToJson(
     AurenHouseholdStockMovement movement,
@@ -225,19 +230,23 @@ class AurenHouseholdInventoryStore {
   static AurenHouseholdStockMovement _movementFromJson(
     Map<String, dynamic> json,
   ) {
-    final typeName = json['type'] as String;
-    final type = switch (typeName) {
-      'restock' => AurenStockMovementType.restock,
-      'consume' => AurenStockMovementType.consume,
-      _ => throw const FormatException('Unknown stock movement type.'),
-    };
-    return AurenHouseholdStockMovement(
-      id: json['id'] as String,
-      itemId: json['itemId'] as String,
-      type: type,
-      amount: (json['amount'] as num).toDouble(),
-      note: json['note'] as String? ?? '',
-      occurredAt: DateTime.parse(json['occurredAt'] as String),
-    );
+    try {
+      final typeName = json['type'] as String;
+      final type = switch (typeName) {
+        'restock' => AurenStockMovementType.restock,
+        'consume' => AurenStockMovementType.consume,
+        _ => throw const FormatException('Unknown stock movement type.'),
+      };
+      return AurenHouseholdStockMovement(
+        id: json['id'] as String,
+        itemId: json['itemId'] as String,
+        type: type,
+        amount: (json['amount'] as num).toDouble(),
+        note: json['note'] as String? ?? '',
+        occurredAt: DateTime.parse(json['occurredAt'] as String),
+      );
+    } on TypeError {
+      throw const FormatException('Stored household movement has invalid field types.');
+    }
   }
 }
