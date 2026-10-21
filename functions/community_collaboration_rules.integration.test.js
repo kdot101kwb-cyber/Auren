@@ -115,6 +115,8 @@ test('club member can join, but cannot remove another member or leave as owner',
     memberCount: 2,
   }));
 
+  await assertFails(dbFor('outsider').doc('community_clubs/club-membership').delete());
+
   await seed('community_clubs/private-club', {
     ownerId: 'private-owner',
     name: 'Private group',
@@ -172,6 +174,8 @@ test('only the collaboration-space owner can add a member', async () => {
     title: 'Hijacked title',
     memberIds: ['space-owner', 'new-member'],
   }));
+
+  await assertFails(dbFor('invitee').doc('collaboration_spaces/space-1').delete());
 });
 
 test('volunteer can add only their own identity and cannot change cause metadata', async () => {
