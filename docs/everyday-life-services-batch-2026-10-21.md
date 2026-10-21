@@ -43,3 +43,10 @@ The canonical Master Blueprint markdown was not located in the repository or lib
 - Partial: appointment, maintenance, itinerary, and utility are service/store-level; dedicated screens/navigation for them remain future work. Household inventory remains the only user-facing screen in this slice.
 - Verified: GitHub Actions run `39559336881` completed successfully on 2026-10-21. All ten domain/storage test commands, the household inventory screen widget tests, and targeted analyze passed.
 - Not done: PR, merge, deployment, cloud sync, or external actions.
+
+## Follow-up UI integration — 2026-10-21
+
+- Added `lib/features/everyday_life/presentation/everyday_services_screen.dart`: authenticated local-only hub for appointment drafts, household maintenance tasks, itinerary stops, and utility meter readings. It uses the existing UID-scoped stores and makes no external bookings or service calls.
+- Added a Discover entry and route in `lib/features/discover/presentation/discover_screen.dart`.
+- Added `test/features/everyday_life/everyday_services_screen_test.dart` for signed-out access and service-area navigation.
+- Verification note: the source changes were committed to the working branch; automated Flutter results for this follow-up must be checked from the resulting GitHub Actions run before calling the UI batch verified.
