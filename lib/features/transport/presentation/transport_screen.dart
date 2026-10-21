@@ -18,6 +18,9 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   final _vehicleMake = TextEditingController();
   final _vehicleModel = TextEditingController();
   final _vehicleYear = TextEditingController();
+  final _vehicleRegistration = TextEditingController();
+  final _insuranceExpiry = TextEditingController();
+  final _maintenanceDue = TextEditingController();
   final _cargoRef = TextEditingController();
   final _cargoOrigin = TextEditingController();
   final _cargoDestination = TextEditingController();
@@ -43,7 +46,8 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   void dispose() {
     for (final controller in [
       _routeOperator, _routeName, _routeStops, _routeSource,
-      _vehicleMake, _vehicleModel, _vehicleYear,
+      _vehicleMake, _vehicleModel, _vehicleYear, _vehicleRegistration,
+      _insuranceExpiry, _maintenanceDue,
       _cargoRef, _cargoOrigin, _cargoDestination,
       _portName, _portCountry, _portSource,
       _distance, _trips, _consumption, _fuelPrice, _tolls,
@@ -81,13 +85,30 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       _message('أدخل سنة مركبة صحيحة.');
       return;
     }
-    final vehicle = VehicleRecord(make: _vehicleMake.text, model: _vehicleModel.text, year: year);
+    final insuranceText = _insuranceExpiry.text.trim();
+    final maintenanceText = _maintenanceDue.text.trim();
+    final insuranceDate = insuranceText.isEmpty ? null : DateTime.tryParse(insuranceText);
+    final maintenanceDate = maintenanceText.isEmpty ? null : DateTime.tryParse(maintenanceText);
+    if ((insuranceText.isNotEmpty && insuranceDate == null) ||
+        (maintenanceText.isNotEmpty && maintenanceDate == null)) {
+      _message('استخدم صيغة التاريخ YYYY-MM-DD.');
+      return;
+    }
+    final vehicle = VehicleRecord(
+      make: _vehicleMake.text,
+      model: _vehicleModel.text,
+      year: year,
+      registrationId: _vehicleRegistration.text.trim().isEmpty ? null : _vehicleRegistration.text.trim(),
+      insuranceExpiresAt: insuranceDate,
+      maintenanceDueAt: maintenanceDate,
+    );
     if (!vehicle.isValid) {
       _message('أدخل الشركة والطراز وسنة صالحة.');
       return;
     }
     setState(() => _vehicles.add(vehicle));
     _vehicleMake.clear(); _vehicleModel.clear(); _vehicleYear.clear();
+    _vehicleRegistration.clear(); _insuranceExpiry.clear(); _maintenanceDue.clear();
   }
 
   void _saveShipment() {
@@ -245,9 +266,12 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('الشركة / الصانع', _vehicleMake),
               _field('الطراز', _vehicleModel),
               _field('سنة الصنع', _vehicleYear, keyboard: TextInputType.number),
+              _field('رقم التسجيل (اختياري)', _vehicleRegistration),
+              _field('انتهاء التأمين YYYY-MM-DD (اختياري)', _insuranceExpiry),
+              _field('موعد الصيانة YYYY-MM-DD (اختياري)', _maintenanceDue),
               Align(alignment: Alignment.centerRight, child: FilledButton(
                 onPressed: _saveVehicle, child: const Text('إضافة مركبة'))),
-              _savedItems(_vehicles, 'لا توجد مركبات مسجلة.', (v) => '${v.year} ${v.make} ${v.model} • أضف الوثائق والصيانة في مرحلة لاحقة'),
+              _savedItems(_vehicles, 'لا توجد مركبات مسجلة.', (v) => '${v.year} ${v.make} ${v.model} • التسجيل: ${v.registrationId ?? 'غير مدخل'} • التأمين: ${v.insuranceExpiresAt?.toIso8601String().split('T').first ?? 'غير مدخل'} • الصيانة: ${v.maintenanceDueAt?.toIso8601String().split('T').first ?? 'غير مدخل'}'),
             ],
           ),
           _section(
