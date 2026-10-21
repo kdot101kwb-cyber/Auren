@@ -4,6 +4,7 @@ const {onSchedule} = require('firebase-functions/v2/scheduler');
 const {defineSecret, defineString} = require('firebase-functions/params');
 const admin = require('firebase-admin');
 const {submitAurenProviderJob, pollAurenProviderJob} = require('./provider_runtime');
+const {isMaterializedMusicOutput} = require('./music_output_validation');
 
 const REPLICATE_API_TOKEN = defineSecret('REPLICATE_API_TOKEN');
 const REPLICATE_MUSIC_MODEL_VERSION = defineString('REPLICATE_MUSIC_MODEL_VERSION', {
@@ -76,7 +77,7 @@ async function processMusicTask(ref) {
     });
     if (!polled.ok) throw new Error(polled.message || 'Music provider polling failed.');
     const state = String(polled.state || '').toLowerCase();
-    if (polled.output && (polled.output.url || polled.output.storagePath)) {
+    if (isMaterializedMusicOutput(polled.output)) {
       await ref.set({
         status:'output',
         output:polled.output,
@@ -126,7 +127,7 @@ async function processMusicTask(ref) {
     return;
   }
 
-  const output=result.result.output && (result.result.output.url || result.result.output.storagePath) ? result.result.output : null;
+  const output=isMaterializedMusicOutput(result.result.output) ? result.result.output : null;
   const unmaterializedExternalId = !output && result.result.output && result.result.output.externalId;
   await ref.set({
     status:output ? 'output' : 'processing',
