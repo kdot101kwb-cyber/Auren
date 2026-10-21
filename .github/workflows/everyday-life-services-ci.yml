@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/everyday-life-services
+      - feat/everyday-life-services-core-v2
   pull_request:
     branches:
       - main
@@ -26,29 +27,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
       - name: Show Flutter version
         run: flutter --version
-
       - name: Resolve dependencies
         run: flutter pub get
-
       - name: Test everyday-life domain and storage
         run: |
           flutter test test/services/everyday/appointment_draft_service_test.dart
+          flutter test test/services/everyday/appointment_draft_store_test.dart
           flutter test test/services/everyday/household_inventory_service_test.dart
           flutter test test/services/everyday/household_inventory_store_test.dart
-          flutter test test/services/everyday/trip_itinerary_service_test.dart
           flutter test test/services/everyday/household_maintenance_service_test.dart
-
+          flutter test test/services/everyday/household_maintenance_store_test.dart
+          flutter test test/services/everyday/trip_itinerary_service_test.dart
+          flutter test test/services/everyday/journey_itinerary_store_test.dart
+          flutter test test/services/everyday/home_utility_ledger_service_test.dart
+          flutter test test/services/everyday/home_utility_reading_store_test.dart
       - name: Test household inventory screen
         run: flutter test test/features/everyday_life/household_inventory_screen_test.dart
-
       - name: Analyze everyday-life implementation
         run: flutter analyze lib/features/everyday_life lib/services/everyday
