@@ -57,4 +57,63 @@ void main() {
       'مصدر السعر غير مكتمل',
     );
   });
+  test('normalized market rows share the seven-day freshness policy', () {
+    const row = AgricultureNormalizedLocalMarketPrice(
+      id: 'normalized-1',
+      iso3: 'SDN',
+      item: 'Sorghum',
+      nativePrice: 120,
+      currency: 'SDG',
+      unit: 'kg',
+      priceLocalPerTonne: null,
+      usdPerLocalUnit: null,
+      priceUsdPerTonne: null,
+      fxDate: null,
+      status: 'needs_unit_or_fx',
+      observedAt: '2026-10-20T12:00:00Z',
+      source: 'Local market record',
+    );
+
+    expect(row.isStaleAt(now), isFalse);
+    expect(
+      row.freshnessLabelAt(now),
+      'تاريخ الرصد حديث؛ المصدر مسجل دون تحقق من رابط المصدر',
+    );
+
+    const missingSource = AgricultureNormalizedLocalMarketPrice(
+      id: 'normalized-2',
+      iso3: 'SDN',
+      item: 'Sorghum',
+      nativePrice: 120,
+      currency: 'SDG',
+      unit: 'kg',
+      priceLocalPerTonne: null,
+      usdPerLocalUnit: null,
+      priceUsdPerTonne: null,
+      fxDate: null,
+      status: 'needs_unit_or_fx',
+      observedAt: '2026-10-20T12:00:00Z',
+      source: ' ',
+    );
+    expect(missingSource.freshnessLabelAt(now), 'مصدر السعر غير مسجل');
+
+    const oldRow = AgricultureNormalizedLocalMarketPrice(
+      id: 'normalized-3',
+      iso3: 'SDN',
+      item: 'Sorghum',
+      nativePrice: 120,
+      currency: 'SDG',
+      unit: 'kg',
+      priceLocalPerTonne: null,
+      usdPerLocalUnit: null,
+      priceUsdPerTonne: null,
+      fxDate: null,
+      status: 'needs_unit_or_fx',
+      observedAt: '2026-10-13T11:59:59Z',
+      source: 'Local market record',
+    );
+    expect(oldRow.isStaleAt(now), isTrue);
+    expect(oldRow.freshnessLabelAt(now), 'بيانات قديمة — تحقق محلياً');
+  });
+
 }
