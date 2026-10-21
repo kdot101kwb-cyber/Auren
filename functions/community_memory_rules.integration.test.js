@@ -8,9 +8,10 @@ const rules = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'ut
 const service = fs.readFileSync(path.join(__dirname, '..', 'lib/services/social/community_casework_service.dart'), 'utf8');
 
 test('community reports can only be created by an authenticated reporter with bounded fields', () => {
-  const match = rules.match(/match \/reports\/\{reportId\}\s*\{([^}]*(?:\}[^}]*?)?)\}/);
-  assert.ok(match, 'reports rule must exist');
-  const block = match[0];
+  const start = rules.indexOf('match /reports/{reportId}');
+  const end = rules.indexOf('match /users/{userId}/notifications', start);
+  assert.ok(start >= 0 && end > start, 'reports rule must exist and have a following rule');
+  const block = rules.slice(start, end);
   assert.match(block, /allow create:\s*if isSignedIn\(\)/);
   assert.match(block, /requestData\(\)\.reporterUid==request\.auth\.uid/);
   assert.match(block, /requestData\(\)\.status=='open'/);
