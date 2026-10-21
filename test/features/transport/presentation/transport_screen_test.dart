@@ -109,6 +109,28 @@ void main() {
     expect(find.textContaining('ملاحظات: اتصل قبل الوصول'), findsOneWidget);
   });
 
+  testWidgets('cargo drafts survive reopening the transport screen', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    await enterField(tester, 'مرجع الشحنة', 'PERSIST-2026');
+    await enterField(tester, 'من', 'بورتسودان');
+    await enterField(tester, 'إلى', 'عطبرة');
+    await enterField(tester, 'الناقل (اختياري)', 'ناقل محفوظ');
+    await tester.ensureVisible(find.text('حفظ مسودة الشحنة'));
+    await tester.tap(find.text('حفظ مسودة الشحنة'));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await tester.pumpAndSettle();
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    expect(find.textContaining('PERSIST-2026: بورتسودان → عطبرة'), findsOneWidget);
+    expect(find.textContaining('ناقل محفوظ'), findsOneWidget);
+  });
+
   testWidgets('vehicle records surface insurance and maintenance alerts', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
     await openSection(tester, 'Vehicle Ownership');
