@@ -4,8 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../business/presentation/business_screen.dart';
 import '../../global_directory/presentation/auren_business_navigator_screen.dart';
 import '../../global_directory/presentation/auren_supplier_discovery_screen.dart';
-import '../../global_directory/presentation/auren_trade_deal_screen.dart';
-import '../../personal_ai/presentation/business_growth_screen.dart';
 import '../domain/business_economy_logic.dart';
 
 /// Entry point that composes existing business foundations without duplicating
