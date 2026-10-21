@@ -25,6 +25,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> enterField(
+    WidgetTester tester,
+    String label,
+    String value,
+  ) async {
+    final target = field(label);
+    await tester.ensureVisible(target);
+    await tester.enterText(target, value);
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows five separate mobility workspaces', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
 
@@ -39,20 +51,14 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
     await openSection(tester, 'Mobility Cost Planner');
 
-    Future<void> enter(String label, String value) async {
-      final targetField = field(label);
-      await tester.ensureVisible(targetField);
-      await tester.enterText(targetField, value);
-    }
-
-    await enter('المسافة لكل رحلة (كم)', '100');
-    await enter('عدد الرحلات', '2');
-    await enter('استهلاك الوقود (لتر / 100 كم)', '8');
-    await enter('سعر لتر الوقود', '1.5');
-    await enter('رسوم الطريق لكل رحلة', '2');
-    await enter('مواقف لكل رحلة', '3');
-    await enter('تكاليف أخرى لكل رحلة', '1');
-    await enter('العملة', 'SDG');
+    await enterField(tester, 'المسافة لكل رحلة (كم)', '100');
+    await enterField(tester, 'عدد الرحلات', '2');
+    await enterField(tester, 'استهلاك الوقود (لتر / 100 كم)', '8');
+    await enterField(tester, 'سعر لتر الوقود', '1.5');
+    await enterField(tester, 'رسوم الطريق لكل رحلة', '2');
+    await enterField(tester, 'مواقف لكل رحلة', '3');
+    await enterField(tester, 'تكاليف أخرى لكل رحلة', '1');
+    await enterField(tester, 'العملة', 'SDG');
 
     await tester.ensureVisible(find.text('احسب التقدير'));
     await tester.tap(find.text('احسب التقدير'));
@@ -76,11 +82,12 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
     await openSection(tester, 'Freight & Cargo Coordination');
 
-    await tester.enterText(field('مرجع الشحنة'), 'C-101');
-    await tester.enterText(field('من'), 'بورتسودان');
-    await tester.enterText(field('إلى'), 'الخرطوم');
-    await tester.enterText(
-      field('متطلبات التسليم، مفصولة بفواصل (اختياري)'),
+    await enterField(tester, 'مرجع الشحنة', 'C-101');
+    await enterField(tester, 'من', 'بورتسودان');
+    await enterField(tester, 'إلى', 'الخرطوم');
+    await enterField(
+      tester,
+      'متطلبات التسليم، مفصولة بفواصل (اختياري)',
       'تغليف, توقيع المستلم',
     );
 
@@ -108,15 +115,17 @@ void main() {
     String date(DateTime value) =>
         '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 
-    await tester.enterText(field('الشركة / الصانع'), 'Toyota');
-    await tester.enterText(field('الطراز'), 'Corolla');
-    await tester.enterText(field('سنة الصنع'), '2020');
-    await tester.enterText(
-      field('انتهاء التأمين YYYY-MM-DD (اختياري)'),
+    await enterField(tester, 'الشركة / الصانع', 'Toyota');
+    await enterField(tester, 'الطراز', 'Corolla');
+    await enterField(tester, 'سنة الصنع', '2020');
+    await enterField(
+      tester,
+      'انتهاء التأمين YYYY-MM-DD (اختياري)',
       date(soon),
     );
-    await tester.enterText(
-      field('موعد الصيانة YYYY-MM-DD (اختياري)'),
+    await enterField(
+      tester,
+      'موعد الصيانة YYYY-MM-DD (اختياري)',
       date(overdue),
     );
 
