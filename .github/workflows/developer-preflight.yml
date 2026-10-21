@@ -1,0 +1,31 @@
+name: AUREN Developer Preflight Checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/auren_developer_preflight.js'
+      - 'scripts/auren_developer_preflight.test.js'
+      - 'docs/AUREN_DEVELOPER_PREFLIGHT.md'
+      - '.github/workflows/developer-preflight.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check syntax
+        run: node --check scripts/auren_developer_preflight.js && node --check scripts/auren_developer_preflight.test.js
+      - name: Run preflight tests
+        run: node --test scripts/auren_developer_preflight.test.js
