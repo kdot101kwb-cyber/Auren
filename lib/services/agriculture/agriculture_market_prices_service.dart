@@ -54,15 +54,18 @@ class AgricultureMarketPrice {
   }
 
   /// A source label alone is not enough to trace a market observation.
-  bool get hasTraceableSource =>
-      source.trim().isNotEmpty &&
-      sourceUrl.trim().isNotEmpty &&
-      Uri.tryParse(sourceUrl.trim())?.hasScheme == true;
+  bool get hasTraceableSource {
+    final uri = Uri.tryParse(sourceUrl.trim());
+    return source.trim().isNotEmpty &&
+        uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+  }
 
   String freshnessLabelAt(DateTime now, {Duration maxAge = const Duration(days: 7)}) {
     if (!hasTraceableSource) return 'مصدر السعر غير مكتمل';
     if (parsedObservedAt == null) return 'تاريخ الرصد غير متوفر';
-    return isStaleAt(now, maxAge: maxAge) ? 'بيانات قديمة — تحقق محلياً' : 'تاريخ الرصد ضمن آخر 7 أيام';
+    return isStaleAt(now, maxAge: maxAge) ? 'بيانات قديمة — تحقق محلياً' : 'تاريخ الرصد حديث وفق حدّ التحقق';
   }
 
   factory AgricultureMarketPrice.fromMap(Map<String, dynamic> d) {
