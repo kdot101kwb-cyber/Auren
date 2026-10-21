@@ -104,6 +104,10 @@ void main() {
           widget is TextField && widget.decoration?.labelText == 'عرض البائع *'),
       'Organic sesame available',
     );
+    // Dismiss the simulated keyboard before scrolling to the save action.
+    // Otherwise the bottom inset can leave the button visible but not hittable.
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('حفظ المسودة محلياً'),
       250,
