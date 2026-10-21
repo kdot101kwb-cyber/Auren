@@ -41,9 +41,9 @@ function inventory(root){
    if(aliases.has(m[2])&&!declared.has(m[1])){out.push({path:rel(root,file),name:m[1]});declared.add(m[1]);}
   }
   // Cover common object-literal exports without evaluating or importing source.
-  for(const block of s.matchAll(/module\\.exports\\s*=\\s*\\{([^}]+)\\}/g)){
+  for(const block of s.matchAll(/module\.exports\s*=\s*\{([^}]+)\}/g)){
    for(const entry of block[1].split(',')){
-    const match=entry.trim().match(/^(?:([A-Za-z_$][\\w$]*)\\s*:\\s*)?([A-Za-z_$][\\w$]*)$/);
+    const match=entry.trim().match(/^(?:([A-Za-z_$][\w$]*)\s*:\s*)?([A-Za-z_$][\w$]*)$/);
     if(!match)continue;
     const exportedName=match[1]||match[2],localName=match[2];
     if(aliases.has(localName)&&!declared.has(exportedName)){
