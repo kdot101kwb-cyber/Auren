@@ -4,6 +4,7 @@ import '../../../services/education/education_repository.dart';
 import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'auren_offline_learning_screen.dart';
+import '../../../services/learning_skills/auren_offline_learning.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
   const AurenAURENEducationScreen({super.key});
@@ -95,6 +96,36 @@ class _EducationCourseDetail extends StatelessWidget {
     required this.uid,
   });
 
+  Future<void> _saveLessonOffline(BuildContext context, AurenLesson lesson) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final lessonId = 'course-${course.id}-lesson-${lesson.id}';
+    if (lessonId.length > 128) {
+      messenger.showSnackBar(const SnackBar(content: Text('تعذر حفظ الدرس: معرّف الدرس طويل جداً.')));
+      return;
+    }
+    if (lesson.title.trim().isEmpty || lesson.content.trim().isEmpty) {
+      messenger.showSnackBar(const SnackBar(content: Text('هذا الدرس لا يحتوي على نص صالح للحفظ دون إنترنت.')));
+      return;
+    }
+    try {
+      await AurenOfflineLearning(const AurenSharedPreferencesLearningStore()).saveLesson(
+        AurenOfflineLesson(
+          id: lessonId,
+          title: lesson.title,
+          content: lesson.content,
+          updatedAt: DateTime.now().toUtc(),
+        ),
+      );
+      messenger.showSnackBar(SnackBar(content: Text('تم حفظ «${lesson.title}» على هذا الجهاز.')));
+    } on ArgumentError {
+      messenger.showSnackBar(const SnackBar(content: Text('تعذر حفظ الدرس: تحقق من العنوان وحدود المحتوى.')));
+    } on StateError {
+      messenger.showSnackBar(const SnackBar(content: Text('المكتبة المحلية ممتلئة. احذف درساً ثم حاول مجدداً.')));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text('تعذر حفظ الدرس محلياً. حاول مرة أخرى.')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,6 +160,11 @@ class _EducationCourseDetail extends StatelessWidget {
                     leading: CircleAvatar(child: Text('${lesson.order}')),
                     title: Text(lesson.title),
                     subtitle: Text('${lesson.durationMinutes} دقيقة'),
+                    trailing: IconButton(
+                      tooltip: 'حفظ الدرس دون إنترنت',
+                      icon: const Icon(Icons.offline_pin_outlined),
+                      onPressed: () => _saveLessonOffline(context, lesson),
+                    ),
                     onTap: () => showDialog<void>(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
