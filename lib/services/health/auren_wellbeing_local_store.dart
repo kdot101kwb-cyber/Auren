@@ -148,7 +148,7 @@ class AurenHealthyHabit {
     }
     if (reminderEnabled &&
         (reminderTime == null ||
-         !RegExp(r'^([01]\\d|2[0-3]):[0-5]\\d$').hasMatch(reminderTime!))) {
+         !RegExp(r'^([01][0-9]|2[0-3]):[0-5][0-9]$').hasMatch(reminderTime!))) {
       return 'Enabled reminder needs a valid local time (HH:mm).';
     }
     return null;
