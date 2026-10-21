@@ -62,7 +62,19 @@ test('recognizes explicit job-level permissions across every job', () => {
   assert.equal(workflow.permissionCoverage, 'all-jobs');
 });
 
-test('report labels its limits and does not dump scanned source', () => {
+
+test('detects scheduled exports assigned through module.exports', () => {
+  const root = fixture();
+  fs.writeFileSync(path.join(root, 'functions/nested/module-export.js'), [
+    "const { onSchedule } = require('firebase-functions/scheduler');",
+    'const cleanup = onSchedule({ schedule: "every day" }, async () => {});',
+    'module.exports.cleanup = cleanup;',
+    'module.exports.directRefresh = onSchedule({ schedule: "every 12 hours" }, async () => {});'
+  ].join('\\n'));
+  const names = inventory(root).scheduledFunctions.map(item => item.name).sort();
+  assert.deepEqual(names, ['cleanup', 'directRefresh']);
+});
+\ntest('report labels its limits and does not dump scanned source', () => {
   const root = fixture();
   fs.writeFileSync(path.join(root, '.github/workflows/ci.yml'), 'name: CI\non:\n  push:\njobs:\n  test:\n    runs-on: ubuntu-latest\n');
   const output = markdown(inventory(root));
