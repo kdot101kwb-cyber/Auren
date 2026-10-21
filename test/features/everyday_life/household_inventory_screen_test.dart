@@ -191,7 +191,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('تعذّر تحميل المخزون:'), findsOneWidget);
+    expect(
+      find.text('تعذّر تحميل المخزون. لم يتم تعديل البيانات المحفوظة؛ حاول مرة أخرى.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('FormatException'), findsNothing);
     expect(find.text('إعادة المحاولة'), findsOneWidget);
 
     final preferences = await SharedPreferences.getInstance();
