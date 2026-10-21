@@ -28,14 +28,14 @@ Working branch: `feat/everyday-life-services`.
 - Source added: yes.
 - Domain/store automated tests authored: `test/services/everyday/appointment_draft_service_test.dart`, `test/services/everyday/household_inventory_service_test.dart`, `test/services/everyday/household_inventory_store_test.dart`, `test/services/everyday/trip_itinerary_service_test.dart`, and `test/services/everyday/household_maintenance_service_test.dart`.
 - Inventory screen widget tests authored: `test/features/everyday_life/household_inventory_screen_test.dart` covers signed-out state, authenticated empty state, item creation, restock, consumption, and movement history rendering.
-- Inventory store tests cover UID isolation, blank UID rejection, invalid item rejection, metadata updates preserving quantity, movement persistence, duplicate movement rejection, over-consumption, and missing-item rejection.
-- Tests executed in this environment: no. No successful CI run was found for this branch at the latest check; the branch currently has no recorded GitHub Actions runs. Test source is not evidence that tests pass.
+- Inventory store tests cover UID isolation, blank UID rejection, invalid item rejection, metadata updates preserving quantity, movement persistence, duplicate movement rejection, over-consumption, missing-item rejection, duplicate stored item and movement IDs, orphan movement records, and rejection of unsupported document schema versions without overwriting the stored value.
+- **CI verification:** GitHub Actions run [39633797040](https://github.com/kdot101kwb-cyber/Auren/actions/runs/39633797040) completed successfully. Its `everyday-life-tests` job passed dependency resolution, everyday-life domain/storage tests, household inventory screen widget tests, and targeted Flutter analysis. This is evidence for that commit/run only; rerun CI after subsequent edits.
 - Firestore persistence, owner authorization rules, cloud sync, and provider adapters: not implemented. Device-local preferences are not encrypted and must not be represented as cloud-backed or tamper-proof data.
 - Therefore these are **partial foundations**, not completed production-ready systems.
 
 ## Next audit targets
 
-1. Run targeted Flutter tests and analyze in CI; fix any confirmed failures before expanding the UI.
+1. Add a recoverable user-facing error state for malformed local inventory data instead of silently resetting or overwriting it; preserve the original stored value until an explicit recovery decision is made.
 2. If cloud sync becomes necessary, review auth/repository conventions and explicit Firestore owner-only rules first; do not simply move this JSON schema to Firestore.
 3. Keep this branch unmerged pending review.
 4. Do not create a generic errands/service-request tracker unless a distinct workflow is demonstrated; prefer linking existing task, calendar, transport, commerce, and supplier records.
