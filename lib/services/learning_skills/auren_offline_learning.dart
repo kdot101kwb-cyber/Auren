@@ -92,6 +92,9 @@ class AurenOfflineLearning {
 
   Future<void> saveNote(String lessonId, String note) async {
     _validateId(lessonId);
+    if (!await _lessonExists(lessonId)) {
+      throw ArgumentError('Cannot save notes for a lesson that is not in the offline library');
+    }
     if (note.length > maxNoteCharacters) throw ArgumentError('Note exceeds $maxNoteCharacters characters');
     final notes = await _readStringMap(_notesKey);
     notes[lessonId] = note;
@@ -108,6 +111,9 @@ class AurenOfflineLearning {
 
   Future<void> setCompleted(String lessonId, bool completed, {DateTime? at}) async {
     _validateId(lessonId);
+    if (!await _lessonExists(lessonId)) {
+      throw ArgumentError('Cannot track progress for a lesson that is not in the offline library');
+    }
     final progress = await _readMap(_progressKey);
     progress[lessonId] = {'completed': completed, 'updatedAt': (at ?? DateTime.now()).toUtc().toIso8601String()};
     if (progress.length > maxProgressEntries) throw StateError('Offline progress limit reached');
@@ -129,6 +135,18 @@ class AurenOfflineLearning {
       ));
     }
     return List.unmodifiable(result);
+  }
+
+  Future<bool> _lessonExists(String lessonId) async {
+    final map = await _readMap(_lessonsKey);
+    final raw = map[lessonId];
+    if (raw == null) return false;
+    try {
+      final lesson = AurenOfflineLesson.fromJson(raw);
+      return lesson.id == lessonId && lesson.title.trim().isNotEmpty;
+    } on TypeError {
+      return false;
+    }
   }
 
   Future<Map<String, dynamic>> _readMap(String key) async {
