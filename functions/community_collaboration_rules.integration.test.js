@@ -253,4 +253,7 @@ test('reads require authentication and collaboration spaces require membership',
   await assertFails(dbFor('outsider').doc('collaboration_spaces/private-space').get());
   await assertSucceeds(dbFor('space-owner').doc('collaboration_spaces/private-space').get());
   await assertFails(dbFor('signed-user').doc('volunteer_causes/closed-cause').get());
+  await assertFails(dbFor('new-volunteer').doc('volunteer_causes/closed-cause').update({
+    volunteerIds: ['cause-owner', 'new-volunteer'],
+  }));
 });
