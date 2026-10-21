@@ -1,0 +1,44 @@
+name: AUREN Learning & Skills CI
+
+on:
+  push:
+    branches:
+      - feat/auren-learning-skills-v1
+    paths:
+      - 'lib/services/learning_skills/**'
+      - 'test/services/learning_skills/**'
+      - '.github/workflows/learning-skills-ci.yml'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/services/learning_skills/**'
+      - 'test/services/learning_skills/**'
+      - '.github/workflows/learning-skills-ci.yml'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+permissions:
+  contents: read
+concurrency:
+  group: auren-learning-skills-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  learning-skills:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+      - name: Analyze Learning & Skills services
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+      - name: Run Learning & Skills tests
+        run: flutter test test/services/learning_skills
+      - name: Build Android debug APK
+        run: flutter build apk --debug
