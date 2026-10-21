@@ -267,7 +267,7 @@ class _AurenHealthWellbeingScreenState extends State<AurenHealthWellbeingScreen>
         initial: time ?? '08:00',
       );
       if (time == null || !mounted) return;
-      if (!RegExp(r'^([01][0-9]|2[0-3]):[0-5][0-9]).hasMatch(time.trim())) {
+      if (!RegExp(r'^([01][0-9]|2[0-3]):[0-5][0-9]$').hasMatch(time.trim())) {
         _message('اكتب الوقت بصيغة 24 ساعة مثل 08:00.');
         return;
       }
