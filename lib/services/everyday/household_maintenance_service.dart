@@ -55,6 +55,7 @@ class AurenMaintenanceTask {
     DateTime? dueAt,
     bool clearDueAt = false,
     int? estimatedCostMinor,
+    bool clearEstimatedCost = false,
     int? actualCostMinor,
     bool clearActualCost = false,
     AurenMaintenanceStatus? status,
@@ -64,7 +65,7 @@ class AurenMaintenanceTask {
     area: area ?? this.area,
     description: description ?? this.description,
     dueAt: clearDueAt ? null : dueAt ?? this.dueAt,
-    estimatedCostMinor: estimatedCostMinor ?? this.estimatedCostMinor,
+    estimatedCostMinor: clearEstimatedCost ? null : estimatedCostMinor ?? this.estimatedCostMinor,
     actualCostMinor: clearActualCost ? null : actualCostMinor ?? this.actualCostMinor,
     status: status ?? this.status,
   );
