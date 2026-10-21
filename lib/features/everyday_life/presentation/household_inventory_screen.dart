@@ -71,7 +71,7 @@ class _AurenHouseholdInventoryScreenState
     } catch (error) {
       if (mounted) {
         setState(() {
-          _error = 'تعذّر تحميل المخزون: $error';
+          _error = 'تعذّر تحميل المخزون. لم يتم تعديل البيانات المحفوظة؛ حاول مرة أخرى.';
           _loading = false;
         });
       }
