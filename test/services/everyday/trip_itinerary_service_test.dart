@@ -34,4 +34,16 @@ void main() {
     expect(stop.completed, isFalse);
     expect(completed.completed, isTrue);
   });
+
+  test('uses stop id as a deterministic tie-breaker', () {
+    final time = DateTime.utc(2026, 11, 1, 8);
+    final result = AurenTripItineraryPlanner.orderedStops([
+      AurenTripStop(id: 'z', title: 'Same stop', plannedAt: time),
+      AurenTripStop(id: 'a', title: 'Same stop', plannedAt: time),
+      const AurenTripStop(id: 'z-unscheduled', title: 'Unscheduled'),
+      const AurenTripStop(id: 'a-unscheduled', title: 'Unscheduled'),
+    ]);
+    expect(result.map((stop) => stop.id),
+      ['a', 'z', 'a-unscheduled', 'z-unscheduled']);
+  });
 }
