@@ -97,7 +97,15 @@ class _MetersState extends State<_Meters> {
   @override void dispose(){meter.dispose();label.dispose();value.dispose();unit.dispose();super.dispose();}
   Future<void> load() async {try{final v=await store.loadReadings(widget.uid);if(mounted)setState(()=>rows=v);}catch(e){if(mounted)setState(()=>error=e.toString());}finally{if(mounted)setState(()=>loading=false);}}
   Future<void> add() async {final n=double.tryParse(value.text.trim());if(n==null||!n.isFinite||n<0){setState(()=>error='أدخل قراءة رقمية صحيحة غير سالبة.');return;}try{await store.saveReading(widget.uid,AurenUtilityReading(id:DateTime.now().microsecondsSinceEpoch.toString(),meterId:meter.text.trim(),label:label.text.trim(),kind:kind,value:n,unit:unit.text.trim(),recordedAt:DateTime.now()));value.clear();error=null;await load();}catch(e){setState(()=>error=e.toString());}}
-  String _usageFor(AurenUtilityReading row) {\n    final series=AurenHomeUtilityLedger.ordered(rows.where((v)=>v.meterId==row.meterId));\n    final index=series.indexWhere((v)=>v.id==row.id);\n    if(index<1) return '—';\n    final previous=series[index-1];\n    if(row.value<previous.value || row.unit!=previous.unit || row.kind!=previous.kind) return 'غير متاح';\n    return '+${(row.value-previous.value).toStringAsFixed(2)} ${row.unit}';\n  }\n  @override Widget build(BuildContext context)=>_Page(title:'عدادات المنزل',description:'سجل القراءات التراكمية واحسب فرق الاستهلاك عند توفر قراءتين متوافقتين.',loading:loading,error:error,children:[
+  String _usageFor(AurenUtilityReading row) {
+    final series = AurenHomeUtilityLedger.ordered(rows.where((v) => v.meterId == row.meterId));
+    final index = series.indexWhere((v) => v.id == row.id);
+    if (index < 1) return '—';
+    final previous = series[index - 1];
+    if (row.value < previous.value || row.unit != previous.unit || row.kind != previous.kind) return 'غير متاح';
+    return '+${(row.value - previous.value).toStringAsFixed(2)} ${row.unit}';
+  }
+  @override Widget build(BuildContext context)=>_Page(title:'عدادات المنزل',description:'سجل القراءات التراكمية واحسب فرق الاستهلاك عند توفر قراءتين متوافقتين.',loading:loading,error:error,children:[
     TextField(controller:meter,decoration:const InputDecoration(labelText:'معرّف العداد الثابت')),
     TextField(controller:label,decoration:const InputDecoration(labelText:'اسم العداد')),
     DropdownButtonFormField<AurenUtilityKind>(value:kind,decoration:const InputDecoration(labelText:'النوع'),items:const [DropdownMenuItem(value:AurenUtilityKind.electricity,child:Text('كهرباء')),DropdownMenuItem(value:AurenUtilityKind.water,child:Text('مياه')),DropdownMenuItem(value:AurenUtilityKind.gas,child:Text('غاز')),DropdownMenuItem(value:AurenUtilityKind.other,child:Text('أخرى'))],onChanged:(v)=>setState(()=>kind=v??AurenUtilityKind.electricity)),
