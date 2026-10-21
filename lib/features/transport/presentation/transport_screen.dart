@@ -417,7 +417,34 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               ),
               Align(alignment: Alignment.centerRight, child: FilledButton(
                 onPressed: _loadingRecords ? null : _saveShipment, child: const Text('حفظ مسودة الشحنة'))),
-              _savedItems(_shipments, 'لا توجد شحنات. الحفظ هنا لا يرسل طلبًا إلى ناقل.', (s) => '${s.reference}: ${s.origin} → ${s.destination} • ${_cargoStatusLabel(s.status)} • الناقل: ${s.carrier?.isNotEmpty == true ? s.carrier : 'غير محدد'}${s.deliveryRequirements.isEmpty ? '' : ' • المتطلبات: ${s.deliveryRequirements.join(', ')}'}${s.notes.trim().isEmpty ? '' : ' • ملاحظات: ${s.notes.trim()}'}'),
+              if (_shipments.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    'لا توجد شحنات. الحفظ هنا لا يرسل طلبًا إلى ناقل.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                )
+              else
+                Column(
+                  children: _shipments.map((shipment) {
+                    final details = <String>[
+                      'الناقل: ${shipment.carrier?.isNotEmpty == true ? shipment.carrier : 'غير محدد'}',
+                      if (shipment.deliveryRequirements.isNotEmpty)
+                        'المتطلبات: ${shipment.deliveryRequirements.join(', ')}',
+                      if (shipment.notes.trim().isNotEmpty)
+                        'ملاحظات: ${shipment.notes.trim()}',
+                    ];
+                    return ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.check_circle_outline),
+                      title: Text(
+                        '${shipment.reference}: ${shipment.origin} → ${shipment.destination} • ${_cargoStatusLabel(shipment.status)}',
+                      ),
+                      subtitle: Text(details.join(' • ')),
+                    );
+                  }).toList(),
+                ),
             ],
           ),
           _section(
