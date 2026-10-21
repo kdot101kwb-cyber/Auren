@@ -31,13 +31,13 @@ function inventory(root){
  const scheduledFunctions=walk(path.join(root,'functions'),f=>f.endsWith('.js')&&!f.endsWith('.test.js')).flatMap(file=>{
   const s=fs.readFileSync(file,'utf8'),out=[],declared=new Set();
   const directPatterns=[
-   /exports\.([A-Za-z_$][\w$]*)\s*=\s*onSchedule\s*\(/g,
-   /exports\.([A-Za-z_$][\w$]*)\s*=\s*functions\.pubsub\.schedule\s*\(/g
+   /(?:exports|module\.exports)\.([A-Za-z_$][\w$]*)\s*=\s*onSchedule\s*\(/g,
+   /(?:exports|module\.exports)\.([A-Za-z_$][\w$]*)\s*=\s*functions\.pubsub\.schedule\s*\(/g
   ];
   for(const re of directPatterns)for(const m of s.matchAll(re)){out.push({path:rel(root,file),name:m[1]});declared.add(m[1]);}
   const aliases=new Map();
   for(const m of s.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:onSchedule|functions\.pubsub\.schedule)\s*\(/g))aliases.set(m[1],true);
-  for(const m of s.matchAll(/exports\.([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*;/g)){
+  for(const m of s.matchAll(/(?:exports|module\.exports)\.([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\s*;/g)){
    if(aliases.has(m[2])&&!declared.has(m[1])){out.push({path:rel(root,file),name:m[1]});declared.add(m[1]);}
   }
   return out;
