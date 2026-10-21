@@ -78,4 +78,36 @@ void main() {
     expect(find.textContaining('تغليف, توقيع المستلم'), findsOneWidget);
   });
 
+
+  testWidgets('vehicle records surface insurance and maintenance alerts', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await tester.tap(find.text('Vehicle Ownership'));
+    await tester.pumpAndSettle();
+
+    final today = DateTime.now();
+    final soon = today.add(const Duration(days: 1));
+    final overdue = today.subtract(const Duration(days: 1));
+    String date(DateTime value) =>
+        '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+
+    await tester.enterText(find.widgetWithText(TextField, 'الشركة / الصانع'), 'Toyota');
+    await tester.enterText(find.widgetWithText(TextField, 'الطراز'), 'Corolla');
+    await tester.enterText(find.widgetWithText(TextField, 'سنة الصنع'), '2020');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'انتهاء التأمين YYYY-MM-DD (اختياري)'),
+      date(soon),
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'موعد الصيانة YYYY-MM-DD (اختياري)'),
+      date(overdue),
+    );
+
+    await tester.ensureVisible(find.text('إضافة مركبة'));
+    await tester.tap(find.text('إضافة مركبة'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('تنبيه: التأمين يحتاج مراجعة'), findsOneWidget);
+    expect(find.textContaining('تنبيه: موعد الصيانة حان أو فات'), findsOneWidget);
+  });
+
 }
