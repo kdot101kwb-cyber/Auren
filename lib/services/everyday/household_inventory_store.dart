@@ -35,6 +35,7 @@ class AurenHouseholdInventoryStore {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Stored household inventory has an invalid shape.');
     }
+    _validateDocumentVersion(decoded);
     final rawItems = decoded['items'];
     if (rawItems is! List) {
       throw const FormatException('Stored household inventory has no item list.');
@@ -59,6 +60,7 @@ class AurenHouseholdInventoryStore {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Stored household inventory has an invalid shape.');
     }
+    _validateDocumentVersion(decoded);
     final rawMovements = decoded['movements'] ?? const <dynamic>[];
     if (rawMovements is! List) {
       throw const FormatException('Stored household movement history is invalid.');
@@ -139,7 +141,17 @@ class AurenHouseholdInventoryStore {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Stored household inventory has an invalid shape.');
     }
+    _validateDocumentVersion(decoded);
     return decoded;
+  }
+
+  void _validateDocumentVersion(Map<String, dynamic> data) {
+    // Documents written before versioning are treated as legacy v1. Never
+    // rewrite an explicitly newer or malformed version with this older client.
+    final version = data['version'];
+    if (version != null && (version is! int || version != 1)) {
+      throw FormatException('Unsupported household inventory version: $version.');
+    }
   }
 
   List<AurenHouseholdItem> _itemsFromDocument(Map<String, dynamic> data) {
