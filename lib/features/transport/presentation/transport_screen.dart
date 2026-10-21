@@ -184,6 +184,33 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
     setState(() => _cargoStatus = CargoStatus.draft);
   }
 
+  Future<void> _updateShipmentStatus(int index, CargoStatus status) async {
+    if (index < 0 || index >= _shipments.length) return;
+    final current = _shipments[index];
+    final updated = List<CargoShipment>.of(_shipments);
+    updated[index] = CargoShipment(
+      reference: current.reference,
+      origin: current.origin,
+      destination: current.destination,
+      carrier: current.carrier,
+      status: status,
+      deliveryRequirements: current.deliveryRequirements,
+      notes: current.notes,
+    );
+    try {
+      await _localStore.saveShipments(updated);
+      if (!mounted) return;
+      setState(() {
+        _shipments
+          ..clear()
+          ..addAll(updated);
+      });
+      _message('تم تحديث حالة الشحنة وحفظها محليًا.');
+    } catch (_) {
+      if (mounted) _message('تعذر حفظ الحالة الجديدة؛ لم يتم تغيير السجل المعروض.');
+    }
+  }
+
   Future<void> _savePort() async {
     final source = _portSource.text.trim();
     final port = PortInformation(
@@ -427,7 +454,9 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
                 )
               else
                 Column(
-                  children: _shipments.map((shipment) {
+                  children: _shipments.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final shipment = entry.value;
                     final details = <String>[
                       'الناقل: ${shipment.carrier?.isNotEmpty == true ? shipment.carrier : 'غير محدد'}',
                       if (shipment.deliveryRequirements.isNotEmpty)
@@ -442,6 +471,28 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
                         '${shipment.reference}: ${shipment.origin} → ${shipment.destination} • ${_cargoStatusLabel(shipment.status)}',
                       ),
                       subtitle: Text(details.join(' • ')),
+                      trailing: SizedBox(
+                        width: 124,
+                        child: DropdownButton<CargoStatus>(
+                          key: ValueKey('cargo-status-$index'),
+                          value: shipment.status,
+                          isExpanded: true,
+                          isDense: true,
+                          underline: const SizedBox.shrink(),
+                          items: CargoStatus.values.map((status) =>
+                            DropdownMenuItem(
+                              value: status,
+                              child: Text(_cargoStatusLabel(status), overflow: TextOverflow.ellipsis),
+                            ),
+                          ).toList(),
+                          onChanged: _loadingRecords || shipment.status == CargoStatus.delivered ||
+                                  shipment.status == CargoStatus.cancelled
+                              ? null
+                              : (status) {
+                                  if (status != null) _updateShipmentStatus(index, status);
+                                },
+                        ),
+                      ),
                     );
                   }).toList(),
                 ),
