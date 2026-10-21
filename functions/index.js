@@ -4235,6 +4235,7 @@ exports.submitAurenEntertainmentRightsReview = require('firebase-functions/v2/ht
 
 // Real provider-backed music generation worker.
 const {runAurenMusicProductionWorker} = require('./music_production_worker');
+const {normalizeAurenMusicProductionRequest} = require('./music_production_validation');
 exports.runAurenMusicProductionWorker = runAurenMusicProductionWorker;
 
 exports.createAurenMusicProductionJob = require('firebase-functions/v2/https').onCall(
@@ -4242,13 +4243,9 @@ exports.createAurenMusicProductionJob = require('firebase-functions/v2/https').o
   async (request) => {
     const uid=request.auth?.uid;
     if(!uid) throw aurenHttpsError('unauthenticated','Authentication is required.');
-    const title=String(request.data?.title||'AUREN Original Track').trim().slice(0,160);
-    const prompt=String(request.data?.prompt||'').trim().slice(0,3000);
-    const genre=String(request.data?.genre||'').trim().slice(0,80);
-    const mood=String(request.data?.mood||'').trim().slice(0,80);
-    const language=String(request.data?.language||'').trim().slice(0,40);
-    const durationSeconds=Math.max(10,Math.min(300,Number(request.data?.durationSeconds||30)));
-    if(!prompt) throw aurenHttpsError('invalid-argument','Music prompt is required.');
+    const normalized=normalizeAurenMusicProductionRequest(request.data);
+    if(!normalized.ok) throw aurenHttpsError('invalid-argument',normalized.message);
+    const {title,prompt,genre,mood,language,durationSeconds}=normalized.value;
     const jobRef=db.collection('users').doc(uid).collection('musicProductionJobs').doc();
     const taskRef=jobRef.collection('productionTasks').doc('music');
     const safePrompt=('Create an original musical work. '+prompt+
