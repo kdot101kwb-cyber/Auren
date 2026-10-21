@@ -75,6 +75,18 @@ test('detects scheduled exports assigned through module.exports', () => {
   assert.deepEqual(names, ['cleanup', 'directRefresh']);
 });
 
+test('detects scheduled exports in a common module.exports object literal', () => {
+  const root = fixture();
+  fs.writeFileSync(path.join(root, 'functions/nested/object-export.js'), [
+    "const { onSchedule } = require('firebase-functions/scheduler');",
+    'const cleanupTask = onSchedule({ schedule: "every day" }, async () => {});',
+    'const refreshTask = onSchedule({ schedule: "every 12 hours" }, async () => {});',
+    'module.exports = { cleanupTask, refresh: refreshTask };'
+  ].join('\\n'));
+  const names = inventory(root).scheduledFunctions.map(item => item.name).sort();
+  assert.deepEqual(names, ['cleanupTask', 'refresh']);
+});
+
 test('report labels its limits and does not dump scanned source', () => {
   const root = fixture();
   fs.writeFileSync(path.join(root, '.github/workflows/ci.yml'), 'name: CI\non:\n  push:\njobs:\n  test:\n    runs-on: ubuntu-latest\n');
