@@ -41,9 +41,13 @@ class AurenOfflineLearning {
   static const _notesKey = 'auren_offline_learning_notes_v1';
   static const _progressKey = 'auren_offline_learning_progress_v1';
   static const maxLessons = 100;
+  static const maxNotes = 100;
+  static const maxProgressEntries = 200;
   static const maxContentCharacters = 20000;
   static const maxNoteCharacters = 4000;
   static const maxCacheBytes = 512 * 1024;
+  static const maxNotesCacheBytes = 512 * 1024;
+  static const maxProgressCacheBytes = 128 * 1024;
 
   Future<void> saveLesson(AurenOfflineLesson lesson) async {
     _validateId(lesson.id);
@@ -60,7 +64,17 @@ class AurenOfflineLearning {
 
   Future<List<AurenOfflineLesson>> lessons() async {
     final map = await _readMap(_lessonsKey);
-    return List.unmodifiable(map.values.map((value) => AurenOfflineLesson.fromJson(value)));
+    final result = <AurenOfflineLesson>[];
+    for (final value in map.values) {
+      try {
+        final lesson = AurenOfflineLesson.fromJson(value);
+        if (lesson.id.trim().isEmpty || lesson.title.trim().isEmpty || lesson.title.length > 160 || lesson.content.length > maxContentCharacters) continue;
+        result.add(lesson);
+      } on TypeError {
+        // Ignore a corrupt record instead of making the entire offline library unusable.
+      }
+    }
+    return List.unmodifiable(result);
   }
 
   Future<void> removeLesson(String id) async {
@@ -74,7 +88,10 @@ class AurenOfflineLearning {
     if (note.length > maxNoteCharacters) throw ArgumentError('Note exceeds $maxNoteCharacters characters');
     final notes = await _readStringMap(_notesKey);
     notes[lessonId] = note;
-    await store.write(_notesKey, jsonEncode(notes));
+    if (notes.length > maxNotes) throw StateError('Offline note limit reached; remove a note first');
+    final encoded = jsonEncode(notes);
+    if (utf8.encode(encoded).length > maxNotesCacheBytes) throw StateError('Offline notes cache size limit reached');
+    await store.write(_notesKey, encoded);
   }
 
   Future<String> noteFor(String lessonId) async {
@@ -86,15 +103,25 @@ class AurenOfflineLearning {
     _validateId(lessonId);
     final progress = await _readMap(_progressKey);
     progress[lessonId] = {'completed': completed, 'updatedAt': (at ?? DateTime.now()).toUtc().toIso8601String()};
-    await store.write(_progressKey, jsonEncode(progress));
+    if (progress.length > maxProgressEntries) throw StateError('Offline progress limit reached');
+    final encoded = jsonEncode(progress);
+    if (utf8.encode(encoded).length > maxProgressCacheBytes) throw StateError('Offline progress cache size limit reached');
+    await store.write(_progressKey, encoded);
   }
 
   Future<List<AurenOfflineProgress>> progress() async {
     final map = await _readMap(_progressKey);
-    return List.unmodifiable(map.entries.map((entry) => AurenOfflineProgress(
-      lessonId: entry.key, completed: entry.value['completed'] == true,
-      updatedAt: DateTime.tryParse(entry.value['updatedAt'] as String? ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-    )));
+    final result = <AurenOfflineProgress>[];
+    for (final entry in map.entries) {
+      if (entry.key.trim().isEmpty || entry.value['completed'] is! bool) continue;
+      final rawDate = entry.value['updatedAt'];
+      final date = rawDate is String ? DateTime.tryParse(rawDate) : null;
+      result.add(AurenOfflineProgress(
+        lessonId: entry.key, completed: entry.value['completed'] as bool,
+        updatedAt: date ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      ));
+    }
+    return List.unmodifiable(result);
   }
 
   Future<Map<String, dynamic>> _readMap(String key) async {
