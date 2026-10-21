@@ -101,3 +101,37 @@ The audit document was updated to record these findings; no application source f
 
 
 - **PR #248 vs PR #251:** the exact changed-path lists share only `lib/features/culture/presentation/culture_news_screen.dart`. PR #248 adds Research Desk, Knowledge Hub navigation, Language Bridge, Knowledge Notebook, Source Registry, and Live News presentation/tests; PR #251 adds a distinct Firestore-backed Knowledge & Information service, validation/rules, evidence/source provenance, and reading queue. This is **not a full duplicate**, but the shared Culture & News integration must be reconciled before both are merged. PR #248 targets `main`; PR #251 currently targets `feat/entertainment-universe-v1-plan`, so its base/dependency should be reviewed explicitly. Do not retarget or merge automatically.
+
+
+## Detailed next-step decisions — 2026-10-21
+
+### Automation inventory: PR #254 vs #255
+
+Both heads currently report all five CircleCI combined statuses as successful:
+- #254 head `dbbfdc809ecf1537ebc76fe66fff53f299e335b1`
+- #255 head `eb65b841445c587602b221ba3ae9c78eeb6c093f`
+
+Both add the same four core paths. The #255 variant also hardens three other workflows with explicit permissions/concurrency and its parser strips YAML comments before cron detection, handles backtick-quoted schedule strings, and escapes backslashes in Markdown cells. PR #254's inventory workflow includes push-on-main triggers, while #255's workflow is pull-request/manual only. This is a genuine policy difference, not just duplicate code.
+
+**Recommendation:** treat #255 as the stronger candidate for shared parser and workflow-hardening behavior, but do not merge it blindly: decide whether push-on-main inventory refresh from #254 is required, reconcile the workflow trigger policy, and verify that the action major versions used by #255 are valid and allowed by repository policy. No PR was selected or merged by this audit.
+
+### Pulse Timeline: PR #256 vs #258
+
+Both heads report all five combined statuses as successful:
+- #256 head `ddb9ae29f881f5ff05a4eafcf05746dd06ed8f07`
+- #258 head `2489b1df2dcd27be2e9abd2a74af8382ca2f3ca6`
+
+Both change the Timeline screen to add quick replies and saved scroll position. #256 additionally adds video media-type detection and post-edit/publish handling, so it is broader than #258. Because the branches share a Timeline integration hotspot and both are based on `main`, integrating both without reconciliation risks overlapping edits. **Recommendation:** treat #258 as the narrow Timeline-only candidate and #256 as the broader candidate; compare their final Timeline implementations and preserve the media handling only if its tests and UX are desired. Do not merge both unchanged.
+
+### Information Intelligence PR #253: current blocker
+
+The observed combined status for head `9c413654f8d7926114c4de9d88c6727a620acb7c` reports:
+- `flutter_ci`: failure
+- `functions_tests`: failure
+- `plugin_worker_tests`, `action_executor_tests`, `plugin_worker_image`: success
+
+The CircleCI run pages could not be opened through the available web reader, and the GitHub connector does not expose CircleCI job logs for these checks in this pass. Therefore the failure root causes remain **unverified**. The safe next action is to obtain the actual failing logs or a reproducible test output; do not modify the source based only on the red status. This PR remains a draft and must not be described as green.
+
+### Audit commit status
+
+The audit branch received documentation-only updates. The latest observed commit is `baa8b4d2486900acbe298c0fbcc578ea223bc712`. A fresh combined-status query returned no status entries at the time checked; this is **not** evidence of success or failure. Recheck CI before declaring the documentation update validated.
