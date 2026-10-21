@@ -284,7 +284,9 @@ class _AurenHealthWellbeingScreenState extends State<AurenHealthWellbeingScreen>
       sleepEntries: _data.sleepEntries, habits: updated,
       careNotes: _data.careNotes,
     ));
-    if (enabled) _message('حُفظ تفضيل التذكير محلياً؛ جدولة إشعارات النظام ليست مفعّلة بعد.');
+    if (enabled) {
+      _message('حُفظ تفضيل التذكير محلياً؛ جدولة إشعارات النظام ليست مفعّلة بعد.');
+    }
   }
 
   Future<void> _addCareNote() async {
