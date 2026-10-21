@@ -108,7 +108,9 @@ class MobilityCostEstimate {
       parking >= 0 &&
       otherCosts.isFinite &&
       otherCosts >= 0 &&
-      currency.trim().isNotEmpty;
+      currency.trim().isNotEmpty &&
+      fuelCost.isFinite &&
+      total.isFinite;
 
   double get fuelCost =>
       distanceKm * trips * fuelLitresPer100Km / 100 * fuelPricePerLitre;
