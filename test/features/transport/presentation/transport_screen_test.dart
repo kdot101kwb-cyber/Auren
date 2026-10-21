@@ -85,6 +85,7 @@ void main() {
     await enterField(tester, 'مرجع الشحنة', 'C-101');
     await enterField(tester, 'من', 'بورتسودان');
     await enterField(tester, 'إلى', 'الخرطوم');
+    await enterField(tester, 'الناقل (اختياري)', 'ناقل تجريبي');
     await enterField(
       tester,
       'متطلبات التسليم، مفصولة بفواصل (اختياري)',
@@ -102,6 +103,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('C-101: بورتسودان → الخرطوم • قيد النقل'), findsOneWidget);
+    expect(find.textContaining('ناقل تجريبي'), findsOneWidget);
     expect(find.textContaining('تغليف, توقيع المستلم'), findsOneWidget);
   });
 
@@ -118,6 +120,7 @@ void main() {
     await enterField(tester, 'الشركة / الصانع', 'Toyota');
     await enterField(tester, 'الطراز', 'Corolla');
     await enterField(tester, 'سنة الصنع', '2020');
+    await enterField(tester, 'ملاحظات المركبة (اختياري)', 'تغيير زيت قريب');
     await enterField(
       tester,
       'انتهاء التأمين YYYY-MM-DD (اختياري)',
@@ -133,6 +136,7 @@ void main() {
     await tester.tap(find.text('إضافة مركبة'));
     await tester.pumpAndSettle();
 
+    expect(find.textContaining('ملاحظات: تغيير زيت قريب'), findsOneWidget);
     expect(find.textContaining('تنبيه: التأمين يحتاج مراجعة'), findsOneWidget);
     expect(find.textContaining('تنبيه: موعد الصيانة حان أو فات'), findsOneWidget);
   });
