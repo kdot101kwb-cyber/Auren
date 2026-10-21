@@ -56,6 +56,21 @@ void main() {
     expect(prefs.getString(key), original);
   });
 
+  test('rejects malformed explicit document versions without rewriting data', () async {
+    final store = AurenHouseholdInventoryStore();
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'auren_household_inventory_v1_${base64Url.encode(utf8.encode('user-A'))}';
+
+    for (final versionJson in ['null', '"1"', '1.0']) {
+      final original = '{"version":$versionJson,"items":[],"movements":[]}';
+      await prefs.setString(key, original);
+
+      await expectLater(store.loadItems('user-A'), throwsFormatException);
+      await expectLater(store.saveItem('user-A', item()), throwsFormatException);
+      expect(prefs.getString(key), original);
+    }
+  });
+
   test('updates item metadata but preserves existing stock quantity', () async {
     final store = AurenHouseholdInventoryStore();
     await store.saveItem('user-A', item(quantity: 7));
