@@ -53,4 +53,18 @@ void main() {
     expect(await offline.lessons(), isEmpty);
     expect(await offline.noteFor('x'), 'private note');
   });
+  test('removing a lesson also removes its notes and progress', () async {
+    final store = MemoryStore();
+    final offline = AurenOfflineLearning(store);
+    await offline.saveLesson(AurenOfflineLesson(id: 'lesson-remove', title: 'Temporary', content: 'Text'));
+    await offline.saveNote('lesson-remove', 'Private note');
+    await offline.setCompleted('lesson-remove', true);
+
+    await offline.removeLesson('lesson-remove');
+
+    expect(await offline.lessons(), isEmpty);
+    expect(await offline.noteFor('lesson-remove'), isEmpty);
+    expect(await offline.progress(), isEmpty);
+  });
+
 }
