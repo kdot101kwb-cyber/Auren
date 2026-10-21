@@ -332,7 +332,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('التوقفات بالترتيب، مفصولة بفواصل', _routeStops),
               _field('مصدر المعلومات', _routeSource, hint: 'مثال: موقع المشغّل أو جدول رسمي'),
               Align(alignment: Alignment.centerRight, child: FilledButton(
-                onPressed: _saveRoute, child: const Text('حفظ محليًا'))),
+                onPressed: _loadingRecords ? null : _saveRoute, child: const Text('حفظ محليًا'))),
               _savedItems(_routes, 'لا توجد مسارات محفوظة. لن نخترع مسارات أو مواعيد.', (r) => '${r.routeName} • ${r.operator} • ${r.stops.length} توقفات • المصدر: ${r.evidence?.sourceName ?? 'غير موثق'}'),
             ],
           ),
@@ -348,7 +348,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('انتهاء التأمين YYYY-MM-DD (اختياري)', _insuranceExpiry),
               _field('موعد الصيانة YYYY-MM-DD (اختياري)', _maintenanceDue),
               Align(alignment: Alignment.centerRight, child: FilledButton(
-                onPressed: _saveVehicle, child: const Text('إضافة مركبة'))),
+                onPressed: _loadingRecords ? null : _saveVehicle, child: const Text('إضافة مركبة'))),
               _savedItems(_vehicles, 'لا توجد مركبات مسجلة.', _vehicleSummary,
             ],
           ),
@@ -410,7 +410,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
                 ),
               ),
               Align(alignment: Alignment.centerRight, child: FilledButton(
-                onPressed: _saveShipment, child: const Text('حفظ مسودة الشحنة'))),
+                onPressed: _loadingRecords ? null : _saveShipment, child: const Text('حفظ مسودة الشحنة'))),
               _savedItems(_shipments, 'لا توجد شحنات. الحفظ هنا لا يرسل طلبًا إلى ناقل.', (s) => '${s.reference}: ${s.origin} → ${s.destination} • ${_cargoStatusLabel(s.status)}${s.deliveryRequirements.isEmpty ? '' : ' • المتطلبات: ${s.deliveryRequirements.join(', ')}'}'),
             ],
           ),
@@ -423,7 +423,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('الدولة', _portCountry),
               _field('مصدر المعلومات', _portSource, hint: 'مصدر رسمي أو مشغّل الميناء'),
               Align(alignment: Alignment.centerRight, child: FilledButton(
-                onPressed: _savePort, child: const Text('حفظ معلومات الميناء'))),
+                onPressed: _loadingRecords ? null : _savePort, child: const Text('حفظ معلومات الميناء'))),
               _savedItems(_ports, 'لا توجد معلومات موانئ موثقة. لا نعرض حالة تشغيل أو مواعيد مباشرة دون مصدر.', (p) => '${p.portName} • ${p.country} • المصدر: ${p.evidence?.sourceName ?? 'غير موثق'}'),
             ],
           ),
