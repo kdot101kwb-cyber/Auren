@@ -1,0 +1,47 @@
+name: AUREN Automation Inventory
+on:
+  pull_request:
+    paths:
+      - 'scripts/auren_automation_inventory.js'
+      - 'scripts/auren_automation_inventory.test.js'
+      - 'functions/**/*.js'
+      - '.github/workflows/**'
+  push:
+    branches:
+      - feat/auren-system-health-snapshot-v1
+    paths:
+      - 'scripts/auren_automation_inventory.js'
+      - 'scripts/auren_automation_inventory.test.js'
+      - 'functions/**/*.js'
+      - '.github/workflows/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: auren-automation-inventory-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  inventory:
+    name: Static automation inventory
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run inventory unit tests
+        run: node --test scripts/auren_automation_inventory.test.js
+      - name: Publish static inventory
+        run: node scripts/auren_automation_inventory.js
+      - name: Upload inventory report
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-automation-inventory
+          path: auren-automation-inventory.md
+          if-no-files-found: ignore
+          retention-days: 3
