@@ -28,7 +28,7 @@ AgricultureMarketPrice price({
 }
 
 void main() {
-  const now = DateTime.utc(2026, 10, 21, 12);
+  final now = DateTime.utc(2026, 10, 21, 12);
 
   test('recent observation with a traceable HTTP source is not stale', () {
     final row = price();
