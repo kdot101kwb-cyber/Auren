@@ -96,6 +96,12 @@ test('users cannot read or update reports and case-event writes remain denied wi
     status: 'resolved', moderatedBy: 'moderator-a',
     moderatedAt: firebase.firestore.Timestamp.now(), moderationNote: 'Reviewed',
   }));
+  await assertFails(db.doc('reports/seeded-report').delete());
+
+  const claimedAdminDb = testEnv.authenticatedContext('claimed-admin', { admin: true }).firestore();
+  await assertFails(claimedAdminDb.doc('reports/seeded-report').get());
+  await assertFails(claimedAdminDb.collection('reports').get());
+  await assertFails(claimedAdminDb.doc('reports/seeded-report').update({ status: 'under_review' }));
   await assertFails(db.doc('community_case_events/event-1').set({
     entityType: 'report', entityId: 'seeded-report', actorUid: 'moderator-a',
     fromStatus: 'open', toStatus: 'resolved', note: 'Reviewed',
