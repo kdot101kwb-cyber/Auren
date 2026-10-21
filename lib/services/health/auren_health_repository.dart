@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'health_data_sharing_consent.dart';
+
 class AurenHealthCheckin {
   const AurenHealthCheckin({
     required this.id,
@@ -17,7 +19,9 @@ class AurenHealthCheckin {
   final int mood;
   final DateTime? updatedAt;
 
-  factory AurenHealthCheckin.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory AurenHealthCheckin.fromDoc(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final d = doc.data() ?? <String, dynamic>{};
     return AurenHealthCheckin(
       id: doc.id,
@@ -30,13 +34,24 @@ class AurenHealthCheckin {
   }
 }
 
+/// Legacy remote check-in repository. Every read/write requires a short-lived
+/// consent object obtained after explicit user confirmation. The privacy-first
+/// wellbeing workspace should continue to use its local store instead.
 class AurenHealthRepository {
   AurenHealthRepository({FirebaseFirestore? firestore})
       : _db = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _db;
 
-  Stream<List<AurenHealthCheckin>> watchCheckins(String uid) {
+  Stream<List<AurenHealthCheckin>> watchCheckins(
+    String uid, {
+    HealthDataSharingConsent? consent,
+  }) {
+    if (consent == null) {
+      return Stream.error(
+        StateError('Explicit health data sharing consent is required.'),
+      );
+    }
     if (uid.trim().isEmpty) return const Stream.empty();
     return _db
         .collection('users')
@@ -55,17 +70,30 @@ class AurenHealthRepository {
     required int waterGlasses,
     required double sleepHours,
     required int mood,
+    HealthDataSharingConsent? consent,
   }) async {
+    if (consent == null) {
+      throw StateError('Explicit health data sharing consent is required.');
+    }
     if (uid.trim().isEmpty || dateId.trim().isEmpty) {
       throw ArgumentError('uid و dateId مطلوبان');
     }
-    if (activityMinutes < 0 || activityMinutes > 1440 ||
-        waterGlasses < 0 || waterGlasses > 50 ||
-        sleepHours < 0 || sleepHours > 24 ||
-        mood < 1 || mood > 5) {
+    if (activityMinutes < 0 ||
+        activityMinutes > 1440 ||
+        waterGlasses < 0 ||
+        waterGlasses > 50 ||
+        sleepHours < 0 ||
+        sleepHours > 24 ||
+        mood < 1 ||
+        mood > 5) {
       throw ArgumentError('قيم المتابعة الصحية غير صالحة');
     }
-    await _db.collection('users').doc(uid).collection('healthCheckins').doc(dateId).set({
+    await _db
+        .collection('users')
+        .doc(uid)
+        .collection('healthCheckins')
+        .doc(dateId)
+        .set({
       'activityMinutes': activityMinutes,
       'waterGlasses': waterGlasses,
       'sleepHours': sleepHours,
