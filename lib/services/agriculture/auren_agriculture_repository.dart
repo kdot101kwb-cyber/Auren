@@ -194,6 +194,39 @@ class AurenAgricultureRepository {
     return ref.id;
   }
 
+
+  Future<void> updateFarmTaskStatus({
+    required String uid,
+    required String taskId,
+    required String status,
+  }) async {
+    final cleanUid = uid.trim();
+    final cleanTaskId = taskId.trim();
+    const statuses = {'planned', 'inProgress', 'done', 'skipped'};
+    if (cleanUid.isEmpty || cleanTaskId.isEmpty || !statuses.contains(status)) {
+      throw ArgumentError('بيانات المهمة أو حالتها غير صالحة.');
+    }
+    final ref = db.collection('users').doc(cleanUid)
+        .collection('agricultureNotes').doc(cleanTaskId);
+    await db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      if (!snapshot.exists) throw StateError('المهمة غير موجودة.');
+      final data = snapshot.data() ?? <String, dynamic>{};
+      if (data['type'] != 'farm' || data['note'] is! String) {
+        throw StateError('السجل ليس مهمة مزرعة صالحة.');
+      }
+      final decoded = jsonDecode(data['note'] as String);
+      if (decoded is! Map<String, dynamic> || decoded['kind'] != 'farm_task') {
+        throw StateError('السجل ليس مهمة مزرعة صالحة.');
+      }
+      final updated = <String, dynamic>{...decoded, 'status': status};
+      transaction.update(ref, {
+        'note': jsonEncode(updated),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
   Stream<List<Map<String, dynamic>>> watchFarmTasks({required String uid}) {
     final cleanUid = uid.trim();
     if (cleanUid.isEmpty) return Stream.value(const <Map<String, dynamic>>[]);
