@@ -45,14 +45,6 @@ void main() {
     expect((await offline.progress()).map((item) => item.lessonId), ['good']);
   });
 
-  test('removes cached lesson without deleting notes/progress implicitly', () async {
-    final offline = AurenOfflineLearning(MemoryStore());
-    await offline.saveLesson(const AurenOfflineLesson(id: 'x', title: 'Lesson', content: 'text'));
-    await offline.saveNote('x', 'private note');
-    await offline.removeLesson('x');
-    expect(await offline.lessons(), isEmpty);
-    expect(await offline.noteFor('x'), 'private note');
-  });
   test('removing a lesson also removes its notes and progress', () async {
     final store = MemoryStore();
     final offline = AurenOfflineLearning(store);
