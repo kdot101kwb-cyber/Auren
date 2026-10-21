@@ -155,18 +155,9 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
           if (rows.isNotEmpty) ...[
             const Divider(height: 18),
             ...rows.take(3).map((r) {
-              final observedAt = DateTime.tryParse(r.observedAt?.trim() ?? '');
               final source = r.source?.trim() ?? '';
-              final stale = observedAt == null ||
-                  DateTime.now().toUtc().difference(observedAt.toUtc()).isNegative ||
-                  DateTime.now().toUtc().difference(observedAt.toUtc()) > const Duration(days: 7);
-              final freshness = source.isEmpty
-                  ? 'مصدر السعر غير مسجل'
-                  : observedAt == null
-                      ? 'تاريخ الرصد غير متوفر'
-                      : stale
-                          ? 'بيانات قديمة — تحقق محلياً'
-                          : 'تاريخ الرصد حديث وفق حدّ التحقق';
+              final stale = r.isStaleAt(DateTime.now());
+              final freshness = r.freshnessLabelAt(DateTime.now());
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Column(
@@ -183,7 +174,7 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
                         style: Theme.of(context).textTheme.bodySmall),
                     Text(freshness,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: stale || source.isEmpty
+                          color: stale || !r.hasRecordedSource
                               ? Theme.of(context).colorScheme.error
                               : Theme.of(context).colorScheme.secondary,
                           fontWeight: FontWeight.w600,
