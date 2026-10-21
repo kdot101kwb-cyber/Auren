@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auren/features/transport/presentation/transport_screen.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  Finder field(String label) => find.byWidgetPredicate(
+        (widget) => widget is TextField && widget.decoration?.labelText == label,
+        description: 'TextField with label $label',
+      );
+
   testWidgets('shows five separate mobility workspaces', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
 
@@ -19,7 +29,7 @@ void main() {
     await tester.pumpAndSettle();
 
     Future<void> enter(String label, String value) async {
-      final field = find.widgetWithText(TextField, label);
+      final field = field(label);
       await tester.ensureVisible(field);
       await tester.enterText(field, value);
     }
@@ -57,11 +67,11 @@ void main() {
     await tester.tap(find.text('Freight & Cargo Coordination'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextField, 'مرجع الشحنة'), 'C-101');
-    await tester.enterText(find.widgetWithText(TextField, 'من'), 'بورتسودان');
-    await tester.enterText(find.widgetWithText(TextField, 'إلى'), 'الخرطوم');
+    await tester.enterText(field('مرجع الشحنة'), 'C-101');
+    await tester.enterText(field('من'), 'بورتسودان');
+    await tester.enterText(field('إلى'), 'الخرطوم');
     await tester.enterText(
-      find.widgetWithText(TextField, 'متطلبات التسليم، مفصولة بفواصل (اختياري)'),
+      field('متطلبات التسليم، مفصولة بفواصل (اختياري)'),
       'تغليف, توقيع المستلم',
     );
 
@@ -90,15 +100,15 @@ void main() {
     String date(DateTime value) =>
         '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 
-    await tester.enterText(find.widgetWithText(TextField, 'الشركة / الصانع'), 'Toyota');
-    await tester.enterText(find.widgetWithText(TextField, 'الطراز'), 'Corolla');
-    await tester.enterText(find.widgetWithText(TextField, 'سنة الصنع'), '2020');
+    await tester.enterText(field('الشركة / الصانع'), 'Toyota');
+    await tester.enterText(field('الطراز'), 'Corolla');
+    await tester.enterText(field('سنة الصنع'), '2020');
     await tester.enterText(
-      find.widgetWithText(TextField, 'انتهاء التأمين YYYY-MM-DD (اختياري)'),
+      field('انتهاء التأمين YYYY-MM-DD (اختياري)'),
       date(soon),
     );
     await tester.enterText(
-      find.widgetWithText(TextField, 'موعد الصيانة YYYY-MM-DD (اختياري)'),
+      field('موعد الصيانة YYYY-MM-DD (اختياري)'),
       date(overdue),
     );
 
