@@ -53,3 +53,37 @@ For each proposed system, record:
 - Candidate overlaps and their provisional decisions are documented.
 - Unverified implementation status is explicitly labelled.
 - Changes remain isolated in this documentation-only pull request until reviewed.
+
+
+## Active workstream review — 2026-10-21
+
+This is a point-in-time review of open pull requests and their reported combined status checks. Open-PR state and checks can change; re-query before merging or declaring completion. Status labels below describe the PR/workstream, not the entire capability in AUREN.
+
+### Priority and overlap findings
+
+| Workstream | Evidence observed | Decision / next action |
+| --- | --- | --- |
+| PR #259 — PR workstream overlap guard | Dedicated read-only overlap checker; all five combined CI statuses were successful on head `5aa2739d0e1abb5f0e8b61a190d3e2dda460a393`. | Keep as a high-value repository safety tool; human review still required because file overlap is not semantic overlap. |
+| PR #255 and PR #254 — automation inventory | Both describe static workflow/schedule/deployment safety inventories and report generation. PR #255 head `eb65b841445c587602b221ba3ae9c78eeb6c093f` had all five combined statuses successful when checked. | Treat as a likely duplicate workstream until changed-file and implementation comparison proves a distinct contract. Do not build a third inventory. |
+| PR #258 and PR #256 — Pulse quick replies / reading position | Both describe SNAP REPLY / quick replies and local scroll-position restore; PR #258 head `2489b1df2dcd27be2e9abd2a74af8382ca2f3ca6` had all five combined statuses successful when checked. | Compare changed paths and dependency/base commits before either is merged; likely duplicate/stacked variants of the same user outcome. |
+| PR #251 and PR #248 — Knowledge & Information | Both cover Knowledge Hub / Research Desk / Language Bridge and adjacent research workflows; PR #251 head `4febcf139b17495eb5711d813bffb4c35a16a40c` had all five combined statuses successful when checked. | Review dependency and file overlap; define one canonical ownership map rather than treating the PR titles as separate full systems. |
+| PR #253 — Information Intelligence tools | Five focused tools are present in service/UI/tests and linked from Culture & News. On head `9c413654f8d7926114c4de9d88c6727a620acb7c`, combined status reported failures for `functions_tests` and `flutter_ci`; other three statuses succeeded. | **Needs validation/fix before considered green.** Inspect failing job logs or CircleCI output before changing code; do not infer the cause from status alone. This is an implementation already in progress, not a reason to create another information system. |
+| PR #220 and PR #223 — News & Information | News domain model and feed ordering are separate related PRs; #223 is described as depending on #220. | Preserve dependency order and recheck both heads and CI before merging. |
+| PR #221 and PR #222 — AUREN Music | Rap Arena and collaboration brief planning extend the existing Music/Entertainment path. | Keep them as Music capabilities; do not create another parallel music ecosystem. |
+| PR #250 — Creation & Production | Reuses Creator Studio, Media Studio, and the existing Music recording/audio-analysis path. All five combined statuses were successful on head `30ee3426817c15a08ef98ee95c4e92015eeade94` when checked. | Maintain the reuse boundary; latest navigation/text-share changes still need review against the exact head and workflow run before declaring release-ready. |
+| PR #257 — Personal Finance | Distinct user-entered budget/income/expense foundation; all five combined statuses were successful on head `b036a5e5a5d1ba0948695de559d764117237f924` when checked. | Candidate for focused product review after duplicate/overlap checks; do not treat CI alone as production readiness. |
+| PR #224 — this audit | Documentation-only coverage/dedup rules; all five combined statuses were successful on head `46fd0d2f939f793c26517ecbfc6fd378fa84a5dc` when checked. | Continue this audit by recording concrete overlap decisions and explicit unknowns. No application behavior changes. |
+
+### Immediate engineering queue
+
+1. **Resolve duplicate/stacked workstreams first:** compare PR #254 vs #255 and #256 vs #258 changed files, base/head ancestry, and whether one is intended to supersede the other. Do not merge or close any PR automatically.
+2. **Triage PR #253:** obtain the failing Flutter and Functions job logs, reproduce the actual failing commands if possible, then make a narrow fix on its own branch and rerun CI. A status failure alone is not enough evidence to edit source.
+3. **Keep Knowledge & Information ownership explicit:** compare #248 and #251 paths and dependencies; keep #253 as utility tooling only where its capabilities are not already implemented by the canonical Knowledge Hub / Research Desk / Library flows.
+4. **Audit the canonical Master Blueprint:** a repository search has not yet identified a definitive numbered master blueprint file. Until it is found, do not treat an individual addendum, feature registry, PR description, or historic dashboard count as the complete canonical source.
+5. **After the overlaps are resolved, choose the next feature batch based on a demonstrated user-facing gap, not on the number of named systems.**
+
+### Evidence limits
+
+- Combined status checks show CI state for the specified commit, not manual UX review, runtime behavior with configured Firebase/App Check, or production readiness.
+- The repository connector did not provide CircleCI job logs in this pass, so the root cause of PR #253's two failed statuses remains unknown.
+- No PR was merged or closed and no production deployment was performed as part of this review.
