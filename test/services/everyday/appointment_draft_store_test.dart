@@ -31,6 +31,15 @@ void main() {
     );
   });
 
+  test('stores completed appointment status and rejects reopening', () async {
+    final store = AurenAppointmentDraftStore();
+    await store.saveDraft('user-a', makeDraft());
+    await store.transitionDraft('user-a', 'visit', AppointmentDraftStatus.completed);
+    expect((await store.loadDrafts('user-a')).single.status, AppointmentDraftStatus.completed);
+    await expectLater(store.transitionDraft('user-a', 'visit', AppointmentDraftStatus.planned), throwsStateError);
+    expect((await store.loadDrafts('user-a')).single.status, AppointmentDraftStatus.completed);
+  });
+
   test('rejects malformed explicit versions and preserves stored bytes', () async {
     final store = AurenAppointmentDraftStore();
     final prefs = await SharedPreferences.getInstance();
