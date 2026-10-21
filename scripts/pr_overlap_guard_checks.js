@@ -156,7 +156,7 @@ test('completes a read-only audit and renders shared paths', async () => {
   }]);
   const markdown = renderMarkdown(report);
   assert.ok(markdown.includes('scripts/shared.js'));
-  assert.ok(markdown.includes('scripts/shared.js'));
+  assert.ok(markdown.includes('never edits, closes, approves, or merges'));
 });
 
 test('does not return a completed report if one pull request file list fails', async () => {
