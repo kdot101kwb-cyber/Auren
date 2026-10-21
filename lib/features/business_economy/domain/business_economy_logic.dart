@@ -34,7 +34,7 @@ class AurenBusinessEconomyLogic {
 
   static Set<String> _tokens(String value) => value
       .toLowerCase()
-      .replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ')
+      .replaceAll(RegExp(r'[^a-z0-9\u0600-\u06FF\s]'), ' ')
       .split(RegExp(r'\s+'))
       .where((token) => token.length > 1)
       .toSet();
