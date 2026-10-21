@@ -292,6 +292,7 @@ class _AurenBusinessGrowthPlannerScreenState
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
       _goal.text = prefs.getString('${_prefix}_goal') ?? '';
       _customers.text = prefs.getString('${_prefix}_customers') ?? '';
       _nextAction.text = prefs.getString('${_prefix}_action') ?? '';
