@@ -9,7 +9,7 @@ The repository's available numbered systems document groups Transport/Taxi with 
 ## Five bounded capabilities
 
 1. **Public Transport Intelligence** — typed route/stop metadata. A route is publishable only with a named source and observation timestamp. No routes, stop sequences, fares, or departure times are invented.
-2. **Vehicle Ownership** — validated local domain records for make/model/year, registration note, insurance expiry, maintenance due date and notes. This slice does not persist documents or send reminders.
+2. **Vehicle Ownership** — validated local domain records for make/model/year, registration note, insurance expiry, maintenance due date and notes. The screen surfaces local insurance/maintenance attention flags, but does not upload document files, schedule operating-system notifications, or send reminders.
 3. **Mobility Cost Planner** — deterministic estimate from user-entered distance, trip count, fuel consumption, fuel price, tolls, parking and other costs. Currency is mandatory; there is no exchange-rate lookup. Assumptions are shown.
 4. **Freight & Cargo Coordination** — shipment reference, origin/destination, carrier label, status and delivery requirements. It records user-entered status only and does not contact carriers.
 5. **Maritime & Port Intelligence** — port/country operational notes require named source evidence and observation timestamp before being described as sourced. No live port status or schedules are claimed.
@@ -20,9 +20,9 @@ The repository's available numbered systems document groups Transport/Taxi with 
 - No booking, payment, dispatch, external messaging, or binding commitment is initiated.
 - Existing ride-request service and journey-planning surfaces are not modified.
 - No paid package or external data provider is added.
-- Vehicle records and shipment data are not yet durably persisted; this foundation does not claim cross-session storage or cloud sync.
+- Routes, vehicles, shipment drafts and port notes are persisted on-device with `SharedPreferences` and reload after reopening the screen. This is offline local persistence only: there is no cloud sync, export/backup, encryption layer added here, or cross-device access. Do not use the registration field for highly sensitive identifiers until the app's storage/privacy policy is reviewed.
 - Cost output is an estimate, not a quote. It excludes costs not supplied by the user and multiplies per-trip tolls/parking/other costs by the entered trip count.
 
 ## Validation plan
 
-Focused unit tests cover source evidence gates, vehicle input/date flags, cost arithmetic and invalid values, shipment endpoint validation, and port-source gating. Flutter CI must run on the branch before this batch can be called green. No local test or build result is claimed from the repository connector session.
+Focused unit tests cover source evidence gates, vehicle input/date flags, cost arithmetic and invalid values, shipment endpoint validation, port-source gating, and SharedPreferences round-trips for offline records. Widget tests cover the five workspaces, cost arithmetic, route-source validation, cargo status/requirements, and vehicle alerts. Flutter CI must run on the branch before this batch can be called green. No local test or build result is claimed from the repository connector session.
