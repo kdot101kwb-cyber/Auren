@@ -76,7 +76,7 @@ async function processMusicTask(ref) {
     });
     if (!polled.ok) throw new Error(polled.message || 'Music provider polling failed.');
     const state = String(polled.state || '').toLowerCase();
-    if (polled.output && (polled.output.url || polled.output.storagePath || polled.output.externalId)) {
+    if (polled.output && (polled.output.url || polled.output.storagePath)) {
       await ref.set({
         status:'output',
         output:polled.output,
@@ -85,6 +85,11 @@ async function processMusicTask(ref) {
         updatedAt:admin.firestore.FieldValue.serverTimestamp(),
       }, {merge:true});
       await updateMusicParentJob(ref, {status:'completed', productionStage:'output', progress:100, output:polled.output});
+      return;
+    }
+    if ((state === 'succeeded' || state === 'completed') && polled.output && polled.output.externalId && !polled.output.url && !polled.output.storagePath) {
+      await ref.set({status:'waiting_provider',providerState:'artifact_not_materialized',externalJobId:'',providerLockUntilMs:0,lastError:'Music provider completed without a playable audio URL or Storage object.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+      await updateMusicParentJob(ref,{status:'waiting_provider',productionStage:'output',progress:90,providerState:'artifact_not_materialized',lastError:'Music provider completed without a playable audio artifact.'});
       return;
     }
     if (state === 'failed' || state === 'canceled') {
@@ -121,7 +126,8 @@ async function processMusicTask(ref) {
     return;
   }
 
-  const output=result.result.output && (result.result.output.url || result.result.output.storagePath || result.result.output.externalId) ? result.result.output : null;
+  const output=result.result.output && (result.result.output.url || result.result.output.storagePath) ? result.result.output : null;
+  const unmaterializedExternalId = !output && result.result.output && result.result.output.externalId;
   await ref.set({
     status:output ? 'output' : 'processing',
     providerId:result.providerId,
@@ -134,6 +140,9 @@ async function processMusicTask(ref) {
   }, {merge:true});
   if (output) {
     await updateMusicParentJob(ref, {status:'completed', productionStage:'output', progress:100, output});
+  } else if (unmaterializedExternalId && !result.result.externalJobId) {
+    await ref.set({status:'waiting_provider',providerState:'artifact_not_materialized',providerLockUntilMs:0,lastError:'Music provider returned only an external artifact ID, not a playable audio URL or Storage object.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+    await updateMusicParentJob(ref,{status:'waiting_provider',productionStage:'output',progress:90,providerState:'artifact_not_materialized',lastError:'Music provider returned no playable audio artifact.'});
   } else {
     await updateMusicParentJob(ref, {status:'processing', productionStage:'generation', progress:35, providerJobId:result.result.externalJobId || ''});
   }
