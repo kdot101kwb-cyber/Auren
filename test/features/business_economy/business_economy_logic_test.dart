@@ -27,6 +27,17 @@ void main() {
       expect(result.reasons, hasLength(3));
     });
 
+    test('supports Arabic terms in shared-need matching', () {
+      final result = AurenBusinessEconomyLogic.scoreMatch(
+        const AurenBusinessMatchInput(
+          buyerNeed: 'سمسم عضوي',
+          sellerOffer: 'سمسم عضوي للتصدير',
+        ),
+      );
+      expect(result.score, 60);
+      expect(result.reasons, hasLength(1));
+    });
+
     test('does not award category or location points for blank values', () {
       final result = AurenBusinessEconomyLogic.scoreMatch(
         const AurenBusinessMatchInput(
