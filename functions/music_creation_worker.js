@@ -21,12 +21,16 @@ async function validateAudioArtifact(o){
 }
 
 async function claim(){
- const snap=await db.collectionGroup('entertainmentCreationJobs').where('mode','==','أغنية').where('musicProductionStage','in',['music_blueprint_ready','blueprint_ready','generation','processing']).limit(10).get();
+ // Do not burn retry attempts while deployment configuration is unavailable.
+ if(!String(REPLICATE_API_TOKEN.value()||'').trim()||!String(REPLICATE_MUSIC_CREATION_MODEL_VERSION.value()||'').trim())return null;
+ const snap=await db.collectionGroup('entertainmentCreationJobs').where('mode','==','أغنية').where('musicProductionStage','in',['music_blueprint_ready','blueprint_ready','generation','processing','waiting_provider']).limit(10).get();
  for(const item of snap.docs){
   const ok=await db.runTransaction(async tx=>{
    const fresh=await tx.get(item.ref);if(!fresh.exists)return false;const d=fresh.data()||{};
-   if(!['music_blueprint_ready','blueprint_ready','generation','processing'].includes(String(d.musicProductionStage||''))||Number(d.musicWorkerLockUntilMs||0)>Date.now()||Number(d.musicWorkerAttempts||0)>=MAX_ATTEMPTS)return false;
-   tx.update(item.ref,{musicProductionStage:'processing',musicWorkerLockUntilMs:Date.now()+LOCK_MS,musicWorkerAttempts:admin.firestore.FieldValue.increment(1),updatedAt:admin.firestore.FieldValue.serverTimestamp()});return true;
+   const stage=String(d.musicProductionStage||'');
+   if(!['music_blueprint_ready','blueprint_ready','generation','processing','waiting_provider'].includes(stage)||Number(d.musicWorkerLockUntilMs||0)>Date.now())return false;
+   if(stage!=='waiting_provider'&&Number(d.musicWorkerAttempts||0)>=MAX_ATTEMPTS)return false;
+   tx.update(item.ref,{musicProductionStage:'processing',musicWorkerLockUntilMs:Date.now()+LOCK_MS,...(stage==='waiting_provider'?{}:{musicWorkerAttempts:admin.firestore.FieldValue.increment(1)}),updatedAt:admin.firestore.FieldValue.serverTimestamp()});return true;
   }); if(ok)return item.ref;
  }
  return null;
