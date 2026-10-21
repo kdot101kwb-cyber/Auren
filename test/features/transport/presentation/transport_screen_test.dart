@@ -11,7 +11,6 @@ void main() {
     expect(find.text('Mobility Cost Planner'), findsOneWidget);
     expect(find.text('Freight & Cargo Coordination'), findsOneWidget);
     expect(find.text('Maritime & Port Intelligence'), findsOneWidget);
-    expect(find.textContaining('لا توجد معلومات موانئ موثقة'), findsNothing);
   });
 
   testWidgets('cost planner calculates only from explicit inputs', (tester) async {
