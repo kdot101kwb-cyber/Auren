@@ -250,6 +250,45 @@ class AurenAgricultureRepository {
     });
   }
 
+
+  Future<String> saveLivestockCareLog({
+    required String uid,
+    required String animalGroup,
+    required String observation,
+    required DateTime observedAt,
+    DateTime? nextCheckAt,
+    bool needsVeterinaryReview = false,
+  }) async {
+    final cleanUid = uid.trim();
+    final cleanGroup = animalGroup.trim();
+    final cleanObservation = observation.trim();
+    if (cleanUid.isEmpty || cleanUid.length > 128 ||
+        cleanGroup.isEmpty || cleanGroup.length > 160 ||
+        cleanObservation.isEmpty || cleanObservation.length > 4000) {
+      throw ArgumentError('مجموعة الحيوانات والملاحظة مطلوبة وبطول مناسب.');
+    }
+    if (nextCheckAt != null && nextCheckAt.isBefore(observedAt)) {
+      throw ArgumentError('موعد المتابعة لا يمكن أن يسبق وقت الملاحظة.');
+    }
+    final ref = db.collection('users').doc(cleanUid)
+        .collection('agricultureNotes').doc();
+    await ref.set({
+      'title': 'متابعة الثروة الحيوانية: $cleanGroup',
+      'note': jsonEncode({
+        'kind': 'livestock_care_log',
+        'animalGroup': cleanGroup,
+        'observation': cleanObservation,
+        'observedAt': observedAt.toUtc().toIso8601String(),
+        'nextCheckAt': nextCheckAt?.toUtc().toIso8601String(),
+        'needsVeterinaryReview': needsVeterinaryReview,
+      }),
+      'type': 'livestock',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  }
+
   Future<String> saveFieldNote({
     required String uid,
     required String title,
