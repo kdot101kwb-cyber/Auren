@@ -76,6 +76,10 @@ void main() {
         ),
       ),
     ]);
+    final sourced = (await MobilityLocalStore().loadPorts()).single;
+    expect(sourced.evidence?.sourceName, 'Port authority');
+    expect(sourced.isPublishable, isTrue);
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('auren_mobility_ports_v1', [
       '{bad json',
