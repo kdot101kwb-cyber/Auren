@@ -35,6 +35,38 @@ class _AurenHealthWellbeingScreenState extends State<AurenHealthWellbeingScreen>
     _load();
   }
 
+  Future<void> _confirmClear() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف سجلات العافية المحلية؟'),
+        content: const Text('سيتم حذف السجل والعادات وأهداف الحركة والنوم وملاحظات الرعاية من هذا الجهاز فقط. لا يمكن التراجع عن الحذف.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف محلياً'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final uid = _uid;
+    if (uid == null || uid.trim().isEmpty) return;
+    try {
+      await _store.clear(uid);
+      if (mounted) setState(() {
+        _data = const AurenWellbeingData();
+        _error = null;
+      });
+    } catch (_) {
+      _message('تعذّر حذف السجلات المحلية.');
+    }
+  }
+
   Future<void> _load() async {
     final uid = _uid;
     if (uid == null || uid.trim().isEmpty) {
@@ -367,7 +399,16 @@ class _AurenHealthWellbeingScreenState extends State<AurenHealthWellbeingScreen>
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('AUREN Health & Wellbeing')),
+      appBar: AppBar(
+        title: const Text('AUREN Health & Wellbeing'),
+        actions: [
+          IconButton(
+            tooltip: 'حذف سجلات العافية المحلية',
+            onPressed: _confirmClear,
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
+      ),
       body: ListView(padding: const EdgeInsets.all(12), children: [
         const Card(child: Padding(
           padding: EdgeInsets.all(16),
