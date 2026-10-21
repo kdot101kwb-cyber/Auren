@@ -2262,20 +2262,34 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
       helpText: 'موعد استحقاق المهمة',
     );
     if (!mounted || due == null) return;
-    final task = FarmOperationTask(
-      title: selected.title,
-      dueAt: DateTime(due.year, due.month, due.day, 23, 59, 59),
-      status: FarmTaskStatus.planned,
-      cropOrAnimal: selected.cropOrAnimal,
-      notes: selected.notes,
-    );
-    setState(() => _farmTasks.add(task));
-    final now = DateTime.now();
-    final summary = _farmTasks.map((item) {
-      final status = item.isOverdue(now) ? 'متأخرة' : 'مخططة';
-      return '• ${item.title} — ${item.dueAt.year}-${item.dueAt.month.toString().padLeft(2, '0')}-${item.dueAt.day.toString().padLeft(2, '0')} — $status';
-    }).join('\\n');
-    await _showResult('مهام المزرعة', '${_farmTasks.length} مهمة في هذه الجلسة:\\n$summary\\n\\nملاحظة: القائمة حالياً مؤقتة داخل الجلسة وليست محفوظة على الحساب بعد.');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.trim().isEmpty) {
+      await _showResult('تعذر الحفظ', 'سجّل الدخول أولاً لحفظ مهام المزرعة على حسابك.');
+      return;
+    }
+    final dueAt = DateTime(due.year, due.month, due.day, 23, 59, 59);
+    try {
+      await _repo.saveFarmTask(
+        uid: uid,
+        title: selected.title,
+        note: selected.notes,
+        dueAt: dueAt,
+        status: 'planned',
+        cropOrAnimal: selected.cropOrAnimal,
+      );
+      final tasks = await _repo.watchFarmTasks(uid: uid).first;
+      final now = DateTime.now();
+      final summary = tasks.map((item) {
+        final dueDate = DateTime.tryParse((item['dueAt'] ?? '').toString());
+        final status = (item['status'] ?? 'planned').toString();
+        final overdue = dueDate != null && dueDate.isBefore(now) && status != 'done' && status != 'skipped';
+        final dateLabel = dueDate == null ? 'موعد غير معروف' : '${dueDate.year}-${dueDate.month.toString().padLeft(2, '0')}-${dueDate.day.toString().padLeft(2, '0')}';
+        return '• ${item['title']} — $dateLabel — ${overdue ? 'متأخرة' : status == 'done' ? 'مكتملة' : 'مخططة'}';
+      }).join('\\n');
+      await _showResult('مهام المزرعة المحفوظة', 'تم حفظ المهمة على حسابك.\\n\\n$summary');
+    } catch (error) {
+      await _showResult('تعذر حفظ المهمة', 'لم نتمكن من حفظ المهمة. تحقق من الاتصال والصلاحيات ثم حاول مجدداً.\\n\\nالتفاصيل: $error');
+    }
   }
 
   Future<void> _showCropChecklistTool() async {
