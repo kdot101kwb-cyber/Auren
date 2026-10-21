@@ -169,14 +169,22 @@ class _AurenBuyerSellerMatchDraftScreenState
       setState(() => _status = 'أدخل احتياج المشتري وعرض البائع أولاً.');
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('${_storageKey}_need', _need.text.trim());
-    await prefs.setString('${_storageKey}_offer', _offer.text.trim());
-    await prefs.setString('${_storageKey}_buyer_location', _buyerLocation.text.trim());
-    await prefs.setString('${_storageKey}_seller_location', _sellerLocation.text.trim());
-    await prefs.setString('${_storageKey}_buyer_category', _buyerCategory.text.trim());
-    await prefs.setString('${_storageKey}_seller_category', _sellerCategory.text.trim());
-    if (mounted) setState(() => _status = 'تم حفظ المسودة على هذا الجهاز؛ لم يُرسل أي طلب.');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('${_storageKey}_need', _need.text.trim());
+      await prefs.setString('${_storageKey}_offer', _offer.text.trim());
+      await prefs.setString('${_storageKey}_buyer_location', _buyerLocation.text.trim());
+      await prefs.setString('${_storageKey}_seller_location', _sellerLocation.text.trim());
+      await prefs.setString('${_storageKey}_buyer_category', _buyerCategory.text.trim());
+      await prefs.setString('${_storageKey}_seller_category', _sellerCategory.text.trim());
+      if (mounted) {
+        setState(() => _status = 'تم حفظ المسودة على هذا الجهاز؛ لم يُرسل أي طلب.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _status = 'تعذر حفظ المسودة. تحقق من مساحة الجهاز وحاول مجدداً.');
+      }
+    }
   }
 
   @override
@@ -304,11 +312,17 @@ class _AurenBusinessGrowthPlannerScreenState
       setState(() => _status = 'أدخل هدفاً أو خطوة واحدة على الأقل.');
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('${_prefix}_goal', _goal.text.trim());
-    await prefs.setString('${_prefix}_customers', _customers.text.trim());
-    await prefs.setString('${_prefix}_action', _nextAction.text.trim());
-    if (mounted) setState(() => _status = 'تم حفظ الخطة محلياً.');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('${_prefix}_goal', _goal.text.trim());
+      await prefs.setString('${_prefix}_customers', _customers.text.trim());
+      await prefs.setString('${_prefix}_action', _nextAction.text.trim());
+      if (mounted) setState(() => _status = 'تم حفظ الخطة محلياً.');
+    } catch (_) {
+      if (mounted) {
+        setState(() => _status = 'تعذر حفظ الخطة. تحقق من مساحة الجهاز وحاول مجدداً.');
+      }
+    }
   }
 
   @override
