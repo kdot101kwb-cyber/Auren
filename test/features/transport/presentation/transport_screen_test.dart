@@ -14,6 +14,17 @@ void main() {
         description: 'TextField with label $label',
       );
 
+  Future<void> openSection(WidgetTester tester, String title) async {
+    await tester.pumpAndSettle();
+    final section = find.ancestor(
+      of: find.text(title),
+      matching: find.byType(ExpansionTile),
+    );
+    await tester.ensureVisible(section);
+    await tester.tap(section);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows five separate mobility workspaces', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
 
@@ -26,8 +37,7 @@ void main() {
 
   testWidgets('cost planner calculates only from explicit inputs', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
-    await tester.tap(find.text('Mobility Cost Planner'));
-    await tester.pumpAndSettle();
+    await openSection(tester, 'Mobility Cost Planner');
 
     Future<void> enter(String label, String value) async {
       final targetField = field(label);
@@ -54,8 +64,7 @@ void main() {
 
   testWidgets('requires a named source before recording a transit route', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
-    await tester.tap(find.text('Public Transport Intelligence'));
-    await tester.pumpAndSettle();
+    await openSection(tester, 'Public Transport Intelligence');
     await tester.ensureVisible(find.text('حفظ محليًا'));
     await tester.tap(find.text('حفظ محليًا'));
     await tester.pumpAndSettle();
@@ -65,8 +74,7 @@ void main() {
 
   testWidgets('cargo draft records selected status and delivery requirements', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
-    await tester.tap(find.text('Freight & Cargo Coordination'));
-    await tester.pumpAndSettle();
+    await openSection(tester, 'Freight & Cargo Coordination');
 
     await tester.enterText(field('مرجع الشحنة'), 'C-101');
     await tester.enterText(field('من'), 'بورتسودان');
@@ -76,6 +84,7 @@ void main() {
       'تغليف, توقيع المستلم',
     );
 
+    await tester.ensureVisible(find.byType(DropdownButtonFormField<CargoStatus>));
     await tester.tap(find.byType(DropdownButtonFormField<CargoStatus>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('قيد النقل').last);
@@ -89,11 +98,9 @@ void main() {
     expect(find.textContaining('تغليف, توقيع المستلم'), findsOneWidget);
   });
 
-
   testWidgets('vehicle records surface insurance and maintenance alerts', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
-    await tester.tap(find.text('Vehicle Ownership'));
-    await tester.pumpAndSettle();
+    await openSection(tester, 'Vehicle Ownership');
 
     final today = DateTime.now();
     final soon = today.add(const Duration(days: 1));
@@ -120,5 +127,4 @@ void main() {
     expect(find.textContaining('تنبيه: التأمين يحتاج مراجعة'), findsOneWidget);
     expect(find.textContaining('تنبيه: موعد الصيانة حان أو فات'), findsOneWidget);
   });
-
 }
