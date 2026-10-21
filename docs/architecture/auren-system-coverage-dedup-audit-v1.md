@@ -87,3 +87,14 @@ This is a point-in-time review of open pull requests and their reported combined
 - Combined status checks show CI state for the specified commit, not manual UX review, runtime behavior with configured Firebase/App Check, or production readiness.
 - The repository connector did not provide CircleCI job logs in this pass, so the root cause of PR #253's two failed statuses remains unknown.
 - No PR was merged or closed and no production deployment was performed as part of this review.
+
+
+### Changed-path overlap check completed — 2026-10-21
+
+The following exact changed-file lists were compared after the initial review:
+
+- **PR #254 vs PR #255:** both change `.github/workflows/automation-inventory.yml`, `scripts/auren_automation_inventory.js`, and `scripts/auren_automation_inventory.test.js`. PR #255 additionally changes `.github/workflows/backend-ci.yml`, `.github/workflows/codeql.yml`, `.github/workflows/publish-images.yml`, and `docs/AUREN_AUTOMATION_INVENTORY.md`. This is confirmed path overlap, not merely similar titles. Inspect diffs and commit ancestry before choosing a canonical PR; do not merge both blindly.
+- **PR #256 vs PR #258:** both change `lib/features/social/presentation/timeline_screen.dart`. PR #256 also changes Nebula tokens, create/edit post screens, media-type helper, repository, and media-type tests; PR #258 is limited to the timeline screen in its reported changed-file list. This confirms a shared integration hotspot but does not prove one PR wholly supersedes the other. Review the timeline diffs and base/head ancestry before merge.
+- **PR #251 vs PR #248:** no path comparison has yet been completed in this pass. Their descriptions indicate related user journeys, but do not label them duplicates until exact changed paths and dependencies are compared.
+
+The audit document was updated to record these findings; no application source files, PR states, or deployment targets were changed.
