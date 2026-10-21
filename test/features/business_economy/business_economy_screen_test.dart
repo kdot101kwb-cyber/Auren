@@ -21,8 +21,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Business Discovery'), findsOneWidget);
 
@@ -31,8 +31,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Buyer–Seller Matching'), findsOneWidget);
 
@@ -41,8 +41,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Trade & Export Hub'), findsOneWidget);
 
@@ -51,8 +51,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Business Growth Planner'), findsOneWidget);
   });
@@ -67,8 +67,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('Business Growth Planner'));
     await tester.pumpAndSettle();
@@ -88,8 +88,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('Buyer–Seller Matching'));
     await tester.pumpAndSettle();
@@ -109,8 +109,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBuyerSellerMatchDraftScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('حفظ المسودة محلياً'));
     await tester.pumpAndSettle();
@@ -133,8 +133,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('Business Growth Planner'));
     await tester.pumpAndSettle();
@@ -154,8 +154,8 @@ void main() {
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessGrowthPlannerScreen),
-        matching: find.byType(ListView),
-      ),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('حفظ الخطة'));
     await tester.pumpAndSettle();
