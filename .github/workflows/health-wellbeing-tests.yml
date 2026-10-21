@@ -24,12 +24,12 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
       - name: Format changed wellbeing sources
-        run: dart format lib/services/health/auren_wellbeing_local_store.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart test/services/health/auren_wellbeing_local_store_test.dart test/features/health/health_wellbeing_screen_test.dart test/features/messenger/ai_message_privacy_notice_test.dart
+        run: dart format lib/services/health/auren_wellbeing_local_store.dart lib/services/health/health_data_sharing_consent.dart lib/services/health/auren_health_repository.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart test/services/health/auren_wellbeing_local_store_test.dart test/services/health/auren_health_repository_test.dart test/features/health/health_wellbeing_screen_test.dart test/features/messenger/ai_message_privacy_notice_test.dart
       - name: Test local wellbeing domain and storage
         run: flutter test test/services/health/auren_wellbeing_local_store_test.dart
-      - name: Test wellbeing screen
+      - name: Test explicit consent gate for remote health data\n        run: flutter test test/services/health/auren_health_repository_test.dart\n      - name: Test wellbeing screen
         run: flutter test test/features/health/health_wellbeing_screen_test.dart
       - name: Test AI message privacy disclosure
         run: flutter test test/features/messenger/ai_message_privacy_notice_test.dart
       - name: Analyze wellbeing and privacy disclosure
-        run: flutter analyze lib/services/health/auren_wellbeing_local_store.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart
+        run: flutter analyze lib/services/health/auren_wellbeing_local_store.dart lib/services/health/health_data_sharing_consent.dart lib/services/health/auren_health_repository.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart
