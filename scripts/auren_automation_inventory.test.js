@@ -92,6 +92,7 @@ test('report labels its limits and does not dump scanned source', () => {
   fs.writeFileSync(path.join(root, '.github/workflows/ci.yml'), 'name: CI\non:\n  push:\njobs:\n  test:\n    runs-on: ubuntu-latest\n');
   const output = markdown(inventory(root));
   assert.match(output, /Static inspection only/);
+  assert.match(output, /Dynamic exports, TypeScript sources, wrapper factories, and cross-module re-exports may be missed/);
   assert.doesNotMatch(output, /TOKEN_VALUE|SECRET_VALUE/);
 });
 
