@@ -79,8 +79,15 @@ class AurenOfflineLearning {
 
   Future<void> removeLesson(String id) async {
     _validateId(id);
-    final map = await _readMap(_lessonsKey)..remove(id);
-    await store.write(_lessonsKey, jsonEncode(map));
+    final lessons = await _readMap(_lessonsKey)..remove(id);
+    final notes = await _readStringMap(_notesKey)..remove(id);
+    final progress = await _readMap(_progressKey)..remove(id);
+
+    // Persist related records too, so deleting a lesson does not leave orphaned
+    // notes or progress entries consuming the bounded local caches.
+    await store.write(_lessonsKey, jsonEncode(lessons));
+    await store.write(_notesKey, jsonEncode(notes));
+    await store.write(_progressKey, jsonEncode(progress));
   }
 
   Future<void> saveNote(String lessonId, String note) async {
