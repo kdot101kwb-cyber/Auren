@@ -151,6 +151,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
             _toolButton(Icons.pets_outlined, 'سجل متابعة الحيوانات', _showLivestockCareLogTool),
+            _toolButton(Icons.notifications_active_outlined, 'متابعات الحيوانات', _showLivestockFollowUpsTool),
             _toolButton(Icons.task_alt_outlined, 'مهام المزرعة', _showFarmOperationsTool),
             _toolButton(Icons.fact_check_outlined, 'إدارة حالة المهام', _manageFarmTasksTool),
             _toolButton(Icons.checklist_outlined, 'قائمة فحص المحصول', _showCropChecklistTool),
@@ -2345,6 +2346,35 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
       await _showResult('سجل الثروة الحيوانية', 'تم حفظ الملاحظة على حسابك.$followUpText${input.$3 ? '\nيُرجى مراجعة طبيب بيطري.' : ''}');
     } catch (error) {
       await _showResult('تعذر حفظ السجل', 'تحقق من الاتصال والصلاحيات ثم حاول مجدداً. التفاصيل: $error');
+    }
+  }
+  Future<void> _showLivestockFollowUpsTool() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.trim().isEmpty) {
+      await _showResult('متابعات الحيوانات', 'سجّل الدخول لعرض سجلات المتابعة.');
+      return;
+    }
+    try {
+      final logs = await _repo.watchLivestockCareLogs(uid: uid).first;
+      if (!mounted) return;
+      if (logs.isEmpty) {
+        await _showResult('متابعات الحيوانات', 'لا توجد سجلات متابعة محفوظة حتى الآن.');
+        return;
+      }
+      final now = DateTime.now();
+      final lines = logs.map((log) {
+        final nextCheck = DateTime.tryParse((log['nextCheckAt'] ?? '').toString());
+        final observedAt = DateTime.tryParse((log['observedAt'] ?? '').toString());
+        final date = nextCheck ?? observedAt;
+        final dateLabel = date == null ? 'تاريخ غير متوفر' : '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        final due = nextCheck != null && !nextCheck.isAfter(now);
+        final vet = log['needsVeterinaryReview'] == true ? ' — مراجعة بيطرية مطلوبة' : '';
+        final reminder = nextCheck == null ? 'تاريخ الملاحظة' : due ? 'المتابعة مستحقة' : 'موعد المتابعة';
+        return '• ${log['animalGroup'] ?? log['title']} — $reminder: $dateLabel$vet\n  ${log['observation'] ?? ''}';
+      }).join('\n');
+      await _showResult('سجلات متابعة الحيوانات', lines);
+    } catch (error) {
+      if (mounted) await _showResult('تعذر عرض المتابعات', 'تحقق من الاتصال والصلاحيات ثم حاول مجدداً. التفاصيل: $error');
     }
   }
   Future<void> _manageFarmTasksTool() async {
