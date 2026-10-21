@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
+import '../data/mobility_local_store.dart';
 import '../domain/mobility_models.dart';
 
 class AurenTransportScreen extends StatefulWidget {
@@ -11,6 +12,8 @@ class AurenTransportScreen extends StatefulWidget {
 }
 
 class _AurenTransportScreenState extends State<AurenTransportScreen> {
+  final MobilityLocalStore _localStore = MobilityLocalStore();
+  bool _loadingRecords = true;
   final _routeOperator = TextEditingController();
   final _routeName = TextEditingController();
   final _routeStops = TextEditingController();
@@ -46,6 +49,34 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   String? _costError;
 
   @override
+  void initState() {
+    super.initState();
+    _loadLocalRecords();
+  }
+
+  Future<void> _loadLocalRecords() async {
+    try {
+      final results = await Future.wait<Object>([
+        _localStore.loadRoutes(),
+        _localStore.loadVehicles(),
+        _localStore.loadShipments(),
+        _localStore.loadPorts(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _routes.addAll(results[0] as List<PublicTransportRoute>);
+        _vehicles.addAll(results[1] as List<VehicleRecord>);
+        _shipments.addAll(results[2] as List<CargoShipment>);
+        _ports.addAll(results[3] as List<PortInformation>);
+        _loadingRecords = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingRecords = false);
+      if (mounted) _message('تعذر تحميل بعض السجلات المحلية. يمكنك المتابعة وإعادة المحاولة لاحقًا.');
+    }
+  }
+
+  @override
   void dispose() {
     for (final controller in [
       _routeOperator, _routeName, _routeStops, _routeSource,
@@ -64,7 +95,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   double? _number(TextEditingController controller) =>
       double.tryParse(controller.text.trim());
 
-  void _saveRoute() {
+  Future<void> _saveRoute() async {
     final source = _routeSource.text.trim();
     final route = PublicTransportRoute(
       operator: _routeOperator.text,
@@ -79,10 +110,15 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       return;
     }
     setState(() => _routes.add(route));
+    try {
+      await _localStore.saveRoutes(_routes);
+    } catch (_) {
+      _message('أُضيف المسار للشاشة، لكن تعذر حفظه على الجهاز.');
+    }
     _routeOperator.clear(); _routeName.clear(); _routeStops.clear(); _routeSource.clear();
   }
 
-  void _saveVehicle() {
+  Future<void> _saveVehicle() async {
     final year = int.tryParse(_vehicleYear.text.trim());
     if (year == null) {
       _message('أدخل سنة مركبة صحيحة.');
@@ -110,11 +146,16 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       return;
     }
     setState(() => _vehicles.add(vehicle));
+    try {
+      await _localStore.saveVehicles(_vehicles);
+    } catch (_) {
+      _message('أُضيفت المركبة للشاشة، لكن تعذر حفظها على الجهاز.');
+    }
     _vehicleMake.clear(); _vehicleModel.clear(); _vehicleYear.clear();
     _vehicleRegistration.clear(); _insuranceExpiry.clear(); _maintenanceDue.clear();
   }
 
-  void _saveShipment() {
+  Future<void> _saveShipment() async {
     final shipment = CargoShipment(
       reference: _cargoRef.text,
       origin: _cargoOrigin.text,
@@ -129,12 +170,17 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       return;
     }
     setState(() => _shipments.add(shipment));
+    try {
+      await _localStore.saveShipments(_shipments);
+    } catch (_) {
+      _message('أُضيفت الشحنة للشاشة، لكن تعذر حفظها على الجهاز.');
+    }
     _cargoRef.clear(); _cargoOrigin.clear(); _cargoDestination.clear();
     _cargoRequirements.clear(); _cargoNotes.clear();
     setState(() => _cargoStatus = CargoStatus.draft);
   }
 
-  void _savePort() {
+  Future<void> _savePort() async {
     final source = _portSource.text.trim();
     final port = PortInformation(
       portName: _portName.text,
@@ -148,6 +194,11 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       return;
     }
     setState(() => _ports.add(port));
+    try {
+      await _localStore.savePorts(_ports);
+    } catch (_) {
+      _message('أُضيفت معلومات الميناء للشاشة، لكن تعذر حفظها على الجهاز.');
+    }
     _portName.clear(); _portCountry.clear(); _portSource.clear();
   }
 
@@ -258,6 +309,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_loadingRecords) const LinearProgressIndicator(),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -266,7 +318,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
                 const SizedBox(height: 8),
                 const Text('أدخل بياناتك بنفسك. المسارات والموانئ لا تُعرض كبيانات موثوقة إلا عند تسمية المصدر. لا توجد حجوزات أو مدفوعات تلقائية.'),
                 const SizedBox(height: 8),
-                const Text('ملاحظة: السجلات في هذه النسخة مؤقتة داخل الشاشة ولا تُحفظ بعد إغلاقها.'),
+                const Text('تُحفظ المسارات والمركبات والشحنات ومعلومات الموانئ محليًا على الجهاز، دون مزامنة سحابية.'),
               ]),
             ),
           ),
