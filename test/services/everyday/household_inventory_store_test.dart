@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auren/services/everyday/household_inventory_service.dart';
@@ -117,4 +118,53 @@ void main() {
     );
     expect(await store.loadMovements('user-A'), isEmpty);
   });
+  test('rejects duplicate item IDs in stored inventory instead of hiding corruption', () async {
+    const key = 'auren_household_inventory_v1_dXNlci1B';
+    SharedPreferences.setMockInitialValues({
+      key: jsonEncode({
+        'version': 1,
+        'items': [
+          {'id': 'rice', 'name': 'Rice', 'category': 'Kitchen', 'quantity': 2, 'lowStockThreshold': 1, 'unit': 'kg', 'notes': ''},
+          {'id': 'rice', 'name': 'Other Rice', 'category': 'Kitchen', 'quantity': 3, 'lowStockThreshold': 1, 'unit': 'kg', 'notes': ''},
+        ],
+        'movements': [],
+      }),
+    });
+    final store = AurenHouseholdInventoryStore();
+    await expectLater(store.loadItems('user-A'), throwsFormatException);
+    await expectLater(store.saveItem('user-A', item()), throwsFormatException);
+  });
+
+  test('rejects duplicate movement IDs and movements pointing to missing items', () async {
+    const key = 'auren_household_inventory_v1_dXNlci1B';
+    final baseItem = {
+      'id': 'rice', 'name': 'Rice', 'category': 'Kitchen',
+      'quantity': 2, 'lowStockThreshold': 1, 'unit': 'kg', 'notes': '',
+    };
+    final movement = {
+      'id': 'move-1', 'itemId': 'rice', 'type': 'restock',
+      'amount': 1, 'note': '', 'occurredAt': '2026-10-20T12:00:00.000Z',
+    };
+    SharedPreferences.setMockInitialValues({
+      key: jsonEncode({
+        'version': 1,
+        'items': [baseItem],
+        'movements': [movement, movement],
+      }),
+    });
+    final store = AurenHouseholdInventoryStore();
+    await expectLater(store.loadMovements('user-A'), throwsFormatException);
+
+    SharedPreferences.setMockInitialValues({
+      key: jsonEncode({
+        'version': 1,
+        'items': [baseItem],
+        'movements': [{...movement, 'itemId': 'missing'}],
+      }),
+    });
+    final orphanStore = AurenHouseholdInventoryStore();
+    await expectLater(orphanStore.loadMovements('user-A'), throwsFormatException);
+    await expectLater(orphanStore.loadItems('user-A'), throwsFormatException);
+  });
+
 }
