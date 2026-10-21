@@ -11,13 +11,15 @@ import '../../../services/everyday/home_utility_reading_store.dart';
 
 /// Local-only household planning. This screen never books or contacts providers.
 class AurenEverydayServicesScreen extends StatefulWidget {
-  const AurenEverydayServicesScreen({super.key});
+  const AurenEverydayServicesScreen({super.key, this.uidOverride, this.useUidOverride = false});
+  final String? uidOverride;
+  final bool useUidOverride;
   @override State<AurenEverydayServicesScreen> createState() => _AurenEverydayServicesScreenState();
 }
 class _AurenEverydayServicesScreenState extends State<AurenEverydayServicesScreen> {
   int tab = 0;
   @override Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = widget.useUidOverride ? widget.uidOverride : FirebaseAuth.instance.currentUser?.uid;
     return Scaffold(
       appBar: AppBar(title: const Text('Everyday Life & Services')),
       body: uid == null
