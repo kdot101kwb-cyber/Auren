@@ -11,24 +11,38 @@ const LIMITS = Object.freeze({
   defaultDurationSeconds: 30,
 });
 
-function boundedString(value, fallback, maxLength) {
-  return String(value ?? fallback).trim().slice(0, maxLength);
+function boundedString(value, fallback, field, maxLength) {
+  if (value === undefined || value === null) value = fallback;
+  if (typeof value !== 'string') {
+    return {ok: false, message: `Music ${field} must be a string.`};
+  }
+  return {ok: true, value: value.trim().slice(0, maxLength)};
 }
 
 function normalizeAurenMusicProductionRequest(data) {
   const source = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
-  const prompt = boundedString(source.prompt, '', LIMITS.prompt);
+  const promptResult = boundedString(source.prompt, '', 'prompt', LIMITS.prompt);
+  if (!promptResult.ok) return promptResult;
+  const prompt = promptResult.value;
   if (!prompt) {
     return {ok: false, message: 'Music prompt is required.'};
   }
 
+  const titleResult = boundedString(source.title, 'AUREN Original Track', 'title', LIMITS.title);
+  const genreResult = boundedString(source.genre, '', 'genre', LIMITS.genre);
+  const moodResult = boundedString(source.mood, '', 'mood', LIMITS.mood);
+  const languageResult = boundedString(source.language, '', 'language', LIMITS.language);
+  for (const result of [titleResult, genreResult, moodResult, languageResult]) {
+    if (!result.ok) return result;
+  }
+
   const rawDuration = source.durationSeconds;
   let duration = LIMITS.defaultDurationSeconds;
-  if (rawDuration !== undefined && rawDuration !== null && rawDuration !== '') {
-    duration = Number(rawDuration);
-    if (!Number.isFinite(duration)) {
+  if (rawDuration !== undefined && rawDuration !== null) {
+    if (typeof rawDuration !== 'number' || !Number.isFinite(rawDuration)) {
       return {ok: false, message: 'Music duration must be a finite number of seconds.'};
     }
+    duration = rawDuration;
   }
 
   duration = Math.max(
@@ -39,11 +53,11 @@ function normalizeAurenMusicProductionRequest(data) {
   return {
     ok: true,
     value: {
-      title: boundedString(source.title, 'AUREN Original Track', LIMITS.title) || 'AUREN Original Track',
+      title: titleResult.value || 'AUREN Original Track',
       prompt,
-      genre: boundedString(source.genre, '', LIMITS.genre),
-      mood: boundedString(source.mood, '', LIMITS.mood),
-      language: boundedString(source.language, '', LIMITS.language),
+      genre: genreResult.value,
+      mood: moodResult.value,
+      language: languageResult.value,
       durationSeconds: duration,
     },
   };
