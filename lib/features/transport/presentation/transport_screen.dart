@@ -333,7 +333,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('مصدر المعلومات', _routeSource, hint: 'مثال: موقع المشغّل أو جدول رسمي'),
               Align(alignment: Alignment.centerRight, child: FilledButton(
                 onPressed: _saveRoute, child: const Text('حفظ محليًا'))),
-              _savedItems(_routes, 'لا توجد مسارات محفوظة. لن نخترع مسارات أو مواعيد.', (r) => '${r.routeName} • ${r.operator} • ${r.stops.length} توقفات • المصدر: ${r.evidence!.sourceName}'),
+              _savedItems(_routes, 'لا توجد مسارات محفوظة. لن نخترع مسارات أو مواعيد.', (r) => '${r.routeName} • ${r.operator} • ${r.stops.length} توقفات • المصدر: ${r.evidence?.sourceName ?? 'غير موثق'}'),
             ],
           ),
           _section(
@@ -424,7 +424,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('مصدر المعلومات', _portSource, hint: 'مصدر رسمي أو مشغّل الميناء'),
               Align(alignment: Alignment.centerRight, child: FilledButton(
                 onPressed: _savePort, child: const Text('حفظ معلومات الميناء'))),
-              _savedItems(_ports, 'لا توجد معلومات موانئ موثقة. لا نعرض حالة تشغيل أو مواعيد مباشرة دون مصدر.', (p) => '${p.portName} • ${p.country} • المصدر: ${p.evidence!.sourceName}'),
+              _savedItems(_ports, 'لا توجد معلومات موانئ موثقة. لا نعرض حالة تشغيل أو مواعيد مباشرة دون مصدر.', (p) => '${p.portName} • ${p.country} • المصدر: ${p.evidence?.sourceName ?? 'غير موثق'}'),
             ],
           ),
         ],
