@@ -289,6 +289,31 @@ class AurenAgricultureRepository {
     return ref.id;
   }
 
+
+  Stream<List<Map<String, dynamic>>> watchLivestockCareLogs({required String uid}) {
+    final cleanUid = uid.trim();
+    if (cleanUid.isEmpty) return Stream.value(const <Map<String, dynamic>>[]);
+    return db.collection('users').doc(cleanUid).collection('agricultureNotes')
+        .where('type', isEqualTo: 'livestock').snapshots().map((snapshot) {
+      final logs = <Map<String, dynamic>>[];
+      for (final doc in snapshot.docs) {
+        final raw = doc.data()['note'];
+        if (raw is! String) continue;
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map<String, dynamic> && decoded['kind'] == 'livestock_care_log') {
+            logs.add({...decoded, 'id': doc.id, 'title': doc.data()['title']});
+          }
+        } on FormatException {
+          // Existing livestock notes are not structured care logs.
+        }
+      }
+      logs.sort((a, b) => (a['nextCheckAt'] ?? a['observedAt'] ?? '')
+          .toString().compareTo((b['nextCheckAt'] ?? b['observedAt'] ?? '').toString()));
+      return logs;
+    });
+  }
+
   Future<String> saveFieldNote({
     required String uid,
     required String title,
