@@ -91,7 +91,6 @@ class AgricultureMarketPrice {
   }
 }
 
-
 class AgricultureNormalizedLocalMarketPrice {
   final String id;
   final String iso3;
@@ -122,6 +121,29 @@ class AgricultureNormalizedLocalMarketPrice {
     required this.observedAt,
     required this.source,
   });
+
+  DateTime? get parsedObservedAt {
+    final value = observedAt?.trim();
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
+  }
+
+  bool isStaleAt(DateTime now, {Duration maxAge = const Duration(days: 7)}) {
+    final date = parsedObservedAt;
+    if (date == null) return true;
+    final age = now.toUtc().difference(date.toUtc());
+    return age.isNegative || age > maxAge;
+  }
+
+  /// This normalized row has no source URL field, so only the label can be checked.
+  bool get hasRecordedSource => source?.trim().isNotEmpty == true;
+
+  String freshnessLabelAt(DateTime now, {Duration maxAge = const Duration(days: 7)}) {
+    if (!hasRecordedSource) return 'مصدر السعر غير مسجل';
+    if (parsedObservedAt == null) return 'تاريخ الرصد غير متوفر';
+    if (isStaleAt(now, maxAge: maxAge)) return 'بيانات قديمة — تحقق محلياً';
+    return 'تاريخ الرصد حديث؛ المصدر مسجل دون تحقق من رابط المصدر';
+  }
 
   factory AgricultureNormalizedLocalMarketPrice.fromMap(Map<String, dynamic> d) {
     double? number(dynamic value) => value is num ? value.toDouble() : double.tryParse(value?.toString() ?? '');
@@ -185,7 +207,7 @@ class AgricultureMarketPricesService {
     }
     return {'global': parse('global'), 'local': parse('local')};
   }
-  
+
   Future<List<AgricultureNormalizedLocalMarketPrice>> normalizeLocalPricesToUsdPerTonne({
     String iso3 = 'ALL',
     String commodity = '',
