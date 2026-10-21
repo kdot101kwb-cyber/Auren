@@ -151,6 +151,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
             _toolButton(Icons.task_alt_outlined, 'مهام المزرعة', _showFarmOperationsTool),
+            _toolButton(Icons.fact_check_outlined, 'إدارة حالة المهام', _manageFarmTasksTool),
             _toolButton(Icons.checklist_outlined, 'قائمة فحص المحصول', _showCropChecklistTool),
             _toolButton(Icons.inventory_2_outlined, 'خطة موارد المزرعة', _showFarmResourcePlannerTool),
             _toolButton(Icons.scale_outlined, 'الإنتاجية', _showYieldTool),
@@ -2288,6 +2289,73 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
       await _showResult('مهام المزرعة المحفوظة', 'تم حفظ المهمة على حسابك.\\n\\n$summary');
     } catch (error) {
       await _showResult('تعذر حفظ المهمة', 'لم نتمكن من حفظ المهمة. تحقق من الاتصال والصلاحيات ثم حاول مجدداً.\\n\\nالتفاصيل: $error');
+    }
+  }
+
+
+  Future<void> _manageFarmTasksTool() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.trim().isEmpty) {
+      await _showResult('إدارة المهام', 'سجّل الدخول لعرض المهام المحفوظة.');
+      return;
+    }
+    try {
+      final tasks = await _repo.watchFarmTasks(uid: uid).first;
+      if (!mounted) return;
+      if (tasks.isEmpty) {
+        await _showResult('إدارة المهام', 'لا توجد مهام محفوظة حتى الآن.');
+        return;
+      }
+      String? selectedId = tasks.first['id']?.toString();
+      String selectedStatus = (tasks.first['status'] ?? 'planned').toString();
+      final changed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, refreshDialog) => AlertDialog(
+            title: const Text('تحديث حالة مهمة'),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              DropdownButtonFormField<String>(
+                value: selectedId,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'المهمة'),
+                items: tasks.map((task) => DropdownMenuItem<String>(
+                  value: task['id'].toString(),
+                  child: Text(task['title'].toString(), overflow: TextOverflow.ellipsis),
+                )).toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  refreshDialog(() {
+                    selectedId = value;
+                    final task = tasks.firstWhere((item) => item['id'].toString() == value);
+                    selectedStatus = (task['status'] ?? 'planned').toString();
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: const {'planned', 'inProgress', 'done', 'skipped'}.contains(selectedStatus) ? selectedStatus : 'planned',
+                decoration: const InputDecoration(labelText: 'الحالة'),
+                items: const [
+                  DropdownMenuItem(value: 'planned', child: Text('مخططة')),
+                  DropdownMenuItem(value: 'inProgress', child: Text('قيد التنفيذ')),
+                  DropdownMenuItem(value: 'done', child: Text('مكتملة')),
+                  DropdownMenuItem(value: 'skipped', child: Text('تم تخطيها')),
+                ],
+                onChanged: (value) { if (value != null) refreshDialog(() => selectedStatus = value); },
+              ),
+            ]),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+              FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('حفظ الحالة')),
+            ],
+          ),
+        ),
+      );
+      if (changed != true || selectedId == null || !mounted) return;
+      await _repo.updateFarmTaskStatus(uid: uid, taskId: selectedId!, status: selectedStatus);
+      await _showResult('إدارة المهام', 'تم تحديث حالة المهمة وحفظها.');
+    } catch (error) {
+      if (mounted) await _showResult('تعذر تحديث المهمة', 'تحقق من الاتصال والصلاحيات ثم حاول مجدداً.\\n\\nالتفاصيل: $error');
     }
   }
 
