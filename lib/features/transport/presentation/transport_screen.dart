@@ -485,8 +485,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
                               child: Text(_cargoStatusLabel(status), overflow: TextOverflow.ellipsis),
                             ),
                           ).toList(),
-                          onChanged: _loadingRecords || shipment.status == CargoStatus.delivered ||
-                                  shipment.status == CargoStatus.cancelled
+                          onChanged: _loadingRecords
                               ? null
                               : (status) {
                                   if (status != null) _updateShipmentStatus(index, status);
