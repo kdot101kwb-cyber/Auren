@@ -62,4 +62,66 @@ void main() {
     expect(find.text('حفظ الخطة'), findsOneWidget);
     expect(find.text('هدف قابل للقياس'), findsOneWidget);
   });
+
+  testWidgets('matching brief is saved locally without sending a request',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenBusinessEconomyScreen()),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Buyer–Seller Matching'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Buyer–Seller Matching'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'Organic sesame');
+    await tester.enterText(find.byType(TextField).at(1), 'Organic sesame available');
+    await tester.scrollUntilVisible(
+      find.text('حفظ المسودة محلياً'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('حفظ المسودة محلياً'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تم حفظ المسودة على هذا الجهاز؛ لم يُرسل أي طلب.'),
+        findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('auren_business_match_draft_v1_need'),
+        'Organic sesame');
+    expect(prefs.getString('auren_business_match_draft_v1_offer'),
+        'Organic sesame available');
+  });
+
+  testWidgets('growth planner saves a measurable goal locally', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenBusinessEconomyScreen()),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Business Growth Planner'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Business Growth Planner'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'Reach 10 customers');
+    await tester.enterText(find.byType(TextField).at(1), 'Local retailers');
+    await tester.scrollUntilVisible(
+      find.text('حفظ الخطة'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('حفظ الخطة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تم حفظ الخطة محلياً.'), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('auren_business_growth_plan_v1_goal'),
+        'Reach 10 customers');
+    expect(prefs.getString('auren_business_growth_plan_v1_customers'),
+        'Local retailers');
+  });
 }
