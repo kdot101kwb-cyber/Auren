@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../services/education/education_repository.dart';
 import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import 'auren_offline_learning_screen.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
   const AurenAURENEducationScreen({super.key});
@@ -17,6 +18,7 @@ class _EducationState extends State<AurenAURENEducationScreen> {
     if(uid==null)return const Scaffold(body:Center(child:Text('سجّل الدخول عشان تستخدم التعلم.')));
     return Scaffold(
       appBar:AppBar(title:const Text('AUREN Education'),actions:[
+        IconButton(tooltip: 'التعلم دون إنترنت', icon: const Icon(Icons.offline_pin_outlined), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenOfflineLearningScreen()))),
         IconButton(icon:const Icon(Icons.auto_awesome),onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const MessengerScreen(initialPrompt:'ابني لي خطة تعلم شخصية بناءً على أهدافي ومهاراتي.')))),
       ]),
       body:StreamBuilder<List<AurenCourse>>(
