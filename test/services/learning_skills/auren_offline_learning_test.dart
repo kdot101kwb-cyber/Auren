@@ -26,6 +26,25 @@ void main() {
     await expectLater(offline.saveNote('x', 'x' * (AurenOfflineLearning.maxNoteCharacters + 1)), throwsArgumentError);
     await expectLater(offline.noteFor(' '), throwsArgumentError);
   });
+  test('bounds note count to keep local storage predictable', () async {
+    final offline = AurenOfflineLearning(MemoryStore());
+    for (var i = 0; i < AurenOfflineLearning.maxNotes; i++) {
+      await offline.saveNote('lesson-$i', 'note');
+    }
+    await expectLater(offline.saveNote('lesson-over-limit', 'note'), throwsStateError);
+  });
+
+  test('skips malformed persisted lesson and progress records without losing valid entries', () async {
+    final store = MemoryStore();
+    store.values['auren_offline_learning_lessons_v1'] =
+        '{"good":{"id":"good","title":"Valid","content":"text"},"bad":{"id":"bad","title":12,"content":false}}';
+    store.values['auren_offline_learning_progress_v1'] =
+        '{"good":{"completed":true,"updatedAt":"2026-10-21T00:00:00Z"},"bad":{"completed":"yes","updatedAt":"not-a-date"}}';
+    final offline = AurenOfflineLearning(store);
+    expect((await offline.lessons()).map((lesson) => lesson.id), ['good']);
+    expect((await offline.progress()).map((item) => item.lessonId), ['good']);
+  });
+
   test('removes cached lesson without deleting notes/progress implicitly', () async {
     final offline = AurenOfflineLearning(MemoryStore());
     await offline.saveLesson(const AurenOfflineLesson(id: 'x', title: 'Lesson', content: 'text'));
