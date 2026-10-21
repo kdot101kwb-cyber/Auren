@@ -98,3 +98,45 @@ test('users cannot read or update reports and case-event writes remain denied wi
     createdAt: firebase.firestore.Timestamp.now(),
   }));
 });
+
+test('appeal workflows remain denied until explicit owner and moderator rules exist', async () => {
+  const appellant = dbFor('appellant-a');
+  const moderator = dbFor('moderator-a');
+  const now = firebase.firestore.Timestamp.now();
+
+  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').set({
+    reportId: 'report-1',
+    appellantUid: 'appellant-a',
+    reason: 'Please review this moderation decision.',
+    status: 'pending',
+    createdAt: now,
+  }));
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('community_case_appeals/report-1__appellant-a').set({
+      reportId: 'report-1',
+      appellantUid: 'appellant-a',
+      reason: 'Please review this moderation decision.',
+      status: 'pending',
+      createdAt: now,
+    });
+  });
+
+  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').get());
+  await assertFails(moderator.collection('community_case_appeals').where('status', '==', 'pending').get());
+  await assertFails(moderator.doc('community_case_appeals/report-1__appellant-a').update({
+    status: 'accepted',
+    reviewedBy: 'moderator-a',
+    reviewedAt: now,
+    reviewNote: 'Reviewed',
+  }));
+  await assertFails(moderator.doc('community_case_events/appeal-event-1').set({
+    entityType: 'appeal',
+    entityId: 'report-1__appellant-a',
+    actorUid: 'moderator-a',
+    fromStatus: 'pending',
+    toStatus: 'accepted',
+    note: 'Reviewed',
+    createdAt: now,
+  }));
+});
