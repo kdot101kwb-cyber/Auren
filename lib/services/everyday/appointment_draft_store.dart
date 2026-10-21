@@ -13,6 +13,12 @@ class AurenAppointmentDraftStore {
 
   Future<List<AurenAppointmentDraft>> loadDrafts(String uid) async {
     final drafts = (await _store.load(uid, decode: _fromJson, validate: (v) => v.validate())).toList();
+    final ids = <String>{};
+    for (final draft in drafts) {
+      if (!ids.add(draft.id)) {
+        throw const FormatException('Duplicate appointment draft id.');
+      }
+    }
     drafts.sort((a, b) {
       final byTime = a.startsAt.compareTo(b.startsAt);
       return byTime != 0 ? byTime : a.id.compareTo(b.id);
