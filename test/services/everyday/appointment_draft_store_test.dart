@@ -54,4 +54,18 @@ void main() {
       expect(prefs.getString(key), original);
     }
   });
+  test('rejects duplicate stored draft IDs instead of updating an ambiguous record', () async {
+    final store = AurenAppointmentDraftStore();
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'auren_appointment_drafts_v1_${base64Url.encode(utf8.encode('user-a'))}';
+    const original = '{"version":1,"items":['
+        '{"id":"visit","title":"First","startsAt":"2026-10-24T10:00:00.000Z","status":"planned"},'
+        '{"id":"visit","title":"Second","startsAt":"2026-10-25T10:00:00.000Z","status":"planned"}'
+        ']}';
+    await prefs.setString(key, original);
+
+    await expectLater(store.loadDrafts('user-a'), throwsFormatException);
+    await expectLater(store.saveDraft('user-a', makeDraft()), throwsFormatException);
+    expect(prefs.getString(key), original);
+  });
 }
