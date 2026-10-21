@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -152,6 +153,68 @@ class AurenAgricultureRepository {
     });
 
     return (result.data is Map ? (result.data['advice'] ?? '') : '').toString();
+  }
+
+
+  /// Persists farm tasks inside the existing owner-scoped agricultureNotes
+  /// collection, whose current Firestore rules already support type 'farm'.
+  Future<String> saveFarmTask({
+    required String uid,
+    required String title,
+    required String note,
+    required DateTime dueAt,
+    required String status,
+    String cropOrAnimal = '',
+  }) async {
+    final cleanUid = uid.trim();
+    final cleanTitle = title.trim();
+    if (cleanUid.isEmpty || cleanUid.length > 128) {
+      throw ArgumentError('معرّف المستخدم غير صالح.');
+    }
+    if (cleanTitle.isEmpty || cleanTitle.length > 160 || note.length > 4000) {
+      throw ArgumentError('عنوان المهمة أو ملاحظاتها غير صالحة.');
+    }
+    const statuses = {'planned', 'inProgress', 'done', 'skipped'};
+    if (!statuses.contains(status)) throw ArgumentError('حالة المهمة غير صالحة.');
+    final ref = db.collection('users').doc(cleanUid)
+        .collection('agricultureNotes').doc();
+    await ref.set({
+      'title': cleanTitle,
+      'note': jsonEncode({
+        'kind': 'farm_task',
+        'note': note.trim(),
+        'dueAt': dueAt.toUtc().toIso8601String(),
+        'status': status,
+        'cropOrAnimal': cropOrAnimal.trim(),
+      }),
+      'type': 'farm',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    return ref.id;
+  }
+
+  Stream<List<Map<String, dynamic>>> watchFarmTasks({required String uid}) {
+    final cleanUid = uid.trim();
+    if (cleanUid.isEmpty) return Stream.value(const <Map<String, dynamic>>[]);
+    return db.collection('users').doc(cleanUid).collection('agricultureNotes')
+        .where('type', isEqualTo: 'farm').snapshots().map((snapshot) {
+      final tasks = <Map<String, dynamic>>[];
+      for (final doc in snapshot.docs) {
+        final raw = doc.data()['note'];
+        if (raw is! String) continue;
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map<String, dynamic> && decoded['kind'] == 'farm_task') {
+            tasks.add({...decoded, 'id': doc.id, 'title': doc.data()['title']});
+          }
+        } on FormatException {
+          // Existing free-form farm notes are not task records.
+        }
+      }
+      tasks.sort((a, b) => (a['dueAt'] ?? '').toString().compareTo((b['dueAt'] ?? '').toString()));
+      return tasks;
+    });
   }
 
   Future<String> saveFieldNote({
