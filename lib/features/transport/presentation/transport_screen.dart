@@ -400,7 +400,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: DropdownButtonFormField<CargoStatus>(
-                  value: _cargoStatus,
+                  initialValue: _cargoStatus,
                   decoration: const InputDecoration(
                     labelText: 'حالة الشحنة',
                     border: OutlineInputBorder(),
