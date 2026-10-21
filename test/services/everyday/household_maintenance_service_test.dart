@@ -57,10 +57,15 @@ void main() {
   });
 
   test('copyWith can clear optional dates and actual costs', () {
-    final original = task('1', 'Repair', dueAt: due,
+    final original = task('1', 'Repair', dueAt: due, estimate: 900,
       status: AurenMaintenanceStatus.completed, actual: 1200);
-    final updated = original.copyWith(clearDueAt: true, clearActualCost: true);
+    final updated = original.copyWith(
+      clearDueAt: true,
+      clearEstimatedCost: true,
+      clearActualCost: true,
+    );
     expect(updated.dueAt, isNull);
+    expect(updated.estimatedCostMinor, isNull);
     expect(updated.actualCostMinor, isNull);
     expect(updated.title, 'Repair');
   });
