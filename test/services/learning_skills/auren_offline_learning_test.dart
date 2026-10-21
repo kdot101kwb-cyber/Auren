@@ -29,9 +29,17 @@ void main() {
   test('bounds note count to keep local storage predictable', () async {
     final offline = AurenOfflineLearning(MemoryStore());
     for (var i = 0; i < AurenOfflineLearning.maxNotes; i++) {
+      await offline.saveLesson(AurenOfflineLesson(id: 'lesson-$i', title: 'Lesson $i', content: 'text'));
       await offline.saveNote('lesson-$i', 'note');
     }
+    await offline.saveLesson(const AurenOfflineLesson(id: 'lesson-over-limit', title: 'Overflow', content: 'text'));
     await expectLater(offline.saveNote('lesson-over-limit', 'note'), throwsStateError);
+  });
+
+  test('rejects notes and progress for lessons outside the offline library', () async {
+    final offline = AurenOfflineLearning(MemoryStore());
+    await expectLater(offline.saveNote('missing-lesson', 'note'), throwsArgumentError);
+    await expectLater(offline.setCompleted('missing-lesson', true), throwsArgumentError);
   });
 
   test('skips malformed persisted lesson and progress records without losing valid entries', () async {
