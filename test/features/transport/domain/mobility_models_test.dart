@@ -71,6 +71,20 @@ void main() {
       expect(estimate.total, 36);
     });
 
+    test('rejects estimates whose arithmetic overflows despite finite inputs', () {
+      const estimate = MobilityCostEstimate(
+        distanceKm: 1e308,
+        trips: 2,
+        fuelLitresPer100Km: 100,
+        fuelPricePerLitre: 1e308,
+        currency: 'SDG',
+      );
+      expect(estimate.distanceKm.isFinite, isTrue);
+      expect(estimate.fuelPricePerLitre.isFinite, isTrue);
+      expect(estimate.isValid, isFalse);
+      expect(estimate.total.isFinite, isFalse);
+    });
+
     test('rejects negative, non-finite and missing currency inputs', () {
       const negative = MobilityCostEstimate(
         distanceKm: 20,
