@@ -14,6 +14,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
   final _repo = AurenAgricultureRepository();
   final _location = TextEditingController();
   String _type = 'all';
+  final List<FarmOperationTask> _farmTasks = <FarmOperationTask>[];
 
   @override
   void dispose() { _location.dispose(); super.dispose(); }
@@ -150,6 +151,7 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
+            _toolButton(Icons.task_alt_outlined, 'مهام المزرعة', _showFarmOperationsTool),
             _toolButton(Icons.checklist_outlined, 'قائمة فحص المحصول', _showCropChecklistTool),
             _toolButton(Icons.inventory_2_outlined, 'خطة موارد المزرعة', _showFarmResourcePlannerTool),
             _toolButton(Icons.scale_outlined, 'الإنتاجية', _showYieldTool),
@@ -2217,6 +2219,64 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     await _showResult('تحليل AUREN AI للاستثمار', result);
   }
 
+
+  Future<void> _showFarmOperationsTool() async {
+    final title = TextEditingController();
+    final cropOrAnimal = TextEditingController();
+    final notes = TextEditingController();
+    final service = const AgricultureFarmManagementService();
+    final selected = await showDialog<FarmOperationTask>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('إضافة مهمة للمزرعة'),
+        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: title, decoration: const InputDecoration(labelText: 'عنوان المهمة')),
+          TextField(controller: cropOrAnimal, decoration: const InputDecoration(labelText: 'المحصول أو مجموعة الحيوانات (اختياري)')),
+          TextField(controller: notes, minLines: 2, maxLines: 3, decoration: const InputDecoration(labelText: 'ملاحظات (اختياري)')),
+          const SizedBox(height: 8),
+          const Text('سيُطلب منك تحديد موعد الاستحقاق بعد حفظ تفاصيل المهمة.'),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              try {
+                final task = service.createTask(title: title.text, dueAt: DateTime.now(), cropOrAnimal: cropOrAnimal.text, notes: notes.text);
+                Navigator.pop(dialogContext, task);
+              } on ArgumentError catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message?.toString() ?? 'أدخل عنوان المهمة.')));
+              }
+            },
+            child: const Text('متابعة'),
+          ),
+        ],
+      ),
+    );
+    title.dispose(); cropOrAnimal.dispose(); notes.dispose();
+    if (!mounted || selected == null) return;
+    final due = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      helpText: 'موعد استحقاق المهمة',
+    );
+    if (!mounted || due == null) return;
+    final task = FarmOperationTask(
+      title: selected.title,
+      dueAt: DateTime(due.year, due.month, due.day, 23, 59, 59),
+      status: FarmTaskStatus.planned,
+      cropOrAnimal: selected.cropOrAnimal,
+      notes: selected.notes,
+    );
+    setState(() => _farmTasks.add(task));
+    final now = DateTime.now();
+    final summary = _farmTasks.map((item) {
+      final status = item.isOverdue(now) ? 'متأخرة' : 'مخططة';
+      return '• ${item.title} — ${item.dueAt.year}-${item.dueAt.month.toString().padLeft(2, '0')}-${item.dueAt.day.toString().padLeft(2, '0')} — $status';
+    }).join('\\n');
+    await _showResult('مهام المزرعة', '${_farmTasks.length} مهمة في هذه الجلسة:\\n$summary\\n\\nملاحظة: القائمة حالياً مؤقتة داخل الجلسة وليست محفوظة على الحساب بعد.');
+  }
 
   Future<void> _showCropChecklistTool() async {
     final crop = TextEditingController();
