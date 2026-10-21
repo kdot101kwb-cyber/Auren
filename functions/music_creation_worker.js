@@ -11,12 +11,28 @@ const db=admin.firestore(),LOCK_MS=6*60*1000,MAX_ATTEMPTS=5;
 const hasOutput=o=>Boolean(o&&(o.url||o.storagePath||o.externalId));
 async function validateAudioArtifact(o){
  if(!hasOutput(o))return {ok:false,reason:'missing_artifact'};
- if(o.storagePath||o.externalId)return {ok:true,referenceOnly:true};
- const url=String(o.url||''); if(!url.startsWith('http://')&&!url.startsWith('https://'))return {ok:false,reason:'invalid_url'};
+ if(o.storagePath){
+  try{
+   const file=admin.storage().bucket().file(String(o.storagePath));
+   const [exists]=await file.exists();
+   if(!exists)return {ok:false,reason:'storage_object_missing'};
+   const [metadata]=await file.getMetadata();
+   const type=String(metadata.contentType||'').toLowerCase();
+   if(!(type.startsWith('audio/')||type==='application/octet-stream'))return {ok:false,reason:'not_audio',contentType:type||null};
+   return {ok:true,storagePath:String(o.storagePath),contentType:type};
+  }catch(e){return {ok:false,reason:'storage_validation_failed'};}
+ }
+ // An external provider ID is a job reference, not a playable audio artifact.
+ const url=String(o.url||'');
+ if(!url)return {ok:false,reason:'artifact_not_materialized'};
+ if(!url.startsWith('https://'))return {ok:false,reason:'invalid_url'};
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),10000);
- try{const r=await fetch(url,{method:'HEAD',signal:controller.signal});if(!r.ok)return {ok:false,reason:'http_'+r.status};
-  const type=String(r.headers.get('content-type')||'').toLowerCase();if(type && !(type.startsWith('audio/')||type==='application/octet-stream'))return {ok:false,reason:'not_audio',contentType:type};
-  return {ok:true,contentType:type||null};
+ try{
+  const r=await fetch(url,{method:'HEAD',signal:controller.signal});
+  if(!r.ok)return {ok:false,reason:'http_'+r.status};
+  const type=String(r.headers.get('content-type')||'').toLowerCase();
+  if(!(type.startsWith('audio/')||type==='application/octet-stream'))return {ok:false,reason:'not_audio',contentType:type||null};
+  return {ok:true,contentType:type};
  }catch(e){return {ok:false,reason:'artifact_unreachable'};}finally{clearTimeout(timer);}
 }
 
