@@ -1,0 +1,44 @@
+name: AUREN PR Overlap Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-overlap-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-audit:
+    name: Test and audit changed-file overlap
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check syntax
+        run: node --check scripts/auren_pr_overlap_guard.js && node --check scripts/pr_overlap_guard_checks.js
+
+      - name: Run unit and failure-path tests
+        run: node --test scripts/pr_overlap_guard_checks.js
+
+      - name: Audit overlapping changed paths
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+        run: |
+          set -o pipefail
+          node scripts/auren_pr_overlap_guard.js | tee -a "$GITHUB_STEP_SUMMARY"
