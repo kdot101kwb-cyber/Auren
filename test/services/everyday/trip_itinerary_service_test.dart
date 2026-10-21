@@ -28,6 +28,22 @@ void main() {
     ]), 0.5);
   });
 
+  test('excludes all stops with duplicate IDs from itinerary and progress', () {
+    final stops = [
+      const AurenTripStop(id: 'duplicate', title: 'Old Town', completed: true),
+      const AurenTripStop(id: 'duplicate', title: 'Museum'),
+      const AurenTripStop(id: 'unique', title: 'Market'),
+    ];
+
+    expect(
+      AurenTripItineraryPlanner.orderedStops(stops).map((stop) => stop.id),
+      ['unique'],
+    );
+    expect(AurenTripItineraryPlanner.completionRatio(stops), 0);
+    expect(AurenTripItineraryPlanner.remainingStops(stops).map((stop) => stop.id),
+        ['unique']);
+  });
+
   test('copyWith does not mutate the original stop', () {
     const stop = AurenTripStop(id: '1', title: 'Gallery');
     final completed = stop.copyWith(completed: true);
