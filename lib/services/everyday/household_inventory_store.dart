@@ -112,6 +112,12 @@ class AurenHouseholdInventoryStore {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('Stored household inventory has an invalid shape.');
     }
+    final version = decoded['version'];
+    // Documents written before versioning are treated as v1 for compatibility.
+    // Refuse unknown versions rather than silently rewriting a newer schema.
+    if (version != null && version != 1) {
+      throw FormatException('Unsupported household inventory version: $version.');
+    }
     return decoded;
   }
 
