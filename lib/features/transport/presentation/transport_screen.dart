@@ -24,6 +24,9 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   final _cargoRef = TextEditingController();
   final _cargoOrigin = TextEditingController();
   final _cargoDestination = TextEditingController();
+  final _cargoRequirements = TextEditingController();
+  final _cargoNotes = TextEditingController();
+  CargoStatus _cargoStatus = CargoStatus.draft;
   final _portName = TextEditingController();
   final _portCountry = TextEditingController();
   final _portSource = TextEditingController();
@@ -48,7 +51,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       _routeOperator, _routeName, _routeStops, _routeSource,
       _vehicleMake, _vehicleModel, _vehicleYear, _vehicleRegistration,
       _insuranceExpiry, _maintenanceDue,
-      _cargoRef, _cargoOrigin, _cargoDestination,
+      _cargoRef, _cargoOrigin, _cargoDestination, _cargoRequirements, _cargoNotes,
       _portName, _portCountry, _portSource,
       _distance, _trips, _consumption, _fuelPrice, _tolls,
       _parking, _other, _currency,
@@ -116,7 +119,10 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       reference: _cargoRef.text,
       origin: _cargoOrigin.text,
       destination: _cargoDestination.text,
-      status: CargoStatus.draft,
+      status: _cargoStatus,
+      deliveryRequirements: _cargoRequirements.text
+          .split(',').map((item) => item.trim()).where((item) => item.isNotEmpty).toList(),
+      notes: _cargoNotes.text.trim(),
     );
     if (!shipment.isValid) {
       _message('مرجع الشحنة ونقطة الإرسال والتسليم مطلوبة.');
@@ -124,6 +130,8 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
     }
     setState(() => _shipments.add(shipment));
     _cargoRef.clear(); _cargoOrigin.clear(); _cargoDestination.clear();
+    _cargoRequirements.clear(); _cargoNotes.clear();
+    setState(() => _cargoStatus = CargoStatus.draft);
   }
 
   void _savePort() {
@@ -163,6 +171,24 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
         _costError = null;
       }
     });
+  }
+
+  String _cargoStatusLabel(CargoStatus status) => switch (status) {
+    CargoStatus.draft => 'مسودة',
+    CargoStatus.prepared => 'جاهزة',
+    CargoStatus.inTransit => 'قيد النقل',
+    CargoStatus.delayed => 'متأخرة',
+    CargoStatus.delivered => 'تم التسليم',
+    CargoStatus.cancelled => 'ملغاة',
+  };
+
+  String _vehicleSummary(VehicleRecord vehicle) {
+    final now = DateTime.now();
+    final alerts = <String>[];
+    if (vehicle.insuranceNeedsAttention(now)) alerts.add('تنبيه: التأمين يحتاج مراجعة');
+    if (vehicle.maintenanceNeedsAttention(now)) alerts.add('تنبيه: موعد الصيانة حان أو فات');
+    final details = '${vehicle.year} ${vehicle.make} ${vehicle.model} • التسجيل: ${vehicle.registrationId ?? 'غير مدخل'} • التأمين: ${vehicle.insuranceExpiresAt?.toIso8601String().split('T').first ?? 'غير مدخل'} • الصيانة: ${vehicle.maintenanceDueAt?.toIso8601String().split('T').first ?? 'غير مدخل'}';
+    return alerts.isEmpty ? details : '$details • ${alerts.join(' • ')}';
   }
 
   void _message(String text) =>
@@ -271,7 +297,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('موعد الصيانة YYYY-MM-DD (اختياري)', _maintenanceDue),
               Align(alignment: Alignment.centerRight, child: FilledButton(
                 onPressed: _saveVehicle, child: const Text('إضافة مركبة'))),
-              _savedItems(_vehicles, 'لا توجد مركبات مسجلة.', (v) => '${v.year} ${v.make} ${v.model} • التسجيل: ${v.registrationId ?? 'غير مدخل'} • التأمين: ${v.insuranceExpiresAt?.toIso8601String().split('T').first ?? 'غير مدخل'} • الصيانة: ${v.maintenanceDueAt?.toIso8601String().split('T').first ?? 'غير مدخل'}'),
+              _savedItems(_vehicles, 'لا توجد مركبات مسجلة.', _vehicleSummary,
             ],
           ),
           _section(
@@ -311,9 +337,29 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('مرجع الشحنة', _cargoRef),
               _field('من', _cargoOrigin),
               _field('إلى', _cargoDestination),
+              _field('متطلبات التسليم، مفصولة بفواصل (اختياري)', _cargoRequirements),
+              _field('ملاحظات (اختياري)', _cargoNotes),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: DropdownButtonFormField<CargoStatus>(
+                  value: _cargoStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'حالة الشحنة',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: CargoStatus.values.map((status) => DropdownMenuItem(
+                    value: status,
+                    child: Text(_cargoStatusLabel(status)),
+                  )).toList(),
+                  onChanged: (status) {
+                    if (status != null) setState(() => _cargoStatus = status);
+                  },
+                ),
+              ),
               Align(alignment: Alignment.centerRight, child: FilledButton(
                 onPressed: _saveShipment, child: const Text('حفظ مسودة الشحنة'))),
-              _savedItems(_shipments, 'لا توجد شحنات. الحفظ هنا لا يرسل طلبًا إلى ناقل.', (s) => '${s.reference}: ${s.origin} → ${s.destination} • مسودة'),
+              _savedItems(_shipments, 'لا توجد شحنات. الحفظ هنا لا يرسل طلبًا إلى ناقل.', (s) => '${s.reference}: ${s.origin} → ${s.destination} • ${_cargoStatusLabel(s.status)}${s.deliveryRequirements.isEmpty ? '' : ' • المتطلبات: ${s.deliveryRequirements.join(', ')}'}'),
             ],
           ),
           _section(
