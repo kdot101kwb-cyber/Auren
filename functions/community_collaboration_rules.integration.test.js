@@ -190,6 +190,12 @@ test('volunteer can add only their own identity and cannot change cause metadata
     volunteerIds: ['cause-owner', 'volunteer-a'],
   }));
 
+  await assertFails(dbFor('volunteer-a').doc('volunteer_causes/cause-1').update({
+    volunteerIds: ['cause-owner', 'volunteer-a', 'volunteer-a'],
+  }));
+
+  await assertFails(dbFor('volunteer-a').doc('volunteer_causes/cause-1').delete());
+
   await assertFails(dbFor('volunteer-b').doc('volunteer_causes/cause-1').update({
     volunteerIds: ['cause-owner', 'volunteer-a', 'someone-else'],
   }));
