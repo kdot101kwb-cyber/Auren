@@ -14,7 +14,6 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
   final _repo = AurenAgricultureRepository();
   final _location = TextEditingController();
   String _type = 'all';
-  final List<FarmOperationTask> _farmTasks = <FarmOperationTask>[];
 
   @override
   void dispose() { _location.dispose(); super.dispose(); }
