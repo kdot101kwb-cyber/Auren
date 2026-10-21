@@ -22,8 +22,7 @@ void main() {
           sellerLocation: 'khartoum',
         ),
       );
-      expect(result.score, inInclusiveRange(40, 100));
-      expect(result.score, lessThanOrEqualTo(100));
+      expect(result.score, 80);
       expect(result.reasons, hasLength(3));
     });
 
