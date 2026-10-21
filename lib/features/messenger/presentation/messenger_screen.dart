@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'ai_message_privacy_notice.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/models/message.dart';
@@ -843,6 +844,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           ),
         ),
           if (_sending) const LinearProgressIndicator(minHeight: 2),
+          if (_isAi) const AiMessagePrivacyNotice(),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
