@@ -64,7 +64,17 @@ void main() {
     expect(find.textContaining('Good day'), findsOneWidget);
     expect(find.text('Walk'), findsOneWidget);
     expect(find.textContaining('7.0 ساعة'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Stretch'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Stretch'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('Ask provider'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.textContaining('Ask provider'), findsOneWidget);
   });
 }
