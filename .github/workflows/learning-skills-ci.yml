@@ -7,6 +7,7 @@ on:
     paths:
       - 'lib/services/learning_skills/**'
       - 'test/services/learning_skills/**'
+      - 'test/features/education/auren_offline_learning_screen_test.dart'
       - 'lib/features/education/presentation/auren_offline_learning_screen.dart'
       - 'lib/features/education/presentation/education_screen.dart'
       - '.github/workflows/learning-skills-ci.yml'
