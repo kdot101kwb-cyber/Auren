@@ -81,13 +81,17 @@ test('report creation rejects malformed status, extra fields, and oversized reas
 
 test('users cannot read or update reports and case-event writes remain denied without rules', async () => {
   const db = dbFor('moderator-a');
+  const anonymousDb = testEnv.unauthenticatedContext().firestore();
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await context.firestore().doc('reports/seeded-report').set({
       reporterUid: 'reporter-a', reportedUid: 'user-b', reason: 'Reason',
       status: 'open', createdAt: firebase.firestore.Timestamp.now(),
     });
   });
+  await assertFails(anonymousDb.doc('reports/seeded-report').get());
+  await assertFails(anonymousDb.collection('reports').get());
   await assertFails(db.doc('reports/seeded-report').get());
+  await assertFails(db.collection('reports').get());
   await assertFails(db.doc('reports/seeded-report').update({
     status: 'resolved', moderatedBy: 'moderator-a',
     moderatedAt: firebase.firestore.Timestamp.now(), moderationNote: 'Reviewed',
