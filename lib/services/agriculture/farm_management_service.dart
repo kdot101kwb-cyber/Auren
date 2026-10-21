@@ -35,6 +35,10 @@ class AgriculturalMarketObservation {
   final double price;
   final DateTime observedAt;
   bool get hasTraceableSource => sourceName.trim().isNotEmpty && sourceReference.trim().isNotEmpty;
+
+  /// Missing source metadata is never treated as verified market intelligence.
+  bool isStale(DateTime now, {Duration maxAge = const Duration(days: 7)}) =>
+      now.difference(observedAt) > maxAge;
 }
 class FarmResourceNeed {
   const FarmResourceNeed({required this.name, required this.quantity, required this.unit, this.availableQuantity = 0});
