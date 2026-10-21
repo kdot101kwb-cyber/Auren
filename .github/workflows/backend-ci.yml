@@ -1,5 +1,8 @@
 name: AUREN Backend CI
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
   push:
