@@ -51,4 +51,31 @@ void main() {
 
     expect(find.text('أدخل المشغّل والمسار والتوقفات ومصدرًا واضحًا للمعلومات.'), findsOneWidget);
   });
+
+  testWidgets('cargo draft records selected status and delivery requirements', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await tester.tap(find.text('Freight & Cargo Coordination'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'مرجع الشحنة'), 'C-101');
+    await tester.enterText(find.widgetWithText(TextField, 'من'), 'بورتسودان');
+    await tester.enterText(find.widgetWithText(TextField, 'إلى'), 'الخرطوم');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'متطلبات التسليم، مفصولة بفواصل (اختياري)'),
+      'تغليف, توقيع المستلم',
+    );
+
+    await tester.tap(find.byType(DropdownButtonFormField<CargoStatus>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('قيد النقل').last);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('حفظ مسودة الشحنة'));
+    await tester.tap(find.text('حفظ مسودة الشحنة'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('C-101: بورتسودان → الخرطوم • قيد النقل'), findsOneWidget);
+    expect(find.textContaining('تغليف, توقيع المستلم'), findsOneWidget);
+  });
+
 }
