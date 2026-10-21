@@ -1,6 +1,8 @@
 name: AUREN CI Failure Triage
 
 on:
+  pull_request:
+    branches: [main]
   workflow_run:
     workflows:
       - AUREN Flutter CI
@@ -12,7 +14,26 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check syntax
+        run: node --check scripts/auren_ci_failure_triage.js
+      - name: Run triage tests
+        run: node --test scripts/auren_ci_failure_triage.test.js
+
   triage:
+    if: github.event_name == 'workflow_run'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
