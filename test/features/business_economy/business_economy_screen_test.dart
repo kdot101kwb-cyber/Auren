@@ -47,14 +47,14 @@ void main() {
     expect(find.text('Trade & Export Hub'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Business Growth Planner'),
+      find.text('Business Growth Planner').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
         matching: find.byType(Scrollable),
       ).first,
     );
-    expect(find.text('Business Growth Planner'), findsOneWidget);
+    expect(find.text('Business Growth Planner').first, findsOneWidget);
   });
 
   testWidgets('growth planner opens from the hub', (tester) async {
@@ -63,17 +63,17 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
-      find.text('Business Growth Planner'),
+      find.text('Business Growth Planner').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
         matching: find.byType(Scrollable),
       ).first,
     );
-    await tester.tap(find.text('Business Growth Planner'));
+    await tester.tap(find.text('Business Growth Planner').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Business Growth Planner'), findsOneWidget);
+    expect(find.text('Business Growth Planner').first, findsOneWidget);
     expect(find.text('حفظ الخطة'), findsOneWidget);
     expect(find.text('هدف قابل للقياس'), findsOneWidget);
   });
@@ -129,14 +129,14 @@ void main() {
       const MaterialApp(home: AurenBusinessEconomyScreen()),
     );
     await tester.scrollUntilVisible(
-      find.text('Business Growth Planner'),
+      find.text('Business Growth Planner').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
         matching: find.byType(Scrollable),
       ).first,
     );
-    await tester.tap(find.text('Business Growth Planner'));
+    await tester.tap(find.text('Business Growth Planner').first);
     await tester.pumpAndSettle();
 
     await tester.enterText(
