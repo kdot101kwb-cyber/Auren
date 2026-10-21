@@ -122,8 +122,8 @@ class AurenHouseholdInventoryStore {
   }
 
   List<AurenHouseholdItem> _itemsFromDocument(Map<String, dynamic> data) {
-    final rawItems = data['items'] ?? const <dynamic>[];
-    if (rawItems is! List) {
+    final rawItems = data['items'];
+    if (!data.containsKey('items') || rawItems is! List) {
       throw const FormatException('Stored household inventory has no item list.');
     }
     return rawItems.map((entry) {
@@ -138,8 +138,8 @@ class AurenHouseholdInventoryStore {
   List<AurenHouseholdStockMovement> _movementsFromDocument(
     Map<String, dynamic> data,
   ) {
-    final rawMovements = data['movements'] ?? const <dynamic>[];
-    if (rawMovements is! List) {
+    final rawMovements = data['movements'];
+    if (!data.containsKey('movements') || rawMovements is! List) {
       throw const FormatException('Stored household movement history is invalid.');
     }
     return rawMovements.map((entry) {
