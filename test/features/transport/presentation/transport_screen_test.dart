@@ -131,6 +131,40 @@ void main() {
     expect(find.textContaining('ناقل محفوظ'), findsOneWidget);
   });
 
+  testWidgets('saved cargo shipment status updates persist locally', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    await enterField(tester, 'مرجع الشحنة', 'STATUS-101');
+    await enterField(tester, 'من', 'بورتسودان');
+    await enterField(tester, 'إلى', 'الخرطوم');
+    await tester.ensureVisible(find.text('حفظ مسودة الشحنة'));
+    await tester.tap(find.text('حفظ مسودة الشحنة'));
+    await tester.pumpAndSettle();
+
+    final statusDropdown = find.byKey(const ValueKey('cargo-status-0'));
+    await tester.ensureVisible(statusDropdown);
+    await tester.tap(statusDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تم التسليم').last);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('STATUS-101: بورتسودان → الخرطوم • تم التسليم'), findsOneWidget);
+    expect(find.text('تم تحديث حالة الشحنة وحفظها محليًا.'), findsOneWidget);
+
+    final stored = await MobilityLocalStore().loadShipments();
+    expect(stored, hasLength(1));
+    expect(stored.single.status, CargoStatus.delivered);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+    await tester.pumpAndSettle();
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    expect(find.textContaining('STATUS-101: بورتسودان → الخرطوم • تم التسليم'), findsOneWidget);
+  });
+
   testWidgets('vehicle records surface insurance and maintenance alerts', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
     await openSection(tester, 'Vehicle Ownership');
