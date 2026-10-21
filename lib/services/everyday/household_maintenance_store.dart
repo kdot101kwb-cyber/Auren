@@ -11,6 +11,12 @@ class AurenHouseholdMaintenanceStore {
 
   Future<List<AurenMaintenanceTask>> loadTasks(String uid) async {
     final tasks = (await _store.load(uid, decode: _fromJson, validate: (v) => v.validate())).toList();
+    final ids = <String>{};
+    for (final task in tasks) {
+      if (!ids.add(task.id)) {
+        throw const FormatException('Duplicate maintenance task id.');
+      }
+    }
     tasks.sort((a, b) {
       if (a.dueAt == null && b.dueAt == null) return a.title.toLowerCase().compareTo(b.title.toLowerCase());
       if (a.dueAt == null) return 1;
