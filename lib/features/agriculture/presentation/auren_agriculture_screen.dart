@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/agriculture/auren_agriculture_repository.dart';
+import '../../../services/agriculture/farm_management_service.dart';
 import '../widgets/gaez_v5_card.dart';
 
 class AurenAgricultureScreen extends StatefulWidget {
@@ -149,6 +150,8 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
             _toolButton(Icons.calculate_outlined, 'تكلفة الوحدة', _showCostTool),
             _toolButton(Icons.inventory_2_outlined, 'المخزون', _showInventoryTool),
             _toolButton(Icons.event_note_outlined, 'خطة الموسم', _showSeasonTool),
+            _toolButton(Icons.checklist_outlined, 'قائمة فحص المحصول', _showCropChecklistTool),
+            _toolButton(Icons.inventory_2_outlined, 'خطة موارد المزرعة', _showFarmResourcePlannerTool),
             _toolButton(Icons.scale_outlined, 'الإنتاجية', _showYieldTool),
             _toolButton(Icons.percent_outlined, 'فاقد الحصاد', _showHarvestLossTool),
             _toolButton(Icons.attach_money_outlined, 'الإيراد المتوقع', _showRevenueTool),
@@ -2212,6 +2215,107 @@ class _AurenAgricultureScreenState extends State<AurenAgricultureScreen> {
     controller.dispose();
     if (!mounted || result == null) return;
     await _showResult('تحليل AUREN AI للاستثمار', result);
+  }
+
+
+  Future<void> _showCropChecklistTool() async {
+    final crop = TextEditingController();
+    final stage = TextEditingController();
+    final observations = TextEditingController();
+    final service = const AgricultureFarmManagementService();
+    final result = await showDialog<CropAdviceSummary>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('قائمة فحص المحصول'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: crop, decoration: const InputDecoration(labelText: 'المحصول')),
+            TextField(controller: stage, decoration: const InputDecoration(labelText: 'مرحلة النمو')),
+            TextField(controller: observations, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'الملاحظات المرصودة')),
+            const SizedBox(height: 8),
+            const Text('إرشادات عامة فقط؛ ليست تشخيصاً زراعياً أو وصفة علاجية.'),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              try {
+                final advice = service.buildCropChecklist(CropAdviceRequest(
+                  crop: crop.text,
+                  growthStage: stage.text,
+                  observations: observations.text,
+                  location: _location.text,
+                ));
+                Navigator.pop(dialogContext, advice);
+              } on ArgumentError catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message?.toString() ?? 'أكمل البيانات المطلوبة.')));
+              }
+            },
+            child: const Text('إنشاء القائمة'),
+          ),
+        ],
+      ),
+    );
+    crop.dispose(); stage.dispose(); observations.dispose();
+    if (!mounted || result == null) return;
+    await _showResult(result.title, [...result.steps, '', ...result.cautions].join('\n'));
+  }
+
+  Future<void> _showFarmResourcePlannerTool() async {
+    final name = TextEditingController();
+    final requiredQty = TextEditingController();
+    final availableQty = TextEditingController(text: '0');
+    final unit = TextEditingController();
+    final service = const AgricultureFarmManagementService();
+    final result = await showDialog<FarmResourceNeed>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('خطة موارد المزرعة'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: name, decoration: const InputDecoration(labelText: 'المورد (بذور، علف، ماء...)')),
+            TextField(controller: requiredQty, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الكمية المطلوبة')),
+            TextField(controller: availableQty, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الكمية المتوفرة')),
+            TextField(controller: unit, decoration: const InputDecoration(labelText: 'الوحدة (كغ، لتر، كيس...)')),
+            const SizedBox(height: 8),
+            const Text('الحساب يعتمد على الكميات التي تدخلها فقط؛ لا توجد أسعار أو تكاليف مفترضة.'),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () {
+              final requiredValue = double.tryParse(requiredQty.text.trim());
+              final availableValue = double.tryParse(availableQty.text.trim());
+              if (requiredValue == null || availableValue == null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل كميات رقمية صحيحة.')));
+                return;
+              }
+              try {
+                final plan = service.planResources([FarmResourceNeed(
+                  name: name.text,
+                  quantity: requiredValue,
+                  availableQuantity: availableValue,
+                  unit: unit.text,
+                )]);
+                Navigator.pop(dialogContext, plan.needs.single);
+              } on ArgumentError catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message?.toString() ?? 'راجع بيانات المورد.')));
+              }
+            },
+            child: const Text('احسب النقص'),
+          ),
+        ],
+      ),
+    );
+    name.dispose(); requiredQty.dispose(); availableQty.dispose(); unit.dispose();
+    if (!mounted || result == null) return;
+    final shortage = result.shortage;
+    await _showResult(
+      'نتيجة تخطيط المورد',
+      'المورد: ${result.name}\nالمطلوب: ${result.quantity} ${result.unit}\nالمتوفر: ${result.availableQuantity} ${result.unit}\nالنقص: $shortage ${result.unit}',
+    );
   }
 
   Widget _businessStudios() {
