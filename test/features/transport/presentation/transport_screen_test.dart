@@ -91,6 +91,7 @@ void main() {
       'متطلبات التسليم، مفصولة بفواصل (اختياري)',
       'تغليف, توقيع المستلم',
     );
+    await enterField(tester, 'ملاحظات (اختياري)', 'اتصل قبل الوصول');
 
     await tester.ensureVisible(find.byType(DropdownButtonFormField<CargoStatus>));
     await tester.tap(find.byType(DropdownButtonFormField<CargoStatus>));
@@ -105,6 +106,7 @@ void main() {
     expect(find.textContaining('C-101: بورتسودان → الخرطوم • قيد النقل'), findsOneWidget);
     expect(find.textContaining('ناقل تجريبي'), findsOneWidget);
     expect(find.textContaining('تغليف, توقيع المستلم'), findsOneWidget);
+    expect(find.textContaining('ملاحظات: اتصل قبل الوصول'), findsOneWidget);
   });
 
   testWidgets('vehicle records surface insurance and maintenance alerts', (tester) async {
