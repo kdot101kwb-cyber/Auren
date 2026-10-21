@@ -84,7 +84,7 @@ class _TripsState extends State<_Trips> {
     TextField(controller:title,decoration:const InputDecoration(labelText:'اسم المحطة')),
     TextField(controller:location,decoration:const InputDecoration(labelText:'الموقع (اختياري)')),
     FilledButton(onPressed:add,child:const Text('إضافة محطة')),
-    if(rows.isNotEmpty) LinearProgressIndicator(value:AurenTripItineraryPlanner.completionRatio(rows)),
+    if(rows.isNotEmpty) LinearProgressIndicator(value:rows.where((r)=>r.completed).length/rows.length),
     for(final r in rows) CheckboxListTile(value:r.completed,onChanged:(v)=>toggle(r,v??false),title:Text(r.title),subtitle:r.location.isEmpty?null:Text(r.location)),
   ]);
 }
@@ -97,14 +97,14 @@ class _MetersState extends State<_Meters> {
   @override void dispose(){meter.dispose();label.dispose();value.dispose();unit.dispose();super.dispose();}
   Future<void> load() async {try{final v=await store.loadReadings(widget.uid);if(mounted)setState(()=>rows=v);}catch(e){if(mounted)setState(()=>error=e.toString());}finally{if(mounted)setState(()=>loading=false);}}
   Future<void> add() async {final n=double.tryParse(value.text.trim());if(n==null||!n.isFinite||n<0){setState(()=>error='أدخل قراءة رقمية صحيحة غير سالبة.');return;}try{await store.saveReading(widget.uid,AurenUtilityReading(id:DateTime.now().microsecondsSinceEpoch.toString(),meterId:meter.text.trim(),label:label.text.trim(),kind:kind,value:n,unit:unit.text.trim(),recordedAt:DateTime.now()));value.clear();error=null;await load();}catch(e){setState(()=>error=e.toString());}}
-  @override Widget build(BuildContext context)=>_Page(title:'عدادات المنزل',description:'سجل القراءات التراكمية واحسب فرق الاستهلاك عند توفر قراءتين متوافقتين.',loading:loading,error:error,children:[
+  String _usageFor(AurenUtilityReading row) {\n    final series=AurenHomeUtilityLedger.ordered(rows.where((v)=>v.meterId==row.meterId));\n    final index=series.indexWhere((v)=>v.id==row.id);\n    if(index<1) return '—';\n    final previous=series[index-1];\n    if(row.value<previous.value || row.unit!=previous.unit || row.kind!=previous.kind) return 'غير متاح';\n    return '+${(row.value-previous.value).toStringAsFixed(2)} ${row.unit}';\n  }\n  @override Widget build(BuildContext context)=>_Page(title:'عدادات المنزل',description:'سجل القراءات التراكمية واحسب فرق الاستهلاك عند توفر قراءتين متوافقتين.',loading:loading,error:error,children:[
     TextField(controller:meter,decoration:const InputDecoration(labelText:'معرّف العداد الثابت')),
     TextField(controller:label,decoration:const InputDecoration(labelText:'اسم العداد')),
     DropdownButtonFormField<AurenUtilityKind>(value:kind,decoration:const InputDecoration(labelText:'النوع'),items:const [DropdownMenuItem(value:AurenUtilityKind.electricity,child:Text('كهرباء')),DropdownMenuItem(value:AurenUtilityKind.water,child:Text('مياه')),DropdownMenuItem(value:AurenUtilityKind.gas,child:Text('غاز')),DropdownMenuItem(value:AurenUtilityKind.other,child:Text('أخرى'))],onChanged:(v)=>setState(()=>kind=v??AurenUtilityKind.electricity)),
     TextField(controller:value,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'القراءة الحالية')),
     TextField(controller:unit,decoration:const InputDecoration(labelText:'الوحدة (kWh أو m³)')),
     FilledButton(onPressed:add,child:const Text('حفظ القراءة')),
-    for(final r in rows) ListTile(title:Text(r.label+': '+r.value.toString()+' '+r.unit),subtitle:Text(r.recordedAt.toLocal().toString()),trailing:Text(AurenHomeUtilityLedger.latestUsage(rows,r.meterId)?.toString()??'—')),
+    for(final r in rows) ListTile(title:Text(r.label+': '+r.value.toString()+' '+r.unit),subtitle:Text(r.recordedAt.toLocal().toString()),trailing:Text(_usageFor(r))),
   ]);
 }
 
