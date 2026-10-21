@@ -47,6 +47,7 @@ class AurenUidScopedJsonListStore<T> {
 
     final decoded = jsonDecode(raw);
     if (decoded is! Map<String, dynamic> ||
+        decoded['version'] is! int ||
         decoded['version'] != 1 ||
         decoded['items'] is! List) {
       throw const FormatException('Stored Everyday records have an invalid shape.');
