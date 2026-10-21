@@ -42,6 +42,6 @@ jobs:
       - name: Analyze Learning & Skills services
         run: flutter analyze --no-fatal-warnings --no-fatal-infos
       - name: Run Learning & Skills tests
-        run: flutter test test/services/learning_skills
+        run: flutter test test/services/learning_skills test/features/education/auren_offline_learning_screen_test.dart
       - name: Build Android debug APK
         run: flutter build apk --debug
