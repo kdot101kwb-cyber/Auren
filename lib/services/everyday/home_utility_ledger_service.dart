@@ -31,7 +31,7 @@ class AurenHomeUtilityLedger {
   }
   static double? latestUsage(Iterable<AurenUtilityReading> input, String meterId) {
     final rows = ordered(input).where((v) => v.meterId == meterId).toList();
-    if (rows.length < 2) return null;
+    if (rows.length < 2 || validateSeries(rows) != null) return null;
     final a = rows[rows.length - 2]; final b = rows.last;
     if (b.value < a.value || a.unit != b.unit || a.kind != b.kind) return null;
     return b.value - a.value;
