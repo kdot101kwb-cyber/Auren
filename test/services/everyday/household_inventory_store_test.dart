@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auren/services/everyday/household_inventory_service.dart';
@@ -38,6 +40,20 @@ void main() {
       throwsArgumentError,
     );
     expect(await store.loadItems('user-A'), isEmpty);
+  });
+
+  test('rejects an unsupported document version without overwriting original data', () async {
+    final store = AurenHouseholdInventoryStore();
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'auren_household_inventory_v1_${base64Url.encode(utf8.encode('user-A'))}';
+    const original = '{"version":2,"items":[],"movements":[]}';
+    await prefs.setString(key, original);
+
+    await expectLater(store.loadItems('user-A'), throwsFormatException);
+    await expectLater(store.loadMovements('user-A'), throwsFormatException);
+    await expectLater(store.saveItem('user-A', item()), throwsFormatException);
+
+    expect(prefs.getString(key), original);
   });
 
   test('updates item metadata but preserves existing stock quantity', () async {
