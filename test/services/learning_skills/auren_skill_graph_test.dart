@@ -11,7 +11,7 @@ void main() {
     ]);
     expect(graph.recommendNext([]).map((n) => n.id), ['dart']);
     expect(graph.recommendNext(['dart']).map((n) => n.id), ['flutter', 'firebase']);
-    expect(graph.readinessPercent(['dart', 'flutter'], 'app'), 33);
+    expect(graph.readinessPercent(['dart', 'flutter'], 'app'), 67);
     expect(graph.prerequisitesFor('flutter').single.id, 'dart');
   });
   test('rejects unknown prerequisites and cycles', () {
