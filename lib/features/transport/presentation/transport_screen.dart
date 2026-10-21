@@ -22,11 +22,13 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   final _vehicleModel = TextEditingController();
   final _vehicleYear = TextEditingController();
   final _vehicleRegistration = TextEditingController();
+  final _vehicleNotes = TextEditingController();
   final _insuranceExpiry = TextEditingController();
   final _maintenanceDue = TextEditingController();
   final _cargoRef = TextEditingController();
   final _cargoOrigin = TextEditingController();
   final _cargoDestination = TextEditingController();
+  final _cargoCarrier = TextEditingController();
   final _cargoRequirements = TextEditingController();
   final _cargoNotes = TextEditingController();
   CargoStatus _cargoStatus = CargoStatus.draft;
@@ -80,9 +82,9 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   void dispose() {
     for (final controller in [
       _routeOperator, _routeName, _routeStops, _routeSource,
-      _vehicleMake, _vehicleModel, _vehicleYear, _vehicleRegistration,
+      _vehicleMake, _vehicleModel, _vehicleYear, _vehicleRegistration, _vehicleNotes,
       _insuranceExpiry, _maintenanceDue,
-      _cargoRef, _cargoOrigin, _cargoDestination, _cargoRequirements, _cargoNotes,
+      _cargoRef, _cargoOrigin, _cargoDestination, _cargoCarrier, _cargoRequirements, _cargoNotes,
       _portName, _portCountry, _portSource,
       _distance, _trips, _consumption, _fuelPrice, _tolls,
       _parking, _other, _currency,
@@ -138,6 +140,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       model: _vehicleModel.text,
       year: year,
       registrationId: _vehicleRegistration.text.trim().isEmpty ? null : _vehicleRegistration.text.trim(),
+      notes: _vehicleNotes.text.trim(),
       insuranceExpiresAt: insuranceDate,
       maintenanceDueAt: maintenanceDate,
     );
@@ -152,7 +155,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       _message('أُضيفت المركبة للشاشة، لكن تعذر حفظها على الجهاز.');
     }
     _vehicleMake.clear(); _vehicleModel.clear(); _vehicleYear.clear();
-    _vehicleRegistration.clear(); _insuranceExpiry.clear(); _maintenanceDue.clear();
+    _vehicleRegistration.clear(); _vehicleNotes.clear(); _insuranceExpiry.clear(); _maintenanceDue.clear();
   }
 
   Future<void> _saveShipment() async {
@@ -160,6 +163,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       reference: _cargoRef.text,
       origin: _cargoOrigin.text,
       destination: _cargoDestination.text,
+      carrier: _cargoCarrier.text.trim().isEmpty ? null : _cargoCarrier.text.trim(),
       status: _cargoStatus,
       deliveryRequirements: _cargoRequirements.text
           .split(',').map((item) => item.trim()).where((item) => item.isNotEmpty).toList(),
@@ -175,7 +179,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
     } catch (_) {
       _message('أُضيفت الشحنة للشاشة، لكن تعذر حفظها على الجهاز.');
     }
-    _cargoRef.clear(); _cargoOrigin.clear(); _cargoDestination.clear();
+    _cargoRef.clear(); _cargoOrigin.clear(); _cargoDestination.clear(); _cargoCarrier.clear();
     _cargoRequirements.clear(); _cargoNotes.clear();
     setState(() => _cargoStatus = CargoStatus.draft);
   }
@@ -238,7 +242,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
     final alerts = <String>[];
     if (vehicle.insuranceNeedsAttention(now)) alerts.add('تنبيه: التأمين يحتاج مراجعة');
     if (vehicle.maintenanceNeedsAttention(now)) alerts.add('تنبيه: موعد الصيانة حان أو فات');
-    final details = '${vehicle.year} ${vehicle.make} ${vehicle.model} • التسجيل: ${vehicle.registrationId ?? 'غير مدخل'} • التأمين: ${vehicle.insuranceExpiresAt?.toIso8601String().split('T').first ?? 'غير مدخل'} • الصيانة: ${vehicle.maintenanceDueAt?.toIso8601String().split('T').first ?? 'غير مدخل'}';
+    final details = '${vehicle.year} ${vehicle.make} ${vehicle.model} • التسجيل: ${vehicle.registrationId ?? 'غير مدخل'} • ملاحظات: ${vehicle.notes.isEmpty ? 'لا توجد' : vehicle.notes} • التأمين: ${vehicle.insuranceExpiresAt?.toIso8601String().split('T').first ?? 'غير مدخل'} • الصيانة: ${vehicle.maintenanceDueAt?.toIso8601String().split('T').first ?? 'غير مدخل'}';
     return alerts.isEmpty ? details : '$details • ${alerts.join(' • ')}';
   }
 
@@ -345,6 +349,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('الطراز', _vehicleModel),
               _field('سنة الصنع', _vehicleYear, keyboard: TextInputType.number),
               _field('رقم التسجيل (اختياري)', _vehicleRegistration),
+              _field('ملاحظات المركبة (اختياري)', _vehicleNotes),
               _field('انتهاء التأمين YYYY-MM-DD (اختياري)', _insuranceExpiry),
               _field('موعد الصيانة YYYY-MM-DD (اختياري)', _maintenanceDue),
               Align(alignment: Alignment.centerRight, child: FilledButton(
@@ -389,6 +394,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               _field('مرجع الشحنة', _cargoRef),
               _field('من', _cargoOrigin),
               _field('إلى', _cargoDestination),
+              _field('الناقل (اختياري)', _cargoCarrier),
               _field('متطلبات التسليم، مفصولة بفواصل (اختياري)', _cargoRequirements),
               _field('ملاحظات (اختياري)', _cargoNotes),
               Padding(
