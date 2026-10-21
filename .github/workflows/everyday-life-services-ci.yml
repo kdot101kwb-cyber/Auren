@@ -5,6 +5,14 @@ on:
     branches:
       - feat/everyday-life-services
       - feat/everyday-life-services-core-v2
+    paths:
+      - "lib/features/everyday_life/**"
+      - "lib/services/everyday/**"
+      - "test/features/everyday_life/**"
+      - "test/services/everyday/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - ".github/workflows/everyday-life-services-ci.yml"
   pull_request:
     branches:
       - main

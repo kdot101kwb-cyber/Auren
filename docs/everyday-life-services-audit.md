@@ -30,7 +30,7 @@ Working branch: `feat/everyday-life-services`.
 - Domain/store automated tests authored: `test/services/everyday/appointment_draft_service_test.dart`, `test/services/everyday/household_inventory_service_test.dart`, `test/services/everyday/household_inventory_store_test.dart`, `test/services/everyday/trip_itinerary_service_test.dart`, and `test/services/everyday/household_maintenance_service_test.dart`.
 - Inventory screen widget tests authored: `test/features/everyday_life/household_inventory_screen_test.dart` covers signed-out state, authenticated empty state, item creation, restock, consumption, and movement history rendering.
 - Inventory store tests cover UID isolation, blank UID rejection, invalid item rejection, metadata updates preserving quantity, movement persistence, duplicate movement rejection, over-consumption, and missing-item rejection.
-- Baseline verification: GitHub Actions run `39487148436` on the parent Everyday branch passed the existing five domain/store test files, inventory widget tests, and targeted analyze on 2026-10-20. New store/ledger tests in this batch are authored and await a run on this branch.
+- Verification: GitHub Actions run `39559336881` on `feat/everyday-life-services-core-v2` completed successfully on 2026-10-21. All ten domain/storage test commands, the household inventory widget test, and targeted `flutter analyze lib/features/everyday_life lib/services/everyday` passed.
 - Firestore persistence, owner authorization rules, cloud sync, and provider adapters: not implemented. Device-local preferences are not encrypted and must not be represented as cloud-backed or tamper-proof data.
 - Therefore these are **partial foundations**, not completed production-ready systems.
 

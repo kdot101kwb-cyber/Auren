@@ -41,5 +41,5 @@ The canonical Master Blueprint markdown was not located in the repository or lib
 
 - Implemented: four new persistence/ledger APIs and their tests; CI coverage added.
 - Partial: appointment, maintenance, itinerary, and utility are service/store-level; dedicated screens/navigation for them remain future work. Household inventory remains the only user-facing screen in this slice.
-- Awaiting: branch CI for the new tests. No new tests are called passing before the run.
+- Verified: GitHub Actions run `39559336881` completed successfully on 2026-10-21. All ten domain/storage test commands, the household inventory screen widget tests, and targeted analyze passed.
 - Not done: PR, merge, deployment, cloud sync, or external actions.
