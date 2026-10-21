@@ -46,7 +46,16 @@ class AurenTripItineraryPlanner {
   const AurenTripItineraryPlanner._();
 
   static List<AurenTripStop> orderedStops(Iterable<AurenTripStop> stops) {
-    final valid = stops.where((stop) => stop.validate() == null).toList();
+    final all = stops.toList();
+    final idCounts = <String, int>{};
+    for (final stop in all) {
+      if (stop.validate() != null) continue;
+      idCounts.update(stop.id, (count) => count + 1, ifAbsent: () => 1);
+    }
+    // A repeated ID makes completion/actions ambiguous, so exclude every
+    // stop using that ID rather than silently choosing one duplicate.
+    final valid = all.where((stop) =>
+        stop.validate() == null && idCounts[stop.id] == 1).toList();
     valid.sort((a, b) {
       if (a.plannedAt == null && b.plannedAt == null) {
         return a.title.toLowerCase().compareTo(b.title.toLowerCase());
