@@ -204,4 +204,36 @@ void main() {
     }
   });
 
+
+  test('normalizes invalid stored field types and preserves the raw document', () async {
+    const key = 'auren_household_inventory_v1_dXNlci1B';
+    final malformedDocuments = <String>[
+      jsonEncode({
+        'version': 1,
+        'items': [
+          {'id': 'rice', 'name': 'Rice', 'category': 'Kitchen', 'quantity': 'two', 'lowStockThreshold': 1, 'unit': 'kg', 'notes': ''},
+        ],
+        'movements': [],
+      }),
+      jsonEncode({
+        'version': 1,
+        'items': [
+          {'id': 'rice', 'name': 'Rice', 'category': 'Kitchen', 'quantity': 2, 'lowStockThreshold': 1, 'unit': 'kg', 'notes': ''},
+        ],
+        'movements': [
+          {'id': 'move-1', 'itemId': 'rice', 'type': 7, 'amount': 1, 'note': '', 'occurredAt': '2026-10-20T12:00:00.000Z'},
+        ],
+      }),
+    ];
+
+    for (final raw in malformedDocuments) {
+      SharedPreferences.setMockInitialValues({key: raw});
+      final store = AurenHouseholdInventoryStore();
+      await expectLater(store.loadItems('user-A'), throwsFormatException);
+      await expectLater(store.saveItem('user-A', item()), throwsFormatException);
+      final preferences = await SharedPreferences.getInstance();
+      expect(preferences.getString(key), raw);
+    }
+  });
+
 }
