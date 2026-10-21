@@ -154,13 +154,44 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
               : '$normalized prices normalized to USD/tonne' + (unresolved > 0 ? ' • $unresolved still need unit or FX data' : '') + '.'),
           if (rows.isNotEmpty) ...[
             const Divider(height: 18),
-            ...rows.take(3).map((r) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(children: [
-                Expanded(child: Text('${r.iso3} • ${r.item}')),
-                Text(r.priceUsdPerTonne == null ? '—' : '${r.priceUsdPerTonne!.toStringAsFixed(2)} USD/t'),
-              ]),
-            )),
+            ...rows.take(3).map((r) {
+              final observedAt = DateTime.tryParse(r.observedAt?.trim() ?? '');
+              final source = r.source?.trim() ?? '';
+              final stale = observedAt == null ||
+                  DateTime.now().toUtc().difference(observedAt.toUtc()).isNegative ||
+                  DateTime.now().toUtc().difference(observedAt.toUtc()) > const Duration(days: 7);
+              final freshness = source.isEmpty
+                  ? 'مصدر السعر غير مسجل'
+                  : observedAt == null
+                      ? 'تاريخ الرصد غير متوفر'
+                      : stale
+                          ? 'بيانات قديمة — تحقق محلياً'
+                          : 'تاريخ الرصد حديث وفق حدّ التحقق';
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Expanded(child: Text('${r.iso3} • ${r.item}')),
+                      Text(r.priceUsdPerTonne == null ? '—' : '${r.priceUsdPerTonne!.toStringAsFixed(2)} USD/t'),
+                    ]),
+                    const SizedBox(height: 3),
+                    Text('المصدر: ${source.isEmpty ? 'غير مسجل' : source}',
+                        style: Theme.of(context).textTheme.bodySmall),
+                    Text('تاريخ الرصد: ${r.observedAt?.trim().isNotEmpty == true ? r.observedAt!.trim() : 'غير متوفر'}',
+                        style: Theme.of(context).textTheme.bodySmall),
+                    Text(freshness,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: stale || source.isEmpty
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.secondary,
+                          fontWeight: FontWeight.w600,
+                        )),
+                  ],
+                ),
+              );
+            }),
           ],
         ]),
       ),
