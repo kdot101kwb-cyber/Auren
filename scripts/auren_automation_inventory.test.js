@@ -28,6 +28,7 @@ test('discovers workflow metadata and scheduled exports', () => {
   assert.deepEqual(result.workflows[0].triggers, ['push', 'pull_request']);
   assert.deepEqual(result.workflows[0].jobs, ['test']);
   assert.equal(result.workflows[0].permissionsDeclared, true);
+  assert.equal(result.workflows[0].permissionCoverage, 'workflow-level');
   assert.equal(result.workflows[0].concurrencyDeclared, true);
   assert.deepEqual(result.scheduledFunctions, [{ path: 'functions/nested/schedules.js', name: 'refreshCache' }]);
 });
@@ -43,6 +44,22 @@ test('flags deployment commands without explicit project and non-staging target'
   const result = inventory(root);
   assert.deepEqual(result.findings.map(item => item.code), ['missing-explicit-project', 'non-staging-target']);
   assert.equal(result.workflows[0].deployCommands.length, 3);
+});
+
+
+test('recognizes explicit job-level permissions across every job', () => {
+  const root = fixture();
+  fs.writeFileSync(path.join(root, '.github/workflows/publish.yml'), [
+    'name: Publish', 'on:', '  workflow_dispatch:', 'jobs:',
+    '  image-a:', '    permissions:', '      contents: read', '      packages: write',
+    '    runs-on: ubuntu-latest',
+    '  image-b:', '    permissions:', '      contents: read', '      packages: write',
+    '    runs-on: ubuntu-latest'
+  ].join('\n'));
+  const workflow = inventory(root).workflows[0];
+  assert.equal(workflow.permissionsDeclared, false);
+  assert.deepEqual(workflow.jobPermissionsDeclared, ['image-a', 'image-b']);
+  assert.equal(workflow.permissionCoverage, 'all-jobs');
 });
 
 test('report labels its limits and does not dump scanned source', () => {
