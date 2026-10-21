@@ -118,6 +118,24 @@ void main() {
     );
     expect(await store.loadMovements('user-A'), isEmpty);
   });
+  test('rejects unknown document versions without overwriting stored data', () async {
+    const key = 'auren_household_inventory_v1_dXNlci1B';
+    final preferences = <String, Object>{
+      key: jsonEncode({
+        'version': 2,
+        'items': [],
+        'movements': [],
+      }),
+    };
+    SharedPreferences.setMockInitialValues(preferences);
+    final store = AurenHouseholdInventoryStore();
+
+    await expectLater(store.loadItems('user-A'), throwsFormatException);
+    await expectLater(store.saveItem('user-A', item()), throwsFormatException);
+    final stored = await SharedPreferences.getInstance();
+    expect(jsonDecode(stored.getString(key)!)['version'], 2);
+  });
+
   test('rejects duplicate item IDs in stored inventory instead of hiding corruption', () async {
     const key = 'auren_household_inventory_v1_dXNlci1B';
     SharedPreferences.setMockInitialValues({
