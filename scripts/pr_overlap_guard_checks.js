@@ -14,3 +14,7 @@ test('finds shared file paths with another open pull request', () => {
   );
   assert.deepEqual(result.overlaps, [{ number: 3, title: 'Other', sharedFiles: ['scripts/a.js'] }]);
 });
+
+test('rejects an invalid current pull request number', () => {
+  assert.throws(() => comparePullRequestChanges({ number: 0, files: [] }, []), /positive integer number/);
+});
