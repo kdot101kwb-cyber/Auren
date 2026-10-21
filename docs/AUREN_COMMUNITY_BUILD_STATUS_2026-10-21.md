@@ -27,3 +27,21 @@
 - `.circleci/config.yml`: added `functions/community_memory_rules.integration.test.js` to the Firestore emulator gate alongside Action and Community Collaboration integration tests.
 - Follow-up status refresh: all five CircleCI contexts reported `success` for the report commit `c702a6c8843d27e46b9a5b4dfeec134c0e8f70ed`: Functions tests, Action Executor tests, Plugin Worker tests, Plugin Worker image, and Flutter CI. The preceding configuration commit `50fe949721f8fc0170acd744010eb543b95e7188` also reports success for all five contexts.
 - The successful `functions_tests` job includes the configured Firestore emulator gate. Raw emulator logs and individual test counts were not retrieved, so this confirms job-level CI success, not the exact number of integration tests. The outstanding Firestore authorization and end-to-end governance blockers above remain unchanged; passing CI does not mean casework/appeals are operational.
+
+
+## Accelerated follow-up — three focused batches
+
+### Batch 1 — appeal security regression coverage
+- Extended `functions/community_memory_rules.integration.test.js` with checks that appeal creation, appellant reads, moderator queue reads, appeal decisions, and appeal-event writes remain denied until explicit Firestore authorization rules are implemented.
+- Commit: `95c99bdfff8d65d6ae1d618a5916dedc0913b55e`.
+- This adds regression coverage for the safe-deny state; it does not make appeals operational.
+
+### Batch 2 — governance security contract
+- Added `docs/COMMUNITY_GOVERNANCE_FIRESTORE_CONTRACT.md` specifying trusted moderator identity, immutable reporter/appellant fields, permitted state transitions, append-only audit events, required emulator cases, and release gates.
+- Commit: `93a6e6c185ed15a23f450865b129fbeb855f128c`.
+- This is a design contract only; Firestore rules were not changed.
+
+### Batch 3 — CI/status verification and release boundary
+- The preceding report commit `78c7f8ebab4540f0b557f9758e883a9bbb734645` showed Functions, Action Executor, Plugin Worker tests, and Plugin Worker image as successful; Flutter CI was pending at the time of refresh.
+- The new test and contract commits have not yet been verified green by CI. Check their CircleCI status before claiming the accelerated batch is fully validated.
+- No production rules/deployment, PR creation, or merge was performed. Governance remains blocked on implementing and emulator-verifying the strict rules described in the contract.
