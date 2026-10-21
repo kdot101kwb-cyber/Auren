@@ -417,7 +417,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
               ),
               Align(alignment: Alignment.centerRight, child: FilledButton(
                 onPressed: _loadingRecords ? null : _saveShipment, child: const Text('حفظ مسودة الشحنة'))),
-              _savedItems(_shipments, 'لا توجد شحنات. الحفظ هنا لا يرسل طلبًا إلى ناقل.', (s) => '${s.reference}: ${s.origin} → ${s.destination} • ${_cargoStatusLabel(s.status)}${s.deliveryRequirements.isEmpty ? '' : ' • المتطلبات: ${s.deliveryRequirements.join(', ')}'}'),
+              _savedItems(_shipments, 'لا توجد شحنات. الحفظ هنا لا يرسل طلبًا إلى ناقل.', (s) => '${s.reference}: ${s.origin} → ${s.destination} • ${_cargoStatusLabel(s.status)} • الناقل: ${s.carrier?.isNotEmpty == true ? s.carrier : 'غير محدد'}${s.deliveryRequirements.isEmpty ? '' : ' • المتطلبات: ${s.deliveryRequirements.join(', ')}'}${s.notes.trim().isEmpty ? '' : ' • ملاحظات: ${s.notes.trim()}'}'),
             ],
           ),
           _section(
