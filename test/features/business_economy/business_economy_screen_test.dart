@@ -94,8 +94,16 @@ void main() {
     await tester.tap(find.text('Buyer–Seller Matching'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).at(0), 'Organic sesame');
-    await tester.enterText(find.byType(TextField).at(1), 'Organic sesame available');
+    await tester.enterText(
+      find.byWidgetPredicate((widget) =>
+          widget is TextField && widget.decoration?.labelText == 'احتياج المشتري *'),
+      'Organic sesame',
+    );
+    await tester.enterText(
+      find.byWidgetPredicate((widget) =>
+          widget is TextField && widget.decoration?.labelText == 'عرض البائع *'),
+      'Organic sesame available',
+    );
     await tester.scrollUntilVisible(
       find.text('حفظ المسودة محلياً'),
       250,
@@ -131,8 +139,16 @@ void main() {
     await tester.tap(find.text('Business Growth Planner'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).at(0), 'Reach 10 customers');
-    await tester.enterText(find.byType(TextField).at(1), 'Local retailers');
+    await tester.enterText(
+      find.byWidgetPredicate((widget) =>
+          widget is TextField && widget.decoration?.labelText == 'هدف قابل للقياس'),
+      'Reach 10 customers',
+    );
+    await tester.enterText(
+      find.byWidgetPredicate((widget) =>
+          widget is TextField && widget.decoration?.labelText == 'مجموعة العملاء المستهدفة'),
+      'Local retailers',
+    );
     await tester.scrollUntilVisible(
       find.text('حفظ الخطة'),
       250,
