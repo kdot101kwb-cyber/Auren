@@ -19,7 +19,7 @@ void main() {
     test('farm operations flag overdue tasks but not completed tasks', () {
       final task = service.createTask(title: 'inspect irrigation', dueAt: DateTime.utc(2026, 10, 20), cropOrAnimal: 'sorghum');
       expect(task.isOverdue(DateTime.utc(2026, 10, 21)), isTrue);
-      const done = FarmOperationTask(title: 'completed', dueAt: DateTime.utc(2026, 10, 20), status: FarmTaskStatus.done);
+      final done = FarmOperationTask(title: 'completed', dueAt: DateTime.utc(2026, 10, 20), status: FarmTaskStatus.done);
       expect(done.isOverdue(DateTime.utc(2026, 10, 21)), isFalse);
     });
     test('market observations require traceable source and date metadata', () {
