@@ -14,12 +14,14 @@ class FirebaseAurenAiGateway implements AurenAiGateway {
     required String conversationId,
     required String message,
     String? requestId,
+    bool includePersonalContext = false,
   }) async {
     final callable = _functions.httpsCallable('aurenAiGateway');
     final result = await callable.call(<String, dynamic>{
       'conversationId': conversationId,
       'message': message,
       'requestId': requestId,
+      'includePersonalContext': includePersonalContext,
     });
     final data = Map<String, dynamic>.from(result.data as Map);
     final rawPayload = data['payload'];
