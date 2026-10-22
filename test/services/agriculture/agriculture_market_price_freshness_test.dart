@@ -57,7 +57,8 @@ void main() {
       'مصدر السعر غير مكتمل',
     );
   });
-  test('normalized market rows share the seven-day freshness policy', () {
+
+  test('normalized market rows require a traceable source for a current label', () {
     const row = AgricultureNormalizedLocalMarketPrice(
       id: 'normalized-1',
       iso3: 'SDN',
@@ -77,7 +78,29 @@ void main() {
     expect(row.isStaleAt(now), isFalse);
     expect(
       row.freshnessLabelAt(now),
-      'تاريخ الرصد حديث؛ المصدر مسجل دون تحقق من رابط المصدر',
+      'مصدر السعر غير مكتمل — رابط المصدر غير متحقق',
+    );
+
+    const traceableRow = AgricultureNormalizedLocalMarketPrice(
+      id: 'normalized-traceable',
+      iso3: 'SDN',
+      item: 'Sorghum',
+      nativePrice: 120,
+      currency: 'SDG',
+      unit: 'kg',
+      priceLocalPerTonne: null,
+      usdPerLocalUnit: null,
+      priceUsdPerTonne: null,
+      fxDate: null,
+      status: 'needs_unit_or_fx',
+      observedAt: '2026-10-20T12:00:00Z',
+      source: 'FAO FPMA',
+      sourceUrl: 'https://fpma.fao.org/',
+    );
+    expect(traceableRow.hasTraceableSource, isTrue);
+    expect(
+      traceableRow.freshnessLabelAt(now),
+      'تاريخ الرصد حديث وفق حدّ التحقق؛ راجع المصدر قبل اتخاذ القرار',
     );
 
     const missingSource = AgricultureNormalizedLocalMarketPrice(
@@ -95,7 +118,7 @@ void main() {
       observedAt: '2026-10-20T12:00:00Z',
       source: ' ',
     );
-    expect(missingSource.freshnessLabelAt(now), 'مصدر السعر غير مسجل');
+    expect(missingSource.freshnessLabelAt(now), 'مصدر السعر غير مكتمل — رابط المصدر غير متحقق');
 
     const oldRow = AgricultureNormalizedLocalMarketPrice(
       id: 'normalized-3',
@@ -113,7 +136,6 @@ void main() {
       source: 'Local market record',
     );
     expect(oldRow.isStaleAt(now), isTrue);
-    expect(oldRow.freshnessLabelAt(now), 'بيانات قديمة — تحقق محلياً');
+    expect(oldRow.freshnessLabelAt(now), 'مصدر السعر غير مكتمل — رابط المصدر غير متحقق');
   });
-
 }
