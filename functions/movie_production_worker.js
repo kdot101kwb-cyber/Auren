@@ -146,9 +146,10 @@ async function run(ref) {
   const result=await submitAurenProviderJob({provider:'replicate',credentials:{token,version},
     task:{input:d.input||{}},idempotencyKey:String(d.idempotencyKey||pending.ref.id)});
   if(!result.ok){await pending.ref.set({status:'queued',lockUntilMs:0,lastError:String(result.message||'Provider unavailable').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
-  const output=result.result?.output, externalId=String(result.result?.externalJobId||'').trim();
+  const providerPayload=result.result && typeof result.result==='object' ? result.result : result;
+  const output=providerPayload.output, externalId=String(providerPayload.externalJobId||'').trim();
   await pending.ref.set({status:hasOutput(output)?'output':externalId?'processing':'failed',output:hasOutput(output)?output:null,
-    externalJobId:hasOutput(output)?'':externalId,providerId:result.providerId,providerState:result.result?.state||'starting',
+    externalJobId:hasOutput(output)?'':externalId,providerId:result.providerId,providerState:providerPayload.state||'starting',
     lockUntilMs:0,lastError:hasOutput(output)||externalId?'':'Provider returned no artifact.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
 }
 
