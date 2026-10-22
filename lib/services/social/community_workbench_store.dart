@@ -8,10 +8,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// represented as a cross-device/community-wide result until a trusted sync
 /// contract is implemented.
 class AurenCommunityWorkbenchStore {
-  AurenCommunityWorkbenchStore({Future<SharedPreferences> Function()? preferences})
-      : _preferences = preferences ?? SharedPreferences.getInstance;
+  AurenCommunityWorkbenchStore({
+    Future<SharedPreferences> Function()? preferences,
+    String scope = 'device',
+  })  : _preferences = preferences ?? SharedPreferences.getInstance,
+        _scope = scope.trim().isEmpty ? 'device' : scope.trim();
 
   final Future<SharedPreferences> Function() _preferences;
+  final String _scope;
+
+  // Signed-in accounts use isolated keys on shared Android devices.
+  String _storageKey(String key) =>
+      _scope == 'device' ? key : '$key.${Uri.encodeComponent(_scope)}';
 
   static const _spaceGuidelinesKey = 'auren.community.space_guidelines.v1';
   static const _projectsKey = 'auren.community.group_projects.v1';
@@ -69,7 +77,7 @@ class AurenCommunityWorkbenchStore {
     if (id.isEmpty || cleanTopic.length > 80 || cleanRules.length > 2000) {
       throw ArgumentError('Space topic or rules are invalid.');
     }
-    final all = await _readMap(_spaceGuidelinesKey);
+    final all = await _readMap(_storageKey(_spaceGuidelinesKey));
     // Keep the newest 100 spaces' metadata so local storage remains bounded.
     all.remove(id);
     all[id] = <String, dynamic>{
@@ -80,16 +88,16 @@ class AurenCommunityWorkbenchStore {
     final bounded = Map<String, dynamic>.fromEntries(
       all.entries.skip(all.length > 100 ? all.length - 100 : 0),
     );
-    await _writeMap(_spaceGuidelinesKey, bounded);
+    await _writeMap(_storageKey(_spaceGuidelinesKey), bounded);
   }
 
   Future<Map<String, dynamic>> readSpaceGuidelines(String spaceId) async {
-    final all = await _readMap(_spaceGuidelinesKey);
+    final all = await _readMap(_storageKey(_spaceGuidelinesKey));
     final value = all[spaceId.trim()];
     return value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
   }
 
-  Future<List<Map<String, dynamic>>> listProjects() => _readList(_projectsKey);
+  Future<List<Map<String, dynamic>>> listProjects() => _readList(_storageKey(_projectsKey));
 
   /// Deletes a project only from this device. No remote project or member data
   /// is changed by this local-first MVP.
@@ -100,7 +108,7 @@ class AurenCommunityWorkbenchStore {
     final originalLength = projects.length;
     projects.removeWhere((project) => project['id'] == id);
     if (projects.length == originalLength) throw StateError('Project not found.');
-    await _writeList(_projectsKey, projects);
+    await _writeList(_storageKey(_projectsKey), projects);
   }
 
   Future<String> createProject({
@@ -126,7 +134,7 @@ class AurenCommunityWorkbenchStore {
       'tasks': <Map<String, dynamic>>[],
       'milestones': <Map<String, dynamic>>[],
     });
-    await _writeList(_projectsKey, projects.take(100).toList());
+    await _writeList(_storageKey(_projectsKey), projects.take(100).toList());
     return id;
   }
 
@@ -222,7 +230,7 @@ class AurenCommunityWorkbenchStore {
     final project = Map<String, dynamic>.from(projects[index]);
     mutate(project);
     projects[index] = project;
-    await _writeList(_projectsKey, projects);
+    await _writeList(_storageKey(_projectsKey), projects);
   }
 
   int projectProgress(Map<String, dynamic> project) {
@@ -237,7 +245,7 @@ class AurenCommunityWorkbenchStore {
     return ((completed / total) * 100).round();
   }
 
-  Future<List<Map<String, dynamic>>> listProposals() => _readList(_proposalsKey);
+  Future<List<Map<String, dynamic>>> listProposals() => _readList(_storageKey(_proposalsKey));
 
   /// Removes a proposal draft and its local votes from this device only.
   Future<void> deleteProposal(String proposalId) async {
@@ -247,7 +255,7 @@ class AurenCommunityWorkbenchStore {
     final originalLength = proposals.length;
     proposals.removeWhere((proposal) => proposal['id'] == id);
     if (proposals.length == originalLength) throw StateError('Proposal not found.');
-    await _writeList(_proposalsKey, proposals);
+    await _writeList(_storageKey(_proposalsKey), proposals);
   }
 
   Future<String> createRuleProposal({
@@ -274,7 +282,7 @@ class AurenCommunityWorkbenchStore {
       'status': 'open',
       'createdAt': DateTime.now().toUtc().toIso8601String(),
     });
-    await _writeList(_proposalsKey, proposals.take(100).toList());
+    await _writeList(_storageKey(_proposalsKey), proposals.take(100).toList());
     return id;
   }
 
@@ -298,7 +306,7 @@ class AurenCommunityWorkbenchStore {
     votes[voter] = support;
     proposal['votes'] = votes;
     proposals[index] = proposal;
-    await _writeList(_proposalsKey, proposals);
+    await _writeList(_storageKey(_proposalsKey), proposals);
   }
 
   Future<void> closeProposal({
@@ -313,7 +321,7 @@ class AurenCommunityWorkbenchStore {
     if (index < 0) throw StateError('Proposal not found.');
     if (proposals[index]['status'] != 'open') throw StateError('Proposal is already closed.');
     proposals[index] = <String, dynamic>{...proposals[index], 'status': status};
-    await _writeList(_proposalsKey, proposals);
+    await _writeList(_storageKey(_proposalsKey), proposals);
   }
 
   int proposalSupportCount(Map<String, dynamic> proposal) {
@@ -321,7 +329,7 @@ class AurenCommunityWorkbenchStore {
     return votes.values.where((value) => value).length;
   }
 
-  Future<List<Map<String, dynamic>>> listMeetupDrafts() => _readList(_meetupsKey);
+  Future<List<Map<String, dynamic>>> listMeetupDrafts() => _readList(_storageKey(_meetupsKey));
 
   /// Deletes a meetup draft and its attendance intentions from this device.
   Future<void> deleteMeetupDraft(String meetupId) async {
@@ -331,7 +339,7 @@ class AurenCommunityWorkbenchStore {
     final originalLength = drafts.length;
     drafts.removeWhere((draft) => draft['id'] == id);
     if (drafts.length == originalLength) throw StateError('Meetup draft not found.');
-    await _writeList(_meetupsKey, drafts);
+    await _writeList(_storageKey(_meetupsKey), drafts);
   }
 
   Future<String> createMeetupDraft({
@@ -363,7 +371,7 @@ class AurenCommunityWorkbenchStore {
       'status': 'draft',
       'createdAt': DateTime.now().toUtc().toIso8601String(),
     });
-    await _writeList(_meetupsKey, drafts.take(100).toList());
+    await _writeList(_storageKey(_meetupsKey), drafts.take(100).toList());
     return id;
   }
 
@@ -391,7 +399,7 @@ class AurenCommunityWorkbenchStore {
     attendance[attendee] = status;
     draft['attendance'] = attendance;
     drafts[index] = draft;
-    await _writeList(_meetupsKey, drafts);
+    await _writeList(_storageKey(_meetupsKey), drafts);
   }
 
   int meetupGoingCount(Map<String, dynamic> meetup) {
