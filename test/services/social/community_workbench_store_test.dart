@@ -282,4 +282,46 @@ void main() {
     expect((await recoveringStore.listMeetupDrafts()).single['title'], 'Recovered meetup');
   });
 
+
+  test('signed-in account scopes isolate projects, proposals, meetups and space metadata', () async {
+    final accountA = AurenCommunityWorkbenchStore(scope: 'uid-a');
+    final accountB = AurenCommunityWorkbenchStore(scope: 'uid-b');
+
+    await accountA.saveSpaceGuidelines(
+      spaceId: 'space-shared-id',
+      topic: 'Private topic A',
+      rules: 'Account A rules',
+    );
+    await accountA.createProject(
+      title: 'Account A project',
+      description: '',
+      communityId: 'community-1',
+    );
+    await accountA.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Account A proposal',
+      proposedRule: 'Rule A',
+    );
+    await accountA.createMeetupDraft(
+      title: 'Account A meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10,
+    );
+
+    expect(await accountB.readSpaceGuidelines('space-shared-id'), isEmpty);
+    expect(await accountB.listProjects(), isEmpty);
+    expect(await accountB.listProposals(), isEmpty);
+    expect(await accountB.listMeetupDrafts(), isEmpty);
+
+    await accountB.createProject(
+      title: 'Account B project',
+      description: '',
+      communityId: 'community-1',
+    );
+    expect((await accountA.listProjects()).single['title'], 'Account A project');
+    expect((await accountB.listProjects()).single['title'], 'Account B project');
+  });
+
 }
