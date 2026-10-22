@@ -15,10 +15,15 @@ void main() {
       expect(log.isFollowUpDue(DateTime.utc(2026, 10, 22)), isTrue);
       expect(log.needsVeterinaryReview, isTrue);
       expect(() => service.createLivestockLog(animalGroup: 'goats', observedAt: DateTime.utc(2026, 10, 21), observation: 'check', nextCheckAt: DateTime.utc(2026, 10, 20)), throwsArgumentError);
+      expect(() => service.createLivestockLog(animalGroup: ' ', observedAt: DateTime.utc(2026, 10, 21), observation: 'check'), throwsArgumentError);
+      expect(() => service.createLivestockLog(animalGroup: 'goats', observedAt: DateTime.utc(2026, 10, 21), observation: ' '), throwsArgumentError);
     });
     test('farm operations flag overdue tasks but not completed tasks', () {
       final task = service.createTask(title: 'inspect irrigation', dueAt: DateTime.utc(2026, 10, 20), cropOrAnimal: 'sorghum');
+      expect(task.isOverdue(DateTime.utc(2026, 10, 20)), isFalse, reason: 'a task is not overdue at its exact due instant');
       expect(task.isOverdue(DateTime.utc(2026, 10, 21)), isTrue);
+      final skipped = FarmOperationTask(title: 'skipped', dueAt: DateTime.utc(2026, 10, 20), status: FarmTaskStatus.skipped);
+      expect(skipped.isOverdue(DateTime.utc(2026, 10, 21)), isFalse);
       final done = FarmOperationTask(title: 'completed', dueAt: DateTime.utc(2026, 10, 20), status: FarmTaskStatus.done);
       expect(done.isOverdue(DateTime.utc(2026, 10, 21)), isFalse);
     });
