@@ -7,6 +7,7 @@ abstract interface class AurenAiGateway {
     required String conversationId,
     required String message,
     String? requestId,
+    bool includePersonalContext = false,
   });
 }
 
@@ -26,6 +27,7 @@ class LocalAiGateway implements AurenAiGateway {
     required String conversationId,
     required String message,
     String? requestId,
+    bool includePersonalContext = false,
   }) async {
     return AurenAiResponse(
       text: 'وصلتني رسالتك: "$message". أنا AUREN AI، وجاهز أساعدك خطوة بخطوة.',
@@ -57,6 +59,7 @@ class ResilientAurenAiGateway implements AurenAiGateway {
         conversationId: conversationId,
         message: message,
         requestId: requestId,
+        includePersonalContext: includePersonalContext,
       );
     } on AurenAiFallbackEligibleException {
       return fallback.send(
