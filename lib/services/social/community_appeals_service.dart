@@ -93,7 +93,8 @@ class AurenCommunityAppealsService {
     }
 
     final appealRef = _appeals.doc(id);
-    final eventRef = db.collection('community_case_events').doc();
+    final eventRef =
+        db.collection('community_case_events').doc('${id}__${status}');
 
     // Only one decision can transition a pending appeal; the audit record is
     // written atomically with the decision.
