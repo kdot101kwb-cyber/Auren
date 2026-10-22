@@ -60,6 +60,7 @@ void main() {
       (tester) async {
     await openScreen(tester);
 
+    await tester.ensureVisible(find.text('Local services'));
     await tester.tap(find.text('Local services'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('أضف خدمة بنفسك'));
