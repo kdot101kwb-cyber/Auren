@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/payments/auren_money_insights.dart';
 import '../../../services/payments/wallet_service.dart';
+import 'auren_subscription_tracker_panel.dart';
 
 class AurenWalletScreen extends StatefulWidget {
   const AurenWalletScreen({super.key});
@@ -82,6 +83,7 @@ class _AurenWalletScreenState extends State<AurenWalletScreen> {
                   ),
                 ),
               ],
+              AurenSubscriptionTrackerPanel(uid: uid),
               const SizedBox(height: 12),
               const Text('المعاملات',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
