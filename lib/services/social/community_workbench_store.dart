@@ -1,8 +1,5 @@
 import 'dart:convert';
 
-extension<T> on List<T> {
-  List<T> takeLast(int count) => skip(length > count ? length - count : 0).toList();
-}
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -81,7 +78,7 @@ class AurenCommunityWorkbenchStore {
       'updatedAt': DateTime.now().toUtc().toIso8601String(),
     };
     final bounded = Map<String, dynamic>.fromEntries(
-      all.entries.toList().takeLast(100),
+      all.entries.skip(all.length > 100 ? all.length - 100 : 0),
     );
     await _writeMap(_spaceGuidelinesKey, bounded);
   }
