@@ -61,8 +61,8 @@ void main() {
       final summary = tracker.summarize(
         [
           item(),
-          item(id: 'music', amount: 500, currency: 'USD'),
-          item(id: 'mobile', amount: 900, currency: 'SDG'),
+          item(id: 'music', amount: 500, currency: 'USD', due: DateTime(2026, 10, 26)),
+          item(id: 'mobile', amount: 900, currency: 'SDG', due: DateTime(2026, 10, 27)),
           item(id: 'paused', amount: 200, active: false),
           item(id: 'later', due: DateTime(2027, 2, 1)),
         ],
