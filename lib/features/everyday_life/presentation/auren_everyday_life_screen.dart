@@ -127,6 +127,9 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
         ),
       ),
     );
+    // Keep controllers alive until the modal's reverse transition has removed
+    // its TextFields; disposing immediately after Navigator.pop can assert.
+    await Future<void>.delayed(const Duration(milliseconds: 250));
     if (title == null || title.trim().isEmpty || !mounted) {
       titleController.dispose();
       detailsController.dispose();
