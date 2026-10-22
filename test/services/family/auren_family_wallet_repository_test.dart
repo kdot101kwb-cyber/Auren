@@ -103,6 +103,50 @@ void main() {
           {'income', 'expense'});
     });
 
+    test('keeps balances isolated by currency', () async {
+      await repository.initialize(uid: 'user-1', currency: 'USD');
+      await repository.recordEntry(
+        uid: 'user-1',
+        title: 'USD income',
+        amountMinor: 1000,
+        currency: 'USD',
+        kind: 'income',
+      );
+      await repository.recordEntry(
+        uid: 'user-1',
+        title: 'EUR income',
+        amountMinor: 500,
+        currency: 'eur',
+        kind: 'income',
+      );
+      await repository.recordEntry(
+        uid: 'user-1',
+        title: 'EUR expense',
+        amountMinor: 200,
+        currency: 'EUR',
+        kind: 'expense',
+      );
+
+      final snapshot = await firestore
+          .collection('users')
+          .doc('user-1')
+          .collection('familyWallet')
+          .doc('current')
+          .get();
+      expect(snapshot.data()?['balancesMinor'], {'USD': 1000, 'EUR': 300});
+
+      await expectLater(
+        repository.recordEntry(
+          uid: 'user-1',
+          title: 'Overspend USD',
+          amountMinor: 1001,
+          currency: 'USD',
+          kind: 'expense',
+        ),
+        throwsStateError,
+      );
+    });
+
     test('rejects an expense above the available balance without writing it',
         () async {
       await repository.initialize(uid: 'user-1', currency: 'USD');
