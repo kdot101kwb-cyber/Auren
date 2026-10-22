@@ -1,6 +1,6 @@
 # Community Governance — Firestore Security Contract
 
-Status: design gate only; **not implemented rules**.
+Status: implemented on `feat/community-governance-and-memory`; **verification gate remains open until Emulator and CI results pass**.
 
 This contract records the minimum security behavior required before report review or appeals can be enabled. Do not treat the current casework/appeal service prototypes as production-ready.
 
@@ -29,9 +29,9 @@ This contract records the minimum security behavior required before report revie
 6. Case events cannot be forged independently, changed, or deleted; valid decision and event writes succeed atomically.
 7. Regression tests cover every other existing `/reports` and recursive matching rule so no broader rule accidentally grants access.
 
-## Current known gap
+## Implementation state and remaining gate
 
-The current `firestore.rules` permits constrained report creation only. It does not authorize report queue reads/updates, `community_case_appeals`, or `community_case_events`. The integration suite intentionally asserts these operations remain denied. This is a safe failure mode, not a working moderation workflow.
+The feature branch now includes explicit rules for moderator report reads/transitions, participant appeal submission/reads, moderator appeal decisions, and append-only audit events. Decision writes must be paired with the deterministic event ID and matching fields in the same atomic transaction. The integration suite has been expanded with valid report-transition and appeal-decision transactions plus privilege-denial cases. The rules and tests have been committed, but CI/Emulator results for the current HEAD are still pending; therefore this is **not yet accepted or production-ready**.
 
 ## Release gate
 
@@ -47,5 +47,5 @@ Do not deploy or advertise casework/appeals as operational until the rules chang
 6. Audit every matching Firestore rule, including recursive wildcard matches. An additional matching allow can override a deny in another match block.
 7. Run the full Firestore Emulator suite from `functions/package.json`'s `test:emulator`, then the complete CI suite. Do not enable UI actions or describe this as operational until valid transactions succeed and each privilege-escalation regression fails as expected.
 
-The current client uses randomly generated audit-event IDs. Step 3 is a required service change before paired writes can be fully enforced by rules; do not attempt to solve this by relaxing event rules.
+The report and appeal services now use deterministic event IDs (`reportId__destinationStatus` and `appealId__destinationStatus`) to satisfy the binding enforced by these rules. Preserve this convention in any future service changes; do not relax event rules to accommodate random IDs.
 
