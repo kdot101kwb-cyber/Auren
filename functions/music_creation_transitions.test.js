@@ -7,7 +7,7 @@ const {resolveMusicSubmission, resolveMusicPoll} = require('./music_creation_tra
 test('submission accepts only a validated materialized artifact as output', () => {
   const output = {url: 'https://cdn.example.test/song.mp3'};
   assert.deepEqual(
-    resolveMusicSubmission({result: {ok: true, result: {output, state: 'succeeded'}}, artifactCheck: {ok: true, contentType: 'audio/mpeg'}}),
+    resolveMusicSubmission({result: {ok: true, output, state: 'succeeded'}, artifactCheck: {ok: true, contentType: 'audio/mpeg'}}),
     {
       status: 'output',
       output,
@@ -21,7 +21,7 @@ test('submission accepts only a validated materialized artifact as output', () =
 
 test('submission keeps accepted asynchronous jobs processing', () => {
   assert.deepEqual(
-    resolveMusicSubmission({result: {ok: true, providerId: 'replicate', result: {externalJobId: 'job-123', state: 'starting'}}}),
+    resolveMusicSubmission({result: {ok: true, providerId: 'replicate', externalJobId: 'job-123', state: 'starting'}}),
     {
       status: 'processing',
       output: null,
@@ -36,7 +36,7 @@ test('submission does not mark an invalid artifact ready', () => {
   const output = {url: 'https://cdn.example.test/song.mp3'};
   const artifactValidation = {ok: false, reason: 'not_audio'};
   const transition = resolveMusicSubmission({
-    result: {ok: true, result: {output, state: 'succeeded'}},
+    result: {ok: true, output, state: 'succeeded'},
     artifactCheck: artifactValidation,
   });
   assert.equal(transition.status, 'queued');
@@ -49,7 +49,7 @@ test('submission does not mark an invalid artifact ready', () => {
 test('submission failure remains retryable and a response without an artifact fails safely', () => {
   assert.equal(resolveMusicSubmission({result: {ok: false, message: 'provider busy'}}).status, 'queued');
   assert.equal(resolveMusicSubmission({result: {ok: false, message: 'provider busy'}}).lastError, 'provider busy');
-  const empty = resolveMusicSubmission({result: {ok: true, result: {state: 'succeeded'}}});
+  const empty = resolveMusicSubmission({result: {ok: true, state: 'succeeded'}});
   assert.equal(empty.status, 'failed');
   assert.equal(empty.output, null);
   assert.equal(empty.lastError, 'Provider returned no artifact.');
