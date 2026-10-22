@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/talent/music_talent_catalog.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'music_audio_lab.dart';
+import 'auren_open_verse_screen.dart';
 
 class AurenMusicTalentTools extends StatelessWidget {
   const AurenMusicTalentTools({super.key});
@@ -26,6 +27,18 @@ class AurenMusicTalentTools extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const AurenMusicAudioLab(),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AurenOpenVerseScreen()),
+                ),
+                icon: const Icon(Icons.multitrack_audio),
+                label: const Text('Open Verse — مساحة التعاون الموسيقي'),
+              ),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 6,
