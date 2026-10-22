@@ -37,7 +37,7 @@ class AurenFamilyBudgetSummary {
   double get progress {
     final limit = budget?.limitMinor ?? 0;
     if (limit <= 0) return 0;
-    return (spentMinor / limit).clamp(0.0, 1.0);
+    return (spentMinor / limit).clamp(0.0, 1.0).toDouble();
   }
 
   bool get isOverBudget => budget != null && spentMinor > budget!.limitMinor;
