@@ -169,11 +169,18 @@ test('Manual review reconciliation never re-executes the external action', () =>
 });
 
 
-test('AI personal context reads are guarded by an explicit opt-in', () => {
+test('AI personal context requires short-lived server-recorded consent', () => {
   const gate = index.indexOf('if (request.data?.includePersonalContext === true)');
+  const consentRead = index.indexOf(".collection('privacyConsents').doc('aiPersonalContext')", gate);
+  const acceptedCheck = index.indexOf('consent.accepted !== true', gate);
+  const purposeCheck = index.indexOf("consent.purpose !== 'ai_personal_context'", gate);
+  const expiryCheck = index.indexOf('expiresAt.toMillis() <= Date.now()', gate);
   const goalsRead = index.indexOf("const goalsSnap = await db.collection('users').doc(uid).collection('goals')", gate);
   const memoryRead = index.indexOf("const memorySnap = await db.collection('users').doc(uid).collection('memory')", gate);
   const prompt = index.indexOf('const messages = [', gate);
-  assert.ok(gate >= 0 && goalsRead > gate && goalsRead < prompt);
+  assert.ok(gate >= 0 && consentRead > gate && consentRead < goalsRead);
+  assert.ok(acceptedCheck > consentRead && purposeCheck > acceptedCheck);
+  assert.ok(expiryCheck > purposeCheck && expiryCheck < goalsRead);
+  assert.ok(goalsRead > gate && goalsRead < prompt);
   assert.ok(memoryRead > goalsRead && memoryRead < prompt);
 });
