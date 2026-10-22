@@ -10,7 +10,6 @@ const {resolveMusicSubmission,resolveMusicPoll}=require('./music_creation_transi
 const REPLICATE_API_TOKEN=defineSecret('REPLICATE_API_TOKEN');
 const REPLICATE_MUSIC_CREATION_MODEL_VERSION=defineString('REPLICATE_MUSIC_CREATION_MODEL_VERSION',{default:'',description:'Backend-only Replicate model version for AUREN original music creation.'});
 const db=admin.firestore(),LOCK_MS=6*60*1000,MAX_ATTEMPTS=5;
-const hasOutput=o=>Boolean(o&&(o.url||o.storagePath||o.externalId));
 async function validateAudioArtifact(o){
  return validateMaterializedMusicOutput(o, {
   getStorageFile: path => admin.storage().bucket().file(path),
