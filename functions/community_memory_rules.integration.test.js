@@ -140,6 +140,22 @@ test('appeal workflows remain denied until explicit owner and moderator rules ex
     createdAt: now,
   }));
 
+  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').set({
+    reportId: 'report-1',
+    appellantUid: 'someone-else',
+    reason: 'Forged appellant identity.',
+    status: 'pending',
+    createdAt: now,
+  }));
+  await assertFails(dbFor('unrelated-user')
+      .doc('community_case_appeals/report-1__unrelated-user').set({
+    reportId: 'report-1',
+    appellantUid: 'unrelated-user',
+    reason: 'Unrelated user appeal.',
+    status: 'pending',
+    createdAt: now,
+  }));
+
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await context.firestore().doc('community_case_appeals/report-1__appellant-a').set({
       reportId: 'report-1',
@@ -163,6 +179,19 @@ test('appeal workflows remain denied until explicit owner and moderator rules ex
     reviewedAt: now,
     reviewNote: 'Reviewed',
   }));
+  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').update({
+    appellantUid: 'attacker',
+  }));
+  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').update({
+    reportId: 'another-report',
+  }));
+  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').update({
+    reason: 'Rewritten appeal reason',
+  }));
+  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').update({
+    createdAt: firebase.firestore.Timestamp.fromDate(new Date('2020-01-01T00:00:00Z')),
+  }));
+  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').delete());
   await assertFails(claimedAdmin.doc('community_case_events/appeal-event-admin').set({
     entityType: 'appeal', entityId: 'report-1__appellant-a', actorUid: 'claimed-admin',
     fromStatus: 'pending', toStatus: 'rejected', note: 'Review', createdAt: now,
