@@ -91,4 +91,48 @@ void main() {
     expect(loaded.single.evidence, isNull);
     expect(loaded.single.isPublishable, isFalse);
   });
+
+  test('skips damaged and unsupported records across local collections', () async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('auren_mobility_routes_v1', [
+      '{broken',
+      '{"operator":"Operator","routeName":"R2","stops":["Central",7],"evidence":null}',
+      '{"operator":false,"routeName":"R3","stops":["Market"]}',
+    ]);
+    await prefs.setStringList('auren_mobility_vehicles_v1', [
+      '{broken',
+      '{"make":"Toyota","model":"Corolla","year":"2020"}',
+      '{"make":"Toyota","model":"Corolla","year":2020,"registrationId":7}',
+      '{"make":"Honda","model":"Civic","year":2021}',
+    ]);
+    await prefs.setStringList('auren_mobility_shipments_v1', [
+      '{broken',
+      '{"reference":"OLD","origin":"A","destination":"B","status":"unknown"}',
+      '{"reference":"C-202","origin":"A","destination":"B","status":"draft","deliveryRequirements":["Seal",9],"notes":""}',
+    ]);
+    await prefs.setStringList('auren_mobility_ports_v1', [
+      '{broken',
+      '{"portName":"Port A","country":"Sudan","evidence":null}',
+      '{"portName":9,"country":"Sudan"}',
+    ]);
+
+    final store = MobilityLocalStore();
+    final routes = await store.loadRoutes();
+    final vehicles = await store.loadVehicles();
+    final shipments = await store.loadShipments();
+    final ports = await store.loadPorts();
+
+    expect(routes, hasLength(1));
+    expect(routes.single.stops, ['Central']);
+    expect(routes.single.isPublishable, isFalse);
+    expect(vehicles, hasLength(1));
+    expect(vehicles.single.make, 'Honda');
+    expect(shipments, hasLength(1));
+    expect(shipments.single.reference, 'C-202');
+    expect(shipments.single.deliveryRequirements, ['Seal']);
+    expect(ports, hasLength(1));
+    expect(ports.single.portName, 'Port A');
+    expect(ports.single.isPublishable, isFalse);
+  });
+
 }
