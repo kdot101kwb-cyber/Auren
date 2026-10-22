@@ -43,7 +43,12 @@ void main() {
     await store.save(item(id: 'service', kind: EverydayLifeKind.localService));
 
     final items = await store.readAll();
-    expect(items.map((entry) => entry.kind).toSet(), EverydayLifeKind.values.toSet());
+    expect(items.map((entry) => entry.kind).toSet(), {
+      EverydayLifeKind.task,
+      EverydayLifeKind.household,
+      EverydayLifeKind.appointmentDraft,
+      EverydayLifeKind.localService,
+    });
   });
 
   test('local service details are unconfirmed unless explicitly marked', () {
