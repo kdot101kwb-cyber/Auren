@@ -75,6 +75,7 @@ class _FakeGateway implements AurenAiGateway {
     required String conversationId,
     required String message,
     String? requestId,
+    bool includePersonalContext = false,
   }) async {
     calls++;
     final failure = error;
