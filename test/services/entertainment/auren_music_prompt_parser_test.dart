@@ -9,7 +9,9 @@ void main() {
     });
 
     test('parses Arabic duration and Arabic-Indic digits', () {
-      expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة ساعتين'), isNull);
+      expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة ساعتين'), 120);
+      expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة نصف ساعة'), 30);
+      expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة ساعة'), 60);
       expect(AurenMusicPromptParser.durationMinutes('لمدة ٢ ساعة'), 120);
       expect(AurenMusicPromptParser.durationMinutes('لمدة ٣٠ دقيقة'), 30);
     });
