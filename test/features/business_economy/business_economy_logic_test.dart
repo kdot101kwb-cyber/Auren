@@ -11,7 +11,9 @@ void main() {
       expect(result.reasons, isEmpty);
     });
 
-    test('scores shared terms, category and location without exceeding 100', () {
+    test(
+      'scores shared terms, category and location without exceeding 100',
+      () {
       final result = AurenBusinessEconomyLogic.scoreMatch(
         const AurenBusinessMatchInput(
           buyerNeed: 'organic sesame bags',
