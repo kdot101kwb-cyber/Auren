@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [feat/auren-business-economy-mvp]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
