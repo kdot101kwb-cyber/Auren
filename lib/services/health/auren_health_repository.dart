@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'health_data_sharing_consent.dart';
@@ -34,9 +36,9 @@ class AurenHealthCheckin {
   }
 }
 
-/// Legacy remote check-in repository. Every read/write requires a short-lived
-/// consent object obtained after explicit user confirmation. The privacy-first
-/// wellbeing workspace should continue to use its local store instead.
+/// Legacy remote check-in repository. Every read/write requires a valid,
+/// short-lived consent object obtained after explicit user confirmation.
+/// The privacy-first wellbeing workspace should use its local store instead.
 class AurenHealthRepository {
   AurenHealthRepository({FirebaseFirestore? firestore})
       : _db = firestore ?? FirebaseFirestore.instance;
@@ -52,8 +54,14 @@ class AurenHealthRepository {
         StateError('Explicit health data sharing consent is required.'),
       );
     }
+    try {
+      consent.validateForUse();
+    } catch (error, stackTrace) {
+      return Stream.error(error, stackTrace);
+    }
     if (uid.trim().isEmpty) return const Stream.empty();
-    return _db
+
+    final source = _db
         .collection('users')
         .doc(uid)
         .collection('healthCheckins')
@@ -61,6 +69,33 @@ class AurenHealthRepository {
         .limit(30)
         .snapshots()
         .map((s) => s.docs.map(AurenHealthCheckin.fromDoc).toList());
+
+    // A live Firestore subscription must not outlive the consent window.
+    return Stream.multi((controller) {
+      final subscription = source.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      final remaining = consent.grantedAt
+          .toUtc()
+          .add(HealthDataSharingConsent.maxAge)
+          .difference(DateTime.now().toUtc());
+      final expiry = Timer(
+        remaining.isNegative ? Duration.zero : remaining,
+        () async {
+          await subscription.cancel();
+          controller.addError(
+            StateError('Health data sharing consent has expired.'),
+          );
+          await controller.close();
+        },
+      );
+      controller.onCancel = () {
+        expiry.cancel();
+        return subscription.cancel();
+      };
+    });
   }
 
   Future<void> saveCheckin({
@@ -75,6 +110,7 @@ class AurenHealthRepository {
     if (consent == null) {
       throw StateError('Explicit health data sharing consent is required.');
     }
+    consent.validateForUse();
     if (uid.trim().isEmpty || dateId.trim().isEmpty) {
       throw ArgumentError('uid و dateId مطلوبان');
     }
