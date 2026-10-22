@@ -36,3 +36,16 @@ The current `firestore.rules` permits constrained report creation only. It does 
 ## Release gate
 
 Do not deploy or advertise casework/appeals as operational until the rules change passes the complete Firestore emulator suite, service/UI integration is verified, and the relevant CI checks pass. No production deployment is authorized by this document.
+
+## Implementation sequence before enabling the workflow
+
+1. Keep the current deny-by-default behavior while implementing rules; do not add broad collection reads or generic moderator exceptions.
+2. Use trusted custom claims for reviewer authorization and explicitly test both a token with `admin: true` and ordinary users. A profile document or client-provided field is never an authority source.
+3. Make each decision/audit pair addressable by a deterministic event document ID derived from the case ID and destination state, or use another rule-verifiable binding. Firestore rules cannot query for an arbitrary audit event, so a random event ID cannot prove from the case update rule that its paired event exists.
+4. Validate the paired writes using `getAfter()`: a report/appeal transition must match the audit event's entity type, entity ID, actor UID, prior state, destination state, note, and server timestamp. Event creation must independently validate the post-transaction case state. Keep events append-only.
+5. For appeal creation, require the report to exist after reads, be resolved/rejected, and identify the appellant as the reporter or reported user; constrain the appeal document ID to the report/appellant pair and reject duplicates. Read access must be limited to the appellant and trusted reviewers.
+6. Audit every matching Firestore rule, including recursive wildcard matches. An additional matching allow can override a deny in another match block.
+7. Run the full Firestore Emulator suite from `functions/package.json`'s `test:emulator`, then the complete CI suite. Do not enable UI actions or describe this as operational until valid transactions succeed and each privilege-escalation regression fails as expected.
+
+The current client uses randomly generated audit-event IDs. Step 3 is a required service change before paired writes can be fully enforced by rules; do not attempt to solve this by relaxing event rules.
+
