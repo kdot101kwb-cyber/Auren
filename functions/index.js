@@ -934,12 +934,16 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     }
 
     const recentSnap = await db.collection('conversations').doc(conversationId)
-      .collection('messages').orderBy('createdAt', 'desc').limit(20).get();
-    const recentMessages = recentSnap.docs.reverse().map((doc) => {
-      const item = doc.data() || {};
-      const content = typeof item.text === 'string' ? item.text.slice(0, 4000) : '';
-      return content ? { role: item.isAi === true ? 'assistant' : 'user', content } : null;
-    }).filter(Boolean);
+      .collection('messages').orderBy('createdAt', 'desc').limit(12).get();
+    // The current user message is appended below as the final prompt item.
+    // Exclude it from history so it is not sent twice to the provider.
+    const recentMessages = recentSnap.docs.reverse()
+      .filter((doc) => doc.id !== requestId)
+      .map((doc) => {
+        const item = doc.data() || {};
+        const content = typeof item.text === 'string' ? item.text.slice(0, 2000) : '';
+        return content ? { role: item.isAi === true ? 'assistant' : 'user', content } : null;
+      }).filter(Boolean);
 
     // Personal goals and saved memory are not added to provider prompts by
     // default. A future client UI must obtain explicit opt-in before sending
