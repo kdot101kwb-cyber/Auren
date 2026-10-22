@@ -1162,6 +1162,39 @@ match /users/{userId}/kids_activity_progress/{activityId} {
           && resource.data.ownerUid == userId;
       }
 
+      match /budgets/{budgetId} {
+        allow read: if isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
+        allow create: if isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
+          && requestData().keys().hasOnly([
+            'ownerUid','periodKey','currency','limitMinor','createdAt','updatedAt'
+          ])
+          && requestData().ownerUid == userId
+          && requestData().periodKey is string
+          && requestData().periodKey.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+          && requestData().currency is string
+          && requestData().currency.size() == 3
+          && intWithin(requestData().limitMinor,1,1000000000000)
+          && hasCreatedAtTimestamp()
+          && hasUpdatedAtTimestamp();
+        allow update: if isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
+          && resource.data.ownerUid == userId
+          && requestData().keys().hasOnly([
+            'ownerUid','periodKey','currency','limitMinor','createdAt','updatedAt'
+          ])
+          && changedFields().hasOnly(['limitMinor','updatedAt'])
+          && requestData().ownerUid == resource.data.ownerUid
+          && requestData().periodKey == resource.data.periodKey
+          && requestData().currency == resource.data.currency
+          && requestData().createdAt == resource.data.createdAt
+          && intWithin(requestData().limitMinor,1,1000000000000)
+          && hasUpdatedAtTimestamp();
+        allow delete: if isOwner(userId)
+          && resource.data.ownerUid == userId;
+      }
+
       match /goals/{goalId} {
         allow read: if isOwner(userId)
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
