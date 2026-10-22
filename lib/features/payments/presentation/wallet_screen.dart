@@ -108,6 +108,8 @@ class _AurenWalletScreenState extends State<AurenWalletScreen> {
                     return copy;
                   }).toList();
                   final spend = insights.monthlySpendByCurrency(normalized);
+                  final categories = insights.monthlySpendByCategory(normalized);
+                  final trend = insights.monthlySpendTrendByCurrency(normalized);
                   final recurring = insights.recurringExpenseCandidates(normalized);
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -137,6 +139,38 @@ class _AurenWalletScreenState extends State<AurenWalletScreen> {
                                       title: Text('مصروفات هذا الشهر • ${entry.key}'),
                                       trailing: Text('${entry.value} ${entry.key}'),
                                     )),
+
+                              if (trend.isNotEmpty) ...[
+                                const Divider(),
+                                const Text('مقارنة بالشهر السابق', style: TextStyle(fontWeight: FontWeight.bold)),
+                                ...trend.entries.map((entry) {
+                                  final delta = entry.value['deltaMinor'] ?? 0;
+                                  final direction = delta > 0 ? 'زيادة' : delta < 0 ? 'انخفاض' : 'دون تغيير';
+                                  return ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text(entry.key),
+                                    subtitle: Text('السابق ${entry.value['previousMinor']} • الحالي ${entry.value['currentMinor']} ${entry.key}'),
+                                    trailing: Text('$direction ${delta.abs()}'),
+                                  );
+                                }),
+                              ],
+                              if (categories.isNotEmpty) ...[
+                                const Divider(),
+                                const Text('التصنيف الشهري للمصروفات', style: TextStyle(fontWeight: FontWeight.bold)),
+                                ...categories.entries.expand((currencyEntry) => [
+                                  ListTile(
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text('العملة: ${currencyEntry.key}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  ),
+                                  ...currencyEntry.value.entries.map((categoryEntry) => ListTile(
+                                    dense: true,
+                                    contentPadding: const EdgeInsets.only(left: 16),
+                                    title: Text(categoryEntry.key),
+                                    trailing: Text('${categoryEntry.value} ${currencyEntry.key}'),
+                                  )),
+                                ]),
+                              ],
                               if (recurring.isNotEmpty) ...[
                                 const Divider(),
                                 const Text('مصروفات متكررة محتملة',
