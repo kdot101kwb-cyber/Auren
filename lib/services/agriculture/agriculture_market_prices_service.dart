@@ -105,6 +105,7 @@ class AgricultureNormalizedLocalMarketPrice {
   final String status;
   final String? observedAt;
   final String? source;
+  final String? sourceUrl;
 
   const AgricultureNormalizedLocalMarketPrice({
     required this.id,
@@ -120,6 +121,7 @@ class AgricultureNormalizedLocalMarketPrice {
     required this.status,
     required this.observedAt,
     required this.source,
+    this.sourceUrl,
   });
 
   DateTime? get parsedObservedAt {
@@ -135,14 +137,20 @@ class AgricultureNormalizedLocalMarketPrice {
     return age.isNegative || age > maxAge;
   }
 
-  /// This normalized row has no source URL field, so only the label can be checked.
-  bool get hasRecordedSource => source?.trim().isNotEmpty == true;
+  /// A label without a usable HTTP(S) URL is not enough to trace a price.
+  bool get hasTraceableSource {
+    if (source?.trim().isNotEmpty != true) return false;
+    final uri = Uri.tryParse(sourceUrl?.trim() ?? '');
+    return uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+  }
 
   String freshnessLabelAt(DateTime now, {Duration maxAge = const Duration(days: 7)}) {
-    if (!hasRecordedSource) return 'مصدر السعر غير مسجل';
+    if (!hasTraceableSource) return 'مصدر السعر غير مكتمل — رابط المصدر غير متحقق';
     if (parsedObservedAt == null) return 'تاريخ الرصد غير متوفر';
     if (isStaleAt(now, maxAge: maxAge)) return 'بيانات قديمة — تحقق محلياً';
-    return 'تاريخ الرصد حديث؛ المصدر مسجل دون تحقق من رابط المصدر';
+    return 'تاريخ الرصد حديث وفق حدّ التحقق؛ راجع المصدر قبل اتخاذ القرار';
   }
 
   factory AgricultureNormalizedLocalMarketPrice.fromMap(Map<String, dynamic> d) {
@@ -161,6 +169,7 @@ class AgricultureNormalizedLocalMarketPrice {
       status: (d['status'] ?? 'needs_unit_or_fx').toString(),
       observedAt: d['observedAt']?.toString(),
       source: d['source']?.toString(),
+      sourceUrl: d['sourceUrl']?.toString(),
     );
   }
 }
