@@ -210,3 +210,24 @@ test('AI provider history is bounded and does not duplicate the current message'
   assert.match(gateway, /filter\(\(doc\) => doc\.id !== requestId\)/);
   assert.match(gateway, /item\.text\.slice\(0, 2000\)/);
 });
+
+
+test('AI-backed podcast and production endpoints do not persist raw provider errors', () => {
+  const names = [
+    'exports.analyzeAurenPodcastEpisode =',
+    'exports.generateAurenSeriesBlueprint =',
+    'exports.generateAurenMovieBlueprint =',
+    'exports.generateAurenMusicBlueprint =',
+  ];
+  for (let i = 0; i < names.length; i++) {
+    const start = index.indexOf(names[i]);
+    const end = i + 1 < names.length ? index.indexOf(names[i + 1], start) : index.indexOf('// AUREN Entertainment production orchestrator.', start);
+    assert.ok(start >= 0 && end > start, 'expected endpoint block: ' + names[i]);
+    const block = index.slice(start, end);
+    assert.doesNotMatch(block, /String\(result\?\.message \|\| provider \+ ' failed'\)/);
+    assert.doesNotMatch(block, /String\(error\?\.message \|\| error\)/);
+  }
+  assert.match(index, /lastError = 'provider_request_failed'/);
+  assert.match(index, /lastError = 'provider_http_' \+ response\.status/);
+  assert.match(index, /errors\.push\(provider \+ ': invalid_provider_response'\)/);
+});
