@@ -1027,6 +1027,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
           && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
         allow create: if isOwner(userId)
+          && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
           && requestData().keys().hasOnly([
             'ownerUid','periodKey','currency','limitMinor','createdAt','updatedAt'
@@ -1040,6 +1041,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
           && hasCreatedAtTimestamp()
           && hasUpdatedAtTimestamp();
         allow update: if isOwner(userId)
+          && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
           && resource.data.ownerUid == userId
           && requestData().keys().hasOnly([
@@ -1062,6 +1064,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
           && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
         allow create: if isOwner(userId)
+          && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
           && requestData().keys().hasOnly([
             'ownerUid','title','targetMinor','savedMinor','currency','createdAt','updatedAt'
@@ -1075,6 +1078,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
           && hasCreatedAtTimestamp()
           && hasUpdatedAtTimestamp();
         allow update: if isOwner(userId)
+          && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
           && resource.data.ownerUid == userId
           && requestData().keys().hasOnly([
@@ -1098,6 +1102,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
           && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
         allow create: if isOwner(userId)
+          && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
           && requestData().keys().hasOnly(['ownerUid','title','amountMinor','currency','kind','createdAt'])
           && requestData().ownerUid == userId
