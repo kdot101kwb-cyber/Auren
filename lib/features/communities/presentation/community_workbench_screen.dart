@@ -190,6 +190,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
           Text('${p['title']}', style: Theme.of(context).textTheme.titleMedium),
           Text('${p['proposedRule']}'),
           Text('المجتمع: ${p['communityId']} • مؤيد $yes • معارض $no • الحالة: ${p['status']}'),
+          const Text('التصويت والأرقام محفوظة محلياً على هذا الجهاز وليست نتيجة رسمية للمجتمع.'),
           if (p['status'] == 'open') Wrap(children: [
             TextButton(onPressed: _busy || voted ? null : () => _run(() => _store.voteOnProposal(proposalId: '${p['id']}', voterId: _voterId, support: true)), child: const Text('أؤيد')),
             TextButton(onPressed: _busy || voted ? null : () => _run(() => _store.voteOnProposal(proposalId: '${p['id']}', voterId: _voterId, support: false)), child: const Text('أعارض')),
