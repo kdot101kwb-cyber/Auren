@@ -171,8 +171,11 @@ class AurenAgricultureRepository {
     if (cleanUid.isEmpty || cleanUid.length > 128) {
       throw ArgumentError('معرّف المستخدم غير صالح.');
     }
-    if (cleanTitle.isEmpty || cleanTitle.length > 160 || note.length > 4000) {
-      throw ArgumentError('عنوان المهمة أو ملاحظاتها غير صالحة.');
+    final cleanNote = note.trim();
+    final cleanCropOrAnimal = cropOrAnimal.trim();
+    if (cleanTitle.isEmpty || cleanTitle.length > 160 ||
+        cleanNote.length > 4000 || cleanCropOrAnimal.length > 160) {
+      throw ArgumentError('عنوان المهمة أو ملاحظاتها أو النشاط المرتبط غير صالح.');
     }
     const statuses = {'planned', 'inProgress', 'done', 'skipped'};
     if (!statuses.contains(status)) throw ArgumentError('حالة المهمة غير صالحة.');
@@ -182,10 +185,10 @@ class AurenAgricultureRepository {
       'title': cleanTitle,
       'note': jsonEncode({
         'kind': 'farm_task',
-        'note': note.trim(),
+        'note': cleanNote,
         'dueAt': dueAt.toUtc().toIso8601String(),
         'status': status,
-        'cropOrAnimal': cropOrAnimal.trim(),
+        'cropOrAnimal': cleanCropOrAnimal,
       }),
       'type': 'farm',
       'createdAt': FieldValue.serverTimestamp(),
