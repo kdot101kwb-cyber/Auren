@@ -66,7 +66,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
       _Field('معرّف المجتمع (اختياري)', maxLength: 160),
     ]);
     if (p == null) return;
-    await _run(() => _store.createProject(title: p[0], description: p[1], communityId: p[2]));
+    await _run(() async { await _store.createProject(title: p[0], description: p[1], communityId: p[2]); });
   }
 
   Future<void> _addTask(String id) async {
@@ -90,7 +90,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
       _Field('نص القاعدة المقترحة', maxLength: 2000, maxLines: 4),
     ]);
     if (p == null) return;
-    await _run(() => _store.createRuleProposal(communityId: p[0], title: p[1], proposedRule: p[2]));
+    await _run(() async { await _store.createRuleProposal(communityId: p[0], title: p[1], proposedRule: p[2]); });
   }
 
   Future<void> _createMeetup() async {
@@ -107,8 +107,8 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل السعة المقترحة كرقم صحيح.')));
       return;
     }
-    await _run(() => _store.createMeetupDraft(title: p[0], description: p[1],
-      startsAt: p[2], location: p[3], capacity: capacity));
+    await _run(() async { await _store.createMeetupDraft(title: p[0], description: p[1],
+      startsAt: p[2], location: p[3], capacity: capacity); });
   }
 
   @override
