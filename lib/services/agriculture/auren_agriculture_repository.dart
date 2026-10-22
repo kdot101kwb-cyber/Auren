@@ -273,9 +273,6 @@ class AurenAgricultureRepository {
     if (nextCheckAt != null && nextCheckAt.isBefore(observedAt)) {
       throw ArgumentError('موعد المتابعة لا يمكن أن يسبق وقت الملاحظة.');
     }
-    if (needsVeterinaryReview != true && cleanObservation.length > 4000) {
-      throw ArgumentError('الملاحظة أطول من الحد المسموح.');
-    }
     final ref = db.collection('users').doc(cleanUid)
         .collection('agricultureNotes').doc();
     await ref.set({
