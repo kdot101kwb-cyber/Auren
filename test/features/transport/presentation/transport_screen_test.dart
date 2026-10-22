@@ -204,8 +204,8 @@ void main() {
 
     await openSection(tester, 'Public Transport Intelligence');
     await enterField(tester, 'اسم المشغّل', 'مشغّل تجريبي');
-    await enterField(tester, 'اسم المسار', 'R-22');
-    await enterField(tester, 'التوقفات مفصولة بفواصل', 'السوق, المحطة');
+    await enterField(tester, 'اسم / رقم المسار', 'R-22');
+    await enterField(tester, 'التوقفات بالترتيب، مفصولة بفواصل', 'السوق, المحطة');
     await enterField(tester, 'مصدر المعلومات', 'جدول المشغّل');
     await tester.ensureVisible(find.text('حفظ محليًا'));
     await tester.tap(find.text('حفظ محليًا'));
