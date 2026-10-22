@@ -169,6 +169,22 @@ test('Manual review reconciliation never re-executes the external action', () =>
 });
 
 
+
+test('AI personal-context consent changes require authentication and explicit confirmation', () => {
+  const start = index.indexOf('exports.setAurenAiPersonalContextConsent = onCall(');
+  const end = index.indexOf('exports.aurenAiGateway =', start);
+  const block = index.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(block, /request\.auth\?\.uid/);
+  assert.match(block, /action !== 'grant' && action !== 'revoke'/);
+  assert.match(block, /request\.data\?\.confirmed !== true/);
+  assert.match(block, /accepted: true/);
+  assert.match(block, /purpose: 'ai_personal_context'/);
+  assert.match(block, /15 \* 60 \* 1000/);
+  assert.match(block, /accepted: false/);
+  assert.match(block, /expiresAt: new Date\(0\)/);
+});
+
 test('AI personal context requires short-lived server-recorded consent', () => {
   const gate = index.indexOf('if (request.data?.includePersonalContext === true)');
   const consentRead = index.indexOf(".collection('privacyConsents').doc('aiPersonalContext')", gate);
