@@ -111,13 +111,14 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       _message('أدخل المشغّل والمسار والتوقفات ومصدرًا واضحًا للمعلومات.');
       return;
     }
-    setState(() => _routes.add(route));
     try {
-      await _localStore.saveRoutes(_routes);
+      await _localStore.saveRoutes([..._routes, route]);
+      if (!mounted) return;
+      setState(() => _routes.add(route));
+      _routeOperator.clear(); _routeName.clear(); _routeStops.clear(); _routeSource.clear();
     } catch (_) {
-      _message('أُضيف المسار للشاشة، لكن تعذر حفظه على الجهاز.');
+      if (mounted) _message('تعذر حفظ المسار على الجهاز؛ لم تتم إضافته إلى السجل.');
     }
-    _routeOperator.clear(); _routeName.clear(); _routeStops.clear(); _routeSource.clear();
   }
 
   Future<void> _saveVehicle() async {
@@ -148,14 +149,15 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       _message('أدخل الشركة والطراز وسنة صالحة.');
       return;
     }
-    setState(() => _vehicles.add(vehicle));
     try {
-      await _localStore.saveVehicles(_vehicles);
+      await _localStore.saveVehicles([..._vehicles, vehicle]);
+      if (!mounted) return;
+      setState(() => _vehicles.add(vehicle));
+      _vehicleMake.clear(); _vehicleModel.clear(); _vehicleYear.clear();
+      _vehicleRegistration.clear(); _vehicleNotes.clear(); _insuranceExpiry.clear(); _maintenanceDue.clear();
     } catch (_) {
-      _message('أُضيفت المركبة للشاشة، لكن تعذر حفظها على الجهاز.');
+      if (mounted) _message('تعذر حفظ المركبة على الجهاز؛ لم تتم إضافتها إلى السجل.');
     }
-    _vehicleMake.clear(); _vehicleModel.clear(); _vehicleYear.clear();
-    _vehicleRegistration.clear(); _vehicleNotes.clear(); _insuranceExpiry.clear(); _maintenanceDue.clear();
   }
 
   Future<void> _saveShipment() async {
@@ -175,15 +177,18 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       _message('مرجع الشحنة ونقطة الإرسال والتسليم مطلوبة.');
       return;
     }
-    setState(() => _shipments.add(shipment));
     try {
-      await _localStore.saveShipments(_shipments);
+      await _localStore.saveShipments([..._shipments, shipment]);
+      if (!mounted) return;
+      setState(() {
+        _shipments.add(shipment);
+        _cargoStatus = CargoStatus.draft;
+      });
+      _cargoRef.clear(); _cargoOrigin.clear(); _cargoDestination.clear(); _cargoCarrier.clear();
+      _cargoRequirements.clear(); _cargoNotes.clear();
     } catch (_) {
-      _message('أُضيفت الشحنة للشاشة، لكن تعذر حفظها على الجهاز.');
+      if (mounted) _message('تعذر حفظ الشحنة على الجهاز؛ لم تتم إضافتها إلى السجل.');
     }
-    _cargoRef.clear(); _cargoOrigin.clear(); _cargoDestination.clear(); _cargoCarrier.clear();
-    _cargoRequirements.clear(); _cargoNotes.clear();
-    setState(() => _cargoStatus = CargoStatus.draft);
   }
 
   Future<void> _updateShipmentStatus(int index, CargoStatus status) async {
@@ -226,13 +231,14 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       _message('أدخل اسم الميناء والدولة ومصدرًا واضحًا للمعلومات.');
       return;
     }
-    setState(() => _ports.add(port));
     try {
-      await _localStore.savePorts(_ports);
+      await _localStore.savePorts([..._ports, port]);
+      if (!mounted) return;
+      setState(() => _ports.add(port));
+      _portName.clear(); _portCountry.clear(); _portSource.clear();
     } catch (_) {
-      _message('أُضيفت معلومات الميناء للشاشة، لكن تعذر حفظها على الجهاز.');
+      if (mounted) _message('تعذر حفظ معلومات الميناء على الجهاز؛ لم تتم إضافتها إلى السجل.');
     }
-    _portName.clear(); _portCountry.clear(); _portSource.clear();
   }
 
   void _calculateCost() {
