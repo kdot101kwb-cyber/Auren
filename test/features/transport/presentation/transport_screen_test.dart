@@ -48,6 +48,8 @@ Future<void> openSection(WidgetTester tester, String title) async {
     250,
     scrollable: find.byType(Scrollable).first,
   );
+  await tester.ensureVisible(sectionTitle);
+  await tester.pumpAndSettle();
   await tester.tap(sectionTitle);
   await tester.pumpAndSettle();
 }
@@ -58,7 +60,13 @@ Future<void> enterField(
   String value,
 ) async {
   final target = field(label);
+  await tester.scrollUntilVisible(
+    target,
+    220,
+    scrollable: find.byType(Scrollable).first,
+  );
   await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
   await tester.enterText(target, value);
   tester.testTextInput.hide();
   await tester.pumpAndSettle();
@@ -380,7 +388,13 @@ void main() {
 
     expect(find.textContaining('STATUS-FAIL: بورتسودان → الخرطوم • مسودة'), findsOneWidget);
     final statusDropdown = find.byKey(const ValueKey('cargo-status-0'));
+    await tester.scrollUntilVisible(
+      statusDropdown,
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.ensureVisible(statusDropdown);
+    await tester.pumpAndSettle();
     await tester.tap(statusDropdown);
     await tester.pumpAndSettle();
     await tester.tap(find.text('تم التسليم').last);
