@@ -35,3 +35,12 @@ Parent work: `feat/health-wellbeing`
 The targeted workflow is `.github/workflows/health-wellbeing-tests.yml`. On `feat/health-privacy-hardening`, it runs local store tests, remote health repository consent tests, wellbeing screen tests, AI privacy notice tests, formatting, and targeted Flutter analysis.
 
 This batch adds tests for expired consent being rejected before Firestore writes and updates the confirmed-consent test to use the current time. CI must pass before this batch is considered verified. No pull request, merge, or deployment is performed as part of this work.
+
+
+## Follow-up: AI provider privacy hardening (2026-10-22)
+
+- Fixed the provider-health update helper mismatch in the AI gateway: all call sites now target a defined helper that writes bounded diagnostics and a one-minute cooldown.
+- Raw upstream provider error messages are no longer persisted as AI request failure details or included in the all-provider-failed log. The request record stores an error code and the callable returns a generic retry message.
+- Removed duplicated action proposal/plan payloads from the AI idempotency request record. The canonical user message remains in the conversation; pending action payloads remain in the dedicated approval-gated action document.
+- Added a focused Node regression test for these invariants and included it in the health/privacy workflow.
+- Verification status: pending CI for `feat/ai-provider-privacy-hardening`. This is a code-level privacy hardening pass, not a complete audit of every AI-backed endpoint in `functions/index.js`; other production, podcast, and content generation endpoints still need separate error-path review.
