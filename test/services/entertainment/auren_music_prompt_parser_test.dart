@@ -33,4 +33,31 @@ void main() {
       ['calm', 'music', 'for', 'trip'],
     );
   });
+  group('AurenMusicPromptParser.matchesPrompt', () {
+    test('matches type and metadata when title and description do not match', () {
+      expect(
+        AurenMusicPromptParser.matchesPrompt(
+          'podcast',
+          'Morning conversation Educational audio en English',
+        ),
+        isTrue,
+      );
+    });
+
+    test('normalizes Arabic-Indic digits in searchable metadata', () {
+      expect(
+        AurenMusicPromptParser.matchesPrompt('2026', 'release ٢٠٢٦'),
+        isTrue,
+      );
+    });
+
+    test('does not filter when the prompt has no meaningful words', () {
+      expect(AurenMusicPromptParser.matchesPrompt('a to', 'anything'), isTrue);
+    });
+
+    test('returns false when meaningful words are absent', () {
+      expect(AurenMusicPromptParser.matchesPrompt('classical piano', 'rock song'), isFalse);
+    });
+  });
+
 }
