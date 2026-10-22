@@ -246,4 +246,40 @@ void main() {
     expect((meetup['attendance'] as Map)['local-0'], 'going');
   });
 
+
+  test('corrupt project, proposal and meetup caches recover on the next save', () async {
+    SharedPreferences.setMockInitialValues({
+      'auren.community.group_projects.v1': '{bad-project-json',
+      'auren.community.governance_proposals.v1': '{bad-proposal-json',
+      'auren.community.meetup_drafts.v1': '{bad-meetup-json',
+    });
+    final recoveringStore = AurenCommunityWorkbenchStore();
+
+    expect(await recoveringStore.listProjects(), isEmpty);
+    expect(await recoveringStore.listProposals(), isEmpty);
+    expect(await recoveringStore.listMeetupDrafts(), isEmpty);
+
+    await recoveringStore.createProject(
+      title: 'Recovered project',
+      description: '',
+      communityId: '',
+    );
+    await recoveringStore.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Recovered proposal',
+      proposedRule: 'Be kind.',
+    );
+    await recoveringStore.createMeetupDraft(
+      title: 'Recovered meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10,
+    );
+
+    expect((await recoveringStore.listProjects()).single['title'], 'Recovered project');
+    expect((await recoveringStore.listProposals()).single['title'], 'Recovered proposal');
+    expect((await recoveringStore.listMeetupDrafts()).single['title'], 'Recovered meetup');
+  });
+
 }
