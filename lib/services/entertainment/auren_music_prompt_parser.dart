@@ -30,7 +30,7 @@ class AurenMusicPromptParser {
     } else if (minutes != null) {
       parsed = int.tryParse(minutes.group(1)!);
     }
-    return parsed?.clamp(10, 240);
+    return parsed == null ? null : parsed.clamp(10, 240).toInt();
   }
 
   /// Splits on real whitespace (including newlines) and drops short tokens.
