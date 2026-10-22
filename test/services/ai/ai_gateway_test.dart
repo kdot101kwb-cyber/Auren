@@ -26,6 +26,9 @@ void main() {
     final remote = _FakeGateway();
     final gateway = ResilientAurenAiGateway(remote: remote, fallback: _FakeGateway());
 
+    await gateway.send(conversationId: 'conversation-1', message: 'default');
+    expect(remote.lastIncludePersonalContext, isFalse);
+
     await gateway.send(
       conversationId: 'conversation-1',
       message: 'hello',
