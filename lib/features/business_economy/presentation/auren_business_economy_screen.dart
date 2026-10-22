@@ -76,6 +76,7 @@ class AurenBusinessEconomyScreen extends StatelessWidget {
           for (final item in items)
             Card(
               child: ListTile(
+                key: ValueKey('business-economy-${item.title}'),
                 leading: Icon(item.icon),
                 title: Text(item.title),
                 subtitle: Text(item.subtitle),
@@ -202,6 +203,7 @@ class _AurenBuyerSellerMatchDraftScreenState
     return Scaffold(
       appBar: AppBar(title: const Text('Buyer–Seller Matching')),
       body: ListView(
+        key: const ValueKey('business-economy-match-draft-list'),
         padding: const EdgeInsets.all(16),
         children: [
           const Text('مطابقة إرشادية فقط — لا تتواصل مع أي طرف ولا تنشئ التزاماً تجارياً.'),
@@ -233,6 +235,7 @@ class _AurenBuyerSellerMatchDraftScreenState
           ),
           const SizedBox(height: 8),
           FilledButton.icon(
+            key: const ValueKey('business-economy-save-match-draft'),
             onPressed: _loaded ? _save : null,
             icon: const Icon(Icons.save_outlined),
             label: const Text('حفظ المسودة محلياً'),
@@ -330,6 +333,7 @@ class _AurenBusinessGrowthPlannerScreenState
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Business Growth Planner')),
         body: ListView(
+          key: const ValueKey('business-economy-growth-plan-list'),
           padding: const EdgeInsets.all(16),
           children: [
             const Text('خطة بسيطة للمشاريع الصغيرة، تعمل دون الحاجة لاتصال دائم.'),
@@ -338,6 +342,7 @@ class _AurenBusinessGrowthPlannerScreenState
             _field(_customers, 'مجموعة العملاء المستهدفة'),
             _field(_nextAction, 'الخطوة العملية التالية'),
             FilledButton.icon(
+              key: const ValueKey('business-economy-save-growth-plan'),
               onPressed: _loaded ? _save : null,
               icon: const Icon(Icons.save_outlined),
               label: const Text('حفظ الخطة'),
