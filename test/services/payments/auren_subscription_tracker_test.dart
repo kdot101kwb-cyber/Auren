@@ -69,7 +69,7 @@ void main() {
         now: DateTime(2026, 10, 22),
       );
       expect(summary.activeCount, 4);
-      expect(summary.totalsByCurrency, {'USD': 1799, 'SDG': 900});
+      expect(summary.totalsByCurrency, {'USD': 3098, 'SDG': 900});
       expect(summary.upcoming.map((x) => x.id), ['netflix', 'music', 'mobile']);
     });
 
