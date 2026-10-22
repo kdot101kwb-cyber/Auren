@@ -858,6 +858,43 @@ exports.cancelAurenAction = require('firebase-functions/v2/https').onCall(
   }
 );
 
+exports.setAurenAiPersonalContextConsent = onCall(
+  { region: 'us-central1', timeoutSeconds: 10, memory: '128MiB' },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw aurenHttpsError('unauthenticated', 'Sign in to change AI privacy consent.');
+    const action = request.data?.action;
+    if (action !== 'grant' && action !== 'revoke') {
+      throw aurenHttpsError('invalid-argument', 'Consent action must be grant or revoke.');
+    }
+    if (action === 'grant' && request.data?.confirmed !== true) {
+      throw aurenHttpsError('failed-precondition', 'Explicit confirmation is required.');
+    }
+
+    const ref = db.collection('users').doc(uid)
+      .collection('privacyConsents').doc('aiPersonalContext');
+    if (action === 'grant') {
+      await ref.set({
+        accepted: true,
+        purpose: 'ai_personal_context',
+        grantedAt: FieldValue.serverTimestamp(),
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        updatedAt: FieldValue.serverTimestamp(),
+      }, {merge: true});
+      return {status: 'granted', expiresInSeconds: 900};
+    }
+
+    await ref.set({
+      accepted: false,
+      purpose: 'ai_personal_context',
+      revokedAt: FieldValue.serverTimestamp(),
+      expiresAt: new Date(0),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    return {status: 'revoked'};
+  }
+);
+
 exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
   { region: 'us-central1', timeoutSeconds: 30, memory: '256MiB', secrets: [AUREN_AI_API_KEY, OPENROUTER_API_KEY, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, HF_TOKEN] },
   async (request) => {
