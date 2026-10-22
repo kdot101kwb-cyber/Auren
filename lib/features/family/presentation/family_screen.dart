@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../services/family/family_pot_repository.dart';
 import '../../../services/family/auren_family_wallet_repository.dart';
 import '../../../services/family/auren_family_savings_goal_repository.dart';
+import '../../../services/family/auren_family_monthly_budget_repository.dart';
 
 class AurenFamilyScreen extends StatefulWidget {
   const AurenFamilyScreen({super.key});
@@ -12,6 +13,7 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
   final _repo = FamilyPotRepository();
   final _familyWallet = AurenFamilyWalletRepository();
   final _savingsGoals = AurenFamilySavingsGoalRepository();
+  final _monthlyBudgets = AurenFamilyMonthlyBudgetRepository();
   final _walletTitle = TextEditingController();
   final _walletAmount = TextEditingController();
   final _name = TextEditingController();
@@ -103,6 +105,144 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
     );
   }
 
+
+
+  String _currentPeriodKey() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildMonthlyBudget(String uid) {
+    final periodKey = _currentPeriodKey();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'ميزانية الأسرة الشهرية',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        StreamBuilder<AurenFamilyMonthlyBudget?>(
+          stream: _monthlyBudgets.watchBudget(
+            uid: uid,
+            periodKey: periodKey,
+            currency: _currency,
+          ),
+          builder: (context, budgetSnapshot) {
+            if (budgetSnapshot.hasError) {
+              return const Card(child: ListTile(title: Text('تعذر تحميل الميزانية الشهرية.')));
+            }
+            final budget = budgetSnapshot.data;
+            return StreamBuilder<int>(
+              stream: _monthlyBudgets.watchMonthlyExpenses(
+                uid: uid,
+                periodKey: periodKey,
+                currency: _currency,
+              ),
+              builder: (context, spentSnapshot) {
+                if (spentSnapshot.hasError) {
+                  return const Card(child: ListTile(title: Text('تعذر حساب مصروفات الشهر.')));
+                }
+                final spent = spentSnapshot.data ?? 0;
+                final summary = AurenFamilyBudgetSummary(
+                  budget: budget,
+                  spentMinor: spent,
+                );
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('الفترة: $periodKey • $_currency'),
+                        const SizedBox(height: 8),
+                        Text('المصروف المسجل: ${(spent / 100).toStringAsFixed(2)} $_currency'),
+                        if (budget == null) ...[
+                          const SizedBox(height: 8),
+                          const Text('حدد سقفاً شهرياً لمقارنة المصروفات المسجلة بميزانيتك.'),
+                        ] else ...[
+                          Text('السقف: ${(budget.limitMinor / 100).toStringAsFixed(2)} $_currency'),
+                          Text(
+                            summary.isOverBudget
+                                ? 'تجاوزت السقف بمقدار ${((-summary.remainingMinor) / 100).toStringAsFixed(2)} $_currency'
+                                : 'المتبقي: ${(summary.remainingMinor / 100).toStringAsFixed(2)} $_currency',
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(value: summary.progress),
+                        ],
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () => _editMonthlyBudget(uid, budget),
+                          icon: const Icon(Icons.tune),
+                          label: Text(budget == null ? 'تحديد الميزانية' : 'تعديل السقف'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        const Text(
+          'تقدير تخطيطي من الحركات اليدوية المسجلة بهذه العملة؛ لا يمنع الدفع ولا ينفذ أي معاملة.',
+          style: TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _editMonthlyBudget(
+    String uid,
+    AurenFamilyMonthlyBudget? existing,
+  ) async {
+    final controller = TextEditingController(
+      text: existing?.limitMinor.toString() ?? '',
+    );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ميزانية الأسرة الشهرية'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'السقف بالأصغر وحدة (مثلاً سنتات)',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+    try {
+      if (confirmed == true) {
+        final amount = int.tryParse(controller.text.trim());
+        if (amount == null) throw ArgumentError('أدخل سقفاً صحيحاً.');
+        await _monthlyBudgets.setMonthlyBudget(
+          uid: uid,
+          periodKey: _currentPeriodKey(),
+          currency: _currency,
+          limitMinor: amount,
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$error')),
+        );
+      }
+    } finally {
+      controller.dispose();
+    }
+  }
 
   Widget _buildSavingsGoals(String uid) {
     return Column(
@@ -446,6 +586,8 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
               );
             },
           ),
+          const SizedBox(height: 12),
+          _buildMonthlyBudget(uid),
           const SizedBox(height: 12),
           _buildSavingsGoals(uid),
           const SizedBox(height: 12),
