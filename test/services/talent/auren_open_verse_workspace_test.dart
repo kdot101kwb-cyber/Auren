@@ -40,7 +40,7 @@ void main() {
     final workspace = AurenOpenVerseWorkspace();
     await expectLater(workspace.saveProject(title: '  ', brief: ''), throwsArgumentError);
     await expectLater(workspace.saveProject(title: 'x', brief: 'b', bpm: 20), throwsArgumentError);
-    await expectLater(workspace.saveProject(title: 'x', brief: 'b', roles: 'r' * 1001), throwsArgumentError);
+    await expectLater(workspace.saveProject(title: 'x', brief: 'b', roles: List.filled(1001, 'r').join()), throwsArgumentError);
   });
 
   test('removes a draft and reports unknown ids without changing data', () async {
