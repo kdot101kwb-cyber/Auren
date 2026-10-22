@@ -108,3 +108,42 @@ test('non-terminal poll remains processing without discarding provider state', (
     {status: 'processing', lockUntilMs: 0, providerState: 'running'},
   );
 });
+
+test('matches the actual provider adapter contract with a direct result payload', () => {
+  const output = {url: 'https://cdn.example.test/direct-track.mp3'};
+  const completed = resolveMusicSubmission({
+    ok: true,
+    providerId: 'replicate',
+    state: 'succeeded',
+    output,
+    externalJobId: 'prediction-should-not-be-kept',
+  }, {ok: true, contentType: 'audio/mpeg'});
+  assert.equal(completed.status, 'output');
+  assert.deepEqual(completed.output, output);
+  assert.equal(completed.externalJobId, '');
+  assert.equal(completed.providerState, 'succeeded');
+
+  const pending = resolveMusicSubmission({
+    ok: true,
+    providerId: 'replicate',
+    state: 'starting',
+    output: null,
+    externalJobId: 'prediction-123',
+  });
+  assert.equal(pending.status, 'processing');
+  assert.equal(pending.externalJobId, 'prediction-123');
+  assert.equal(pending.providerState, 'starting');
+});
+
+test('direct provider result with no output preserves its external job id', () => {
+  const transition = resolveMusicSubmission({
+    ok: true,
+    providerId: 'replicate',
+    state: 'processing',
+    externalJobId: 'prediction-456',
+    output: null,
+  });
+  assert.equal(transition.status, 'processing');
+  assert.equal(transition.externalJobId, 'prediction-456');
+  assert.equal(transition.output, null);
+});
