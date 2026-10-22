@@ -163,7 +163,9 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
       reference: _cargoRef.text,
       origin: _cargoOrigin.text,
       destination: _cargoDestination.text,
-      carrier: _cargoCarrier.text.trim().isEmpty ? null : _cargoCarrier.text.trim(),
+      carrier: _cargoCarrier.text.trim().isEmpty
+          ? null
+          : _cargoCarrier.text.trim(),
       status: _cargoStatus,
       deliveryRequirements: _cargoRequirements.text
           .split(',').map((item) => item.trim()).where((item) => item.isNotEmpty).toList(),
@@ -457,8 +459,9 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
                   children: _shipments.asMap().entries.map((entry) {
                     final index = entry.key;
                     final shipment = entry.value;
+                    final carrier = shipment.carrier?.trim();
                     final details = <String>[
-                      'الناقل: ${shipment.carrier?.isNotEmpty == true ? shipment.carrier : 'غير محدد'}',
+                      'الناقل: ${carrier == null || carrier.isEmpty ? 'غير محدد' : carrier}',
                       if (shipment.deliveryRequirements.isNotEmpty)
                         'المتطلبات: ${shipment.deliveryRequirements.join(', ')}',
                       if (shipment.notes.trim().isNotEmpty)
@@ -470,7 +473,11 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
                       title: Text(
                         '${shipment.reference}: ${shipment.origin} → ${shipment.destination} • ${_cargoStatusLabel(shipment.status)}',
                       ),
-                      subtitle: Text(details.join(' • ')),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: details.map((detail) => Text(detail)).toList(),
+                      ),
                       trailing: SizedBox(
                         width: 124,
                         child: DropdownButton<CargoStatus>(
