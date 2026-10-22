@@ -1004,7 +1004,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         return true;
       });
       if (!consentConsumed) {
-        throw new Error('Explicit, unexpired consent is required to include personal AI context.');
+        throw aurenHttpsError('failed-precondition', 'Explicit, unexpired consent is required to include personal AI context.');
       }
 
       const goalsSnap = await db.collection('users').doc(uid).collection('goals').limit(50).get();
