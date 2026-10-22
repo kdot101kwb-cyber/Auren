@@ -24,6 +24,7 @@ import '../../communities/presentation/communities_screen.dart';
 import '../../communities/presentation/clubs_screen.dart';
 import '../../communities/presentation/volunteer_causes_screen.dart';
 import '../../communities/presentation/collaboration_spaces_screen.dart';
+import '../../communities/presentation/community_workbench_screen.dart';
 import '../../culture/presentation/culture_news_screen.dart';
 import '../../agriculture/presentation/agriculture_dashboard_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
@@ -73,6 +74,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Clubs & Circles', 'نوادٍ ودوائر صغيرة للأنشطة والاهتمامات', Icons.groups_2_outlined),
     _DiscoverItem('Volunteer & Causes', 'مبادرات تطوعية ومشاركة مجتمعية', Icons.volunteer_activism_outlined),
     _DiscoverItem('Collaboration Spaces', 'مساحات عمل مشتركة للفرق والمشاريع', Icons.workspaces_outline),
+    _DiscoverItem('Community Workbench', 'مشاريع جماعية وحوكمة ومسودات لقاءات تعمل دون اتصال', Icons.hub_outlined),
     _DiscoverItem('Culture & News', 'أخبار، ثقافة، تراث ومعرفة من العالم', Icons.public_outlined),
   ];
 
@@ -186,6 +188,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     }
     if (item.title == 'Clubs & Circles') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenClubsScreen()));
+      return;
+    }
+    if (item.title == 'Community Workbench') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCommunityWorkbenchScreen()));
       return;
     }
     if (item.title == 'Collaboration Spaces') {
