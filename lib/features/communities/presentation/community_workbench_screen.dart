@@ -35,6 +35,31 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     }
   }
 
+  Future<void> _confirmLocalDelete({
+    required String title,
+    required String message,
+    required Future<void> Function() delete,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف محلي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) await _run(delete);
+  }
+
   Future<List<String>?> _ask(String title, List<_Field> fields) async {
     final controllers = fields.map((_) => TextEditingController()).toList();
     final result = await showDialog<List<String>>(
@@ -148,7 +173,18 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
         final milestones = List<Map<String, dynamic>>.from(project['milestones'] as List? ?? const []);
         final progress = _store.projectProgress(project);
         return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('${project['title']}', style: Theme.of(context).textTheme.titleMedium),
+          Row(children: [
+            Expanded(child: Text('${project['title']}', style: Theme.of(context).textTheme.titleMedium)),
+            IconButton(
+              tooltip: 'حذف المشروع من هذا الجهاز',
+              onPressed: _busy ? null : () => _confirmLocalDelete(
+                title: 'حذف المشروع المحلي؟',
+                message: 'سيُحذف المشروع ومهامه ومراحله من هذا الجهاز فقط. لن يتغير أي سجل بعيد.',
+                delete: () => _store.deleteProject('${project['id']}'),
+              ),
+              icon: const Icon(Icons.delete_outline),
+            ),
+          ]),
           if ('${project['description']}'.isNotEmpty) Text('${project['description']}'),
           const SizedBox(height: 8), LinearProgressIndicator(value: progress / 100),
           Text('التقدم $progress% • ${tasks.length} مهام • ${milestones.length} مراحل'),
@@ -187,7 +223,18 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
         final yes = _store.proposalSupportCount(p);
         final no = votes.length - yes;
         return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('${p['title']}', style: Theme.of(context).textTheme.titleMedium),
+          Row(children: [
+            Expanded(child: Text('${p['title']}', style: Theme.of(context).textTheme.titleMedium)),
+            IconButton(
+              tooltip: 'حذف مسودة الاقتراح من هذا الجهاز',
+              onPressed: _busy ? null : () => _confirmLocalDelete(
+                title: 'حذف مسودة الاقتراح؟',
+                message: 'سيُحذف الاقتراح وأصواته المحلية من هذا الجهاز فقط.',
+                delete: () => _store.deleteProposal('${p['id']}'),
+              ),
+              icon: const Icon(Icons.delete_outline),
+            ),
+          ]),
           Text('${p['proposedRule']}'),
           Text('المجتمع: ${p['communityId']} • مؤيد $yes • معارض $no • الحالة: ${p['status']}'),
           const Text('التصويت والأرقام محفوظة محلياً على هذا الجهاز وليست نتيجة رسمية للمجتمع.'),
@@ -213,7 +260,21 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
         final attendance = Map<String, String>.from(m['attendance'] as Map? ?? const {});
         final current = attendance[_voterId] ?? 'interested';
         return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [const Icon(Icons.event_note_outlined), const SizedBox(width: 8), Expanded(child: Text('${m['title']}', style: Theme.of(context).textTheme.titleMedium)), const Chip(label: Text('مسودة'))]),
+          Row(children: [
+            const Icon(Icons.event_note_outlined),
+            const SizedBox(width: 8),
+            Expanded(child: Text('${m['title']}', style: Theme.of(context).textTheme.titleMedium)),
+            IconButton(
+              tooltip: 'حذف مسودة اللقاء من هذا الجهاز',
+              onPressed: _busy ? null : () => _confirmLocalDelete(
+                title: 'حذف مسودة اللقاء؟',
+                message: 'سيُحذف اللقاء وسجلات الاهتمام المحلية من هذا الجهاز فقط.',
+                delete: () => _store.deleteMeetupDraft('${m['id']}'),
+              ),
+              icon: const Icon(Icons.delete_outline),
+            ),
+            const Chip(label: Text('مسودة')),
+          ]),
           if ('${m['description']}'.isNotEmpty) Text('${m['description']}'),
           Text('الموعد: ${m['startsAt']}'), Text('المكان المقترح: ${m['location']}'),
           Text('السعة المقترحة: ${m['capacity']} • سجلات الحضور المحلية: ${attendance.length} • سيحضر: ${_store.meetupGoingCount(m)}'),
