@@ -75,6 +75,46 @@ class _AurenCollaborationSpacesScreenState
     }
   }
 
+  Future<void> _editGuidelines(AurenCollaborationSpace space) async {
+    final current = await _workbench.readSpaceGuidelines(space.id);
+    if (!mounted) return;
+    final topic = TextEditingController(text: current['topic'] as String? ?? '');
+    final rules = TextEditingController(text: current['rules'] as String? ?? '');
+    final save = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('موضوع وقواعد المساحة'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: topic, maxLength: 80,
+              decoration: const InputDecoration(labelText: 'الموضوع')),
+            TextField(controller: rules, maxLength: 2000, maxLines: 4,
+              decoration: const InputDecoration(labelText: 'القواعد (محلية على هذا الجهاز)')),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حفظ محلياً')),
+        ],
+      ),
+    );
+    try {
+      if (save == true) {
+        await _workbench.saveSpaceGuidelines(
+          spaceId: space.id, topic: topic.text, rules: rules.text);
+        if (mounted) setState(() {});
+      }
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر حفظ القواعد محلياً: $error')));
+    } finally {
+      topic.dispose();
+      rules.dispose();
+    }
+  }
+
   Future<void> _invite(AurenCollaborationSpace space) async {
     final memberUid = TextEditingController();
     final invite = await showDialog<bool>(
@@ -169,9 +209,14 @@ class _AurenCollaborationSpacesScreenState
                     ].where((line) => line.isNotEmpty).join('\n')),
                     isThreeLine: true,
                     trailing: isOwner
-                        ? IconButton(tooltip: 'دعوة عضو',
-                            onPressed: () => _invite(space),
-                            icon: const Icon(Icons.person_add_alt_1))
+                        ? Row(mainAxisSize: MainAxisSize.min, children: [
+                            IconButton(tooltip: 'تعديل الموضوع والقواعد',
+                              onPressed: _busy ? null : () => _editGuidelines(space),
+                              icon: const Icon(Icons.rule_outlined)),
+                            IconButton(tooltip: 'دعوة عضو',
+                              onPressed: _busy ? null : () => _invite(space),
+                              icon: const Icon(Icons.person_add_alt_1)),
+                          ])
                         : const Icon(Icons.lock_open_outlined),
                   );
                 },
