@@ -21,7 +21,8 @@ test('video output requires a real provider artifact',()=>{
 test('provider jobs persist external ids and poll instead of duplicate submission',()=>{
   assert.match(source,/if \(task\.externalJobId && task\.providerId\)/);
   assert.match(source,/pollAurenProviderJob/);
-  assert.match(source,/const providerPayload = result\.result && typeof result\.result === 'object' \? result\.result : result/);\n  assert.match(source,/externalJobId:realOutput \? '' : \(providerPayload\.externalJobId \|\| ''\)/);
+  assert.match(source,/const providerPayload = result\.result && typeof result\.result === 'object' \? result\.result : result/);
+  assert.match(source,/externalJobId:realOutput \? '' : \(providerPayload\.externalJobId \|\| ''\)/);
   assert.match(source,/idempotencyKey/);
 });
 
@@ -64,7 +65,8 @@ test('generation retry budget is not consumed by provider polling',()=>{
 });
 
 test('completed provider output skips an unnecessary polling cycle',()=>{
-  assert.match(source,/const providerPayload = result\.result && typeof result\.result === 'object' \? result\.result : result/);\n  assert.match(source,/const realOutput=providerPayload\.output/);
+  assert.match(source,/const providerPayload = result\.result && typeof result\.result === 'object' \? result\.result : result/);
+  assert.match(source,/const realOutput=providerPayload\.output/);
   assert.match(source,/status:realOutput \? 'output' : 'processing'/);
   assert.match(source,/externalJobId:realOutput \? '' :/);
 });
