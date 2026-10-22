@@ -17,5 +17,5 @@ test('completed provider job without a materialized artifact is QC-failed withou
   assert.match(source, /musicProductionStage:'qc_failed',musicProductionStatus:'qc_failed',musicWorkerLockUntilMs:0/);
   assert.match(source, /reason:'artifact_not_materialized'/);
   assert.match(source, /Provider completed without a materialized audio artifact\./);
-  assert.ok(source.indexOf("if(d.status==='waiting_provider'&&!d.externalJobId)") < source.indexOf('submitAurenProviderJob'));
+  assert.ok(source.indexOf("if(d.status==='waiting_provider'&&!d.externalJobId)") < source.indexOf('const result=await submitAurenProviderJob'));
 });
