@@ -1,4 +1,4 @@
-enum EverydayLifeKind { task, note, household, appointmentDraft, localService }
+enum EverydayLifeKind { task, note, taskList, household, householdSupply, householdMaintenance, appointmentDraft, localService }
 
 class EverydayLifeItem {
   const EverydayLifeItem({
@@ -6,6 +6,9 @@ class EverydayLifeItem {
     required this.kind,
     required this.title,
     this.details = '',
+    this.category = '',
+    this.quantity = '',
+    this.requestedWindow = '',
     this.createdAt,
     this.dueAt,
     this.completed = false,
@@ -20,6 +23,9 @@ class EverydayLifeItem {
   final EverydayLifeKind kind;
   final String title;
   final String details;
+  final String category;
+  final String quantity;
+  final String requestedWindow;
   final String? createdAt;
   final String? dueAt;
   final bool completed;
@@ -33,6 +39,9 @@ class EverydayLifeItem {
   EverydayLifeItem copyWith({
     String? title,
     String? details,
+    String? category,
+    String? quantity,
+    String? requestedWindow,
     String? dueAt,
     bool clearDueAt = false,
     bool? completed,
@@ -46,6 +55,9 @@ class EverydayLifeItem {
     kind: kind,
     title: title ?? this.title,
     details: details ?? this.details,
+    category: category ?? this.category,
+    quantity: quantity ?? this.quantity,
+    requestedWindow: requestedWindow ?? this.requestedWindow,
     createdAt: createdAt,
     dueAt: clearDueAt ? null : (dueAt ?? this.dueAt),
     completed: completed ?? this.completed,
@@ -61,6 +73,9 @@ class EverydayLifeItem {
     'kind': kind.name,
     'title': title,
     'details': details,
+    'category': category,
+    'quantity': quantity,
+    'requestedWindow': requestedWindow,
     'createdAt': createdAt,
     'dueAt': dueAt,
     'completed': completed,
@@ -84,6 +99,9 @@ class EverydayLifeItem {
       kind: kind.first,
       title: title,
       details: json['details'] as String? ?? '',
+      category: json['category'] as String? ?? '',
+      quantity: json['quantity'] as String? ?? '',
+      requestedWindow: json['requestedWindow'] as String? ?? '',
       createdAt: json['createdAt'] as String?,
       dueAt: json['dueAt'] as String?,
       completed: json['completed'] == true,
