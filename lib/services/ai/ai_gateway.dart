@@ -53,6 +53,7 @@ class ResilientAurenAiGateway implements AurenAiGateway {
     required String conversationId,
     required String message,
     String? requestId,
+    bool includePersonalContext = false,
   }) async {
     try {
       return await remote.send(
