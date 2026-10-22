@@ -23,7 +23,7 @@ void main() {
 
     test('reports no progress without a configured budget', () {
       const summary = AurenFamilyBudgetSummary(budget: null, spentMinor: 300);
-      expect(summary.remainingMinor, -300);
+      expect(summary.remainingMinor, 0);
       expect(summary.progress, 0);
       expect(summary.isOverBudget, isFalse);
     });
@@ -104,6 +104,48 @@ void main() {
           limitMinor: 0,
         ),
         throwsArgumentError,
+      );
+    });
+
+    test('counts only current-month expenses in the selected currency', () async {
+      final entries = firestore
+          .collection('users')
+          .doc('user-1')
+          .collection('familyWallet')
+          .doc('current')
+          .collection('entries');
+      await entries.doc('current-expense').set({
+        'kind': 'expense',
+        'currency': 'USD',
+        'amountMinor': 1500,
+        'createdAt': Timestamp.fromDate(DateTime(2026, 10, 10)),
+      });
+      await entries.doc('current-income').set({
+        'kind': 'income',
+        'currency': 'USD',
+        'amountMinor': 9000,
+        'createdAt': Timestamp.fromDate(DateTime(2026, 10, 11)),
+      });
+      await entries.doc('other-currency').set({
+        'kind': 'expense',
+        'currency': 'EUR',
+        'amountMinor': 3000,
+        'createdAt': Timestamp.fromDate(DateTime(2026, 10, 12)),
+      });
+      await entries.doc('previous-month').set({
+        'kind': 'expense',
+        'currency': 'USD',
+        'amountMinor': 500,
+        'createdAt': Timestamp.fromDate(DateTime(2026, 9, 30)),
+      });
+
+      await expectLater(
+        budgets.watchMonthlyExpenses(
+          uid: 'user-1',
+          periodKey: '2026-10',
+          currency: 'usd',
+        ),
+        emits(1500),
       );
     });
 
