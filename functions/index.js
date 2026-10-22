@@ -980,17 +980,30 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     let goalLines = [];
     let memoryLines = [];
     if (request.data?.includePersonalContext === true) {
-      // A client boolean alone is not consent. Require a short-lived,
-      // server-recorded consent created by a dedicated explicit-confirmation UI.
-      const consentSnap = await db.collection('users').doc(uid)
-        .collection('privacyConsents').doc('aiPersonalContext').get();
-      const consent = consentSnap.data() || {};
-      const expiresAt = consent.expiresAt;
-      if (!consentSnap.exists ||
-          consent.accepted !== true ||
-          consent.purpose !== 'ai_personal_context' ||
-          !expiresAt || typeof expiresAt.toMillis !== 'function' ||
-          expiresAt.toMillis() <= Date.now()) {
+      // Consume the short-lived consent atomically so one grant can authorize
+      // at most one request, even if multiple clients race to use it.
+      const consentRef = db.collection('users').doc(uid)
+        .collection('privacyConsents').doc('aiPersonalContext');
+      const consentConsumed = await db.runTransaction(async (transaction) => {
+        const consentSnap = await transaction.get(consentRef);
+        const consent = consentSnap.data() || {};
+        const expiresAt = consent.expiresAt;
+        if (!consentSnap.exists ||
+            consent.accepted !== true ||
+            consent.purpose !== 'ai_personal_context' ||
+            !expiresAt || typeof expiresAt.toMillis !== 'function' ||
+            expiresAt.toMillis() <= Date.now()) {
+          return false;
+        }
+        transaction.update(consentRef, {
+          accepted: false,
+          consumedAt: FieldValue.serverTimestamp(),
+          expiresAt: new Date(0),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        return true;
+      });
+      if (!consentConsumed) {
         throw new Error('Explicit, unexpired consent is required to include personal AI context.');
       }
 
