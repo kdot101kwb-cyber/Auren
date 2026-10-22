@@ -103,6 +103,12 @@ test('users cannot read or update reports and case-event writes remain denied wi
   }));
   await assertFails(db.doc('reports/seeded-report').update({ reporterUid: 'attacker' }));
   await assertFails(db.doc('reports/seeded-report').update({ reason: 'Rewritten reason' }));
+  await assertFails(db.doc('reports/seeded-report').update({ reportedUid: 'attacker' }));
+  await assertFails(db.doc('reports/seeded-report').update({ contentId: 'rewritten-content' }));
+  await assertFails(db.doc('reports/seeded-report').update({ contentType: 'profile' }));
+  await assertFails(db.doc('reports/seeded-report').update({
+    createdAt: firebase.firestore.Timestamp.fromDate(new Date('2020-01-01T00:00:00Z')),
+  }));
   await assertFails(db.doc('reports/seeded-report').delete());
 
   const claimedAdminDb = testEnv.authenticatedContext('claimed-admin', { admin: true }).firestore();
