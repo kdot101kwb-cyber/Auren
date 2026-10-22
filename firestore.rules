@@ -1022,6 +1022,40 @@ match /users/{userId}/kids_activity_progress/{activityId} {
         && hasUpdatedAtTimestamp();
       allow delete: if isOwner(userId) && walletId == 'current';
 
+      match /goals/{goalId} {
+        allow read: if isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
+        allow create: if isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
+          && requestData().keys().hasOnly([
+            'ownerUid','title','targetMinor','savedMinor','currency','createdAt','updatedAt'
+          ])
+          && requestData().ownerUid == userId
+          && nonEmptyStringAtMost(requestData().title,120)
+          && intWithin(requestData().targetMinor,1,1000000000000)
+          && requestData().savedMinor == 0
+          && requestData().currency is string
+          && requestData().currency.size() == 3
+          && hasCreatedAtTimestamp()
+          && hasUpdatedAtTimestamp();
+        allow update: if isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
+          && resource.data.ownerUid == userId
+          && requestData().keys().hasOnly([
+            'ownerUid','title','targetMinor','savedMinor','currency','createdAt','updatedAt'
+          ])
+          && changedFields().hasOnly(['savedMinor','updatedAt'])
+          && requestData().ownerUid == resource.data.ownerUid
+          && requestData().title == resource.data.title
+          && requestData().targetMinor == resource.data.targetMinor
+          && requestData().currency == resource.data.currency
+          && requestData().createdAt == resource.data.createdAt
+          && intWithin(requestData().savedMinor,resource.data.savedMinor,resource.data.targetMinor)
+          && hasUpdatedAtTimestamp();
+        allow delete: if isOwner(userId)
+          && resource.data.ownerUid == userId;
+      }
+
       match /entries/{entryId} {
         allow read: if isOwner(userId)
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
