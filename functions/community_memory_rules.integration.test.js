@@ -206,3 +206,96 @@ test('appeal workflows remain denied until explicit owner and moderator rules ex
     createdAt: now,
   }));
 });
+
+
+test('report submitters cannot pre-seed reviewer decisions or privileged metadata', async () => {
+  const db = dbFor('reporter-a');
+  const now = firebase.firestore.Timestamp.now();
+  for (const [id, extra] of [
+    ['forged-moderation-identity', { moderatedBy: 'reporter-a' }],
+    ['forged-moderation-time', { moderatedAt: now }],
+    ['forged-moderation-note', { moderationNote: 'Self-approved' }],
+    ['forged-reviewer-role', { isModerator: true }],
+  ]) {
+    await assertFails(db.doc(`reports/${id}`).set({
+      reporterUid: 'reporter-a',
+      reportedUid: 'user-b',
+      reason: 'A report',
+      status: 'open',
+      createdAt: now,
+      ...extra,
+    }));
+  }
+});
+
+test('appeal documents reject forged review metadata, invalid states, and deletion', async () => {
+  const appellant = dbFor('appellant-a');
+  const now = firebase.firestore.Timestamp.now();
+
+  for (const [id, extra] of [
+    ['forged-status', { status: 'accepted' }],
+    ['forged-reviewer', { reviewedBy: 'appellant-a' }],
+    ['forged-review-time', { reviewedAt: now }],
+    ['forged-review-note', { reviewNote: 'Self-approved' }],
+    ['extra-role-field', { moderator: true }],
+  ]) {
+    await assertFails(appellant.doc(`community_case_appeals/report-x__${id}`).set({
+      reportId: 'report-x',
+      appellantUid: 'appellant-a',
+      reason: 'Please review this decision.',
+      status: 'pending',
+      createdAt: now,
+      ...extra,
+    }));
+  }
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('community_case_appeals/seeded-appeal').set({
+      reportId: 'report-x',
+      appellantUid: 'appellant-a',
+      reason: 'Please review this decision.',
+      status: 'pending',
+      createdAt: now,
+    });
+  });
+
+  await assertFails(appellant.doc('community_case_appeals/seeded-appeal').update({
+    status: 'accepted',
+    reviewedBy: 'appellant-a',
+    reviewedAt: now,
+    reviewNote: 'Self-approved',
+  }));
+  await assertFails(appellant.doc('community_case_appeals/seeded-appeal').delete());
+});
+
+test('case audit events reject client-authored decisions and remain immutable', async () => {
+  const db = dbFor('moderator-a');
+  const now = firebase.firestore.Timestamp.now();
+
+  await assertFails(db.doc('community_case_events/forged-event').set({
+    entityType: 'report',
+    entityId: 'report-x',
+    actorUid: 'moderator-a',
+    fromStatus: 'open',
+    toStatus: 'resolved',
+    note: 'Forged decision',
+    createdAt: now,
+  }));
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('community_case_events/immutable-event').set({
+      entityType: 'report',
+      entityId: 'report-x',
+      actorUid: 'moderator-a',
+      fromStatus: 'open',
+      toStatus: 'under_review',
+      note: 'Seeded event',
+      createdAt: now,
+    });
+  });
+
+  await assertFails(db.doc('community_case_events/immutable-event').update({
+    toStatus: 'resolved',
+  }));
+  await assertFails(db.doc('community_case_events/immutable-event').delete());
+});
