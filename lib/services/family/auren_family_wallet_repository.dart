@@ -129,8 +129,14 @@ class AurenFamilyWalletRepository {
         }
       }
       final current = balances[code] ?? 0;
+      if (current < 0 || current > 1000000000000) {
+        throw StateError('رصيد العملة الحالي خارج النطاق المدعوم.');
+      }
       if (kind == 'expense' && amountMinor > current) {
         throw StateError('الرصيد المتاح غير كافٍ لهذه المصروفات.');
+      }
+      if (kind == 'income' && amountMinor > 1000000000000 - current) {
+        throw StateError('الحركة تتجاوز الحد الأقصى للرصيد المدعوم.');
       }
       final next = kind == 'income' ? current + amountMinor : current - amountMinor;
       balances[code] = next;
