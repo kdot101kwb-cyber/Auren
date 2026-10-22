@@ -22,6 +22,14 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
 
   String get _voterId => FirebaseAuth.instance.currentUser?.uid ?? 'local-device';
 
+  String _proposalStatusLabel(Object? status) => switch (status) {
+        'open' => 'مفتوح محلياً',
+        'accepted' => 'مغلق محلياً: مؤيدون أكثر',
+        'rejected' => 'مغلق محلياً: معارضون أكثر أو تعادل',
+        'withdrawn' => 'مسحوب محلياً',
+        _ => 'مسودة محلية',
+      };
+
   Future<void> _run(Future<void> Function() action) async {
     setState(() => _busy = true);
     try {
@@ -236,12 +244,16 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
             ),
           ]),
           Text('${p['proposedRule']}'),
-          Text('المجتمع: ${p['communityId']} • مؤيد $yes • معارض $no • الحالة: ${p['status']}'),
+          Text('المجتمع: ${p['communityId']} • مؤيد $yes • معارض $no • الحالة: ${_proposalStatusLabel(p['status'])}'),
           const Text('التصويت والأرقام محفوظة محلياً على هذا الجهاز وليست نتيجة رسمية للمجتمع.'),
           if (p['status'] == 'open') Wrap(children: [
             TextButton(onPressed: _busy || voted ? null : () => _run(() => _store.voteOnProposal(proposalId: '${p['id']}', voterId: _voterId, support: true)), child: const Text('أؤيد')),
             TextButton(onPressed: _busy || voted ? null : () => _run(() => _store.voteOnProposal(proposalId: '${p['id']}', voterId: _voterId, support: false)), child: const Text('أعارض')),
-            TextButton(onPressed: _busy ? null : () => _run(() => _store.closeProposal(proposalId: '${p['id']}', status: yes > no ? 'accepted' : 'rejected')), child: const Text('إغلاق المسودة بالنتيجة الحالية')),
+            TextButton(onPressed: _busy ? null : () => _confirmLocalDelete(
+              title: 'إغلاق المسودة محلياً؟',
+              message: 'سيُغلق هذا الاقتراح على جهازك فقط بناءً على الأصوات المحلية. لن تتغير قواعد المجتمع ولن يصدر قرار رسمي.',
+              delete: () => _store.closeProposal(proposalId: '${p['id']}', status: yes > no ? 'accepted' : 'rejected'),
+            ), child: const Text('إغلاق المسودة محلياً')),
           ]),
           if (voted) const Text('تم تسجيل صوتك على هذا الجهاز.'),
         ])));
