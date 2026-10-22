@@ -19,40 +19,28 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Discovery')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-hub-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Business Discovery').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-hub-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Buyer–Seller Matching').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Trade & Export Hub')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-hub-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Trade & Export Hub').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-hub-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Business Growth Planner').first, findsOneWidget);
   });
@@ -65,10 +53,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-hub-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.text('Business Growth Planner').first);
     await tester.pumpAndSettle();
@@ -86,10 +71,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-hub-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')));
     await tester.pumpAndSettle();
@@ -111,10 +93,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-save-match-draft')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-match-draft-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.byKey(const ValueKey('business-economy-save-match-draft')));
     await tester.pumpAndSettle();
@@ -135,10 +114,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-hub-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.text('Business Growth Planner').first);
     await tester.pumpAndSettle();
@@ -156,10 +132,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-save-growth-plan')),
       250,
-      scrollable: find.descendant(
-        of: find.byKey(const ValueKey('business-economy-growth-plan-list')),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.byKey(const ValueKey('business-economy-save-growth-plan')));
     await tester.pumpAndSettle();
