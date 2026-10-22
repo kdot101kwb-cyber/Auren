@@ -19,28 +19,40 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Discovery')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-hub-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Business Discovery').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-hub-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Buyer–Seller Matching').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Trade & Export Hub')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-hub-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Trade & Export Hub').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-hub-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Business Growth Planner').first, findsOneWidget);
   });
@@ -53,7 +65,10 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-hub-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('Business Growth Planner').first);
     await tester.pumpAndSettle();
@@ -71,19 +86,26 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-hub-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
-    await tester.tap(find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')));
+    await tester.tap(
+      find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')),
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(
       find.byWidgetPredicate((widget) =>
-          widget is TextField && widget.decoration?.labelText == 'احتياج المشتري *'),
+          widget is TextField &&
+          widget.decoration?.labelText == 'احتياج المشتري *'),
       'Organic sesame',
     );
     await tester.enterText(
       find.byWidgetPredicate((widget) =>
-          widget is TextField && widget.decoration?.labelText == 'عرض البائع *'),
+          widget is TextField &&
+          widget.decoration?.labelText == 'عرض البائع *'),
       'Organic sesame available',
     );
     // Dismiss the simulated keyboard before scrolling to the save action.
@@ -93,9 +115,14 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-save-match-draft')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-match-draft-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
-    await tester.tap(find.byKey(const ValueKey('business-economy-save-match-draft')));
+    await tester.tap(
+      find.byKey(const ValueKey('business-economy-save-match-draft')),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('تم حفظ المسودة على هذا الجهاز؛ لم يُرسل أي طلب.'),
@@ -114,27 +141,37 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-hub-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('Business Growth Planner').first);
     await tester.pumpAndSettle();
 
     await tester.enterText(
       find.byWidgetPredicate((widget) =>
-          widget is TextField && widget.decoration?.labelText == 'هدف قابل للقياس'),
+          widget is TextField &&
+          widget.decoration?.labelText == 'هدف قابل للقياس'),
       'Reach 10 customers',
     );
     await tester.enterText(
       find.byWidgetPredicate((widget) =>
-          widget is TextField && widget.decoration?.labelText == 'مجموعة العملاء المستهدفة'),
+          widget is TextField &&
+          widget.decoration?.labelText == 'مجموعة العملاء المستهدفة'),
       'Local retailers',
     );
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-save-growth-plan')),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('business-economy-growth-plan-list')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
-    await tester.tap(find.byKey(const ValueKey('business-economy-save-growth-plan')));
+    await tester.tap(
+      find.byKey(const ValueKey('business-economy-save-growth-plan')),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('تم حفظ الخطة محلياً.'), findsOneWidget);
