@@ -5,6 +5,7 @@ function resolveMusicSubmission({result, artifactCheck}) {
   const externalId = String(result?.result?.externalJobId || '').trim();
   const candidate = Boolean(output && (output.url || output.storagePath));
   const validArtifact = Boolean(candidate && artifactCheck?.ok);
+  const validationReason = artifactCheck?.reason || 'artifact_validation_unavailable';
   const status = !result?.ok
     ? 'queued'
     : validArtifact
@@ -26,7 +27,7 @@ function resolveMusicSubmission({result, artifactCheck}) {
         : candidate
           ? 'artifact_validation_failed'
           : (result.result?.state || 'starting'),
-    ...(candidate && artifactCheck ? {artifactValidation: artifactCheck} : {}),
+    ...(candidate ? {artifactValidation: artifactCheck || {ok: false, reason: validationReason}} : {}),
     lastError: !result?.ok
       ? String(result.message || 'Provider unavailable').slice(0, 700)
       : validArtifact
