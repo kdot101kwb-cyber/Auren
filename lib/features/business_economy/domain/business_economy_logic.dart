@@ -48,7 +48,9 @@ class AurenBusinessEconomyLogic {
 
     if (need.isNotEmpty && offer.isNotEmpty) {
       score += ((shared.length / need.length) * 60).round().clamp(0, 60);
-      if (shared.isNotEmpty) reasons.add('Shared need/offer terms: ${shared.take(5).join(', ')}');
+      if (shared.isNotEmpty) {
+        reasons.add('Shared need/offer terms: ${shared.take(5).join(', ')}');
+      }
     }
 
     final buyerCategory = input.buyerCategory.trim().toLowerCase();
