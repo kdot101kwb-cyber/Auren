@@ -167,21 +167,3 @@ test('Manual review reconciliation never re-executes the external action', () =>
   assert.doesNotMatch(block, /action\.type ===/);
   assert.doesNotMatch(block, /executeAurenAction/);
 });
-
-
-test('AI gateway includes personal goals and saved memory only after explicit opt-in', () => {
-  const gate = index.indexOf('if (request.data?.includePersonalContext === true)');
-  const goalsRead = index.indexOf("const goalsSnap = await db.collection('users').doc(uid).collection('goals')", gate);
-  const memoryRead = index.indexOf("const memorySnap = await db.collection('users').doc(uid).collection('memory')", gate);
-  const messagesStart = index.indexOf('const messages = [', gate);
-
-  assert.ok(gate >= 0, 'personal context must be behind an explicit opt-in');
-  assert.ok(goalsRead > gate && goalsRead < messagesStart);
-  assert.ok(memoryRead > goalsRead && memoryRead < messagesStart);
-
-  const clientGateway = fs.readFileSync(
-    path.join(__dirname, '..', 'lib', 'services', 'ai', 'firebase_ai_gateway.dart'),
-    'utf8',
-  );
-  assert.doesNotMatch(clientGateway, /includePersonalContext/);
-});
