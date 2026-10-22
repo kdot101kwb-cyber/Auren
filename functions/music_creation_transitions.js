@@ -1,8 +1,11 @@
 'use strict';
 
 function resolveMusicSubmission({result, artifactCheck}) {
-  const output = result?.result?.output;
-  const externalId = String(result?.result?.externalJobId || '').trim();
+  // Provider adapters return the normalized payload directly; accept the older
+  // wrapped form as well so callers cannot silently lose accepted jobs.
+  const payload = result?.result && typeof result.result === 'object' ? result.result : result;
+  const output = payload?.output;
+  const externalId = String(payload?.externalJobId || '').trim();
   const candidate = Boolean(output && (output.url || output.storagePath));
   const validArtifact = Boolean(candidate && artifactCheck?.ok);
   const validationReason = artifactCheck?.reason || 'artifact_validation_unavailable';
@@ -23,10 +26,10 @@ function resolveMusicSubmission({result, artifactCheck}) {
     providerState: !result?.ok
       ? 'submission_unavailable'
       : validArtifact
-        ? (result.result?.state || 'succeeded')
+        ? (payload?.state || 'succeeded')
         : candidate
           ? 'artifact_validation_failed'
-          : (result.result?.state || 'starting'),
+          : (payload?.state || 'starting'),
     ...(candidate ? {artifactValidation: artifactCheck || {ok: false, reason: validationReason}} : {}),
     lastError: !result?.ok
       ? String(result.message || 'Provider unavailable').slice(0, 700)
