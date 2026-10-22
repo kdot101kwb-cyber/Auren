@@ -47,12 +47,9 @@ void main() {
   Future<void> openSection(WidgetTester tester, String title) async {
     ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).clearSnackBars();
     await tester.pumpAndSettle();
-    final section = find.ancestor(
-      of: find.text(title),
-      matching: find.byType(ExpansionTile),
-    );
-    await tester.ensureVisible(section);
-    await tester.tap(section);
+    final sectionTitle = find.text(title);
+    await tester.ensureVisible(sectionTitle);
+    await tester.tap(sectionTitle);
     await tester.pumpAndSettle();
   }
 
