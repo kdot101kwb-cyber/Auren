@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/social/community_workbench_store.dart';
@@ -10,7 +12,8 @@ class AurenCommunityWorkbenchScreen extends StatefulWidget {
 
 class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchScreen>
     with SingleTickerProviderStateMixin {
-  late final AurenCommunityWorkbenchStore _store;
+  late AurenCommunityWorkbenchStore _store;
+  StreamSubscription<User?>? _authSubscription;
   late final TabController _tabs;
   bool _busy = false;
   int _refresh = 0;
@@ -19,11 +22,25 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    _store = AurenCommunityWorkbenchStore(scope: userId ?? 'anonymous');
+    final auth = FirebaseAuth.instance;
+    _store = AurenCommunityWorkbenchStore(
+      scope: auth.currentUser?.uid ?? 'anonymous',
+    );
+    _authSubscription = auth.authStateChanges().listen((user) {
+      if (!mounted) return;
+      setState(() {
+        _store = AurenCommunityWorkbenchStore(scope: user?.uid ?? 'anonymous');
+        _refresh++;
+      });
+    });
   }
+
   @override
-  void dispose() { _tabs.dispose(); super.dispose(); }
+  void dispose() {
+    _authSubscription?.cancel();
+    _tabs.dispose();
+    super.dispose();
+  }
 
   String get _voterId => FirebaseAuth.instance.currentUser?.uid ?? 'local-device';
 
