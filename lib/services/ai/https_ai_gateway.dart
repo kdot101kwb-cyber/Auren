@@ -15,6 +15,7 @@ class HttpsAurenAiGateway implements AurenAiGateway {
     required String conversationId,
     required String message,
     String? requestId,
+    bool includePersonalContext = false,
   }) async {
     if (endpoint.isEmpty) {
       throw const AurenAiFallbackEligibleException(
@@ -39,6 +40,7 @@ class HttpsAurenAiGateway implements AurenAiGateway {
         'message': message,
         if (requestId != null && requestId.trim().isNotEmpty)
           'requestId': requestId.trim(),
+        'includePersonalContext': includePersonalContext,
       }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
