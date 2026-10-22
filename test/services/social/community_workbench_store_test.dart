@@ -20,7 +20,29 @@ void main() {
     final loaded = await store.readSpaceGuidelines('space-1');
     expect(loaded['topic'], 'Community garden');
     expect(loaded['rules'], 'Be kind; share tools.');
+    await store.saveSpaceGuidelines(
+      spaceId: 'space-1',
+      topic: 'Shared garden',
+      rules: 'Return borrowed tools.',
+    );
+    final updated = await store.readSpaceGuidelines('space-1');
+    expect(updated['topic'], 'Shared garden');
+    expect(updated['rules'], 'Return borrowed tools.');
     expect(await store.readSpaceGuidelines('missing'), isEmpty);
+  });
+
+  test('corrupt local space metadata recovers and can be replaced', () async {
+    SharedPreferences.setMockInitialValues({
+      'auren.community.space_guidelines.v1': '{not-json',
+    });
+    final recoveringStore = AurenCommunityWorkbenchStore();
+    expect(await recoveringStore.readSpaceGuidelines('space-1'), isEmpty);
+    await recoveringStore.saveSpaceGuidelines(
+      spaceId: 'space-1',
+      topic: 'Recovery',
+      rules: 'Use respectful language.',
+    );
+    expect((await recoveringStore.readSpaceGuidelines('space-1'))['topic'], 'Recovery');
   });
 
   test('project tasks and milestones calculate bounded local progress', () async {
