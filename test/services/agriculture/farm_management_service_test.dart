@@ -28,6 +28,9 @@ void main() {
       expect(skipped.isOverdue(DateTime.utc(2026, 10, 21)), isFalse);
       final done = FarmOperationTask(title: 'completed', dueAt: DateTime.utc(2026, 10, 20), status: FarmTaskStatus.done);
       expect(done.isOverdue(DateTime.utc(2026, 10, 21)), isFalse);
+      expect(() => service.createTask(title: ' ' * 161, dueAt: DateTime.utc(2026, 10, 20)), throwsArgumentError);
+      expect(() => service.createTask(title: 'valid', dueAt: DateTime.utc(2026, 10, 20), notes: 'x' * 4001), throwsArgumentError);
+      expect(() => service.createTask(title: 'valid', dueAt: DateTime.utc(2026, 10, 20), cropOrAnimal: 'x' * 161), throwsArgumentError);
     });
     test('market observations require traceable source and date metadata', () {
       final observation = AgriculturalMarketObservation(commodity: 'sorghum', market: 'sample market', price: 120, currency: 'SDG', unit: 'sack', observedAt: DateTime.utc(2026, 10, 20), sourceName: 'Cooperative bulletin', sourceReference: 'bulletin-2026-10-20');
