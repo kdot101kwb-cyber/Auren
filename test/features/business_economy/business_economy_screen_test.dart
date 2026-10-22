@@ -78,8 +78,10 @@ void main() {
     // Otherwise the bottom inset can leave the button visible but not hittable.
     tester.testTextInput.hide();
     await tester.pumpAndSettle();
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-save-match-draft')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-match-draft-list')),
     );
     await tester.tap(find.byKey(const ValueKey('business-economy-save-match-draft')));
     await tester.pumpAndSettle();
@@ -113,8 +115,10 @@ void main() {
           widget is TextField && widget.decoration?.labelText == 'مجموعة العملاء المستهدفة'),
       'Local retailers',
     );
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-save-growth-plan')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-growth-plan-list')),
     );
     await tester.tap(find.byKey(const ValueKey('business-economy-save-growth-plan')));
     await tester.pumpAndSettle();
