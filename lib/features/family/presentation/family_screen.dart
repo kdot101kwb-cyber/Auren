@@ -21,6 +21,7 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
   final _title = TextEditingController();
   final _amount = TextEditingController();
   String _currency = 'USD';
+  int _budgetMonthOffset = 0;
   String? get _uid => FirebaseAuth.instance.currentUser?.uid;
   @override void dispose() { _name.dispose(); _relation.dispose(); _title.dispose(); _amount.dispose(); _walletTitle.dispose(); _walletAmount.dispose(); super.dispose(); }
   Future<void> _member() async { final uid=_uid; if(uid==null)return; await _repo.addMember(uid:uid,name:_name.text,relation:_relation.text); _name.clear(); _relation.clear(); if(mounted)Navigator.pop(context); }
@@ -109,8 +110,9 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
 
   String _currentPeriodKey() {
     final now = DateTime.now();
-    final year = now.year.toString().padLeft(4, '0');
-    final month = now.month.toString().padLeft(2, '0');
+    final selected = DateTime(now.year, now.month + _budgetMonthOffset);
+    final year = selected.year.toString().padLeft(4, '0');
+    final month = selected.month.toString().padLeft(2, '0');
     return '$year-$month';
   }
 
@@ -119,9 +121,26 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'ميزانية الأسرة الشهرية',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'ميزانية الأسرة الشهرية',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              tooltip: 'الشهر السابق',
+              onPressed: () => setState(() => _budgetMonthOffset--),
+              icon: const Icon(Icons.chevron_left),
+            ),
+            Text(periodKey),
+            IconButton(
+              tooltip: 'الشهر التالي',
+              onPressed: () => setState(() => _budgetMonthOffset++),
+              icon: const Icon(Icons.chevron_right),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         StreamBuilder<AurenFamilyMonthlyBudget?>(
@@ -156,7 +175,7 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('الفترة: $periodKey • $_currency'),
+                        Text('العملة: $_currency'),
                         const SizedBox(height: 8),
                         Text('المصروف المسجل: ${(spent / 100).toStringAsFixed(2)} $_currency'),
                         if (budget == null) ...[
