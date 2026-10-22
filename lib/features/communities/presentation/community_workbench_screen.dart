@@ -10,13 +10,18 @@ class AurenCommunityWorkbenchScreen extends StatefulWidget {
 
 class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchScreen>
     with SingleTickerProviderStateMixin {
-  final _store = AurenCommunityWorkbenchStore();
+  late final AurenCommunityWorkbenchStore _store;
   late final TabController _tabs;
   bool _busy = false;
   int _refresh = 0;
 
   @override
-  void initState() { super.initState(); _tabs = TabController(length: 3, vsync: this); }
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 3, vsync: this);
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    _store = AurenCommunityWorkbenchStore(scope: userId ?? 'anonymous');
+  }
   @override
   void dispose() { _tabs.dispose(); super.dispose(); }
 
