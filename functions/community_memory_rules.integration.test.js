@@ -87,6 +87,11 @@ test('users cannot read or update reports and case-event writes remain denied wi
       reporterUid: 'reporter-a', reportedUid: 'user-b', reason: 'Reason',
       status: 'open', createdAt: firebase.firestore.Timestamp.now(),
     });
+    await context.firestore().doc('community_case_events/seeded-event').set({
+      entityType: 'report', entityId: 'seeded-report', actorUid: 'moderator-a',
+      fromStatus: 'open', toStatus: 'under_review', note: 'Seeded audit record',
+      createdAt: firebase.firestore.Timestamp.now(),
+    });
   });
   await assertFails(anonymousDb.doc('reports/seeded-report').get());
   await assertFails(anonymousDb.collection('reports').get());
@@ -96,6 +101,8 @@ test('users cannot read or update reports and case-event writes remain denied wi
     status: 'resolved', moderatedBy: 'moderator-a',
     moderatedAt: firebase.firestore.Timestamp.now(), moderationNote: 'Reviewed',
   }));
+  await assertFails(db.doc('reports/seeded-report').update({ reporterUid: 'attacker' }));
+  await assertFails(db.doc('reports/seeded-report').update({ reason: 'Rewritten reason' }));
   await assertFails(db.doc('reports/seeded-report').delete());
 
   const claimedAdminDb = testEnv.authenticatedContext('claimed-admin', { admin: true }).firestore();
@@ -107,6 +114,10 @@ test('users cannot read or update reports and case-event writes remain denied wi
     fromStatus: 'open', toStatus: 'resolved', note: 'Reviewed',
     createdAt: firebase.firestore.Timestamp.now(),
   }));
+  await assertFails(db.doc('community_case_events/seeded-event').update({
+    note: 'Rewritten audit record',
+  }));
+  await assertFails(db.doc('community_case_events/seeded-event').delete());
 });
 
 test('appeal workflows remain denied until explicit owner and moderator rules exist', async () => {
