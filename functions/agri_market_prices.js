@@ -207,7 +207,9 @@ function normalizeFpmaRow(row) {
     priceLCU: price, unit, nativeUnitCanonical, priceLCUTonne, currency, frequency,
     priceUSDTonne: currency === 'USD' && priceLCUTonne !== null ? priceLCUTonne : usdPrice,
     conversionStatus: currency === 'USD' && priceLCUTonne !== null ? 'unit_converted' : usdPrice !== null ? 'source_usd' : 'currency_not_converted',
-    source: 'FAO GIEWS FPMA'
+    source: 'FAO GIEWS FPMA',
+    // Set only from the configured endpoint after officialFpmaUrl validates its host.
+    sourceUrl: FPMA_DATA_URL || null
   };
 }
 
