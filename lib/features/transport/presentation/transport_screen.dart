@@ -5,14 +5,16 @@ import '../data/mobility_local_store.dart';
 import '../domain/mobility_models.dart';
 
 class AurenTransportScreen extends StatefulWidget {
-  const AurenTransportScreen({super.key});
+  const AurenTransportScreen({super.key, this.localStore});
+
+  final MobilityLocalStore? localStore;
 
   @override
   State<AurenTransportScreen> createState() => _AurenTransportScreenState();
 }
 
 class _AurenTransportScreenState extends State<AurenTransportScreen> {
-  final MobilityLocalStore _localStore = MobilityLocalStore();
+  late final MobilityLocalStore _localStore;
   bool _loadingRecords = true;
   final _routeOperator = TextEditingController();
   final _routeName = TextEditingController();
@@ -55,6 +57,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   @override
   void initState() {
     super.initState();
+    _localStore = widget.localStore ?? MobilityLocalStore();
     _loadLocalRecords();
   }
 
