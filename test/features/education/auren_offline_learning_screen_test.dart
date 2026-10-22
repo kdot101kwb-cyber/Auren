@@ -26,6 +26,7 @@ void main() {
     expect(find.text('حفظ درس على الجهاز'), findsOneWidget);
     expect(find.text('حفظ محلياً'), findsOneWidget);
   });
+
   testWidgets('saves, opens, completes and removes a lesson from local storage', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenOfflineLearningScreen()));
     await tester.pumpAndSettle();
@@ -42,15 +43,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Saved text for airplane mode'), findsOneWidget);
 
+    await tester.drag(find.byType(ListView), const Offset(0, -450));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('إكمال الدرس'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('إكمال الدرس'));
     await tester.pumpAndSettle();
     expect(find.text('مكتمل'), findsOneWidget);
 
     await tester.ensureVisible(find.byTooltip('حذف الدرس المحلي'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('حذف الدرس المحلي'));
     await tester.pumpAndSettle();
     expect(find.text('لا توجد دروس محلية بعد. استخدم زر إضافة درس لحفظ نص صغير يعمل دون اتصال.'), findsOneWidget);
   });
-
 }
