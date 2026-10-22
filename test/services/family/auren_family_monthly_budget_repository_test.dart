@@ -147,14 +147,12 @@ void main() {
         'createdAt': Timestamp.fromDate(DateTime(2026, 9, 30)),
       });
 
-      await expectLater(
-        budgets.watchMonthlyExpenses(
-          uid: 'user-1',
-          periodKey: '2026-10',
-          currency: 'usd',
-        ),
-        emits(1500),
-      );
+      final spent = await budgets.watchMonthlyExpenses(
+        uid: 'user-1',
+        periodKey: '2026-10',
+        currency: 'usd',
+      ).first;
+      expect(spent, 1500);
     });
 
     test('rejects a malformed currency without creating a budget', () async {
