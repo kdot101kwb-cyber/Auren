@@ -200,3 +200,13 @@ test('AI provider diagnostics do not persist upstream error text or duplicate pr
   assert.doesNotMatch(gateway, /error: lastProviderError/);
   assert.match(gateway, /throw new Error\('AUREN AI is temporarily unavailable\. Please try again later\.'\)/);
 });
+
+
+test('AI provider history is bounded and does not duplicate the current message', () => {
+  const gatewayStart = index.indexOf('exports.aurenAiGateway =');
+  const gatewayEnd = index.indexOf('exports.analyzeAurenPodcastEpisode =', gatewayStart);
+  const gateway = index.slice(gatewayStart, gatewayEnd);
+  assert.match(gateway, /collection\('messages'\)\.orderBy\('createdAt', 'desc'\)\.limit\(12\)/);
+  assert.match(gateway, /filter\(\(doc\) => doc\.id !== requestId\)/);
+  assert.match(gateway, /item\.text\.slice\(0, 2000\)/);
+});
