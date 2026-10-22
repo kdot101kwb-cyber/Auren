@@ -11,7 +11,7 @@ void main() {
         {'kind': 'expense', 'amountMinor': 2500, 'currency': 'USD', 'createdAt': DateTime(2026, 10, 2)},
         {'kind': 'expense', 'amountMinor': 100, 'currency': 'SDG', 'createdAt': DateTime(2026, 10, 3)},
         {'kind': 'expense', 'amountMinor': 900, 'currency': 'USD', 'createdAt': DateTime(2026, 9, 30)},
-        {'kind': 'expense', 'amountMinor': 800, 'currency': 'USD', 'createdAt': DateTime(2026, 10, 3), 'amount': 'bad'},
+        {'kind': 'expense', 'amountMinor': 'bad', 'currency': 'USD', 'createdAt': DateTime(2026, 10, 3)},
       ], now: DateTime(2026, 10, 15));
 
       expect(result['USD'], {'incomeMinor': 10000, 'expenseMinor': 2500, 'netMinor': 7500});
