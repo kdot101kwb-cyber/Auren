@@ -11,6 +11,12 @@ class _FailingShipmentStore extends MobilityLocalStore {
   Future<void> saveShipments(List<CargoShipment> shipments) async {
     throw StateError('simulated local storage failure');
   }
+}
+
+void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
 
   testWidgets('failed cargo save keeps the form and does not show a phantom record', (tester) async {
     await tester.pumpWidget(MaterialApp(
@@ -32,12 +38,6 @@ class _FailingShipmentStore extends MobilityLocalStore {
     expect(tester.widget<TextField>(field('إلى')).controller!.text, 'الخرطوم');
   });
 
-}
-
-void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
 
   Finder field(String label) => find.byWidgetPredicate(
         (widget) => widget is TextField && widget.decoration?.labelText == label,
