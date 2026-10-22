@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../services/social/community_collaboration_service.dart';
@@ -14,8 +17,30 @@ class AurenCollaborationSpacesScreen extends StatefulWidget {
 class _AurenCollaborationSpacesScreenState
     extends State<AurenCollaborationSpacesScreen> {
   final _service = AurenCollaborationService();
-  final _workbench = AurenCommunityWorkbenchStore();
+  late AurenCommunityWorkbenchStore _workbench;
+  StreamSubscription<User?>? _authSubscription;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = FirebaseAuth.instance;
+    _workbench = AurenCommunityWorkbenchStore(
+      scope: auth.currentUser?.uid ?? 'anonymous',
+    );
+    _authSubscription = auth.authStateChanges().listen((user) {
+      if (!mounted) return;
+      setState(() {
+        _workbench = AurenCommunityWorkbenchStore(scope: user?.uid ?? 'anonymous');
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
 
   Future<void> _createSpace() async {
     final title = TextEditingController();
