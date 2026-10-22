@@ -104,9 +104,14 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
     final candidates = widget.source.where((item) {
       if (item.mediaUrl.isEmpty) return false;
       if (query.isEmpty) return true;
-      final text = (item.title + ' ' + item.description).toLowerCase();
-      final words = AurenMusicPromptParser.searchableWords(query);
-      return words.isEmpty || words.any(text.contains);
+      final searchable = <String>[
+        item.title,
+        item.description,
+        item.type,
+        item.artistName,
+        item.language,
+      ].join(' ');
+      return AurenMusicPromptParser.matchesPrompt(query, searchable);
     }).toList();
 
     const hints = <String, List<String>>{
