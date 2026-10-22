@@ -16,9 +16,15 @@ const CLOUDFLARE_ACCOUNT_ID = defineSecret('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_TOKEN = defineSecret('CLOUDFLARE_API_TOKEN');
 const HF_TOKEN = defineSecret('HF_TOKEN');
 
-async function recordAurenAiProviderHealth(provider, ok, message) {
+async function updateAurenAiProviderHealth(provider, ok, diagnostic) {
+  // Provider errors can echo request content or other upstream details. Keep
+  // only a bounded, non-sensitive diagnostic and a short cooldown timestamp.
+  const safeCode = typeof diagnostic === 'string' && /^provider_(?:http_\d{3}|request_failed|unavailable)$/.test(diagnostic)
+    ? diagnostic
+    : 'provider_request_failed';
   await db.collection('ai_provider_health').doc(provider).set({
-    lastError: ok ? '' : String(message || '').slice(0, 500),
+    lastError: ok ? '' : safeCode,
+    cooldownUntilMs: ok ? 0 : Date.now() + 60_000,
     updatedAt: FieldValue.serverTimestamp(),
   }, {merge:true});
 }
@@ -906,8 +912,6 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
         task: typeof request.data?.task === 'string' ? request.data.task.trim().toLowerCase() : null,
         inferredTask,
         intent: inferredIntent.intent,
-        actionProposal,
-        actionPlan,
         startedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       }, {merge: true});
@@ -1018,7 +1022,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok) {
-              lastProviderError = String(result?.error?.message || ('HTTP '+response.status)).slice(0,500);
+              lastProviderError = 'provider_http_' + response.status;
               continue;
             }
             rawText = result?.choices?.[0]?.message?.content || '';
@@ -1029,7 +1033,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
           const result = await callAurenTextProvider(provider, messages, { task });
           if (!result.ok) {
             if (!result.unavailable) {
-              lastProviderError = result.message || provider + ' failed';
+              lastProviderError = 'provider_request_failed';
               await updateAurenAiProviderHealth(provider, false, lastProviderError);
             }
             continue;
@@ -1042,7 +1046,7 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
           break;
         }
       } catch (error) {
-        lastProviderError = String(error?.message || error).slice(0,500);
+        lastProviderError = 'provider_request_failed';
         if (provider !== 'legacy') {
           await updateAurenAiProviderHealth(provider, false, lastProviderError);
         }
@@ -1050,13 +1054,13 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     }
 
     if (!rawText.trim()) {
-      console.error('All AUREN AI providers failed:', lastProviderError);
+      console.error('All AUREN AI providers failed.');
       await requestRef.set({
         status: 'failed',
-        error: lastProviderError || 'No AI provider returned a response.',
+        errorCode: lastProviderError || 'provider_unavailable',
         updatedAt: FieldValue.serverTimestamp(),
       }, {merge:true});
-      throw new Error(lastProviderError || 'AUREN AI is temporarily unavailable.');
+      throw new Error('AUREN AI is temporarily unavailable. Please try again later.');
     }
 
     const responseText = rawText.trim().slice(0, 20000);
