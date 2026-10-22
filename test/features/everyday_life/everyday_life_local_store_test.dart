@@ -38,17 +38,41 @@ void main() {
   test('supports all four systems without merging their record types', () async {
     final store = EverydayLifeLocalStore();
     await store.save(item(id: 'task', kind: EverydayLifeKind.task));
+    await store.save(item(id: 'note', kind: EverydayLifeKind.note));
+    await store.save(item(id: 'list', kind: EverydayLifeKind.taskList));
     await store.save(item(id: 'home', kind: EverydayLifeKind.household));
+    await store.save(item(id: 'supply', kind: EverydayLifeKind.householdSupply));
+    await store.save(item(id: 'maintenance', kind: EverydayLifeKind.householdMaintenance));
     await store.save(item(id: 'draft', kind: EverydayLifeKind.appointmentDraft));
     await store.save(item(id: 'service', kind: EverydayLifeKind.localService));
 
     final items = await store.readAll();
     expect(items.map((entry) => entry.kind).toSet(), {
       EverydayLifeKind.task,
+      EverydayLifeKind.note,
+      EverydayLifeKind.taskList,
       EverydayLifeKind.household,
+      EverydayLifeKind.householdSupply,
+      EverydayLifeKind.householdMaintenance,
       EverydayLifeKind.appointmentDraft,
       EverydayLifeKind.localService,
     });
+  });
+
+  test('round-trips household quantities, categories, and requested windows', () async {
+    final store = EverydayLifeLocalStore();
+    await store.save(EverydayLifeItem(
+      id: 'supply-meta',
+      kind: EverydayLifeKind.householdSupply,
+      title: 'Laundry detergent',
+      category: 'Cleaning',
+      quantity: '2 bottles',
+      requestedWindow: 'Saturday morning',
+    ));
+    final saved = (await store.readAll()).single;
+    expect(saved.category, 'Cleaning');
+    expect(saved.quantity, '2 bottles');
+    expect(saved.requestedWindow, 'Saturday morning');
   });
 
   test('local service details are unconfirmed unless explicitly marked', () {
