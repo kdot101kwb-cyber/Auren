@@ -135,7 +135,7 @@ class _AurenWalletScreenState extends State<AurenWalletScreen> {
                                 ...spend.entries.map((entry) => ListTile(
                                       contentPadding: EdgeInsets.zero,
                                       title: Text('مصروفات هذا الشهر • ${entry.key}'),
-                                      trailing: Text('${entry.value} ${entry.key}'),
+                                      trailing: Text(_formatMinorAmount(entry.value, entry.key)),
                                     )),
                               if (recurring.isNotEmpty) ...[
                                 const Divider(),
@@ -145,7 +145,7 @@ class _AurenWalletScreenState extends State<AurenWalletScreen> {
                                       contentPadding: EdgeInsets.zero,
                                       title: Text(candidate['label'] as String),
                                       subtitle: Text(
-                                        '${candidate['occurrences']} معاملات • متوسط ${candidate['averageAmountMinor']} ${candidate['currency']}',
+                                        '${candidate['occurrences']} معاملات • متوسط ${_formatMinorAmount(candidate['averageAmountMinor'] as int, candidate['currency'] as String)}',
                                       ),
                                       trailing: const Icon(Icons.repeat),
                                     )),
@@ -183,6 +183,9 @@ class _AurenWalletScreenState extends State<AurenWalletScreen> {
       ),
     );
   }
+
+  String _formatMinorAmount(int amountMinor, String currency) =>
+      '${(amountMinor / 100).toStringAsFixed(2)} $currency';
 
   Future<void> _currency(BuildContext context, String uid) async {
     final controller = TextEditingController();
