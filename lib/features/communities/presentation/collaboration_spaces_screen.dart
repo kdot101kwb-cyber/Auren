@@ -166,7 +166,7 @@ class _AurenCollaborationSpacesScreenState
                       if (topic.isNotEmpty) 'الموضوع: $topic',
                       if (rules.isNotEmpty) 'القواعد المحلية: $rules',
                       '${space.memberIds.length} أعضاء',
-                    ].where((line) => line.isNotEmpty).join('\\n')),
+                    ].where((line) => line.isNotEmpty).join('\n')),
                     isThreeLine: true,
                     trailing: isOwner
                         ? IconButton(tooltip: 'دعوة عضو',
