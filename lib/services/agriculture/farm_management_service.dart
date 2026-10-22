@@ -85,8 +85,14 @@ class AgricultureFarmManagementService {
   }
 
   FarmOperationTask createTask({required String title, required DateTime dueAt, String cropOrAnimal = '', String notes = ''}) {
-    if (title.trim().isEmpty) throw ArgumentError('عنوان المهمة مطلوب.');
-    return FarmOperationTask(title: title.trim(), dueAt: dueAt, status: FarmTaskStatus.planned, cropOrAnimal: cropOrAnimal.trim(), notes: notes.trim());
+    final cleanTitle = title.trim();
+    final cleanCropOrAnimal = cropOrAnimal.trim();
+    final cleanNotes = notes.trim();
+    if (cleanTitle.isEmpty || cleanTitle.length > 160 ||
+        cleanCropOrAnimal.length > 160 || cleanNotes.length > 4000) {
+      throw ArgumentError('عنوان المهمة أو النشاط المرتبط أو الملاحظات غير صالحة.');
+    }
+    return FarmOperationTask(title: cleanTitle, dueAt: dueAt, status: FarmTaskStatus.planned, cropOrAnimal: cleanCropOrAnimal, notes: cleanNotes);
   }
 
   AgriculturalMarketObservation validateMarketObservation(AgriculturalMarketObservation observation) {
