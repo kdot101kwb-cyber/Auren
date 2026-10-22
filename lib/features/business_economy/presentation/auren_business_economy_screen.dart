@@ -65,10 +65,17 @@ class AurenBusinessEconomyScreen extends StatelessWidget {
                 children: const [
                   Icon(Icons.business_center_outlined, size: 34),
                   SizedBox(height: 10),
-                  Text('من الفكرة إلى فرصة واضحة',
-                      style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+                  Text(
+                    'من الفكرة إلى فرصة واضحة',
+                    style: TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   SizedBox(height: 6),
-                  Text('نسخة اقتصادية تعمل مع الخدمات الموجودة. المطابقة والخطط مسودات؛ لا رسائل أو معاملات تجارية تلقائية.'),
+                  Text(
+                    'نسخة اقتصادية تعمل مع الخدمات الموجودة. المطابقة والخطط مسودات؛ لا رسائل أو معاملات تجارية تلقائية.',
+                  ),
                 ],
               ),
             ),
@@ -155,10 +162,14 @@ class _AurenBuyerSellerMatchDraftScreenState
       if (!mounted) return;
       _need.text = prefs.getString('${_storageKey}_need') ?? '';
       _offer.text = prefs.getString('${_storageKey}_offer') ?? '';
-      _buyerLocation.text = prefs.getString('${_storageKey}_buyer_location') ?? '';
-      _sellerLocation.text = prefs.getString('${_storageKey}_seller_location') ?? '';
-      _buyerCategory.text = prefs.getString('${_storageKey}_buyer_category') ?? '';
-      _sellerCategory.text = prefs.getString('${_storageKey}_seller_category') ?? '';
+      _buyerLocation.text =
+          prefs.getString('${_storageKey}_buyer_location') ?? '';
+      _sellerLocation.text =
+          prefs.getString('${_storageKey}_seller_location') ?? '';
+      _buyerCategory.text =
+          prefs.getString('${_storageKey}_buyer_category') ?? '';
+      _sellerCategory.text =
+          prefs.getString('${_storageKey}_seller_category') ?? '';
     } catch (_) {
       if (mounted) setState(() => _status = 'التخزين المحلي غير متاح الآن.');
     } finally {
@@ -175,16 +186,32 @@ class _AurenBuyerSellerMatchDraftScreenState
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('${_storageKey}_need', _need.text.trim());
       await prefs.setString('${_storageKey}_offer', _offer.text.trim());
-      await prefs.setString('${_storageKey}_buyer_location', _buyerLocation.text.trim());
-      await prefs.setString('${_storageKey}_seller_location', _sellerLocation.text.trim());
-      await prefs.setString('${_storageKey}_buyer_category', _buyerCategory.text.trim());
-      await prefs.setString('${_storageKey}_seller_category', _sellerCategory.text.trim());
+      await prefs.setString(
+        '${_storageKey}_buyer_location',
+        _buyerLocation.text.trim(),
+      );
+      await prefs.setString(
+        '${_storageKey}_seller_location',
+        _sellerLocation.text.trim(),
+      );
+      await prefs.setString(
+        '${_storageKey}_buyer_category',
+        _buyerCategory.text.trim(),
+      );
+      await prefs.setString(
+        '${_storageKey}_seller_category',
+        _sellerCategory.text.trim(),
+      );
       if (mounted) {
-        setState(() => _status = 'تم حفظ المسودة على هذا الجهاز؛ لم يُرسل أي طلب.');
+        setState(
+          () => _status = 'تم حفظ المسودة على هذا الجهاز؛ لم يُرسل أي طلب.',
+        );
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _status = 'تعذر حفظ المسودة. تحقق من مساحة الجهاز وحاول مجدداً.');
+        setState(
+          () => _status = 'تعذر حفظ المسودة. تحقق من مساحة الجهاز وحاول مجدداً.',
+        );
       }
     }
   }
@@ -207,7 +234,9 @@ class _AurenBuyerSellerMatchDraftScreenState
         key: const ValueKey('business-economy-match-draft-list'),
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('مطابقة إرشادية فقط — لا تتواصل مع أي طرف ولا تنشئ التزاماً تجارياً.'),
+          const Text(
+            'مطابقة إرشادية فقط — لا تتواصل مع أي طرف ولا تنشئ التزاماً تجارياً.',
+          ),
           const SizedBox(height: 12),
           _field(_need, 'احتياج المشتري *'),
           _field(_offer, 'عرض البائع *'),
@@ -222,14 +251,21 @@ class _AurenBuyerSellerMatchDraftScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('مؤشر التوافق: ${result.score} / 100',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                  Text(
+                    'مؤشر التوافق: ${result.score} / 100',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Text(result.reasons.isEmpty
                       ? 'أدخل بيانات أكثر للحصول على مؤشر أولي.'
                       : result.reasons.join(' • ')),
                   const SizedBox(height: 6),
-                  const Text('هذا المؤشر تقريبي وغير موثّق، ولا يمثل ضماناً للجودة أو الملاءمة.'),
+                  const Text(
+                    'هذا المؤشر تقريبي وغير موثّق، ولا يمثل ضماناً للجودة أو الملاءمة.',
+                  ),
                 ],
               ),
             ),
@@ -253,7 +289,10 @@ class _AurenBuyerSellerMatchDraftScreenState
         child: TextField(
           controller: controller,
           onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+          ),
           minLines: 1,
           maxLines: 3,
         ),
@@ -325,7 +364,9 @@ class _AurenBusinessGrowthPlannerScreenState
       if (mounted) setState(() => _status = 'تم حفظ الخطة محلياً.');
     } catch (_) {
       if (mounted) {
-        setState(() => _status = 'تعذر حفظ الخطة. تحقق من مساحة الجهاز وحاول مجدداً.');
+        setState(
+          () => _status = 'تعذر حفظ الخطة. تحقق من مساحة الجهاز وحاول مجدداً.',
+        );
       }
     }
   }
@@ -337,7 +378,9 @@ class _AurenBusinessGrowthPlannerScreenState
           key: const ValueKey('business-economy-growth-plan-list'),
           padding: const EdgeInsets.all(16),
           children: [
-            const Text('خطة بسيطة للمشاريع الصغيرة، تعمل دون الحاجة لاتصال دائم.'),
+            const Text(
+              'خطة بسيطة للمشاريع الصغيرة، تعمل دون الحاجة لاتصال دائم.',
+            ),
             const SizedBox(height: 12),
             _field(_goal, 'هدف قابل للقياس'),
             _field(_customers, 'مجموعة العملاء المستهدفة'),
@@ -358,7 +401,10 @@ class _AurenBusinessGrowthPlannerScreenState
         padding: const EdgeInsets.only(bottom: 10),
         child: TextField(
           controller: controller,
-          decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+          ),
           minLines: 1,
           maxLines: 3,
         ),
