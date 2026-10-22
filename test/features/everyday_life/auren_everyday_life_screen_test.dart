@@ -1,0 +1,84 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:auren/features/everyday_life/data/everyday_life_local_store.dart';
+import 'package:auren/features/everyday_life/presentation/auren_everyday_life_screen.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  Future<void> openScreen(WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenEverydayLifeScreen()));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('organizer creates a local task and can mark it complete',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.tap(find.text('أضف مهمة'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Call the electrician');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Call the electrician'), findsOneWidget);
+    expect((await EverydayLifeLocalStore().readAll()).single.title,
+        'Call the electrician');
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('مكتملة'), findsOneWidget);
+  });
+
+  testWidgets('appointment request is stored as an unsent draft',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.tap(find.text('Appointments'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('إنشاء مسودة طلب'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Request a plumbing visit');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Request a plumbing visit'), findsOneWidget);
+    expect(find.textContaining('لم يُرسل ولم يُؤكَّد أي موعد'), findsOneWidget);
+    final records = await EverydayLifeLocalStore().readAll();
+    expect(records.single.kind.name, 'appointmentDraft');
+    expect(records.single.providerName, isEmpty);
+    expect(records.single.dueAt, isNull);
+  });
+
+  testWidgets('local directory entry defaults to unconfirmed and can be unverified',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.tap(find.text('Local services'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أضف خدمة بنفسك'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Electrician - entered by me');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('معلومات غير مؤكدة'), findsOneWidget);
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('وضع علامة: تحققت منه'));
+    await tester.pumpAndSettle();
+    expect(find.text('وضع المستخدم علامة التحقق'), findsOneWidget);
+
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('إزالة علامة التحقق'));
+    await tester.pumpAndSettle();
+    expect(find.text('معلومات غير مؤكدة'), findsOneWidget);
+  });
+}
