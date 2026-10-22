@@ -170,6 +170,17 @@ test('Manual review reconciliation never re-executes the external action', () =>
 
 
 
+test('personal context stays excluded unless the request explicitly opts in', () => {
+  const gate = index.indexOf('if (request.data?.includePersonalContext === true)');
+  const goalsRead = index.indexOf("const goalsSnap = await db.collection('users').doc(uid).collection('goals')", gate);
+  const memoryRead = index.indexOf("const memorySnap = await db.collection('users').doc(uid).collection('memory')", gate);
+  const goalInit = index.lastIndexOf('let goalLines = [];', gate);
+  const memoryInit = index.lastIndexOf('let memoryLines = [];', gate);
+  assert.ok(goalInit >= 0 && memoryInit > goalInit && gate > memoryInit);
+  assert.ok(goalsRead > gate && memoryRead > gate);
+  assert.match(index.slice(gate, goalsRead), /consentConsumed/);
+});
+
 test('AI personal-context consent changes require authentication and explicit confirmation', () => {
   const start = index.indexOf('exports.setAurenAiPersonalContextConsent = onCall(');
   const end = index.indexOf('exports.aurenAiGateway =', start);
