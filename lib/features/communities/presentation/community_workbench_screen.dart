@@ -46,6 +46,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
   Future<void> _confirmLocalDelete({
     required String title,
     required String message,
+    String confirmLabel = 'حذف محلي',
     required Future<void> Function() delete,
   }) async {
     final confirmed = await showDialog<bool>(
@@ -60,7 +61,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('حذف محلي'),
+            child: Text(confirmLabel),
           ),
         ],
       ),
@@ -252,6 +253,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
             TextButton(onPressed: _busy ? null : () => _confirmLocalDelete(
               title: 'إغلاق المسودة محلياً؟',
               message: 'سيُغلق هذا الاقتراح على جهازك فقط بناءً على الأصوات المحلية. لن تتغير قواعد المجتمع ولن يصدر قرار رسمي.',
+              confirmLabel: 'إغلاق محلي',
               delete: () => _store.closeProposal(proposalId: '${p['id']}', status: yes > no ? 'accepted' : 'rejected'),
             ), child: const Text('إغلاق المسودة محلياً')),
           ]),
