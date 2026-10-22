@@ -199,4 +199,43 @@ void main() {
     expect(find.textContaining('تنبيه: التأمين يحتاج مراجعة'), findsOneWidget);
     expect(find.textContaining('تنبيه: موعد الصيانة حان أو فات'), findsOneWidget);
   });
+  testWidgets('route and port records retain the user-entered observation date', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
+
+    await openSection(tester, 'Public Transport Intelligence');
+    await enterField(tester, 'اسم المشغّل', 'مشغّل تجريبي');
+    await enterField(tester, 'اسم المسار', 'R-22');
+    await enterField(tester, 'التوقفات مفصولة بفواصل', 'السوق, المحطة');
+    await enterField(tester, 'مصدر المعلومات', 'جدول المشغّل');
+    await tester.ensureVisible(find.text('حفظ محليًا'));
+    await tester.tap(find.text('حفظ محليًا'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('أدخل المشغّل والمسار والتوقفات واسم المصدر وتاريخ ملاحظته بصيغة YYYY-MM-DD.'),
+      findsOneWidget,
+    );
+    await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-10-20');
+    await tester.ensureVisible(find.text('حفظ محليًا'));
+    await tester.tap(find.text('حفظ محليًا'));
+    await tester.pumpAndSettle();
+
+    final routes = await MobilityLocalStore().loadRoutes();
+    expect(routes, hasLength(1));
+    expect(routes.single.evidence?.observedAt, DateTime(2026, 10, 20));
+
+    await openSection(tester, 'Maritime & Port Intelligence');
+    await enterField(tester, 'اسم الميناء', 'ميناء تجريبي');
+    await enterField(tester, 'الدولة', 'السودان');
+    await enterField(tester, 'مصدر المعلومات', 'إدارة الميناء');
+    await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-10-19');
+    await tester.ensureVisible(find.text('حفظ معلومات الميناء'));
+    await tester.tap(find.text('حفظ معلومات الميناء'));
+    await tester.pumpAndSettle();
+
+    final ports = await MobilityLocalStore().loadPorts();
+    expect(ports, hasLength(1));
+    expect(ports.single.evidence?.observedAt, DateTime(2026, 10, 19));
+  });
+
 }
