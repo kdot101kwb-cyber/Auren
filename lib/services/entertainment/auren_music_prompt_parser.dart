@@ -33,6 +33,15 @@ class AurenMusicPromptParser {
     return parsed == null ? null : parsed.clamp(10, 240).toInt();
   }
 
+  /// Matches a prompt against searchable metadata, including content type.
+  /// A prompt with no meaningful tokens does not filter the source list.
+  static bool matchesPrompt(String prompt, String searchableText) {
+    final words = searchableWords(prompt);
+    if (words.isEmpty) return true;
+    final normalized = normalizeDigits(searchableText).toLowerCase();
+    return words.any(normalized.contains);
+  }
+
   /// Splits on real whitespace (including newlines) and drops short tokens.
   static List<String> searchableWords(String input) => input
       .toLowerCase()
