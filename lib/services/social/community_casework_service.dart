@@ -40,7 +40,8 @@ class AurenCommunityCaseworkService {
     }
 
     final reportRef = db.collection('reports').doc(reportId);
-    final eventRef = db.collection('community_case_events').doc();
+    final eventRef =
+        db.collection('community_case_events').doc('${reportId}__${status}');
 
     // Keep the status check and the decision/audit writes atomic so two
     // reviewers cannot both act on a stale status read.
