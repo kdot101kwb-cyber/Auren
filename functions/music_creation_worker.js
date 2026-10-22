@@ -5,6 +5,7 @@ const {defineSecret,defineString}=require('firebase-functions/params');
 const admin=require('firebase-admin');
 const {submitAurenProviderJob,pollAurenProviderJob}=require('./provider_runtime');
 const {validateMaterializedMusicOutput}=require('./music_output_validation');
+const {resolveMusicSubmission,resolveMusicPoll}=require('./music_creation_transitions');
 
 const REPLICATE_API_TOKEN=defineSecret('REPLICATE_API_TOKEN');
 const REPLICATE_MUSIC_CREATION_MODEL_VERSION=defineString('REPLICATE_MUSIC_CREATION_MODEL_VERSION',{default:'',description:'Backend-only Replicate model version for AUREN original music creation.'});
@@ -68,31 +69,22 @@ async function run(ref){
  const fresh=(await taskRef.get()).data()||{};
  if(fresh.externalJobId&&fresh.providerId){
   const p=await pollAurenProviderJob({provider:fresh.providerId,credentials:{token},externalJobId:String(fresh.externalJobId)});
-  if(p.ok&&(p.state==='succeeded'||p.state==='completed')){
-   const candidate=Boolean(p.output&&(p.output.url||p.output.storagePath));
-   const artifactCheck=candidate?await validateAudioArtifact(p.output):{ok:false,reason:'artifact_not_materialized'};
-   if(artifactCheck.ok)await taskRef.set({status:'output',output:p.output,artifactValidation:artifactCheck,externalJobId:'',lockUntilMs:0,providerState:p.state,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
-   else await taskRef.set({status:'waiting_provider',output:null,externalJobId:'',lockUntilMs:0,providerState:'artifact_validation_failed',lastError:'Music output failed artifact validation: '+artifactCheck.reason,artifactValidation:artifactCheck,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
-  }
-  else if(p.state==='failed'||p.state==='canceled')await taskRef.set({status:Number(fresh.attempts||0)<MAX_ATTEMPTS?'queued':'failed',externalJobId:'',lockUntilMs:0,lastError:String(p.error||'Music provider failed').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
-  else await taskRef.set({status:'processing',lockUntilMs:0,providerState:p.state||'processing',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  const completed=p.ok&&(p.state==='succeeded'||p.state==='completed');
+  const candidate=Boolean(p.output&&(p.output.url||p.output.storagePath));
+  const artifactCheck=completed&&candidate?await validateAudioArtifact(p.output):null;
+  const transition=resolveMusicPoll({pollResult:p,attempts:fresh.attempts,maxAttempts:MAX_ATTEMPTS,artifactCheck});
+  await taskRef.set({...transition,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
   return;
  }
  const result=await submitAurenProviderJob({provider:'replicate',credentials:{token,version},task:{input:d.input||{}},idempotencyKey:String(d.idempotencyKey||taskRef.id)});
- const output=result.result?.output,externalId=String(result.result?.externalJobId||'').trim();
+ const output=result.result?.output;
  const candidate=Boolean(output&&(output.url||output.storagePath));
  const artifactCheck=candidate?await validateAudioArtifact(output):null;
- const validArtifact=Boolean(artifactCheck?.ok);
- const status=!result.ok?'queued':validArtifact?'output':externalId?'processing':candidate?'queued':'failed';
+ const transition=resolveMusicSubmission({result,artifactCheck});
  await taskRef.set({
-  status,
-  output:validArtifact?output:null,
-  externalJobId:validArtifact?'':externalId,
+  ...transition,
   providerId:result.providerId||'',
-  providerState:!result.ok?'submission_unavailable':validArtifact?(result.result?.state||'succeeded'):candidate?'artifact_validation_failed':(result.result?.state||'starting'),
-  ...(artifactCheck?{artifactValidation:artifactCheck}:{}),
   lockUntilMs:0,
-  lastError:!result.ok?String(result.message||'Provider unavailable').slice(0,700):validArtifact?'':candidate?'Music output failed artifact validation: '+artifactCheck.reason:externalId?'':'Provider returned no artifact.',
   updatedAt:admin.firestore.FieldValue.serverTimestamp()
  },{merge:true});
 }
