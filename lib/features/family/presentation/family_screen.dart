@@ -109,7 +109,9 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
 
   String _currentPeriodKey() {
     final now = DateTime.now();
-    return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}';
+    final year = now.year.toString().padLeft(4, '0');
+    final month = now.month.toString().padLeft(2, '0');
+    return '$year-$month';
   }
 
   Widget _buildMonthlyBudget(String uid) {
@@ -587,9 +589,21 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
             },
           ),
           const SizedBox(height: 12),
-          _buildMonthlyBudget(uid),
-          const SizedBox(height: 12),
-          _buildSavingsGoals(uid),
+          StreamBuilder<AurenFamilyWallet?>(
+            stream: _familyWallet.watch(uid),
+            builder: (context, walletState) {
+              if (walletState.hasError || walletState.data == null) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  _buildMonthlyBudget(uid),
+                  const SizedBox(height: 12),
+                  _buildSavingsGoals(uid),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 12),
           const Text('أفراد الأسرة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           StreamBuilder<List<Map<String,dynamic>>>(
