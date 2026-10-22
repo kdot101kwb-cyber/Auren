@@ -3,7 +3,7 @@ name: AUREN Music Concierge CI
 on:
   push:
     branches:
-      - feat/auren-music-concierge-hardening-v1
+      - feat/auren-open-verse-collaboration-v1
     paths:
       - 'lib/services/entertainment/auren_music_prompt_parser.dart'
       - 'lib/services/talent/auren_open_verse_workspace.dart'
