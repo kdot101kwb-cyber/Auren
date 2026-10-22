@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/auren_music_player_controller.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
+import '../../../services/entertainment/auren_music_prompt_parser.dart';
 import 'auren_audio_player_screen.dart';
 
 class AurenMusicConciergeScreen extends StatefulWidget {
@@ -42,14 +43,9 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
 
   void parsePrompt() {
     final text = prompt.text.toLowerCase();
-    int? parsed;
-    final h = RegExp(r'(\d+(?:\.\d+)?)\s*(?:ساعة|ساعات|hour|hours|hr|hrs)').firstMatch(text);
-    final m = RegExp(r'(\d+)\s*(?:دقيقة|دقائق|minute|minutes|min|mins)').firstMatch(text);
-    if (h != null) parsed = ((double.tryParse(h.group(1)!) ?? 1) * 60).round();
-    if (h == null && m != null) parsed = int.tryParse(m.group(1)!);
-    if (parsed != null) {
-      final next = parsed!.clamp(10, 240);
-      if (next != minutes && mounted) setState(() => minutes = next);
+    final parsed = AurenMusicPromptParser.durationMinutes(text);
+    if (parsed != null && parsed != minutes && mounted) {
+      setState(() => minutes = parsed);
     }
 
     const moodKeys = <String, List<String>>{
@@ -109,7 +105,7 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
       if (item.mediaUrl.isEmpty) return false;
       if (query.isEmpty) return true;
       final text = (item.title + ' ' + item.description).toLowerCase();
-      final words = query.split(RegExp(r'\s+')).where((x) => x.length > 2);
+      final words = AurenMusicPromptParser.searchableWords(query);
       return words.isEmpty || words.any(text.contains);
     }).toList();
 
@@ -129,7 +125,7 @@ class _AurenMusicConciergeScreenState extends State<AurenMusicConciergeScreen> {
         if (mood != 'الكل' && text.contains(mood.toLowerCase())) value += 12;
         if (contextMode != 'تلقائي' && text.contains(contextMode.toLowerCase())) value += 8;
         if (contentMode != 'أي صوت' && item.type.toLowerCase().contains(contentMode.toLowerCase())) value += 10;
-        final words = prompt.text.toLowerCase().split(RegExp(r'\\s+')).where((x) => x.length > 2);
+        final words = AurenMusicPromptParser.searchableWords(prompt.text);
         value += words.where(text.contains).length * 2;
         final signal = signals[item.id];
         if (signal != null) {
