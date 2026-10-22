@@ -28,7 +28,7 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
       - name: Format changed wellbeing and AI gateway sources
-        run: dart format lib/services/health/auren_wellbeing_local_store.dart lib/services/health/health_data_sharing_consent.dart lib/services/health/auren_health_repository.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart lib/services/ai/ai_gateway.dart lib/services/ai/https_ai_gateway.dart test/services/health/auren_wellbeing_local_store_test.dart test/services/health/auren_health_repository_test.dart test/features/health/health_wellbeing_screen_test.dart test/features/messenger/ai_message_privacy_notice_test.dart test/services/ai/ai_gateway_test.dart
+        run: dart format lib/services/health/auren_wellbeing_local_store.dart lib/services/health/health_data_sharing_consent.dart lib/services/health/auren_health_repository.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart lib/services/ai/ai_gateway.dart lib/services/ai/firebase_ai_gateway.dart lib/services/ai/https_ai_gateway.dart test/services/health/auren_wellbeing_local_store_test.dart test/services/health/auren_health_repository_test.dart test/features/health/health_wellbeing_screen_test.dart test/features/messenger/ai_message_privacy_notice_test.dart test/services/ai/ai_gateway_test.dart
       - name: Test local wellbeing domain and storage
         run: flutter test test/services/health/auren_wellbeing_local_store_test.dart
       - name: Test explicit consent gate for remote health data
@@ -40,6 +40,6 @@ jobs:
       - name: Test AI gateway fallback safety
         run: flutter test test/services/ai/ai_gateway_test.dart
       - name: Test AI personal-context privacy gate
-        run: node --test --test-name-pattern=personal functions/index.test.js
+        run: node --check functions/index.js && node --test --test-name-pattern=personal functions/index.test.js
       - name: Analyze wellbeing, AI gateway, and privacy disclosure
-        run: flutter analyze lib/services/health/auren_wellbeing_local_store.dart lib/services/health/health_data_sharing_consent.dart lib/services/health/auren_health_repository.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart lib/services/ai/ai_gateway.dart lib/services/ai/https_ai_gateway.dart
+        run: flutter analyze lib/services/health/auren_wellbeing_local_store.dart lib/services/health/health_data_sharing_consent.dart lib/services/health/auren_health_repository.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart lib/services/ai/ai_gateway.dart lib/services/ai/firebase_ai_gateway.dart lib/services/ai/https_ai_gateway.dart
