@@ -112,8 +112,8 @@ test('users cannot read or update reports and case-event writes remain denied wi
   await assertFails(db.doc('reports/seeded-report').delete());
 
   const claimedAdminDb = testEnv.authenticatedContext('claimed-admin', { admin: true }).firestore();
-  await assertFails(claimedAdminDb.doc('reports/seeded-report').get());
-  await assertFails(claimedAdminDb.collection('reports').get());
+  await assertSucceeds(claimedAdminDb.doc('reports/seeded-report').get());
+  await assertSucceeds(claimedAdminDb.collection('reports').get());
   await assertFails(claimedAdminDb.doc('reports/seeded-report').update({ status: 'under_review' }));
   await assertFails(db.doc('community_case_events/event-1').set({
     entityType: 'report', entityId: 'seeded-report', actorUid: 'moderator-a',
@@ -166,10 +166,10 @@ test('appeal workflows remain denied until explicit owner and moderator rules ex
     });
   });
 
-  await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').get());
+  await assertSucceeds(appellant.doc('community_case_appeals/report-1__appellant-a').get());
   await assertFails(moderator.collection('community_case_appeals').where('status', '==', 'pending').get());
-  await assertFails(claimedAdmin.doc('community_case_appeals/report-1__appellant-a').get());
-  await assertFails(claimedAdmin.collection('community_case_appeals').where('status', '==', 'pending').get());
+  await assertSucceeds(claimedAdmin.doc('community_case_appeals/report-1__appellant-a').get());
+  await assertSucceeds(claimedAdmin.collection('community_case_appeals').where('status', '==', 'pending').get());
   await assertFails(claimedAdmin.doc('community_case_appeals/report-1__appellant-a').update({
     status: 'rejected', reviewedBy: 'claimed-admin', reviewedAt: now, reviewNote: 'Review',
   }));
@@ -298,4 +298,94 @@ test('case audit events reject client-authored decisions and remain immutable', 
     toStatus: 'resolved',
   }));
   await assertFails(db.doc('community_case_events/immutable-event').delete());
+});
+
+
+test('trusted reviewer transitions a report with a matching immutable audit event and participant appeals atomically', async () => {
+  const reviewer = testEnv.authenticatedContext('reviewer-atomic', { admin: true }).firestore();
+  const reporter = dbFor('reporter-atomic');
+  const reportRef = reviewer.doc('reports/report-atomic');
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('reports/report-atomic').set({
+      reporterUid: 'reporter-atomic',
+      reportedUid: 'reported-atomic',
+      reason: 'Seeded report for atomic decision test',
+      status: 'open',
+      createdAt: firebase.firestore.Timestamp.now(),
+    });
+  });
+
+  const firstAt = firebase.firestore.Timestamp.now();
+  await assertSucceeds(reviewer.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(reportRef);
+    transaction.update(reportRef, {
+      status: 'under_review',
+      moderatedBy: 'reviewer-atomic',
+      moderatedAt: firstAt,
+      moderationNote: 'Review started',
+    });
+    transaction.set(reviewer.doc('community_case_events/report-atomic__under_review'), {
+      entityType: 'report',
+      entityId: 'report-atomic',
+      actorUid: 'reviewer-atomic',
+      fromStatus: snapshot.data().status,
+      toStatus: 'under_review',
+      note: 'Review started',
+      createdAt: firstAt,
+    });
+  }));
+
+  const finalAt = firebase.firestore.Timestamp.now();
+  await assertSucceeds(reviewer.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(reportRef);
+    transaction.update(reportRef, {
+      status: 'resolved',
+      moderatedBy: 'reviewer-atomic',
+      moderatedAt: finalAt,
+      moderationNote: 'Resolved after review',
+    });
+    transaction.set(reviewer.doc('community_case_events/report-atomic__resolved'), {
+      entityType: 'report',
+      entityId: 'report-atomic',
+      actorUid: 'reviewer-atomic',
+      fromStatus: snapshot.data().status,
+      toStatus: 'resolved',
+      note: 'Resolved after review',
+      createdAt: finalAt,
+    });
+  }));
+
+  const appealRef = reporter.doc('community_case_appeals/report-atomic__reporter-atomic');
+  await assertSucceeds(appealRef.set({
+    reportId: 'report-atomic',
+    appellantUid: 'reporter-atomic',
+    reason: 'Please reconsider the decision.',
+    status: 'pending',
+    createdAt: firebase.firestore.Timestamp.now(),
+  }));
+
+  const decisionAt = firebase.firestore.Timestamp.now();
+  await assertSucceeds(reviewer.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(reviewer.doc('community_case_appeals/report-atomic__reporter-atomic'));
+    transaction.update(snapshot.ref, {
+      status: 'accepted',
+      reviewedBy: 'reviewer-atomic',
+      reviewedAt: decisionAt,
+      reviewNote: 'Appeal accepted',
+    });
+    transaction.set(reviewer.doc('community_case_events/report-atomic__reporter-atomic__accepted'), {
+      entityType: 'appeal',
+      entityId: 'report-atomic__reporter-atomic',
+      actorUid: 'reviewer-atomic',
+      fromStatus: snapshot.data().status,
+      toStatus: 'accepted',
+      note: 'Appeal accepted',
+      createdAt: decisionAt,
+    });
+  }));
+
+  await assertSucceeds(reviewer.doc('community_case_events/report-atomic__under_review').get());
+  await assertFails(reporter.doc('community_case_events/report-atomic__resolved').get());
+  await assertFails(reporter.doc('community_case_events/report-atomic__resolved').delete());
 });
