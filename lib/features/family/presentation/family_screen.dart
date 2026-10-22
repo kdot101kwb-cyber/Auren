@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/family/family_pot_repository.dart';
 import '../../../services/family/auren_family_wallet_repository.dart';
+import '../../../services/family/auren_family_savings_goal_repository.dart';
 
 class AurenFamilyScreen extends StatefulWidget {
   const AurenFamilyScreen({super.key});
@@ -10,6 +11,7 @@ class AurenFamilyScreen extends StatefulWidget {
 class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
   final _repo = FamilyPotRepository();
   final _familyWallet = AurenFamilyWalletRepository();
+  final _savingsGoals = AurenFamilySavingsGoalRepository();
   final _walletTitle = TextEditingController();
   final _walletAmount = TextEditingController();
   final _name = TextEditingController();
@@ -99,6 +101,250 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
         ),
       ),
     );
+  }
+
+
+  Widget _buildSavingsGoals(String uid) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'أهداف ادخار الأسرة',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              tooltip: 'إنشاء هدف ادخار',
+              onPressed: () => _createSavingsGoal(uid),
+              icon: const Icon(Icons.add_circle_outline),
+            ),
+          ],
+        ),
+        StreamBuilder<List<AurenFamilySavingsGoal>>(
+          stream: _savingsGoals.watch(uid),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const ListTile(title: Text('تعذر تحميل أهداف الادخار.'));
+            }
+            final goals = snapshot.data ?? const <AurenFamilySavingsGoal>[];
+            if (goals.isEmpty) {
+              return const Card(
+                child: ListTile(
+                  leading: Icon(Icons.savings_outlined),
+                  title: Text('لا توجد أهداف ادخار بعد'),
+                  subtitle: Text('أنشئ هدفاً وحدد المبلغ المراد ادخاره.'),
+                ),
+              );
+            }
+            return Column(
+              children: goals.map((goal) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              goal.title,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'حذف الهدف',
+                            onPressed: () => _deleteSavingsGoal(uid, goal),
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${(goal.savedMinor / 100).toStringAsFixed(2)} / '
+                        '${(goal.targetMinor / 100).toStringAsFixed(2)} '
+                        '${goal.currency}',
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(value: goal.progress),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              goal.isComplete
+                                  ? 'اكتمل الهدف'
+                                  : 'المتبقي: ${(goal.remainingMinor / 100).toStringAsFixed(2)} ${goal.currency}',
+                            ),
+                          ),
+                          if (!goal.isComplete)
+                            TextButton(
+                              onPressed: () => _addPlannedSavings(uid, goal),
+                              child: const Text('تسجيل ادخار مخطط'),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              )).toList(),
+            );
+          },
+        ),
+        const Text(
+          'أهداف تخطيطية فقط؛ تسجيل الادخار لا يخصم من رصيد المحفظة ولا يحوّل أموالاً.',
+          style: TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _createSavingsGoal(String uid) async {
+    final title = TextEditingController();
+    final target = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('هدف ادخار جديد'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: title,
+              maxLength: 120,
+              decoration: const InputDecoration(labelText: 'اسم الهدف'),
+            ),
+            TextField(
+              controller: target,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'المبلغ المستهدف بالأصغر وحدة',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('العملة: $_currency'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('إنشاء الهدف'),
+          ),
+        ],
+      ),
+    );
+    try {
+      if (confirmed == true) {
+        final amount = int.tryParse(target.text.trim());
+        if (amount == null) throw ArgumentError('أدخل مبلغاً صحيحاً.');
+        await _savingsGoals.create(
+          uid: uid,
+          title: title.text,
+          targetMinor: amount,
+          currency: _currency,
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$error')),
+        );
+      }
+    } finally {
+      title.dispose();
+      target.dispose();
+    }
+  }
+
+  Future<void> _addPlannedSavings(
+    String uid,
+    AurenFamilySavingsGoal goal,
+  ) async {
+    final amountController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('تسجيل ادخار: ${goal.title}'),
+        content: TextField(
+          controller: amountController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'المبلغ بالأصغر وحدة • المتبقي ${goal.remainingMinor}',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('تسجيل'),
+          ),
+        ],
+      ),
+    );
+    try {
+      if (confirmed == true) {
+        final amount = int.tryParse(amountController.text.trim());
+        if (amount == null) throw ArgumentError('أدخل مبلغاً صحيحاً.');
+        await _savingsGoals.addPlannedSavings(
+          uid: uid,
+          goalId: goal.id,
+          amountMinor: amount,
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$error')),
+        );
+      }
+    } finally {
+      amountController.dispose();
+    }
+  }
+
+  Future<void> _deleteSavingsGoal(
+    String uid,
+    AurenFamilySavingsGoal goal,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف هدف الادخار؟'),
+        content: Text('سيتم حذف الهدف «${goal.title}» وسجل تقدمه.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _savingsGoals.delete(uid: uid, goalId: goal.id);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$error')),
+        );
+      }
+    }
   }
 
   void _addMember() => showModalBottomSheet(context:context,isScrollControlled:true,builder:(_)=>Padding(padding:EdgeInsets.fromLTRB(16,16,16,16+MediaQuery.viewInsetsOf(context).bottom),child:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:_name,decoration:const InputDecoration(labelText:'الاسم')),TextField(controller:_relation,decoration:const InputDecoration(labelText:'صلة القرابة')),const SizedBox(height:12),FilledButton(onPressed:_member,child:const Text('حفظ'))])));
@@ -200,6 +446,8 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
               );
             },
           ),
+          const SizedBox(height: 12),
+          _buildSavingsGoals(uid),
           const SizedBox(height: 12),
           const Text('أفراد الأسرة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           StreamBuilder<List<Map<String,dynamic>>>(
