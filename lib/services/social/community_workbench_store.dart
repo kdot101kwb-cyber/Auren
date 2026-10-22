@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+extension<T> on List<T> {
+  List<T> takeLast(int count) => skip(length > count ? length - count : 0).toList();
+}
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Local-first community workspace. These records are device-local drafts;
@@ -69,12 +73,17 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Space topic or rules are invalid.');
     }
     final all = await _readMap(_spaceGuidelinesKey);
+    // Keep the newest 100 spaces' metadata so local storage remains bounded.
+    all.remove(id);
     all[id] = <String, dynamic>{
       'topic': cleanTopic,
       'rules': cleanRules,
       'updatedAt': DateTime.now().toUtc().toIso8601String(),
     };
-    await _writeMap(_spaceGuidelinesKey, all);
+    final bounded = Map<String, dynamic>.fromEntries(
+      all.entries.toList().takeLast(100),
+    );
+    await _writeMap(_spaceGuidelinesKey, bounded);
   }
 
   Future<Map<String, dynamic>> readSpaceGuidelines(String spaceId) async {
