@@ -21,6 +21,12 @@ class AurenMusicPromptParser {
     int? parsed;
     if (hours != null) {
       parsed = ((double.tryParse(hours.group(1)!) ?? 1) * 60).round();
+    } else if (text.contains('ساعتين')) {
+      parsed = 120;
+    } else if (text.contains('نصف ساعة')) {
+      parsed = 30;
+    } else if (text.contains('ساعة')) {
+      parsed = 60;
     } else if (minutes != null) {
       parsed = int.tryParse(minutes.group(1)!);
     }
