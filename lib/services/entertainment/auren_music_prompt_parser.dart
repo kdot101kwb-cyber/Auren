@@ -21,9 +21,15 @@ class AurenMusicPromptParser {
     int? parsed;
     if (hours != null) {
       parsed = ((double.tryParse(hours.group(1)!) ?? 1) * 60).round();
+    } else if (text.contains('ساعتين ونصف') || text.contains('ساعتين ونص')) {
+      parsed = 150;
+    } else if (text.contains('ساعة ونصف') || text.contains('ساعة ونص')) {
+      parsed = 90;
+    } else if (text.contains('ربع ساعة')) {
+      parsed = 15;
     } else if (text.contains('ساعتين')) {
       parsed = 120;
-    } else if (text.contains('نصف ساعة')) {
+    } else if (text.contains('نصف ساعة') || text.contains('نص ساعة')) {
       parsed = 30;
     } else if (text.contains('ساعة')) {
       parsed = 60;
