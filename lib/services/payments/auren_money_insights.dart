@@ -100,7 +100,7 @@ class AurenMoneyInsights {
       final amount = transaction['amountMinor'];
       if (amount is! int || amount <= 0) continue;
       final currency = (transaction['currency'] ?? '').toString().trim().toUpperCase();
-      if (!RegExp(r'^[A-Z]{3}Map<String, dynamic> transaction) {
+      if (!RegExp(r'^[A-Z]{3}$').hasMatch(currency)) continue;
     final direction = transaction['direction']?.toString().toLowerCase();
     if (const {'expense', 'outgoing', 'debit'}.contains(direction)) return true;
     if (const {'income', 'incoming', 'credit'}.contains(direction)) return false;
@@ -125,7 +125,7 @@ class AurenMoneyInsights {
 ).hasMatch(currency)) continue;
       final rawCategory = transaction['category'];
       final normalizedCategory = rawCategory is String
-          ? rawCategory.trim().replaceAll(RegExp(r'\\s+'), ' ')
+          ? rawCategory.trim().replaceAll(RegExp(r'\s+'), ' ')
           : '';
       final category = normalizedCategory.isEmpty
           ? 'غير مصنّف'
@@ -158,7 +158,7 @@ class AurenMoneyInsights {
       final amount = transaction['amountMinor'];
       if (amount is! int || amount <= 0) continue;
       final currency = (transaction['currency'] ?? '').toString().trim().toUpperCase();
-      if (!RegExp(r'^[A-Z]{3}Map<String, dynamic> transaction) {
+      if (!RegExp(r'^[A-Z]{3}$').hasMatch(currency)) continue;
     final direction = transaction['direction']?.toString().toLowerCase();
     if (const {'expense', 'outgoing', 'debit'}.contains(direction)) return true;
     if (const {'income', 'incoming', 'credit'}.contains(direction)) return false;
