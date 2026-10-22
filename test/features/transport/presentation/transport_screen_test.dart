@@ -34,6 +34,32 @@ class _FailingPortStore extends MobilityLocalStore {
   }
 }
 
+Finder field(String label) => find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.labelText == label,
+      description: 'TextField with label $label',
+    );
+
+Future<void> openSection(WidgetTester tester, String title) async {
+  ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).clearSnackBars();
+  await tester.pumpAndSettle();
+  final sectionTitle = find.text(title);
+  await tester.ensureVisible(sectionTitle);
+  await tester.tap(sectionTitle);
+  await tester.pumpAndSettle();
+}
+
+Future<void> enterField(
+  WidgetTester tester,
+  String label,
+  String value,
+) async {
+  final target = field(label);
+  await tester.ensureVisible(target);
+  await tester.enterText(target, value);
+  tester.testTextInput.hide();
+  await tester.pumpAndSettle();
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -59,32 +85,6 @@ void main() {
     expect(tester.widget<TextField>(field('إلى')).controller!.text, 'الخرطوم');
   });
 
-
-  Finder field(String label) => find.byWidgetPredicate(
-        (widget) => widget is TextField && widget.decoration?.labelText == label,
-        description: 'TextField with label $label',
-      );
-
-  Future<void> openSection(WidgetTester tester, String title) async {
-    ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).clearSnackBars();
-    await tester.pumpAndSettle();
-    final sectionTitle = find.text(title);
-    await tester.ensureVisible(sectionTitle);
-    await tester.tap(sectionTitle);
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> enterField(
-    WidgetTester tester,
-    String label,
-    String value,
-  ) async {
-    final target = field(label);
-    await tester.ensureVisible(target);
-    await tester.enterText(target, value);
-    tester.testTextInput.hide();
-    await tester.pumpAndSettle();
-  }
 
   testWidgets('shows five separate mobility workspaces', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AurenTransportScreen()));
