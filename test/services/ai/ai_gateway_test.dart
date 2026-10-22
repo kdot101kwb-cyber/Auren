@@ -22,6 +22,19 @@ void main() {
     expect(fallback.calls, 0);
   });
 
+  test('forwards personal-context opt-in only when explicitly requested', () async {
+    final remote = _FakeGateway();
+    final gateway = ResilientAurenAiGateway(remote: remote, fallback: _FakeGateway());
+
+    await gateway.send(
+      conversationId: 'conversation-1',
+      message: 'hello',
+      includePersonalContext: true,
+    );
+
+    expect(remote.lastIncludePersonalContext, isTrue);
+  });
+
   test('uses local fallback for explicit missing-configuration failures',
       () async {
     final remote = _FakeGateway(
@@ -69,6 +82,7 @@ class _FakeGateway implements AurenAiGateway {
   final Object? error;
   final AurenAiResponse response;
   int calls = 0;
+  bool lastIncludePersonalContext = false;
 
   @override
   Future<AurenAiResponse> send({
@@ -78,6 +92,7 @@ class _FakeGateway implements AurenAiGateway {
     bool includePersonalContext = false,
   }) async {
     calls++;
+    lastIncludePersonalContext = includePersonalContext;
     final failure = error;
     if (failure != null) throw failure;
     return response;
