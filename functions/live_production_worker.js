@@ -336,14 +336,15 @@ async function processTask(ref) {
     return;
   }
 
-  const realOutput=result.result.output &&
-    (result.result.output.url || result.result.output.storagePath || result.result.output.externalId)
-    ? result.result.output : null;
+  const providerPayload = result.result && typeof result.result === 'object' ? result.result : result;
+  const realOutput=providerPayload.output &&
+    (providerPayload.output.url || providerPayload.output.storagePath || providerPayload.output.externalId)
+    ? providerPayload.output : null;
   await ref.set({
     status:realOutput ? 'output' : 'processing',
     providerId:result.providerId,
-    providerState:result.result.state || (realOutput ? 'completed' : 'starting'),
-    externalJobId:realOutput ? '' : (result.result.externalJobId || ''),
+    providerState:providerPayload.state || (realOutput ? 'completed' : 'starting'),
+    externalJobId:realOutput ? '' : (providerPayload.externalJobId || ''),
     idempotencyKey,
     output:realOutput,
     providerAttempts:result.attempts || [],
