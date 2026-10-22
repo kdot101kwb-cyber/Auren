@@ -43,7 +43,11 @@ Future<void> openSection(WidgetTester tester, String title) async {
   ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).clearSnackBars();
   await tester.pumpAndSettle();
   final sectionTitle = find.text(title);
-  await tester.ensureVisible(sectionTitle);
+  await tester.scrollUntilVisible(
+    sectionTitle,
+    250,
+    scrollable: find.byType(Scrollable).first,
+  );
   await tester.tap(sectionTitle);
   await tester.pumpAndSettle();
 }
@@ -195,7 +199,11 @@ void main() {
     await tester.pumpAndSettle();
 
     final statusDropdown = find.byKey(const ValueKey('cargo-status-0'));
-    await tester.ensureVisible(statusDropdown);
+    await tester.scrollUntilVisible(
+      statusDropdown,
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(statusDropdown);
     await tester.pumpAndSettle();
     await tester.tap(find.text('تم التسليم').last);
@@ -313,7 +321,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('تعذر حفظ المسار على الجهاز؛ لم تتم إضافته إلى السجل.'), findsOneWidget);
-    expect(find.textContaining('R-FAIL'), findsNothing);
+    expect(await MobilityLocalStore().loadRoutes(), isEmpty);
     expect(tester.widget<TextField>(field('اسم / رقم المسار')).controller!.text, 'R-FAIL');
     expect(tester.widget<TextField>(field('مصدر المعلومات')).controller!.text, 'جدول المشغّل');
   });
@@ -350,7 +358,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('تعذر حفظ معلومات الميناء على الجهاز؛ لم تتم إضافتها إلى السجل.'), findsOneWidget);
-    expect(find.textContaining('ميناء تجريبي'), findsNothing);
+    expect(await MobilityLocalStore().loadPorts(), isEmpty);
     expect(tester.widget<TextField>(field('اسم الميناء')).controller!.text, 'ميناء تجريبي');
     expect(tester.widget<TextField>(field('مصدر المعلومات')).controller!.text, 'إدارة الميناء');
   });
