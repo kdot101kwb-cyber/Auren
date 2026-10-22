@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../services/low_data_policy.dart';
 import '../data/everyday_life_local_store.dart';
 import '../domain/everyday_life_item.dart';
 
@@ -233,7 +232,19 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                             title: Text('بيانات الدليل'),
                             subtitle: Text('المعلومات التي تضيفها غير مؤكدة افتراضياً. تحقق منها بنفسك قبل الاعتماد عليها. لا توجد أسعار أو مواعيد افتراضية.'),
                           )),
-                        FilledButton.icon(
+                        if (kind == EverydayLifeKind.task) ...[
+                          FilledButton.icon(
+                            onPressed: () => _add(EverydayLifeKind.task),
+                            icon: const Icon(Icons.add_task),
+                            label: const Text('أضف مهمة'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () => _add(EverydayLifeKind.note),
+                            icon: const Icon(Icons.note_add_outlined),
+                            label: const Text('أضف ملاحظة'),
+                          ),
+                        ] else FilledButton.icon(
                           onPressed: () => _add(kind),
                           icon: const Icon(Icons.add),
                           label: Text(kind == EverydayLifeKind.localService
