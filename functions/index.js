@@ -943,6 +943,20 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
     let goalLines = [];
     let memoryLines = [];
     if (request.data?.includePersonalContext === true) {
+      // A client boolean alone is not consent. Require a short-lived,
+      // server-recorded consent created by a dedicated explicit-confirmation UI.
+      const consentSnap = await db.collection('users').doc(uid)
+        .collection('privacyConsents').doc('aiPersonalContext').get();
+      const consent = consentSnap.data() || {};
+      const expiresAt = consent.expiresAt;
+      if (!consentSnap.exists ||
+          consent.accepted !== true ||
+          consent.purpose !== 'ai_personal_context' ||
+          !expiresAt || typeof expiresAt.toMillis !== 'function' ||
+          expiresAt.toMillis() <= Date.now()) {
+        throw new Error('Explicit, unexpired consent is required to include personal AI context.');
+      }
+
       const goalsSnap = await db.collection('users').doc(uid).collection('goals').limit(50).get();
         goalLines = goalsSnap.docs.map((doc) => doc.data() || {})
         .filter((item) => (item.status || 'active') === 'active')
