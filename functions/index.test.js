@@ -167,3 +167,13 @@ test('Manual review reconciliation never re-executes the external action', () =>
   assert.doesNotMatch(block, /action\.type ===/);
   assert.doesNotMatch(block, /executeAurenAction/);
 });
+
+
+test('AI personal context reads are guarded by an explicit opt-in', () => {
+  const gate = index.indexOf('if (request.data?.includePersonalContext === true)');
+  const goalsRead = index.indexOf("const goalsSnap = await db.collection('users').doc(uid).collection('goals')", gate);
+  const memoryRead = index.indexOf("const memorySnap = await db.collection('users').doc(uid).collection('memory')", gate);
+  const prompt = index.indexOf('const messages = [', gate);
+  assert.ok(gate >= 0 && goalsRead > gate && goalsRead < prompt);
+  assert.ok(memoryRead > goalsRead && memoryRead < prompt);
+});
