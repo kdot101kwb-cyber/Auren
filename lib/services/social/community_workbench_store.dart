@@ -91,6 +91,18 @@ class AurenCommunityWorkbenchStore {
 
   Future<List<Map<String, dynamic>>> listProjects() => _readList(_projectsKey);
 
+  /// Deletes a project only from this device. No remote project or member data
+  /// is changed by this local-first MVP.
+  Future<void> deleteProject(String projectId) async {
+    final id = projectId.trim();
+    if (id.isEmpty) throw ArgumentError('Project ID is required.');
+    final projects = await listProjects();
+    final originalLength = projects.length;
+    projects.removeWhere((project) => project['id'] == id);
+    if (projects.length == originalLength) throw StateError('Project not found.');
+    await _writeList(_projectsKey, projects);
+  }
+
   Future<String> createProject({
     required String title,
     required String description,
@@ -227,6 +239,17 @@ class AurenCommunityWorkbenchStore {
 
   Future<List<Map<String, dynamic>>> listProposals() => _readList(_proposalsKey);
 
+  /// Removes a proposal draft and its local votes from this device only.
+  Future<void> deleteProposal(String proposalId) async {
+    final id = proposalId.trim();
+    if (id.isEmpty) throw ArgumentError('Proposal ID is required.');
+    final proposals = await listProposals();
+    final originalLength = proposals.length;
+    proposals.removeWhere((proposal) => proposal['id'] == id);
+    if (proposals.length == originalLength) throw StateError('Proposal not found.');
+    await _writeList(_proposalsKey, proposals);
+  }
+
   Future<String> createRuleProposal({
     required String communityId,
     required String title,
@@ -271,6 +294,7 @@ class AurenCommunityWorkbenchStore {
     if (proposal['status'] != 'open') throw StateError('Proposal is closed.');
     final votes = Map<String, bool>.from(proposal['votes'] as Map? ?? const {});
     if (votes.containsKey(voter)) throw StateError('This voter has already voted.');
+    if (votes.length >= 1000) throw StateError('Local vote limit reached.');
     votes[voter] = support;
     proposal['votes'] = votes;
     proposals[index] = proposal;
@@ -298,6 +322,17 @@ class AurenCommunityWorkbenchStore {
   }
 
   Future<List<Map<String, dynamic>>> listMeetupDrafts() => _readList(_meetupsKey);
+
+  /// Deletes a meetup draft and its attendance intentions from this device.
+  Future<void> deleteMeetupDraft(String meetupId) async {
+    final id = meetupId.trim();
+    if (id.isEmpty) throw ArgumentError('Meetup ID is required.');
+    final drafts = await listMeetupDrafts();
+    final originalLength = drafts.length;
+    drafts.removeWhere((draft) => draft['id'] == id);
+    if (drafts.length == originalLength) throw StateError('Meetup draft not found.');
+    await _writeList(_meetupsKey, drafts);
+  }
 
   Future<String> createMeetupDraft({
     required String title,
@@ -350,6 +385,9 @@ class AurenCommunityWorkbenchStore {
     final attendance = Map<String, String>.from(
       draft['attendance'] as Map? ?? const {},
     );
+    if (!attendance.containsKey(attendee) && attendance.length >= 1000) {
+      throw StateError('Local attendance list limit reached.');
+    }
     attendance[attendee] = status;
     draft['attendance'] = attendance;
     drafts[index] = draft;
