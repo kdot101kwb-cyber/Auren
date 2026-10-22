@@ -76,7 +76,7 @@ async function run(ref){
   return;
  }
  const result=await submitAurenProviderJob({provider:'replicate',credentials:{token,version},task:{input:d.input||{}},idempotencyKey:String(d.idempotencyKey||taskRef.id)});
- const output=result.result?.output;
+ const output=result.output || result.result?.output;
  const candidate=Boolean(output&&(output.url||output.storagePath));
  const artifactCheck=candidate?await validateAudioArtifact(output):null;
  const transition=resolveMusicSubmission({result,artifactCheck});
