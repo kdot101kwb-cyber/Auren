@@ -147,16 +147,19 @@ async function processMusicTask(ref) {
     return;
   }
 
-  const outputCandidate = isMaterializedMusicOutput(result.result.output) ? result.result.output : null;
+  // provider_runtime returns the normalized adapter payload directly. Keep
+  // support for a wrapped payload during migrations, but never assume wrapping.
+  const providerPayload = result.result && typeof result.result === 'object' ? result.result : result;
+  const outputCandidate = isMaterializedMusicOutput(providerPayload.output) ? providerPayload.output : null;
   const artifactCheck = outputCandidate ? await validateProductionOutput(outputCandidate) : null;
   const output = artifactCheck?.ok ? outputCandidate : null;
-  const unmaterializedExternalId = !output && result.result.output && result.result.output.externalId;
+  const unmaterializedExternalId = !output && providerPayload.output && providerPayload.output.externalId;
   const artifactValidationFailed = Boolean(outputCandidate && !artifactCheck?.ok);
   await ref.set({
     status:output ? 'output' : (artifactValidationFailed ? 'waiting_provider' : 'processing'),
     providerId:result.providerId,
-    providerState:artifactValidationFailed ? 'artifact_validation_failed' : (result.result.state || (output ? 'completed' : 'starting')),
-    externalJobId:output ? '' : (result.result.externalJobId || ''),
+    providerState:artifactValidationFailed ? 'artifact_validation_failed' : (providerPayload.state || (output ? 'completed' : 'starting')),
+    externalJobId:output ? '' : (providerPayload.externalJobId || ''),
     output,
     ...(artifactCheck ? {artifactValidation:artifactCheck} : {}),
     providerAttempts:result.attempts || [],
@@ -168,11 +171,11 @@ async function processMusicTask(ref) {
     await updateMusicParentJob(ref, {status:'completed', productionStage:'output', progress:100, output, artifactValidation:artifactCheck});
   } else if (artifactValidationFailed) {
     await updateMusicParentJob(ref, {status:'waiting_provider', productionStage:'output', progress:90, providerState:'artifact_validation_failed', lastError:'Music output failed artifact validation: ' + artifactCheck.reason});
-  } else if (unmaterializedExternalId && !result.result.externalJobId) {
+  } else if (unmaterializedExternalId && !providerPayload.externalJobId) {
     await ref.set({status:'waiting_provider',providerState:'artifact_not_materialized',providerLockUntilMs:0,lastError:'Music provider returned only an external artifact ID, not a playable audio URL or Storage object.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
     await updateMusicParentJob(ref,{status:'waiting_provider',productionStage:'output',progress:90,providerState:'artifact_not_materialized',lastError:'Music provider returned no playable audio artifact.'});
   } else {
-    await updateMusicParentJob(ref, {status:'processing', productionStage:'generation', progress:35, providerJobId:result.result.externalJobId || ''});
+    await updateMusicParentJob(ref, {status:'processing', productionStage:'generation', progress:35, providerJobId:providerPayload.externalJobId || ''});
   }
 }
 
