@@ -1024,6 +1024,7 @@ match /users/{userId}/kids_activity_progress/{activityId} {
 
       match /budgets/{budgetId} {
         allow read: if isOwner(userId)
+          && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
         allow create: if isOwner(userId)
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
@@ -1052,11 +1053,13 @@ match /users/{userId}/kids_activity_progress/{activityId} {
           && intWithin(requestData().limitMinor,1,1000000000000)
           && hasUpdatedAtTimestamp();
         allow delete: if isOwner(userId)
+          && walletId == 'current'
           && resource.data.ownerUid == userId;
       }
 
       match /goals/{goalId} {
         allow read: if isOwner(userId)
+          && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
         allow create: if isOwner(userId)
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
@@ -1086,11 +1089,13 @@ match /users/{userId}/kids_activity_progress/{activityId} {
           && intWithin(requestData().savedMinor,resource.data.savedMinor,resource.data.targetMinor)
           && hasUpdatedAtTimestamp();
         allow delete: if isOwner(userId)
+          && walletId == 'current'
           && resource.data.ownerUid == userId;
       }
 
       match /entries/{entryId} {
         allow read: if isOwner(userId)
+          && walletId == 'current'
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
         allow create: if isOwner(userId)
           && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
