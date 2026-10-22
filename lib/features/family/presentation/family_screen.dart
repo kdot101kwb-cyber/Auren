@@ -186,7 +186,7 @@ class _AurenFamilyScreenState extends State<AurenFamilyScreen> {
                                   ? Icons.south_west : Icons.north_east),
                                 title: Text(entry['title'] as String? ?? ''),
                                 subtitle: Text(entry['kind'] == 'income' ? 'دخل' : 'مصروف'),
-                                trailing: Text('${entry['amountMinor'] ?? 0} ${entry['currency'] ?? ''}'),
+                                trailing: Text('${(((entry['amountMinor'] as num?)?.toInt() ?? 0) / 100).toStringAsFixed(2)} ${entry['currency'] ?? ''}'),
                               )).toList(),
                             );
                           },
