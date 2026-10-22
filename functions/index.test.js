@@ -181,6 +181,11 @@ test('personal context stays excluded unless the request explicitly opts in', ()
   assert.match(index.slice(gate, goalsRead), /consentConsumed/);
 });
 
+test('personal context sent to AI is bounded in total size', () => {
+  assert.match(index, /\.join\('\\n'\)\.slice\(0, 12000\)/);
+  assert.match(index, /User-approved personal context \(bounded\):/);
+});
+
 test('AI personal-context consent changes require authentication and explicit confirmation', () => {
   const start = index.indexOf('exports.setAurenAiPersonalContextConsent = onCall(');
   const end = index.indexOf('exports.aurenAiGateway =', start);
