@@ -23,7 +23,7 @@ class AurenFamilySavingsGoal {
 
   double get progress {
     if (targetMinor <= 0) return 0;
-    return (savedMinor / targetMinor).clamp(0.0, 1.0);
+    return (savedMinor / targetMinor).clamp(0.0, 1.0).toDouble();
   }
 
   bool get isComplete => savedMinor >= targetMinor;
@@ -35,7 +35,7 @@ class AurenFamilySavingsGoal {
     final target = data['targetMinor'];
     final saved = data['savedMinor'];
     final targetMinor = target is int && target > 0 ? target : 1;
-    final savedMinor = saved is int ? saved.clamp(0, targetMinor) : 0;
+    final savedMinor = saved is int ? saved.clamp(0, targetMinor).toInt() : 0;
     return AurenFamilySavingsGoal(
       id: id,
       ownerUid: data['ownerUid']?.toString() ?? '',
