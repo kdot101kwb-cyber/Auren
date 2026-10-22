@@ -96,6 +96,21 @@ test('family monthly budgets reject malformed periods and restrict updates', asy
   }));
 });
 
+test('family planning subcollections cannot be written under a non-current wallet id', async () => {
+  const db = testEnv.authenticatedContext('family-wallet-owner').firestore();
+  const now = firebase.firestore.Timestamp.now();
+  await assertFails(db.doc(
+    'users/family-wallet-owner/familyWallet/alternate/budgets/2026-10_USD',
+  ).set({
+    ownerUid: 'family-wallet-owner',
+    periodKey: '2026-10',
+    currency: 'USD',
+    limitMinor: 1000,
+    createdAt: now,
+    updatedAt: now,
+  }));
+});
+
 test('family savings goals permit progress only up to target', async () => {
   const db = testEnv.authenticatedContext('family-wallet-owner').firestore();
   const now = firebase.firestore.Timestamp.now();
