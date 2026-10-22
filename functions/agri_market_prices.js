@@ -559,7 +559,7 @@ exports.aurenAgriLocalMarketPriceUsdNormalization = onCall(async (request) => {
       priceLocalPerTonne:tonneLocal, usdPerLocalUnit:fx??null, priceUsdPerTonne:usdPerTonne,
       fxDate:currency==='USD'?null:(fxByIso3[rowIso]?.date||null),
       status:usdPerTonne!=null?'normalized':'needs_unit_or_fx', observedAt:r.observedAt||r.date||null,
-      source:r.source||null
+      source:r.source||null, sourceUrl:r.sourceUrl||null
     });
   }
   rows.sort((a,b)=>String(b.observedAt||'').localeCompare(String(a.observedAt||'')));
