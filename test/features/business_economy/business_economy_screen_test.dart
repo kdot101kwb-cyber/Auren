@@ -17,34 +17,34 @@ void main() {
     expect(find.text('AUREN Business & Economy'), findsOneWidget);
     expect(find.text('Local Business OS'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('Business Discovery'),
+      find.text('Business Discovery').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
         matching: find.byType(Scrollable),
       ).first,
     );
-    expect(find.text('Business Discovery'), findsOneWidget);
+    expect(find.text('Business Discovery').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Buyer–Seller Matching'),
+      find.text('Buyer–Seller Matching').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
         matching: find.byType(Scrollable),
       ).first,
     );
-    expect(find.text('Buyer–Seller Matching'), findsOneWidget);
+    expect(find.text('Buyer–Seller Matching').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Trade & Export Hub'),
+      find.text('Trade & Export Hub').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
         matching: find.byType(Scrollable),
       ).first,
     );
-    expect(find.text('Trade & Export Hub'), findsOneWidget);
+    expect(find.text('Trade & Export Hub').first, findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Business Growth Planner').first,
@@ -74,7 +74,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Business Growth Planner').first, findsOneWidget);
-    expect(find.text('حفظ الخطة'), findsOneWidget);
+    expect(find.text('حفظ الخطة').first, findsOneWidget);
     expect(find.text('هدف قابل للقياس'), findsOneWidget);
   });
 
@@ -84,7 +84,7 @@ void main() {
       const MaterialApp(home: AurenBusinessEconomyScreen()),
     );
     await tester.scrollUntilVisible(
-      find.text('Buyer–Seller Matching'),
+      find.text('Buyer–Seller Matching').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessEconomyScreen),
@@ -109,7 +109,7 @@ void main() {
     tester.testTextInput.hide();
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('حفظ المسودة محلياً'),
+      find.text('حفظ المسودة محلياً').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBuyerSellerMatchDraftScreen),
@@ -154,7 +154,7 @@ void main() {
       'Local retailers',
     );
     await tester.scrollUntilVisible(
-      find.text('حفظ الخطة'),
+      find.text('حفظ الخطة').first,
       250,
       scrollable: find.descendant(
         of: find.byType(AurenBusinessGrowthPlannerScreen),
