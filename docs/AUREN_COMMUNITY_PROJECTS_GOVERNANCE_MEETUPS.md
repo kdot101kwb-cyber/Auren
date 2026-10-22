@@ -12,11 +12,12 @@
 - These local records are **not synced across users/devices** in this MVP. Local vote counts are not official community-wide results; they must not be represented as authoritative governance.
 - Meetup records stay in `draft` status. No public event is published, no seat is reserved, no invitation is sent, and no payment or booking is triggered.
 - Capacity is informational only; the store does not treat attendance as a confirmed reservation.
-- Stored records are bounded to 100 projects/proposals/meetups; each project is bounded to 100 tasks and 50 milestones.
+- Stored records are bounded to 100 projects/proposals/meetups; each project is bounded to 100 tasks and 50 milestones. Local proposal votes and meetup attendance records are each capped at 1,000 entries per record.
+- Users can explicitly delete local project, proposal, and meetup drafts from the UI; deletion affects only the current device and is confirmed before execution.
 - Local cache corruption is treated as an empty cache so users can continue; the next successful save replaces the corrupt value.
 
 ## Verification
 - Focused test file: `test/services/social/community_workbench_store_test.dart`.
-- Tests cover local persistence, space guideline metadata, task/milestone progress, input bounds, one local vote per voter, proposal closure, and draft-only meetup attendance.
+- Tests cover local persistence, space guideline metadata, task/milestone progress, input bounds, one local vote per voter, proposal closure, draft-only meetup attendance, bounded attendance, and deletion of local drafts.
 - Run `dart format lib test`, `flutter analyze`, `flutter test test/services/social/community_workbench_store_test.dart`, full `flutter test`, Android debug build, and the existing Firestore emulator suites before release.
 - Do not call cross-device governance or published events complete until an authenticated sync contract, Firestore rules/tests, and conflict handling are implemented.
