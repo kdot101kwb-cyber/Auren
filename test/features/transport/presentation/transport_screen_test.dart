@@ -215,6 +215,14 @@ void main() {
       find.text('أدخل المشغّل والمسار والتوقفات واسم المصدر وتاريخ ملاحظته بصيغة YYYY-MM-DD.'),
       findsOneWidget,
     );
+    await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-02-31');
+    await tester.ensureVisible(find.text('حفظ محليًا'));
+    await tester.tap(find.text('حفظ محليًا'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('أدخل المشغّل والمسار والتوقفات واسم المصدر وتاريخ ملاحظته بصيغة YYYY-MM-DD.'),
+      findsOneWidget,
+    );
     await enterField(tester, 'تاريخ ملاحظة المصدر YYYY-MM-DD', '2026-10-20');
     await tester.ensureVisible(find.text('حفظ محليًا'));
     await tester.tap(find.text('حفظ محليًا'));
