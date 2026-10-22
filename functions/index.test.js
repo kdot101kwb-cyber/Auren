@@ -185,18 +185,21 @@ test('AI personal-context consent changes require authentication and explicit co
   assert.match(block, /expiresAt: new Date\(0\)/);
 });
 
-test('AI personal context requires short-lived server-recorded consent', () => {
+test('AI personal context requires and atomically consumes short-lived consent', () => {
   const gate = index.indexOf('if (request.data?.includePersonalContext === true)');
   const consentRead = index.indexOf(".collection('privacyConsents').doc('aiPersonalContext')", gate);
+  const transaction = index.indexOf('db.runTransaction(async (transaction)', gate);
   const acceptedCheck = index.indexOf('consent.accepted !== true', gate);
   const purposeCheck = index.indexOf("consent.purpose !== 'ai_personal_context'", gate);
   const expiryCheck = index.indexOf('expiresAt.toMillis() <= Date.now()', gate);
+  const consume = index.indexOf('consumedAt: FieldValue.serverTimestamp()', gate);
   const goalsRead = index.indexOf("const goalsSnap = await db.collection('users').doc(uid).collection('goals')", gate);
   const memoryRead = index.indexOf("const memorySnap = await db.collection('users').doc(uid).collection('memory')", gate);
   const prompt = index.indexOf('const messages = [', gate);
   assert.ok(gate >= 0 && consentRead > gate && consentRead < goalsRead);
-  assert.ok(acceptedCheck > consentRead && purposeCheck > acceptedCheck);
-  assert.ok(expiryCheck > purposeCheck && expiryCheck < goalsRead);
+  assert.ok(transaction > consentRead && acceptedCheck > transaction && purposeCheck > acceptedCheck);
+  assert.ok(expiryCheck > purposeCheck && consume > expiryCheck && consume < goalsRead);
+  assert.match(index.slice(gate, goalsRead), /transaction\.update\(consentRef/);
   assert.ok(goalsRead > gate && goalsRead < prompt);
   assert.ok(memoryRead > goalsRead && memoryRead < prompt);
 });
