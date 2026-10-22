@@ -51,6 +51,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   bool _showDetails = false;
   String? _error;
   bool _isAi = true;
+  bool _includePersonalContext = false;
   String _conversationTitle = 'AUREN Messenger';
   String? _otherUid;
   DateTime? _lastReadMarkAt;
@@ -103,8 +104,10 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _sending || _uid == null || _conversationId == null) return;
+    final includePersonalContext = _isAi && _includePersonalContext;
 
     _controller.clear();
+    if (_includePersonalContext && mounted) setState(() => _includePersonalContext = false);
     if (_conversationId != null && _uid != null) await _typing.setTyping(_conversationId!, _uid!, false);
     setState(() => _sending = true);
 
@@ -139,6 +142,7 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
           conversationId: _conversationId!,
           message: text,
           requestId: messageId,
+          includePersonalContext: includePersonalContext,
         );
         widget.onAiResponse?.call(response.text);
 
@@ -154,7 +158,74 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
         );
       }
     } finally {
+      if (includePersonalContext) {
+        try {
+          await FirebaseFunctions.instanceFor(region: 'us-central1')
+              .httpsCallable('setAurenAiPersonalContextConsent')
+              .call(<String, dynamic>{'action': 'revoke'});
+        } catch (_) {
+          // The server-side consent still expires automatically after 15 minutes.
+        }
+      }
       if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _configurePersonalContext() async {
+    if (!_isAi || _sending) return;
+    if (_includePersonalContext) {
+      try {
+        await FirebaseFunctions.instanceFor(region: 'us-central1')
+            .httpsCallable('setAurenAiPersonalContextConsent')
+            .call(<String, dynamic>{'action': 'revoke'});
+        if (mounted) setState(() => _includePersonalContext = false);
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذر إيقاف مشاركة السياق الشخصي الآن.')),
+          );
+        }
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('استخدام السياق الشخصي؟'),
+        content: const Text(
+          'إذا وافقت، سيُرسل AUREN AI أهدافك المحفوظة وذكرياتك المفعّلة مع الرسالة التالية إلى مزوّد الذكاء الاصطناعي لمعالجتها. هذا اختياري لمرة واحدة، وتُسحب الموافقة بعد الطلب، وتنتهي تلقائياً خلال 15 دقيقة كحد أقصى.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ليس الآن'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('موافقة لهذه الرسالة'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('setAurenAiPersonalContextConsent')
+          .call(<String, dynamic>{'action': 'grant', 'confirmed': true});
+      if (mounted) setState(() => _includePersonalContext = true);
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'تعذر تفعيل الموافقة.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تفعيل الموافقة.')),
+        );
+      }
     }
   }
 
@@ -845,6 +916,20 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
         ),
           if (_sending) const LinearProgressIndicator(minHeight: 2),
           if (_isAi) const AiMessagePrivacyNotice(),
+          if (_isAi)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _sending ? null : _configurePersonalContext,
+                  icon: Icon(_includePersonalContext ? Icons.privacy_tip : Icons.privacy_tip_outlined),
+                  label: Text(_includePersonalContext
+                      ? 'السياق الشخصي مفعّل للرسالة التالية'
+                      : 'السماح بالسياق الشخصي لرسالة واحدة'),
+                ),
+              ),
+            ),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
