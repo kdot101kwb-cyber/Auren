@@ -243,7 +243,8 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                   final kind = _sections[index];
                   final entries = _items.where((item) =>
                     item.kind == kind ||
-                    (kind == EverydayLifeKind.task && item.kind == EverydayLifeKind.note),
+                    (kind == EverydayLifeKind.task &&
+                      (item.kind == EverydayLifeKind.note || item.kind == EverydayLifeKind.taskList)),
                   ).toList().reversed.toList();
                   return RefreshIndicator(
                     onRefresh: _refresh,
@@ -274,6 +275,12 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                             onPressed: () => _add(EverydayLifeKind.note),
                             icon: const Icon(Icons.note_add_outlined),
                             label: const Text('أضف ملاحظة'),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () => _add(EverydayLifeKind.taskList),
+                            icon: const Icon(Icons.checklist_outlined),
+                            label: const Text('أضف قائمة'),
                           ),
                         ] else FilledButton.icon(
                           onPressed: () => _add(kind),
