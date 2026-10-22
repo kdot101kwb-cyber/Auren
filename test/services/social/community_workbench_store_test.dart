@@ -143,6 +143,39 @@ void main() {
     );
   });
 
+  test('space metadata, proposals, and meetup drafts remain bounded', () async {
+    for (var i = 0; i < 101; i++) {
+      await store.saveSpaceGuidelines(
+        spaceId: 'space-$i',
+        topic: 'Topic $i',
+        rules: 'Rule $i',
+      );
+    }
+    expect(await store.readSpaceGuidelines('space-0'), isEmpty);
+    expect((await store.readSpaceGuidelines('space-100'))['topic'], 'Topic 100');
+
+    for (var i = 0; i < 101; i++) {
+      await store.createRuleProposal(
+        communityId: 'community',
+        title: 'Proposal $i',
+        proposedRule: 'Rule $i',
+      );
+      await store.createMeetupDraft(
+        title: 'Meetup $i',
+        description: '',
+        startsAt: '2026-11-01T17:00:00Z',
+        location: 'Suggested',
+        capacity: 10,
+      );
+    }
+    final proposals = await store.listProposals();
+    final meetups = await store.listMeetupDrafts();
+    expect(proposals, hasLength(100));
+    expect(proposals.first['title'], 'Proposal 100');
+    expect(meetups, hasLength(100));
+    expect(meetups.first['title'], 'Meetup 100');
+  });
+
   test('local persistence survives a new store instance', () async {
     final id = await store.createProject(title: 'Offline plan', description: '', communityId: '');
     final reloaded = AurenCommunityWorkbenchStore();
