@@ -937,24 +937,33 @@ exports.aurenAiGateway = require('firebase-functions/v2/https').onCall(
       return content ? { role: item.isAi === true ? 'assistant' : 'user', content } : null;
     }).filter(Boolean);
 
-    const goalsSnap = await db.collection('users').doc(uid).collection('goals').limit(50).get();
-    const goalLines = goalsSnap.docs.map((doc) => doc.data() || {})
-      .filter((item) => (item.status || 'active') === 'active')
-      .map((item) => {
-        const title = typeof item.title === 'string' ? item.title.slice(0, 200) : '';
-        const description = typeof item.description === 'string' ? item.description.slice(0, 500) : '';
-        const progress = Number.isFinite(Number(item.progress)) ? Math.max(0, Math.min(100, Number(item.progress))) : 0;
-        return title ? '- ' + title + ' (' + progress + '%)' + (description ? ': ' + description : '') : '';
-      }).filter(Boolean).slice(0, 10);
-
-    const memorySnap = await db.collection('users').doc(uid).collection('memory')
-      .where('enabled', '==', true).limit(50).get();
-    const memoryLines = memorySnap.docs.map((doc) => doc.data() || {})
-      .map((item) => {
-        const key = typeof item.key === 'string' ? item.key.slice(0, 120) : '';
-        const value = typeof item.value === 'string' ? item.value.slice(0, 2000) : '';
-        return key && value ? '- ' + key + ': ' + value : '';
-      }).filter(Boolean).slice(0, 20);
+    // Personal goals and saved memory are not added to provider prompts by
+    // default. A future client UI must obtain explicit opt-in before sending
+    // includePersonalContext=true; absence or any other value means no sharing.
+    let goalLines = [];
+    let memoryLines = [];
+    if (request.data?.includePersonalContext === true) {
+      const goalsSnap = await db.collection('users').doc(uid).collection('goals').limit(50).get();
+        goalLines = goalsSnap.docs.map((doc) => doc.data() || {})
+        .filter((item) => (item.status || 'active') === 'active')
+        .map((item) => {
+          const title = typeof item.title === 'string' ? item.title.slice(0, 200) : '';
+          const description = typeof item.description === 'string' ? item.description.slice(0, 500) : '';
+          const progress = Number.isFinite(Number(item.progress)) ? Math.max(0, Math.min(100, Number(item.progress))) : 0;
+          return title ? '- ' + title + ' (' + progress + '%)' + (description ? ': ' + description : '') : '';
+        }).filter(Boolean).slice(0, 10);
+  
+      const memorySnap = await db.collection('users').doc(uid).collection('memory')
+        .where('enabled', '==', true).limit(50).get();
+        memoryLines = memorySnap.docs.map((doc) => doc.data() || {})
+        .map((item) => {
+          const key = typeof item.key === 'string' ? item.key.slice(0, 120) : '';
+          const value = typeof item.value === 'string' ? item.value.slice(0, 2000) : '';
+          return key && value ? '- ' + key + ': ' + value : '';
+        }).filter(Boolean).slice(0, 20);
+  
+  
+    }
 
     const messages = [
       {role: 'system', content: [
