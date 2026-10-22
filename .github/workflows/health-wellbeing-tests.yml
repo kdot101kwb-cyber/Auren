@@ -3,7 +3,9 @@ name: AUREN Health & Wellbeing Tests
 on:
   workflow_dispatch:
   push:
-    branches: [feat/health-wellbeing]
+    branches:
+      - feat/health-wellbeing
+      - feat/health-privacy-hardening
 
 permissions:
   contents: read
