@@ -16,23 +16,31 @@ void main() {
 
     expect(find.text('AUREN Business & Economy'), findsOneWidget);
     expect(find.text('Local Business OS'), findsOneWidget);
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Discovery')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-hub-list')),
     );
     expect(find.text('Business Discovery').first, findsOneWidget);
 
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-hub-list')),
     );
     expect(find.text('Buyer–Seller Matching').first, findsOneWidget);
 
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Trade & Export Hub')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-hub-list')),
     );
     expect(find.text('Trade & Export Hub').first, findsOneWidget);
 
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-hub-list')),
     );
     expect(find.text('Business Growth Planner').first, findsOneWidget);
   });
@@ -42,8 +50,10 @@ void main() {
       const MaterialApp(home: AurenBusinessEconomyScreen()),
     );
 
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-hub-list')),
     );
     await tester.tap(find.text('Business Growth Planner').first);
     await tester.pumpAndSettle();
@@ -58,8 +68,10 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(home: AurenBusinessEconomyScreen()),
     );
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-hub-list')),
     );
     await tester.tap(find.byKey(const ValueKey('business-economy-Buyer–Seller Matching')));
     await tester.pumpAndSettle();
@@ -99,8 +111,10 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(home: AurenBusinessEconomyScreen()),
     );
-    await tester.ensureVisible(
+    await tester.scrollUntilVisible(
       find.byKey(const ValueKey('business-economy-Business Growth Planner')),
+      250,
+      scrollable: find.byKey(const ValueKey('business-economy-hub-list')),
     );
     await tester.tap(find.text('Business Growth Planner').first);
     await tester.pumpAndSettle();
