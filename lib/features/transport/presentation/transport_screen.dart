@@ -101,7 +101,16 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
 
   DateTime? _observationDate(TextEditingController controller) {
     final value = controller.text.trim();
-    if (!RegExp(r'^\\d{4}-\\d{2}-\\d{2}
+    if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) return null;
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null ||
+        parsed.year.toString().padLeft(4, '0') != value.substring(0, 4) ||
+        parsed.month.toString().padLeft(2, '0') != value.substring(5, 7) ||
+        parsed.day.toString().padLeft(2, '0') != value.substring(8, 10)) {
+      return null;
+    }
+    return parsed;
+  }
 
   Future<void> _saveRoute() async {
     final source = _routeSource.text.trim();
