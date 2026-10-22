@@ -43,4 +43,8 @@ This batch adds tests for expired consent being rejected before Firestore writes
 - Raw upstream provider error messages are no longer persisted as AI request failure details or included in the all-provider-failed log. The request record stores an error code and the callable returns a generic retry message.
 - Removed duplicated action proposal/plan payloads from the AI idempotency request record. The canonical user message remains in the conversation; pending action payloads remain in the dedicated approval-gated action document.
 - Added a focused Node regression test for these invariants and included it in the health/privacy workflow.
-- Verification status: pending CI for `feat/ai-provider-privacy-hardening`. This is a code-level privacy hardening pass, not a complete audit of every AI-backed endpoint in `functions/index.js`; other production, podcast, and content generation endpoints still need separate error-path review.
+- Verification status: pending CI for `feat/ai-provider-privacy-hardening`. This is a code-level privacy hardening pass, not a complete audit of every AI-backed endpoint in `functions/index.js`. Podcast analysis and series/movie/music blueprint provider-error paths were also reviewed and now persist bounded diagnostics; unrelated AI-backed functions and generic operational logs still need separate review.
+
+
+- The AI prompt history is now bounded to at most 12 recent messages, 2,000 characters per historical message, and excludes the current message ID to prevent duplicate transmission. A regression test asserts these limits.
+- The focused Node privacy tests, Flutter storage/UI tests, and targeted Flutter analysis passed on commit `032343d866342fd18be0f4102d50e577eb5e66f9`. Documentation-only follow-up is on the same branch; its CI run is tracked separately.
