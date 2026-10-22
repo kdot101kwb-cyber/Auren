@@ -4,29 +4,29 @@ const {onSchedule}=require('firebase-functions/v2/scheduler');
 const {defineSecret,defineString}=require('firebase-functions/params');
 const admin=require('firebase-admin');
 const {submitAurenProviderJob,pollAurenProviderJob}=require('./provider_runtime');
+const {validateMaterializedMusicOutput}=require('./music_output_validation');
+const {resolveMusicSubmission,resolveMusicPoll}=require('./music_creation_transitions');
 
 const REPLICATE_API_TOKEN=defineSecret('REPLICATE_API_TOKEN');
 const REPLICATE_MUSIC_CREATION_MODEL_VERSION=defineString('REPLICATE_MUSIC_CREATION_MODEL_VERSION',{default:'',description:'Backend-only Replicate model version for AUREN original music creation.'});
 const db=admin.firestore(),LOCK_MS=6*60*1000,MAX_ATTEMPTS=5;
-const hasOutput=o=>Boolean(o&&(o.url||o.storagePath||o.externalId));
 async function validateAudioArtifact(o){
- if(!hasOutput(o))return {ok:false,reason:'missing_artifact'};
- if(o.storagePath||o.externalId)return {ok:true,referenceOnly:true};
- const url=String(o.url||''); if(!url.startsWith('http://')&&!url.startsWith('https://'))return {ok:false,reason:'invalid_url'};
- const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),10000);
- try{const r=await fetch(url,{method:'HEAD',signal:controller.signal});if(!r.ok)return {ok:false,reason:'http_'+r.status};
-  const type=String(r.headers.get('content-type')||'').toLowerCase();if(type && !(type.startsWith('audio/')||type==='application/octet-stream'))return {ok:false,reason:'not_audio',contentType:type};
-  return {ok:true,contentType:type||null};
- }catch(e){return {ok:false,reason:'artifact_unreachable'};}finally{clearTimeout(timer);}
+ return validateMaterializedMusicOutput(o, {
+  getStorageFile: path => admin.storage().bucket().file(path),
+ });
 }
 
 async function claim(){
- const snap=await db.collectionGroup('entertainmentCreationJobs').where('mode','==','أغنية').where('musicProductionStage','in',['music_blueprint_ready','blueprint_ready','generation','processing']).limit(10).get();
+ // Do not burn retry attempts while deployment configuration is unavailable.
+ if(!String(REPLICATE_API_TOKEN.value()||'').trim()||!String(REPLICATE_MUSIC_CREATION_MODEL_VERSION.value()||'').trim())return null;
+ const snap=await db.collectionGroup('entertainmentCreationJobs').where('mode','==','أغنية').where('musicProductionStage','in',['music_blueprint_ready','blueprint_ready','generation','processing','waiting_provider']).limit(10).get();
  for(const item of snap.docs){
   const ok=await db.runTransaction(async tx=>{
    const fresh=await tx.get(item.ref);if(!fresh.exists)return false;const d=fresh.data()||{};
-   if(!['music_blueprint_ready','blueprint_ready','generation','processing'].includes(String(d.musicProductionStage||''))||Number(d.musicWorkerLockUntilMs||0)>Date.now()||Number(d.musicWorkerAttempts||0)>=MAX_ATTEMPTS)return false;
-   tx.update(item.ref,{musicProductionStage:'processing',musicWorkerLockUntilMs:Date.now()+LOCK_MS,musicWorkerAttempts:admin.firestore.FieldValue.increment(1),updatedAt:admin.firestore.FieldValue.serverTimestamp()});return true;
+   const stage=String(d.musicProductionStage||'');
+   if(!['music_blueprint_ready','blueprint_ready','generation','processing','waiting_provider'].includes(stage)||Number(d.musicWorkerLockUntilMs||0)>Date.now())return false;
+   if(stage!=='waiting_provider'&&Number(d.musicWorkerAttempts||0)>=MAX_ATTEMPTS)return false;
+   tx.update(item.ref,{musicProductionStage:'processing',musicWorkerLockUntilMs:Date.now()+LOCK_MS,...(stage==='waiting_provider'?{}:{musicWorkerAttempts:admin.firestore.FieldValue.increment(1)}),updatedAt:admin.firestore.FieldValue.serverTimestamp()});return true;
   }); if(ok)return item.ref;
  }
  return null;
@@ -51,8 +51,17 @@ async function run(ref){
   const check=await validateAudioArtifact(d.output);
   if(!check.ok){await ref.set({musicProductionStage:'qc_failed',musicProductionStatus:'qc_failed',musicWorkerLockUntilMs:0,musicProductionQc:{version:2,result:'failed',taskCount:1,artifactChecks:[check]},lastError:'Music artifact QC failed.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
   await ref.set({musicProductionStage:'ready',musicProductionStatus:'ready',musicWorkerLockUntilMs:0,musicArtifact:d.output,musicProductionQc:{version:2,result:'passed',taskCount:1,artifactChecks:[check]},progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;
-}
- if(d.status==='failed'||Number(d.lockUntilMs||0)>Date.now())return;
+ }
+ if(d.status==='failed'){
+  await ref.set({musicProductionStage:'failed',musicProductionStatus:'failed',musicWorkerLockUntilMs:0,lastError:String(d.lastError||'Music generation failed.').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  return;
+ }
+ if(Number(d.lockUntilMs||0)>Date.now())return;
+ // Do not silently resubmit a terminal provider job; expose the missing artifact as a terminal QC issue.
+ if(d.status==='waiting_provider'&&!d.externalJobId){
+  await ref.set({musicProductionStage:'qc_failed',musicProductionStatus:'qc_failed',musicWorkerLockUntilMs:0,musicProductionQc:{version:2,result:'failed',taskCount:1,reason:'artifact_not_materialized'},lastError:String(d.lastError||'Provider completed without a materialized audio artifact.').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  return;
+ }
  if(Number(d.attempts||0)>=MAX_ATTEMPTS&&!d.externalJobId){
   await taskRef.set({status:'failed',lockUntilMs:0,lastError:'Maximum music generation attempts reached.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
   return;
@@ -68,13 +77,23 @@ async function run(ref){
  const fresh=(await taskRef.get()).data()||{};
  if(fresh.externalJobId&&fresh.providerId){
   const p=await pollAurenProviderJob({provider:fresh.providerId,credentials:{token},externalJobId:String(fresh.externalJobId)});
-  if(p.ok&&(p.state==='succeeded'||p.state==='completed')&&hasOutput(p.output))await taskRef.set({status:'output',output:p.output,externalJobId:'',lockUntilMs:0,providerState:p.state,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
-  else if(p.state==='failed'||p.state==='canceled')await taskRef.set({status:Number(fresh.attempts||0)<MAX_ATTEMPTS?'queued':'failed',externalJobId:'',lockUntilMs:0,lastError:String(p.error||'Music provider failed').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
-  else await taskRef.set({status:'processing',lockUntilMs:0,providerState:p.state||'processing',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  const completed=p.ok&&(p.state==='succeeded'||p.state==='completed');
+  const candidate=Boolean(p.output&&(p.output.url||p.output.storagePath));
+  const artifactCheck=completed&&candidate?await validateAudioArtifact(p.output):null;
+  const transition=resolveMusicPoll({pollResult:p,attempts:fresh.attempts,maxAttempts:MAX_ATTEMPTS,artifactCheck});
+  await taskRef.set({...transition,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
   return;
  }
  const result=await submitAurenProviderJob({provider:'replicate',credentials:{token,version},task:{input:d.input||{}},idempotencyKey:String(d.idempotencyKey||taskRef.id)});
- const output=result.result?.output,externalId=String(result.result?.externalJobId||'').trim();
- await taskRef.set({status:result.ok?(hasOutput(output)?'output':externalId?'processing':'failed'):'queued',output:hasOutput(output)?output:null,externalJobId:hasOutput(output)?'':externalId,providerId:result.providerId||'',providerState:result.result?.state||'starting',lockUntilMs:0,lastError:result.ok?(hasOutput(output)||externalId?'':'Provider returned no artifact.'):String(result.message||'Provider unavailable').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+ const output=result.output || result.result?.output;
+ const candidate=Boolean(output&&(output.url||output.storagePath));
+ const artifactCheck=candidate?await validateAudioArtifact(output):null;
+ const transition=resolveMusicSubmission({result,artifactCheck});
+ await taskRef.set({
+  ...transition,
+  providerId:result.providerId||'',
+  lockUntilMs:0,
+  updatedAt:admin.firestore.FieldValue.serverTimestamp()
+ },{merge:true});
 }
 exports.runAurenMusicCreationWorker=onSchedule({schedule:'every 2 minutes',timeZone:'UTC',region:'us-central1',timeoutSeconds:120,memory:'512MiB',concurrency:1,secrets:[REPLICATE_API_TOKEN]},async()=>{const ref=await claim();if(!ref)return;try{await run(ref);}catch(error){await ref.set({musicProductionStage:'generation',musicWorkerLockUntilMs:0,lastError:String(error?.message||error).slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});}});

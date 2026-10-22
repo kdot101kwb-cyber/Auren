@@ -387,14 +387,15 @@ async function processTask(ref) {
     return;
   }
 
-  const output = result.result?.output;
+  const providerPayload = result.result && typeof result.result === 'object' ? result.result : result;
+  const output = providerPayload.output;
   const hasOutput = hasRealOutput(output);
-  const externalId = String(result.result?.externalJobId || '').trim();
+  const externalId = String(providerPayload.externalJobId || '').trim();
 
   await ref.set({
     status: hasOutput ? 'output' : (externalId ? 'processing' : 'failed'),
     providerId: result.providerId,
-    providerState: result.result?.state || 'starting',
+    providerState: providerPayload.state || 'starting',
     externalJobId: hasOutput ? '' : externalId,
     output: hasOutput ? output : null,
     providerAttempts: result.attempts || [],
