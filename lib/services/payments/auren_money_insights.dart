@@ -1,14 +1,11 @@
 /// Lightweight, offline-friendly financial insights for the AUREN wallet.
 ///
-/// This layer only analyses transaction records already available to the user.
-/// It never initiates payments, moves money, or contacts a financial provider.
+/// This layer analyses transaction records already available to the user. It
+/// never initiates payments, moves money, or contacts a financial provider.
 class AurenMoneyInsights {
   const AurenMoneyInsights();
 
   /// Summarizes outgoing transactions for the current calendar month.
-  ///
-  /// A transaction is considered outgoing when [type] is one of the common
-  /// debit labels or when an explicit [direction] is "expense"/"outgoing".
   Map<String, int> monthlySpendByCurrency(
     Iterable<Map<String, dynamic>> transactions, {
     DateTime? now,
@@ -35,20 +32,14 @@ class AurenMoneyInsights {
     return Map.unmodifiable(totals);
   }
 
-  /// Returns recurring-looking expense groups, without claiming certainty.
-  ///
-  /// The group requires at least [minimumOccurrences] outgoing records with
-  /// the same normalized merchant/title and currency. It is a hint only.
+  /// Finds repeated expense labels as candidates, not confirmed subscriptions.
   List<Map<String, dynamic>> recurringExpenseCandidates(
     Iterable<Map<String, dynamic>> transactions, {
     int minimumOccurrences = 3,
   }) {
     if (minimumOccurrences < 2 || minimumOccurrences > 24) {
-      throw ArgumentError.value(
-        minimumOccurrences,
-        'minimumOccurrences',
-        'Must be between 2 and 24.',
-      );
+      throw ArgumentError.value(minimumOccurrences, 'minimumOccurrences',
+          'Must be between 2 and 24.');
     }
     final groups = <String, List<Map<String, dynamic>>>{};
     for (final transaction in transactions) {
@@ -57,7 +48,7 @@ class AurenMoneyInsights {
           transaction['title'] ??
           transaction['description'];
       if (rawLabel is! String || rawLabel.trim().isEmpty) continue;
-      final label = rawLabel.trim().replaceAll(RegExp(r'\\s+'), ' ');
+      final label = rawLabel.trim().replaceAll(RegExp(r'\s+'), ' ');
       final currency =
           (transaction['currency'] ?? '').toString().trim().toUpperCase();
       if (!RegExp(r'^[A-Z]{3}$').hasMatch(currency)) continue;
@@ -72,7 +63,6 @@ class AurenMoneyInsights {
         'date': date,
       });
     }
-
     final candidates = <Map<String, dynamic>>[];
     for (final records in groups.values) {
       if (records.length < minimumOccurrences) continue;
@@ -80,14 +70,12 @@ class AurenMoneyInsights {
           (a['date'] as DateTime).compareTo(b['date'] as DateTime));
       final amounts = records.map((r) => r['amountMinor'] as int).toList();
       final sortedAmounts = [...amounts]..sort();
-      final median = sortedAmounts[sortedAmounts.length ~/ 2];
-      final average = amounts.reduce((a, b) => a + b) ~/ amounts.length;
       candidates.add({
         'label': records.first['label'],
         'currency': records.first['currency'],
         'occurrences': records.length,
-        'averageAmountMinor': average,
-        'medianAmountMinor': median,
+        'averageAmountMinor': amounts.reduce((a, b) => a + b) ~/ amounts.length,
+        'medianAmountMinor': sortedAmounts[sortedAmounts.length ~/ 2],
         'confidence': 'possible',
       });
     }
@@ -98,12 +86,8 @@ class AurenMoneyInsights {
 
   bool _isOutgoing(Map<String, dynamic> transaction) {
     final direction = transaction['direction']?.toString().toLowerCase();
-    if (direction == 'expense' || direction == 'outgoing' || direction == 'debit') {
-      return true;
-    }
-    if (direction == 'income' || direction == 'incoming' || direction == 'credit') {
-      return false;
-    }
+    if (const {'expense', 'outgoing', 'debit'}.contains(direction)) return true;
+    if (const {'income', 'incoming', 'credit'}.contains(direction)) return false;
     final type = transaction['type']?.toString().toLowerCase() ?? '';
     return const {'expense', 'debit', 'payment', 'purchase', 'withdrawal'}
         .contains(type);
@@ -111,9 +95,14 @@ class AurenMoneyInsights {
 
   DateTime? _dateOf(dynamic value) {
     if (value is DateTime) return value;
-    // Firestore Timestamp exposes toDate(), but this pure helper intentionally
-    // avoids a Firebase dependency. Convert timestamps before calling if needed.
     if (value is String) return DateTime.tryParse(value);
+    // Supports Firestore Timestamp without coupling this pure helper to Firebase.
+    try {
+      final converted = (value as dynamic).toDate();
+      if (converted is DateTime) return converted;
+    } catch (_) {
+      // Unsupported or missing date.
+    }
     return null;
   }
 }
