@@ -16,19 +16,29 @@ class HttpsAurenAiGateway implements AurenAiGateway {
     required String message,
     String? requestId,
   }) async {
-    if (endpoint.isEmpty) throw StateError('AUREN_AI_GATEWAY_URL is not configured.');
+    if (endpoint.isEmpty) {
+      throw const AurenAiFallbackEligibleException(
+        'AUREN_AI_GATEWAY_URL is not configured.',
+      );
+    }
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw StateError('AUREN account is not authenticated.');
     final token = await user.getIdToken();
-    if (token == null || token.isEmpty) throw StateError('AUREN authentication token is unavailable.');
+    if (token == null || token.isEmpty) {
+      throw StateError('AUREN authentication token is unavailable.');
+    }
 
     final response = await http.post(
       Uri.parse(endpoint),
-      headers: {'content-type': 'application/json', 'authorization': 'Bearer $token'},
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer $token',
+      },
       body: jsonEncode({
         'conversationId': conversationId,
         'message': message,
-        if (requestId != null && requestId.trim().isNotEmpty) 'requestId': requestId.trim(),
+        if (requestId != null && requestId.trim().isNotEmpty)
+          'requestId': requestId.trim(),
       }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
