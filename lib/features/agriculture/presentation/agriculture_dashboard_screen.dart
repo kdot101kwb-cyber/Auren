@@ -174,7 +174,7 @@ class _AurenAgricultureDashboardScreenState extends State<AurenAgricultureDashbo
                         style: Theme.of(context).textTheme.bodySmall),
                     Text(freshness,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: stale || !r.hasRecordedSource
+                          color: stale || !r.hasTraceableSource
                               ? Theme.of(context).colorScheme.error
                               : Theme.of(context).colorScheme.secondary,
                           fontWeight: FontWeight.w600,
