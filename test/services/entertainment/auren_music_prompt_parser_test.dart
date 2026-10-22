@@ -12,6 +12,9 @@ void main() {
       expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة ساعتين'), 120);
       expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة نصف ساعة'), 30);
       expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة ساعة'), 60);
+      expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة ساعة ونصف'), 90);
+      expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة ساعتين ونصف'), 150);
+      expect(AurenMusicPromptParser.durationMinutes('موسيقى لمدة ربع ساعة'), 15);
       expect(AurenMusicPromptParser.durationMinutes('لمدة ٢ ساعة'), 120);
       expect(AurenMusicPromptParser.durationMinutes('لمدة ٣٠ دقيقة'), 30);
     });
