@@ -5,6 +5,35 @@ import 'package:auren/features/transport/data/mobility_local_store.dart';
 import 'package:auren/features/transport/domain/mobility_models.dart';
 import 'package:auren/features/transport/presentation/transport_screen.dart';
 
+
+class _FailingShipmentStore extends MobilityLocalStore {
+  @override
+  Future<void> saveShipments(List<CargoShipment> shipments) async {
+    throw StateError('simulated local storage failure');
+  }
+
+  testWidgets('failed cargo save keeps the form and does not show a phantom record', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AurenTransportScreen(localStore: _FailingShipmentStore()),
+    ));
+    await openSection(tester, 'Freight & Cargo Coordination');
+
+    await enterField(tester, 'مرجع الشحنة', 'FAIL-101');
+    await enterField(tester, 'من', 'بورتسودان');
+    await enterField(tester, 'إلى', 'الخرطوم');
+    await tester.ensureVisible(find.text('حفظ مسودة الشحنة'));
+    await tester.tap(find.text('حفظ مسودة الشحنة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر حفظ الشحنة على الجهاز؛ لم تتم إضافتها إلى السجل.'), findsOneWidget);
+    expect(find.textContaining('FAIL-101: بورتسودان → الخرطوم'), findsNothing);
+    expect(tester.widget<TextField>(field('مرجع الشحنة')).controller!.text, 'FAIL-101');
+    expect(tester.widget<TextField>(field('من')).controller!.text, 'بورتسودان');
+    expect(tester.widget<TextField>(field('إلى')).controller!.text, 'الخرطوم');
+  });
+
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
