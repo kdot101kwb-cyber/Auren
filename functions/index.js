@@ -1233,7 +1233,7 @@ exports.analyzeAurenPodcastEpisode = require('firebase-functions/v2/https').onCa
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok) {
-              lastError = String(result?.error?.message || ('HTTP ' + response.status)).slice(0, 500);
+              lastError = 'provider_http_' + response.status;
               continue;
             }
             rawText = result?.choices?.[0]?.message?.content || '';
@@ -1243,7 +1243,7 @@ exports.analyzeAurenPodcastEpisode = require('firebase-functions/v2/https').onCa
         } else {
           const result = await callAurenTextProvider(provider, messages, {task: 'summarization'});
           if (!result.ok) {
-            lastError = String(result.message || provider + ' failed').slice(0, 500);
+            lastError = 'provider_request_failed';
             if (!result.unavailable) await updateAurenAiProviderHealth(provider, false, lastError);
             continue;
           }
@@ -1256,13 +1256,13 @@ exports.analyzeAurenPodcastEpisode = require('firebase-functions/v2/https').onCa
           break;
         }
       } catch (error) {
-        lastError = String(error?.message || error).slice(0, 500);
+        lastError = 'provider_request_failed';
         if (provider !== 'legacy') await updateAurenAiProviderHealth(provider, false, lastError);
       }
     }
 
     if (!rawText.trim()) {
-      throw aurenHttpsError('unavailable', lastError || 'AUREN AI is temporarily unavailable.');
+      throw aurenHttpsError('unavailable', 'AUREN AI is temporarily unavailable. Please try again later.');
     }
 
     let analysis;
@@ -1394,7 +1394,7 @@ exports.generateAurenSeriesBlueprint = require('firebase-functions/v2/https').on
       try {
         const result = await callAurenTextProvider(provider, messages, {task:'planning'});
         if (!result?.ok || !String(result.text || '').trim()) {
-          errors.push(provider + ': ' + String(result?.message || 'empty response').slice(0,180));
+          errors.push(provider + ': provider_request_failed');
           continue;
         }
         let raw = String(result.text).trim();
@@ -1410,7 +1410,7 @@ exports.generateAurenSeriesBlueprint = require('firebase-functions/v2/https').on
         selectedProvider = provider;
         break;
       } catch (error) {
-        errors.push(provider + ': ' + String(error?.message || error).slice(0,180));
+        errors.push(provider + ': invalid_provider_response');
       }
     }
     if (!generated) {
@@ -1485,7 +1485,7 @@ exports.generateAurenMovieBlueprint = require('firebase-functions/v2/https').onC
       try {
         const result = await callAurenTextProvider(provider, messages, {task:'planning'});
         if (!result?.ok || !String(result.text || '').trim()) {
-          errors.push(provider + ': ' + String(result?.message || 'empty response').slice(0,180));
+          errors.push(provider + ': provider_request_failed');
           continue;
         }
         let raw = String(result.text).trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'');
@@ -1495,7 +1495,7 @@ exports.generateAurenMovieBlueprint = require('firebase-functions/v2/https').onC
         if (!parsed.title || !parsed.story || !Array.isArray(parsed.scenes)) throw new Error('Film blueprint is missing required sections.');
         generated = parsed; selectedProvider = provider; break;
       } catch (error) {
-        errors.push(provider + ': ' + String(error?.message || error).slice(0,180));
+        errors.push(provider + ': invalid_provider_response');
       }
     }
     if (!generated) {
@@ -1547,7 +1547,7 @@ exports.generateAurenMusicBlueprint = require('firebase-functions/v2/https').onC
       try {
         const result = await callAurenTextProvider(provider, messages, {task:'planning'});
         if (!result?.ok || !String(result.text || '').trim()) {
-          errors.push(provider + ': ' + String(result?.message || 'empty response').slice(0,180));
+          errors.push(provider + ': provider_request_failed');
           continue;
         }
         let raw = String(result.text).trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'');
@@ -1557,7 +1557,7 @@ exports.generateAurenMusicBlueprint = require('firebase-functions/v2/https').onC
         if (!parsed.title || !parsed.concept || !parsed.lyrics) throw new Error('Music blueprint is missing required sections.');
         generated = parsed; selectedProvider = provider; break;
       } catch (error) {
-        errors.push(provider + ': ' + String(error?.message || error).slice(0,180));
+        errors.push(provider + ': invalid_provider_response');
       }
     }
     if (!generated) {
