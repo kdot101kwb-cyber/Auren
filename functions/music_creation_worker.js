@@ -52,9 +52,16 @@ async function run(ref){
   if(!check.ok){await ref.set({musicProductionStage:'qc_failed',musicProductionStatus:'qc_failed',musicWorkerLockUntilMs:0,musicProductionQc:{version:2,result:'failed',taskCount:1,artifactChecks:[check]},lastError:'Music artifact QC failed.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;}
   await ref.set({musicProductionStage:'ready',musicProductionStatus:'ready',musicWorkerLockUntilMs:0,musicArtifact:d.output,musicProductionQc:{version:2,result:'passed',taskCount:1,artifactChecks:[check]},progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;
  }
- if(d.status==='failed'||Number(d.lockUntilMs||0)>Date.now())return;
- // A terminal provider result without a materialized artifact must not silently trigger a second generation.
- if(d.status==='waiting_provider'&&!d.externalJobId)return;
+ if(d.status==='failed'){
+  await ref.set({musicProductionStage:'failed',musicProductionStatus:'failed',musicWorkerLockUntilMs:0,lastError:String(d.lastError||'Music generation failed.').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  return;
+ }
+ if(Number(d.lockUntilMs||0)>Date.now())return;
+ // Do not silently resubmit a terminal provider job; expose the missing artifact as a terminal QC issue.
+ if(d.status==='waiting_provider'&&!d.externalJobId){
+  await ref.set({musicProductionStage:'qc_failed',musicProductionStatus:'qc_failed',musicWorkerLockUntilMs:0,musicProductionQc:{version:2,result:'failed',taskCount:1,reason:'artifact_not_materialized'},lastError:String(d.lastError||'Provider completed without a materialized audio artifact.').slice(0,700),updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
+  return;
+ }
  if(Number(d.attempts||0)>=MAX_ATTEMPTS&&!d.externalJobId){
   await taskRef.set({status:'failed',lockUntilMs:0,lastError:'Maximum music generation attempts reached.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
   return;
