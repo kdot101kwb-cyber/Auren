@@ -75,6 +75,13 @@ void main() {
       expect(docs.docs.single.id, '2026-10_USD');
       expect(docs.docs.single.data()['limitMinor'], 25000);
       expect(docs.docs.single.data()['periodKey'], '2026-10');
+      final observed = await budgets.watchBudget(
+        uid: 'user-1',
+        periodKey: '2026-10',
+        currency: 'usd',
+      ).first;
+      expect(observed?.limitMinor, 25000);
+      expect(observed?.currency, 'USD');
     });
 
     test('requires an existing wallet and rejects invalid limits', () async {
