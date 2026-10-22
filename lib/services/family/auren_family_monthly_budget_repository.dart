@@ -33,7 +33,7 @@ class AurenFamilyBudgetSummary {
   final AurenFamilyMonthlyBudget? budget;
   final int spentMinor;
 
-  int get remainingMinor => (budget?.limitMinor ?? 0) - spentMinor;
+  int get remainingMinor => budget == null ? 0 : budget!.limitMinor - spentMinor;
   double get progress {
     final limit = budget?.limitMinor ?? 0;
     if (limit <= 0) return 0;
@@ -97,8 +97,6 @@ class AurenFamilyMonthlyBudgetRepository {
     final end = DateTime(year, month + 1);
     return _wallet(owner)
         .collection('entries')
-        .where('kind', isEqualTo: 'expense')
-        .where('currency', isEqualTo: code)
         .where(
           'createdAt',
           isGreaterThanOrEqualTo: Timestamp.fromDate(start),
@@ -106,7 +104,12 @@ class AurenFamilyMonthlyBudgetRepository {
         .where('createdAt', isLessThan: Timestamp.fromDate(end))
         .snapshots()
         .map((snapshot) => snapshot.docs.fold<int>(0, (sum, doc) {
-              final amount = doc.data()['amountMinor'];
+              final data = doc.data();
+              if (data['kind'] != 'expense' ||
+                  (data['currency']?.toString().toUpperCase() ?? '') != code) {
+                return sum;
+              }
+              final amount = data['amountMinor'];
               return sum + (amount is int && amount > 0 ? amount : 0);
             }));
   }
