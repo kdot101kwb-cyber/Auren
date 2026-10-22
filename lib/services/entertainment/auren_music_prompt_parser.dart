@@ -45,7 +45,19 @@ class AurenMusicPromptParser {
     final words = searchableWords(prompt);
     if (words.isEmpty) return true;
     final normalized = normalizeDigits(searchableText).toLowerCase();
-    return words.any(normalized.contains);
+    return words.any((word) {
+      if (normalized.contains(word)) return true;
+      // Treat common content-type terms as searchable aliases, so a podcast
+      // can be discovered from its audio/episode metadata even when its title
+      // and description do not literally say "podcast".
+      final aliases = switch (word) {
+        'podcast' || 'podcasts' => const ['audio', 'episode', 'conversation'],
+        'music' || 'song' || 'songs' => const ['track', 'soundtrack'],
+        'video' || 'videos' => const ['clip', 'footage'],
+        _ => const <String>[],
+      };
+      return aliases.any(normalized.contains);
+    });
   }
 
   /// Splits on real whitespace (including newlines) and drops short tokens.
