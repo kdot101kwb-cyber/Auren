@@ -1,0 +1,35 @@
+name: AUREN Mobility & Transport Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/auren-mobility-transport-v1]
+
+permissions:
+  contents: read
+
+jobs:
+  mobility-transport:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Format mobility sources
+        run: dart format lib/features/transport lib/services/transport test/features/transport
+      - name: Test mobility domain
+        run: flutter test test/features/transport/domain/mobility_models_test.dart
+      - name: Test mobility local storage
+        run: flutter test test/features/transport/data/mobility_local_store_test.dart
+      - name: Test mobility screens
+        run: flutter test test/features/transport/presentation/transport_screen_test.dart
+      - name: Analyze mobility
+        run: flutter analyze lib/features/transport lib/services/transport
