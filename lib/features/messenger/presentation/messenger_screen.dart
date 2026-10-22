@@ -108,10 +108,12 @@ class _MessengerScreenState extends State<MessengerScreen> with WidgetsBindingOb
 
     _controller.clear();
     if (_includePersonalContext && mounted) setState(() => _includePersonalContext = false);
-    if (_conversationId != null && _uid != null) await _typing.setTyping(_conversationId!, _uid!, false);
     setState(() => _sending = true);
 
     try {
+      if (_conversationId != null && _uid != null) {
+        await _typing.setTyping(_conversationId!, _uid!, false);
+      }
       if (!_isAi) {
         final conversation = await _conversationRepository.findById(_conversationId!);
         final otherUid = conversation?.memberIds.where((id) => id != _uid).firstOrNull;
