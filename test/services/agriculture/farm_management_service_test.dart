@@ -32,12 +32,16 @@ void main() {
       expect(observation.isStale(DateTime.utc(2026, 10, 19)), isTrue, reason: 'future-dated market observations must not be treated as current');
       expect(() => service.validateMarketObservation(AgriculturalMarketObservation(commodity: 'sorghum', market: 'sample market', price: 120, currency: 'SDG', unit: 'sack', observedAt: DateTime.utc(2026, 10, 20), sourceName: '', sourceReference: '')), throwsArgumentError);
       expect(() => service.validateMarketObservation(AgriculturalMarketObservation(commodity: 'sorghum', market: 'sample market', price: -1, currency: 'SDG', unit: 'sack', observedAt: DateTime.utc(2026, 10, 20), sourceName: 'source', sourceReference: 'ref')), throwsArgumentError);
+      expect(() => service.validateMarketObservation(AgriculturalMarketObservation(commodity: 'sorghum', market: 'sample market', price: double.nan, currency: 'SDG', unit: 'sack', observedAt: DateTime.utc(2026, 10, 20), sourceName: 'source', sourceReference: 'ref')), throwsArgumentError);
+      expect(() => service.validateMarketObservation(AgriculturalMarketObservation(commodity: 'sorghum', market: 'sample market', price: double.infinity, currency: 'SDG', unit: 'sack', observedAt: DateTime.utc(2026, 10, 20), sourceName: 'source', sourceReference: 'ref')), throwsArgumentError);
     });
     test('resource planner calculates shortages without inventing prices', () {
       final plan = service.planResources(const [FarmResourceNeed(name: 'seed', quantity: 20, availableQuantity: 12, unit: 'kg'), FarmResourceNeed(name: 'water', quantity: 100, availableQuantity: 100, unit: 'L')]);
       expect(plan.shortages, hasLength(1));
       expect(plan.shortages.single.shortage, 8);
       expect(() => service.planResources(const [FarmResourceNeed(name: 'seed', quantity: -2, unit: 'kg')]), throwsArgumentError);
+      expect(() => service.planResources([FarmResourceNeed(name: 'seed', quantity: double.infinity, unit: 'kg')]), throwsArgumentError);
+      expect(() => service.planResources(const [FarmResourceNeed(name: ' ', quantity: 1, unit: 'kg')]), throwsArgumentError);
     });
   });
 }
