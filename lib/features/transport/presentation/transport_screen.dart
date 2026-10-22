@@ -99,8 +99,8 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
   double? _number(TextEditingController controller) =>
       double.tryParse(controller.text.trim());
 
-  DateTime? _observationDate(TextEditingController controller) {
-    final value = controller.text.trim();
+  DateTime? _dateOnly(String rawValue) {
+    final value = rawValue.trim();
     if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) return null;
     final parsed = DateTime.tryParse(value);
     if (parsed == null ||
@@ -114,7 +114,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
 
   Future<void> _saveRoute() async {
     final source = _routeSource.text.trim();
-    final observedAt = _observationDate(_routeObservedAt);
+    final observedAt = _dateOnly(_routeObservedAt.text);
     final route = PublicTransportRoute(
       operator: _routeOperator.text,
       routeName: _routeName.text,
@@ -145,8 +145,8 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
     }
     final insuranceText = _insuranceExpiry.text.trim();
     final maintenanceText = _maintenanceDue.text.trim();
-    final insuranceDate = insuranceText.isEmpty ? null : DateTime.tryParse(insuranceText);
-    final maintenanceDate = maintenanceText.isEmpty ? null : DateTime.tryParse(maintenanceText);
+    final insuranceDate = insuranceText.isEmpty ? null : _dateOnly(insuranceText);
+    final maintenanceDate = maintenanceText.isEmpty ? null : _dateOnly(maintenanceText);
     if ((insuranceText.isNotEmpty && insuranceDate == null) ||
         (maintenanceText.isNotEmpty && maintenanceDate == null)) {
       _message('استخدم صيغة التاريخ YYYY-MM-DD.');
@@ -236,7 +236,7 @@ class _AurenTransportScreenState extends State<AurenTransportScreen> {
 
   Future<void> _savePort() async {
     final source = _portSource.text.trim();
-    final observedAt = _observationDate(_portObservedAt);
+    final observedAt = _dateOnly(_portObservedAt.text);
     final port = PortInformation(
       portName: _portName.text,
       country: _portCountry.text,
