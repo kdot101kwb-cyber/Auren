@@ -10,6 +10,16 @@ abstract interface class AurenAiGateway {
   });
 }
 
+/// Only errors of this type are eligible for the local fallback response.
+class AurenAiFallbackEligibleException implements Exception {
+  const AurenAiFallbackEligibleException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class LocalAiGateway implements AurenAiGateway {
   @override
   Future<AurenAiResponse> send({
@@ -23,8 +33,9 @@ class LocalAiGateway implements AurenAiGateway {
   }
 }
 
-/// Uses the real authenticated AI gateway when configured, while keeping
-/// development/offline builds usable when no endpoint is supplied.
+/// Uses the authenticated AI gateway when configured. It only falls back
+/// locally for explicitly eligible configuration/offline failures; auth,
+/// validation, permission, and unknown programming errors are not swallowed.
 class ResilientAurenAiGateway implements AurenAiGateway {
   final AurenAiGateway remote;
   final AurenAiGateway fallback;
@@ -47,14 +58,14 @@ class ResilientAurenAiGateway implements AurenAiGateway {
         message: message,
         requestId: requestId,
       );
-    } on StateError {
+    } on AurenAiFallbackEligibleException {
       return fallback.send(
         conversationId: conversationId,
         message: message,
       );
     } on FirebaseFunctionsException catch (e) {
-      // Use the local response only for infrastructure/offline failures.
-      // Do not hide authentication, permission, validation, or provider errors.
+      // Only infrastructure failures may use the local fallback.
+      // Authentication, permission, validation, and provider errors propagate.
       const transientCodes = {
         'unavailable',
         'deadline-exceeded',
