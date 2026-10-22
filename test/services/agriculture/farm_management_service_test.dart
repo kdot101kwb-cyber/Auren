@@ -12,6 +12,8 @@ void main() {
     });
     test('livestock log validates and reports follow-up due time', () {
       final log = service.createLivestockLog(animalGroup: 'goats', observedAt: DateTime.utc(2026, 10, 20), observation: 'reduced appetite; record only', nextCheckAt: DateTime.utc(2026, 10, 21), needsVeterinaryReview: true);
+      expect(log.isFollowUpDue(DateTime.utc(2026, 10, 20)), isFalse);
+      expect(log.isFollowUpDue(DateTime.utc(2026, 10, 21)), isTrue, reason: 'follow-up is due at the scheduled instant');
       expect(log.isFollowUpDue(DateTime.utc(2026, 10, 22)), isTrue);
       expect(log.needsVeterinaryReview, isTrue);
       expect(() => service.createLivestockLog(animalGroup: 'goats', observedAt: DateTime.utc(2026, 10, 21), observation: 'check', nextCheckAt: DateTime.utc(2026, 10, 20)), throwsArgumentError);
@@ -44,6 +46,10 @@ void main() {
       final plan = service.planResources(const [FarmResourceNeed(name: 'seed', quantity: 20, availableQuantity: 12, unit: 'kg'), FarmResourceNeed(name: 'water', quantity: 100, availableQuantity: 100, unit: 'L')]);
       expect(plan.shortages, hasLength(1));
       expect(plan.shortages.single.shortage, 8);
+      expect(plan.needs, hasLength(2));
+      expect(plan.shortages.single.name, 'seed');
+      expect(plan.shortages.single.unit, 'kg');
+      expect(() => plan.needs.add(const FarmResourceNeed(name: 'fertilizer', quantity: 1, unit: 'kg')), throwsUnsupportedError);
       expect(() => service.planResources(const [FarmResourceNeed(name: 'seed', quantity: -2, unit: 'kg')]), throwsArgumentError);
       expect(() => service.planResources([FarmResourceNeed(name: 'seed', quantity: double.infinity, unit: 'kg')]), throwsArgumentError);
       expect(() => service.planResources(const [FarmResourceNeed(name: ' ', quantity: 1, unit: 'kg')]), throwsArgumentError);
