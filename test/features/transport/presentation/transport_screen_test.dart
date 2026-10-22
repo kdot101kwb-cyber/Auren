@@ -45,6 +45,7 @@ void main() {
       );
 
   Future<void> openSection(WidgetTester tester, String title) async {
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold))).clearSnackBars();
     await tester.pumpAndSettle();
     final section = find.ancestor(
       of: find.text(title),
@@ -105,7 +106,10 @@ void main() {
     await tester.tap(find.text('حفظ محليًا'));
     await tester.pumpAndSettle();
 
-    expect(find.text('أدخل المشغّل والمسار والتوقفات ومصدرًا واضحًا للمعلومات.'), findsOneWidget);
+    expect(
+      find.text('أدخل المشغّل والمسار والتوقفات واسم المصدر وتاريخ ملاحظته بصيغة YYYY-MM-DD.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('cargo draft records selected status and delivery requirements', (tester) async {
