@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/social/community_collaboration_service.dart';
+import '../../../services/social/community_workbench_store.dart';
 
 class AurenCollaborationSpacesScreen extends StatefulWidget {
   const AurenCollaborationSpacesScreen({super.key});
@@ -13,11 +14,14 @@ class AurenCollaborationSpacesScreen extends StatefulWidget {
 class _AurenCollaborationSpacesScreenState
     extends State<AurenCollaborationSpacesScreen> {
   final _service = AurenCollaborationService();
+  final _workbench = AurenCommunityWorkbenchStore();
   bool _busy = false;
 
   Future<void> _createSpace() async {
     final title = TextEditingController();
     final description = TextEditingController();
+    final topic = TextEditingController();
+    final rules = TextEditingController();
     final create = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -28,6 +32,10 @@ class _AurenCollaborationSpacesScreenState
               decoration: const InputDecoration(labelText: 'اسم المساحة')),
             TextField(controller: description, maxLength: 2000, maxLines: 3,
               decoration: const InputDecoration(labelText: 'وصف المساحة')),
+            TextField(controller: topic, maxLength: 80,
+              decoration: const InputDecoration(labelText: 'الموضوع')), 
+            TextField(controller: rules, maxLength: 2000, maxLines: 3,
+              decoration: const InputDecoration(labelText: 'قواعد المساحة (محلية على هذا الجهاز)')),
           ]),
         ),
         actions: [
@@ -41,11 +49,14 @@ class _AurenCollaborationSpacesScreenState
     if (create != true) {
       title.dispose();
       description.dispose();
+      topic.dispose();
+      rules.dispose();
       return;
     }
     setState(() => _busy = true);
     try {
-      await _service.createSpace(title: title.text, description: description.text);
+      final spaceId = await _service.createSpace(title: title.text, description: description.text);
+      await _workbench.saveSpaceGuidelines(spaceId: spaceId, topic: topic.text, rules: rules.text);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم إنشاء مساحة التعاون')));
@@ -58,6 +69,8 @@ class _AurenCollaborationSpacesScreenState
     } finally {
       title.dispose();
       description.dispose();
+      topic.dispose();
+      rules.dispose();
       if (mounted) setState(() => _busy = false);
     }
   }
@@ -140,17 +153,28 @@ class _AurenCollaborationSpacesScreenState
             itemBuilder: (context, index) {
               final space = spaces[index];
               final isOwner = space.ownerId == _service.uid;
-              return Card(child: ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.groups_outlined)),
-                title: Text(space.title),
-                subtitle: Text(space.description + '\n' +
-                  space.memberIds.length.toString() + ' أعضاء'),
-                isThreeLine: true,
-                trailing: isOwner
-                    ? IconButton(tooltip: 'دعوة عضو',
-                        onPressed: () => _invite(space),
-                        icon: const Icon(Icons.person_add_alt_1))
-                    : const Icon(Icons.lock_open_outlined),
+              return Card(child: FutureBuilder<Map<String, dynamic>>(
+                future: _workbench.readSpaceGuidelines(space.id),
+                builder: (context, meta) {
+                  final topic = meta.data?['topic'] as String? ?? '';
+                  final rules = meta.data?['rules'] as String? ?? '';
+                  return ListTile(
+                    leading: const CircleAvatar(child: Icon(Icons.groups_outlined)),
+                    title: Text(space.title),
+                    subtitle: Text([
+                      space.description,
+                      if (topic.isNotEmpty) 'الموضوع: $topic',
+                      if (rules.isNotEmpty) 'القواعد المحلية: $rules',
+                      '${space.memberIds.length} أعضاء',
+                    ].where((line) => line.isNotEmpty).join('\\n')),
+                    isThreeLine: true,
+                    trailing: isOwner
+                        ? IconButton(tooltip: 'دعوة عضو',
+                            onPressed: () => _invite(space),
+                            icon: const Icon(Icons.person_add_alt_1))
+                        : const Icon(Icons.lock_open_outlined),
+                  );
+                },
               ));
             },
           );
