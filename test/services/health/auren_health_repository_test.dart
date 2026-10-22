@@ -12,6 +12,13 @@ void main() {
     repository = AurenHealthRepository(firestore: firestore);
   });
 
+  HealthDataSharingConsent consentAt(DateTime time) =>
+      HealthDataSharingConsent.fromUserConfirmation(
+        accepted: true,
+        purpose: 'User requested health check-in sync',
+        grantedAt: time,
+      );
+
   test('remote reads fail without explicit health sharing consent', () async {
     await expectLater(
       repository.watchCheckins('user-1').first,
@@ -72,16 +79,41 @@ void main() {
     );
   });
 
-  test('confirmed consent enables the legacy remote check-in path', () async {
-    final consent = HealthDataSharingConsent.fromUserConfirmation(
-      accepted: true,
-      purpose: 'User requested health check-in sync',
-      grantedAt: DateTime.utc(2026, 10, 21),
+  test('expired consent is rejected before remote writes', () async {
+    final consent = consentAt(
+      DateTime.now().toUtc().subtract(
+        HealthDataSharingConsent.maxAge + const Duration(seconds: 1),
+      ),
     );
+
+    await expectLater(
+      repository.saveCheckin(
+        uid: 'user-1',
+        dateId: '2026-10-21',
+        activityMinutes: 20,
+        waterGlasses: 4,
+        sleepHours: 7,
+        mood: 4,
+        consent: consent,
+      ),
+      throwsA(isA<StateError>()),
+    );
+
+    final snapshot = await firestore
+        .collection('users')
+        .doc('user-1')
+        .collection('healthCheckins')
+        .get();
+    expect(snapshot.docs, isEmpty);
+  });
+
+  test('confirmed consent enables bounded remote check-in reads and writes',
+      () async {
+    final consent = consentAt(DateTime.now().toUtc());
 
     await repository.saveCheckin(
       uid: 'user-1',
-      dateId: '2026-10-21',
+      dateId: '2026-10-22',
       activityMinutes: 20,
       waterGlasses: 4,
       sleepHours: 7,
@@ -101,14 +133,11 @@ void main() {
   });
 
   test('rejects invalid check-in values even after consent', () async {
-    final consent = HealthDataSharingConsent.fromUserConfirmation(
-      accepted: true,
-      purpose: 'User requested health check-in sync',
-    );
+    final consent = consentAt(DateTime.now().toUtc());
     await expectLater(
       repository.saveCheckin(
         uid: 'user-1',
-        dateId: '2026-10-21',
+        dateId: '2026-10-22',
         activityMinutes: 1441,
         waterGlasses: 4,
         sleepHours: 7,
