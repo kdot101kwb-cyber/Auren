@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/family/family_pot_repository.dart';
 import '../../../services/family/auren_family_wallet_repository.dart';
+import '../../../services/family/auren_family_wallet_insights.dart';
 
 class AurenFamilyScreen extends StatefulWidget {
   const AurenFamilyScreen({super.key});
