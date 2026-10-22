@@ -8,11 +8,11 @@ The repository's available numbered systems document groups Transport/Taxi with 
 
 ## Five bounded capabilities
 
-1. **Public Transport Intelligence** — typed route/stop metadata. A route is publishable only with a named source and observation timestamp. No routes, stop sequences, fares, or departure times are invented.
+1. **Public Transport Intelligence** — typed route/stop metadata. A route requires a named source and a user-entered observation date in `YYYY-MM-DD` format; the app does not silently substitute the current time for the observation date. No routes, stop sequences, fares, or departure times are invented.
 2. **Vehicle Ownership** — validated local domain records for make/model/year, registration note, insurance expiry, maintenance due date and notes. The screen surfaces local insurance/maintenance attention flags, but does not upload document files, schedule operating-system notifications, or send reminders.
 3. **Mobility Cost Planner** — deterministic estimate from user-entered distance, trip count, fuel consumption, fuel price, tolls, parking and other costs. Currency is mandatory; there is no exchange-rate lookup. Assumptions are shown.
 4. **Freight & Cargo Coordination** — shipment reference, origin/destination, carrier label, status and delivery requirements. It records user-entered status only and does not contact carriers.
-5. **Maritime & Port Intelligence** — port/country operational notes require named source evidence and observation timestamp before being described as sourced. No live port status or schedules are claimed.
+5. **Maritime & Port Intelligence** — port/country operational notes require a named source and a user-entered observation date in `YYYY-MM-DD` format before being described as sourced. No live port status or schedules are claimed.
 
 ## Safety, offline and cost boundaries
 
