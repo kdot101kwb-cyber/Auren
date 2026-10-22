@@ -177,3 +177,26 @@ test('AI personal context reads are guarded by an explicit opt-in', () => {
   assert.ok(gate >= 0 && goalsRead > gate && goalsRead < prompt);
   assert.ok(memoryRead > goalsRead && memoryRead < prompt);
 });
+
+
+test('AI provider diagnostics do not persist upstream error text or duplicate private action payloads', () => {
+  const healthStart = index.indexOf('async function updateAurenAiProviderHealth');
+  const healthEnd = index.indexOf('async function getAurenAiProviderHealth', healthStart);
+  const healthHelper = index.slice(healthStart, healthEnd);
+  assert.ok(healthStart >= 0 && healthEnd > healthStart);
+  assert.match(healthHelper, /lastError: ok \? '' : safeCode/);
+  assert.doesNotMatch(healthHelper, /lastError:.*String\(diagnostic/);
+
+  const gatewayStart = index.indexOf('exports.aurenAiGateway =');
+  const gatewayEnd = index.indexOf('exports.analyzeAurenPodcastEpisode =', gatewayStart);
+  const gateway = index.slice(gatewayStart, gatewayEnd);
+  assert.ok(gatewayStart >= 0 && gatewayEnd > gatewayStart);
+  const requestClaim = gateway.slice(
+    gateway.indexOf('tx.set(requestRef, {'),
+    gateway.indexOf('}, {merge: true});', gateway.indexOf('tx.set(requestRef, {')),
+  );
+  assert.doesNotMatch(requestClaim, /actionProposal|actionPlan/);
+  assert.match(gateway, /errorCode: lastProviderError/);
+  assert.doesNotMatch(gateway, /error: lastProviderError/);
+  assert.match(gateway, /throw new Error\('AUREN AI is temporarily unavailable\. Please try again later\.'\)/);
+});
