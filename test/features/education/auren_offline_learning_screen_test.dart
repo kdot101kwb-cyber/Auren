@@ -43,15 +43,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Saved text for airplane mode'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -450));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('إكمال الدرس'));
+    await tester.scrollUntilVisible(
+      find.text('إكمال الدرس'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('إكمال الدرس'));
     await tester.pumpAndSettle();
     expect(find.text('مكتمل'), findsOneWidget);
 
-    await tester.ensureVisible(find.byTooltip('حذف الدرس المحلي'));
+    await tester.scrollUntilVisible(
+      find.byTooltip('حذف الدرس المحلي'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('حذف الدرس المحلي'));
     await tester.pumpAndSettle();
