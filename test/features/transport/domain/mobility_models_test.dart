@@ -13,6 +13,37 @@ void main() {
       expect(route.isPublishable, isFalse);
     });
 
+
+    test('normalizes stops and exposes an immutable stop list', () {
+      final route = PublicTransportRoute(
+        operator: ' Operator ',
+        routeName: ' R1 ',
+        stops: [' Central ', '', 'Market'],
+        evidence: MobilityEvidence(
+          sourceName: 'Official schedule',
+          observedAt: DateTime.utc(2026, 10, 21),
+        ),
+      );
+
+      expect(route.operator, ' Operator ');
+      expect(route.stops, ['Central', 'Market']);
+      expect(() => route.stops.add('Airport'), throwsUnsupportedError);
+      expect(route.isPublishable, isTrue);
+    });
+
+    test('rejects whitespace-only source evidence', () {
+      final route = PublicTransportRoute(
+        operator: 'Operator',
+        routeName: 'R1',
+        stops: ['Central'],
+        evidence: MobilityEvidence(
+          sourceName: '   ',
+          observedAt: DateTime.utc(2026, 10, 21),
+        ),
+      );
+      expect(route.isPublishable, isFalse);
+    });
+
     test('accepts route details only when source evidence is named', () {
       final route = PublicTransportRoute(
         operator: 'Operator',
