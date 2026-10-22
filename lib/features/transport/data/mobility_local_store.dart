@@ -39,10 +39,13 @@ class MobilityLocalStore {
   }
 
   Future<void> _write(String key, Iterable<Map<String, dynamic>> records) async {
-    await (await _prefs).setStringList(
+    final saved = await (await _prefs).setStringList(
       key,
       records.map(jsonEncode).toList(growable: false),
     );
+    if (!saved) {
+      throw StateError('Local mobility records could not be persisted.');
+    }
   }
 
   DateTime? _date(dynamic value) =>
