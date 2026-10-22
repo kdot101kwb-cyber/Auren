@@ -112,6 +112,7 @@ test('users cannot read or update reports and case-event writes remain denied wi
 test('appeal workflows remain denied until explicit owner and moderator rules exist', async () => {
   const appellant = dbFor('appellant-a');
   const moderator = dbFor('moderator-a');
+  const claimedAdmin = testEnv.authenticatedContext('claimed-admin', { admin: true }).firestore();
   const now = firebase.firestore.Timestamp.now();
 
   await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').set({
@@ -134,11 +135,20 @@ test('appeal workflows remain denied until explicit owner and moderator rules ex
 
   await assertFails(appellant.doc('community_case_appeals/report-1__appellant-a').get());
   await assertFails(moderator.collection('community_case_appeals').where('status', '==', 'pending').get());
+  await assertFails(claimedAdmin.doc('community_case_appeals/report-1__appellant-a').get());
+  await assertFails(claimedAdmin.collection('community_case_appeals').where('status', '==', 'pending').get());
+  await assertFails(claimedAdmin.doc('community_case_appeals/report-1__appellant-a').update({
+    status: 'rejected', reviewedBy: 'claimed-admin', reviewedAt: now, reviewNote: 'Review',
+  }));
   await assertFails(moderator.doc('community_case_appeals/report-1__appellant-a').update({
     status: 'accepted',
     reviewedBy: 'moderator-a',
     reviewedAt: now,
     reviewNote: 'Reviewed',
+  }));
+  await assertFails(claimedAdmin.doc('community_case_events/appeal-event-admin').set({
+    entityType: 'appeal', entityId: 'report-1__appellant-a', actorUid: 'claimed-admin',
+    fromStatus: 'pending', toStatus: 'rejected', note: 'Review', createdAt: now,
   }));
   await assertFails(moderator.doc('community_case_events/appeal-event-1').set({
     entityType: 'appeal',
