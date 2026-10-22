@@ -81,8 +81,11 @@ Provider requests are authenticated server-side and have a 30-second timeout. Th
 
 ## Privacy and provider diagnostics
 
-The AI callable includes the latest 20 messages in provider context. It does not add saved goals or enabled memory unless the request explicitly opts in; current Flutter client calls do not send that opt-in flag.
+The AI callable includes at most 12 recent messages in provider context, caps each historical message at 2,000 characters, and excludes the current user message from history because it is appended once as the final prompt item. It does not add saved goals or enabled memory unless the request explicitly opts in; current Flutter client calls do not send that opt-in flag.
 
 Provider diagnostics must never store upstream error text because providers can echo request or other sensitive details. The gateway now stores a bounded diagnostic code and a short cooldown timestamp instead of the raw upstream message. If all providers fail, the request record stores an error code and the client receives a generic retry message. Detailed raw provider errors are not written to the AI request document or emitted by the AI gateway's all-provider-failed log.
 
 The per-user `ai_requests` document is used for idempotency and response caching. It should contain only operational state, bounded task/intent labels, provider metadata, and the response needed for retries. Do not duplicate raw user prompts, saved-memory content, or action payloads there; the canonical user message remains in the conversation messages collection, and any proposed action payload belongs only in the dedicated pending action record behind approval.
+
+
+Podcast analysis and series/movie/music blueprint generation also avoid persisting raw upstream provider errors. Provider failures are represented by bounded diagnostic codes, and user-facing failure messages remain generic. This focused pass does not certify every AI-powered function or every operational log in the repository.
