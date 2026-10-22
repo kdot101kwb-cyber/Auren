@@ -278,14 +278,16 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                                 if (action == 'done') _toggle(item);
                                 if (action == 'delete') _delete(item);
                                 if (action == 'confirmed' && kind == EverydayLifeKind.localService) {
-                                  _store.save(item.copyWith(informationConfirmed: true)).then((_) => _refresh());
+                                  _store.save(item.copyWith(
+                                    informationConfirmed: !item.informationConfirmed,
+                                  )).then((_) => _refresh());
                                 }
                               },
                               itemBuilder: (_) => [
                                 if (kind == EverydayLifeKind.localService)
                                   PopupMenuItem(
                                     value: 'confirmed',
-                                    child: Text(item.informationConfirmed ? 'تم وضع علامة تحقق' : 'وضع علامة: تحققت منه'),
+                                    child: Text(item.informationConfirmed ? 'إزالة علامة التحقق' : 'وضع علامة: تحققت منه'),
                                   ),
                                 PopupMenuItem(
                                   value: 'favorite',
