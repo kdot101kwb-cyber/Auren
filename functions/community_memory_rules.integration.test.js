@@ -357,12 +357,18 @@ test('trusted reviewer transitions a report with a matching immutable audit even
   }));
 
   const appealRef = reporter.doc('community_case_appeals/report-atomic__reporter-atomic');
-  await assertSucceeds(appealRef.set({
-    reportId: 'report-atomic',
-    appellantUid: 'reporter-atomic',
-    reason: 'Please reconsider the decision.',
-    status: 'pending',
-    createdAt: firebase.firestore.Timestamp.now(),
+  await assertSucceeds(reporter.runTransaction(async (transaction) => {
+    const reportSnapshot = await transaction.get(reporter.doc('reports/report-atomic'));
+    assert.equal(reportSnapshot.data().status, 'resolved');
+    const existingAppeal = await transaction.get(appealRef);
+    assert.equal(existingAppeal.exists, false);
+    transaction.set(appealRef, {
+      reportId: 'report-atomic',
+      appellantUid: 'reporter-atomic',
+      reason: 'Please reconsider the decision.',
+      status: 'pending',
+      createdAt: firebase.firestore.Timestamp.now(),
+    });
   }));
 
   const decisionAt = firebase.firestore.Timestamp.now();
