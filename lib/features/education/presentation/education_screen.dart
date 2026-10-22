@@ -5,6 +5,7 @@ import '../../../core/models/education.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 import 'auren_offline_learning_screen.dart';
 import '../../../services/learning_skills/auren_offline_learning.dart';
+import '../../../services/learning_skills/auren_course_offline_bridge.dart';
 
 class AurenAURENEducationScreen extends StatefulWidget {
   const AurenAURENEducationScreen({super.key});
@@ -98,23 +99,13 @@ class _EducationCourseDetail extends StatelessWidget {
 
   Future<void> _saveLessonOffline(BuildContext context, AurenLesson lesson) async {
     final messenger = ScaffoldMessenger.of(context);
-    final lessonId = 'course-${course.id}-lesson-${lesson.id}';
-    if (lessonId.length > 128) {
-      messenger.showSnackBar(const SnackBar(content: Text('تعذر حفظ الدرس: معرّف الدرس طويل جداً.')));
-      return;
-    }
-    if (lesson.title.trim().isEmpty || lesson.content.trim().isEmpty) {
-      messenger.showSnackBar(const SnackBar(content: Text('هذا الدرس لا يحتوي على نص صالح للحفظ دون إنترنت.')));
-      return;
-    }
     try {
-      await AurenOfflineLearning(const AurenSharedPreferencesLearningStore()).saveLesson(
-        AurenOfflineLesson(
-          id: lessonId,
-          title: lesson.title,
-          content: lesson.content,
-          updatedAt: DateTime.now().toUtc(),
-        ),
+      final offline = AurenOfflineLearning(const AurenSharedPreferencesLearningStore());
+      await AurenCourseOfflineBridge(offline).savePublishedLesson(
+        courseId: course.id,
+        lessonId: lesson.id,
+        title: lesson.title,
+        content: lesson.content,
       );
       messenger.showSnackBar(SnackBar(content: Text('تم حفظ «${lesson.title}» على هذا الجهاز.')));
     } on ArgumentError {
