@@ -181,4 +181,69 @@ void main() {
     final reloaded = AurenCommunityWorkbenchStore();
     expect((await reloaded.listProjects()).single['id'], id);
   });
+
+  test('local drafts can be deleted without touching remote community records', () async {
+    final projectId = await store.createProject(
+      title: 'Local project',
+      description: '',
+      communityId: 'community-1',
+    );
+    final proposalId = await store.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Local proposal',
+      proposedRule: 'Keep the space safe.',
+    );
+    final meetupId = await store.createMeetupDraft(
+      title: 'Local meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested location',
+      capacity: 12,
+    );
+
+    await store.deleteProject(projectId);
+    await store.deleteProposal(proposalId);
+    await store.deleteMeetupDraft(meetupId);
+
+    expect(await store.listProjects(), isEmpty);
+    expect(await store.listProposals(), isEmpty);
+    expect(await store.listMeetupDrafts(), isEmpty);
+    await expectLater(store.deleteProject(projectId), throwsStateError);
+    await expectLater(store.deleteProposal(' '), throwsArgumentError);
+    await expectLater(store.deleteMeetupDraft(meetupId), throwsStateError);
+  });
+
+  test('local attendance list is bounded and existing attendee can update status', () async {
+    final meetupId = await store.createMeetupDraft(
+      title: 'Bounded meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10000,
+    );
+    for (var i = 0; i < 1000; i++) {
+      await store.setDraftAttendance(
+        meetupId: meetupId,
+        attendeeId: 'local-$i',
+        status: 'interested',
+      );
+    }
+    await store.setDraftAttendance(
+      meetupId: meetupId,
+      attendeeId: 'local-0',
+      status: 'going',
+    );
+    await expectLater(
+      store.setDraftAttendance(
+        meetupId: meetupId,
+        attendeeId: 'local-overflow',
+        status: 'going',
+      ),
+      throwsStateError,
+    );
+    final meetup = (await store.listMeetupDrafts()).single;
+    expect((meetup['attendance'] as Map).length, 1000);
+    expect((meetup['attendance'] as Map)['local-0'], 'going');
+  });
+
 }
