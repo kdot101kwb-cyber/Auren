@@ -1,6 +1,16 @@
 name: Firestore Rules Validation
 
 on:
+  push:
+    branches:
+      - feat/ai-provider-privacy-hardening
+    paths:
+      - "firestore.rules"
+      - "firebase.json"
+      - "firestore.indexes.json"
+      - "functions/*rules*"
+      - "functions/ai_privacy_rules.integration.test.js"
+      - ".github/workflows/firestore-rules-validation.yml"
   pull_request:
     paths:
       - "firestore.rules"
@@ -37,4 +47,4 @@ jobs:
       - name: Compile rules and run authorization integration tests in isolated emulator
         run: >-
           firebase emulators:exec --only firestore --project demo-auren-rules
-          "node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/education_rules.integration.test.js"
+          "node --test functions/action_rules.integration.test.js functions/supplier_rules.integration.test.js functions/education_rules.integration.test.js functions/ai_privacy_rules.integration.test.js"
