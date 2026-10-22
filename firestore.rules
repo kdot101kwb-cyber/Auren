@@ -1000,6 +1000,45 @@ match /users/{userId}/kids_activity_progress/{activityId} {
     
     
     
+    match /users/{userId}/familyWallet/{walletId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && walletId == 'current'
+        && requestData().keys().hasOnly(['ownerUid','currency','balancesMinor','createdAt','updatedAt'])
+        && requestData().ownerUid == userId
+        && requestData().currency is string
+        && requestData().currency.size() == 3
+        && requestData().balancesMinor is map
+        && hasCreatedAtTimestamp()
+        && hasUpdatedAtTimestamp();
+      allow update: if isOwner(userId)
+        && walletId == 'current'
+        && resource.data.ownerUid == userId
+        && requestData().keys().hasOnly(['ownerUid','currency','balancesMinor','createdAt','updatedAt'])
+        && requestData().ownerUid == userId
+        && requestData().currency == resource.data.currency
+        && requestData().balancesMinor is map
+        && requestData().createdAt == resource.data.createdAt
+        && hasUpdatedAtTimestamp();
+      allow delete: if isOwner(userId) && walletId == 'current';
+
+      match /entries/{entryId} {
+        allow read: if isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId;
+        allow create: if isOwner(userId)
+          && get(/databases/$(database)/documents/users/$(userId)/familyWallet/current).data.ownerUid == userId
+          && requestData().keys().hasOnly(['ownerUid','title','amountMinor','currency','kind','createdAt'])
+          && requestData().ownerUid == userId
+          && nonEmptyStringAtMost(requestData().title,160)
+          && intWithin(requestData().amountMinor,1,1000000000000)
+          && requestData().currency is string
+          && requestData().currency.size() == 3
+          && requestData().kind in ['income','expense']
+          && hasCreatedAtTimestamp();
+        allow update, delete: if false;
+      }
+    }
+
     match /users/{userId}/familyMembers/{memberId} {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId)
