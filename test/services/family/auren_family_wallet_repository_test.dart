@@ -172,6 +172,36 @@ void main() {
       expect(entries.docs, isEmpty);
     });
 
+    test('rejects income that would exceed the supported balance ceiling', () async {
+      await repository.initialize(uid: 'user-1', currency: 'USD');
+      await repository.recordEntry(
+        uid: 'user-1',
+        title: 'Maximum supported balance',
+        amountMinor: 1000000000000,
+        currency: 'USD',
+        kind: 'income',
+      );
+
+      await expectLater(
+        repository.recordEntry(
+          uid: 'user-1',
+          title: 'Overflow attempt',
+          amountMinor: 1,
+          currency: 'USD',
+          kind: 'income',
+        ),
+        throwsStateError,
+      );
+
+      final snapshot = await firestore
+          .collection('users')
+          .doc('user-1')
+          .collection('familyWallet')
+          .doc('current')
+          .get();
+      expect(snapshot.data()?['balancesMinor'], {'USD': 1000000000000});
+    });
+
     test('rejects invalid entry details', () {
       expect(
         repository.recordEntry(
