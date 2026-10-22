@@ -21,12 +21,16 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
   static const _sections = <EverydayLifeKind>[
     EverydayLifeKind.task,
     EverydayLifeKind.household,
+    EverydayLifeKind.householdSupply,
+    EverydayLifeKind.householdMaintenance,
     EverydayLifeKind.appointmentDraft,
     EverydayLifeKind.localService,
   ];
   static const _titles = <String>[
     'Organizer',
     'Home',
+    'Supplies',
+    'Maintenance',
     'Appointments',
     'Local services',
   ];
@@ -68,9 +72,16 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
     final providerController = TextEditingController();
     final contactController = TextEditingController();
     final locationController = TextEditingController();
+    final categoryController = TextEditingController();
+    final quantityController = TextEditingController();
+    final requestedWindowController = TextEditingController();
     final isDirectory = kind == EverydayLifeKind.localService;
     final isAppointment = kind == EverydayLifeKind.appointmentDraft;
-    final isHousehold = kind == EverydayLifeKind.household;
+    final isHousehold = kind == EverydayLifeKind.household ||
+        kind == EverydayLifeKind.householdSupply ||
+        kind == EverydayLifeKind.householdMaintenance;
+    final isSupply = kind == EverydayLifeKind.householdSupply;
+    final isMaintenance = kind == EverydayLifeKind.householdMaintenance;
     final title = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -85,6 +96,8 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
               Text(
                 isDirectory ? 'إضافة خدمة محلية' :
                 isAppointment ? 'مسودة طلب خدمة / موعد' :
+                isSupply ? 'إضافة مستلزم منزلي' :
+                isMaintenance ? 'إضافة صيانة منزلية' :
                 isHousehold ? 'إضافة مهمة منزلية' : 'إضافة مهمة أو ملاحظة',
                 style: Theme.of(sheetContext).textTheme.titleLarge,
               ),
@@ -99,6 +112,12 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                 decoration: const InputDecoration(labelText: 'تفاصيل / ملاحظات'),
                 maxLines: 3,
               ),
+              if (isSupply)
+                TextField(controller: quantityController, decoration: const InputDecoration(labelText: 'الكمية (اختياري)')),
+              if (isDirectory)
+                TextField(controller: categoryController, decoration: const InputDecoration(labelText: 'التصنيف (اختياري)')),
+              if (isAppointment || isMaintenance)
+                TextField(controller: requestedWindowController, decoration: const InputDecoration(labelText: 'الوقت المطلوب (اختياري؛ غير مؤكد)')),
               if (isDirectory || isAppointment) ...[
                 TextField(controller: providerController, decoration: const InputDecoration(labelText: 'اسم مقدم الخدمة (اختياري)')),
                 TextField(controller: contactController, decoration: const InputDecoration(labelText: 'وسيلة التواصل (اختياري)')),
@@ -136,6 +155,9 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
       providerController.dispose();
       contactController.dispose();
       locationController.dispose();
+      categoryController.dispose();
+      quantityController.dispose();
+      requestedWindowController.dispose();
       return;
     }
     final item = EverydayLifeItem(
@@ -143,6 +165,9 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
       kind: kind,
       title: title,
       details: detailsController.text.trim(),
+      category: categoryController.text.trim(),
+      quantity: quantityController.text.trim(),
+      requestedWindow: requestedWindowController.text.trim(),
       createdAt: DateTime.now().toUtc().toIso8601String(),
       providerName: providerController.text.trim(),
       contact: contactController.text.trim(),
@@ -154,6 +179,9 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
     providerController.dispose();
     contactController.dispose();
     locationController.dispose();
+    categoryController.dispose();
+    quantityController.dispose();
+    requestedWindowController.dispose();
     try {
       await _store.save(item);
       await _refresh();
@@ -254,9 +282,13 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                               ? 'أضف خدمة بنفسك'
                               : kind == EverydayLifeKind.appointmentDraft
                                   ? 'إنشاء مسودة طلب'
-                                  : kind == EverydayLifeKind.household
-                                      ? 'أضف مهمة منزلية'
-                                      : 'أضف مهمة / ملاحظة'),
+                                  : kind == EverydayLifeKind.householdSupply
+                                      ? 'أضف مستلزم منزلي'
+                                      : kind == EverydayLifeKind.householdMaintenance
+                                          ? 'أضف مهمة صيانة'
+                                          : kind == EverydayLifeKind.household
+                                              ? 'أضف مهمة منزلية'
+                                              : 'أضف مهمة / ملاحظة'),
                         ),
                         const SizedBox(height: 8),
                         if (entries.isEmpty)
@@ -313,6 +345,9 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
   String _subtitle(EverydayLifeItem item) {
     final parts = <String>[];
     if (item.details.isNotEmpty) parts.add(item.details);
+    if (item.category.isNotEmpty) parts.add('التصنيف: ${item.category}');
+    if (item.quantity.isNotEmpty) parts.add('الكمية: ${item.quantity}');
+    if (item.requestedWindow.isNotEmpty) parts.add('الوقت المطلوب (غير مؤكد): ${item.requestedWindow}');
     if (item.kind == EverydayLifeKind.appointmentDraft) parts.add('مسودة غير مرسلة');
     if (item.kind == EverydayLifeKind.localService) {
       if (item.providerName.isNotEmpty) parts.add(item.providerName);
