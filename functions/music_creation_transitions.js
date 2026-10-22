@@ -36,7 +36,7 @@ function resolveMusicSubmission({result, artifactCheck}) {
       : validArtifact
         ? ''
         : candidate
-          ? 'Music output failed artifact validation: ' + artifactCheck.reason
+          ? 'Music output failed artifact validation: ' + validationReason
           : externalId
             ? ''
             : 'Provider returned no artifact.',
