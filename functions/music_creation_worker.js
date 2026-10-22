@@ -53,6 +53,8 @@ async function run(ref){
   await ref.set({musicProductionStage:'ready',musicProductionStatus:'ready',musicWorkerLockUntilMs:0,musicArtifact:d.output,musicProductionQc:{version:2,result:'passed',taskCount:1,artifactChecks:[check]},progress:100,updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});return;
  }
  if(d.status==='failed'||Number(d.lockUntilMs||0)>Date.now())return;
+ // A terminal provider result without a materialized artifact must not silently trigger a second generation.
+ if(d.status==='waiting_provider'&&!d.externalJobId)return;
  if(Number(d.attempts||0)>=MAX_ATTEMPTS&&!d.externalJobId){
   await taskRef.set({status:'failed',lockUntilMs:0,lastError:'Maximum music generation attempts reached.',updatedAt:admin.firestore.FieldValue.serverTimestamp()},{merge:true});
   return;
