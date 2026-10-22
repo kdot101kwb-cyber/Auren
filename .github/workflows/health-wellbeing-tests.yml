@@ -8,6 +8,7 @@ on:
       - feat/health-privacy-hardening
       - feat/ai-gateway-failure-safety
       - feat/ai-context-privacy-defaults
+      - feat/ai-provider-privacy-hardening
 
 permissions:
   contents: read
@@ -39,7 +40,7 @@ jobs:
         run: flutter test test/features/messenger/ai_message_privacy_notice_test.dart
       - name: Test AI gateway fallback safety
         run: flutter test test/services/ai/ai_gateway_test.dart
-      - name: Test AI personal-context privacy gate
+      - name: Test AI privacy regressions
         run: node --test --test-name-pattern=AI functions/index.test.js
       - name: Analyze wellbeing, AI gateway, and privacy disclosure
         run: flutter analyze lib/services/health/auren_wellbeing_local_store.dart lib/services/health/health_data_sharing_consent.dart lib/services/health/auren_health_repository.dart lib/features/health/presentation/health_wellbeing_screen.dart lib/features/health/presentation/health_sports_screen.dart lib/features/messenger/presentation/messenger_screen.dart lib/features/messenger/presentation/ai_message_privacy_notice.dart lib/services/ai/ai_gateway.dart lib/services/ai/https_ai_gateway.dart
