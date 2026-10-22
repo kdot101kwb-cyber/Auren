@@ -77,3 +77,10 @@ The action-executor requires:
 - `AUREN_AI_MODEL`
 
 Provider requests are authenticated server-side and have a 30-second timeout. The provider key is never sent to Flutter.
+
+
+## Personal-context consent gate
+
+Saved goals and enabled memory are excluded from AI provider prompts by default. Setting `includePersonalContext=true` is not sufficient on its own: the backend also requires `users/{uid}/privacyConsents/aiPersonalContext` to exist with `accepted: true`, `purpose: "ai_personal_context"`, and a future `expiresAt` timestamp. This check runs before reading goals or memory. Missing, malformed, revoked, or expired consent fails closed.
+
+The explicit-consent UI/write path is not implemented in this batch. Consequently, personal context remains unavailable unless a trusted consent flow creates the expected record. Do not manually seed this record as a workaround; build and test a clear user-facing grant/revoke flow before enabling the feature. This server guard is defense in depth, not proof that a user interface has already obtained informed consent.
