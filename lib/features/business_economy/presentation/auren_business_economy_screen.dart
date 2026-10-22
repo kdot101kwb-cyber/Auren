@@ -54,6 +54,7 @@ class AurenBusinessEconomyScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('AUREN Business & Economy')),
       body: ListView(
+        key: const ValueKey('business-economy-hub-list'),
         padding: const EdgeInsets.all(16),
         children: [
           Card(
