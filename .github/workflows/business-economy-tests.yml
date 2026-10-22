@@ -11,7 +11,7 @@ permissions:
 jobs:
   business-economy:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,11 +23,13 @@ jobs:
           cache: true
       - name: Resolve dependencies
         run: flutter pub get
-      - name: Format business and economy sources
-        run: dart format lib/features/business_economy test/features/business_economy
+      - name: Check business and economy formatting
+        run: dart format --output=none --set-exit-if-changed lib/features/business_economy test/features/business_economy
       - name: Test business and economy logic
         run: flutter test test/features/business_economy/business_economy_logic_test.dart
       - name: Test business and economy screens
         run: flutter test test/features/business_economy/business_economy_screen_test.dart
       - name: Analyze business and economy
         run: flutter analyze lib/features/business_economy
+      - name: Build Android debug APK
+        run: flutter build apk --debug
