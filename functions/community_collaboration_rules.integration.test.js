@@ -394,4 +394,9 @@ test('community poll creation cannot seed forged vote totals', async () => {
     ownerId: 'poll-member', communityId: 'poll-create-community', question: 'Choose one',
     options: ['A', 'x'.repeat(101)], votes: { '0': 0, '1': 0 }, voters: {}, createdAt: now,
   }));
+
+  await assertFails(dbFor('poll-member').doc('community_polls/poll-empty-option').set({
+    ownerId: 'poll-member', communityId: 'poll-create-community', question: 'Choose one',
+    options: ['A', ''], votes: { '0': 0, '1': 0 }, voters: {}, createdAt: now,
+  }));
 });
