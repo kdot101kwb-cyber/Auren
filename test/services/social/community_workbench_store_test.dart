@@ -358,7 +358,7 @@ void main() {
       'auren.community.governance_proposals.v1':
           '[{"id":"p","communityId":"c","title":"bad","proposedRule":"rule","votes":[],"status":"open","createdAt":"now"}]',
       'auren.community.meetup_drafts.v1':
-          '[{"id":"m","title":"bad","description":"","startsAt":"not-a-date","location":"here","capacity":"many","attendance":{},"status":"draft","createdAt":"now"}]',
+          '[{"id":"m","title":"bad","description":"","startsAt":"not-a-date","location":"here","capacity":10,"attendance":{},"status":"draft","createdAt":"now"}]',
     });
     final recoveringStore = AurenCommunityWorkbenchStore();
 
