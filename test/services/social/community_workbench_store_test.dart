@@ -870,4 +870,31 @@ void main() {
     expect(readable, 100);
   });
 
+  test('list caches cap recovered records and ignore duplicate record IDs', () async {
+    final proposals = <Map<String, dynamic>>[
+      for (var i = 0; i < 105; i++)
+        {
+          'id': 'proposal-$i',
+          'communityId': 'community-1',
+          'title': 'Proposal $i',
+          'proposedRule': 'Rule $i',
+          'createdAt': DateTime.utc(2026, 1, 1).toIso8601String(),
+          'status': 'open',
+          'votes': <String, bool>{},
+        },
+    ];
+    // Duplicate identities are ambiguous and must not leak through as
+    // separate rows, even if a cache was modified outside this store.
+    proposals.insert(1, Map<String, dynamic>.from(proposals.first));
+    SharedPreferences.setMockInitialValues({
+      'auren.community.governance_proposals.v1': jsonEncode(proposals),
+    });
+
+    final recovered = AurenCommunityWorkbenchStore();
+    final loaded = await recovered.listProposals();
+    expect(loaded, hasLength(100));
+    expect(loaded.map((proposal) => proposal['id']).toSet(), hasLength(100));
+    expect(loaded.first['id'], 'proposal-0');
+  });
+
 }
