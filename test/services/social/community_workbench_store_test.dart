@@ -1353,31 +1353,37 @@ void main() {
   test(
     'rapid local record creation produces unique project, task and milestone IDs',
     () async {
-    final projectIds = <String>[];
-    for (var i = 0; i < 20; i++) {
-      projectIds.add(await store.createProject(
-        title: 'Burst project $i',
-        description: '',
-        communityId: 'community-1',
-      ));
-    }
-    expect(projectIds.toSet(), hasLength(20));
+      final projectIds = <String>[];
+      for (var i = 0; i < 20; i++) {
+        projectIds.add(
+          await store.createProject(
+            title: 'Burst project $i',
+            description: '',
+            communityId: 'community-1',
+          ),
+        );
+      }
+      expect(projectIds.toSet(), hasLength(20));
 
-    final projectId = projectIds.first;
-    await Future.wait([
-      for (var i = 0; i < 30; i++)
-        store.addProjectTask(projectId: projectId, title: 'Burst task $i'),
-      for (var i = 0; i < 30; i++)
-        store.addProjectMilestone(projectId: projectId, title: 'Burst milestone $i'),
-    ]);
+      final projectId = projectIds.first;
+      await Future.wait([
+        for (var i = 0; i < 30; i++)
+          store.addProjectTask(projectId: projectId, title: 'Burst task $i'),
+        for (var i = 0; i < 30; i++)
+          store.addProjectMilestone(
+            projectId: projectId,
+            title: 'Burst milestone $i',
+          ),
+      ]);
 
-    final project = (await store.listProjects())
-        .singleWhere((item) => item['id'] == projectId);
-    final tasks = List<Map<String, dynamic>>.from(project['tasks'] as List);
-    final milestones =
-        List<Map<String, dynamic>>.from(project['milestones'] as List);
-    expect(tasks.map((item) => item['id']).toSet(), hasLength(30));
-    expect(milestones.map((item) => item['id']).toSet(), hasLength(30));
-  });
+      final project = (await store.listProjects())
+          .singleWhere((item) => item['id'] == projectId);
+      final tasks = List<Map<String, dynamic>>.from(project['tasks'] as List);
+      final milestones =
+          List<Map<String, dynamic>>.from(project['milestones'] as List);
+      expect(tasks.map((item) => item['id']).toSet(), hasLength(30));
+      expect(milestones.map((item) => item['id']).toSet(), hasLength(30));
+    },
+  );
 
 }
