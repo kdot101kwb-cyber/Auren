@@ -16,6 +16,7 @@
 - Stored records are bounded to 100 projects/proposals/meetups and 100 space-guideline entries; each project is bounded to 100 tasks and 50 milestones. Local proposal votes and meetup attendance records are each capped at 1,000 entries per record. Reaching a limit rejects the new record instead of silently evicting older user data; an existing space guideline can still be updated at the limit.
 - Users can explicitly delete local project, proposal, and meetup drafts from the UI; deletion affects only the current device and is confirmed before execution.
 - Malformed JSON and structurally invalid local records are ignored rather than allowed to crash the UI; the next successful save rewrites the affected cache using validated records.
+- Cache validation also enforces per-field character limits, bounded vote/attendance identity keys, and parseable project/proposal/meetup timestamps; malformed records are ignored before reaching widgets.
 
 ## Verification
 - Focused test file: `test/services/social/community_workbench_store_test.dart`.
