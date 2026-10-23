@@ -19,7 +19,6 @@ class EverydayLifeLocalStore {
 
   static const storageKey = 'auren_everyday_life_records_v1';
   final SharedPreferences? _preferences;
-  final Future<bool> Function(String key, String value)? _writeString;
   final EverydayLifeWriteString? _writeString;
 
   Future<SharedPreferences> get _prefs async =>
