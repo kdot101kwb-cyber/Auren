@@ -264,7 +264,12 @@ class AurenCommunityWorkbenchStore {
     await prefs.setString(key, jsonEncode(value));
   }
 
-  String _id(String prefix) => '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
+  // Timestamps can collide when several records are created in one clock tick.
+  // The process-local sequence adds a second uniqueness component for this store.
+  static int _idSequence = 0;
+
+  String _id(String prefix) =>
+      '${prefix}_${DateTime.now().microsecondsSinceEpoch}_${_idSequence++}';
 
   Future<void> saveSpaceGuidelines({
     required String spaceId,
