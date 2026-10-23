@@ -42,8 +42,8 @@ class AurenCommunityAppealsService {
     final reportRef = db.collection('reports').doc(id);
     final appealRef = _appeals.doc('${id}__${uid}');
 
-    // Eligibility and duplicate detection share a transaction. Rules must
-    // independently enforce the same checks before this flow is enabled.
+    // Eligibility and duplicate detection share a transaction. Firestore rules
+    // independently enforce participant identity, terminal status, and uniqueness.
     await db.runTransaction((transaction) async {
       final reportSnapshot = await transaction.get(reportRef);
       if (!reportSnapshot.exists) {
