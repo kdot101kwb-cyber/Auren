@@ -41,7 +41,7 @@ class AurenCommunityMemberToolsService {
     required String taskId, required bool completed}) async {
     final id = taskId.trim();
     if (id.isEmpty || id.length > 80) throw ArgumentError('Invalid task ID.');
-    final tasks = await onboardingTasks(communityId);
+    final tasks = List<AurenOnboardingTask>.of(await onboardingTasks(communityId));
     final index = tasks.indexWhere((task) => task.id == id);
     if (index < 0) throw StateError('Onboarding task not found.');
     tasks[index] = tasks[index].copyWith(completed: completed);
