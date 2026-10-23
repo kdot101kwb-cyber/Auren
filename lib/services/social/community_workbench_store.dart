@@ -374,7 +374,9 @@ class AurenCommunityWorkbenchStore {
     }
     await _mutateProject(projectId, (project) {
       final tasks = List<Map<String, dynamic>>.from(project['tasks'] as List? ?? const []);
-      final index = tasks.indexWhere((task) => task['id'] == taskId);
+      final cleanTaskId = taskId.trim();
+      if (cleanTaskId.isEmpty) throw ArgumentError('Task ID is required.');
+      final index = tasks.indexWhere((task) => task['id'] == cleanTaskId);
       if (index < 0) throw StateError('Task not found.');
       tasks[index] = <String, dynamic>{...tasks[index], 'status': status};
       project['tasks'] = tasks;
@@ -412,7 +414,11 @@ class AurenCommunityWorkbenchStore {
       final milestones = List<Map<String, dynamic>>.from(
         project['milestones'] as List? ?? const [],
       );
-      final index = milestones.indexWhere((item) => item['id'] == milestoneId);
+      final cleanMilestoneId = milestoneId.trim();
+      if (cleanMilestoneId.isEmpty) {
+        throw ArgumentError('Milestone ID is required.');
+      }
+      final index = milestones.indexWhere((item) => item['id'] == cleanMilestoneId);
       if (index < 0) throw StateError('Milestone not found.');
       milestones[index] = <String, dynamic>{
         ...milestones[index],
@@ -427,8 +433,10 @@ class AurenCommunityWorkbenchStore {
     void Function(Map<String, dynamic> project) mutate,
   ) async {
     return _withMutationLock(_storageKey(_projectsKey), () async {
+    final cleanProjectId = projectId.trim();
+    if (cleanProjectId.isEmpty) throw ArgumentError('Project ID is required.');
     final projects = await listProjects();
-    final index = projects.indexWhere((project) => project['id'] == projectId);
+    final index = projects.indexWhere((project) => project['id'] == cleanProjectId);
     if (index < 0) throw StateError('Project not found.');
     final project = Map<String, dynamic>.from(projects[index]);
     mutate(project);
@@ -511,7 +519,9 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('A valid local voter ID is required.');
     }
     final proposals = await listProposals();
-    final index = proposals.indexWhere((item) => item['id'] == proposalId);
+    final cleanProposalId = proposalId.trim();
+    if (cleanProposalId.isEmpty) throw ArgumentError('Proposal ID is required.');
+    final index = proposals.indexWhere((item) => item['id'] == cleanProposalId);
     if (index < 0) throw StateError('Proposal not found.');
     final proposal = Map<String, dynamic>.from(proposals[index]);
     if (proposal['status'] != 'open') throw StateError('Proposal is closed.');
@@ -535,7 +545,9 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Unsupported proposal status.');
     }
     final proposals = await listProposals();
-    final index = proposals.indexWhere((item) => item['id'] == proposalId);
+    final cleanProposalId = proposalId.trim();
+    if (cleanProposalId.isEmpty) throw ArgumentError('Proposal ID is required.');
+    final index = proposals.indexWhere((item) => item['id'] == cleanProposalId);
     if (index < 0) throw StateError('Proposal not found.');
     if (proposals[index]['status'] != 'open') throw StateError('Proposal is already closed.');
     proposals[index] = <String, dynamic>{...proposals[index], 'status': status};
@@ -616,7 +628,9 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Attendance draft is invalid.');
     }
     final drafts = await listMeetupDrafts();
-    final index = drafts.indexWhere((item) => item['id'] == meetupId);
+    final cleanMeetupId = meetupId.trim();
+    if (cleanMeetupId.isEmpty) throw ArgumentError('Meetup ID is required.');
+    final index = drafts.indexWhere((item) => item['id'] == cleanMeetupId);
     if (index < 0) throw StateError('Meetup draft not found.');
     final draft = Map<String, dynamic>.from(drafts[index]);
     if (draft['status'] != 'draft') throw StateError('Meetup is not a draft.');
