@@ -174,4 +174,22 @@ void main() {
     expect(find.text('Keep this task unchanged'), findsOneWidget);
   });
 
+  testWidgets('failed local create shows an error and does not add a record',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AurenEverydayLifeScreen(store: _FailingWriteStore()),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('أضف مهمة'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Task that cannot be saved');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+
+    expect(find.text('تعذر الحفظ على هذا الجهاز.'), findsOneWidget);
+    expect(await EverydayLifeLocalStore().readAll(), isEmpty);
+    expect(find.text('Task that cannot be saved'), findsNothing);
+  });
+
 }
