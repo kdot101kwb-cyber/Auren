@@ -1015,4 +1015,65 @@ void main() {
     expect(await secondAccount.listMeetupDrafts(), isEmpty);
   });
 
+
+  test('closed local proposals reject votes and normalized voter IDs cannot vote twice', () async {
+    final id = await store.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Local governance lifecycle',
+      proposedRule: 'A closed draft cannot accept new votes.',
+    );
+
+    await store.voteOnProposal(
+      proposalId: id,
+      voterId: ' member-a ',
+      support: true,
+    );
+    await expectLater(
+      store.voteOnProposal(
+        proposalId: id,
+        voterId: 'member-a',
+        support: false,
+      ),
+      throwsStateError,
+    );
+
+    await store.closeProposal(proposalId: id, status: 'accepted');
+    await expectLater(
+      store.voteOnProposal(
+        proposalId: id,
+        voterId: 'member-b',
+        support: true,
+      ),
+      throwsStateError,
+    );
+
+    final proposal = (await store.listProposals()).single;
+    expect(proposal['status'], 'accepted');
+    expect(proposal['votes'], containsPair('member-a', true));
+    expect((proposal['votes'] as Map), hasLength(1));
+  });
+
+  test('local governance rejects blank and oversized voter identities', () async {
+    final id = await store.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Bound voter identity',
+      proposedRule: 'Voter identifiers have a strict local bound.',
+    );
+
+    await expectLater(
+      store.voteOnProposal(proposalId: id, voterId: '   ', support: true),
+      throwsArgumentError,
+    );
+    await expectLater(
+      store.voteOnProposal(
+        proposalId: id,
+        voterId: List.filled(129, 'v').join(),
+        support: true,
+      ),
+      throwsArgumentError,
+    );
+
+    expect((await store.listProposals()).single['votes'], isEmpty);
+  });
+
 }
