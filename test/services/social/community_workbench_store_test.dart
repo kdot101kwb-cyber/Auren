@@ -578,4 +578,102 @@ void main() {
     expect(store.proposalSupportCount(proposal), inInclusiveRange(0, 1));
   });
 
+
+
+  test('local drafts are isolated between signed-in account scopes', () async {
+    final accountA = AurenCommunityWorkbenchStore(scope: 'account-a');
+    final accountB = AurenCommunityWorkbenchStore(scope: 'account-b');
+
+    final projectId = await accountA.createProject(
+      title: 'Private account A project',
+      description: '',
+      communityId: 'community-1',
+    );
+    await accountA.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Account A proposal',
+      proposedRule: 'Keep the space safe.',
+    );
+    await accountA.createMeetupDraft(
+      title: 'Account A meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10,
+    );
+    await accountA.saveSpaceGuidelines(
+      spaceId: 'space-1',
+      topic: 'Account A topic',
+      rules: 'Account A rules',
+    );
+
+    expect((await accountA.listProjects()).single['id'], projectId);
+    expect(await accountB.listProjects(), isEmpty);
+    expect(await accountB.listProposals(), isEmpty);
+    expect(await accountB.listMeetupDrafts(), isEmpty);
+    expect(await accountB.readSpaceGuidelines('space-1'), isEmpty);
+  });
+
+  test('concurrent duplicate local votes preserve one-vote invariant', () async {
+    final proposalId = await store.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Concurrent vote',
+      proposedRule: 'Be respectful.',
+    );
+
+    final results = await Future.wait([
+      store.voteOnProposal(
+        proposalId: proposalId,
+        voterId: 'member-a',
+        support: true,
+      ).then<Object?>((_) => 'accepted', onError: (Object error) => error),
+      store.voteOnProposal(
+        proposalId: proposalId,
+        voterId: 'member-a',
+        support: false,
+      ).then<Object?>((_) => 'accepted', onError: (Object error) => error),
+    ]);
+
+    expect(results.whereType<String>(), hasLength(1));
+    expect(results.whereType<StateError>(), hasLength(1));
+    final proposal = (await store.listProposals()).single;
+    expect((proposal['votes'] as Map).length, 1);
+    expect((proposal['votes'] as Map).containsKey('member-a'), isTrue);
+  });
+
+  test('concurrent attendance updates do not overwrite one another', () async {
+    final meetupId = await store.createMeetupDraft(
+      title: 'Concurrent attendance',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10000,
+    );
+
+    await Future.wait([
+      store.setDraftAttendance(
+        meetupId: meetupId,
+        attendeeId: 'member-a',
+        status: 'going',
+      ),
+      store.setDraftAttendance(
+        meetupId: meetupId,
+        attendeeId: 'member-b',
+        status: 'interested',
+      ),
+      store.setDraftAttendance(
+        meetupId: meetupId,
+        attendeeId: 'member-c',
+        status: 'declined',
+      ),
+    ]);
+
+    final meetup = (await store.listMeetupDrafts()).single;
+    final attendance = Map<String, dynamic>.from(meetup['attendance'] as Map);
+    expect(attendance, hasLength(3));
+    expect(attendance['member-a'], 'going');
+    expect(attendance['member-b'], 'interested');
+    expect(attendance['member-c'], 'declined');
+    expect(meetup['status'], 'draft');
+  });
 }
