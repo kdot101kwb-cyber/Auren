@@ -98,10 +98,19 @@ class AurenCommunityWorkbenchStore {
       final decoded = jsonDecode(raw);
       if (decoded is List) {
         final safe = <Map<String, dynamic>>[];
+        final seenIds = <String>{};
+        // Treat local caches as untrusted input: enforce the same collection
+        // bound on reads as writes and ignore duplicate identities. Without
+        // this, a hand-edited/legacy cache could make list screens unbounded
+        // or expose ambiguous records with the same ID.
         for (final item in decoded) {
+          if (safe.length >= 100) break;
           if (item is! Map) continue;
           final record = Map<String, dynamic>.from(item);
-          if (_isValidRecordForKey(key, record)) safe.add(record);
+          if (!_isValidRecordForKey(key, record)) continue;
+          final id = record['id'] as String;
+          if (!seenIds.add(id)) continue;
+          safe.add(record);
         }
         return safe;
       }
