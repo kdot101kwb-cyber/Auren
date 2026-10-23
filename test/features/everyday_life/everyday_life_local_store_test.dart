@@ -35,6 +35,26 @@ void main() {
     expect(await store.readAll(), isEmpty);
   });
 
+  test('failed local write reports failure and preserves the previous record', () async {
+    final initialStore = EverydayLifeLocalStore();
+    await initialStore.save(item(title: 'Previously saved'));
+
+    final preferences = await SharedPreferences.getInstance();
+    final failingStore = EverydayLifeLocalStore(
+      preferences: preferences,
+      writeString: (_, __, ___) async => false,
+    );
+
+    await expectLater(
+      failingStore.save(item(title: 'Unsaved replacement')),
+      throwsStateError,
+    );
+
+    final records = await initialStore.readAll();
+    expect(records, hasLength(1));
+    expect(records.single.title, 'Previously saved');
+  });
+
   test('rejects a cross-system ID collision without replacing saved data',
       () async {
     final store = EverydayLifeLocalStore();
