@@ -144,17 +144,25 @@ void main() {
   });
 
   test('space metadata, proposals, and meetup drafts remain bounded', () async {
-    for (var i = 0; i < 101; i++) {
+    for (var i = 0; i < 100; i++) {
       await store.saveSpaceGuidelines(
         spaceId: 'space-$i',
         topic: 'Topic $i',
         rules: 'Rule $i',
       );
     }
-    expect(await store.readSpaceGuidelines('space-0'), isEmpty);
-    expect((await store.readSpaceGuidelines('space-100'))['topic'], 'Topic 100');
+    await expectLater(
+      store.saveSpaceGuidelines(
+        spaceId: 'space-100',
+        topic: 'Topic 100',
+        rules: 'Rule 100',
+      ),
+      throwsStateError,
+    );
+    expect((await store.readSpaceGuidelines('space-0'))['topic'], 'Topic 0');
+    expect(await store.readSpaceGuidelines('space-100'), isEmpty);
 
-    for (var i = 0; i < 101; i++) {
+    for (var i = 0; i < 100; i++) {
       await store.createRuleProposal(
         communityId: 'community',
         title: 'Proposal $i',
@@ -168,12 +176,30 @@ void main() {
         capacity: 10,
       );
     }
+    await expectLater(
+      store.createRuleProposal(
+        communityId: 'community',
+        title: 'Overflow proposal',
+        proposedRule: 'Rule overflow',
+      ),
+      throwsStateError,
+    );
+    await expectLater(
+      store.createMeetupDraft(
+        title: 'Overflow meetup',
+        description: '',
+        startsAt: '2026-11-01T17:00:00Z',
+        location: 'Suggested',
+        capacity: 10,
+      ),
+      throwsStateError,
+    );
     final proposals = await store.listProposals();
     final meetups = await store.listMeetupDrafts();
     expect(proposals, hasLength(100));
-    expect(proposals.first['title'], 'Proposal 100');
+    expect(proposals.map((item) => item['title']), contains('Proposal 0'));
     expect(meetups, hasLength(100));
-    expect(meetups.first['title'], 'Meetup 100');
+    expect(meetups.map((item) => item['title']), contains('Meetup 0'));
   });
 
   test('local persistence survives a new store instance', () async {
@@ -282,6 +308,52 @@ void main() {
     expect((await recoveringStore.listMeetupDrafts()).single['title'], 'Recovered meetup');
   });
 
+
+  test('valid JSON with invalid record shapes is ignored without crashing', () async {
+    SharedPreferences.setMockInitialValues({
+      'auren.community.space_guidelines.v1':
+          '{"space-bad":{"topic":42,"rules":[],"updatedAt":false}}',
+      'auren.community.group_projects.v1':
+          '[{"id":7,"title":"bad","tasks":"not-a-list","milestones":[]}]',
+      'auren.community.governance_proposals.v1':
+          '[{"id":"p","communityId":"c","title":"bad","proposedRule":"rule","votes":[],"status":"open","createdAt":"now"}]',
+      'auren.community.meetup_drafts.v1':
+          '[{"id":"m","title":"bad","description":"","startsAt":"not-a-date","location":"here","capacity":"many","attendance":{},"status":"draft","createdAt":"now"}]',
+    });
+    final recoveringStore = AurenCommunityWorkbenchStore();
+
+    expect(await recoveringStore.readSpaceGuidelines('space-bad'), isEmpty);
+    expect(await recoveringStore.listProjects(), isEmpty);
+    expect(await recoveringStore.listProposals(), isEmpty);
+    expect(await recoveringStore.listMeetupDrafts(), isEmpty);
+
+    await recoveringStore.saveSpaceGuidelines(
+      spaceId: 'space-good',
+      topic: 'Safe cache',
+      rules: 'Keep records valid.',
+    );
+    await recoveringStore.createProject(
+      title: 'Valid project',
+      description: '',
+      communityId: 'community',
+    );
+    await recoveringStore.createRuleProposal(
+      communityId: 'community',
+      title: 'Valid proposal',
+      proposedRule: 'Be kind.',
+    );
+    await recoveringStore.createMeetupDraft(
+      title: 'Valid meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10,
+    );
+
+    expect((await recoveringStore.listProjects()).single['title'], 'Valid project');
+    expect((await recoveringStore.listProposals()).single['title'], 'Valid proposal');
+    expect((await recoveringStore.listMeetupDrafts()).single['title'], 'Valid meetup');
+  });
 
   test('signed-in account scopes isolate projects, proposals, meetups and space metadata', () async {
     final accountA = AurenCommunityWorkbenchStore(scope: 'uid-a');
