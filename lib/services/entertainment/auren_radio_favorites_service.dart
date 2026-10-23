@@ -97,12 +97,9 @@ class AurenRadioFavoritesService {
       id: id,
       name: name,
       streamUrl: favorite.streamUrl.trim(),
-      country: favorite.country.trim().substring(
-          0, favorite.country.trim().length.clamp(0, 80)),
-      language: favorite.language.trim().substring(
-          0, favorite.language.trim().length.clamp(0, 80)),
-      tags: favorite.tags.trim().substring(
-          0, favorite.tags.trim().length.clamp(0, 300)),
+      country: _limit(favorite.country.trim(), 80),
+      language: _limit(favorite.language.trim(), 80),
+      tags: _limit(favorite.tags.trim(), 300),
     ));
     await store.setString(_key, jsonEncode(items.map((item) => item.toMap()).toList()));
   }
@@ -115,6 +112,9 @@ class AurenRadioFavoritesService {
     items.removeWhere((item) => item.id == normalized);
     await store.setString(_key, jsonEncode(items.map((item) => item.toMap()).toList()));
   }
+
+  static String _limit(String value, int max) =>
+      value.length <= max ? value : value.substring(0, max);
 
   static bool _validStream(String value) {
     final uri = Uri.tryParse(value.trim());
