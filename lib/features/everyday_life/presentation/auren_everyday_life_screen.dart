@@ -206,23 +206,43 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
     }
   }
 
-  Future<void> _toggle(EverydayLifeItem item) async {
+  Future<void> _runMutation(Future<void> Function() mutation) async {
+    try {
+      await mutation();
+      await _refresh();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('تعذر حفظ التغيير محلياً؛ احتفظنا بالبيانات السابقة. حاول مرة أخرى.'),
+          ),
+        );
+    }
+  }
+
+  Future<void> _toggle(EverydayLifeItem item) => _runMutation(() async {
     await _store.save(item.copyWith(
       completed: !item.completed,
       favorite: item.favorite,
     ));
-    await _refresh();
-  }
+  });
 
-  Future<void> _favorite(EverydayLifeItem item) async {
+  Future<void> _favorite(EverydayLifeItem item) => _runMutation(() async {
     await _store.save(item.copyWith(favorite: !item.favorite));
-    await _refresh();
-  }
+  });
 
-  Future<void> _delete(EverydayLifeItem item) async {
+  Future<void> _delete(EverydayLifeItem item) => _runMutation(() async {
     await _store.delete(item.id);
-    await _refresh();
-  }
+  });
+
+  Future<void> _toggleVerification(EverydayLifeItem item) =>
+      _runMutation(() async {
+        await _store.save(item.copyWith(
+          informationConfirmed: !item.informationConfirmed,
+        ));
+      });
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -327,9 +347,7 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                                 if (action == 'done') _toggle(item);
                                 if (action == 'delete') _delete(item);
                                 if (action == 'confirmed' && kind == EverydayLifeKind.localService) {
-                                  _store.save(item.copyWith(
-                                    informationConfirmed: !item.informationConfirmed,
-                                  )).then((_) => _refresh());
+                                  _toggleVerification(item);
                                 }
                               },
                               itemBuilder: (_) => [
