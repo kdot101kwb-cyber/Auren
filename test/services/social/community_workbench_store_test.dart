@@ -758,4 +758,77 @@ void main() {
     expect(await store.listProjects(), isEmpty);
   });
 
+
+  test('local records are isolated between signed-in account scopes', () async {
+    final accountA = AurenCommunityWorkbenchStore(scope: 'user-a');
+    final accountB = AurenCommunityWorkbenchStore(scope: 'user-b');
+
+    await accountA.createProject(
+      title: 'Private A project',
+      description: '',
+      communityId: 'community-a',
+    );
+    await accountA.createRuleProposal(
+      communityId: 'community-a',
+      title: 'A proposal',
+      proposedRule: 'A-only rule',
+    );
+    await accountA.createMeetupDraft(
+      title: 'A meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10,
+    );
+
+    expect(await accountB.listProjects(), isEmpty);
+    expect(await accountB.listProposals(), isEmpty);
+    expect(await accountB.listMeetupDrafts(), isEmpty);
+    expect((await accountA.listProjects()).single['title'], 'Private A project');
+  });
+
+  test('concurrent local task additions do not overwrite each other', () async {
+    final id = await store.createProject(
+      title: 'Concurrent task plan',
+      description: '',
+      communityId: 'community',
+    );
+
+    await Future.wait([
+      for (var i = 0; i < 12; i++)
+        store.addProjectTask(projectId: id, title: 'Task $i'),
+    ]);
+
+    final project = (await store.listProjects()).single;
+    final tasks = List<Map<String, dynamic>>.from(project['tasks'] as List);
+    expect(tasks, hasLength(12));
+    expect(tasks.map((task) => task['title']).toSet(), hasLength(12));
+  });
+
+  test('concurrent votes from one local voter cannot be duplicated', () async {
+    final id = await store.createRuleProposal(
+      communityId: 'community',
+      title: 'One vote',
+      proposedRule: 'One local vote per voter.',
+    );
+
+    final attempts = await Future.wait([
+      store.voteOnProposal(
+        proposalId: id,
+        voterId: 'same-voter',
+        support: true,
+      ).then<Object?>((_) => 'saved', onError: (Object error) => error),
+      store.voteOnProposal(
+        proposalId: id,
+        voterId: 'same-voter',
+        support: false,
+      ).then<Object?>((_) => 'saved', onError: (Object error) => error),
+    ]);
+
+    expect(attempts.whereType<String>(), hasLength(1));
+    expect(attempts.whereType<StateError>(), hasLength(1));
+    final proposal = (await store.listProposals()).single;
+    expect((proposal['votes'] as Map).length, 1);
+  });
+
 }
