@@ -163,6 +163,7 @@ class AurenCommunityWorkbenchStore {
 
     if (key.startsWith(_storageKey(_meetupsKey))) {
       final capacity = record['capacity'];
+      final startsAt = record['startsAt'];
       return hasStrings([
             'id',
             'title',
@@ -171,6 +172,7 @@ class AurenCommunityWorkbenchStore {
             'location',
             'createdAt',
           ]) &&
+          DateTime.tryParse(startsAt as String) != null &&
           capacity is int &&
           capacity >= 1 &&
           capacity <= 10000 &&
