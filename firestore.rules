@@ -120,8 +120,11 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
     }
 
     match /community_polls/{pollId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn()
+        && resource.data.communityId is string
+        && request.auth.uid in get(/databases/$(database)/documents/communities/$(resource.data.communityId)).data.memberIds;
       allow create: if isRequestOwner()
+        && requestData().keys().hasOnly(['ownerId','communityId','question','options','votes','voters','createdAt'])
         && requestData().communityId is string
         && request.auth.uid in get(/databases/$(database)/documents/communities/$(requestData().communityId)).data.memberIds
         && nonEmptyStringAtMost(requestData().question,240)
@@ -129,6 +132,7 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
         && requestData().options.size() >= 2
         && sizeAtMost(requestData().options,6)
         && requestData().votes is map
+        && requestData().votes.keys().hasOnly(['0','1','2','3','4','5'])
         && requestData().voters is map
         && requestData().voters.size() == 0
         && hasCreatedAtTimestamp();
@@ -139,8 +143,23 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
         && request.auth.uid in requestData().voters
         && changedFields().hasOnly(['votes','voters'])
         && requestData().votes is map
+        && requestData().votes.keys().hasOnly(['0','1','2','3','4','5'])
         && requestData().voters is map
-        && requestData().voters.size() == resource.data.voters.size() + 1;
+        && requestData().voters.size() == resource.data.voters.size() + 1
+        && requestData().voters.diff(resource.data.voters).affectedKeys().hasOnly([request.auth.uid])
+        && requestData().voters.diff(resource.data.voters).affectedKeys().hasAll([request.auth.uid])
+        && requestData().voters[request.auth.uid] is string
+        && requestData().voters[request.auth.uid] in ['0','1','2','3','4','5']
+        && (requestData().voters[request.auth.uid] != '1' || resource.data.options.size() > 1)
+        && (requestData().voters[request.auth.uid] != '2' || resource.data.options.size() > 2)
+        && (requestData().voters[request.auth.uid] != '3' || resource.data.options.size() > 3)
+        && (requestData().voters[request.auth.uid] != '4' || resource.data.options.size() > 4)
+        && (requestData().voters[request.auth.uid] != '5' || resource.data.options.size() > 5)
+        && requestData().votes.diff(resource.data.votes).affectedKeys().hasOnly([requestData().voters[request.auth.uid]])
+        && requestData().votes.diff(resource.data.votes).affectedKeys().hasAll([requestData().voters[request.auth.uid]])
+        && resource.data.votes[requestData().voters[request.auth.uid]] is int
+        && requestData().votes[requestData().voters[request.auth.uid]] is int
+        && requestData().votes[requestData().voters[request.auth.uid]] == resource.data.votes[requestData().voters[request.auth.uid]] + 1;
       allow delete: if isResourceOwner();
     }
 
