@@ -1350,7 +1350,9 @@ void main() {
   });
 
 
-  test('rapid local record creation produces unique project, task and milestone IDs', () async {
+  test(
+    'rapid local record creation produces unique project, task and milestone IDs',
+    () async {
     final projectIds = <String>[];
     for (var i = 0; i < 20; i++) {
       projectIds.add(await store.createProject(
