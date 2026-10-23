@@ -16,13 +16,16 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
   late AurenCommunityWorkbenchStore _store;
   StreamSubscription<User?>? _authSubscription;
   late final TabController _tabs;
+  final TextEditingController _spaceIdController = TextEditingController();
+  final TextEditingController _spaceTopicController = TextEditingController();
+  final TextEditingController _spaceRulesController = TextEditingController();
   bool _busy = false;
   int _refresh = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 4, vsync: this);
     final auth = FirebaseAuth.instance;
     _store = AurenCommunityWorkbenchStore(
       scope: auth.currentUser?.uid ?? 'anonymous',
@@ -40,6 +43,9 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
   void dispose() {
     _authSubscription?.cancel();
     _tabs.dispose();
+    _spaceIdController.dispose();
+    _spaceTopicController.dispose();
+    _spaceRulesController.dispose();
     super.dispose();
   }
 
@@ -114,6 +120,44 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     );
     for (final c in controllers) { c.dispose(); }
     return result;
+  }
+
+  Future<void> _loadSpaceGuidelines() async {
+    final id = _spaceIdController.text.trim();
+    if (id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أدخل معرّف مساحة التعاون أولاً.')),
+      );
+      return;
+    }
+    try {
+      final value = await _store.readSpaceGuidelines(id);
+      if (!mounted) return;
+      _spaceTopicController.text = value['topic'] as String? ?? '';
+      _spaceRulesController.text = value['rules'] as String? ?? '';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(value.isEmpty ? 'لا توجد إرشادات محلية محفوظة لهذه المساحة.' : 'تم تحميل الإرشادات المحلية.'),
+      ));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر تحميل الإرشادات المحلية: $error')),
+      );
+    }
+  }
+
+  Future<void> _saveSpaceGuidelines() async {
+    final id = _spaceIdController.text.trim();
+    if (id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('معرّف مساحة التعاون مطلوب.')),
+      );
+      return;
+    }
+    await _run(() => _store.saveSpaceGuidelines(
+      spaceId: id,
+      topic: _spaceTopicController.text,
+      rules: _spaceRulesController.text,
+    ));
   }
 
   Future<void> _createProject() async {
@@ -223,6 +267,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
         Tab(icon: Icon(Icons.groups_2_outlined), text: 'المشاريع'),
         Tab(icon: Icon(Icons.how_to_vote_outlined), text: 'الحوكمة'),
         Tab(icon: Icon(Icons.event_outlined), text: 'اللقاءات'),
+        Tab(icon: Icon(Icons.rule_folder_outlined), text: 'إرشادات المساحات'),
       ])),
     body: Column(children: [
       Material(color: Theme.of(context).colorScheme.secondaryContainer,
@@ -230,14 +275,68 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
           Icon(Icons.offline_bolt_outlined), SizedBox(width: 8),
           Expanded(child: Text('حفظ محلي أولاً. الاقتراحات والتصويت والحضور مسودات على هذا الجهاز؛ لا نشر أو حجز أو دفع تلقائي.')),
         ]))),
-      Expanded(child: TabBarView(controller: _tabs, children: [_projectsTab(), _governanceTab(), _meetupsTab()])),
+      Expanded(child: TabBarView(controller: _tabs, children: [_projectsTab(), _governanceTab(), _meetupsTab(), _spaceGuidelinesTab()])),
     ]),
     floatingActionButton: AnimatedBuilder(animation: _tabs, builder: (context, _) =>
       FloatingActionButton.extended(onPressed: _busy ? null : () {
         if (_tabs.index == 0) _createProject();
         if (_tabs.index == 1) _createProposal();
         if (_tabs.index == 2) _createMeetup();
-      }, icon: const Icon(Icons.add), label: Text(_tabs.index == 0 ? 'مشروع' : _tabs.index == 1 ? 'اقتراح قاعدة' : 'لقاء'))),
+        if (_tabs.index == 3) _saveSpaceGuidelines();
+      }, icon: Icon(_tabs.index == 3 ? Icons.save_outlined : Icons.add), label: Text(_tabs.index == 0 ? 'مشروع' : _tabs.index == 1 ? 'اقتراح قاعدة' : _tabs.index == 2 ? 'لقاء' : 'حفظ الإرشادات'))),
+  );
+
+  Widget _spaceGuidelinesTab() => ListView(
+    padding: const EdgeInsets.all(16),
+    children: [
+      Text('موضوع وقواعد مساحة التعاون', style: Theme.of(context).textTheme.titleLarge),
+      const SizedBox(height: 8),
+      const Text('هذه الإرشادات تُحفظ على هذا الجهاز فقط ولا تغيّر عضوية المساحة أو قواعد الخادم. استخدم معرّف مساحة موجودة لديك.'),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _spaceIdController,
+        maxLength: 160,
+        decoration: const InputDecoration(
+          labelText: 'معرّف مساحة التعاون',
+          helperText: 'معرّف السجل، وليس اسم المساحة',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: OutlinedButton.icon(
+          onPressed: _busy ? null : _loadSpaceGuidelines,
+          icon: const Icon(Icons.download_outlined),
+          label: const Text('تحميل الإرشادات المحلية'),
+        ),
+      ),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _spaceTopicController,
+        maxLength: 80,
+        decoration: const InputDecoration(
+          labelText: 'موضوع المساحة',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _spaceRulesController,
+        maxLength: 2000,
+        maxLines: 6,
+        decoration: const InputDecoration(
+          labelText: 'قواعد وإرشادات المجتمع',
+          alignLabelWithHint: true,
+          border: OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 12),
+      FilledButton.icon(
+        onPressed: _busy ? null : _saveSpaceGuidelines,
+        icon: const Icon(Icons.save_outlined),
+        label: const Text('حفظ على هذا الجهاز'),
+      ),
+    ],
   );
 
   Widget _projectsTab() => FutureBuilder<List<Map<String, dynamic>>>(
