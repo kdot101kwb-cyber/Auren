@@ -350,3 +350,38 @@ test('community poll votes can only add one member vote and increment exactly on
   }));
   await assertFails(dbFor('outsider').doc('community_polls/poll-guarded').get());
 });
+
+
+test('community poll creation cannot seed forged vote totals', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('communities/poll-create-community', {
+    ownerId: 'poll-owner',
+    name: 'Poll creation community',
+    description: '',
+    topic: 'Governance',
+    visibility: 'public',
+    memberIds: ['poll-owner', 'poll-member'],
+    memberCount: 2,
+    createdAt: now,
+  });
+
+  await assertSucceeds(dbFor('poll-member').doc('community_polls/poll-valid-create').set({
+    ownerId: 'poll-member',
+    communityId: 'poll-create-community',
+    question: 'Choose one',
+    options: ['A', 'B'],
+    votes: { '0': 0, '1': 0 },
+    voters: {},
+    createdAt: now,
+  }));
+
+  await assertFails(dbFor('poll-member').doc('community_polls/poll-forged-create').set({
+    ownerId: 'poll-member',
+    communityId: 'poll-create-community',
+    question: 'Choose one',
+    options: ['A', 'B'],
+    votes: { '0': 50, '1': 12 },
+    voters: {},
+    createdAt: now,
+  }));
+});
