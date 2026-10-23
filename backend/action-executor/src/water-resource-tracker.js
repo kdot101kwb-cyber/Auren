@@ -37,8 +37,9 @@ export function normalizeWaterReading(input, ownerUid) {
 }
 
 export function calculateWaterConsumption(previous, current) {
-  if (!previous || !current || previous.meterId !== current.meterId || previous.unit !== current.unit
-      || (previous.ownerUid != null && current.ownerUid != null && previous.ownerUid !== current.ownerUid)) {
+  if (!previous || !current || typeof previous.ownerUid !== 'string' || !previous.ownerUid.trim()
+      || typeof current.ownerUid !== 'string' || !current.ownerUid.trim()
+      || previous.ownerUid !== current.ownerUid || previous.meterId !== current.meterId || previous.unit !== current.unit) {
     throw Object.assign(new Error('Readings must share an owner, meter, and unit.'), { code: 400 });
   }
   const previousDate = date(previous.date);
