@@ -35,6 +35,26 @@ void main() {
     expect(await store.readAll(), isEmpty);
   });
 
+  test('rejects a cross-system ID collision without replacing saved data',
+      () async {
+    final store = EverydayLifeLocalStore();
+    await store.save(item(id: 'shared-id', kind: EverydayLifeKind.task));
+
+    await expectLater(
+      store.save(item(
+        id: 'shared-id',
+        kind: EverydayLifeKind.localService,
+        title: 'Electrician',
+      )),
+      throwsStateError,
+    );
+
+    final records = await store.readAll();
+    expect(records, hasLength(1));
+    expect(records.single.kind, EverydayLifeKind.task);
+    expect(records.single.title, 'Buy supplies');
+  });
+
   test('supports all four systems without merging their record types', () async {
     final store = EverydayLifeLocalStore();
     await store.save(item(id: 'task', kind: EverydayLifeKind.task));
