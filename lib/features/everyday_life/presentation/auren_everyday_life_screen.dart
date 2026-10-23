@@ -4,12 +4,11 @@ import '../data/everyday_life_local_store.dart';
 import '../domain/everyday_life_item.dart';
 
 class AurenEverydayLifeScreen extends StatefulWidget {
-  const AurenEverydayLifeScreen({super.key, EverydayLifeLocalStore? store})
-      : store = store ?? EverydayLifeLocalStore();
+  const AurenEverydayLifeScreen({super.key, this.store});
 
   /// Injectable local store keeps persistence failures testable without
   /// changing the production device-local default.
-  final EverydayLifeLocalStore store;
+  final EverydayLifeLocalStore? store;
 
   @override
   State<AurenEverydayLifeScreen> createState() => _AurenEverydayLifeScreenState();
@@ -17,7 +16,8 @@ class AurenEverydayLifeScreen extends StatefulWidget {
 
 class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
     with SingleTickerProviderStateMixin {
-  EverydayLifeLocalStore get _store => widget.store;
+  final _defaultStore = EverydayLifeLocalStore();
+  EverydayLifeLocalStore get _store => widget.store ?? _defaultStore;
   late final TabController _tabs;
   List<EverydayLifeItem> _items = const [];
   bool _loading = true;
