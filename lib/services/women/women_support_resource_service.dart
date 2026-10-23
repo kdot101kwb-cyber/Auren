@@ -70,7 +70,7 @@ class AurenWomenSupportResourceService {
     if (cleanTitle.isEmpty || cleanTitle.length > 120 || cleanNotes.length > 500) {
       throw ArgumentError('العنوان أو الملاحظات غير صالحة.');
     }
-    final items = await list();
+    final items = (await list()).toList();
     if (items.length >= maxResources) {
       throw StateError('تم الوصول إلى الحد الأقصى للعناصر.');
     }
