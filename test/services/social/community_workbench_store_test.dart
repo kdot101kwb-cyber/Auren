@@ -1365,6 +1365,29 @@ void main() {
       }
       expect(projectIds.toSet(), hasLength(20));
 
+      final proposalIds = <String>[];
+      final meetupIds = <String>[];
+      for (var i = 0; i < 20; i++) {
+        proposalIds.add(
+          await store.createRuleProposal(
+            communityId: 'community-1',
+            title: 'Burst proposal $i',
+            proposedRule: 'Rule $i',
+          ),
+        );
+        meetupIds.add(
+          await store.createMeetupDraft(
+            title: 'Burst meetup $i',
+            description: '',
+            startsAt: '2026-11-01T17:00:00Z',
+            location: 'Suggested',
+            capacity: 10,
+          ),
+        );
+      }
+      expect(proposalIds.toSet(), hasLength(20));
+      expect(meetupIds.toSet(), hasLength(20));
+
       final projectId = projectIds.first;
       await Future.wait([
         for (var i = 0; i < 30; i++)
