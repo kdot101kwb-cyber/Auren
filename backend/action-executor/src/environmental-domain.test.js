@@ -17,6 +17,14 @@ test('legal case organizer validates dates, bounds text, and sorts opted-in remi
   assert.throws(() => normalizeLegalCase({ title: 'Bad date', createdDate: '2026-02-30' }, 'owner-1'), /createdDate/i);
   assert.throws(() => normalizeLegalCase({ title: 'Bad order', createdDate: '2026-02-10', nextDeadline: '2026-02-01' }, 'owner-1'), /precede/i);
   assert.throws(() => normalizeLegalCase({ title: 'x'.repeat(161) }, 'owner-1'), /title/i);
+  assert.deepEqual(
+    listUpcomingCaseDeadlines([
+      { ...item, nextDeadline: 'not-a-date' },
+      { ...item, status: 'closed', nextDeadline: '2026-10-24' },
+      { ...item, nextDeadline: '2026-10-23' },
+    ], '2026-10-23').map((entry) => entry.nextDeadline),
+    ['2026-10-23'],
+  );
 });
 
 test('water resource tracker rejects decreasing meters and calculates consumption safely', () => {
@@ -26,6 +34,8 @@ test('water resource tracker rejects decreasing meters and calculates consumptio
   assert.throws(() => calculateWaterConsumption(previous, { ...current, value: 99 }), /monotonic/i);
   assert.throws(() => normalizeWaterReading({ meterId: 'meter-1', date: '2026-01-01', value: -1, unit: 'litre' }, 'owner-1'), /non-negative/i);
   assert.throws(() => normalizeWaterReading({ meterId: 'meter-1', date: '2026-01-01', value: 1, unit: 'unknown' }, 'owner-1'), /unit/i);
+  assert.throws(() => calculateWaterConsumption(previous, { ...current, date: 'not-a-date' }), /date/i);
+  assert.throws(() => calculateWaterConsumption(previous, { ...current, ownerUid: 'owner-2' }), /owner/i);
 });
 
 test('energy analytics aggregates only valid entries by matching units and date range', () => {
@@ -60,4 +70,11 @@ test('biodiversity sharing projection does not expose owner or exact coordinates
   assert.throws(() => normalizeBiodiversityObservation({
     species: 'Tree', observedOn: '2026-01-01', latitude: 91, longitude: 10,
   }, 'owner-1'), /Coordinates/i);
+  assert.throws(() => normalizeBiodiversityObservation({
+    species: 'Tree', observedOn: '2026-01-01', latitude: 10,
+  }, 'owner-1'), /supplied together/i);
+  const privateObservation = normalizeBiodiversityObservation({
+    species: 'Private tree', observedOn: '2026-01-01', latitude: 10, longitude: 20,
+  }, 'owner-1');
+  assert.equal(projectObservationForSharing(privateObservation).locationAvailable, undefined);
 });
