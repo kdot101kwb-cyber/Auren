@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../communities/presentation/community_workbench_screen.dart';
 import '../../personal_ai/presentation/personal_ai_screen.dart';
 import '../../education/presentation/education_screen.dart';
 import '../../travel/presentation/travel_screen.dart';
@@ -64,6 +65,13 @@ class AurenMoreScreen extends StatelessWidget {
           subtitle: const Text('تابع مسودات التواصل وطلبات عروض الأسعار وحالاتها.'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenSupplierRequestsScreen())),
+        )),
+        Card(child: ListTile(
+          leading: const Icon(Icons.groups_2_outlined),
+          title: const Text('Community & Collaboration'),
+          subtitle: const Text('المشاريع الجماعية، حوكمة المجتمعات، واللقاءات المحلية.'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCommunityWorkbenchScreen())),
         )),
         Card(child: ListTile(
           leading: const Icon(Icons.hub_outlined),
