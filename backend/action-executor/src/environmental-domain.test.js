@@ -5,6 +5,20 @@ import { normalizeWaterReading, calculateWaterConsumption } from './water-resour
 import { normalizeEnergyEntry, summarizeResourceUsage } from './energy-usage-analytics.js';
 import { normalizeBiodiversityObservation, projectObservationForSharing } from './biodiversity-observations.js';
 
+test('legal case updates ignore server-managed ISO timestamps from previously saved records', () => {
+  const item = normalizeLegalCase({
+    caseId: 'case-1',
+    title: 'Lease review',
+    status: 'active',
+    createdDate: '2026-01-01',
+    nextDeadline: '2026-11-01',
+    updatedAt: '2026-10-23T19:50:00.000Z',
+  }, 'owner-1');
+
+  assert.equal(item.caseId, 'case-1');
+  assert.equal(Object.hasOwn(item, 'updatedAt'), false);
+});
+
 test('legal case organizer validates dates, bounds text, and sorts opted-in reminders', () => {
   const item = normalizeLegalCase({
     caseId: 'case-1', title: 'Lease review', status: 'active', createdDate: '2026-01-01',
