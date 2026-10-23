@@ -32,6 +32,12 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     );
     _authSubscription = auth.authStateChanges().listen((user) {
       if (!mounted) return;
+      // Never leave one account's unsaved private draft text visible after an
+      // account switch on a shared device. Persisted records remain isolated
+      // by the store scope; clear transient form contents as well.
+      _spaceIdController.clear();
+      _spaceTopicController.clear();
+      _spaceRulesController.clear();
       setState(() {
         _store = AurenCommunityWorkbenchStore(scope: user?.uid ?? 'anonymous');
         _refresh++;
