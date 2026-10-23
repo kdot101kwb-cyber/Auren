@@ -57,9 +57,16 @@ export function listUpcomingCaseDeadlines(cases, asOfDate) {
   const today = isoDate(asOfDate, 'asOfDate');
   if (!Array.isArray(cases)) throw Object.assign(new Error('Cases must be an array.'), { code: 400 });
   return cases
-    .filter((item) => item && item.status !== 'closed' && item.status !== 'archived'
-      && item.reminderEnabled === true && typeof item.nextDeadline === 'string'
-      && item.nextDeadline >= today)
+    .filter((item) => {
+      if (!item || typeof item !== 'object' || item.status === 'closed' || item.status === 'archived'
+          || item.reminderEnabled !== true) return false;
+      try {
+        const deadline = isoDate(item.nextDeadline, 'nextDeadline');
+        return deadline !== null && deadline >= today;
+      } catch {
+        return false;
+      }
+    })
     .slice()
     .sort((a, b) => a.nextDeadline.localeCompare(b.nextDeadline));
 }
