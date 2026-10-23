@@ -223,12 +223,29 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
             TextButton.icon(onPressed: _busy ? null : () => _addTask('${project['id']}'), icon: const Icon(Icons.add_task), label: const Text('مهمة')),
             TextButton.icon(onPressed: _busy ? null : () => _addMilestone('${project['id']}'), icon: const Icon(Icons.flag_outlined), label: const Text('مرحلة')),
           ]),
-          for (final task in tasks) CheckboxListTile(
-            dense: true, contentPadding: EdgeInsets.zero, value: task['status'] == 'done',
+          for (final task in tasks) ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
             title: Text('${task['title']}'),
             subtitle: Text('${task['assignee']}'.isEmpty ? 'غير مسندة' : 'المسؤول: ${task['assignee']}'),
-            onChanged: _busy ? null : (done) => _run(() => _store.setProjectTaskStatus(
-              projectId: '${project['id']}', taskId: '${task['id']}', status: done == true ? 'done' : 'todo')),
+            trailing: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: const {'todo', 'doing', 'done'}.contains(task['status'])
+                    ? task['status'] as String
+                    : 'todo',
+                isDense: true,
+                items: const [
+                  DropdownMenuItem(value: 'todo', child: Text('لم تبدأ')),
+                  DropdownMenuItem(value: 'doing', child: Text('قيد التنفيذ')),
+                  DropdownMenuItem(value: 'done', child: Text('مكتملة')),
+                ],
+                onChanged: _busy ? null : (status) {
+                  if (status == null) return;
+                  _run(() => _store.setProjectTaskStatus(
+                    projectId: '${project['id']}', taskId: '${task['id']}', status: status));
+                },
+              ),
+            ),
           ),
           for (final m in milestones) CheckboxListTile(
             dense: true, contentPadding: EdgeInsets.zero, value: m['completed'] == true,
