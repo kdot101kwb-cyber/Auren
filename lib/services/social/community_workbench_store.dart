@@ -271,8 +271,12 @@ class AurenCommunityWorkbenchStore {
   static int _idSequence = 0;
   static final math.Random _idRandom = math.Random.secure();
 
-  String _id(String prefix) =>
-      '${prefix}_${DateTime.now().microsecondsSinceEpoch}_${_idSequence++}_${_idRandom.nextInt(1 << 32).toRadixString(16)}';
+  String _id(String prefix) {
+    final timestamp = DateTime.now().microsecondsSinceEpoch;
+    final sequence = _idSequence++;
+    final randomSuffix = _idRandom.nextInt(1 << 32).toRadixString(16);
+    return '${prefix}_${timestamp}_${sequence}_$randomSuffix';
+  }
 
   Future<void> saveSpaceGuidelines({
     required String spaceId,
