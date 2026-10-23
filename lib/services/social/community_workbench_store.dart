@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 
@@ -16,6 +17,30 @@ class AurenCommunityWorkbenchStore {
 
   final Future<SharedPreferences> Function() _preferences;
   final String _scope;
+
+  // Serialize read-modify-write operations by scoped preference key. This
+  // prevents concurrent UI actions (or multiple store instances for the same
+  // account) from overwriting each other's local changes in this process.
+  static final Map<String, Future<void>> _mutationTails = <String, Future<void>>{};
+
+  Future<T> _withMutationLock<T>(
+    String key,
+    Future<T> Function() action,
+  ) async {
+    final previous = _mutationTails[key] ?? Future<void>.value();
+    final release = Completer<void>();
+    final queued = release.future;
+    _mutationTails[key] = queued;
+    await previous;
+    try {
+      return await action();
+    } finally {
+      release.complete();
+      if (identical(_mutationTails[key], queued)) {
+        _mutationTails.remove(key);
+      }
+    }
+  }
 
   // Signed-in accounts use isolated keys on shared Android devices.
   String _storageKey(String key) =>
@@ -67,9 +92,12 @@ class AurenCommunityWorkbenchStore {
   String _id(String prefix) => '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
 
   Future<void> saveSpaceGuidelines({
+    return _withMutationLock(_storageKey(_spaceGuidelinesKey), () async {
     required String spaceId,
     required String topic,
     required String rules,
+  
+    });
   }) async {
     final id = spaceId.trim();
     final cleanTopic = topic.trim();
@@ -102,6 +130,7 @@ class AurenCommunityWorkbenchStore {
   /// Deletes a project only from this device. No remote project or member data
   /// is changed by this local-first MVP.
   Future<void> deleteProject(String projectId) async {
+    return _withMutationLock(_storageKey(_projectsKey), () async {
     final id = projectId.trim();
     if (id.isEmpty) throw ArgumentError('Project ID is required.');
     final projects = await listProjects();
@@ -109,12 +138,17 @@ class AurenCommunityWorkbenchStore {
     projects.removeWhere((project) => project['id'] == id);
     if (projects.length == originalLength) throw StateError('Project not found.');
     await _writeList(_storageKey(_projectsKey), projects);
+  
+    });
   }
 
   Future<String> createProject({
+    return _withMutationLock(_storageKey(_projectsKey), () async {
     required String title,
     required String description,
     required String communityId,
+  
+    });
   }) async {
     final cleanTitle = title.trim();
     final cleanDescription = description.trim();
@@ -150,6 +184,7 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Task title or assignee is invalid.');
     }
     await _mutateProject(projectId, (project) {
+    return _withMutationLock(_storageKey(_projectsKey), () async {
       final tasks = List<Map<String, dynamic>>.from(project['tasks'] as List? ?? const []);
       if (tasks.length >= 100) throw StateError('Project task limit reached.');
       tasks.add(<String, dynamic>{
@@ -159,7 +194,9 @@ class AurenCommunityWorkbenchStore {
         'status': 'todo',
       });
       project['tasks'] = tasks;
+    
     });
+  });
   }
 
   Future<void> setProjectTaskStatus({
@@ -249,6 +286,7 @@ class AurenCommunityWorkbenchStore {
 
   /// Removes a proposal draft and its local votes from this device only.
   Future<void> deleteProposal(String proposalId) async {
+    return _withMutationLock(_storageKey(_proposalsKey), () async {
     final id = proposalId.trim();
     if (id.isEmpty) throw ArgumentError('Proposal ID is required.');
     final proposals = await listProposals();
@@ -256,12 +294,17 @@ class AurenCommunityWorkbenchStore {
     proposals.removeWhere((proposal) => proposal['id'] == id);
     if (proposals.length == originalLength) throw StateError('Proposal not found.');
     await _writeList(_storageKey(_proposalsKey), proposals);
+  
+    });
   }
 
   Future<String> createRuleProposal({
+    return _withMutationLock(_storageKey(_proposalsKey), () async {
     required String communityId,
     required String title,
     required String proposedRule,
+  
+    });
   }) async {
     final cleanCommunity = communityId.trim();
     final cleanTitle = title.trim();
@@ -287,9 +330,12 @@ class AurenCommunityWorkbenchStore {
   }
 
   Future<void> voteOnProposal({
+    return _withMutationLock(_storageKey(_proposalsKey), () async {
     required String proposalId,
     required String voterId,
     required bool support,
+  
+    });
   }) async {
     final voter = voterId.trim();
     if (proposalId.trim().isEmpty || voter.isEmpty || voter.length > 128) {
@@ -310,8 +356,11 @@ class AurenCommunityWorkbenchStore {
   }
 
   Future<void> closeProposal({
+    return _withMutationLock(_storageKey(_proposalsKey), () async {
     required String proposalId,
     required String status,
+  
+    });
   }) async {
     if (!const {'accepted', 'rejected', 'withdrawn'}.contains(status)) {
       throw ArgumentError('Unsupported proposal status.');
@@ -333,6 +382,7 @@ class AurenCommunityWorkbenchStore {
 
   /// Deletes a meetup draft and its attendance intentions from this device.
   Future<void> deleteMeetupDraft(String meetupId) async {
+    return _withMutationLock(_storageKey(_meetupsKey), () async {
     final id = meetupId.trim();
     if (id.isEmpty) throw ArgumentError('Meetup ID is required.');
     final drafts = await listMeetupDrafts();
@@ -340,14 +390,19 @@ class AurenCommunityWorkbenchStore {
     drafts.removeWhere((draft) => draft['id'] == id);
     if (drafts.length == originalLength) throw StateError('Meetup draft not found.');
     await _writeList(_storageKey(_meetupsKey), drafts);
+  
+    });
   }
 
   Future<String> createMeetupDraft({
+    return _withMutationLock(_storageKey(_meetupsKey), () async {
     required String title,
     required String description,
     required String startsAt,
     required String location,
     required int capacity,
+  
+    });
   }) async {
     final cleanTitle = title.trim();
     final cleanDescription = description.trim();
@@ -376,9 +431,12 @@ class AurenCommunityWorkbenchStore {
   }
 
   Future<void> setDraftAttendance({
+    return _withMutationLock(_storageKey(_meetupsKey), () async {
     required String meetupId,
     required String attendeeId,
     required String status,
+  
+    });
   }) async {
     final attendee = attendeeId.trim();
     if (attendee.isEmpty || attendee.length > 128 ||
