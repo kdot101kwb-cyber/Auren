@@ -395,3 +395,59 @@ test('trusted reviewer transitions a report with a matching immutable audit even
   await assertFails(reporter.doc('community_case_events/report-atomic__resolved').get());
   await assertFails(reporter.doc('community_case_events/report-atomic__resolved').delete());
 });
+
+
+test('community memory is member-readable, validated, and append-only', async () => {
+  const member = dbFor('memory-member');
+  const outsider = dbFor('memory-outsider');
+  const now = firebase.firestore.Timestamp.now();
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('communities/memory-community').set({
+      ownerId: 'memory-member',
+      name: 'Memory community',
+      description: 'Test community',
+      topic: 'Governance',
+      visibility: 'public',
+      memberIds: ['memory-member', 'memory-second'],
+      memberCount: 2,
+      createdAt: now,
+    });
+  });
+
+  const entry = member.doc('communities/memory-community/memory_entries/entry-valid');
+  await assertSucceeds(entry.set({
+    kind: 'decision',
+    title: 'Community garden plan',
+    body: 'Members agreed to prepare a draft plan.',
+    recordedBy: 'memory-member',
+    createdAt: now,
+  }));
+  await assertSucceeds(entry.get());
+  await assertFails(outsider.doc('communities/memory-community/memory_entries/entry-valid').get());
+  await assertFails(entry.update({ body: 'Rewritten decision' }));
+  await assertFails(entry.delete());
+
+  await assertFails(member.doc('communities/memory-community/memory_entries/forged-author').set({
+    kind: 'outcome',
+    title: 'Forged author',
+    body: 'This must be rejected.',
+    recordedBy: 'memory-outsider',
+    createdAt: now,
+  }));
+  await assertFails(member.doc('communities/memory-community/memory_entries/invalid-kind').set({
+    kind: 'discussion',
+    title: 'Unsupported entry type',
+    body: 'This must be rejected.',
+    recordedBy: 'memory-member',
+    createdAt: now,
+  }));
+  await assertFails(member.doc('communities/memory-community/memory_entries/extra-field').set({
+    kind: 'milestone',
+    title: 'Unexpected metadata',
+    body: 'This must be rejected.',
+    recordedBy: 'memory-member',
+    createdAt: now,
+    updatedAt: now,
+  }));
+});
