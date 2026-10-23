@@ -1,32 +1,266 @@
-# AUREN Community & Collaboration — Implementation Notes
+'use strict';
 
-## Audit basis
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const firebase = require('firebase/compat/app');
+require('firebase/compat/firestore');
+const {
+  initializeTestEnvironment,
+  assertSucceeds,
+  assertFails,
+} = require('@firebase/rules-unit-testing');
 
-- Repository execution map: `docs/AUREN_47_SYSTEMS_10_BATCHES.md`.
-- Existing broad communities implementation: `lib/services/social/community_service.dart`, `lib/features/communities/presentation/communities_screen.dart`, and `lib/features/communities/presentation/community_detail_screen.dart`.
-- Existing reporting foundation: `reports` rules in `firestore.rules`.
-- No file explicitly named “Master Blueprint” was found in the initial repository code search; the 47-system execution map is the closest identified planning document. Confirm whether a separate blueprint exists before final scope sign-off.
+const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
+let testEnv;
 
-## Scope decision
+test.before(async () => {
+  testEnv = await initializeTestEnvironment({
+    projectId: PROJECT_ID,
+    firestore: {
+      host: '127.0.0.1',
+      port: 8080,
+      rules: fs.readFileSync(path.resolve(__dirname, '../firestore.rules'), 'utf8'),
+    },
+  });
+});
 
-1. **AUREN Communities — existing foundation; do not rebuild.** Existing service/screens support public communities, membership, posts, and polls. Review remaining rule/UX gaps in a later pass.
-2. **AUREN Clubs & Circles — foundational data layer added.** New `community_clubs` collection and Discover-linked `Clubs & Circles` screen support public clubs, creation, owner membership, join/leave, and category-based discovery. Private/invite-only circles, roles, and activity scheduling remain.
-3. **AUREN Collaboration Spaces — foundational data layer added.** New `collaboration_spaces` collection plus a Discover-linked screen support owner-created spaces and owner-managed invitations by user UID. Shared documents, tasks, comments, and activity history remain.
-4. **AUREN Community Governance — partial reuse.** Reports are submitted through the existing `reports` collection, avoiding a duplicate reporting pipeline. A moderator queue, case status transitions, sanctions, appeals, and audit history remain unimplemented.
-5. **AUREN Volunteer & Causes — foundational data layer added.** New `volunteer_causes` collection plus a Discover-linked directory screen support open causes and volunteer opt-in. The directory exposes cause creation, open-cause discovery, and volunteer opt-in. Capacity management, organizer review, shifts, project tasks, and impact tracking remain.
+test.after(async () => {
+  if (testEnv) await testEnv.cleanup();
+});
 
-## Changed files
+function dbFor(uid) {
+  return testEnv.authenticatedContext(uid).firestore();
+}
 
-- `lib/services/social/community_collaboration_service.dart`
-- `firestore.rules`
-- `lib/features/communities/presentation/clubs_screen.dart`\n- `lib/features/communities/presentation/collaboration_spaces_screen.dart`\n- `lib/features/communities/presentation/volunteer_causes_screen.dart`\n- `lib/features/discover/presentation/discover_screen.dart`\n- `test/services/social/community_collaboration_service_test.dart`
+async function seed(pathname, data) {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(pathname).set(data);
+  });
+}
 
-## Verification status
+test('club creator can create a public club with only themselves as initial member', async () => {
+  const db = dbFor('club-owner');
+  const now = firebase.firestore.Timestamp.now();
+  await assertSucceeds(db.doc('community_clubs/club-1').set({
+    ownerId: 'club-owner',
+    name: 'Readers',
+    description: 'Read together',
+    category: 'Books',
+    visibility: 'public',
+    memberIds: ['club-owner'],
+    memberCount: 1,
+    createdAt: now,
+  }));
 
-The new service tests have been authored using the repository's existing `fake_cloud_firestore` and `firebase_auth_mocks` dev dependencies. They have **not yet been executed** in a Flutter runtime in this workflow. Firestore rules have been edited but have **not yet been validated with the Firebase emulator**. Do not treat cloud authorization or runtime integration as verified until those checks pass.
+  await assertFails(db.doc('community_clubs/forged-owner').set({
+    ownerId: 'someone-else',
+    name: 'Readers',
+    description: '',
+    category: 'Books',
+    visibility: 'public',
+    memberIds: ['club-owner'],
+    memberCount: 1,
+    createdAt: now,
+  }));
+});
 
-## Safety and release constraints
+test('club member can join, but cannot remove another member or leave as owner', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('community_clubs/club-membership', {
+    ownerId: 'club-owner',
+    name: 'Chess',
+    description: '',
+    category: 'Games',
+    visibility: 'public',
+    memberIds: ['club-owner', 'member-a'],
+    memberCount: 2,
+    createdAt: now,
+  });
 
-- Changes are isolated on `feat/community-collaboration-foundation`; no PR was merged and no production data was changed.
-- Before release, run `dart format`, `flutter analyze`, the focused test file, the full test suite, and Firestore emulator rules tests.
-- Next scope: complete collaboration-space documents/tasks/comments and governance review workflows after the service and security contract pass validation.
+  await assertSucceeds(dbFor('member-b').doc('community_clubs/club-membership').update({
+    memberIds: ['club-owner', 'member-a', 'member-b'],
+    memberCount: 3,
+  }));
+
+  await assertFails(dbFor('member-b').doc('community_clubs/club-membership').update({
+    memberIds: ['club-owner', 'member-b'],
+    memberCount: 2,
+  }));
+
+  await assertFails(dbFor('club-owner').doc('community_clubs/club-membership').update({
+    memberIds: ['member-a'],
+    memberCount: 1,
+  }));
+
+  await seed('community_clubs/private-club', {
+    ownerId: 'private-owner',
+    name: 'Private group',
+    description: '',
+    category: 'Private',
+    visibility: 'private',
+    memberIds: ['private-owner'],
+    memberCount: 1,
+    createdAt: now,
+  });
+  await assertFails(dbFor('outsider').doc('community_clubs/private-club').update({
+    memberIds: ['private-owner', 'outsider'],
+    memberCount: 2,
+  }));
+
+  await seed('community_clubs/legacy-duplicate-members', {
+    ownerId: 'legacy-owner',
+    name: 'Legacy club',
+    description: '',
+    category: 'Books',
+    visibility: 'public',
+    memberIds: ['legacy-owner', 'legacy-member', 'legacy-member'],
+    memberCount: 3,
+    createdAt: now,
+  });
+  await assertFails(dbFor('new-member').doc('community_clubs/legacy-duplicate-members').update({
+    memberIds: ['legacy-owner', 'legacy-member', 'legacy-member', 'new-member'],
+    memberCount: 4,
+  }));
+});
+
+test('only the collaboration-space owner can add a member', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('collaboration_spaces/space-1', {
+    ownerId: 'space-owner',
+    title: 'Garden team',
+    description: 'Plan together',
+    memberIds: ['space-owner'],
+    createdAt: now,
+  });
+
+  await assertSucceeds(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    memberIds: ['space-owner', 'invitee'],
+  }));
+
+  await assertFails(dbFor('invitee').doc('collaboration_spaces/space-1').update({
+    memberIds: ['space-owner', 'invitee', 'another-user'],
+  }));
+
+  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    memberIds: ['space-owner', 'space-owner'],
+  }));
+
+  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    title: 'Hijacked title',
+    memberIds: ['space-owner', 'new-member'],
+  }));
+});
+
+test('volunteer can add only their own identity and cannot change cause metadata', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('volunteer_causes/cause-1', {
+    ownerId: 'cause-owner',
+    title: 'Park cleanup',
+    description: 'Clean the park',
+    category: 'Environment',
+    status: 'open',
+    volunteerIds: ['cause-owner'],
+    createdAt: now,
+  });
+
+  await assertSucceeds(dbFor('volunteer-a').doc('volunteer_causes/cause-1').update({
+    volunteerIds: ['cause-owner', 'volunteer-a'],
+  }));
+
+  await assertFails(dbFor('volunteer-b').doc('volunteer_causes/cause-1').update({
+    volunteerIds: ['cause-owner', 'volunteer-a', 'someone-else'],
+  }));
+
+  await assertFails(dbFor('volunteer-b').doc('volunteer_causes/cause-1').update({
+    title: 'Hijacked cause',
+    volunteerIds: ['cause-owner', 'volunteer-a', 'volunteer-b'],
+  }));
+
+  await seed('volunteer_causes/legacy-duplicate-volunteers', {
+    ownerId: 'legacy-cause-owner',
+    title: 'Legacy cause',
+    description: 'Existing legacy record',
+    category: 'Community',
+    status: 'open',
+    volunteerIds: ['legacy-cause-owner', 'legacy-volunteer', 'legacy-volunteer'],
+    createdAt: now,
+  });
+  await assertFails(dbFor('new-volunteer').doc('volunteer_causes/legacy-duplicate-volunteers').update({
+    volunteerIds: ['legacy-cause-owner', 'legacy-volunteer', 'legacy-volunteer', 'new-volunteer'],
+  }));
+});
+
+test('reads require authentication and collaboration spaces require membership', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('community_clubs/read-club', {
+    ownerId: 'read-owner',
+    name: 'Public club',
+    description: '',
+    category: 'Books',
+    visibility: 'public',
+    memberIds: ['read-owner'],
+    memberCount: 1,
+    createdAt: now,
+  });
+  await seed('collaboration_spaces/private-space', {
+    ownerId: 'space-owner',
+    title: 'Private space',
+    description: '',
+    memberIds: ['space-owner'],
+    createdAt: now,
+  });
+  await seed('volunteer_causes/closed-cause', {
+    ownerId: 'cause-owner',
+    title: 'Closed cause',
+    description: 'No longer accepting volunteers',
+    category: 'Community',
+    status: 'closed',
+    volunteerIds: ['cause-owner'],
+    createdAt: now,
+  });
+
+  await assertSucceeds(dbFor('signed-user').doc('community_clubs/read-club').get());
+  await assertFails(testEnv.unauthenticatedContext().firestore().doc('community_clubs/read-club').get());
+  await assertFails(dbFor('outsider').doc('collaboration_spaces/private-space').get());
+  await assertSucceeds(dbFor('space-owner').doc('collaboration_spaces/private-space').get());
+  await assertFails(dbFor('signed-user').doc('volunteer_causes/closed-cause').get());
+});
+
+test('community members can join public communities but cannot join private legacy communities', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('communities/public-community-join', {
+    ownerId: 'community-owner',
+    name: 'Public community',
+    description: '',
+    topic: 'Books',
+    visibility: 'public',
+    memberIds: ['community-owner'],
+    memberCount: 1,
+    createdAt: now,
+  });
+  await seed('communities/private-community-join', {
+    ownerId: 'private-community-owner',
+    name: 'Private community',
+    description: '',
+    topic: 'Private',
+    visibility: 'private',
+    memberIds: ['private-community-owner'],
+    memberCount: 1,
+    createdAt: now,
+  });
+
+  await assertSucceeds(dbFor('new-member').doc('communities/public-community-join').update({
+    memberIds: ['community-owner', 'new-member'],
+    memberCount: 2,
+  }));
+  await assertFails(dbFor('outsider').doc('communities/private-community-join').update({
+    memberIds: ['private-community-owner', 'outsider'],
+    memberCount: 2,
+  }));
+});
+
+
+## Membership security regression coverage
+- Collaboration-space rules must reject owner removal of existing members, member self-promotion, and adding more than one member in a single update. Membership is intentionally separate from local topic/rules metadata.
