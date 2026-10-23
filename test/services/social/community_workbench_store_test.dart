@@ -1076,4 +1076,34 @@ void main() {
     expect((await store.listProposals()).single['votes'], isEmpty);
   });
 
+
+  test('concurrent local vote and closure preserve a valid proposal lifecycle', () async {
+    final id = await store.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Concurrent close and vote',
+      proposedRule: 'Closure and voting are serialized locally.',
+    );
+
+    final outcomes = await Future.wait<Object?>([
+      store.voteOnProposal(
+        proposalId: id,
+        voterId: 'member-a',
+        support: true,
+      ).then<Object?>((_) => 'vote-saved', onError: (Object error) => error),
+      store.closeProposal(
+        proposalId: id,
+        status: 'accepted',
+      ).then<Object?>((_) => 'closed', onError: (Object error) => error),
+    ]);
+
+    expect(outcomes.whereType<String>(), hasLength(2));
+    final proposal = (await store.listProposals()).single;
+    expect(proposal['status'], 'accepted');
+    final votes = Map<String, bool>.from(proposal['votes'] as Map);
+    expect(votes.length, lessThanOrEqualTo(1));
+    if (votes.isNotEmpty) {
+      expect(votes, containsPair('member-a', true));
+    }
+  });
+
 }
