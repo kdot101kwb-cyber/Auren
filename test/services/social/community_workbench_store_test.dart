@@ -373,7 +373,7 @@ void main() {
       'auren.community.group_projects.v1': jsonEncode([
         {
           'id': 'p1',
-          'title': 'x' * 121,
+          'title': List.filled(121, 'x').join(),
           'description': '',
           'communityId': 'c',
           'createdAt': DateTime.utc(2026).toIso8601String(),
