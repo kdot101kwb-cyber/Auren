@@ -36,7 +36,7 @@ void main() {
   });
 
   test(
-      'failed local write reports failure and preserves the previous record',
+      'failed local write reports failure when preferences are injected',
       () async {
     final initialStore = EverydayLifeLocalStore();
     await initialStore.save(item(title: 'Previously saved'));
@@ -151,7 +151,7 @@ void main() {
     expect(draft.informationConfirmed, isFalse);
   });
 
-  test('failed local write reports failure and preserves the previous record', () async {
+  test('failed local write preserves existing records with default preferences', () async {
     final store = EverydayLifeLocalStore();
     await store.save(item(id: 'stable', title: 'Previously saved'));
     final failingStore = EverydayLifeLocalStore(
