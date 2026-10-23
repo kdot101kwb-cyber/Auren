@@ -119,7 +119,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     final p = await _ask('مشروع جماعي جديد', const [
       _Field('اسم المشروع', maxLength: 120),
       _Field('الوصف', maxLength: 2000, maxLines: 3),
-      _Field('معرّف المجتمع (اختياري)', maxLength: 160),
+      _Field('معرّف المجتمع (مطلوب)', maxLength: 160),
     ]);
     if (p == null) return;
     await _run(() async { await _store.createProject(title: p[0], description: p[1], communityId: p[2]); });
