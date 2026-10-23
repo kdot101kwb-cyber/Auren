@@ -76,6 +76,8 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
     final quantityController = TextEditingController();
     final requestedWindowController = TextEditingController();
     final isDirectory = kind == EverydayLifeKind.localService;
+    final isList = kind == EverydayLifeKind.taskList;
+    final isNote = kind == EverydayLifeKind.note;
     final isAppointment = kind == EverydayLifeKind.appointmentDraft;
     final isHousehold = kind == EverydayLifeKind.household ||
         kind == EverydayLifeKind.householdSupply ||
@@ -96,6 +98,8 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
               Text(
                 isDirectory ? 'إضافة خدمة محلية' :
                 isAppointment ? 'مسودة طلب خدمة / موعد' :
+                isList ? 'إنشاء قائمة يومية' :
+                isNote ? 'إضافة ملاحظة يومية' :
                 isSupply ? 'إضافة مستلزم منزلي' :
                 isMaintenance ? 'إضافة صيانة منزلية' :
                 isHousehold ? 'إضافة مهمة منزلية' : 'إضافة مهمة أو ملاحظة',
@@ -109,8 +113,11 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
               ),
               TextField(
                 controller: detailsController,
-                decoration: const InputDecoration(labelText: 'تفاصيل / ملاحظات'),
-                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: isList ? 'عناصر القائمة (كل عنصر في سطر)' : 'تفاصيل / ملاحظات',
+                  hintText: isList ? 'مثال: خبز\\nحليب\\nمنظف' : null,
+                ),
+                maxLines: isList ? 6 : 3,
               ),
               if (isSupply)
                 TextField(controller: quantityController, decoration: const InputDecoration(labelText: 'الكمية (اختياري)')),
@@ -351,7 +358,11 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
 
   String _subtitle(EverydayLifeItem item) {
     final parts = <String>[];
-    if (item.details.isNotEmpty) parts.add(item.details);
+    if (item.details.isNotEmpty) {
+      parts.add(item.kind == EverydayLifeKind.taskList
+          ? 'عناصر القائمة:\\n${item.details}'
+          : item.details);
+    }
     if (item.category.isNotEmpty) parts.add('التصنيف: ${item.category}');
     if (item.quantity.isNotEmpty) parts.add('الكمية: ${item.quantity}');
     if (item.requestedWindow.isNotEmpty) parts.add('الوقت المطلوب (غير مؤكد): ${item.requestedWindow}');
