@@ -57,7 +57,24 @@ class AurenCommunityWorkbenchStore {
     if (raw == null || raw.isEmpty) return <String, dynamic>{};
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      if (decoded is Map) {
+        final safe = <String, dynamic>{};
+        for (final entry in decoded.entries) {
+          if (entry.key is! String || entry.value is! Map) continue;
+          final value = Map<String, dynamic>.from(entry.value as Map);
+          final topic = value['topic'];
+          final rules = value['rules'];
+          final updatedAt = value['updatedAt'];
+          if (topic is String &&
+              topic.length <= 80 &&
+              rules is String &&
+              rules.length <= 2000 &&
+              updatedAt is String) {
+            safe[entry.key as String] = value;
+          }
+        }
+        return safe;
+      }
     } on FormatException {
       // A corrupt local cache must not prevent the user from continuing.
     }
@@ -71,12 +88,97 @@ class AurenCommunityWorkbenchStore {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is List) {
-        return decoded.whereType<Map>().map(Map<String, dynamic>.from).toList();
+        final safe = <Map<String, dynamic>>[];
+        for (final item in decoded) {
+          if (item is! Map) continue;
+          final record = Map<String, dynamic>.from(item);
+          if (_isValidRecordForKey(key, record)) safe.add(record);
+        }
+        return safe;
       }
     } on FormatException {
       // Recover as an empty local list; the next save replaces corrupt data.
     }
     return <Map<String, dynamic>>[];
+  }
+
+  bool _isValidRecordForKey(String key, Map<String, dynamic> record) {
+    bool hasStrings(List<String> fields) =>
+        fields.every((field) => record[field] is String);
+
+    bool validVotes(Object? value) =>
+        value is Map &&
+        value.length <= 1000 &&
+        value.entries.every((entry) => entry.key is String && entry.value is bool);
+
+    bool validAttendance(Object? value) =>
+        value is Map &&
+        value.length <= 1000 &&
+        value.entries.every(
+          (entry) =>
+              entry.key is String &&
+              const {'interested', 'going', 'declined'}.contains(entry.value),
+        );
+
+    if (key.startsWith(_storageKey(_projectsKey))) {
+      final tasks = record['tasks'];
+      final milestones = record['milestones'];
+      if (!hasStrings(['id', 'title', 'description', 'communityId', 'createdAt']) ||
+          tasks is! List ||
+          tasks.length > 100 ||
+          milestones is! List ||
+          milestones.length > 50) {
+        return false;
+      }
+      final validTasks = tasks.every(
+        (task) =>
+            task is Map &&
+            task['id'] is String &&
+            task['title'] is String &&
+            task['assignee'] is String &&
+            const {'todo', 'doing', 'done'}.contains(task['status']),
+      );
+      final validMilestones = milestones.every(
+        (milestone) =>
+            milestone is Map &&
+            milestone['id'] is String &&
+            milestone['title'] is String &&
+            milestone['completed'] is bool,
+      );
+      return validTasks && validMilestones;
+    }
+
+    if (key.startsWith(_storageKey(_proposalsKey))) {
+      return hasStrings([
+            'id',
+            'communityId',
+            'title',
+            'proposedRule',
+            'createdAt',
+          ]) &&
+          const {'open', 'accepted', 'rejected', 'withdrawn'}
+              .contains(record['status']) &&
+          validVotes(record['votes']);
+    }
+
+    if (key.startsWith(_storageKey(_meetupsKey))) {
+      final capacity = record['capacity'];
+      return hasStrings([
+            'id',
+            'title',
+            'description',
+            'startsAt',
+            'location',
+            'createdAt',
+          ]) &&
+          capacity is int &&
+          capacity >= 1 &&
+          capacity <= 10000 &&
+          record['status'] == 'draft' &&
+          validAttendance(record['attendance']);
+    }
+
+    return false;
   }
 
   Future<void> _writeMap(String key, Map<String, dynamic> value) async {
@@ -104,7 +206,9 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Space topic or rules are invalid.');
     }
     final all = await _readMap(_storageKey(_spaceGuidelinesKey));
-    // Keep the newest 100 spaces' metadata so local storage remains bounded.
+    if (!all.containsKey(id) && all.length >= 100) {
+      throw StateError('Local space-guideline limit reached.');
+    }
     all.remove(id);
     all[id] = <String, dynamic>{
       'topic': cleanTopic,
@@ -156,6 +260,9 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Project title, description, or community is invalid.');
     }
     final projects = await listProjects();
+    if (projects.length >= 100) {
+      throw StateError('Local project limit reached.');
+    }
     final id = _id('project');
     projects.insert(0, <String, dynamic>{
       'id': id,
@@ -166,7 +273,7 @@ class AurenCommunityWorkbenchStore {
       'tasks': <Map<String, dynamic>>[],
       'milestones': <Map<String, dynamic>>[],
     });
-    await _writeList(_storageKey(_projectsKey), projects.take(100).toList());
+    await _writeList(_storageKey(_projectsKey), projects);
     return id;
   
     });
@@ -313,6 +420,9 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Proposal details are invalid.');
     }
     final proposals = await listProposals();
+    if (proposals.length >= 100) {
+      throw StateError('Local proposal limit reached.');
+    }
     final id = _id('proposal');
     proposals.insert(0, <String, dynamic>{
       'id': id,
@@ -323,7 +433,7 @@ class AurenCommunityWorkbenchStore {
       'status': 'open',
       'createdAt': DateTime.now().toUtc().toIso8601String(),
     });
-    await _writeList(_storageKey(_proposalsKey), proposals.take(100).toList());
+    await _writeList(_storageKey(_proposalsKey), proposals);
     return id;
   
     });
@@ -412,6 +522,9 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Meetup draft details are invalid.');
     }
     final drafts = await listMeetupDrafts();
+    if (drafts.length >= 100) {
+      throw StateError('Local meetup-draft limit reached.');
+    }
     final id = _id('meetup');
     drafts.insert(0, <String, dynamic>{
       'id': id,
@@ -424,7 +537,7 @@ class AurenCommunityWorkbenchStore {
       'status': 'draft',
       'createdAt': DateTime.now().toUtc().toIso8601String(),
     });
-    await _writeList(_storageKey(_meetupsKey), drafts.take(100).toList());
+    await _writeList(_storageKey(_meetupsKey), drafts);
     return id;
   
     });
