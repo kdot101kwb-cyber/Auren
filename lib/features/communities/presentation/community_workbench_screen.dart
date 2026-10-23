@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../services/social/community_workbench_store.dart';
+import 'collaboration_spaces_screen.dart';
 
 class AurenCommunityWorkbenchScreen extends StatefulWidget {
   const AurenCommunityWorkbenchScreen({super.key});
@@ -206,7 +207,18 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Community & Collaboration'),
+    appBar: AppBar(
+      title: const Text('Community & Collaboration'),
+      actions: [
+        IconButton(
+          key: const ValueKey('open-collaboration-spaces'),
+          tooltip: 'مساحات التعاون',
+          icon: const Icon(Icons.space_dashboard_outlined),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AurenCollaborationSpacesScreen()),
+          ),
+        ),
+      ],
       bottom: TabBar(controller: _tabs, isScrollable: true, tabs: const [
         Tab(icon: Icon(Icons.groups_2_outlined), text: 'المشاريع'),
         Tab(icon: Icon(Icons.how_to_vote_outlined), text: 'الحوكمة'),
