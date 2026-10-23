@@ -153,7 +153,7 @@ void main() {
     final store = EverydayLifeLocalStore();
     await store.save(item(id: 'stable', title: 'Previously saved'));
     final failingStore = EverydayLifeLocalStore(
-      writeString: (key, value) async => false,
+      writeString: (preferences, key, value) async => false,
     );
 
     await expectLater(
