@@ -86,3 +86,14 @@ The Everyday Life & Services feature is a local-first utility layer, not a repla
 - **Integration boundaries:** Universal Search remains the discovery/search surface; Mobility remains responsible for transport flows; Business Directory remains the canonical business profile surface. Everyday Life may link or hand off to those systems later, but must not duplicate their search indexes, provider profiles, route logic, or business records.
 
 Storage is device-local and designed to work offline. A system is not release-complete until its local persistence, empty/error states, user flows, and CI tests pass.
+
+## Execution register — Everyday Life & Services hardening
+
+Last updated: 2026-10-23
+
+- **Baseline validation:** commit `951c42276fa8d9bb75fa245e33f7a9169e21ff42` passed the recorded Flutter analyze, Flutter tests, Android debug build, and the listed backend/CircleCI checks.
+- **Mutation reliability:** the screen now routes completion toggles, favorites, deletion, and the directory verification flag through one guarded mutation path. If persistence fails, it displays a retry-oriented error instead of allowing an unhandled asynchronous failure.
+- **Regression coverage added:** a widget test now exercises the local service directory's favorite toggle and deletion, including checking the persisted local records.
+- **Status:** these hardening changes are committed on the Everyday Life feature branch; their own CI must pass before this work is considered validated. This is not a release-completion declaration for any of the four systems.
+- **Remaining acceptance work:** test write-failure behavior directly, verify empty/error states and all four system flows, inspect integration boundaries, and rerun all required CI/build checks. Do not merge the draft PR until review and explicit approval.
+
