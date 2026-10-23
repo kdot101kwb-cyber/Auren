@@ -60,6 +60,11 @@ class EverydayLifeLocalStore {
 
   Future<void> _write(List<EverydayLifeItem> records) async {
     final raw = jsonEncode(records.map((entry) => entry.toJson()).toList());
-    await (await _prefs).setString(storageKey, raw);
+    final saved = await (await _prefs).setString(storageKey, raw);
+    if (!saved) {
+      // SharedPreferences can report a failed write without throwing.
+      // Surface it so callers never mistake an unsaved change for success.
+      throw StateError('Unable to persist AUREN Everyday Life records locally.');
+    }
   }
 }
