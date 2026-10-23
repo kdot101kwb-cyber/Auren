@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -264,12 +265,14 @@ class AurenCommunityWorkbenchStore {
     await prefs.setString(key, jsonEncode(value));
   }
 
-  // Timestamps can collide when several records are created in one clock tick.
-  // The process-local sequence adds a second uniqueness component for this store.
+  // The sequence distinguishes rapid calls in one isolate. The random suffix
+  // also makes collisions across isolates or app restarts extraordinarily
+  // unlikely; local IDs are not a substitute for server-assigned identities.
   static int _idSequence = 0;
+  static final math.Random _idRandom = math.Random.secure();
 
   String _id(String prefix) =>
-      '${prefix}_${DateTime.now().microsecondsSinceEpoch}_${_idSequence++}';
+      '${prefix}_${DateTime.now().microsecondsSinceEpoch}_${_idSequence++}_${_idRandom.nextInt(1 << 32).toRadixString(16)}';
 
   Future<void> saveSpaceGuidelines({
     required String spaceId,
