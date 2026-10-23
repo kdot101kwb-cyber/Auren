@@ -4,12 +4,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/everyday_life_item.dart';
 
+typedef EverydayLifeWriteString = Future<bool> Function(
+  SharedPreferences preferences,
+  String key,
+  String value,
+);
+
 class EverydayLifeLocalStore {
-  EverydayLifeLocalStore({SharedPreferences? preferences})
-      : _preferences = preferences;
+  EverydayLifeLocalStore({
+    SharedPreferences? preferences,
+    EverydayLifeWriteString? writeString,
+  })  : _preferences = preferences,
+        _writeString = writeString;
 
   static const storageKey = 'auren_everyday_life_records_v1';
   final SharedPreferences? _preferences;
+  final EverydayLifeWriteString? _writeString;
 
   Future<SharedPreferences> get _prefs async =>
       _preferences ?? SharedPreferences.getInstance();
@@ -68,7 +78,9 @@ class EverydayLifeLocalStore {
 
   Future<void> _write(List<EverydayLifeItem> records) async {
     final raw = jsonEncode(records.map((entry) => entry.toJson()).toList());
-    final saved = await (await _prefs).setString(storageKey, raw);
+    final preferences = await _prefs;
+    final saved = await (_writeString?.call(preferences, storageKey, raw) ??
+        preferences.setString(storageKey, raw));
     if (!saved) {
       // SharedPreferences can report a failed write without throwing.
       // Surface it so callers never mistake an unsaved change for success.
