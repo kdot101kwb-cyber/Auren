@@ -289,7 +289,7 @@ void main() {
 
   test('reports reuse existing reports collection schema', () async {
     final id = await service.reportCommunityContent(
-      reportedUid: 'member-b',
+      reportedUid: ' member-b ',
       reason: 'Harassment in a community post',
       contentId: 'post-1',
       contentType: 'community_post',
@@ -307,6 +307,20 @@ void main() {
       service.reportCommunityContent(
         reportedUid: 'member-a',
         reason: 'Invalid target',
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      service.reportCommunityContent(
+        reportedUid: ' member-a ',
+        reason: 'Whitespace must not bypass the self-report guard',
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      service.reportCommunityContent(
+        reportedUid: List.filled(129, 'x').join(),
+        reason: 'Oversized target UID',
       ),
       throwsArgumentError,
     );
