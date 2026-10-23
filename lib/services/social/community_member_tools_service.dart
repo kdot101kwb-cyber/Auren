@@ -127,9 +127,15 @@ class AurenCommunityMemberToolsService {
       var completed = 0, saved = 0, removed = 0;
       for (final item in decoded.whereType<Map>()) {
         switch (item['type']) {
-          case 'task_completed': completed++;
-          case 'resource_saved': saved++;
-          case 'resource_removed': removed++;
+          case 'task_completed':
+            completed++;
+            break;
+          case 'resource_saved':
+            saved++;
+            break;
+          case 'resource_removed':
+            removed++;
+            break;
         }
       }
       return AurenCommunityActivitySummary(onboardingTasksCompleted: completed,
