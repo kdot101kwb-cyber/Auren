@@ -12,8 +12,10 @@ test('legal case organizer validates dates, bounds text, and sorts opted-in remi
   }, 'owner-1');
   assert.equal(item.ownerUid, 'owner-1');
   assert.equal(item.status, 'active');
-  assert.equal(listUpcomingCaseDeadlines([item], '2026-10-23').length, 1);
-  assert.equal(listUpcomingCaseDeadlines([{ ...item, reminderEnabled: false }], '2026-10-23').length, 0);
+  assert.equal(listUpcomingCaseDeadlines([item], '2026-10-23', 'owner-1').length, 1);
+  assert.equal(listUpcomingCaseDeadlines([{ ...item, reminderEnabled: false }], '2026-10-23', 'owner-1').length, 0);
+  assert.throws(() => listUpcomingCaseDeadlines([item], '2026-10-23'), /owner uid/i);
+  assert.equal(listUpcomingCaseDeadlines([{ ...item, ownerUid: 'owner-2' }, item], '2026-10-23', 'owner-1').length, 1);
   assert.throws(() => normalizeLegalCase({ title: 'Bad date', createdDate: '2026-02-30' }, 'owner-1'), /createdDate/i);
   assert.throws(() => normalizeLegalCase({ title: 'Bad order', createdDate: '2026-02-10', nextDeadline: '2026-02-01' }, 'owner-1'), /precede/i);
   assert.throws(() => normalizeLegalCase({ title: 'x'.repeat(161) }, 'owner-1'), /title/i);
@@ -22,7 +24,7 @@ test('legal case organizer validates dates, bounds text, and sorts opted-in remi
       { ...item, nextDeadline: 'not-a-date' },
       { ...item, status: 'closed', nextDeadline: '2026-10-24' },
       { ...item, nextDeadline: '2026-10-23' },
-    ], '2026-10-23').map((entry) => entry.nextDeadline),
+    ], '2026-10-23', 'owner-1').map((entry) => entry.nextDeadline),
     ['2026-10-23'],
   );
 });
@@ -36,6 +38,7 @@ test('water resource tracker rejects decreasing meters and calculates consumptio
   assert.throws(() => normalizeWaterReading({ meterId: 'meter-1', date: '2026-01-01', value: 1, unit: 'unknown' }, 'owner-1'), /unit/i);
   assert.throws(() => calculateWaterConsumption(previous, { ...current, date: 'not-a-date' }), /date/i);
   assert.throws(() => calculateWaterConsumption(previous, { ...current, ownerUid: 'owner-2' }), /owner/i);
+  assert.throws(() => calculateWaterConsumption(previous, { ...current, ownerUid: undefined }), /owner/i);
 });
 
 test('energy analytics aggregates only valid entries by matching units and date range', () => {
