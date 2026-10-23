@@ -201,12 +201,12 @@ class _AurenCollaborationSpacesScreenState
     try {
       await _service.inviteToSpace(
         spaceId: space.id, memberUid: memberUid.text.trim());
-      if (mounted) {
+      if (mounted && generation == _accountGeneration) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تمت إضافة العضو')));
       }
     } catch (error) {
-      if (mounted) {
+      if (mounted && generation == _accountGeneration) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('تعذرت الدعوة: $error')));
       }
