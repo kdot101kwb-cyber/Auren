@@ -395,3 +395,67 @@ test('trusted reviewer transitions a report with a matching immutable audit even
   await assertFails(reporter.doc('community_case_events/report-atomic__resolved').get());
   await assertFails(reporter.doc('community_case_events/report-atomic__resolved').delete());
 });
+
+
+test('participant appeal decision and append-only audit event succeed atomically', async () => {
+  const appellantUid = 'appeal-participant';
+  const adminUid = 'trusted-moderator';
+  const reportId = 'terminal-report-for-appeal';
+  const appealId = reportId + '__' + appellantUid;
+  const now = firebase.firestore.Timestamp.now();
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('reports/' + reportId).set({
+      reporterUid: appellantUid,
+      reportedUid: 'reported-user',
+      reason: 'Community guideline concern',
+      contentId: 'community-post-1',
+      contentType: 'post',
+      status: 'resolved',
+      createdAt: now,
+      moderatedBy: adminUid,
+      moderatedAt: now,
+      moderationNote: 'Initial review completed',
+    });
+  });
+
+  const appellantDb = dbFor(appellantUid);
+  await assertSucceeds(appellantDb.doc('community_case_appeals/' + appealId).set({
+    reportId,
+    appellantUid,
+    reason: 'Please reconsider the moderation decision.',
+    status: 'pending',
+    createdAt: now,
+  }));
+
+  const adminDb = testEnv.authenticatedContext(adminUid, { admin: true }).firestore();
+  const reviewedAt = firebase.firestore.Timestamp.now();
+  const reviewNote = 'Appeal reviewed with the original decision upheld.';
+  const batch = adminDb.batch();
+  batch.update(adminDb.doc('community_case_appeals/' + appealId), {
+    status: 'rejected',
+    reviewedBy: adminUid,
+    reviewedAt,
+    reviewNote,
+  });
+  batch.set(adminDb.doc('community_case_events/' + appealId + '__rejected'), {
+    entityType: 'appeal',
+    entityId: appealId,
+    actorUid: adminUid,
+    fromStatus: 'pending',
+    toStatus: 'rejected',
+    note: reviewNote,
+    createdAt: reviewedAt,
+  });
+  await assertSucceeds(batch.commit());
+
+  await assertFails(adminDb.doc('community_case_events/' + appealId + '__rejected')
+      .update({ note: 'Attempt to rewrite audit history' }));
+  await assertFails(adminDb.doc('community_case_events/' + appealId + '__rejected').delete());
+  await assertFails(adminDb.doc('community_case_appeals/' + appealId).update({
+    status: 'accepted',
+    reviewedBy: adminUid,
+    reviewedAt: firebase.firestore.Timestamp.now(),
+    reviewNote: 'Attempt to decide the same appeal twice',
+  }));
+});
