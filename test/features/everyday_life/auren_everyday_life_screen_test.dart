@@ -100,4 +100,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('معلومات غير مؤكدة'), findsOneWidget);
   });
+
+  testWidgets('local service favorite and delete changes persist locally',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.ensureVisible(find.text('Local services'));
+    await tester.tap(find.text('Local services'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أضف خدمة بنفسك'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'User-entered tailor');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    var records = await EverydayLifeLocalStore().readAll();
+    expect(records, hasLength(1));
+    expect(records.single.favorite, isFalse);
+
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('إضافة للمفضلة'));
+    await tester.pumpAndSettle();
+
+    records = await EverydayLifeLocalStore().readAll();
+    expect(records.single.favorite, isTrue);
+    expect(find.textContaining('مفضلة'), findsOneWidget);
+
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حذف'));
+    await tester.pumpAndSettle();
+
+    expect(await EverydayLifeLocalStore().readAll(), isEmpty);
+    expect(find.text('لا توجد عناصر بعد. أضف أول عنصر واحفظه محلياً.'), findsOneWidget);
+  });
+
 }
