@@ -6,6 +6,13 @@ import 'package:auren/features/everyday_life/data/everyday_life_local_store.dart
 import 'package:auren/features/everyday_life/domain/everyday_life_item.dart';
 import 'package:auren/features/everyday_life/presentation/auren_everyday_life_screen.dart';
 
+class _FailingReadStore extends EverydayLifeLocalStore {
+  @override
+  Future<List<EverydayLifeItem>> readAll() async {
+    throw StateError('simulated local read failure');
+  }
+}
+
 class _FailingWriteStore extends EverydayLifeLocalStore {
   @override
   Future<void> save(EverydayLifeItem item) async {
@@ -29,6 +36,21 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: AurenEverydayLifeScreen()));
     await tester.pumpAndSettle();
   }
+
+  testWidgets(
+      'shows a retry action when local records cannot be read',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AurenEverydayLifeScreen(store: _FailingReadStore()),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر قراءة البيانات المحلية. حاول مرة أخرى.'), findsOneWidget);
+    await tester.tap(find.text('إعادة المحاولة'));
+    await tester.pumpAndSettle();
+    expect(find.text('تعذر قراءة البيانات المحلية. حاول مرة أخرى.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('organizer creates a local task and can mark it complete',
       (tester) async {
