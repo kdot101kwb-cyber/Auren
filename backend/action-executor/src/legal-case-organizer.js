@@ -47,7 +47,6 @@ export function normalizeLegalCase(input, ownerUid) {
     status,
     createdDate,
     nextDeadline,
-    updatedAt: isoDate(input.updatedAt, 'updatedAt'),
     reminderEnabled: input.reminderEnabled === true,
     // Legal content is user-entered; this helper does not determine rights or provide legal advice.
   };
