@@ -11,8 +11,6 @@ class _FailingWriteStore extends EverydayLifeLocalStore {
   Future<void> save(EverydayLifeItem item) async {
     throw StateError('simulated local persistence failure');
   }
-
-
 }
 
 void main() {
@@ -147,7 +145,8 @@ void main() {
   });
 
 
-  testWidgets('failed local mutation keeps the previous state and shows retry guidance',
+  testWidgets(
+      'failed local mutation keeps the previous state and shows retry guidance',
       (tester) async {
     final persisted = EverydayLifeItem(
       id: 'existing-task',
@@ -174,7 +173,8 @@ void main() {
     expect(find.text('Keep this task unchanged'), findsOneWidget);
   });
 
-  testWidgets('failed local create shows an error and does not add a record',
+  testWidgets(
+      'failed local create shows an error and does not add a record',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: AurenEverydayLifeScreen(store: _FailingWriteStore()),
@@ -191,5 +191,4 @@ void main() {
     expect(await EverydayLifeLocalStore().readAll(), isEmpty);
     expect(find.text('Task that cannot be saved'), findsNothing);
   });
-
 }
