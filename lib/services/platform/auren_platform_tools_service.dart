@@ -271,6 +271,8 @@ class AurenPlatformToolsService {
           return 'Bluetooth';
         case ConnectivityResult.vpn:
           return 'VPN';
+        case ConnectivityResult.satellite:
+          return 'Satellite';
         case ConnectivityResult.other:
           return 'اتصال آخر';
         case ConnectivityResult.none:
