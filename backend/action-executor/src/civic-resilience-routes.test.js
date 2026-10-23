@@ -109,3 +109,13 @@ test('invalid legal case dates fail without persisting a record', async () => {
   assert.equal(res.statusCode, 400);
   assert.equal(writes.length, 0);
 });
+
+
+test('malformed water meter filters fail closed instead of returning an unfiltered list', async () => {
+  const { routes } = harness();
+  const handlers = routes.get('GET /api/civic/water/readings');
+  const res = response();
+  await handlers[1]({ uid: 'trusted-user', query: { meterId: 'nested/attacker-path' } }, res);
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(res.body, { error: 'Invalid meter id.' });
+});
