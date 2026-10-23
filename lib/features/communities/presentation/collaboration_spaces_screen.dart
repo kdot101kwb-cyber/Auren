@@ -80,17 +80,39 @@ class _AurenCollaborationSpacesScreenState
     }
     setState(() => _busy = true);
     try {
-      final spaceId = await _service.createSpace(title: title.text, description: description.text);
-      await _workbench.saveSpaceGuidelines(spaceId: spaceId, topic: topic.text, rules: rules.text);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إنشاء مساحة التعاون')));
+      final spaceId = await _service.createSpace(
+        title: title.text,
+        description: description.text,
+      );
+      try {
+        await _workbench.saveSpaceGuidelines(
+          spaceId: spaceId,
+          topic: topic.text,
+          rules: rules.text,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم إنشاء مساحة التعاون وحفظ قواعدها محلياً')),
+          );
+        }
+      } catch (metadataError) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'تم إنشاء المساحة، لكن تعذر حفظ الموضوع والقواعد محلياً: $metadataError',
+              ),
+            ),
+          );
+        }
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر إنشاء المساحة: $error')));
+          SnackBar(content: Text('تعذر إنشاء المساحة: $error')),
+        );
       }
+    }
     } finally {
       title.dispose();
       description.dispose();
