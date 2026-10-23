@@ -104,7 +104,7 @@ void main() {
       store.createProject(title: ' ', description: '', communityId: ''),
       throwsArgumentError,
     );
-    final id = await store.createProject(title: 'Small project', description: '', communityId: '');
+    final id = await store.createProject(title: 'Small project', description: '', communityId: 'community-1');
     for (var i = 0; i < 100; i++) {
       await store.addProjectTask(projectId: id, title: 'Task $i');
     }
@@ -226,7 +226,7 @@ void main() {
   });
 
   test('local persistence survives a new store instance', () async {
-    final id = await store.createProject(title: 'Offline plan', description: '', communityId: '');
+    final id = await store.createProject(title: 'Offline plan', description: '', communityId: 'community-1');
     final reloaded = AurenCommunityWorkbenchStore();
     expect((await reloaded.listProjects()).single['id'], id);
   });
@@ -311,7 +311,7 @@ void main() {
     await recoveringStore.createProject(
       title: 'Recovered project',
       description: '',
-      communityId: '',
+      communityId: 'community-1',
     );
     await recoveringStore.createRuleProposal(
       communityId: 'community-1',
