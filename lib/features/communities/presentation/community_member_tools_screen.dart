@@ -71,6 +71,22 @@ class _AurenCommunityMemberToolsScreenState extends State<AurenCommunityMemberTo
     }
   }
 
+  Future<void> _removeResource(AurenCommunityResource resource) async {
+    try {
+      await _service.removeResource(
+        communityId: widget.communityId,
+        resourceId: resource.id,
+      );
+      await _load();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر حذف المورد المحلي. حاول مرة أخرى.')),
+        );
+      }
+    }
+  }
+
   Future<void> _saveDigest(AurenCommunityDigestPreferences next) async {
     try {
       await _service.saveDigestPreferences(next);
@@ -119,11 +135,8 @@ class _AurenCommunityMemberToolsScreenState extends State<AurenCommunityMemberTo
                     resource.description + '\n' + resource.link),
                   isThreeLine: resource.description.isNotEmpty,
                   trailing: IconButton(tooltip: 'حذف المورد المحلي',
-                    icon: const Icon(Icons.delete_outline), onPressed: () async {
-                      await _service.removeResource(communityId: widget.communityId,
-                        resourceId: resource.id);
-                      await _load();
-                    }),
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => _removeResource(resource)),
                 )),
               ]),
               _section('٣. تفضيلات ملخص المجتمع', Icons.mark_email_unread_outlined, [
