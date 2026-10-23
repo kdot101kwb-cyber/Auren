@@ -768,4 +768,25 @@ void main() {
     expect((proposal['votes'] as Map).length, 1);
   });
 
+
+  test('project creation rejects missing or oversized community identifiers', () async {
+    await expectLater(
+      store.createProject(
+        title: 'Orphan project',
+        description: '',
+        communityId: '  ',
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      store.createProject(
+        title: 'Oversized community reference',
+        description: '',
+        communityId: 'c' * 161,
+      ),
+      throwsArgumentError,
+    );
+    expect(await store.listProjects(), isEmpty);
+  });
+
 }
