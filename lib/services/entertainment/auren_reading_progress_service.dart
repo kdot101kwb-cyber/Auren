@@ -26,13 +26,14 @@ class AurenReadingProgress {
 
   factory AurenReadingProgress.fromMap(Map<String, dynamic> map) {
     final statusName = map['status'] as String? ?? '';
-    final status = AurenReadingStatus.values
+    final matches = AurenReadingStatus.values
         .where((value) => value.name == statusName)
-        .firstOrNull;
+        .toList();
+    final status = matches.isEmpty ? AurenReadingStatus.wantToRead : matches.first;
     return AurenReadingProgress(
       itemId: map['itemId'] as String? ?? '',
       title: map['title'] as String? ?? '',
-      status: status ?? AurenReadingStatus.wantToRead,
+      status: status,
       updatedAt: DateTime.tryParse(map['updatedAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
     );
