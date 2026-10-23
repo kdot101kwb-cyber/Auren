@@ -161,8 +161,14 @@ test('only the collaboration-space owner can add a member', async () => {
   await assertFails(dbFor('invitee').doc('collaboration_spaces/space-1').update({
     memberIds: ['space-owner', 'invitee'],
   }));
-  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+  // Owners may add one new member per update while preserving all existing members.
+  await assertSucceeds(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
     memberIds: ['space-owner', 'invitee', 'third-user'],
+  }));
+
+  // A single update cannot add multiple members at once.
+  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    memberIds: ['space-owner', 'invitee', 'third-user', 'fourth-user', 'fifth-user'],
   }));
 });
 
