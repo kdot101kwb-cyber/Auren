@@ -109,7 +109,13 @@ class AurenCommunityWorkbenchStore {
     bool validVotes(Object? value) =>
         value is Map &&
         value.length <= 1000 &&
-        value.entries.every((entry) => entry.key is String && entry.value is bool);
+        value.entries.every(
+          (entry) =>
+              entry.key is String &&
+              (entry.key as String).isNotEmpty &&
+              (entry.key as String).length <= 128 &&
+              entry.value is bool,
+        );
 
     bool validAttendance(Object? value) =>
         value is Map &&
@@ -117,6 +123,8 @@ class AurenCommunityWorkbenchStore {
         value.entries.every(
           (entry) =>
               entry.key is String &&
+              (entry.key as String).isNotEmpty &&
+              (entry.key as String).length <= 128 &&
               const {'interested', 'going', 'declined'}.contains(entry.value),
         );
 
@@ -124,6 +132,13 @@ class AurenCommunityWorkbenchStore {
       final tasks = record['tasks'];
       final milestones = record['milestones'];
       if (!hasStrings(['id', 'title', 'description', 'communityId', 'createdAt']) ||
+          (record['id'] as String).isEmpty ||
+          (record['id'] as String).length > 128 ||
+          (record['title'] as String).isEmpty ||
+          (record['title'] as String).length > 120 ||
+          (record['description'] as String).length > 2000 ||
+          (record['communityId'] as String).length > 160 ||
+          DateTime.tryParse(record['createdAt'] as String) == null ||
           tasks is! List ||
           tasks.length > 100 ||
           milestones is! List ||
@@ -134,15 +149,24 @@ class AurenCommunityWorkbenchStore {
         (task) =>
             task is Map &&
             task['id'] is String &&
+            (task['id'] as String).isNotEmpty &&
+            (task['id'] as String).length <= 128 &&
             task['title'] is String &&
+            (task['title'] as String).isNotEmpty &&
+            (task['title'] as String).length <= 160 &&
             task['assignee'] is String &&
+            (task['assignee'] as String).length <= 128 &&
             const {'todo', 'doing', 'done'}.contains(task['status']),
       );
       final validMilestones = milestones.every(
         (milestone) =>
             milestone is Map &&
             milestone['id'] is String &&
+            (milestone['id'] as String).isNotEmpty &&
+            (milestone['id'] as String).length <= 128 &&
             milestone['title'] is String &&
+            (milestone['title'] as String).isNotEmpty &&
+            (milestone['title'] as String).length <= 160 &&
             milestone['completed'] is bool,
       );
       return validTasks && validMilestones;
@@ -156,6 +180,15 @@ class AurenCommunityWorkbenchStore {
             'proposedRule',
             'createdAt',
           ]) &&
+          (record['id'] as String).isNotEmpty &&
+          (record['id'] as String).length <= 128 &&
+          (record['communityId'] as String).isNotEmpty &&
+          (record['communityId'] as String).length <= 160 &&
+          (record['title'] as String).isNotEmpty &&
+          (record['title'] as String).length <= 120 &&
+          (record['proposedRule'] as String).isNotEmpty &&
+          (record['proposedRule'] as String).length <= 2000 &&
+          DateTime.tryParse(record['createdAt'] as String) != null &&
           const {'open', 'accepted', 'rejected', 'withdrawn'}
               .contains(record['status']) &&
           validVotes(record['votes']);
@@ -172,7 +205,14 @@ class AurenCommunityWorkbenchStore {
             'location',
             'createdAt',
           ]) &&
+          (record['id'] as String).isNotEmpty &&
+          (record['id'] as String).length <= 128 &&
+          (record['title'] as String).isNotEmpty &&
+          (record['title'] as String).length <= 120 &&
+          (record['description'] as String).length <= 2000 &&
+          (record['location'] as String).length <= 160 &&
           DateTime.tryParse(startsAt as String) != null &&
+          DateTime.tryParse(record['createdAt'] as String) != null &&
           capacity is int &&
           capacity >= 1 &&
           capacity <= 10000 &&
