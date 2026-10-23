@@ -74,3 +74,15 @@ End-to-end flows, Firebase rules, indexes, CI/build validation, Android release 
 
 ## Completion rule
 A system is considered ready only when its user flow, data layer, security rules, error/empty states, and integration points are implemented. Existing foundations are reused rather than rebuilt.
+
+## Everyday Life & Services implementation boundary
+
+The Everyday Life & Services feature is a local-first utility layer, not a replacement for existing cross-system foundations:
+
+- **Personal Organizer:** owns lightweight tasks, notes, and user-entered lists. Calendar remains the source for calendar events and scheduling; organizer items must not create calendar events automatically.
+- **Home & Household:** owns chores, household supply notes/quantities, and maintenance reminders or requested windows entered by the user. It does not create purchases or service orders.
+- **Appointments & Service Requests:** stores reviewable local drafts only. No booking, calling, sending, payment, or external confirmation occurs automatically; requested windows are not confirmed appointments.
+- **Local Service Directory:** stores user-entered service records and favorites. Entries remain unconfirmed until the user explicitly marks them verified; no provider, price, hours, or availability is invented.
+- **Integration boundaries:** Universal Search remains the discovery/search surface; Mobility remains responsible for transport flows; Business Directory remains the canonical business profile surface. Everyday Life may link or hand off to those systems later, but must not duplicate their search indexes, provider profiles, route logic, or business records.
+
+Storage is device-local and designed to work offline. A system is not release-complete until its local persistence, empty/error states, user flows, and CI tests pass.
