@@ -151,6 +151,17 @@ test('only the collaboration-space owner can add a member', async () => {
     title: 'Hijacked title',
     memberIds: ['space-owner', 'new-member'],
   }));
+  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    ownerId: 'attacker',
+    memberIds: ['space-owner', 'invitee', 'new-member'],
+  }));
+  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    description: 'Changed without authorization',
+    memberIds: ['space-owner', 'invitee', 'new-member'],
+  }));
+  await assertFails(dbFor('space-owner').doc('collaboration_spaces/space-1').update({
+    memberIds: ['space-owner', 'invitee', 'invitee'],
+  }));
 
   // Space membership is owner-managed and additive in this contract: the
   // owner cannot silently remove existing members, and an invitee cannot
