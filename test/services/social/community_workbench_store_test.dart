@@ -341,8 +341,12 @@ void main() {
     final projects = await store.listProjects();
     expect(projects, hasLength(100));
     expect(projects.map((item) => item['title']), contains('Existing project 0'));
-    expect(projects.map((item) => item['title']), contains('Concurrent project A') |
-        contains('Concurrent project B') | contains('Concurrent project C'));
+    expect(
+      projects
+          .map((item) => item['title'] as String)
+          .where((title) => title.startsWith('Concurrent project ')),
+      hasLength(1),
+    );
   });
 
   test('valid JSON with invalid record shapes is ignored without crashing', () async {
