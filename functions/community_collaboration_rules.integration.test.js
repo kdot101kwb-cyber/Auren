@@ -290,3 +290,63 @@ test('community members can join public communities but cannot join private lega
     memberCount: 2,
   }));
 });
+
+
+test('community poll votes can only add one member vote and increment exactly one counter', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('communities/poll-community', {
+    ownerId: 'poll-owner',
+    name: 'Poll community',
+    description: '',
+    topic: 'Governance',
+    visibility: 'public',
+    memberIds: ['poll-owner', 'poll-member', 'second-member'],
+    memberCount: 3,
+    createdAt: now,
+  });
+  await seed('community_polls/poll-guarded', {
+    ownerId: 'poll-owner',
+    communityId: 'poll-community',
+    question: 'Which option?',
+    options: ['A', 'B'],
+    votes: { '0': 0, '1': 0 },
+    voters: {},
+    createdAt: now,
+  });
+
+  const poll = dbFor('poll-member').doc('community_polls/poll-guarded');
+  await assertSucceeds(poll.update({
+    votes: { '0': 1, '1': 0 },
+    voters: { 'poll-member': '0' },
+  }));
+
+  await seed('community_polls/poll-forged-count', {
+    ownerId: 'poll-owner', communityId: 'poll-community', question: 'Which option?',
+    options: ['A', 'B'], votes: { '0': 0, '1': 0 }, voters: {}, createdAt: now,
+  });
+  await assertFails(dbFor('poll-member').doc('community_polls/poll-forged-count').update({
+    votes: { '0': 9, '1': 4 }, voters: { 'poll-member': '0' },
+  }));
+
+  await seed('community_polls/poll-forged-choice', {
+    ownerId: 'poll-owner', communityId: 'poll-community', question: 'Which option?',
+    options: ['A', 'B'], votes: { '0': 0, '1': 0 }, voters: {}, createdAt: now,
+  });
+  await assertFails(dbFor('poll-member').doc('community_polls/poll-forged-choice').update({
+    votes: { '0': 0, '1': 1 }, voters: { 'poll-member': '0' },
+  }));
+
+  await seed('community_polls/poll-metadata-tamper', {
+    ownerId: 'poll-owner', communityId: 'poll-community', question: 'Which option?',
+    options: ['A', 'B'], votes: { '0': 0, '1': 0 }, voters: {}, createdAt: now,
+  });
+  await assertFails(dbFor('poll-member').doc('community_polls/poll-metadata-tamper').update({
+    question: 'Changed question', votes: { '0': 1, '1': 0 }, voters: { 'poll-member': '0' },
+  }));
+
+  await assertFails(dbFor('poll-member').doc('community_polls/poll-guarded').update({
+    votes: { '0': 2, '1': 0 },
+    voters: { 'poll-member': '0', 'second-member': '0' },
+  }));
+  await assertFails(dbFor('outsider').doc('community_polls/poll-guarded').get());
+});
