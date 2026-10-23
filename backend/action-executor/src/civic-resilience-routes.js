@@ -81,14 +81,20 @@ export function registerCivicResilienceRoutes(app, { db, requireUser, serverTime
     try {
       const item = normalizeWaterReading(req.body?.reading, req.uid);
       const ref = userCollection(req.uid, 'water_readings').doc(`${item.meterId}__${item.date}`);
-      const previousSnap = await userCollection(req.uid, 'water_readings')
-        .where('meterId', '==', item.meterId).where('unit', '==', item.unit)
-        .where('date', '<', item.date).orderBy('date', 'desc').limit(1).get();
-      const nextSnap = await userCollection(req.uid, 'water_readings')
-        .where('meterId', '==', item.meterId).where('unit', '==', item.unit)
-        .where('date', '>', item.date).orderBy('date', 'asc').limit(1).get();
-      if (!previousSnap.empty) calculateWaterConsumption(previousSnap.docs[0].data(), item);
-      if (!nextSnap.empty) calculateWaterConsumption(item, nextSnap.docs[0].data());
+      const existing = await ref.get();
+      if (existing.exists && existing.data()?.unit !== item.unit) {
+        throw Object.assign(new Error('A meter reading cannot change the meter unit.'), { code: 409 });
+      }
+      // A bounded per-meter read avoids requiring a compound Firestore index.
+      const meterSnapshot = await userCollection(req.uid, 'water_readings')
+        .where('meterId', '==', item.meterId).limit(MAX_LIST).get();
+      const readings = meterSnapshot.docs.map((doc) => doc.data())
+        .filter((reading) => reading.unit === item.unit && reading.date !== item.date)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      const previous = readings.filter((reading) => reading.date < item.date).at(-1);
+      const next = readings.find((reading) => reading.date > item.date);
+      if (previous) calculateWaterConsumption(previous, item);
+      if (next) calculateWaterConsumption(item, next);
       await ref.set(item, { merge: true });
       return res.status(201).json(item);
     } catch (error) {
