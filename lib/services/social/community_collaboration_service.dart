@@ -151,8 +151,9 @@ class AurenCollaborationService {
   }) async {
     final actorUid = uid;
     final cleanMemberUid = memberUid.trim();
-    if (cleanMemberUid.isEmpty || cleanMemberUid == actorUid) {
-      throw ArgumentError('Choose another valid member.');
+    if (cleanMemberUid.isEmpty || cleanMemberUid.length > 128 ||
+        cleanMemberUid == actorUid) {
+      throw ArgumentError('Choose another valid member UID (1–128 characters).');
     }
     final ref = _spaces.doc(spaceId);
     await _db.runTransaction((transaction) async {
