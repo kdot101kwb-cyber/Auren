@@ -21,6 +21,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
   final TextEditingController _spaceRulesController = TextEditingController();
   bool _busy = false;
   int _refresh = 0;
+  int _accountGeneration = 0;
 
   @override
   void initState() {
@@ -32,6 +33,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     );
     _authSubscription = auth.authStateChanges().listen((user) {
       if (!mounted) return;
+      _accountGeneration++;
       // Never leave one account's unsaved private draft text visible after an
       // account switch on a shared device. Persisted records remain isolated
       // by the store scope; clear transient form contents as well.
@@ -66,13 +68,19 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
       };
 
   Future<void> _run(Future<void> Function() action) async {
+    final generation = _accountGeneration;
     setState(() => _busy = true);
     try {
       await action();
-      if (mounted) setState(() => _refresh++);
+      if (mounted && generation == _accountGeneration) {
+        setState(() => _refresh++);
+      }
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر حفظ التغيير محلياً: $error')));
+      if (mounted && generation == _accountGeneration) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر حفظ التغيير محلياً: $error')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -165,6 +173,8 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
   }
 
   Future<void> _saveSpaceGuidelines() async {
+    final requestedStore = _store;
+    final generation = _accountGeneration;
     final id = _spaceIdController.text.trim();
     if (id.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -172,45 +182,56 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
       );
       return;
     }
-    await _run(() => _store.saveSpaceGuidelines(
+    if (generation != _accountGeneration || !identical(requestedStore, _store)) return;
+    final topic = _spaceTopicController.text;
+    final rules = _spaceRulesController.text;
+    await _run(() => requestedStore.saveSpaceGuidelines(
       spaceId: id,
-      topic: _spaceTopicController.text,
-      rules: _spaceRulesController.text,
+      topic: topic,
+      rules: rules,
     ));
   }
 
   Future<void> _createProject() async {
+    final generation = _accountGeneration;
     final p = await _ask('مشروع جماعي جديد', const [
       _Field('اسم المشروع', maxLength: 120),
       _Field('الوصف', maxLength: 2000, maxLines: 3),
       _Field('معرّف المجتمع (مطلوب)', maxLength: 160),
     ]);
-    if (p == null) return;
-    await _run(() async { await _store.createProject(title: p[0], description: p[1], communityId: p[2]); });
+    if (p == null || !mounted || generation != _accountGeneration) return;
+    final requestedStore = _store;
+    await _run(() async { await requestedStore.createProject(title: p[0], description: p[1], communityId: p[2]); });
   }
 
   Future<void> _addTask(String id) async {
+    final generation = _accountGeneration;
+    final requestedStore = _store;
     final p = await _ask('إضافة مهمة', const [
       _Field('اسم المهمة', maxLength: 160), _Field('المسؤول (اختياري)', maxLength: 128),
     ]);
-    if (p == null) return;
-    await _run(() => _store.addProjectTask(projectId: id, title: p[0], assignee: p[1]));
+    if (p == null || !mounted || generation != _accountGeneration) return;
+    await _run(() => requestedStore.addProjectTask(projectId: id, title: p[0], assignee: p[1]));
   }
 
   Future<void> _addMilestone(String id) async {
+    final generation = _accountGeneration;
+    final requestedStore = _store;
     final p = await _ask('إضافة مرحلة', const [_Field('اسم المرحلة', maxLength: 160)]);
-    if (p == null) return;
-    await _run(() => _store.addProjectMilestone(projectId: id, title: p[0]));
+    if (p == null || !mounted || generation != _accountGeneration) return;
+    await _run(() => requestedStore.addProjectMilestone(projectId: id, title: p[0]));
   }
 
   Future<void> _createProposal() async {
+    final generation = _accountGeneration;
     final p = await _ask('اقتراح قاعدة للمجتمع', const [
       _Field('معرّف المجتمع', maxLength: 160),
       _Field('عنوان الاقتراح', maxLength: 120),
       _Field('نص القاعدة المقترحة', maxLength: 2000, maxLines: 4),
     ]);
-    if (p == null) return;
-    await _run(() async { await _store.createRuleProposal(communityId: p[0], title: p[1], proposedRule: p[2]); });
+    if (p == null || !mounted || generation != _accountGeneration) return;
+    final requestedStore = _store;
+    await _run(() async { await requestedStore.createRuleProposal(communityId: p[0], title: p[1], proposedRule: p[2]); });
   }
 
   Future<DateTime?> _pickMeetupStart() async {
@@ -241,15 +262,16 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
   }
 
   Future<void> _createMeetup() async {
+    final generation = _accountGeneration;
     final p = await _ask('مسودة لقاء مجتمعي', const [
       _Field('اسم اللقاء', maxLength: 120),
       _Field('الوصف', maxLength: 2000, maxLines: 3),
       _Field('المكان أو رابط مقترح (نص فقط)', maxLength: 160),
       _Field('السعة المقترحة (رقم)', maxLength: 5, keyboardType: TextInputType.number),
     ]);
-    if (p == null || !mounted) return;
+    if (p == null || !mounted || generation != _accountGeneration) return;
     final startsAt = await _pickMeetupStart();
-    if (startsAt == null || !mounted) return;
+    if (startsAt == null || !mounted || generation != _accountGeneration) return;
     final capacity = int.tryParse(p[3].trim());
     if (capacity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -257,8 +279,9 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
       );
       return;
     }
+    final requestedStore = _store;
     await _run(() async {
-      await _store.createMeetupDraft(
+      await requestedStore.createMeetupDraft(
         title: p[0],
         description: p[1],
         startsAt: startsAt.toUtc().toIso8601String(),
