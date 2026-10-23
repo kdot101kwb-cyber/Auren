@@ -41,7 +41,7 @@ void main() {
     expect(await service.availability('garden'), {'visible': true, 'text': 'Evenings'});
     expect(await service.availability('book-club'), {'visible': false, 'text': ''});
     await expectLater(service.saveAvailability(communityId: 'garden',
-      text: 'x' * 501, visible: false), throwsArgumentError);
+      text: List.filled(501, 'x').join(), visible: false), throwsArgumentError);
   });
 
   test('community glossary validates and stores terms by community', () async {
