@@ -36,6 +36,24 @@ void main() {
     expect(find.textContaining('مكتملة'), findsOneWidget);
   });
 
+  testWidgets('organizer creates a daily list and preserves separate lines',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.tap(find.text('أضف قائمة'));
+    await tester.pumpAndSettle();
+    expect(find.text('إنشاء قائمة يومية'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'Shopping');
+    await tester.enterText(find.byType(TextField).at(1), 'Bread\nMilk\nSoap');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    final saved = (await EverydayLifeLocalStore().readAll()).single;
+    expect(saved.kind.name, 'taskList');
+    expect(saved.details, 'Bread\nMilk\nSoap');
+    expect(find.textContaining('عناصر القائمة'), findsOneWidget);
+  });
+
   testWidgets('appointment request is stored as an unsent draft',
       (tester) async {
     await openScreen(tester);
