@@ -14,7 +14,13 @@ void main() {
       expect(task.title, 'Planting');
       expect(task.note, 'field A');
       expect(task.withStatus('in_progress').status, 'in_progress');
+      expect(() => task.withStatus('completed'), throwsStateError);
       expect(() => task.withStatus('unknown'), throwsArgumentError);
+      final inProgress = task.withStatus('in_progress');
+      expect(inProgress.withStatus('completed').status, 'completed');
+      expect(() => inProgress.withStatus('planned'), throwsStateError);
+      expect(() => inProgress.withStatus('in_progress'), throwsStateError);
+      expect(() => task.withStatus('cancelled').withStatus('planned'), throwsStateError);
     });
 
     test('rejects empty task titles and prevents reopening closed tasks', () {
