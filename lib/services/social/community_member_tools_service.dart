@@ -119,17 +119,23 @@ class AurenCommunityMemberToolsService {
   }
 
   Future<AurenCommunityActivitySummary> activitySummary(String communityId) async {
+    final completedCount = (await onboardingTasks(communityId))
+        .where((task) => task.completed).length;
     final raw = (await _store).getString(_key(communityId, 'activity'));
-    if (raw == null) return const AurenCommunityActivitySummary();
+    if (raw == null) {
+      return AurenCommunityActivitySummary(
+        onboardingTasksCompleted: completedCount);
+    }
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is! List) return const AurenCommunityActivitySummary();
-      var completed = 0, saved = 0, removed = 0;
-      for (final item in decoded.whereType<Map>()) {
+      if (decoded is! List) {
+        return AurenCommunityActivitySummary(
+          onboardingTasksCompleted: completedCount);
+      }
+      final validEvents = decoded.whereType<Map>().toList();
+      var saved = 0, removed = 0;
+      for (final item in validEvents) {
         switch (item['type']) {
-          case 'task_completed':
-            completed++;
-            break;
           case 'resource_saved':
             saved++;
             break;
@@ -138,13 +144,18 @@ class AurenCommunityMemberToolsService {
             break;
         }
       }
-      return AurenCommunityActivitySummary(onboardingTasksCompleted: completed,
-        resourcesSaved: saved, resourcesRemoved: removed,
-        recordedActions: decoded.length);
+      return AurenCommunityActivitySummary(
+        onboardingTasksCompleted: completedCount,
+        resourcesSaved: saved,
+        resourcesRemoved: removed,
+        recordedActions: validEvents.length,
+      );
     } on FormatException {
-      return const AurenCommunityActivitySummary();
+      return AurenCommunityActivitySummary(
+        onboardingTasksCompleted: completedCount);
     } on TypeError {
-      return const AurenCommunityActivitySummary();
+      return AurenCommunityActivitySummary(
+        onboardingTasksCompleted: completedCount);
     }
   }
 
@@ -155,6 +166,8 @@ class AurenCommunityMemberToolsService {
       final decoded = jsonDecode(store.getString(key) ?? '[]');
       events = decoded is List ? decoded : <dynamic>[];
     } on FormatException {
+      events = <dynamic>[];
+    } on TypeError {
       events = <dynamic>[];
     }
     events.add({'type': type, 'at': DateTime.now().toUtc().toIso8601String()});
