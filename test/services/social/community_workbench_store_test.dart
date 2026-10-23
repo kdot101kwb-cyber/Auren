@@ -1293,4 +1293,60 @@ void main() {
     expect(meetup['attendance'], containsPair('member-a', 'going'));
   });
 
+
+  test('project cache rejects duplicate task and milestone identities', () async {
+    final createdAt = DateTime.utc(2026, 1, 1).toIso8601String();
+    final duplicateTask = <String, dynamic>{
+      'id': 'task-1',
+      'title': 'Duplicate identity',
+      'assignee': '',
+      'status': 'todo',
+    };
+    final duplicateMilestone = <String, dynamic>{
+      'id': 'milestone-1',
+      'title': 'Duplicate milestone',
+      'completed': false,
+    };
+    SharedPreferences.setMockInitialValues({
+      'auren.community.group_projects.v1': jsonEncode([
+        {
+          'id': 'project-bad-task',
+          'title': 'Bad task cache',
+          'description': '',
+          'communityId': 'community-1',
+          'createdAt': createdAt,
+          'tasks': [duplicateTask, Map<String, dynamic>.from(duplicateTask)],
+          'milestones': <Map<String, dynamic>>[],
+        },
+        {
+          'id': 'project-bad-milestone',
+          'title': 'Bad milestone cache',
+          'description': '',
+          'communityId': 'community-1',
+          'createdAt': createdAt,
+          'tasks': <Map<String, dynamic>>[],
+          'milestones': [
+            duplicateMilestone,
+            Map<String, dynamic>.from(duplicateMilestone),
+          ],
+        },
+        {
+          'id': 'project-valid',
+          'title': 'Valid project',
+          'description': '',
+          'communityId': 'community-1',
+          'createdAt': createdAt,
+          'tasks': <Map<String, dynamic>>[],
+          'milestones': <Map<String, dynamic>>[],
+        },
+      ]),
+    });
+
+    final recovered = AurenCommunityWorkbenchStore();
+    final projects = await recovered.listProjects();
+
+    expect(projects, hasLength(1));
+    expect(projects.single['id'], 'project-valid');
+  });
+
 }
