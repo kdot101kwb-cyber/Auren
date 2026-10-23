@@ -65,7 +65,52 @@ class _AurenEmergencyScreenState extends State<AurenEmergencyScreen> {
           if (snapshot.hasError) return const Center(child: Text('تعذر تحميل خدمات الطوارئ.'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final contacts = snapshot.data!;
-          if (contacts.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد أرقام طوارئ موثقة لهذه المنطقة حالياً.')));
+          if (contacts.isEmpty) return ListView(padding: const EdgeInsets.all(16), children: [
+            AurenEmergencyPreparednessCard(
+              area: '${city.trim()}, ${country.trim()}'.replaceAll(RegExp(r'^, |, 
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: contacts.length + 1,
+            separatorBuilder: (_, __) => const Divider(),
+            itemBuilder: (_, i) {
+              if (i == 0) {
+                return AurenEmergencyPreparednessCard(
+                  area: '${city.trim()}, ${country.trim()}'.replaceAll(RegExp(r'^, |, 
+              return ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.emergency)),
+                title: Text(x.name),
+                subtitle: Text('${x.type} • ${x.city}, ${x.country}'),
+                trailing: SelectableText(x.phone),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}), ''),
+                );
+              }
+              final x = contacts[i - 1];
+              return ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.emergency)),
+                title: Text(x.name),
+                subtitle: Text('${x.type} • ${x.city}, ${x.country}'),
+                trailing: SelectableText(x.phone),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}), ''),
+            ),
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('لا توجد أرقام طوارئ موثقة لهذه المنطقة حالياً. لا تستخدم أرقاماً غير متحقق منها.'),
+            ),
+          ]);
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: contacts.length + 1,
