@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:auren/services/social/community_workbench_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -366,6 +368,48 @@ void main() {
     expect(await recoveringStore.listProjects(), isEmpty);
     expect(await recoveringStore.listProposals(), isEmpty);
     expect(await recoveringStore.listMeetupDrafts(), isEmpty);
+
+    SharedPreferences.setMockInitialValues({
+      'auren.community.group_projects.v1': jsonEncode([
+        {
+          'id': 'p1',
+          'title': 'x' * 121,
+          'description': '',
+          'communityId': 'c',
+          'createdAt': DateTime.utc(2026).toIso8601String(),
+          'tasks': [],
+          'milestones': [],
+        },
+      ]),
+      'auren.community.governance_proposals.v1': jsonEncode([
+        {
+          'id': 'proposal-1',
+          'communityId': 'c',
+          'title': 'Valid title',
+          'proposedRule': 'Rule',
+          'createdAt': DateTime.utc(2026).toIso8601String(),
+          'status': 'open',
+          'votes': {List.filled(129, 'v').join(): true},
+        },
+      ]),
+      'auren.community.meetup_drafts.v1': jsonEncode([
+        {
+          'id': 'meetup-1',
+          'title': 'Valid title',
+          'description': '',
+          'startsAt': DateTime.utc(2026, 11).toIso8601String(),
+          'location': 'Somewhere',
+          'capacity': 10,
+          'attendance': {List.filled(129, 'a').join(): 'going'},
+          'status': 'draft',
+          'createdAt': DateTime.utc(2026).toIso8601String(),
+        },
+      ]),
+    });
+    final boundedStore = AurenCommunityWorkbenchStore();
+    expect(await boundedStore.listProjects(), isEmpty);
+    expect(await boundedStore.listProposals(), isEmpty);
+    expect(await boundedStore.listMeetupDrafts(), isEmpty);
 
     await recoveringStore.saveSpaceGuidelines(
       spaceId: 'space-good',
