@@ -148,4 +148,22 @@ void main() {
     expect(draft.dueAt, isNull);
     expect(draft.informationConfirmed, isFalse);
   });
+
+  test('failed local write reports failure and preserves the previous record', () async {
+    final store = EverydayLifeLocalStore();
+    await store.save(item(id: 'stable', title: 'Previously saved'));
+    final failingStore = EverydayLifeLocalStore(
+      writeString: (key, value) async => false,
+    );
+
+    await expectLater(
+      failingStore.save(item(id: 'stable', title: 'Unsaved replacement')),
+      throwsStateError,
+    );
+
+    final records = await store.readAll();
+    expect(records, hasLength(1));
+    expect(records.single.title, 'Previously saved');
+  });
+
 }
