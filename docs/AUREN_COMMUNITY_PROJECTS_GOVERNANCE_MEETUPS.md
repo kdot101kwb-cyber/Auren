@@ -20,6 +20,6 @@
 
 ## Verification
 - Focused test file: `test/services/social/community_workbench_store_test.dart`.
-- Tests cover local persistence, space guideline metadata, task/milestone progress, input bounds, one local vote per voter, proposal closure, draft-only meetup attendance, bounded attendance, and deletion of local drafts.
+- Tests cover local persistence, space guideline metadata, task/milestone progress, input bounds, one local vote per voter (including concurrent duplicate attempts), proposal closure, draft-only meetup attendance, concurrent attendance updates, account-scoped isolation, bounded attendance, cache recovery, and deletion of local drafts.
 - Run `dart format lib test`, `flutter analyze`, `flutter test test/services/social/community_workbench_store_test.dart`, full `flutter test`, Android debug build, and the existing Firestore emulator suites before release.
 - Do not call cross-device governance or published events complete until an authenticated sync contract, Firestore rules/tests, and conflict handling are implemented.
