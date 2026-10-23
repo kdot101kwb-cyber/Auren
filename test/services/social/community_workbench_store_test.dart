@@ -1131,4 +1131,28 @@ void main() {
     expect(tasks.map((task) => task['title']).toSet(), hasLength(10));
   });
 
+
+  test('separate store instances preserve concurrent space guideline writes', () async {
+    final first = AurenCommunityWorkbenchStore(scope: 'shared-guidelines');
+    final second = AurenCommunityWorkbenchStore(scope: 'shared-guidelines');
+
+    await Future.wait([
+      for (var i = 0; i < 20; i++)
+        (i.isEven ? first : second).saveSpaceGuidelines(
+          spaceId: 'space-$i',
+          topic: 'Topic $i',
+          rules: 'Rule $i',
+        ),
+    ]);
+
+    var recovered = 0;
+    for (var i = 0; i < 20; i++) {
+      final value = await first.readSpaceGuidelines('space-$i');
+      expect(value['topic'], 'Topic $i');
+      expect(value['rules'], 'Rule $i');
+      recovered++;
+    }
+    expect(recovered, 20);
+  });
+
 }
