@@ -132,7 +132,13 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
         && requestData().options.size() >= 2
         && sizeAtMost(requestData().options,6)
         && requestData().votes is map
-        && requestData().votes.keys().hasOnly(['0','1','2','3','4','5'])
+        && (
+          (requestData().options.size() == 2 && requestData().votes == {'0': 0, '1': 0})
+          || (requestData().options.size() == 3 && requestData().votes == {'0': 0, '1': 0, '2': 0})
+          || (requestData().options.size() == 4 && requestData().votes == {'0': 0, '1': 0, '2': 0, '3': 0})
+          || (requestData().options.size() == 5 && requestData().votes == {'0': 0, '1': 0, '2': 0, '3': 0, '4': 0})
+          || (requestData().options.size() == 6 && requestData().votes == {'0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0})
+        )
         && requestData().voters is map
         && requestData().voters.size() == 0
         && hasCreatedAtTimestamp();
