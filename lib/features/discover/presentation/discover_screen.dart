@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../messenger/presentation/messenger_screen.dart';
+import '../../platform/presentation/auren_platform_tools_screen.dart';
 import '../../emergency/presentation/emergency_screen.dart';
 import '../../content/presentation/content_platform_screen.dart';
 import '../../tv/presentation/auren_tv_screen.dart';
@@ -47,6 +48,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Food + Home', 'طعام، بقالة ومستلزمات المنزل', Icons.restaurant_outlined),
     _DiscoverItem('Offline Safety', 'تنقل وأمان عند ضعف الإنترنت', Icons.shield_outlined),
     _DiscoverItem('Emergency Services', 'أرقام وخدمات الطوارئ الموثقة حسب المنطقة', Icons.emergency_outlined),
+    _DiscoverItem('AUREN Platform Tools', 'المساعدة، فحص الاتصال، التخزين والملاحظات', Icons.build_circle_outlined),
     _DiscoverItem('AUREN Content', 'قنوات ومحتوى ومتابعة صناع المحتوى', Icons.ondemand_video_outlined),
     _DiscoverItem('AUREN TV', 'تلفزيونات مباشرة من العالم عبر مصادر IPTV العامة', Icons.live_tv_outlined),
     _DiscoverItem('Travel', 'خطط رحلاتك واحفظ وجهاتك', Icons.flight_takeoff_outlined),
@@ -112,6 +114,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     if (item.title == 'AUREN Content') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenContentPlatformScreen())); return; }
     if (item.title == 'AUREN TV') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenTvScreen())); return; }
     if (item.title == 'Emergency Services') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenEmergencyScreen())); return; }
+    if (item.title == 'AUREN Platform Tools') { Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenPlatformToolsScreen())); return; }
     if (item.title == 'Offline Safety') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenOfflineSafetyScreen()));
       return;

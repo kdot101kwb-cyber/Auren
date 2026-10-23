@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/entertainment.dart';
 import '../../../services/entertainment/entertainment_repository.dart';
+import '../../../services/entertainment/auren_radio_favorites_service.dart';
 import 'auren_audio_player_screen.dart';
 
 class AurenRadioScreen extends StatefulWidget {
@@ -19,6 +20,49 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
   bool _loading = false;
   String? _error;
   List<Map<String, dynamic>> _discovered = const [];
+  final _favoritesService = AurenRadioFavoritesService();
+  List<AurenRadioFavorite> _favorites = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    try {
+      final favorites = await _favoritesService.list();
+      if (mounted) setState(() => _favorites = favorites);
+    } catch (_) {
+      if (mounted) setState(() => _favorites = const []);
+    }
+  }
+
+  String _stationId(Map<String, dynamic> station) =>
+      'radio_' + (station['stationUuid'] ?? station['name'] ?? '').toString();
+
+  Future<void> _toggleFavorite(Map<String, dynamic> station) async {
+    final id = _stationId(station);
+    try {
+      if (_favorites.any((item) => item.id == id)) {
+        await _favoritesService.remove(id);
+      } else {
+        await _favoritesService.save(AurenRadioFavorite(
+          id: id,
+          name: station['name']?.toString() ?? 'Radio',
+          streamUrl: station['streamUrl']?.toString() ?? '',
+          country: station['country']?.toString() ?? '',
+          language: station['language']?.toString() ?? '',
+          tags: station['tags']?.toString() ?? '',
+        ));
+      }
+      await _loadFavorites();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر حفظ المحطة المفضلة. تحقق من رابط البث.')),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -194,6 +238,32 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
               ),
             ),
           ],
+          if (_favorites.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text('محطاتي المفضلة على هذا الجهاز (${_favorites.length})',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            ..._favorites.take(20).map((favorite) => Card(child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.favorite)),
+              title: Text(favorite.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text([favorite.country, favorite.language, favorite.tags]
+                  .where((value) => value.trim().isNotEmpty).join(' • '),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+              trailing: IconButton(
+                tooltip: 'إزالة من المفضلة',
+                icon: const Icon(Icons.favorite_border),
+                onPressed: () async {
+                  await _favoritesService.remove(favorite.id);
+                  await _loadFavorites();
+                },
+              ),
+              onTap: () => _openStream({
+                ...favorite.toMap(),
+                'stationUuid': favorite.id.startsWith('radio_')
+                    ? favorite.id.substring('radio_'.length) : favorite.id,
+              }),
+            ))),
+          ],
           if (_discovered.isNotEmpty) ...[
             const SizedBox(height: 18),
             Text('محطات مباشرة (${_discovered.length})', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
@@ -211,7 +281,16 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
                   ].where((e) => e.trim().isNotEmpty).join(' • '),
                   maxLines: 2, overflow: TextOverflow.ellipsis,
                 ),
-                trailing: const Icon(Icons.play_circle_fill),
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                  IconButton(
+                    tooltip: _favorites.any((item) => item.id == _stationId(station))
+                        ? 'إزالة من المفضلة' : 'إضافة للمفضلة',
+                    onPressed: () => _toggleFavorite(station),
+                    icon: Icon(_favorites.any((item) => item.id == _stationId(station))
+                        ? Icons.favorite : Icons.favorite_border),
+                  ),
+                  const Icon(Icons.play_circle_fill),
+                ]),
                 onTap: () => _openStream(station),
               ),
             )),

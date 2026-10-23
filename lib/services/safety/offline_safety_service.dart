@@ -20,6 +20,8 @@ class AurenOfflineSafetyService {
   final _db = FirebaseFirestore.instance;
   static const _placesPrefix = 'auren.safety.places.';
   static const _routesPrefix = 'auren.safety.routes.';
+  static const _maxCachedRoutes = 50;
+  static const _maxRoutePoints = 500;
 
   String _areaKey(String city, String country) => 'auren.safety.places.${city.trim().toLowerCase()}|${country.trim().toLowerCase()}';
   String _routesKey(String uid) => 'auren.safety.routes.$uid';
@@ -37,14 +39,49 @@ class AurenOfflineSafetyService {
     final raw = prefs.getString(_areaKey(city, country));
     if (raw == null || raw.isEmpty) return const [];
     try {
-      return (jsonDecode(raw) as List).whereType<Map>().map((x) => AurenSafetyPlace.fromJson(Map<String, dynamic>.from(x))).toList();
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return const [];
+      return decoded.whereType<Map>()
+          .map((x) => AurenSafetyPlace.fromJson(Map<String, dynamic>.from(x)))
+          .where((x) => x.id.isNotEmpty && x.name.trim().isNotEmpty)
+          .take(100).toList();
     } catch (_) {
       return const [];
     }
   }
 
+  static bool isValidPoint(Map<String, dynamic> point) {
+    final latitude = point['lat'] ?? point['latitude'];
+    final longitude = point['lng'] ?? point['lon'] ?? point['longitude'];
+    if (latitude is! num || longitude is! num) return false;
+    return latitude.isFinite && longitude.isFinite &&
+        latitude >= -90 && latitude <= 90 &&
+        longitude >= -180 && longitude <= 180;
+  }
+
+  static bool _validPoints(dynamic value) => value is List &&
+      value.length >= 2 && value.length <= _maxRoutePoints &&
+      value.every((point) => point is Map && isValidPoint(Map<String, dynamic>.from(point)));
+
+  static List<Map<String, dynamic>> sanitizeCachedRoutes(dynamic decoded, String uid) {
+    if (decoded is! List || uid.trim().isEmpty) return [];
+    return decoded.whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .where((route) =>
+            route['ownerId'] == uid &&
+            (route['id']?.toString().trim().isNotEmpty ?? false) &&
+            (route['name']?.toString().trim().isNotEmpty ?? false) &&
+            _validPoints(route['points']))
+        .take(_maxCachedRoutes).toList();
+  }
+
   Future<String> saveRoute({required String uid, required String name, required List<Map<String, double>> points}) async {
-    if (uid.isEmpty || name.trim().isEmpty || points.length < 2 || points.length > 500) throw ArgumentError('بيانات المسار غير صالحة.');
+    if (uid.trim().isEmpty || uid.length > 180 || name.trim().isEmpty ||
+        name.trim().length > 120 || points.length < 2 ||
+        points.length > _maxRoutePoints ||
+        !_validPoints(points.map((point) => Map<String, dynamic>.from(point)).toList())) {
+      throw ArgumentError('بيانات المسار غير صالحة.');
+    }
     final ref = _db.collection('users').doc(uid).collection('offline_routes').doc();
     final route = {'id': ref.id, 'ownerId': uid, 'name': name.trim(), 'points': points, 'createdAt': DateTime.now().toIso8601String()};
     final prefs = await SharedPreferences.getInstance();
@@ -64,7 +101,7 @@ class AurenOfflineSafetyService {
     final raw = prefs.getString(_routesKey(uid));
     if (raw == null || raw.isEmpty) return [];
     try {
-      return (jsonDecode(raw) as List).whereType<Map>().map((x) => Map<String, dynamic>.from(x)).toList();
+      return sanitizeCachedRoutes(jsonDecode(raw), uid);
     } catch (_) {
       return [];
     }
@@ -75,7 +112,9 @@ class AurenOfflineSafetyService {
     final rows = snapshot.docs.map((d) {
       final data = d.data();
       return {'id': d.id, 'ownerId': uid, 'name': data['name'] ?? '', 'points': data['points'] ?? const [], 'createdAt': data['createdAt'] is Timestamp ? (data['createdAt'] as Timestamp).toDate().toIso8601String() : DateTime.now().toIso8601String()};
-    }).toList();
+    }).where((route) =>
+        (route['name']?.toString().trim().isNotEmpty ?? false) &&
+        _validPoints(route['points'])).take(_maxCachedRoutes).toList();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_routesKey(uid), jsonEncode(rows));
   }
