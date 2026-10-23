@@ -22,16 +22,16 @@ class AurenCommunityMemberToolsService {
 
   Future<List<AurenOnboardingTask>> onboardingTasks(String communityId) async {
     final raw = (await _store).getString(_key(communityId, 'onboarding'));
-    if (raw == null) return AurenOnboardingTask.defaults;
+    if (raw == null) return List<AurenOnboardingTask>.of(AurenOnboardingTask.defaults);
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is! List) return AurenOnboardingTask.defaults;
+      if (decoded is! List) return List<AurenOnboardingTask>.of(AurenOnboardingTask.defaults);
       return decoded.whereType<Map>().map((item) =>
         AurenOnboardingTask.fromMap(Map<String, dynamic>.from(item)))
         .where((task) => task.id.isNotEmpty && task.title.isNotEmpty)
         .take(30).toList();
     } on FormatException {
-      return AurenOnboardingTask.defaults;
+      return List<AurenOnboardingTask>.of(AurenOnboardingTask.defaults);
     } on TypeError {
       return AurenOnboardingTask.defaults;
     }
