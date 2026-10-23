@@ -149,22 +149,59 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     await _run(() async { await _store.createRuleProposal(communityId: p[0], title: p[1], proposedRule: p[2]); });
   }
 
+  Future<DateTime?> _pickMeetupStart() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 5),
+      helpText: 'اختر تاريخ اللقاء المقترح',
+    );
+    if (date == null || !mounted) return null;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 17, minute: 0),
+      helpText: 'اختر وقت اللقاء المقترح',
+    );
+    if (time == null) return null;
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
+  String _formatMeetupStart(String raw) {
+    final parsed = DateTime.tryParse(raw)?.toLocal();
+    if (parsed == null) return raw;
+    final localizations = MaterialLocalizations.of(context);
+    return '${localizations.formatMediumDate(parsed)} • '
+        '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(parsed))}';
+  }
+
   Future<void> _createMeetup() async {
     final p = await _ask('مسودة لقاء مجتمعي', const [
       _Field('اسم اللقاء', maxLength: 120),
       _Field('الوصف', maxLength: 2000, maxLines: 3),
-      _Field('موعد ISO مثل 2026-11-01T17:00:00Z', maxLength: 40),
       _Field('المكان أو رابط مقترح (نص فقط)', maxLength: 160),
       _Field('السعة المقترحة (رقم)', maxLength: 5, keyboardType: TextInputType.number),
     ]);
-    if (p == null) return;
-    final capacity = int.tryParse(p[4].trim());
+    if (p == null || !mounted) return;
+    final startsAt = await _pickMeetupStart();
+    if (startsAt == null || !mounted) return;
+    final capacity = int.tryParse(p[3].trim());
     if (capacity == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أدخل السعة المقترحة كرقم صحيح.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أدخل السعة المقترحة كرقم صحيح.')),
+      );
       return;
     }
-    await _run(() async { await _store.createMeetupDraft(title: p[0], description: p[1],
-      startsAt: p[2], location: p[3], capacity: capacity); });
+    await _run(() async {
+      await _store.createMeetupDraft(
+        title: p[0],
+        description: p[1],
+        startsAt: startsAt.toUtc().toIso8601String(),
+        location: p[2],
+        capacity: capacity,
+      );
+    });
   }
 
   @override
@@ -329,7 +366,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
             const Chip(label: Text('مسودة')),
           ]),
           if ('${m['description']}'.isNotEmpty) Text('${m['description']}'),
-          Text('الموعد: ${m['startsAt']}'), Text('المكان المقترح: ${m['location']}'),
+          Text('الموعد المقترح: ${_formatMeetupStart('${m['startsAt']}')}'), Text('المكان المقترح: ${m['location']}'),
           Text('السعة المقترحة: ${m['capacity']} • سجلات الحضور المحلية: ${attendance.length} • سيحضر: ${_store.meetupGoingCount(m)}'),
           DropdownButton<String>(value: current, items: const [
             DropdownMenuItem(value: 'interested', child: Text('مهتم')),
