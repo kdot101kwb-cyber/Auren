@@ -136,18 +136,31 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
       );
       return;
     }
+
+    // A read can finish after sign-out/account-switch. Bind the request to the
+    // initiating account and store so stale results/errors cannot repopulate
+    // private form fields or show misleading feedback in the next account.
+    final requestedStore = _store;
+    final requestedUid = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
+    bool requestStillBelongsToCurrentAccount() =>
+        mounted &&
+        identical(requestedStore, _store) &&
+        (FirebaseAuth.instance.currentUser?.uid ?? 'anonymous') == requestedUid;
+
     try {
-      final value = await _store.readSpaceGuidelines(id);
-      if (!mounted) return;
+      final value = await requestedStore.readSpaceGuidelines(id);
+      if (!requestStillBelongsToCurrentAccount()) return;
       _spaceTopicController.text = value['topic'] as String? ?? '';
       _spaceRulesController.text = value['rules'] as String? ?? '';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(value.isEmpty ? 'لا توجد إرشادات محلية محفوظة لهذه المساحة.' : 'تم تحميل الإرشادات المحلية.'),
       ));
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر تحميل الإرشادات المحلية: $error')),
-      );
+      if (requestStillBelongsToCurrentAccount()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر تحميل الإرشادات المحلية: $error')),
+        );
+      }
     }
   }
 
