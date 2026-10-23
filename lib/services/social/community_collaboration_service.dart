@@ -242,8 +242,11 @@ class AurenCollaborationService {
     String? contentType,
   }) async {
     final reporterUid = uid;
+    final cleanReportedUid = reportedUid.trim();
     final cleanReason = reason.trim();
-    if (reportedUid.trim().isEmpty || reportedUid == reporterUid) {
+    if (cleanReportedUid.isEmpty ||
+        cleanReportedUid.length > 128 ||
+        cleanReportedUid == reporterUid) {
       throw ArgumentError('Invalid report target.');
     }
     if (cleanReason.isEmpty || cleanReason.length > 500) {
@@ -252,7 +255,7 @@ class AurenCollaborationService {
     final ref = _db.collection('reports').doc();
     await ref.set({
       'reporterUid': reporterUid,
-      'reportedUid': reportedUid,
+      'reportedUid': cleanReportedUid,
       'reason': cleanReason,
       'contentId': contentId,
       'contentType': contentType,
