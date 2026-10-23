@@ -184,7 +184,6 @@ class AurenCommunityWorkbenchStore {
       throw ArgumentError('Task title or assignee is invalid.');
     }
     await _mutateProject(projectId, (project) {
-    return _withMutationLock(_storageKey(_projectsKey), () async {
       final tasks = List<Map<String, dynamic>>.from(project['tasks'] as List? ?? const []);
       if (tasks.length >= 100) throw StateError('Project task limit reached.');
       tasks.add(<String, dynamic>{
@@ -194,9 +193,7 @@ class AurenCommunityWorkbenchStore {
         'status': 'todo',
       });
       project['tasks'] = tasks;
-    
     });
-  });
   }
 
   Future<void> setProjectTaskStatus({
@@ -261,6 +258,7 @@ class AurenCommunityWorkbenchStore {
     String projectId,
     void Function(Map<String, dynamic> project) mutate,
   ) async {
+    return _withMutationLock(_storageKey(_projectsKey), () async {
     final projects = await listProjects();
     final index = projects.indexWhere((project) => project['id'] == projectId);
     if (index < 0) throw StateError('Project not found.');
@@ -268,6 +266,8 @@ class AurenCommunityWorkbenchStore {
     mutate(project);
     projects[index] = project;
     await _writeList(_storageKey(_projectsKey), projects);
+  
+    });
   }
 
   int projectProgress(Map<String, dynamic> project) {
