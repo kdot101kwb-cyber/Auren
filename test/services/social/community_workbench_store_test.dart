@@ -309,6 +309,42 @@ void main() {
   });
 
 
+  test('project capacity rejects overflow without evicting existing records', () async {
+    for (var i = 0; i < 99; i++) {
+      await store.createProject(
+        title: 'Existing project $i',
+        description: '',
+        communityId: 'community',
+      );
+    }
+
+    final attempts = await Future.wait([
+      store.createProject(
+        title: 'Concurrent project A',
+        description: '',
+        communityId: 'community',
+      ).then<Object?>((id) => id, onError: (Object error) => error),
+      store.createProject(
+        title: 'Concurrent project B',
+        description: '',
+        communityId: 'community',
+      ).then<Object?>((id) => id, onError: (Object error) => error),
+      store.createProject(
+        title: 'Concurrent project C',
+        description: '',
+        communityId: 'community',
+      ).then<Object?>((id) => id, onError: (Object error) => error),
+    ]);
+
+    expect(attempts.whereType<String>(), hasLength(1));
+    expect(attempts.whereType<StateError>(), hasLength(2));
+    final projects = await store.listProjects();
+    expect(projects, hasLength(100));
+    expect(projects.map((item) => item['title']), contains('Existing project 0'));
+    expect(projects.map((item) => item['title']), contains('Concurrent project A') |
+        contains('Concurrent project B') | contains('Concurrent project C'));
+  });
+
   test('valid JSON with invalid record shapes is ignored without crashing', () async {
     SharedPreferences.setMockInitialValues({
       'auren.community.space_guidelines.v1':
