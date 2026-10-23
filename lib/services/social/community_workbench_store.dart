@@ -262,7 +262,7 @@ class AurenCommunityWorkbenchStore {
     final id = spaceId.trim();
     final cleanTopic = topic.trim();
     final cleanRules = rules.trim();
-    if (id.isEmpty || cleanTopic.length > 80 || cleanRules.length > 2000) {
+    if (id.isEmpty || id.length > 160 || cleanTopic.length > 80 || cleanRules.length > 2000) {
       throw ArgumentError('Space topic or rules are invalid.');
     }
     final all = await _readMap(_storageKey(_spaceGuidelinesKey));
