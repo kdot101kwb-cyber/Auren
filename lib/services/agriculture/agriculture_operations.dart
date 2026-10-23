@@ -18,12 +18,24 @@ class FarmOperationTask {
   });
 
   FarmOperationTask withStatus(String nextStatus) {
-    const allowed = {'planned', 'in_progress', 'completed', 'cancelled'};
-    if (!allowed.contains(nextStatus)) {
-      throw ArgumentError.value(nextStatus, 'nextStatus', 'Unsupported status.');
+    const transitions = {
+      'planned': {'in_progress', 'cancelled'},
+      'in_progress': {'completed', 'cancelled'},
+      'completed': <String>{},
+      'cancelled': <String>{},
+    };
+    final allowedNext = transitions[status];
+    if (allowedNext == null) {
+      throw StateError('The current task has an unsupported status.');
     }
-    if (status == 'completed' || status == 'cancelled') {
-      throw StateError('A closed task cannot be changed.');
+    if (!allowedNext.contains(nextStatus)) {
+      if (nextStatus != 'planned' &&
+          nextStatus != 'in_progress' &&
+          nextStatus != 'completed' &&
+          nextStatus != 'cancelled') {
+        throw ArgumentError.value(nextStatus, 'nextStatus', 'Unsupported status.');
+      }
+      throw StateError('Task status transition is not allowed.');
     }
     return FarmOperationTask(
       id: id,
