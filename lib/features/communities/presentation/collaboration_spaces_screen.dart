@@ -112,7 +112,6 @@ class _AurenCollaborationSpacesScreenState
           SnackBar(content: Text('تعذر إنشاء المساحة: $error')),
         );
       }
-    }
     } finally {
       title.dispose();
       description.dispose();
