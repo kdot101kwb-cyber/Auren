@@ -31,6 +31,13 @@ function safeId(value) {
     : '';
 }
 
+function optionalId(value, field) {
+  if (value == null || value === '') return null;
+  const id = safeId(value);
+  if (!id) throw Object.assign(new Error(`Invalid ${field}.`), { code: 400 });
+  return id;
+}
+
 export function registerCivicResilienceRoutes(app, { db, requireUser, serverTimestamp }) {
   if (!app || !db || typeof requireUser !== 'function') {
     throw new TypeError('app, db, and requireUser are required.');
@@ -55,7 +62,7 @@ export function registerCivicResilienceRoutes(app, { db, requireUser, serverTime
   app.post('/api/civic/legal-cases', requireUser, async (req, res) => {
     try {
       const input = req.body?.case;
-      const caseId = safeId(input?.caseId) || crypto.randomUUID();
+      const caseId = optionalId(input?.caseId, 'case id') || crypto.randomUUID();
       const item = normalizeLegalCase({ ...input, caseId }, req.uid);
       const saved = { ...item, updatedAt: new Date().toISOString() };
       await userCollection(req.uid, 'legal_cases').doc(caseId).set(saved, { merge: true });
@@ -142,7 +149,7 @@ export function registerCivicResilienceRoutes(app, { db, requireUser, serverTime
   app.post('/api/civic/biodiversity/observations', requireUser, async (req, res) => {
     try {
       const input = req.body?.observation;
-      const observationId = safeId(input?.observationId) || crypto.randomUUID();
+      const observationId = optionalId(input?.observationId, 'observation id') || crypto.randomUUID();
       const item = normalizeBiodiversityObservation({ ...input, observationId }, req.uid);
       await userCollection(req.uid, 'biodiversity_observations').doc(observationId).set(item, { merge: true });
       return res.status(201).json({ observation: item, shareable: projectObservationForSharing(item) });
