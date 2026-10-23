@@ -681,6 +681,63 @@ void main() {
 
 
 
+  test('meetup start times normalize to UTC and invalid dates are rejected', () async {
+    final meetupId = await store.createMeetupDraft(
+      title: 'Timezone-safe draft',
+      description: '',
+      startsAt: '2026-11-01T19:30:00+02:00',
+      location: 'Suggested only',
+      capacity: 1,
+    );
+
+    final meetup = (await store.listMeetupDrafts()).single;
+    expect(meetup['id'], meetupId);
+    expect(meetup['startsAt'], '2026-11-01T17:30:00.000Z');
+    expect(meetup['status'], 'draft');
+
+    await expectLater(
+      store.createMeetupDraft(
+        title: 'Invalid date',
+        description: '',
+        startsAt: 'not-a-date',
+        location: 'Suggested',
+        capacity: 1,
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      store.createMeetupDraft(
+        title: 'Invalid capacity',
+        description: '',
+        startsAt: '2026-11-01T17:00:00Z',
+        location: 'Suggested',
+        capacity: 10001,
+      ),
+      throwsArgumentError,
+    );
+    expect(await store.listMeetupDrafts(), hasLength(1));
+  });
+
+  test('attendance status cannot exceed the explicit local state set', () async {
+    final meetupId = await store.createMeetupDraft(
+      title: 'Bounded attendance states',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 5,
+    );
+
+    await expectLater(
+      store.setDraftAttendance(
+        meetupId: meetupId,
+        attendeeId: 'member-1',
+        status: 'reserved',
+      ),
+      throwsArgumentError,
+    );
+    expect((await store.listMeetupDrafts()).single['attendance'], isEmpty);
+  });
+
   test('project creation rejects missing or oversized community identifiers', () async {
     await expectLater(
       store.createProject(
