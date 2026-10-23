@@ -92,6 +92,11 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     String confirmLabel = 'حذف محلي',
     required Future<void> Function() delete,
   }) async {
+    // A confirmation dialog may remain open while a shared device changes
+    // accounts. Never let a confirmation from the previous account execute
+    // against the newly selected store.
+    final generation = _accountGeneration;
+    final requestedStore = _store;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -109,7 +114,13 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
         ],
       ),
     );
-    if (confirmed == true && mounted) await _run(delete);
+    if (confirmed != true ||
+        !mounted ||
+        generation != _accountGeneration ||
+        !identical(requestedStore, _store)) {
+      return;
+    }
+    await _run(delete);
   }
 
   Future<List<String>?> _ask(String title, List<_Field> fields) async {
