@@ -92,13 +92,11 @@ class AurenCommunityWorkbenchStore {
   String _id(String prefix) => '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
 
   Future<void> saveSpaceGuidelines({
-    return _withMutationLock(_storageKey(_spaceGuidelinesKey), () async {
     required String spaceId,
     required String topic,
     required String rules,
-  
-    });
   }) async {
+    return _withMutationLock(_storageKey(_spaceGuidelinesKey), () async {
     final id = spaceId.trim();
     final cleanTopic = topic.trim();
     final cleanRules = rules.trim();
@@ -117,6 +115,8 @@ class AurenCommunityWorkbenchStore {
       all.entries.skip(all.length > 100 ? all.length - 100 : 0),
     );
     await _writeMap(_storageKey(_spaceGuidelinesKey), bounded);
+  
+    });
   }
 
   Future<Map<String, dynamic>> readSpaceGuidelines(String spaceId) async {
@@ -143,13 +143,11 @@ class AurenCommunityWorkbenchStore {
   }
 
   Future<String> createProject({
-    return _withMutationLock(_storageKey(_projectsKey), () async {
     required String title,
     required String description,
     required String communityId,
-  
-    });
   }) async {
+    return _withMutationLock(_storageKey(_projectsKey), () async {
     final cleanTitle = title.trim();
     final cleanDescription = description.trim();
     final cleanCommunity = communityId.trim();
@@ -170,6 +168,8 @@ class AurenCommunityWorkbenchStore {
     });
     await _writeList(_storageKey(_projectsKey), projects.take(100).toList());
     return id;
+  
+    });
   }
 
   Future<void> addProjectTask({
@@ -299,13 +299,11 @@ class AurenCommunityWorkbenchStore {
   }
 
   Future<String> createRuleProposal({
-    return _withMutationLock(_storageKey(_proposalsKey), () async {
     required String communityId,
     required String title,
     required String proposedRule,
-  
-    });
   }) async {
+    return _withMutationLock(_storageKey(_proposalsKey), () async {
     final cleanCommunity = communityId.trim();
     final cleanTitle = title.trim();
     final cleanRule = proposedRule.trim();
@@ -327,16 +325,16 @@ class AurenCommunityWorkbenchStore {
     });
     await _writeList(_storageKey(_proposalsKey), proposals.take(100).toList());
     return id;
+  
+    });
   }
 
   Future<void> voteOnProposal({
-    return _withMutationLock(_storageKey(_proposalsKey), () async {
     required String proposalId,
     required String voterId,
     required bool support,
-  
-    });
   }) async {
+    return _withMutationLock(_storageKey(_proposalsKey), () async {
     final voter = voterId.trim();
     if (proposalId.trim().isEmpty || voter.isEmpty || voter.length > 128) {
       throw ArgumentError('A valid local voter ID is required.');
@@ -353,15 +351,15 @@ class AurenCommunityWorkbenchStore {
     proposal['votes'] = votes;
     proposals[index] = proposal;
     await _writeList(_storageKey(_proposalsKey), proposals);
+  
+    });
   }
 
   Future<void> closeProposal({
-    return _withMutationLock(_storageKey(_proposalsKey), () async {
     required String proposalId,
     required String status,
-  
-    });
   }) async {
+    return _withMutationLock(_storageKey(_proposalsKey), () async {
     if (!const {'accepted', 'rejected', 'withdrawn'}.contains(status)) {
       throw ArgumentError('Unsupported proposal status.');
     }
@@ -371,6 +369,8 @@ class AurenCommunityWorkbenchStore {
     if (proposals[index]['status'] != 'open') throw StateError('Proposal is already closed.');
     proposals[index] = <String, dynamic>{...proposals[index], 'status': status};
     await _writeList(_storageKey(_proposalsKey), proposals);
+  
+    });
   }
 
   int proposalSupportCount(Map<String, dynamic> proposal) {
@@ -395,15 +395,13 @@ class AurenCommunityWorkbenchStore {
   }
 
   Future<String> createMeetupDraft({
-    return _withMutationLock(_storageKey(_meetupsKey), () async {
     required String title,
     required String description,
     required String startsAt,
     required String location,
     required int capacity,
-  
-    });
   }) async {
+    return _withMutationLock(_storageKey(_meetupsKey), () async {
     final cleanTitle = title.trim();
     final cleanDescription = description.trim();
     final cleanLocation = location.trim();
@@ -428,16 +426,16 @@ class AurenCommunityWorkbenchStore {
     });
     await _writeList(_storageKey(_meetupsKey), drafts.take(100).toList());
     return id;
+  
+    });
   }
 
   Future<void> setDraftAttendance({
-    return _withMutationLock(_storageKey(_meetupsKey), () async {
     required String meetupId,
     required String attendeeId,
     required String status,
-  
-    });
   }) async {
+    return _withMutationLock(_storageKey(_meetupsKey), () async {
     final attendee = attendeeId.trim();
     if (attendee.isEmpty || attendee.length > 128 ||
         !const {'interested', 'going', 'declined'}.contains(status)) {
@@ -458,6 +456,8 @@ class AurenCommunityWorkbenchStore {
     draft['attendance'] = attendance;
     drafts[index] = draft;
     await _writeList(_storageKey(_meetupsKey), drafts);
+  
+    });
   }
 
   int meetupGoingCount(Map<String, dynamic> meetup) {
