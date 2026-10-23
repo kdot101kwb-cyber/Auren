@@ -37,7 +37,10 @@ class AurenOfflineSafetyService {
     final raw = prefs.getString(_areaKey(city, country));
     if (raw == null || raw.isEmpty) return const [];
     try {
-      return (jsonDecode(raw) as List).whereType<Map>().map((x) => AurenSafetyPlace.fromJson(Map<String, dynamic>.from(x))).toList();
+      return (jsonDecode(raw) as List).whereType<Map>().map((x) => AurenSafetyPlace.fromJson(Map<String, dynamic>.from(x)))
+          .where((place) => place.id.trim().isNotEmpty && place.name.trim().isNotEmpty)
+          .take(100)
+          .toList();
     } catch (_) {
       return const [];
     }
