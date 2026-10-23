@@ -17,6 +17,7 @@
 - Users can explicitly delete local project, proposal, and meetup drafts from the UI; deletion affects only the current device and is confirmed before execution.
 - Malformed JSON and structurally invalid local records are ignored rather than allowed to crash the UI; the next successful save rewrites the affected cache using validated records.
 - Cache validation also enforces per-field character limits, bounded vote/attendance identity keys, and parseable project/proposal/meetup timestamps; malformed records are ignored before reaching widgets.
+- List caches are capped at 100 valid records on read as well as write; duplicate record IDs in a malformed or legacy cache are ignored to prevent unbounded list rendering and ambiguous local edits.
 
 ## Verification
 - Focused test file: `test/services/social/community_workbench_store_test.dart`.
