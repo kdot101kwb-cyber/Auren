@@ -112,7 +112,7 @@ class _AurenEmergencyScreenState extends State<AurenEmergencyScreen> {
           final contacts = snapshot.data!;
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: contacts.length + 2,
+            itemCount: contacts.isEmpty ? 2 : contacts.length + 1,
             separatorBuilder: (_, __) => const Divider(),
             itemBuilder: (context, index) {
               if (index == 0) {
@@ -130,7 +130,7 @@ class _AurenEmergencyScreenState extends State<AurenEmergencyScreen> {
               if (contacts.isEmpty) {
                 return const SizedBox.shrink();
               }
-              final contact = contacts[index - 2];
+              final contact = contacts[index - 1];
               return ListTile(
                 leading: const CircleAvatar(
                   child: Icon(Icons.emergency),
