@@ -44,13 +44,19 @@ test('energy analytics aggregates only valid entries by matching units and date 
     normalizeEnergyEntry({ label: 'Home meter', date: '2026-01-02', unit: 'kwh', amount: 8, costMinor: 150 }, 'owner-1'),
     normalizeEnergyEntry({ label: 'Generator fuel', date: '2026-01-02', unit: 'litre', amount: 4 }, 'owner-1'),
   ];
-  const result = summarizeResourceUsage(entries, { from: '2026-01-02', to: '2026-01-31' });
+  const result = summarizeResourceUsage(entries, { from: '2026-01-02', to: '2026-01-31', ownerUid: 'owner-1' });
   assert.deepEqual(result, [
     { unit: 'kwh', amount: 8, costMinor: 150, costEntries: 1, entries: 1 },
     { unit: 'litre', amount: 4, costMinor: 0, costEntries: 0, entries: 1 },
   ]);
   assert.throws(() => normalizeEnergyEntry({ label: 'bad', date: '2026-01-01', unit: 'kwh', amount: -2 }, 'owner-1'), /amount/i);
-  assert.throws(() => summarizeResourceUsage(entries, { from: '2026-02-01', to: '2026-01-01' }), /range/i);
+  assert.throws(() => summarizeResourceUsage(entries, { from: '2026-02-01', to: '2026-01-01', ownerUid: 'owner-1' }), /range/i);
+  assert.throws(() => summarizeResourceUsage(entries, { from: '2026-01-01', to: '2026-01-31' }), /owner uid/i);
+  const mixedOwners = [...entries, normalizeEnergyEntry({ label: 'Other user meter', date: '2026-01-02', unit: 'kwh', amount: 999 }, 'owner-2')];
+  assert.deepEqual(summarizeResourceUsage(mixedOwners, { from: '2026-01-01', to: '2026-01-31', ownerUid: 'owner-1' }), [
+    { unit: 'kwh', amount: 20, costMinor: 400, costEntries: 2, entries: 2 },
+    { unit: 'litre', amount: 4, costMinor: 0, costEntries: 0, entries: 1 },
+  ]);
 });
 
 test('biodiversity sharing projection does not expose owner or exact coordinates', () => {
