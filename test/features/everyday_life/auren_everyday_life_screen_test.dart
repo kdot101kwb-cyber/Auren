@@ -109,6 +109,62 @@ void main() {
     expect(records.single.dueAt, isNull);
   });
 
+  testWidgets('household chores, supplies, and maintenance save their entered details',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.ensureVisible(find.text('Home'));
+    await tester.tap(find.text('Home'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أضف مهمة منزلية'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Clean kitchen');
+    await tester.enterText(find.byType(TextField).at(1), 'User-entered chore details');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    var records = await EverydayLifeLocalStore().readAll();
+    expect(records.single.kind, EverydayLifeKind.household);
+    expect(records.single.details, 'User-entered chore details');
+
+    await tester.ensureVisible(find.text('Supplies'));
+    await tester.tap(find.text('Supplies'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أضف مستلزم منزلي'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Laundry detergent');
+    await tester.enterText(find.byType(TextField).at(1), 'Keep in the laundry room');
+    await tester.enterText(find.byType(TextField).at(2), '2 bottles');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    records = await EverydayLifeLocalStore().readAll();
+    final supply = records.singleWhere((item) => item.kind == EverydayLifeKind.householdSupply);
+    expect(supply.title, 'Laundry detergent');
+    expect(supply.details, 'Keep in the laundry room');
+    expect(supply.quantity, '2 bottles');
+
+    await tester.ensureVisible(find.text('Maintenance'));
+    await tester.tap(find.text('Maintenance'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أضف مهمة صيانة'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Repair kitchen tap');
+    await tester.enterText(find.byType(TextField).at(1), 'Tap is leaking');
+    await tester.enterText(find.byType(TextField).at(2), 'Friday afternoon');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    records = await EverydayLifeLocalStore().readAll();
+    final maintenance = records.singleWhere(
+      (item) => item.kind == EverydayLifeKind.householdMaintenance,
+    );
+    expect(maintenance.title, 'Repair kitchen tap');
+    expect(maintenance.details, 'Tap is leaking');
+    expect(maintenance.requestedWindow, 'Friday afternoon');
+    expect(maintenance.dueAt, isNull);
+  });
+
   testWidgets('local directory entry defaults to unconfirmed and can be unverified',
       (tester) async {
     await openScreen(tester);
