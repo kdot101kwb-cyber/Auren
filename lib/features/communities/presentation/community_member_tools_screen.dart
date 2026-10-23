@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/social/community_member_tools_service.dart';
+import 'community_member_extensions_screen.dart';
 
 /// Member tools are private to this device; they do not publish or sync data.
 class AurenCommunityMemberToolsScreen extends StatefulWidget {
@@ -94,6 +95,17 @@ class _AurenCommunityMemberToolsScreenState extends State<AurenCommunityMemberTo
             children: [
               const Text('هذه البيانات محفوظة على جهازك فقط، وليست إحصاءات رسمية للمجتمع.'),
               const SizedBox(height: 12),
+              Card(child: ListTile(
+                leading: const Icon(Icons.extension_outlined),
+                title: const Text('أربع أدوات إضافية للمجتمع'),
+                subtitle: const Text('الترجمة، ساعات التطوع، التوفر، وقاموس المصطلحات'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => AurenCommunityMemberExtensionsScreen(
+                    communityId: widget.communityId,
+                  ),
+                )),
+              )),
               _section('١. الانضمام للمجتمع', Icons.flag_outlined, [
                 ..._tasks.map((task) => CheckboxListTile(
                   contentPadding: EdgeInsets.zero, value: task.completed,
