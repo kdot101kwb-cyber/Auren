@@ -121,6 +121,30 @@ void main() {
     expect(snapshot.data()?['memberIds'], ['member-a']);
   });
 
+  test('space creation trims fields and rejects invalid bounds', () async {
+    final id = await service.createSpace(
+      title: '  Shared studio  ',
+      description: '  Work together  ',
+    );
+    final snapshot =
+        await firestore.collection('collaboration_spaces').doc(id).get();
+    expect(snapshot.data()?['title'], 'Shared studio');
+    expect(snapshot.data()?['description'], 'Work together');
+
+    await expectLater(
+      service.createSpace(title: ' ', description: ''),
+      throwsArgumentError,
+    );
+    await expectLater(
+      service.createSpace(title: List.filled(121, 'x').join(), description: ''),
+      throwsArgumentError,
+    );
+    await expectLater(
+      service.createSpace(title: 'Valid', description: List.filled(2001, 'x').join()),
+      throwsArgumentError,
+    );
+  });
+
   test('cause creation opens a volunteer opportunity owned by creator',
       () async {
     final id = await service.createCause(
@@ -163,6 +187,60 @@ void main() {
     final snapshot =
         await firestore.collection('collaboration_spaces').doc(spaceId).get();
     expect(snapshot.data()?['memberIds'], ['member-a', 'member-b']);
+  });
+
+  test('space invites reject blank, self, and oversized member UIDs', () async {
+    final spaceId = await service.createSpace(
+      title: 'Invite validation',
+      description: 'Validate invite inputs',
+    );
+
+    await expectLater(
+      service.inviteToSpace(spaceId: spaceId, memberUid: '  '),
+      throwsArgumentError,
+    );
+    await expectLater(
+      service.inviteToSpace(spaceId: spaceId, memberUid: ' member-a '),
+      throwsArgumentError,
+    );
+    await expectLater(
+      service.inviteToSpace(
+        spaceId: spaceId,
+        memberUid: List.filled(129, 'x').join(),
+      ),
+      throwsArgumentError,
+    );
+
+    final snapshot =
+        await firestore.collection('collaboration_spaces').doc(spaceId).get();
+    expect(snapshot.data()?['memberIds'], ['member-a']);
+  });
+
+  test('space invites are idempotent and enforce the membership cap', () async {
+    final spaceId = await service.createSpace(
+      title: 'Bounded team',
+      description: 'Membership must stay bounded',
+    );
+
+    await service.inviteToSpace(spaceId: spaceId, memberUid: 'member-b');
+    await service.inviteToSpace(spaceId: spaceId, memberUid: ' member-b ');
+
+    final ref = firestore.collection('collaboration_spaces').doc(spaceId);
+    final current = (await ref.get()).data()!;
+    final members = List<String>.from(current['memberIds'] as List);
+    await ref.update({
+      'memberIds': [
+        ...members,
+        for (var i = 0; i < 98; i++) 'member-${i + 2}',
+      ],
+    });
+
+    await expectLater(
+      service.inviteToSpace(spaceId: spaceId, memberUid: 'last-member'),
+      throwsStateError,
+    );
+    final snapshot = await ref.get();
+    expect((snapshot.data()?['memberIds'] as List).length, 100);
   });
 
   test('only the collaboration space owner can invite members', () async {
