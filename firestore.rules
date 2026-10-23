@@ -269,7 +269,8 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
         && sizeAtMost(requestData().memberIds,10000)
         && requestData().memberCount == requestData().memberIds.size()
         && (
-          (!(request.auth.uid in resource.data.memberIds)
+          (resource.data.visibility == 'public'
+            && !(request.auth.uid in resource.data.memberIds)
             && request.auth.uid in requestData().memberIds
             && requestData().memberIds.hasAll(resource.data.memberIds)
             && requestData().memberIds.size() == resource.data.memberIds.size() + 1)
