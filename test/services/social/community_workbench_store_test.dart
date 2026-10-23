@@ -831,4 +831,43 @@ void main() {
     expect((proposal['votes'] as Map).length, 1);
   });
 
+  test('space guideline cache rejects invalid timestamps and caps recovered records', () async {
+    final cache = <String, dynamic>{
+      'bad-time': {
+        'topic': 'Invalid timestamp',
+        'rules': 'Should be ignored.',
+        'updatedAt': 'not-a-date',
+      },
+      List.filled(161, 'x').join(): {
+        'topic': 'Oversized key',
+        'rules': 'Should be ignored.',
+        'updatedAt': DateTime.utc(2026).toIso8601String(),
+      },
+    };
+    for (var i = 0; i < 105; i++) {
+      cache['space-$i'] = {
+        'topic': 'Topic $i',
+        'rules': 'Rule $i',
+        'updatedAt': DateTime.utc(2026).toIso8601String(),
+      };
+    }
+    SharedPreferences.setMockInitialValues({
+      'auren.community.space_guidelines.v1': jsonEncode(cache),
+    });
+
+    final recovered = AurenCommunityWorkbenchStore();
+    final first = await recovered.readSpaceGuidelines('space-0');
+    expect(first['topic'], 'Topic 0');
+    expect(await recovered.readSpaceGuidelines('bad-time'), isEmpty);
+    expect(await recovered.readSpaceGuidelines(List.filled(161, 'x').join()), isEmpty);
+
+    // Reading an oversized valid JSON cache never returns more than the
+    // documented 100 local guideline records.
+    var readable = 0;
+    for (var i = 0; i < 105; i++) {
+      if ((await recovered.readSpaceGuidelines('space-$i')).isNotEmpty) readable++;
+    }
+    expect(readable, 100);
+  });
+
 }
