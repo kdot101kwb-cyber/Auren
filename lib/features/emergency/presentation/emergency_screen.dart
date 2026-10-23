@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/emergency/emergency_service.dart';
+import 'emergency_preparedness_card.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenEmergencyScreen extends StatefulWidget {
@@ -67,10 +68,28 @@ class _AurenEmergencyScreenState extends State<AurenEmergencyScreen> {
           if (contacts.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد أرقام طوارئ موثقة لهذه المنطقة حالياً.')));
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: contacts.length,
+            itemCount: contacts.length + 1,
             separatorBuilder: (_, __) => const Divider(),
             itemBuilder: (_, i) {
-              final x = contacts[i];
+              if (i == 0) {
+                return AurenEmergencyPreparednessCard(
+                  area: '${city.trim()}, ${country.trim()}'.replaceAll(RegExp(r'^, |, 
+              return ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.emergency)),
+                title: Text(x.name),
+                subtitle: Text('${x.type} • ${x.city}, ${x.country}'),
+                trailing: SelectableText(x.phone),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}), ''),
+                );
+              }
+              final x = contacts[i - 1];
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.emergency)),
                 title: Text(x.name),
