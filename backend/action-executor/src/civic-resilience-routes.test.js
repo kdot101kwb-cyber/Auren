@@ -86,6 +86,19 @@ test('biodiversity create returns a privacy-safe sharing projection', async () =
   assert.equal('longitude' in res.body.shareable, false);
 });
 
+test('malformed caller-supplied record ids are rejected instead of silently creating new records', async () => {
+  const { routes, writes } = harness();
+  const handlers = routes.get('POST /api/civic/legal-cases');
+  const res = response();
+  await handlers[1]({ uid: 'trusted-user', body: { case: {
+    caseId: 'nested/attacker-path',
+    title: 'Should not be saved',
+  } } }, res);
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(writes.length, 0);
+});
+
 test('invalid legal case dates fail without persisting a record', async () => {
   const { routes, writes } = harness();
   const handlers = routes.get('POST /api/civic/legal-cases');
