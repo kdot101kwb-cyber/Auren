@@ -11,7 +11,14 @@ class AurenSafetyPlace {
     return AurenSafetyPlace(id: d.id, name: x['name'] ?? '', type: x['type'] ?? 'emergency', city: x['city'] ?? '', country: x['country'] ?? '');
   }
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'type': type, 'city': city, 'country': country};
-  factory AurenSafetyPlace.fromJson(Map<String, dynamic> x) => AurenSafetyPlace(id: x['id'] ?? '', name: x['name'] ?? '', type: x['type'] ?? 'emergency', city: x['city'] ?? '', country: x['country'] ?? '');
+  factory AurenSafetyPlace.fromJson(Map<String, dynamic> x) =>
+      AurenSafetyPlace(
+        id: x['id']?.toString() ?? '',
+        name: x['name']?.toString() ?? '',
+        type: x['type']?.toString() ?? 'emergency',
+        city: x['city']?.toString() ?? '',
+        country: x['country']?.toString() ?? '',
+      );
 }
 
 class AurenOfflineSafetyService {
