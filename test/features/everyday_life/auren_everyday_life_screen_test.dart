@@ -185,7 +185,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Task that cannot be saved');
     await tester.tap(find.text('حفظ محلياً'));
-    await tester.pumpAndSettle(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
 
     expect(find.text('تعذر الحفظ على هذا الجهاز.'), findsOneWidget);
     expect(await EverydayLifeLocalStore().readAll(), isEmpty);
