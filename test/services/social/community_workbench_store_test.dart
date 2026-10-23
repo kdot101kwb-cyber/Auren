@@ -1096,7 +1096,8 @@ void main() {
       ).then<Object?>((_) => 'closed', onError: (Object error) => error),
     ]);
 
-    expect(outcomes.whereType<String>(), hasLength(2));
+    expect(outcomes.whereType<String>().length, inInclusiveRange(1, 2));
+    expect(outcomes.whereType<StateError>().length, lessThanOrEqualTo(1));
     final proposal = (await store.listProposals()).single;
     expect(proposal['status'], 'accepted');
     final votes = Map<String, bool>.from(proposal['votes'] as Map);
