@@ -74,7 +74,11 @@ export function registerCivicResilienceRoutes(app, { db, requireUser, serverTime
 
   app.get('/api/civic/water/readings', requireUser, async (req, res) => {
     try {
-      const meterId = typeof req.query.meterId === 'string' ? safeId(req.query.meterId) : '';
+      const rawMeterId = req.query.meterId;
+      const meterId = rawMeterId == null || rawMeterId === '' ? '' : safeId(rawMeterId);
+      if (rawMeterId != null && rawMeterId !== '' && !meterId) {
+        throw Object.assign(new Error('Invalid meter id.'), { code: 400 });
+      }
       let query = userCollection(req.uid, 'water_readings').orderBy('date', 'desc').limit(MAX_LIST);
       if (meterId) query = userCollection(req.uid, 'water_readings').where('meterId', '==', meterId).orderBy('date', 'desc').limit(MAX_LIST);
       const snapshot = await query.get();
