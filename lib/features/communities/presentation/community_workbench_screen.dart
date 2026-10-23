@@ -478,7 +478,9 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
           ]),
           if ('${m['description']}'.isNotEmpty) Text('${m['description']}'),
           Text('الموعد المقترح: ${_formatMeetupStart('${m['startsAt']}')}'), Text('المكان المقترح: ${m['location']}'),
-          Text('السعة المقترحة: ${m['capacity']} • سجلات الحضور المحلية: ${attendance.length} • سيحضر: ${_store.meetupGoingCount(m)}'),
+          Text('السعة المقترحة محلياً: ${m['capacity']} • سجلات الاهتمام المحلية: ${attendance.length} • نوايا الحضور: ${_store.meetupGoingCount(m)}'),
+          if (_store.meetupGoingCount(m) >= (m['capacity'] as int))
+            const Text('وصلت مسودة اللقاء إلى السعة المقترحة؛ غيّر نية الحضور الحالية قبل إضافة نية حضور أخرى.'),
           DropdownButton<String>(value: current, items: const [
             DropdownMenuItem(value: 'interested', child: Text('مهتم')),
             DropdownMenuItem(value: 'going', child: Text('سأحضر')),
