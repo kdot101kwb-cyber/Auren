@@ -78,6 +78,27 @@ void main() {
     );
   });
 
+  test('in-progress task status is retained without counting as completed', () async {
+    final id = await store.createProject(
+      title: 'Status workflow',
+      description: '',
+      communityId: 'community-1',
+    );
+    await store.addProjectTask(projectId: id, title: 'Coordinate volunteers');
+    final project = (await store.listProjects()).single;
+    final taskId = (project['tasks'] as List).single['id'] as String;
+
+    await store.setProjectTaskStatus(
+      projectId: id,
+      taskId: taskId,
+      status: 'doing',
+    );
+
+    final updated = (await store.listProjects()).single;
+    expect((updated['tasks'] as List).single['status'], 'doing');
+    expect(store.projectProgress(updated), 0);
+  });
+
   test('project bounds reject empty names and cap tasks', () async {
     await expectLater(
       store.createProject(title: ' ', description: '', communityId: ''),
