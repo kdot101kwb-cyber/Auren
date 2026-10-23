@@ -48,6 +48,14 @@ class EverydayLifeLocalStore {
     if (index == -1) {
       records.add(item);
     } else {
+      if (records[index].kind != item.kind) {
+        // IDs are global within this feature. Never let an accidental ID
+        // collision in another system silently replace a saved record.
+        throw StateError(
+          'Record ID "${item.id}" already belongs to '
+          '${records[index].kind.name}, not ${item.kind.name}.',
+        );
+      }
       records[index] = item;
     }
     await _write(records);
