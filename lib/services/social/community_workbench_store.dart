@@ -146,6 +146,16 @@ class AurenCommunityWorkbenchStore {
               const {'interested', 'going', 'declined'}.contains(entry.value),
         );
 
+    bool hasUniqueChildIds(List<dynamic> items) {
+      final ids = <String>{};
+      for (final item in items) {
+        if (item is! Map || item['id'] is! String) return false;
+        final id = (item['id'] as String).trim();
+        if (id.isEmpty || !ids.add(id)) return false;
+      }
+      return true;
+    }
+
     if (key.startsWith(_storageKey(_projectsKey))) {
       final tasks = record['tasks'];
       final milestones = record['milestones'];
@@ -187,7 +197,10 @@ class AurenCommunityWorkbenchStore {
             (milestone['title'] as String).length <= 160 &&
             milestone['completed'] is bool,
       );
-      return validTasks && validMilestones;
+      return validTasks &&
+          validMilestones &&
+          hasUniqueChildIds(tasks) &&
+          hasUniqueChildIds(milestones);
     }
 
     if (key.startsWith(_storageKey(_proposalsKey))) {
