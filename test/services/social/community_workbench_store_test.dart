@@ -324,4 +324,81 @@ void main() {
     expect((await accountB.listProjects()).single['title'], 'Account B project');
   });
 
+
+  test('concurrent local mutations preserve projects, tasks, proposals and meetups', () async {
+    final secondStore = AurenCommunityWorkbenchStore(scope: 'parallel-account');
+    final firstStore = AurenCommunityWorkbenchStore(scope: 'parallel-account');
+
+    await Future.wait(List.generate(20, (index) {
+      final target = index.isEven ? firstStore : secondStore;
+      return target.createProject(
+        title: 'Concurrent project $index',
+        description: '',
+        communityId: 'community-1',
+      );
+    }));
+    expect(await firstStore.listProjects(), hasLength(20));
+
+    final projectId = (await firstStore.listProjects()).first['id'] as String;
+    await Future.wait(List.generate(20, (index) {
+      final target = index.isEven ? firstStore : secondStore;
+      return target.addProjectTask(
+        projectId: projectId,
+        title: 'Concurrent task $index',
+      );
+    }));
+    final project = (await firstStore.listProjects())
+        .singleWhere((item) => item['id'] == projectId);
+    expect(project['tasks'], hasLength(20));
+
+    await Future.wait(List.generate(20, (index) {
+      final target = index.isEven ? firstStore : secondStore;
+      return target.createRuleProposal(
+        communityId: 'community-1',
+        title: 'Concurrent proposal $index',
+        proposedRule: 'Rule $index',
+      );
+    }));
+    expect(await firstStore.listProposals(), hasLength(20));
+
+    await Future.wait(List.generate(20, (index) {
+      final target = index.isEven ? firstStore : secondStore;
+      return target.createMeetupDraft(
+        title: 'Concurrent meetup $index',
+        description: '',
+        startsAt: '2026-11-01T17:00:00Z',
+        location: 'Suggested',
+        capacity: 10,
+      );
+    }));
+    expect(await firstStore.listMeetupDrafts(), hasLength(20));
+  });
+
+  test('concurrent duplicate votes cannot overwrite or double count', () async {
+    final otherStore = AurenCommunityWorkbenchStore();
+    final proposalId = await store.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Vote once',
+      proposedRule: 'Be respectful.',
+    );
+
+    final results = await Future.wait([
+      store.voteOnProposal(
+        proposalId: proposalId,
+        voterId: 'member-1',
+        support: true,
+      ).then<Object?>((_) => null, onError: (Object error) => error),
+      otherStore.voteOnProposal(
+        proposalId: proposalId,
+        voterId: 'member-1',
+        support: false,
+      ).then<Object?>((_) => null, onError: (Object error) => error),
+    ]);
+
+    expect(results.whereType<StateError>(), hasLength(1));
+    final proposal = (await store.listProposals()).single;
+    expect((proposal['votes'] as Map), hasLength(1));
+    expect(store.proposalSupportCount(proposal), inInclusiveRange(0, 1));
+  });
+
 }
