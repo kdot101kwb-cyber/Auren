@@ -20,6 +20,7 @@ class _AurenCollaborationSpacesScreenState
   late AurenCommunityWorkbenchStore _workbench;
   StreamSubscription<User?>? _authSubscription;
   bool _busy = false;
+  int _accountGeneration = 0;
 
   @override
   void initState() {
@@ -30,6 +31,7 @@ class _AurenCollaborationSpacesScreenState
     );
     _authSubscription = auth.authStateChanges().listen((user) {
       if (!mounted) return;
+      _accountGeneration++;
       setState(() {
         _workbench = AurenCommunityWorkbenchStore(scope: user?.uid ?? 'anonymous');
       });
@@ -43,6 +45,8 @@ class _AurenCollaborationSpacesScreenState
   }
 
   Future<void> _createSpace() async {
+    final generation = _accountGeneration;
+    final requestedWorkbench = _workbench;
     final title = TextEditingController();
     final description = TextEditingController();
     final topic = TextEditingController();
@@ -71,7 +75,7 @@ class _AurenCollaborationSpacesScreenState
         ],
       ),
     );
-    if (create != true) {
+    if (create != true || !mounted || generation != _accountGeneration) {
       title.dispose();
       description.dispose();
       topic.dispose();
@@ -84,19 +88,23 @@ class _AurenCollaborationSpacesScreenState
         title: title.text,
         description: description.text,
       );
+      if (!mounted || generation != _accountGeneration ||
+          !identical(requestedWorkbench, _workbench)) return;
       try {
-        await _workbench.saveSpaceGuidelines(
+        await requestedWorkbench.saveSpaceGuidelines(
           spaceId: spaceId,
           topic: topic.text,
           rules: rules.text,
         );
-        if (mounted) {
+        if (mounted && generation == _accountGeneration &&
+            identical(requestedWorkbench, _workbench)) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم إنشاء مساحة التعاون وحفظ قواعدها محلياً')),
           );
         }
       } catch (metadataError) {
-        if (mounted) {
+        if (mounted && generation == _accountGeneration &&
+            identical(requestedWorkbench, _workbench)) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -107,7 +115,7 @@ class _AurenCollaborationSpacesScreenState
         }
       }
     } catch (error) {
-      if (mounted) {
+      if (mounted && generation == _accountGeneration) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('تعذر إنشاء المساحة: $error')),
         );
@@ -122,8 +130,11 @@ class _AurenCollaborationSpacesScreenState
   }
 
   Future<void> _editGuidelines(AurenCollaborationSpace space) async {
-    final current = await _workbench.readSpaceGuidelines(space.id);
-    if (!mounted) return;
+    final generation = _accountGeneration;
+    final requestedWorkbench = _workbench;
+    final current = await requestedWorkbench.readSpaceGuidelines(space.id);
+    if (!mounted || generation != _accountGeneration ||
+        !identical(requestedWorkbench, _workbench)) return;
     final topic = TextEditingController(text: current['topic'] as String? ?? '');
     final rules = TextEditingController(text: current['rules'] as String? ?? '');
     final save = await showDialog<bool>(
@@ -147,14 +158,19 @@ class _AurenCollaborationSpacesScreenState
       ),
     );
     try {
-      if (save == true) {
-        await _workbench.saveSpaceGuidelines(
+      if (save == true && mounted && generation == _accountGeneration &&
+          identical(requestedWorkbench, _workbench)) {
+        await requestedWorkbench.saveSpaceGuidelines(
           spaceId: space.id, topic: topic.text, rules: rules.text);
-        if (mounted) setState(() {});
+        if (mounted && generation == _accountGeneration &&
+            identical(requestedWorkbench, _workbench)) setState(() {});
       }
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر حفظ القواعد محلياً: $error')));
+      if (mounted && generation == _accountGeneration &&
+          identical(requestedWorkbench, _workbench)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر حفظ القواعد محلياً: $error')));
+      }
     } finally {
       topic.dispose();
       rules.dispose();
@@ -162,6 +178,7 @@ class _AurenCollaborationSpacesScreenState
   }
 
   Future<void> _invite(AurenCollaborationSpace space) async {
+    final generation = _accountGeneration;
     final memberUid = TextEditingController();
     final invite = await showDialog<bool>(
       context: context,
@@ -177,7 +194,7 @@ class _AurenCollaborationSpacesScreenState
         ],
       ),
     );
-    if (invite != true) {
+    if (invite != true || !mounted || generation != _accountGeneration) {
       memberUid.dispose();
       return;
     }
