@@ -11,6 +11,11 @@ class _FailingWriteStore extends EverydayLifeLocalStore {
   Future<void> save(EverydayLifeItem item) async {
     throw StateError('simulated local persistence failure');
   }
+
+  @override
+  Future<void> delete(String id) async {
+    throw StateError('simulated local deletion failure');
+  }
 }
 
 void main() {
@@ -171,6 +176,48 @@ void main() {
     expect(records, hasLength(1));
     expect(records.single.completed, isFalse);
     expect(find.text('Keep this task unchanged'), findsOneWidget);
+  });
+
+  testWidgets(
+      'failed local service favorite and delete preserve the previous record',
+      (tester) async {
+    final persisted = EverydayLifeItem(
+      id: 'existing-service',
+      kind: EverydayLifeKind.localService,
+      title: 'Keep this service unchanged',
+      favorite: false,
+      informationConfirmed: false,
+    );
+    await EverydayLifeLocalStore().save(persisted);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenEverydayLifeScreen(store: _FailingWriteStore()),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('إضافة للمفضلة'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('تعذر حفظ التغيير محلياً؛ احتفظنا بالبيانات السابقة. حاول مرة أخرى.'),
+      findsOneWidget,
+    );
+    expect((await EverydayLifeLocalStore().readAll()).single.favorite, isFalse);
+    expect(find.text('Keep this service unchanged'), findsOneWidget);
+
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حذف'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('تعذر حفظ التغيير محلياً؛ احتفظنا بالبيانات السابقة. حاول مرة أخرى.'),
+      findsOneWidget,
+    );
+    final records = await EverydayLifeLocalStore().readAll();
+    expect(records, hasLength(1));
+    expect(records.single.id, 'existing-service');
+    expect(records.single.favorite, isFalse);
+    expect(find.text('Keep this service unchanged'), findsOneWidget);
   });
 
   testWidgets(
