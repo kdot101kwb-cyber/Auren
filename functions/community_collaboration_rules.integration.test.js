@@ -227,3 +227,36 @@ test('reads require authentication and collaboration spaces require membership',
   await assertSucceeds(dbFor('space-owner').doc('collaboration_spaces/private-space').get());
   await assertFails(dbFor('signed-user').doc('volunteer_causes/closed-cause').get());
 });
+
+test('community members can join public communities but cannot join private legacy communities', async () => {
+  const now = firebase.firestore.Timestamp.now();
+  await seed('communities/public-community-join', {
+    ownerId: 'community-owner',
+    name: 'Public community',
+    description: '',
+    topic: 'Books',
+    visibility: 'public',
+    memberIds: ['community-owner'],
+    memberCount: 1,
+    createdAt: now,
+  });
+  await seed('communities/private-community-join', {
+    ownerId: 'private-community-owner',
+    name: 'Private community',
+    description: '',
+    topic: 'Private',
+    visibility: 'private',
+    memberIds: ['private-community-owner'],
+    memberCount: 1,
+    createdAt: now,
+  });
+
+  await assertSucceeds(dbFor('new-member').doc('communities/public-community-join').update({
+    memberIds: ['community-owner', 'new-member'],
+    memberCount: 2,
+  }));
+  await assertFails(dbFor('outsider').doc('communities/private-community-join').update({
+    memberIds: ['private-community-owner', 'outsider'],
+    memberCount: 2,
+  }));
+});
