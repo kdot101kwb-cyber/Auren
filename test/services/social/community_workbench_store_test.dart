@@ -1107,4 +1107,28 @@ void main() {
     }
   });
 
+
+  test('separate store instances serialize writes for the same account scope', () async {
+    final first = AurenCommunityWorkbenchStore(scope: 'shared-account');
+    final second = AurenCommunityWorkbenchStore(scope: 'shared-account');
+    final projectId = await first.createProject(
+      title: 'Cross-instance local writes',
+      description: '',
+      communityId: 'community-1',
+    );
+
+    await Future.wait([
+      for (var i = 0; i < 10; i++)
+        (i.isEven ? first : second).addProjectTask(
+          projectId: projectId,
+          title: 'Task $i',
+        ),
+    ]);
+
+    final project = (await second.listProjects()).single;
+    final tasks = List<Map<String, dynamic>>.from(project['tasks'] as List);
+    expect(tasks, hasLength(10));
+    expect(tasks.map((task) => task['title']).toSet(), hasLength(10));
+  });
+
 }
