@@ -97,3 +97,4 @@ Last updated: 2026-10-23
 - **Status:** these hardening changes are committed on the Everyday Life feature branch; their own CI must pass before this work is considered validated. This is not a release-completion declaration for any of the four systems.
 - **Remaining acceptance work:** test write-failure behavior directly, verify empty/error states and all four system flows, inspect integration boundaries, and rerun all required CI/build checks. Do not merge the draft PR until review and explicit approval.
 
+- **Write-failure regression:** the local store now accepts an injectable string-write function for deterministic failure tests. A regression test forces the storage adapter to return `false`, expects a surfaced `StateError`, and verifies the previously persisted record remains unchanged. CI on the new head is required to validate this seam and test.
