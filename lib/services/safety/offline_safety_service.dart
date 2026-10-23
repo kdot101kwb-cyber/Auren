@@ -63,6 +63,18 @@ class AurenOfflineSafetyService {
       value.length >= 2 && value.length <= _maxRoutePoints &&
       value.every((point) => point is Map && isValidPoint(Map<String, dynamic>.from(point)));
 
+  static List<Map<String, dynamic>> sanitizeCachedRoutes(dynamic decoded, String uid) {
+    if (decoded is! List || uid.trim().isEmpty) return [];
+    return decoded.whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .where((route) =>
+            route['ownerId'] == uid &&
+            (route['id']?.toString().trim().isNotEmpty ?? false) &&
+            (route['name']?.toString().trim().isNotEmpty ?? false) &&
+            _validPoints(route['points']))
+        .take(_maxCachedRoutes).toList();
+  }
+
   Future<String> saveRoute({required String uid, required String name, required List<Map<String, double>> points}) async {
     if (uid.trim().isEmpty || uid.length > 180 || name.trim().isEmpty ||
         name.trim().length > 120 || points.length < 2 ||
@@ -89,16 +101,7 @@ class AurenOfflineSafetyService {
     final raw = prefs.getString(_routesKey(uid));
     if (raw == null || raw.isEmpty) return [];
     try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List || uid.trim().isEmpty) return [];
-      return decoded.whereType<Map>()
-          .map((x) => Map<String, dynamic>.from(x))
-          .where((route) =>
-              route['ownerId'] == uid &&
-              (route['id']?.toString().trim().isNotEmpty ?? false) &&
-              (route['name']?.toString().trim().isNotEmpty ?? false) &&
-              _validPoints(route['points']))
-          .take(_maxCachedRoutes).toList();
+      return sanitizeCachedRoutes(jsonDecode(raw), uid);
     } catch (_) {
       return [];
     }
