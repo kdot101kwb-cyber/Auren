@@ -1155,4 +1155,21 @@ void main() {
     expect(recovered, 20);
   });
 
+
+  test('space guidelines reject oversized identifiers before saving', () async {
+    final oversizedId = List.filled(161, 's').join();
+
+    await expectLater(
+      store.saveSpaceGuidelines(
+        spaceId: oversizedId,
+        topic: 'A topic',
+        rules: 'A rule',
+      ),
+      throwsArgumentError,
+    );
+
+    expect(await store.readSpaceGuidelines(oversizedId), isEmpty);
+    expect(await store.readSpaceGuidelines('valid-space'), isEmpty);
+  });
+
 }
