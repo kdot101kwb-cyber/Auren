@@ -3,7 +3,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:auren/features/everyday_life/data/everyday_life_local_store.dart';
+import 'package:auren/features/everyday_life/domain/everyday_life_item.dart';
 import 'package:auren/features/everyday_life/presentation/auren_everyday_life_screen.dart';
+
+class _FailingWriteStore extends EverydayLifeLocalStore {
+  @override
+  Future<void> save(EverydayLifeItem item) async {
+    throw StateError('simulated local persistence failure');
+  }
+  testWidgets('failed local mutation keeps the previous state and shows retry guidance',
+      (tester) async {
+    final persisted = EverydayLifeItem(
+      id: 'existing-task',
+      kind: EverydayLifeKind.task,
+      title: 'Keep this task unchanged',
+      completed: false,
+    );
+    await EverydayLifeLocalStore().save(persisted);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenEverydayLifeScreen(store: _FailingWriteStore()),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر حفظ التغيير محلياً؛ احتفظنا بالبيانات السابقة. حاول مرة أخرى.'),
+        findsOneWidget);
+    final records = await EverydayLifeLocalStore().readAll();
+    expect(records, hasLength(1));
+    expect(records.single.completed, isFalse);
+    expect(find.text('Keep this task unchanged'), findsOneWidget);
+  });
+
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
