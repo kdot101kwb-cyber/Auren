@@ -131,6 +131,13 @@ rules_version='2';service cloud.firestore{match /databases/{database}/documents{
         && requestData().options is list
         && requestData().options.size() >= 2
         && sizeAtMost(requestData().options,6)
+        && requestData().options[0] is string
+        && nonEmptyStringAtMost(requestData().options[0],100)
+        && (requestData().options.size() < 2 || (requestData().options[1] is string && nonEmptyStringAtMost(requestData().options[1],100)))
+        && (requestData().options.size() < 3 || (requestData().options[2] is string && nonEmptyStringAtMost(requestData().options[2],100)))
+        && (requestData().options.size() < 4 || (requestData().options[3] is string && nonEmptyStringAtMost(requestData().options[3],100)))
+        && (requestData().options.size() < 5 || (requestData().options[4] is string && nonEmptyStringAtMost(requestData().options[4],100)))
+        && (requestData().options.size() < 6 || (requestData().options[5] is string && nonEmptyStringAtMost(requestData().options[5],100)))
         && requestData().votes is map
         && (
           (requestData().options.size() == 2 && requestData().votes == {'0': 0, '1': 0})
