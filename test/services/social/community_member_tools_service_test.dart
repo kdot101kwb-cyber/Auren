@@ -63,6 +63,32 @@ void main() {
     expect((await service.activitySummary('other')).recordedActions, 0);
   });
 
+  test('onboarding insights show current completion rather than repeated actions', () async {
+    final service = AurenCommunityMemberToolsService();
+    await service.setOnboardingTask(
+      communityId: 'garden', taskId: 'read_guidelines', completed: true);
+    await service.setOnboardingTask(
+      communityId: 'garden', taskId: 'read_guidelines', completed: false);
+
+    final summary = await service.activitySummary('garden');
+    expect(summary.onboardingTasksCompleted, 0);
+    expect(summary.recordedActions, 2);
+  });
+
+  test('corrupt activity history falls back without hiding saved onboarding state', () async {
+    final service = AurenCommunityMemberToolsService();
+    await service.setOnboardingTask(
+      communityId: 'garden', taskId: 'read_guidelines', completed: true);
+    SharedPreferences.setMockInitialValues({
+      'auren.community_member_tools.v1.garden.onboarding': '[{"id":"read_guidelines","title":"Read guidelines","completed":true}]',
+      'auren.community_member_tools.v1.garden.activity': '{invalid-json',
+    });
+
+    final summary = await AurenCommunityMemberToolsService().activitySummary('garden');
+    expect(summary.onboardingTasksCompleted, 1);
+    expect(summary.recordedActions, 0);
+  });
+
   test('invalid community and unknown onboarding task are rejected', () async {
     final service = AurenCommunityMemberToolsService();
     await expectLater(service.onboardingTasks(' '), throwsArgumentError);
