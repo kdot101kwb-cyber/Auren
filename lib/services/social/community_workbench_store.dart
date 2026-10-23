@@ -626,6 +626,15 @@ class AurenCommunityWorkbenchStore {
     if (!attendance.containsKey(attendee) && attendance.length >= 1000) {
       throw StateError('Local attendance list limit reached.');
     }
+    // Capacity is a local planning limit, not a booking or reservation. A
+    // person already marked "going" may change their intention without being
+    // blocked by the capacity check.
+    final capacity = draft['capacity'] as int;
+    final wasGoing = attendance[attendee] == 'going';
+    if (status == 'going' && !wasGoing &&
+        attendance.values.where((value) => value == 'going').length >= capacity) {
+      throw StateError('Proposed meetup capacity reached.');
+    }
     attendance[attendee] = status;
     draft['attendance'] = attendance;
     drafts[index] = draft;
