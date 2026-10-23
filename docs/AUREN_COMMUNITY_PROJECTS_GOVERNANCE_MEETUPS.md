@@ -14,6 +14,7 @@
 - Space-guideline reads are bound to the initiating store and authenticated UID; if sign-out/account-switch happens before a read finishes, its stale result and error are discarded rather than filling the next account's form or showing cross-account feedback.
 - Draft dialogs and date/time pickers also capture an account-generation token. If authentication changes while a form is open, the unfinished draft is discarded instead of being written into the next account's local store; delayed operation feedback is suppressed after the account changes.
 - Destructive confirmation dialogs capture the originating account/store and discard confirmation if the account changes before the user confirms, preventing a stale delete dialog from deleting a record in the next account's local scope.
+- Collaboration Space create/edit/invite dialogs also capture the account generation; stale guideline reads/saves are discarded and invite/create feedback is suppressed after an account switch. The local guideline sidecar is written only through the store instance that initiated the action.
 - These local records are **not synced across users/devices** in this MVP. Local vote counts are not official community-wide results; they must not be represented as authoritative governance.
 - Meetup records stay in `draft` status. No public event is published, no seat is reserved, no invitation is sent, and no payment or booking is triggered.
 - Capacity is informational only; the store does not treat attendance as a confirmed reservation.
