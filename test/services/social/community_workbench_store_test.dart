@@ -897,4 +897,122 @@ void main() {
     expect(loaded.first['id'], 'proposal-0');
   });
 
+
+  test('concurrent project task writes do not overwrite one another', () async {
+    final id = await store.createProject(
+      title: 'Concurrent collaboration',
+      description: '',
+      communityId: 'community-1',
+    );
+
+    await Future.wait([
+      for (var i = 0; i < 20; i++)
+        store.addProjectTask(projectId: id, title: 'Task $i'),
+    ]);
+
+    final project = (await store.listProjects()).single;
+    final tasks = List<Map<String, dynamic>>.from(project['tasks'] as List);
+    expect(tasks, hasLength(20));
+    expect(tasks.map((task) => task['title']).toSet(), hasLength(20));
+  });
+
+  test('concurrent governance votes keep one vote per local voter', () async {
+    final id = await store.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Protect shared spaces',
+      proposedRule: 'Respect other members.',
+    );
+
+    await expectLater(
+      Future.wait([
+        store.voteOnProposal(proposalId: id, voterId: 'member-a', support: true),
+        store.voteOnProposal(proposalId: id, voterId: 'member-a', support: false),
+      ]),
+      throwsStateError,
+    );
+
+    final proposal = (await store.listProposals()).single;
+    final votes = Map<String, bool>.from(proposal['votes'] as Map);
+    expect(votes, hasLength(1));
+    expect(votes.containsKey('member-a'), isTrue);
+  });
+
+  test('meetup draft capacity limits local going intentions but allows changes', () async {
+    final id = await store.createMeetupDraft(
+      title: 'Small planning meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested location',
+      capacity: 1,
+    );
+
+    await store.setDraftAttendance(
+      meetupId: id,
+      attendeeId: 'member-a',
+      status: 'going',
+    );
+    await expectLater(
+      store.setDraftAttendance(
+        meetupId: id,
+        attendeeId: 'member-b',
+        status: 'going',
+      ),
+      throwsStateError,
+    );
+
+    // A participant may revise their local intention; the capacity limit
+    // must not trap a person in the "going" state.
+    await store.setDraftAttendance(
+      meetupId: id,
+      attendeeId: 'member-a',
+      status: 'interested',
+    );
+    await store.setDraftAttendance(
+      meetupId: id,
+      attendeeId: 'member-b',
+      status: 'going',
+    );
+
+    final meetup = (await store.listMeetupDrafts()).single;
+    expect(store.meetupGoingCount(meetup), 1);
+    expect(meetup['attendance'], containsPair('member-a', 'interested'));
+    expect(meetup['attendance'], containsPair('member-b', 'going'));
+  });
+
+  test('community workspace records are isolated by account scope', () async {
+    final firstAccount = AurenCommunityWorkbenchStore(scope: 'account-a');
+    final secondAccount = AurenCommunityWorkbenchStore(scope: 'account-b');
+
+    await firstAccount.saveSpaceGuidelines(
+      spaceId: 'space-shared-id',
+      topic: 'Account A topic',
+      rules: 'Private local notes A',
+    );
+    await firstAccount.createProject(
+      title: 'Account A project',
+      description: '',
+      communityId: 'community-1',
+    );
+    await firstAccount.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Account A proposal',
+      proposedRule: 'Rule A',
+    );
+    await firstAccount.createMeetupDraft(
+      title: 'Account A meetup',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10,
+    );
+
+    expect(
+      (await secondAccount.readSpaceGuidelines('space-shared-id')),
+      isEmpty,
+    );
+    expect(await secondAccount.listProjects(), isEmpty);
+    expect(await secondAccount.listProposals(), isEmpty);
+    expect(await secondAccount.listMeetupDrafts(), isEmpty);
+  });
+
 }
