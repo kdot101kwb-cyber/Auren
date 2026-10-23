@@ -35,7 +35,9 @@ void main() {
     expect(await store.readAll(), isEmpty);
   });
 
-  test('failed local write reports failure and preserves the previous record', () async {
+  test(
+      'failed local write reports failure and preserves the previous record',
+      () async {
     final initialStore = EverydayLifeLocalStore();
     await initialStore.save(item(title: 'Previously saved'));
 
@@ -165,5 +167,4 @@ void main() {
     expect(records, hasLength(1));
     expect(records.single.title, 'Previously saved');
   });
-
 }
