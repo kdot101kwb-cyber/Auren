@@ -88,7 +88,7 @@ class _AurenCommunityMemberToolsScreenState extends State<AurenCommunityMemberTo
       ? const Center(child: CircularProgressIndicator())
       : _error != null
         ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(_error!), TextButton(onPressed: _load, child: const Text('إعادة المحاولة'))])
+            Text(_error!), TextButton(onPressed: _load, child: const Text('إعادة المحاولة'))]))
         : RefreshIndicator(onRefresh: _load, child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
