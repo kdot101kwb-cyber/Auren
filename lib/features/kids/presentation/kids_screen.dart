@@ -131,7 +131,7 @@ class _AurenKidsScreenState extends State<AurenKidsScreen> {
                           Text(
                             ageBand == 13
                                 ? '13–17'
-                                : '${ageBand}}–${ageBand} + 2}',
+                                : '${ageBand}–${ageBand + 2}',
                           ),
                           const Spacer(),
                           TextButton.icon(
