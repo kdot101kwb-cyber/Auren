@@ -11,30 +11,7 @@ class _FailingWriteStore extends EverydayLifeLocalStore {
   Future<void> save(EverydayLifeItem item) async {
     throw StateError('simulated local persistence failure');
   }
-  testWidgets('failed local mutation keeps the previous state and shows retry guidance',
-      (tester) async {
-    final persisted = EverydayLifeItem(
-      id: 'existing-task',
-      kind: EverydayLifeKind.task,
-      title: 'Keep this task unchanged',
-      completed: false,
-    );
-    await EverydayLifeLocalStore().save(persisted);
-    await tester.pumpWidget(MaterialApp(
-      home: AurenEverydayLifeScreen(store: _FailingWriteStore()),
-    ));
-    await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(Checkbox).first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('تعذر حفظ التغيير محلياً؛ احتفظنا بالبيانات السابقة. حاول مرة أخرى.'),
-        findsOneWidget);
-    final records = await EverydayLifeLocalStore().readAll();
-    expect(records, hasLength(1));
-    expect(records.single.completed, isFalse);
-    expect(find.text('Keep this task unchanged'), findsOneWidget);
-  });
 
 }
 
@@ -167,6 +144,34 @@ void main() {
 
     expect(await EverydayLifeLocalStore().readAll(), isEmpty);
     expect(find.text('لا توجد عناصر بعد. أضف أول عنصر واحفظه محلياً.'), findsOneWidget);
+  });
+
+
+  testWidgets('failed local mutation keeps the previous state and shows retry guidance',
+      (tester) async {
+    final persisted = EverydayLifeItem(
+      id: 'existing-task',
+      kind: EverydayLifeKind.task,
+      title: 'Keep this task unchanged',
+      completed: false,
+    );
+    await EverydayLifeLocalStore().save(persisted);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenEverydayLifeScreen(store: _FailingWriteStore()),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('تعذر حفظ التغيير محلياً؛ احتفظنا بالبيانات السابقة. حاول مرة أخرى.'),
+      findsOneWidget,
+    );
+    final records = await EverydayLifeLocalStore().readAll();
+    expect(records, hasLength(1));
+    expect(records.single.completed, isFalse);
+    expect(find.text('Keep this task unchanged'), findsOneWidget);
   });
 
 }
