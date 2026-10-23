@@ -12,7 +12,7 @@ void main() {
   });
 
   test('cached routes are limited to the current owner and valid coordinates', () {
-    final rows = AurenOfflineSafetyService.sanitizeCachedRoutesForTest([
+    final rows = AurenOfflineSafetyService.sanitizeCachedRoutes([
       {
         'id': 'owned',
         'ownerId': 'user-a',
