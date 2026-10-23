@@ -9,7 +9,7 @@ function requiredId(value, field) {
 }
 
 function date(value) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
     throw Object.assign(new Error('date must use YYYY-MM-DD.'), { code: 400 });
   }
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -20,7 +20,7 @@ function date(value) {
 }
 
 export function normalizeWaterReading(input, ownerUid) {
-  requiredId(ownerUid, 'owner uid');
+  const normalizedOwnerUid = requiredId(ownerUid, 'owner uid');
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw Object.assign(new Error('Reading must be an object.'), { code: 400 });
   }
@@ -33,19 +33,22 @@ export function normalizeWaterReading(input, ownerUid) {
   if (!['litre', 'kilolitre', 'gallon'].includes(unit)) {
     throw Object.assign(new Error('Unsupported water unit.'), { code: 400 });
   }
-  return { ownerUid: ownerUid.trim(), meterId, date: readingDate, value: input.value, unit };
+  return { ownerUid: normalizedOwnerUid, meterId, date: readingDate, value: input.value, unit };
 }
 
 export function calculateWaterConsumption(previous, current) {
-  if (!previous || !current || previous.meterId !== current.meterId || previous.unit !== current.unit) {
-    throw Object.assign(new Error('Readings must share a meter and unit.'), { code: 400 });
+  if (!previous || !current || previous.meterId !== current.meterId || previous.unit !== current.unit
+      || (previous.ownerUid != null && current.ownerUid != null && previous.ownerUid !== current.ownerUid)) {
+    throw Object.assign(new Error('Readings must share an owner, meter, and unit.'), { code: 400 });
   }
-  if (typeof previous.date !== 'string' || typeof current.date !== 'string' || current.date <= previous.date) {
+  const previousDate = date(previous.date);
+  const currentDate = date(current.date);
+  if (currentDate <= previousDate) {
     throw Object.assign(new Error('Current reading must be later than previous reading.'), { code: 400 });
   }
   if (!Number.isSafeInteger(previous.value) || !Number.isSafeInteger(current.value)
-      || previous.value < 0 || current.value < previous.value) {
+      || previous.value < 0 || current.value < previous.value || current.value > MAX_READING) {
     throw Object.assign(new Error('Meter readings must be non-negative and monotonic.'), { code: 400 });
   }
-  return { meterId: current.meterId, unit: current.unit, from: previous.date, to: current.date, consumed: current.value - previous.value };
+  return { meterId: current.meterId, unit: current.unit, from: previousDate, to: currentDate, consumed: current.value - previous.value };
 }
