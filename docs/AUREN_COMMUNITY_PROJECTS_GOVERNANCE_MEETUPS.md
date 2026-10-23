@@ -10,6 +10,7 @@
 ## Offline and safety behavior
 - Project data, governance proposal drafts/votes, meetup drafts/attendance, and space topic/rules metadata are persisted using SharedPreferences and survive app restarts on the same device.
 - Signed-in accounts use account-scoped local keys; anonymous drafts use a separate anonymous scope. Old unscoped records are not automatically imported into an account scope, avoiding accidental disclosure on shared devices.
+- When authentication changes while the workbench is open, transient space-guideline form fields are cleared as well as switching the storage scope, preventing unsaved text from one account remaining visible to the next account on a shared device.
 - These local records are **not synced across users/devices** in this MVP. Local vote counts are not official community-wide results; they must not be represented as authoritative governance.
 - Meetup records stay in `draft` status. No public event is published, no seat is reserved, no invitation is sent, and no payment or booking is triggered.
 - Capacity is informational only; the store does not treat attendance as a confirmed reservation.
