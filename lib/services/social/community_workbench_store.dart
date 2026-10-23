@@ -298,7 +298,8 @@ class AurenCommunityWorkbenchStore {
     final cleanDescription = description.trim();
     final cleanCommunity = communityId.trim();
     if (cleanTitle.isEmpty || cleanTitle.length > 120 ||
-        cleanDescription.length > 2000 || cleanCommunity.length > 160) {
+        cleanDescription.length > 2000 || cleanCommunity.isEmpty ||
+        cleanCommunity.length > 160) {
       throw ArgumentError('Project title, description, or community is invalid.');
     }
     final projects = await listProjects();
