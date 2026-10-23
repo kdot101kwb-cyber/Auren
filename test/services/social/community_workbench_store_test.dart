@@ -782,7 +782,7 @@ void main() {
       store.createProject(
         title: 'Oversized community reference',
         description: '',
-        communityId: 'c' * 161,
+        communityId: List.filled(161, 'c').join(),
       ),
       throwsArgumentError,
     );
