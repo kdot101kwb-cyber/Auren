@@ -238,6 +238,32 @@ class _AurenRadioScreenState extends State<AurenRadioScreen> {
               ),
             ),
           ],
+          if (_favorites.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text('محطاتي المفضلة على هذا الجهاز (${_favorites.length})',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            ..._favorites.take(20).map((favorite) => Card(child: ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.favorite)),
+              title: Text(favorite.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text([favorite.country, favorite.language, favorite.tags]
+                  .where((value) => value.trim().isNotEmpty).join(' • '),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+              trailing: IconButton(
+                tooltip: 'إزالة من المفضلة',
+                icon: const Icon(Icons.favorite_border),
+                onPressed: () async {
+                  await _favoritesService.remove(favorite.id);
+                  await _loadFavorites();
+                },
+              ),
+              onTap: () => _openStream({
+                ...favorite.toMap(),
+                'stationUuid': favorite.id.startsWith('radio_')
+                    ? favorite.id.substring('radio_'.length) : favorite.id,
+              }),
+            ))),
+          ],
           if (_discovered.isNotEmpty) ...[
             const SizedBox(height: 18),
             Text('محطات مباشرة (${_discovered.length})', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
