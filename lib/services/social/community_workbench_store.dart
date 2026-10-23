@@ -59,8 +59,16 @@ class AurenCommunityWorkbenchStore {
       final decoded = jsonDecode(raw);
       if (decoded is Map) {
         final safe = <String, dynamic>{};
+        // A malformed or hand-edited cache must not bypass the same bounds
+        // enforced by saveSpaceGuidelines. Keep reads bounded as well as writes.
         for (final entry in decoded.entries) {
-          if (entry.key is! String || entry.value is! Map) continue;
+          if (safe.length >= 100) break;
+          if (entry.key is! String ||
+              (entry.key as String).trim().isEmpty ||
+              (entry.key as String).length > 160 ||
+              entry.value is! Map) {
+            continue;
+          }
           final value = Map<String, dynamic>.from(entry.value as Map);
           final topic = value['topic'];
           final rules = value['rules'];
@@ -69,7 +77,8 @@ class AurenCommunityWorkbenchStore {
               topic.length <= 80 &&
               rules is String &&
               rules.length <= 2000 &&
-              updatedAt is String) {
+              updatedAt is String &&
+              DateTime.tryParse(updatedAt) != null) {
             safe[entry.key as String] = value;
           }
         }
