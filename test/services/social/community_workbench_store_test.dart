@@ -1172,4 +1172,63 @@ void main() {
     expect(await store.readSpaceGuidelines('valid-space'), isEmpty);
   });
 
+
+
+  test('separate store instances serialize governance votes for one local voter', () async {
+    final first = AurenCommunityWorkbenchStore(scope: 'shared-vote-account');
+    final second = AurenCommunityWorkbenchStore(scope: 'shared-vote-account');
+    final proposalId = await first.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Cross-instance vote integrity',
+      proposedRule: 'A local voter may vote only once.',
+    );
+
+    final outcomes = await Future.wait<Object?>([
+      first.voteOnProposal(
+        proposalId: proposalId,
+        voterId: 'member-a',
+        support: true,
+      ).then<Object?>((_) => 'saved', onError: (Object error) => error),
+      second.voteOnProposal(
+        proposalId: proposalId,
+        voterId: ' member-a ',
+        support: false,
+      ).then<Object?>((_) => 'saved', onError: (Object error) => error),
+    ]);
+
+    expect(outcomes.whereType<String>(), hasLength(1));
+    expect(outcomes.whereType<StateError>(), hasLength(1));
+    final proposal = (await first.listProposals()).single;
+    final votes = Map<String, bool>.from(proposal['votes'] as Map);
+    expect(votes, hasLength(1));
+    expect(votes.keys.single, 'member-a');
+  });
+
+  test('separate store instances preserve concurrent meetup attendance writes', () async {
+    final first = AurenCommunityWorkbenchStore(scope: 'shared-meetup-account');
+    final second = AurenCommunityWorkbenchStore(scope: 'shared-meetup-account');
+    final meetupId = await first.createMeetupDraft(
+      title: 'Cross-instance attendance',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 10,
+    );
+
+    await Future.wait([
+      for (var i = 0; i < 20; i++)
+        (i.isEven ? first : second).setDraftAttendance(
+          meetupId: meetupId,
+          attendeeId: 'member-$i',
+          status: i.isEven ? 'going' : 'interested',
+        ),
+    ]);
+
+    final meetup = (await second.listMeetupDrafts()).single;
+    final attendance = Map<String, String>.from(meetup['attendance'] as Map);
+    expect(attendance, hasLength(20));
+    expect(attendance.keys.toSet(), hasLength(20));
+    expect(second.meetupGoingCount(meetup), 10);
+  });
+
 }
