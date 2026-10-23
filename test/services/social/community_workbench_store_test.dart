@@ -1231,4 +1231,66 @@ void main() {
     expect(second.meetupGoingCount(meetup), 10);
   });
 
+
+  test('workspace record IDs are normalized consistently across mutations', () async {
+    final projectId = await store.createProject(
+      title: 'Normalize project references',
+      description: '',
+      communityId: 'community-1',
+    );
+    await store.addProjectTask(projectId: projectId, title: 'Task');
+    await store.addProjectMilestone(projectId: projectId, title: 'Milestone');
+    var project = (await store.listProjects()).single;
+    final taskId = (project['tasks'] as List).single['id'] as String;
+    final milestoneId =
+        (project['milestones'] as List).single['id'] as String;
+
+    await store.setProjectTaskStatus(
+      projectId: ' $projectId ',
+      taskId: ' $taskId ',
+      status: 'done',
+    );
+    await store.setMilestoneCompleted(
+      projectId: ' $projectId ',
+      milestoneId: ' $milestoneId ',
+      completed: true,
+    );
+    project = (await store.listProjects()).single;
+    expect((project['tasks'] as List).single['status'], 'done');
+    expect((project['milestones'] as List).single['completed'], isTrue);
+
+    final proposalId = await store.createRuleProposal(
+      communityId: 'community-1',
+      title: 'Normalize proposal references',
+      proposedRule: 'Trim IDs consistently.',
+    );
+    await store.voteOnProposal(
+      proposalId: ' $proposalId ',
+      voterId: 'member-a',
+      support: true,
+    );
+    await store.closeProposal(
+      proposalId: ' $proposalId ',
+      status: 'accepted',
+    );
+    final proposal = (await store.listProposals()).single;
+    expect(proposal['status'], 'accepted');
+    expect(proposal['votes'], containsPair('member-a', true));
+
+    final meetupId = await store.createMeetupDraft(
+      title: 'Normalize meetup references',
+      description: '',
+      startsAt: '2026-11-01T17:00:00Z',
+      location: 'Suggested',
+      capacity: 2,
+    );
+    await store.setDraftAttendance(
+      meetupId: ' $meetupId ',
+      attendeeId: 'member-a',
+      status: 'going',
+    );
+    final meetup = (await store.listMeetupDrafts()).single;
+    expect(meetup['attendance'], containsPair('member-a', 'going'));
+  });
+
 }
