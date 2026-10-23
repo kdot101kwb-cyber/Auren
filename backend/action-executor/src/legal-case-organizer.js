@@ -53,12 +53,15 @@ export function normalizeLegalCase(input, ownerUid) {
   };
 }
 
-export function listUpcomingCaseDeadlines(cases, asOfDate) {
+export function listUpcomingCaseDeadlines(cases, asOfDate, ownerUid) {
   const today = isoDate(asOfDate, 'asOfDate');
   if (!Array.isArray(cases)) throw Object.assign(new Error('Cases must be an array.'), { code: 400 });
+  if (typeof ownerUid !== 'string' || !ownerUid.trim() || ownerUid.length > MAX_ID_LENGTH || ownerUid.includes('/')) {
+    throw Object.assign(new Error('A valid owner uid is required for deadline lists.'), { code: 400 });
+  }
   return cases
     .filter((item) => {
-      if (!item || typeof item !== 'object' || item.status === 'closed' || item.status === 'archived'
+      if (!item || typeof item !== 'object' || item.ownerUid !== ownerUid.trim() || item.status === 'closed' || item.status === 'archived'
           || item.reminderEnabled !== true) return false;
       try {
         const deadline = isoDate(item.nextDeadline, 'nextDeadline');
