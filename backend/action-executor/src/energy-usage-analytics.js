@@ -31,14 +31,19 @@ export function normalizeEnergyEntry(input, ownerUid) {
   return { ownerUid: ownerUid.trim(), label, date: input.date, unit, amount: input.amount, costMinor };
 }
 
-export function summarizeResourceUsage(entries, { from, to } = {}) {
+export function summarizeResourceUsage(entries, { from, to, ownerUid } = {}) {
   if (!Array.isArray(entries)) throw Object.assign(new Error('Entries must be an array.'), { code: 400 });
+  if (typeof ownerUid !== 'string' || !ownerUid.trim() || ownerUid.length > 128 || ownerUid.includes('/')) {
+    throw Object.assign(new Error('A valid owner uid is required for resource summaries.'), { code: 400 });
+  }
   if ((from && !validDate(from)) || (to && !validDate(to)) || (from && to && from > to)) {
     throw Object.assign(new Error('Invalid summary date range.'), { code: 400 });
   }
   const totals = new Map();
   for (const entry of entries) {
-    if (!entry || !validDate(entry.date) || (from && entry.date < from) || (to && entry.date > to)) continue;
+    // Never combine records from different owners, even if a caller passes a mixed collection.
+    if (!entry || entry.ownerUid !== ownerUid.trim() || !validDate(entry.date)
+        || (from && entry.date < from) || (to && entry.date > to)) continue;
     if (!ENERGY_UNITS.includes(entry.unit) || !Number.isSafeInteger(entry.amount) || entry.amount < 0) continue;
     const key = entry.unit;
     const current = totals.get(key) || { unit: key, amount: 0, costMinor: 0, costEntries: 0, entries: 0 };
