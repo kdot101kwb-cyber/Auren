@@ -434,4 +434,64 @@ void main() {
     expect(find.textContaining('التصنيف: Cleaning'), findsOneWidget);
   });
 
+
+
+  testWidgets('appointment draft preserves requested window and provider contact details',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.tap(find.text('Appointments'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('إنشاء مسودة طلب'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'Book a repair visit');
+    await tester.enterText(find.byType(TextField).at(2), 'Tuesday evening');
+    await tester.enterText(find.byType(TextField).at(3), 'User-selected technician');
+    await tester.enterText(find.byType(TextField).at(4), '555-0100');
+    await tester.enterText(find.byType(TextField).at(5), 'Near the main market');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    final draft = (await EverydayLifeLocalStore().readAll()).single;
+    expect(draft.kind, EverydayLifeKind.appointmentDraft);
+    expect(draft.requestedWindow, 'Tuesday evening');
+    expect(draft.providerName, 'User-selected technician');
+    expect(draft.contact, '555-0100');
+    expect(draft.location, 'Near the main market');
+    expect(draft.dueAt, isNull);
+    expect(find.textContaining('Tuesday evening'), findsOneWidget);
+    expect(find.textContaining('مسودة غير مرسلة'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('local service directory persists user-entered category and contact details',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.ensureVisible(find.text('Local services'));
+    await tester.tap(find.text('Local services'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أضف خدمة بنفسك'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'Independent electrician');
+    await tester.enterText(find.byType(TextField).at(2), 'Electrical');
+    await tester.enterText(find.byType(TextField).at(3), 'Provider entered by user');
+    await tester.enterText(find.byType(TextField).at(4), '555-0199');
+    await tester.enterText(find.byType(TextField).at(5), 'West district');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    final service = (await EverydayLifeLocalStore().readAll()).single;
+    expect(service.kind, EverydayLifeKind.localService);
+    expect(service.category, 'Electrical');
+    expect(service.providerName, 'Provider entered by user');
+    expect(service.contact, '555-0199');
+    expect(service.location, 'West district');
+    expect(service.informationConfirmed, isFalse);
+    expect(find.textContaining('التصنيف: Electrical'), findsOneWidget);
+    expect(find.textContaining('555-0199'), findsOneWidget);
+    expect(find.text('معلومات غير مؤكدة'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }
