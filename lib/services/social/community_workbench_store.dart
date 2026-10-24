@@ -132,6 +132,7 @@ class AurenCommunityWorkbenchStore {
           (entry) =>
               entry.key is String &&
               (entry.key as String).isNotEmpty &&
+              (entry.key as String) == (entry.key as String).trim() &&
               (entry.key as String).length <= 128 &&
               entry.value is bool,
         );
@@ -143,6 +144,7 @@ class AurenCommunityWorkbenchStore {
           (entry) =>
               entry.key is String &&
               (entry.key as String).isNotEmpty &&
+              (entry.key as String) == (entry.key as String).trim() &&
               (entry.key as String).length <= 128 &&
               const {'interested', 'going', 'declined'}.contains(entry.value),
         );
@@ -157,8 +159,7 @@ class AurenCommunityWorkbenchStore {
       return true;
     }
 
-    if (key.startsWith(_storageKey(_projectsKey))) {
-      final tasks = record['tasks'];
+    if (key.startsWith(_storageKey(_projectsKey))) {      final tasks = record['tasks'];
       final milestones = record['milestones'];
       if (!hasStrings(['id', 'title', 'description', 'communityId', 'createdAt']) ||
           (record['id'] as String).isEmpty ||
@@ -317,8 +318,7 @@ class AurenCommunityWorkbenchStore {
   Future<List<Map<String, dynamic>>> listProjects() => _readList(_storageKey(_projectsKey));
 
   /// Deletes a project only from this device. No remote project or member data
-  /// is changed by this local-first MVP.
-  Future<void> deleteProject(String projectId) async {
+  /// is changed by this local-first MVP.  Future<void> deleteProject(String projectId) async {
     return _withMutationLock(_storageKey(_projectsKey), () async {
     final id = projectId.trim();
     if (id.isEmpty) throw ArgumentError('Project ID is required.');
@@ -477,7 +477,6 @@ class AurenCommunityWorkbenchStore {
       project['milestones'] = milestones;
     });
   }
-
   Future<void> _mutateProject(
     String projectId,
     void Function(Map<String, dynamic> project) mutate,
@@ -637,8 +636,7 @@ class AurenCommunityWorkbenchStore {
     return _withMutationLock(_storageKey(_meetupsKey), () async {
     final cleanTitle = title.trim();
     final cleanDescription = description.trim();
-    final cleanLocation = location.trim();
-    final parsedStart = DateTime.tryParse(startsAt);
+    final cleanLocation = location.trim();    final parsedStart = DateTime.tryParse(startsAt);
     if (cleanTitle.isEmpty || cleanTitle.length > 120 ||
         cleanDescription.length > 2000 || cleanLocation.length > 160 ||
         parsedStart == null || capacity < 1 || capacity > 10000) {
