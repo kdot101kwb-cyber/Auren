@@ -642,7 +642,9 @@ class AurenCommunityWorkbenchStore {
     final parsedStart = DateTime.tryParse(startsAt);
     if (cleanTitle.isEmpty || cleanTitle.length > 120 ||
         cleanDescription.length > 2000 || cleanLocation.length > 160 ||
-        parsedStart == null || capacity < 1 || capacity > 10000) {
+        parsedStart == null ||
+        !parsedStart.isAfter(DateTime.now()) ||
+        capacity < 1 || capacity > 10000) {
       throw ArgumentError('Meetup draft details are invalid.');
     }
     final drafts = await listMeetupDrafts();
