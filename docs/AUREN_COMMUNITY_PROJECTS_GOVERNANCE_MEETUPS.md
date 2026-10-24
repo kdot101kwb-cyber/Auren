@@ -39,3 +39,8 @@
 - Added focused regressions for reassignment, clearing, invalid oversized identities, and missing tasks.
 - This remains device-local project planning. It does not notify members or assign tasks in a shared server workspace until trusted sync and authorization are implemented.
 - Validation gate for this follow-up: Flutter format, analysis, focused store tests, full Flutter tests, Android debug APK, backend and security CI.
+
+## Follow-up batch — cache identity integrity
+- Hardened cache validation so voter and attendee identity keys must already be trimmed and normalized. A malformed cached identity such as `" member-a "` can no longer bypass the one-local-vote rule or create a duplicate attendance identity.
+- Added focused regression tests for malformed cached vote/attendance IDs and confirmed that normal API inputs are trimmed before saving.
+- This is local-cache integrity only; it does not turn local votes or attendance into shared server state.
