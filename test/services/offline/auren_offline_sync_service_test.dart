@@ -91,4 +91,26 @@ void main() {
     service.unregisterHandler('slow');
     await service.clear();
   });
+
+  test('corrupted persisted queue is preserved until explicit clear', () async {
+    final service = AurenOfflineSyncService.instance;
+    final prefs = await SharedPreferences.getInstance();
+    const corrupted = '{"unfinished":';
+    await prefs.setString('auren_offline_sync_queue_v1', corrupted);
+
+    await expectLater(
+      service.enqueue(type: 'save', payload: {'new': true}),
+      throwsStateError,
+    );
+    expect(
+      prefs.getString('auren_offline_sync_queue_v1'),
+      corrupted,
+      reason: 'Enqueue must not overwrite data it cannot safely decode.',
+    );
+    await expectLater(service.pending(), throwsStateError);
+
+    // Clearing is the explicit destructive operation.
+    await service.clear();
+    expect(prefs.getString('auren_offline_sync_queue_v1'), isNull);
+  });
 }
