@@ -126,8 +126,15 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
               ),
               if (isSupply)
                 TextField(controller: quantityController, decoration: const InputDecoration(labelText: 'الكمية (اختياري)')),
-              if (isDirectory)
-                TextField(controller: categoryController, decoration: const InputDecoration(labelText: 'التصنيف (اختياري)')),
+              if (isDirectory || isHousehold)
+                TextField(
+                  controller: categoryController,
+                  decoration: InputDecoration(
+                    labelText: isHousehold
+                        ? 'تصنيف المنزل (اختياري)'
+                        : 'التصنيف (اختياري)',
+                  ),
+                ),
               if (isAppointment || isMaintenance)
                 TextField(controller: requestedWindowController, decoration: const InputDecoration(labelText: 'الوقت المطلوب (اختياري؛ غير مؤكد)')),
               if (isDirectory || isAppointment) ...[
