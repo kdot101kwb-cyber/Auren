@@ -36,7 +36,7 @@ void main() {
         id: 'task-1',
         title: 'Harvest',
         dueAt: DateTime.utc(2026, 10, 24),
-      ).withStatus('completed');
+      ).withStatus('in_progress').withStatus('completed');
       expect(() => task.withStatus('planned'), throwsStateError);
     });
   });
