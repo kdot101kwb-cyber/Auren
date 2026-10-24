@@ -96,9 +96,16 @@ export function registerCivicResilienceRoutes(app, { db, requireUser, serverTime
       if (existing.exists && existing.data()?.unit !== item.unit) {
         throw Object.assign(new Error('A meter reading cannot change the meter unit.'), { code: 409 });
       }
-      // A bounded per-meter read avoids requiring a compound Firestore index.
+      // Read one beyond the supported bound so we never validate monotonicity
+      // against an incomplete, unordered sample of a meter's history.
       const meterSnapshot = await userCollection(req.uid, 'water_readings')
-        .where('meterId', '==', item.meterId).limit(MAX_LIST).get();
+        .where('meterId', '==', item.meterId).limit(MAX_LIST + 1).get();
+      if (meterSnapshot.size > MAX_LIST || meterSnapshot.docs.length > MAX_LIST) {
+        throw Object.assign(
+          new Error('This meter has more than 100 readings; its history must be reconciled before adding another reading.'),
+          { code: 409 },
+        );
+      }
       const readings = meterSnapshot.docs.map((doc) => doc.data())
         .filter((reading) => reading.unit === item.unit && reading.date !== item.date)
         .sort((a, b) => a.date.localeCompare(b.date));
