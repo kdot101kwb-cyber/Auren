@@ -1482,4 +1482,24 @@ void main() {
     expect(task['assignee'], isEmpty);
   });
 
+
+  test('meetup drafts reject start times that are already in the past', () async {
+    final past = DateTime.now()
+        .subtract(const Duration(minutes: 1))
+        .toUtc()
+        .toIso8601String();
+
+    await expectLater(
+      store.createMeetupDraft(
+        title: 'Past meetup',
+        description: '',
+        startsAt: past,
+        location: 'Suggested',
+        capacity: 10,
+      ),
+      throwsArgumentError,
+    );
+    expect(await store.listMeetupDrafts(), isEmpty);
+  });
+
 }
