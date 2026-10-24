@@ -234,12 +234,12 @@ void main() {
     expect(records, hasLength(1));
     expect(records.single.title, 'Previously saved');
   });
-  test('concurrent saves on one store preserve every distinct record', () async {
+  test('concurrent saves across store instances preserve every record', () async {
     final store = EverydayLifeLocalStore();
 
     await Future.wait([
       for (var index = 0; index < 20; index++)
-        store.save(item(
+        EverydayLifeLocalStore().save(item(
           id: 'parallel-$index',
           title: 'Concurrent record $index',
         )),
