@@ -165,10 +165,9 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
         ),
       ),
     );
-    // Keep controllers alive until the modal's reverse transition has removed
-    // its TextFields; disposing immediately after Navigator.pop can assert.
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    if (title == null || title.trim().isEmpty || !mounted) {
+    // showModalBottomSheet completes after the route closes, so its fields
+    // are detached before these controllers are disposed.
+    void disposeControllers() {
       titleController.dispose();
       detailsController.dispose();
       providerController.dispose();
@@ -177,6 +176,10 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
       categoryController.dispose();
       quantityController.dispose();
       requestedWindowController.dispose();
+    }
+
+    if (title == null || title.trim().isEmpty || !mounted) {
+      disposeControllers();
       return;
     }
     final item = EverydayLifeItem(
@@ -193,14 +196,7 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
       location: locationController.text.trim(),
       informationConfirmed: false,
     );
-    titleController.dispose();
-    detailsController.dispose();
-    providerController.dispose();
-    contactController.dispose();
-    locationController.dispose();
-    categoryController.dispose();
-    quantityController.dispose();
-    requestedWindowController.dispose();
+    disposeControllers();
     try {
       await _store.save(item);
       await _refresh();
