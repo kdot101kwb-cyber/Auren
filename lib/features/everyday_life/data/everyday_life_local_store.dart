@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,28 @@ class EverydayLifeLocalStore {
   static const storageKey = 'auren_everyday_life_records_v1';
   final SharedPreferences? _preferences;
   final EverydayLifeWriteString? _writeString;
+
+  // Serialize read-modify-write operations so overlapping actions on this
+  // store instance cannot overwrite one another with stale snapshots.
+  Future<void> _mutationTail = Future<void>.value();
+
+  Future<T> _serializeMutation<T>(Future<T> Function() operation) {
+    final result = Completer<T>();
+    final previous = _mutationTail;
+    final next = Completer<void>();
+    _mutationTail = next.future;
+    () async {
+      await previous;
+      try {
+        result.complete(await operation());
+      } catch (error, stackTrace) {
+        result.completeError(error, stackTrace);
+      } finally {
+        next.complete();
+      }
+    }();
+    return result.future;
+  }
 
   Future<SharedPreferences> get _prefs async =>
       _preferences ?? SharedPreferences.getInstance();
@@ -60,7 +83,10 @@ class EverydayLifeLocalStore {
     }
   }
 
-  Future<void> save(EverydayLifeItem item) async {
+  Future<void> save(EverydayLifeItem item) =>
+      _serializeMutation(() => _save(item));
+
+  Future<void> _save(EverydayLifeItem item) async {
     if (item.id.trim().isEmpty || item.title.trim().isEmpty) {
       throw ArgumentError('A record needs an ID and a non-empty title.');
     }
@@ -82,7 +108,10 @@ class EverydayLifeLocalStore {
     await _write(records);
   }
 
-  Future<void> delete(String id) async {
+  Future<void> delete(String id) =>
+      _serializeMutation(() => _delete(id));
+
+  Future<void> _delete(String id) async {
     final records = (await readAll()).where((entry) => entry.id != id).toList();
     await _write(records);
   }
@@ -91,7 +120,9 @@ class EverydayLifeLocalStore {
   ///
   /// This is intentionally scoped to this feature's storage key; it does not
   /// clear unrelated app preferences or remote data.
-  Future<void> clearAll() async {
+  Future<void> clearAll() => _serializeMutation(_clearAll);
+
+  Future<void> _clearAll() async {
     final preferences = await _prefs;
     // Erasure is idempotent: an empty store is already in the desired state.
     if (!preferences.containsKey(storageKey)) return;
