@@ -76,6 +76,18 @@ void main() {
     expect(preferences.getString(EverydayLifeLocalStore.storageKey), isNull);
   });
 
+  test('clearAll succeeds when the feature store is already empty', () async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('unrelated_app_setting', 'keep-me');
+
+    final store = EverydayLifeLocalStore(preferences: preferences);
+    await store.clearAll();
+    await store.clearAll();
+
+    expect(preferences.getString('unrelated_app_setting'), 'keep-me');
+    expect(preferences.containsKey(EverydayLifeLocalStore.storageKey), isFalse);
+  });
+
   test('rejects a cross-system ID collision without replacing saved data',
       () async {
     final store = EverydayLifeLocalStore();
