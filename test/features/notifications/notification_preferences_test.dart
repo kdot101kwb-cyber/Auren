@@ -11,7 +11,7 @@ void main() {
 
   test('round trips and ignores malformed preference fields', () {
     final decoded = AurenNotificationPreferences.fromJson({
-      'mutedCategories': ['sports', 12, 'x' * 65],
+      'mutedCategories': ['sports', 12, List<String>.filled(65, 'x').join()],
       'unreadOnly': true,
       'showInAppBanners': false,
     });
