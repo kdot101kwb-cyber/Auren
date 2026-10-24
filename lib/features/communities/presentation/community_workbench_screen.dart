@@ -451,7 +451,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
                   visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.person_outline),
                   onPressed: _busy ? null : () => _editTaskAssignee(
-                    '${project['id']}', '${task['id']}', '${task['assignee']}'),
+                    '${project['id']}', '${task['id']}'),
                 ),
                 DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
