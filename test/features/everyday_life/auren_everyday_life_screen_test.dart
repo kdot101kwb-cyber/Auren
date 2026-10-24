@@ -37,6 +37,44 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('local data erasure requires confirmation and preserves unrelated settings',
+      (tester) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('unrelated_app_setting', 'keep-me');
+    await EverydayLifeLocalStore(preferences: preferences).save(
+      EverydayLifeItem(
+        id: 'private-task',
+        kind: EverydayLifeKind.task,
+        title: 'Locally saved task',
+      ),
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: AurenEverydayLifeScreen(
+        store: EverydayLifeLocalStore(preferences: preferences),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('إدارة البيانات المحلية'));
+    await tester.pumpAndSettle();
+    expect(find.text('مسح بيانات الحياة اليومية؟'), findsOneWidget);
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+    expect((await EverydayLifeLocalStore(preferences: preferences).readAll()),
+        hasLength(1));
+
+    await tester.tap(find.byTooltip('إدارة البيانات المحلية'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('مسح البيانات المحلية'));
+    await tester.pumpAndSettle();
+
+    expect(await EverydayLifeLocalStore(preferences: preferences).readAll(),
+        isEmpty);
+    expect(preferences.getString('unrelated_app_setting'), 'keep-me');
+    expect(find.text('تم مسح بيانات الحياة اليومية من هذا الجهاز.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
       'shows a retry action when local records cannot be read',
       (tester) async {
