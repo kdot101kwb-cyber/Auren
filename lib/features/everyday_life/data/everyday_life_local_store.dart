@@ -29,7 +29,12 @@ class EverydayLifeLocalStore {
     if (raw == null || raw.isEmpty) return const [];
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is! List) return const [];
+      if (decoded is! List) {
+        throw StateError(
+          'Stored AUREN Everyday Life data has an invalid format; '
+          'refusing to overwrite it.',
+        );
+      }
       final records = <EverydayLifeItem>[];
       for (final entry in decoded) {
         if (entry is! Map) continue;
@@ -45,7 +50,13 @@ class EverydayLifeLocalStore {
       }
       return List.unmodifiable(records);
     } on FormatException {
-      return const [];
+      // Do not treat a damaged top-level payload as an empty store: the next
+      // write would silently replace the original bytes and lose recoverable
+      // local data. Individual malformed records above remain skippable.
+      throw StateError(
+        'Stored AUREN Everyday Life data is corrupted; '
+        'refusing to overwrite it.',
+      );
     }
   }
 
