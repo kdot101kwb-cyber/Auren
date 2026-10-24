@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/notifications/notification_repository.dart';
+import '../../../services/notifications/notification_preferences_store.dart';
+import '../domain/notification_preferences.dart';
 import '../../messenger/presentation/messenger_screen.dart';
 
 class AurenNotificationsScreen extends StatefulWidget {
@@ -10,13 +14,124 @@ class AurenNotificationsScreen extends StatefulWidget {
 
 class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
   final _repo = NotificationRepository();
+  final _preferencesStore = const AurenNotificationPreferencesStore();
+  AurenNotificationPreferences _preferences = const AurenNotificationPreferences();
   String? _uid;
   String _filter = 'all';
+
+  StreamSubscription<User?>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
     _uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = _uid;
+    if (uid != null) unawaited(_loadPreferences(uid));
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (!mounted) return;
+      final nextUid = user?.uid;
+      if (nextUid == _uid) return;
+      setState(() {
+        _uid = nextUid;
+        _preferences = const AurenNotificationPreferences();
+        _filter = 'all';
+      });
+      if (nextUid != null) unawaited(_loadPreferences(nextUid));
+    });
+  }
+
+  Future<void> _loadPreferences(String uid) async {
+    try {
+      final value = await _preferencesStore.load(uid);
+      if (!mounted || _uid != uid) return;
+      setState(() => _preferences = value);
+    } catch (_) {
+      // Keep safe defaults when local preferences cannot be read.
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_authSubscription?.cancel());
+    super.dispose();
+  }
+
+  Future<void> _editPreferences() async {
+    final uid = _uid;
+    if (uid == null) return;
+    var unreadOnly = _preferences.unreadOnly;
+    var showBanners = _preferences.showInAppBanners;
+    final muted = Set<String>.from(_preferences.mutedCategories);
+    const categories = <String, String>{
+      'social': 'اجتماعي',
+      'messages': 'رسائل',
+      'opportunities': 'فرص',
+      'system': 'النظام',
+    };
+    final saved = await showDialog<AurenNotificationPreferences>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, refresh) => AlertDialog(
+          title: const Text('تفضيلات الإشعارات'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('عرض غير المقروءة فقط'),
+                  value: unreadOnly,
+                  onChanged: (value) => refresh(() => unreadOnly = value),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('السماح بتنبيهات داخل التطبيق'),
+                  value: showBanners,
+                  onChanged: (value) => refresh(() => showBanners = value),
+                ),
+                const Divider(),
+                const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text('إخفاء فئات من المركز'),
+                ),
+                ...categories.entries.map((entry) => CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(entry.value),
+                  value: muted.contains(entry.key),
+                  onChanged: (value) => refresh(() {
+                    if (value == true) {
+                      muted.add(entry.key);
+                    } else {
+                      muted.remove(entry.key);
+                    }
+                  }),
+                )),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                dialogContext,
+                AurenNotificationPreferences(
+                  mutedCategories: Set.unmodifiable(muted),
+                  unreadOnly: unreadOnly,
+                  showInAppBanners: showBanners,
+                ),
+              ),
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved == null || !mounted || _uid != uid) return;
+    await _preferencesStore.save(uid, saved);
+    if (mounted && _uid == uid) setState(() => _preferences = saved);
   }
 
   String _category(AurenNotification n) {
@@ -62,11 +177,11 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
     final now = DateTime.now();
     final d = now.difference(value);
     if (d.inSeconds < 60) return 'الآن';
-    if (d.inMinutes < 60) return 'منذ \${d.inMinutes} د';
-    if (d.inHours < 24) return 'منذ \${d.inHours} س';
+    if (d.inMinutes < 60) return 'منذ ${d.inMinutes} د';
+    if (d.inHours < 24) return 'منذ ${d.inHours} س';
     if (d.inDays == 1) return 'أمس';
-    if (d.inDays < 7) return 'منذ \${d.inDays} أيام';
-    return '\${value.day}/\${value.month}/\${value.year}';
+    if (d.inDays < 7) return 'منذ ${d.inDays} أيام';
+    return '${value.day}/${value.month}/${value.year}';
   }
 
   String _filterLabel(String value) {
@@ -119,7 +234,7 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
 
   Future<void> _markAll(String uid) async {
     await _repo.markAllRead(uid);
-    if (!mounted) return;
+    if (!mounted || _uid != uid) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم تعليم كل الإشعارات كمقروءة')),
     );
@@ -136,6 +251,11 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
       appBar: AppBar(
         title: const Text('مركز الإشعارات'),
         actions: [
+          IconButton(
+            tooltip: 'تفضيلات الإشعارات',
+            onPressed: _editPreferences,
+            icon: const Icon(Icons.tune),
+          ),
           StreamBuilder<int>(
             stream: _repo.watchUnreadCount(uid),
             builder: (context, snapshot) {
@@ -158,6 +278,8 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
 
           final all = snapshot.data!;
           final items = all.where((n) {
+            if (_preferences.mutedCategories.contains(_category(n))) return false;
+            if (_preferences.unreadOnly && n.read) return false;
             if (_filter == 'unread') return !n.read;
             if (_filter == 'all') return true;
             return _category(n) == _filter;
@@ -219,7 +341,7 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
                                 style: TextStyle(fontWeight: n.read ? FontWeight.w500 : FontWeight.w800)),
                               subtitle: Padding(
                                 padding: const EdgeInsets.only(top: 4),
-                                child: Text('\${n.body}\\n\${_when(n.createdAt)}', maxLines: 3, overflow: TextOverflow.ellipsis),
+                                child: Text('${n.body}\n${_when(n.createdAt)}', maxLines: 3, overflow: TextOverflow.ellipsis),
                               ),
                               isThreeLine: true,
                               onTap: () => _open(n),
