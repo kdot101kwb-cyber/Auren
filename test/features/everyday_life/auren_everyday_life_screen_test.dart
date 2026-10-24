@@ -189,7 +189,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Repair kitchen tap');
     await tester.enterText(find.byType(TextField).at(1), 'Tap is leaking');
-    await tester.enterText(find.byType(TextField).at(2), 'Friday afternoon');
+    await tester.enterText(find.byType(TextField).at(3), 'Friday afternoon');
     await tester.tap(find.text('حفظ محلياً'));
     await tester.pumpAndSettle();
 
