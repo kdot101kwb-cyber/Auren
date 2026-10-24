@@ -106,3 +106,12 @@ Last updated: 2026-10-23
 - **Validation result (2026-10-23, commit `480e855626a16c4fe826ce82a9b7c2cf5c03c252`):** GitHub Actions Flutter CI passed formatting, analysis, the full test step, Android debug APK build, and artifact upload. CircleCI `flutter_ci`, `functions_tests`, `plugin_worker_tests`, `action_executor_tests`, and `plugin_worker_image` checks all reported success for that commit. The focused failure regressions are therefore validated on this commit.
 - **Build notes:** Android debug build emitted upstream Kotlin Gradle Plugin migration and dependency deprecation/unchecked-operation warnings, but the build completed successfully. Track plugin/toolchain compatibility during Batch 10 release hardening.
 - **Current status boundary:** Everyday Life & Services hardening CI is green on `480e855`; this confirms the tested feature branch, not Android release signing, production rollout, or final completion of all 47 systems. PR #271 remains a draft and must not be merged without review and explicit approval.
+
+
+## Batch 9 execution register — local privacy controls
+
+- **Implemented:** added a scoped `clearAll()` operation for Everyday Life & Services that removes only `auren_everyday_life_records_v1`; it does not clear unrelated app preferences or claim to erase remote data.
+- **User flow:** added a visible privacy action in the feature screen, with an explicit confirmation dialog, cancellation path, success feedback, and failure feedback that does not claim success.
+- **Regression coverage:** data-layer test verifies feature records are removed while unrelated preferences remain; widget test verifies cancellation leaves data intact and confirmed erasure clears only this feature's local records.
+- **Security boundary:** SharedPreferences is device-local convenience storage, not encrypted secret storage. Do not place passwords, access tokens, payment credentials, or other secrets in these records. Stronger at-rest protection and platform-wide retention/backup policy remain release-hardening work.
+- **Validation gate:** this implementation is committed on the feature branch. Wait for GitHub Actions and applicable CircleCI checks on the resulting code commit before marking this Batch 9 slice green. PR #271 remains draft and unmerged.
