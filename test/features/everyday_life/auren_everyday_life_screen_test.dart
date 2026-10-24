@@ -239,8 +239,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Repair kitchen tap');
     await tester.enterText(find.byType(TextField).at(1), 'Tap is leaking');
-    // Maintenance forms now expose category before the optional time window.
-    await tester.enterText(find.byType(TextField).at(3), 'Friday afternoon');
+    // Target the optional time-window field by its label instead of relying on
+    // the global TextField order across the tab view and modal sheet.
+    final requestedWindowField = find.byWidgetPredicate(
+      (widget) => widget is TextField &&
+          widget.decoration?.labelText ==
+              'الوقت المطلوب (اختياري؛ غير مؤكد)',
+    );
+    expect(requestedWindowField, findsOneWidget);
+    await tester.enterText(requestedWindowField, 'Friday afternoon');
     await tester.tap(find.text('حفظ محلياً'));
     await tester.pumpAndSettle();
 
