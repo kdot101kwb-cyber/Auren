@@ -370,4 +370,29 @@ void main() {
     expect(await EverydayLifeLocalStore().readAll(), isEmpty);
     expect(find.text('Task that cannot be saved'), findsNothing);
   });
+
+  testWidgets('household supplies expose and persist the user-entered category',
+      (tester) async {
+    await openScreen(tester);
+
+    await tester.ensureVisible(find.text('Supplies'));
+    await tester.tap(find.text('Supplies'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أضف مستلزم منزلي'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'Laundry detergent');
+    await tester.enterText(find.byType(TextField).at(2), '2 bottles');
+    await tester.enterText(find.byType(TextField).at(3), 'Cleaning');
+    await tester.tap(find.text('حفظ محلياً'));
+    await tester.pumpAndSettle();
+
+    final records = await EverydayLifeLocalStore().readAll();
+    expect(records, hasLength(1));
+    expect(records.single.title, 'Laundry detergent');
+    expect(records.single.quantity, '2 bottles');
+    expect(records.single.category, 'Cleaning');
+    expect(find.textContaining('التصنيف: Cleaning'), findsOneWidget);
+  });
+
 }
