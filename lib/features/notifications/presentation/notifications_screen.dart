@@ -234,7 +234,7 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
 
   Future<void> _markAll(String uid) async {
     await _repo.markAllRead(uid);
-    if (!mounted) return;
+    if (!mounted || !_preferences.showInAppBanners) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم تعليم كل الإشعارات كمقروءة')),
     );
