@@ -21,6 +21,10 @@ import '../../safety/presentation/offline_safety_screen.dart';
 import '../../travel/presentation/travel_screen.dart';
 import '../../talent/presentation/talent_agents_screen.dart';
 import '../../communities/presentation/communities_screen.dart';
+import '../../communities/presentation/clubs_screen.dart';
+import '../../communities/presentation/volunteer_causes_screen.dart';
+import '../../communities/presentation/collaboration_spaces_screen.dart';
+import '../../communities/presentation/community_workbench_screen.dart';
 import '../../culture/presentation/culture_news_screen.dart';
 import '../../agriculture/presentation/agriculture_dashboard_screen.dart';
 import '../../entertainment/presentation/entertainment_screen.dart';
@@ -67,6 +71,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Access AI', 'إتاحة، دعم ذوي الإعاقة وخريطة الوصول', Icons.accessibility_new),
     _DiscoverItem('Talent', 'مواهب ووكلاء AI للمسار المهني', Icons.psychology_outlined),
     _DiscoverItem('Communities', 'مجتمعات حول الاهتمامات والأهداف والمشاريع', Icons.groups_outlined),
+    _DiscoverItem('Clubs & Circles', 'نوادٍ ودوائر صغيرة للأنشطة والاهتمامات', Icons.groups_2_outlined),
+    _DiscoverItem('Volunteer & Causes', 'مبادرات تطوعية ومشاركة مجتمعية', Icons.volunteer_activism_outlined),
+    _DiscoverItem('Collaboration Spaces', 'مساحات عمل مشتركة للفرق والمشاريع', Icons.workspaces_outline),
+    _DiscoverItem('Community Workbench', 'مشاريع جماعية وحوكمة ومسودات لقاءات تعمل دون اتصال', Icons.hub_outlined),
     _DiscoverItem('Culture & News', 'أخبار، ثقافة، تراث ومعرفة من العالم', Icons.public_outlined),
   ];
 
@@ -176,6 +184,22 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     }
     if (item.title == 'Communities') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCommunitiesScreen()));
+      return;
+    }
+    if (item.title == 'Clubs & Circles') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenClubsScreen()));
+      return;
+    }
+    if (item.title == 'Community Workbench') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCommunityWorkbenchScreen()));
+      return;
+    }
+    if (item.title == 'Collaboration Spaces') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenCollaborationSpacesScreen()));
+      return;
+    }
+    if (item.title == 'Volunteer & Causes') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenVolunteerCausesScreen()));
       return;
     }
     if (item.title == 'People') {
