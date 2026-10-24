@@ -90,6 +90,44 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+      'corrupted local payload can be cleared only after explicit confirmation',
+      (tester) async {
+    const corruptedPayload = '{not valid JSON';
+    SharedPreferences.setMockInitialValues({
+      EverydayLifeLocalStore.storageKey: corruptedPayload,
+      'unrelated_app_setting': 'keep-me',
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final store = EverydayLifeLocalStore(preferences: preferences);
+    await tester.pumpWidget(MaterialApp(
+      home: AurenEverydayLifeScreen(store: store),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تعذر قراءة البيانات المحلية. حاول مرة أخرى.'), findsOneWidget);
+    expect(find.textContaining('مسح بيانات هذه الميزة فقط بعد التأكيد'), findsOneWidget);
+    expect(preferences.getString(EverydayLifeLocalStore.storageKey), corruptedPayload);
+
+    await tester.tap(find.byTooltip('إدارة البيانات المحلية'));
+    await tester.pumpAndSettle();
+    expect(find.text('مسح بيانات الحياة اليومية؟'), findsOneWidget);
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+    expect(preferences.getString(EverydayLifeLocalStore.storageKey), corruptedPayload);
+
+    await tester.tap(find.byTooltip('إدارة البيانات المحلية'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('مسح البيانات المحلية'));
+    await tester.pumpAndSettle();
+
+    expect(preferences.containsKey(EverydayLifeLocalStore.storageKey), isFalse);
+    expect(preferences.getString('unrelated_app_setting'), 'keep-me');
+    expect(find.text('تعذر قراءة البيانات المحلية. حاول مرة أخرى.'), findsNothing);
+    expect(find.text('تم مسح بيانات الحياة اليومية من هذا الجهاز.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('organizer creates a local task and can mark it complete',
       (tester) async {
     await openScreen(tester);
