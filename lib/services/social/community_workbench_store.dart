@@ -159,7 +159,8 @@ class AurenCommunityWorkbenchStore {
       return true;
     }
 
-    if (key.startsWith(_storageKey(_projectsKey))) {      final tasks = record['tasks'];
+    if (key.startsWith(_storageKey(_projectsKey))) {
+      final tasks = record['tasks'];
       final milestones = record['milestones'];
       if (!hasStrings(['id', 'title', 'description', 'communityId', 'createdAt']) ||
           (record['id'] as String).isEmpty ||
@@ -318,7 +319,8 @@ class AurenCommunityWorkbenchStore {
   Future<List<Map<String, dynamic>>> listProjects() => _readList(_storageKey(_projectsKey));
 
   /// Deletes a project only from this device. No remote project or member data
-  /// is changed by this local-first MVP.  Future<void> deleteProject(String projectId) async {
+  /// is changed by this local-first MVP.
+  Future<void> deleteProject(String projectId) async {
     return _withMutationLock(_storageKey(_projectsKey), () async {
     final id = projectId.trim();
     if (id.isEmpty) throw ArgumentError('Project ID is required.');
@@ -389,31 +391,6 @@ class AurenCommunityWorkbenchStore {
     });
   }
 
-  Future<void> setProjectTaskAssignee({
-    required String projectId,
-    required String taskId,
-    required String assignee,
-  }) async {
-    final cleanAssignee = assignee.trim();
-    if (cleanAssignee.length > 128) {
-      throw ArgumentError('Task assignee is too long.');
-    }
-    await _mutateProject(projectId, (project) {
-      final tasks = List<Map<String, dynamic>>.from(
-        project['tasks'] as List? ?? const [],
-      );
-      final cleanTaskId = taskId.trim();
-      if (cleanTaskId.isEmpty) throw ArgumentError('Task ID is required.');
-      final index = tasks.indexWhere((task) => task['id'] == cleanTaskId);
-      if (index < 0) throw StateError('Task not found.');
-      tasks[index] = <String, dynamic>{
-        ...tasks[index],
-        'assignee': cleanAssignee,
-      };
-      project['tasks'] = tasks;
-    });
-  }
-
   Future<void> setProjectTaskStatus({
     required String projectId,
     required String taskId,
@@ -477,6 +454,7 @@ class AurenCommunityWorkbenchStore {
       project['milestones'] = milestones;
     });
   }
+
   Future<void> _mutateProject(
     String projectId,
     void Function(Map<String, dynamic> project) mutate,
@@ -636,7 +614,8 @@ class AurenCommunityWorkbenchStore {
     return _withMutationLock(_storageKey(_meetupsKey), () async {
     final cleanTitle = title.trim();
     final cleanDescription = description.trim();
-    final cleanLocation = location.trim();    final parsedStart = DateTime.tryParse(startsAt);
+    final cleanLocation = location.trim();
+    final parsedStart = DateTime.tryParse(startsAt);
     if (cleanTitle.isEmpty || cleanTitle.length > 120 ||
         cleanDescription.length > 2000 || cleanLocation.length > 160 ||
         parsedStart == null || capacity < 1 || capacity > 10000) {
