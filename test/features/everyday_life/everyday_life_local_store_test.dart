@@ -175,6 +175,42 @@ void main() {
     expect(items.map((entry) => entry.title), ['Valid']);
   });
 
+  test('refuses to overwrite a corrupted top-level payload', () async {
+    const corrupted = '{not valid JSON';
+    SharedPreferences.setMockInitialValues({
+      EverydayLifeLocalStore.storageKey: corrupted,
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final store = EverydayLifeLocalStore(preferences: preferences);
+
+    await expectLater(store.readAll(), throwsStateError);
+    await expectLater(
+      store.save(item(id: 'new-record', title: 'New task')),
+      throwsStateError,
+    );
+
+    expect(
+      preferences.getString(EverydayLifeLocalStore.storageKey),
+      corrupted,
+    );
+  });
+
+  test('refuses to overwrite a valid JSON payload with an invalid root type',
+      () async {
+    const invalidRoot = '{"unexpected":"object"}';
+    SharedPreferences.setMockInitialValues({
+      EverydayLifeLocalStore.storageKey: invalidRoot,
+    });
+    final preferences = await SharedPreferences.getInstance();
+    final store = EverydayLifeLocalStore(preferences: preferences);
+
+    await expectLater(store.save(item(title: 'New task')), throwsStateError);
+    expect(
+      preferences.getString(EverydayLifeLocalStore.storageKey),
+      invalidRoot,
+    );
+  });
+
   test('appointment drafts do not have implicit provider or confirmation', () {
     final draft = item(kind: EverydayLifeKind.appointmentDraft);
     expect(draft.providerName, isEmpty);
