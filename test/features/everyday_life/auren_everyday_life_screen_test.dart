@@ -126,6 +126,9 @@ void main() {
     expect(find.text('تعذر قراءة البيانات المحلية. حاول مرة أخرى.'), findsNothing);
     expect(find.text('تم مسح بيانات الحياة اليومية من هذا الجهاز.'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    // Drain pending SnackBar and sheet-close timers in widget tests.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('organizer creates a local task and can mark it complete',
@@ -145,6 +148,9 @@ void main() {
     await tester.tap(find.byType(Checkbox).first);
     await tester.pumpAndSettle();
     expect(find.textContaining('مكتملة'), findsOneWidget);
+    // Drain pending SnackBar and sheet-close timers in widget tests.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('organizer creates a daily list and preserves separate lines',
@@ -163,6 +169,9 @@ void main() {
     expect(saved.kind.name, 'taskList');
     expect(saved.details, 'Bread\nMilk\nSoap');
     expect(find.textContaining('عناصر القائمة'), findsOneWidget);
+    // Drain pending SnackBar and sheet-close timers in widget tests.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('appointment request is stored as an unsent draft',
@@ -183,6 +192,9 @@ void main() {
     expect(records.single.kind.name, 'appointmentDraft');
     expect(records.single.providerName, isEmpty);
     expect(records.single.dueAt, isNull);
+    // Drain pending SnackBar and sheet-close timers in widget tests.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('household chores, supplies, and maintenance save their entered details',
@@ -240,6 +252,9 @@ void main() {
     expect(maintenance.details, 'Tap is leaking');
     expect(maintenance.requestedWindow, 'Friday afternoon');
     expect(maintenance.dueAt, isNull);
+    // Drain pending SnackBar and sheet-close timers in widget tests.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('local directory entry defaults to unconfirmed and can be unverified',
@@ -267,6 +282,9 @@ void main() {
     await tester.tap(find.text('إزالة علامة التحقق'));
     await tester.pumpAndSettle();
     expect(find.text('معلومات غير مؤكدة'), findsOneWidget);
+    // Drain pending SnackBar and sheet-close timers in widget tests.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('local service favorite and delete changes persist locally',
@@ -313,6 +331,9 @@ void main() {
 
     expect(await EverydayLifeLocalStore().readAll(), isEmpty);
     expect(find.text('لا توجد عناصر بعد. أضف أول عنصر واحفظه محلياً.'), findsOneWidget);
+    // Drain pending SnackBar and sheet-close timers in widget tests.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
 
@@ -342,6 +363,9 @@ void main() {
     expect(records, hasLength(1));
     expect(records.single.completed, isFalse);
     expect(find.text('Keep this task unchanged'), findsOneWidget);
+    // Drain pending SnackBar and sheet-close timers in widget tests.
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
   });
 
   testWidgets(
