@@ -234,4 +234,22 @@ void main() {
     expect(records, hasLength(1));
     expect(records.single.title, 'Previously saved');
   });
+  test('concurrent saves on one store preserve every distinct record', () async {
+    final store = EverydayLifeLocalStore();
+
+    await Future.wait([
+      for (var index = 0; index < 20; index++)
+        store.save(item(
+          id: 'parallel-$index',
+          title: 'Concurrent record $index',
+        )),
+    ]);
+
+    final records = await store.readAll();
+    expect(records, hasLength(20));
+    expect(records.map((record) => record.id).toSet(), {
+      for (var index = 0; index < 20; index++) 'parallel-$index',
+    });
+  });
+
 }
