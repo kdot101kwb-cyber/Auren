@@ -339,6 +339,14 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(_error!),
+                  const SizedBox(height: 8),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'إذا استمر الخطأ بسبب تلف البيانات، يمكنك استخدام رمز إدارة البيانات أعلى الشاشة لمسح بيانات هذه الميزة فقط بعد التأكيد. لن تُمس إعدادات AUREN الأخرى.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                   TextButton(onPressed: _refresh, child: const Text('إعادة المحاولة')),
                 ],
               ))
