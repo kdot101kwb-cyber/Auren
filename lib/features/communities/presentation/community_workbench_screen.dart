@@ -297,6 +297,12 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     if (p == null || !mounted || generation != _accountGeneration) return;
     final startsAt = await _pickMeetupStart();
     if (startsAt == null || !mounted || generation != _accountGeneration) return;
+    if (!startsAt.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('وقت اللقاء لازم يكون في المستقبل.')),
+      );
+      return;
+    }
     final capacity = int.tryParse(p[3].trim());
     if (capacity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
