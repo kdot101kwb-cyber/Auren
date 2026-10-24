@@ -57,6 +57,25 @@ void main() {
     expect(records.single.title, 'Previously saved');
   });
 
+  test('clearAll removes only Everyday Life data and preserves other settings',
+      () async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('unrelated_app_setting', 'keep-me');
+    final store = EverydayLifeLocalStore(preferences: preferences);
+    await store.save(item(id: 'task'));
+    await store.save(item(
+      id: 'service',
+      kind: EverydayLifeKind.localService,
+      title: 'Electrician',
+    ));
+
+    await store.clearAll();
+
+    expect(await store.readAll(), isEmpty);
+    expect(preferences.getString('unrelated_app_setting'), 'keep-me');
+    expect(preferences.getString(EverydayLifeLocalStore.storageKey), isNull);
+  });
+
   test('rejects a cross-system ID collision without replacing saved data',
       () async {
     final store = EverydayLifeLocalStore();
