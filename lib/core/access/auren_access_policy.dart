@@ -25,7 +25,14 @@ class AurenAccessPolicy {
       AurenPermission.createCommunityPost,
       AurenPermission.moderateCommunityContent,
     },
-    AurenRole.administrator: AurenPermission.values.toSet(),
+    AurenRole.administrator: {
+      AurenPermission.readOwnData,
+      AurenPermission.editOwnData,
+      AurenPermission.createCommunityPost,
+      AurenPermission.moderateCommunityContent,
+      AurenPermission.manageCommunityMembers,
+      AurenPermission.managePlatformSettings,
+    },
   };
 
   static bool allows(AurenRole role, AurenPermission permission) =>
