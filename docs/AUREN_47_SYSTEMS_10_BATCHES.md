@@ -115,3 +115,6 @@ Last updated: 2026-10-23
 - **Regression coverage:** data-layer test verifies feature records are removed while unrelated preferences remain; widget test verifies cancellation leaves data intact and confirmed erasure clears only this feature's local records.
 - **Security boundary:** SharedPreferences is device-local convenience storage, not encrypted secret storage. Do not place passwords, access tokens, payment credentials, or other secrets in these records. Stronger at-rest protection and platform-wide retention/backup policy remain release-hardening work.
 - **Validation gate:** this implementation is committed on the feature branch. Wait for GitHub Actions and applicable CircleCI checks on the resulting code commit before marking this Batch 9 slice green. PR #271 remains draft and unmerged.
+
+
+- **Android local-data backup hardening (Batch 9):** disabled Android app backup in `android/app/src/main/AndroidManifest.xml` (`android:allowBackup="false"`) to reduce unintended transfer of locally stored personal records through Android backup flows. This is not encryption, does not securely erase previously exported copies, and OEM/device-transfer behavior must still be verified on supported Android versions. iOS backup policy and a dedicated encrypted store remain separate release-hardening items.
