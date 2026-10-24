@@ -249,10 +249,55 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
         ));
       });
 
+  Future<void> _clearLocalData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('مسح بيانات الحياة اليومية؟'),
+        content: const Text(
+          'سيتم حذف المهام والملاحظات والقوائم المنزلية ومسودات الطلبات '
+          'ودليل الخدمات المحفوظة على هذا الجهاز. لا يمكن التراجع عن ذلك. '
+          'لن تُمس إعدادات AUREN الأخرى.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('مسح البيانات المحلية'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _store.clearAll();
+      await _refresh();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم مسح بيانات الحياة اليومية من هذا الجهاز.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر مسح البيانات؛ لم نعرض العملية كأنها نجحت.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: const Text('Everyday Life & Services'),
+      actions: [
+        IconButton(
+          tooltip: 'إدارة البيانات المحلية',
+          onPressed: _clearLocalData,
+          icon: const Icon(Icons.delete_sweep_outlined),
+        ),
+      ],
       bottom: TabBar(
         controller: _tabs,
         isScrollable: true,
