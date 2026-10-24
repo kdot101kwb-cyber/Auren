@@ -144,13 +144,26 @@ class AurenOfflineSyncService {
     if (raw == null || raw.isEmpty) return [];
     try {
       final decoded = jsonDecode(raw);
-      if (decoded is! List) return [];
-      return decoded
-          .whereType<Map>()
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList();
-    } catch (_) {
-      return [];
+      if (decoded is! List) {
+        throw const FormatException('Offline queue must contain a JSON list.');
+      }
+      return decoded.map((item) {
+        if (item is! Map) {
+          throw const FormatException('Offline queue contains an invalid item.');
+        }
+        try {
+          return Map<String, dynamic>.from(item);
+        } catch (_) {
+          throw const FormatException('Offline queue item has invalid keys.');
+        }
+      }).toList();
+    } catch (error) {
+      // Never interpret damaged persisted data as an empty queue: doing so
+      // would let enqueue/flush overwrite the original payload without consent.
+      throw StateError(
+        'Offline queue data is corrupted. Preserve it and clear it explicitly '
+        'only after the user confirms data loss.',
+      );
     }
   }
 }
