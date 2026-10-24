@@ -24,6 +24,7 @@ import { submitReview } from './agent-reputation.js';
 import { preparePluginInvocation, executePluginThroughWorker } from './plugin-runtime.js';
 import { createMessageNotifications, createGroupNotifications } from './notification-store.js';
 import { validatePackageMetadata, validateDependencyList, verifyPackageSignature, packageSha256, scanPluginArtifact, validateArtifactId, artifactObjectPath, createArtifactId } from './plugin-security.js';
+import { registerCivicResilienceRoutes } from './civic-resilience-routes.js';
 
 if (getApps().length === 0) {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
@@ -66,6 +67,8 @@ async function requireUser(req, res, next) {
   }
 }
 
+
+registerCivicResilienceRoutes(app, { db, requireUser, serverTimestamp: FieldValue.serverTimestamp });
 
 app.post('/api/notifications/message', requireUser, async (req, res) => {
   try {
