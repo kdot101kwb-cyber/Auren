@@ -260,6 +260,17 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('حذف'));
     await tester.pumpAndSettle();
+    expect(find.text('حذف هذا العنصر؟'), findsOneWidget);
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+    expect(await EverydayLifeLocalStore().readAll(), hasLength(1));
+
+    await tester.tap(find.byType(PopupMenuButton<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حذف'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حذف العنصر'));
+    await tester.pumpAndSettle();
 
     expect(await EverydayLifeLocalStore().readAll(), isEmpty);
     expect(find.text('لا توجد عناصر بعد. أضف أول عنصر واحفظه محلياً.'), findsOneWidget);
@@ -327,6 +338,8 @@ void main() {
     await tester.tap(find.byType(PopupMenuButton<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('حذف'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حذف العنصر'));
     await tester.pumpAndSettle();
     expect(
       find.text('تعذر حفظ التغيير محلياً؛ احتفظنا بالبيانات السابقة. حاول مرة أخرى.'),
