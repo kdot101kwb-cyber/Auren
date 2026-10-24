@@ -225,6 +225,20 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     await _run(() => requestedStore.addProjectTask(projectId: id, title: p[0], assignee: p[1]));
   }
 
+  Future<void> _editTaskAssignee(String projectId, String taskId, String currentAssignee) async {
+    final generation = _accountGeneration;
+    final requestedStore = _store;
+    final result = await _ask('تعديل المسؤول عن المهمة', [
+      _Field('معرّف المستخدم أو اسم المسؤول (اتركه فارغاً لإلغاء الإسناد)', maxLength: 128),
+    ]);
+    if (result == null || !mounted || generation != _accountGeneration) return;
+    await _run(() => requestedStore.setProjectTaskAssignee(
+      projectId: projectId,
+      taskId: taskId,
+      assignee: result[0],
+    ));
+  }
+
   Future<void> _addMilestone(String id) async {
     final generation = _accountGeneration;
     final requestedStore = _store;
@@ -429,23 +443,36 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
             contentPadding: EdgeInsets.zero,
             title: Text('${task['title']}'),
             subtitle: Text('${task['assignee']}'.isEmpty ? 'غير مسندة' : 'المسؤول: ${task['assignee']}'),
-            trailing: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: const {'todo', 'doing', 'done'}.contains(task['status'])
-                    ? task['status'] as String
-                    : 'todo',
-                isDense: true,
-                items: const [
-                  DropdownMenuItem(value: 'todo', child: Text('لم تبدأ')),
-                  DropdownMenuItem(value: 'doing', child: Text('قيد التنفيذ')),
-                  DropdownMenuItem(value: 'done', child: Text('مكتملة')),
-                ],
-                onChanged: _busy ? null : (status) {
-                  if (status == null) return;
-                  _run(() => _store.setProjectTaskStatus(
-                    projectId: '${project['id']}', taskId: '${task['id']}', status: status));
-                },
-              ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'تعديل المسؤول عن المهمة',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.person_outline),
+                  onPressed: _busy ? null : () => _editTaskAssignee(
+                    '${project['id']}', '${task['id']}', '${task['assignee']}'),
+                ),
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: const {'todo', 'doing', 'done'}.contains(task['status'])
+                        ? task['status'] as String
+                        : 'todo',
+                    isDense: true,
+                    items: const [
+                      DropdownMenuItem(value: 'todo', child: Text('لم تبدأ')),
+                      DropdownMenuItem(value: 'doing', child: Text('قيد التنفيذ')),
+                      DropdownMenuItem(value: 'done', child: Text('مكتملة')),
+                    ],
+                    onChanged: _busy ? null : (status) {
+                      if (status == null) return;
+                      final requestedStore = _store;
+                      _run(() => requestedStore.setProjectTaskStatus(
+                        projectId: '${project['id']}', taskId: '${task['id']}', status: status));
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
           for (final m in milestones) CheckboxListTile(
