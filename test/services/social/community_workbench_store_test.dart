@@ -1409,4 +1409,77 @@ void main() {
     },
   );
 
+
+  test('task assignee can be changed or cleared without changing task status', () async {
+    final projectId = await store.createProject(
+      title: 'Assign community tasks',
+      description: '',
+      communityId: 'community-1',
+    );
+    await store.addProjectTask(
+      projectId: projectId,
+      title: 'Prepare agenda',
+      assignee: 'member-a',
+    );
+    var project = (await store.listProjects()).single;
+    final taskId = (project['tasks'] as List).single['id'] as String;
+
+    await store.setProjectTaskStatus(
+      projectId: projectId,
+      taskId: taskId,
+      status: 'doing',
+    );
+    await store.setProjectTaskAssignee(
+      projectId: projectId,
+      taskId: taskId,
+      assignee: ' member-b ',
+    );
+
+    project = (await store.listProjects()).single;
+    var task = (project['tasks'] as List).single as Map;
+    expect(task['assignee'], 'member-b');
+    expect(task['status'], 'doing');
+
+    await store.setProjectTaskAssignee(
+      projectId: projectId,
+      taskId: taskId,
+      assignee: ' ',
+    );
+    project = (await store.listProjects()).single;
+    task = (project['tasks'] as List).single as Map;
+    expect(task['assignee'], isEmpty);
+    expect(task['status'], 'doing');
+  });
+
+  test('task assignee rejects oversized identities and missing tasks', () async {
+    final projectId = await store.createProject(
+      title: 'Validate task assignment',
+      description: '',
+      communityId: 'community-1',
+    );
+    await store.addProjectTask(projectId: projectId, title: 'Valid task');
+    final taskId = ((await store.listProjects()).single['tasks'] as List)
+        .single['id'] as String;
+
+    await expectLater(
+      store.setProjectTaskAssignee(
+        projectId: projectId,
+        taskId: taskId,
+        assignee: List.filled(129, 'x').join(),
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      store.setProjectTaskAssignee(
+        projectId: projectId,
+        taskId: 'missing-task',
+        assignee: 'member-a',
+      ),
+      throwsStateError,
+    );
+
+    final task = ((await store.listProjects()).single['tasks'] as List).single;
+    expect(task['assignee'], isEmpty);
+  });
+
 }
