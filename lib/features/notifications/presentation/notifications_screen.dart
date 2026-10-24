@@ -129,9 +129,9 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
         ),
       ),
     );
-    if (saved == null) return;
+    if (saved == null || !mounted || _uid != uid) return;
     await _preferencesStore.save(uid, saved);
-    if (mounted) setState(() => _preferences = saved);
+    if (mounted && _uid == uid) setState(() => _preferences = saved);
   }
 
   String _category(AurenNotification n) {
@@ -234,7 +234,7 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
 
   Future<void> _markAll(String uid) async {
     await _repo.markAllRead(uid);
-    if (!mounted || !_preferences.showInAppBanners) return;
+    if (!mounted || _uid != uid || !_preferences.showInAppBanners) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم تعليم كل الإشعارات كمقروءة')),
     );
