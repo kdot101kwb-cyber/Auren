@@ -225,7 +225,7 @@ class _AurenCommunityWorkbenchScreenState extends State<AurenCommunityWorkbenchS
     await _run(() => requestedStore.addProjectTask(projectId: id, title: p[0], assignee: p[1]));
   }
 
-  Future<void> _editTaskAssignee(String projectId, String taskId, String currentAssignee) async {
+  Future<void> _editTaskAssignee(String projectId, String taskId) async {
     final generation = _accountGeneration;
     final requestedStore = _store;
     final result = await _ask('تعديل المسؤول عن المهمة', [
