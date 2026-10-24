@@ -38,21 +38,28 @@ class AurenOfflineSyncService {
   Future<String> enqueue({
     required String type,
     required Map<String, dynamic> payload,
+    String? idempotencyKey,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final items = await _readQueue(prefs);
+    final key = idempotencyKey?.trim();
+    if (key != null && key.isNotEmpty) {
+      final existing = items.where((item) => item['idempotencyKey'] == key);
+      if (existing.isNotEmpty) return existing.first['id'] as String;
+    }
+    if (items.length >= 100) {
+      throw StateError('Offline queue is full; pending actions were preserved.');
+    }
     final id = '${DateTime.now().microsecondsSinceEpoch}-$type';
 
     items.add({
       'id': id,
+      if (key != null && key.isNotEmpty) 'idempotencyKey': key,
       'type': type,
       'payload': payload,
       'createdAt': DateTime.now().toUtc().toIso8601String(),
     });
 
-    if (items.length > 100) {
-      items.removeRange(0, items.length - 100);
-    }
     await prefs.setString(_queueKey, jsonEncode(items));
     return id;
   }
@@ -70,24 +77,30 @@ class AurenOfflineSyncService {
       final items = await _readQueue(prefs);
       if (items.isEmpty) return;
 
-      final remaining = <Map<String, dynamic>>[];
+      final completedIds = <String>{};
       for (final item in items) {
+        final id = item['id'];
         final type = item['type'];
         final payload = item['payload'];
-        if (type is! String || payload is! Map) continue;
+        if (id is! String || type is! String || payload is! Map) continue;
 
         final handler = _handlers[type];
-        if (handler == null) {
-          remaining.add(item);
-          continue;
-        }
+        if (handler == null) continue;
 
         try {
           await handler(Map<String, dynamic>.from(payload));
+          completedIds.add(id);
         } catch (_) {
-          remaining.add(item);
+          // Keep failed items for retry; never silently discard their payload.
         }
       }
+
+      // Re-read after replay: enqueue() may have appended items while handlers
+      // were running. Remove only successfully replayed IDs from the snapshot.
+      final latest = await _readQueue(prefs);
+      final remaining = latest
+          .where((item) => !completedIds.contains(item['id']))
+          .toList();
       await prefs.setString(_queueKey, jsonEncode(remaining));
     } finally {
       _flushing = false;
