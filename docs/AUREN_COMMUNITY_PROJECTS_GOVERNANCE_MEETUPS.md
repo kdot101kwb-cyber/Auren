@@ -31,3 +31,11 @@
 - Run `dart format lib test`, `flutter analyze`, `flutter test test/services/social/community_workbench_store_test.dart`, full `flutter test`, Android debug build, and the existing Firestore emulator suites before release.
 - Do not call cross-device governance or published events complete until an authenticated sync contract, Firestore rules/tests, and conflict handling are implemented.
 - Firestore community poll rules require member access, an initially zeroed counter map, bounded non-empty string options (maximum 100 characters each), and exactly one vote-counter increment matching the newly added voter entry; rule integration regressions cover forged totals, invalid/oversized options, multi-counter changes, metadata tampering, duplicate voting, and non-member reads.
+
+
+## Follow-up batch — task assignment workflow
+- Added a local task-assignee update operation, including trimming, a strict 128-character bound, and safe failure when the project/task does not exist.
+- Exposed task reassignment in the Community Workbench UI, including clearing an assignee; status remains unchanged when assignment changes.
+- Added focused regressions for reassignment, clearing, invalid oversized identities, and missing tasks.
+- This remains device-local project planning. It does not notify members or assign tasks in a shared server workspace until trusted sync and authorization are implemented.
+- Validation gate for this follow-up: Flutter format, analysis, focused store tests, full Flutter tests, Android debug APK, backend and security CI.
