@@ -118,3 +118,6 @@ Last updated: 2026-10-23
 
 
 - **Android local-data backup hardening (Batch 9):** disabled Android app backup in `android/app/src/main/AndroidManifest.xml` (`android:allowBackup="false"`) to reduce unintended transfer of locally stored personal records through Android backup flows. This is not encryption, does not securely erase previously exported copies, and OEM/device-transfer behavior must still be verified on supported Android versions. iOS backup policy and a dedicated encrypted store remain separate release-hardening items.
+
+
+- **Destructive-action safeguard (Batch 9/10 boundary):** deleting an individual Everyday Life record now requires an explicit confirmation naming the item. Cancellation leaves the record untouched; confirmed deletion still uses the guarded persistence path and reports write failures without pretending the record was removed. Widget regression coverage checks cancellation, successful confirmation, and failed persistence. Validate on the current head with full Flutter and backend CI before considering this slice green.
