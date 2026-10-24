@@ -73,6 +73,25 @@ jobs:
             flutter create . --platforms=android --org com.auren
           fi
           test -f android/app/src/main/AndroidManifest.xml
+      - name: Install Android NDK with retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          ndk_version="28.2.13676358"
+          ndk_dir="$sdk_root/ndk/$ndk_version"
+          test -x "$sdkmanager"
+          for attempt in 1 2 3; do
+            echo "Installing Android NDK $ndk_version (attempt $attempt/3)"
+            rm -rf "$ndk_dir"
+            if yes | "$sdkmanager" --install "ndk;$ndk_version" && test -f "$ndk_dir/source.properties"; then
+              exit 0
+            fi
+            sleep "$((attempt * 5))"
+          done
+          echo "Android NDK installation failed after 3 attempts." >&2
+          exit 1
       - name: Build Android debug APK
         run: flutter build apk --debug
       - name: Upload Android debug APK
