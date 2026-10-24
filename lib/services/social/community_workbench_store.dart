@@ -391,6 +391,30 @@ class AurenCommunityWorkbenchStore {
     });
   }
 
+  Future<void> setProjectTaskAssignee({
+    required String projectId,
+    required String taskId,
+    required String assignee,
+  }) async {
+    final cleanAssignee = assignee.trim();
+    final cleanTaskId = taskId.trim();
+    if (cleanTaskId.isEmpty || cleanAssignee.length > 128) {
+      throw ArgumentError('Task ID or assignee is invalid.');
+    }
+    await _mutateProject(projectId, (project) {
+      final tasks = List<Map<String, dynamic>>.from(
+        project['tasks'] as List? ?? const [],
+      );
+      final index = tasks.indexWhere((task) => task['id'] == cleanTaskId);
+      if (index < 0) throw StateError('Task not found.');
+      tasks[index] = <String, dynamic>{
+        ...tasks[index],
+        'assignee': cleanAssignee,
+      };
+      project['tasks'] = tasks;
+    });
+  }
+
   Future<void> setProjectTaskStatus({
     required String projectId,
     required String taskId,
