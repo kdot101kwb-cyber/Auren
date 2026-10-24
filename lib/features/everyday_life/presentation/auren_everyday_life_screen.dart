@@ -165,8 +165,9 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
         ),
       ),
     );
-    // showModalBottomSheet completes after the route closes, so its fields
-    // are detached before these controllers are disposed.
+    // The modal result completes as the reverse transition starts; its
+    // TextFields may still rebuild during that animation. Defer controller
+    // disposal until the closing transition has finished.
     void disposeControllers() {
       titleController.dispose();
       detailsController.dispose();
@@ -178,8 +179,12 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
       requestedWindowController.dispose();
     }
 
+    void disposeControllersAfterSheetCloses() {
+      Future<void>.delayed(const Duration(milliseconds: 400), disposeControllers);
+    }
+
     if (title == null || title.trim().isEmpty || !mounted) {
-      disposeControllers();
+      disposeControllersAfterSheetCloses();
       return;
     }
     final item = EverydayLifeItem(
@@ -196,7 +201,7 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
       location: locationController.text.trim(),
       informationConfirmed: false,
     );
-    disposeControllers();
+    disposeControllersAfterSheetCloses();
     try {
       await _store.save(item);
       await _refresh();
