@@ -85,7 +85,16 @@ jobs:
           for attempt in 1 2 3; do
             echo "Installing Android NDK $ndk_version (attempt $attempt/3)"
             rm -rf "$ndk_dir"
-            if yes | "$sdkmanager" --install "ndk;$ndk_version" && test -f "$ndk_dir/source.properties"; then
+            # sdkmanager closes stdin after accepting the license; with pipefail,
+            # the expected SIGPIPE from yes can incorrectly mark a successful install as failed.
+            set +o pipefail
+            if yes | "$sdkmanager" --install "ndk;$ndk_version"; then
+              install_status=0
+            else
+              install_status=$?
+            fi
+            set -o pipefail
+            if [ "$install_status" -eq 0 ] && test -f "$ndk_dir/source.properties"; then
               exit 0
             fi
             sleep "$((attempt * 5))"
