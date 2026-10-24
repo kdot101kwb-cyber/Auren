@@ -39,6 +39,39 @@ void main() {
     await service.clear();
   });
 
+  test('concurrent enqueues preserve every distinct action', () async {
+    final service = AurenOfflineSyncService.instance;
+    await Future.wait(List.generate(
+      40,
+      (index) => service.enqueue(
+        type: 'save',
+        payload: {'index': index},
+      ),
+    ));
+    final pending = await service.pending();
+    expect(pending.length, 40);
+    expect(
+      pending.map((item) => (item['payload'] as Map)['index']).toSet().length,
+      40,
+    );
+    await service.clear();
+  });
+
+  test('concurrent duplicate idempotency keys create one queue item', () async {
+    final service = AurenOfflineSyncService.instance;
+    final ids = await Future.wait(List.generate(
+      20,
+      (index) => service.enqueue(
+        type: 'save',
+        payload: {'index': index},
+        idempotencyKey: 'same-operation',
+      ),
+    ));
+    expect(ids.toSet().length, 1);
+    expect((await service.pending()).length, 1);
+    await service.clear();
+  });
+
   test('successful replay does not erase an item enqueued during handler', () async {
     final service = AurenOfflineSyncService.instance;
     final entered = Completer<void>();
