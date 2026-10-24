@@ -76,6 +76,19 @@ class EverydayLifeLocalStore {
     await _write(records);
   }
 
+  /// Removes every Everyday Life record from this device.
+  ///
+  /// This is intentionally scoped to this feature's storage key; it does not
+  /// clear unrelated app preferences or remote data.
+  Future<void> clearAll() async {
+    final removed = await (await _prefs).remove(storageKey);
+    if (!removed) {
+      throw StateError(
+        'Unable to clear AUREN Everyday Life records from this device.',
+      );
+    }
+  }
+
   Future<void> _write(List<EverydayLifeItem> records) async {
     final raw = jsonEncode(records.map((entry) => entry.toJson()).toList());
     final preferences = await _prefs;
