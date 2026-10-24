@@ -15,6 +15,7 @@ class AurenOfflineSyncService {
   final Connectivity _connectivity = Connectivity();
   final Map<String, Future<void> Function(Map<String, dynamic>)> _handlers = {};
   StreamSubscription<List<ConnectivityResult>>? _subscription;
+  Future<void> _mutationTail = Future<void>.value();
   bool _flushing = false;
 
   Future<void> start() async {
@@ -41,27 +42,29 @@ class AurenOfflineSyncService {
     String? idempotencyKey,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final items = await _readQueue(prefs);
-    final key = idempotencyKey?.trim();
-    if (key != null && key.isNotEmpty) {
-      final existing = items.where((item) => item['idempotencyKey'] == key);
-      if (existing.isNotEmpty) return existing.first['id'] as String;
-    }
-    if (items.length >= 100) {
-      throw StateError('Offline queue is full; pending actions were preserved.');
-    }
-    final id = '${DateTime.now().microsecondsSinceEpoch}-$type';
+    return _serializeMutation(() async {
+      final items = await _readQueue(prefs);
+      final key = idempotencyKey?.trim();
+      if (key != null && key.isNotEmpty) {
+        final existing = items.where((item) => item['idempotencyKey'] == key);
+        if (existing.isNotEmpty) return existing.first['id'] as String;
+      }
+      if (items.length >= 100) {
+        throw StateError('Offline queue is full; pending actions were preserved.');
+      }
+      final id = '${DateTime.now().microsecondsSinceEpoch}-$type';
 
-    items.add({
-      'id': id,
-      if (key != null && key.isNotEmpty) 'idempotencyKey': key,
-      'type': type,
-      'payload': payload,
-      'createdAt': DateTime.now().toUtc().toIso8601String(),
+      items.add({
+        'id': id,
+        if (key != null && key.isNotEmpty) 'idempotencyKey': key,
+        'type': type,
+        'payload': payload,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      await prefs.setString(_queueKey, jsonEncode(items));
+      return id;
     });
-
-    await prefs.setString(_queueKey, jsonEncode(items));
-    return id;
   }
 
   Future<List<Map<String, dynamic>>> pending() async {
@@ -95,13 +98,15 @@ class AurenOfflineSyncService {
         }
       }
 
-      // Re-read after replay: enqueue() may have appended items while handlers
-      // were running. Remove only successfully replayed IDs from the snapshot.
-      final latest = await _readQueue(prefs);
-      final remaining = latest
-          .where((item) => !completedIds.contains(item['id']))
-          .toList();
-      await prefs.setString(_queueKey, jsonEncode(remaining));
+      // Serialize the final read-modify-write with enqueue/clear. This prevents
+      // concurrent mutations from overwriting each other's queue snapshots.
+      await _serializeMutation(() async {
+        final latest = await _readQueue(prefs);
+        final remaining = latest
+            .where((item) => !completedIds.contains(item['id']))
+            .toList();
+        await prefs.setString(_queueKey, jsonEncode(remaining));
+      });
     } finally {
       _flushing = false;
     }
@@ -109,12 +114,24 @@ class AurenOfflineSyncService {
 
   Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_queueKey);
+    await _serializeMutation(() => prefs.remove(_queueKey));
   }
 
   Future<void> dispose() async {
     await _subscription?.cancel();
     _subscription = null;
+  }
+
+  Future<T> _serializeMutation<T>(Future<T> Function() action) {
+    final result = Completer<T>();
+    _mutationTail = _mutationTail.then((_) async {
+      try {
+        result.complete(await action());
+      } catch (error, stackTrace) {
+        result.completeError(error, stackTrace);
+      }
+    });
+    return result.future;
   }
 
   bool _hasConnection(List<ConnectivityResult> results) =>
