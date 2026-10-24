@@ -238,9 +238,29 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
     await _store.save(item.copyWith(favorite: !item.favorite));
   });
 
-  Future<void> _delete(EverydayLifeItem item) => _runMutation(() async {
-    await _store.delete(item.id);
-  });
+  Future<void> _delete(EverydayLifeItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف هذا العنصر؟'),
+        content: Text('سيتم حذف «${item.title}» من هذا الجهاز نهائياً.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف العنصر'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _runMutation(() async {
+      await _store.delete(item.id);
+    });
+  }
 
   Future<void> _toggleVerification(EverydayLifeItem item) =>
       _runMutation(() async {
