@@ -81,8 +81,12 @@ class EverydayLifeLocalStore {
   /// This is intentionally scoped to this feature's storage key; it does not
   /// clear unrelated app preferences or remote data.
   Future<void> clearAll() async {
-    final removed = await (await _prefs).remove(storageKey);
-    if (!removed) {
+    final preferences = await _prefs;
+    // Erasure is idempotent: an empty store is already in the desired state.
+    if (!preferences.containsKey(storageKey)) return;
+
+    final removed = await preferences.remove(storageKey);
+    if (!removed && preferences.containsKey(storageKey)) {
       throw StateError(
         'Unable to clear AUREN Everyday Life records from this device.',
       );
