@@ -150,11 +150,11 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
     final now = DateTime.now();
     final d = now.difference(value);
     if (d.inSeconds < 60) return 'الآن';
-    if (d.inMinutes < 60) return 'منذ \${d.inMinutes} د';
-    if (d.inHours < 24) return 'منذ \${d.inHours} س';
+    if (d.inMinutes < 60) return 'منذ ${d.inMinutes} د';
+    if (d.inHours < 24) return 'منذ ${d.inHours} س';
     if (d.inDays == 1) return 'أمس';
-    if (d.inDays < 7) return 'منذ \${d.inDays} أيام';
-    return '\${value.day}/\${value.month}/\${value.year}';
+    if (d.inDays < 7) return 'منذ ${d.inDays} أيام';
+    return '${value.day}/${value.month}/${value.year}';
   }
 
   String _filterLabel(String value) {
@@ -314,7 +314,7 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
                                 style: TextStyle(fontWeight: n.read ? FontWeight.w500 : FontWeight.w800)),
                               subtitle: Padding(
                                 padding: const EdgeInsets.only(top: 4),
-                                child: Text('\${n.body}\\n\${_when(n.createdAt)}', maxLines: 3, overflow: TextOverflow.ellipsis),
+                                child: Text('${n.body}\n${_when(n.createdAt)}', maxLines: 3, overflow: TextOverflow.ellipsis),
                               ),
                               isThreeLine: true,
                               onTap: () => _open(n),
