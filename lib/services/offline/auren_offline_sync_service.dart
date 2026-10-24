@@ -157,7 +157,7 @@ class AurenOfflineSyncService {
           throw const FormatException('Offline queue item has invalid keys.');
         }
       }).toList();
-    } catch (error) {
+    } catch (_) {
       // Never interpret damaged persisted data as an empty queue: doing so
       // would let enqueue/flush overwrite the original payload without consent.
       throw StateError(
