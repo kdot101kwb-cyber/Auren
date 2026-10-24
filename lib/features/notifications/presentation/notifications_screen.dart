@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/notifications/notification_repository.dart';
@@ -17,16 +19,41 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
   String? _uid;
   String _filter = 'all';
 
+  StreamSubscription<User?>? _authSubscription;
+
   @override
   void initState() {
     super.initState();
     _uid = FirebaseAuth.instance.currentUser?.uid;
     final uid = _uid;
-    if (uid != null) {
-      _preferencesStore.load(uid).then((value) {
-        if (mounted) setState(() => _preferences = value);
-      }).catchError((Object _) {});
+    if (uid != null) unawaited(_loadPreferences(uid));
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (!mounted) return;
+      final nextUid = user?.uid;
+      if (nextUid == _uid) return;
+      setState(() {
+        _uid = nextUid;
+        _preferences = const AurenNotificationPreferences();
+        _filter = 'all';
+      });
+      if (nextUid != null) unawaited(_loadPreferences(nextUid));
+    });
+  }
+
+  Future<void> _loadPreferences(String uid) async {
+    try {
+      final value = await _preferencesStore.load(uid);
+      if (!mounted || _uid != uid) return;
+      setState(() => _preferences = value);
+    } catch (_) {
+      // Keep safe defaults when local preferences cannot be read.
     }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_authSubscription?.cancel());
+    super.dispose();
   }
 
   Future<void> _editPreferences() async {
