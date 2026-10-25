@@ -4994,3 +4994,7 @@ const novaFreeTheAIVideo = require('./nova_freetheai_video_service');
 exports.listNovaFreeTheAIVideoModels = novaFreeTheAIVideo.listNovaFreeTheAIVideoModels;
 exports.submitNovaFreeTheAIVideo = novaFreeTheAIVideo.submitNovaFreeTheAIVideo;
 exports.getNovaFreeTheAIVideoStatus = novaFreeTheAIVideo.getNovaFreeTheAIVideoStatus;
+
+
+// NOVA background revenue work-pack engine (drafts and plans only; no automatic outreach or publishing).
+Object.assign(module.exports, require('./nova_revenue_engine'));
