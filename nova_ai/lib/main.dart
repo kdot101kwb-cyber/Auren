@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'features/opportunities/opportunity_lab_screen.dart';
 import 'features/integrations/integration_hub_screen.dart';
 import 'features/debate/nova_debate_screen.dart';
+import 'features/revenue/nova_revenue_engine_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -90,6 +91,7 @@ class _NovaHomeState extends State<NovaHome> {
       const IntegrationHubScreen(),
       const NovaTaskCenterScreen(),
       const NovaAppBuilderScreen(),
+      const NovaRevenueEngineScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -111,6 +113,7 @@ class _NovaHomeState extends State<NovaHome> {
           NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'الربط'),
           NavigationDestination(icon: Icon(Icons.playlist_add_check_circle_outlined), selectedIcon: Icon(Icons.playlist_add_check_circle), label: 'المهام'),
           NavigationDestination(icon: Icon(Icons.code_rounded), selectedIcon: Icon(Icons.code), label: 'المطور'),
+          NavigationDestination(icon: Icon(Icons.attach_money), selectedIcon: Icon(Icons.trending_up), label: 'دخل AI'),
         ],
       ),
     );
@@ -134,6 +137,8 @@ class _NovaHomeState extends State<NovaHome> {
     ]),
     const SizedBox(height: 18),
     FilledButton.icon(onPressed: () => setState(() => tab = 2), icon: const Icon(Icons.auto_awesome), label: const Text('فتح استوديو الصور والفيديو والألعاب')),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: () => setState(() => tab = 10), icon: const Icon(Icons.attach_money), label: const Text('فتح محرك فرص الدخل اليومي')),
     const SizedBox(height: 18),
     const Text('خطة العمل التالية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     const SizedBox(height: 8),
