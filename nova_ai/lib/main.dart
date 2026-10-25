@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'firebase_runtime.dart';
 import 'features/tasks/nova_task_center_screen.dart';
+import 'features/builder/nova_app_builder_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'features/opportunities/opportunity_lab_screen.dart';
 import 'features/integrations/integration_hub_screen.dart';
@@ -87,6 +88,7 @@ class _NovaHomeState extends State<NovaHome> {
       activity(),
       const IntegrationHubScreen(),
       const NovaTaskCenterScreen(),
+      const NovaAppBuilderScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -107,6 +109,7 @@ class _NovaHomeState extends State<NovaHome> {
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'النشاط'),
           NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'الربط'),
           NavigationDestination(icon: Icon(Icons.playlist_add_check_circle_outlined), selectedIcon: Icon(Icons.playlist_add_check_circle), label: 'المهام'),
+          NavigationDestination(icon: Icon(Icons.code_rounded), selectedIcon: Icon(Icons.code), label: 'المطور'),
         ],
       ),
     );
