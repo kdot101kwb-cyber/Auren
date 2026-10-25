@@ -438,6 +438,11 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Task that cannot be saved');
     await tester.tap(find.text('حفظ محلياً'));
     await tester.pumpAndSettle();
+    // The save failure is reported while the modal route's reverse animation
+    // may still be completing. Drain that finite transition before asserting
+    // that the form is no longer present.
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
     expect(find.text('تعذر الحفظ على هذا الجهاز.'), findsOneWidget);
     expect(await EverydayLifeLocalStore().readAll(), isEmpty);
