@@ -99,6 +99,8 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
         'languages': _languages.text.trim(),
         'hoursPerDay': hours,
         'startingBudgetUsd': budget,
+        'walletName': 'Trust Wallet',
+        'walletNetworks': 'multi-chain; verify each chain in Trust Wallet',
       });
       final data = Map<String, dynamic>.from(response.data as Map);
       setState(() {
