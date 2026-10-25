@@ -4967,3 +4967,15 @@ Object.assign(module.exports, require('./personal_ai_life_engine'));
 
 // Global business data ingestion and source-provenance normalization.
 Object.assign(module.exports, require('./global_business_data'));
+
+// Proactive opportunity discovery and scheduled evidence-based alerts.
+Object.assign(module.exports, require('./proactive_opportunity_monitor'));
+
+// NOVA AI unified task intake and status APIs.
+Object.assign(module.exports, require('./nova_command_center'));
+
+// NOVA AI scheduled text-task worker.
+Object.assign(module.exports, require('./nova_task_worker'));
+
+// NOVA AI app and web builder job APIs.
+Object.assign(module.exports, require('./nova_app_builder'));

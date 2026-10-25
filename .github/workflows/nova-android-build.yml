@@ -1,0 +1,53 @@
+name: NOVA Android Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feat/nova-ai-android-app
+    paths:
+      - 'nova_ai/**'
+      - '.github/workflows/nova-android-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nova_ai
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android host files
+        run: flutter create --platforms=android --org com.kwb86 --project-name nova_ai .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-ai-debug-apk
+          path: nova_ai/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

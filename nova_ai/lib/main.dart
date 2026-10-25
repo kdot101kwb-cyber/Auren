@@ -1,0 +1,379 @@
+import 'package:flutter/material.dart';
+import 'firebase_runtime.dart';
+import 'features/tasks/nova_task_center_screen.dart';
+import 'features/builder/nova_app_builder_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'features/opportunities/opportunity_lab_screen.dart';
+import 'features/integrations/integration_hub_screen.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NovaFirebaseRuntime.initialize();
+  runApp(const NovaApp());
+}
+
+const violet = Color(0xFF9B87FF);
+const surface = Color(0xFF191925);
+
+class NovaApp extends StatelessWidget {
+  const NovaApp({super.key});
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+        title: 'NOVA AI',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(seedColor: violet, brightness: Brightness.dark),
+          scaffoldBackgroundColor: const Color(0xFF101018),
+          cardTheme: CardThemeData(color: surface, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+        ),
+        home: const NovaHome(),
+      );
+}
+
+class NovaHome extends StatefulWidget {
+  const NovaHome({super.key});
+  @override
+  State<NovaHome> createState() => _NovaHomeState();
+}
+
+class _NovaHomeState extends State<NovaHome> {
+  int tab = 0;
+  String creativeMode = 'صور';
+  final promptController = TextEditingController();
+  final tasks = <String>[
+    'فحص حالة مستودع AUREN',
+    'إصلاح اختبارات Flutter الفاشلة',
+    'تجهيز بناء Android قابل للتثبيت',
+    'تأسيس وكلاء NOVA وسجل التنفيذ',
+  ];
+  final done = <bool>[false, false, false, false];
+
+  @override
+  void dispose() {
+    promptController.dispose();
+    super.dispose();
+  }
+
+  Future<void> open(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر فتح الرابط')));
+    }
+  }
+
+  void prepareCreativeRequest() {
+    final prompt = promptController.text.trim();
+    if (prompt.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اكتب وصفاً لما تريد إنشاءه أولاً')));
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('تم التحقق من طلب $creativeMode. التوليد الفعلي يحتاج ربط محرك وخادم آمن؛ لم يتم إنشاء ملف بعد.'),
+      duration: const Duration(seconds: 5),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pages = [
+      dashboard(),
+      agents(),
+      creativeStudio(),
+      socialCenter(),
+      const OpportunityLabScreen(),
+      auren(),
+      activity(),
+      const IntegrationHubScreen(),
+      const NovaTaskCenterScreen(),
+      const NovaAppBuilderScreen(),
+    ];
+    return Scaffold(
+      appBar: AppBar(
+        title: const Row(children: [Icon(Icons.auto_awesome, color: violet), SizedBox(width: 9), Text('NOVA AI', style: TextStyle(fontWeight: FontWeight.w800))]),
+        actions: [IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة تأسيسية. أدوات الإبداع تحتاج ربط محركات التوليد عبر خادم آمن.')]), icon: const Icon(Icons.info_outline))],
+      ),
+      body: SafeArea(child: IndexedStack(index: tab, children: pages)),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: tab,
+        onDestinationSelected: (v) => setState(() => tab = v),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'الرئيسية'),
+          NavigationDestination(icon: Icon(Icons.smart_toy_outlined), selectedIcon: Icon(Icons.smart_toy), label: 'الوكلاء'),
+          NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'الإبداع'),
+          NavigationDestination(icon: Icon(Icons.campaign_outlined), selectedIcon: Icon(Icons.campaign), label: 'التسويق'),
+          NavigationDestination(icon: Icon(Icons.trending_up), selectedIcon: Icon(Icons.trending_up), label: 'فرص الدخل'),
+          NavigationDestination(icon: Icon(Icons.code_outlined), selectedIcon: Icon(Icons.code), label: 'AUREN'),
+          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'النشاط'),
+          NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'الربط'),
+          NavigationDestination(icon: Icon(Icons.playlist_add_check_circle_outlined), selectedIcon: Icon(Icons.playlist_add_check_circle), label: 'المهام'),
+          NavigationDestination(icon: Icon(Icons.code_rounded), selectedIcon: Icon(Icons.code), label: 'المطور'),
+        ],
+      ),
+    );
+  }
+
+  Widget dashboard() => ListView(padding: const EdgeInsets.all(16), children: [
+    Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF382B70), Color(0xFF202039)]), borderRadius: BorderRadius.circular(22)),
+      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('مركز القيادة الذكي', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Text('إدارة NOVA وAUREN والوكلاء واستوديو الإبداع من مكان واحد.'),
+      ]),
+    ),
+    const SizedBox(height: 16),
+    const Row(children: [
+      Expanded(child: _Metric(icon: Icons.smart_toy, title: 'الوكلاء', value: '6 أدوار مخططة')),
+      SizedBox(width: 10),
+      Expanded(child: _Metric(icon: Icons.auto_awesome, title: 'استوديو الإبداع', value: 'صور • فيديو • ألعاب')),
+    ]),
+    const SizedBox(height: 18),
+    FilledButton.icon(onPressed: () => setState(() => tab = 2), icon: const Icon(Icons.auto_awesome), label: const Text('فتح استوديو الصور والفيديو والألعاب')),
+    const SizedBox(height: 18),
+    const Text('خطة العمل التالية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    ...List.generate(tasks.length, (i) => Card(child: CheckboxListTile(
+      value: done[i],
+      onChanged: (v) => setState(() => done[i] = v ?? false),
+      title: Text(tasks[i], textDirection: TextDirection.rtl),
+      controlAffinity: ListTileControlAffinity.leading,
+      activeColor: violet,
+    ))),
+    const SizedBox(height: 8),
+    const _Notice(text: 'تنبيه: حالة المهام أعلاه محلية على الهاتف حالياً. التنفيذ التلقائي والمزامنة يحتاجان إلى خادم آمن وربط GitHub.'),
+  ]);
+
+  Widget agents() => ListView(padding: const EdgeInsets.all(16), children: const [
+    Text('فريق NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+    SizedBox(height: 6),
+    Text('وكلاء متخصصون تحت إشراف المدير الرئيسي. هذه قائمة الأدوار المخططة؛ لم يتم تفعيل التنفيذ الآلي بعد.'),
+    SizedBox(height: 12),
+    _Agent(icon: Icons.account_tree, name: 'NOVA Manager', role: 'توزيع المهام ومتابعة النتائج'),
+    _Agent(icon: Icons.code, name: 'وكيل التطوير', role: 'فحص الكود وتنفيذ الإصلاحات'),
+    _Agent(icon: Icons.fact_check, name: 'وكيل الجودة', role: 'اختبارات Flutter وAndroid وCI'),
+    _Agent(icon: Icons.security, name: 'وكيل الأمان', role: 'مراجعة Firebase والصلاحيات'),
+    _Agent(icon: Icons.campaign, name: 'وكيل التسويق', role: 'المحتوى والنشر وتحليل الجمهور'),
+    _Agent(icon: Icons.mail, name: 'وكيل البريد', role: 'فرز الرسائل وصياغة الردود'),
+    _Notice(text: 'لن تُمنح الوكلاء صلاحيات غير محدودة. الربط الرسمي، أقل صلاحية لازمة، وسجل تدقيق وموافقة للعمليات الحساسة شروط أساسية.'),
+  ]);
+
+  Widget creativeStudio() => ListView(padding: const EdgeInsets.all(16), children: [
+    Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF49317C), Color(0xFF202039)]), borderRadius: BorderRadius.circular(22)),
+      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Icons.auto_awesome, size: 30, color: violet),
+        SizedBox(height: 10),
+        Text('استوديو NOVA الإبداعي', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Text('جهّز أفكار الصور والفيديو والألعاب في مساحة واحدة، مع قابلية إضافة أكثر من محرك توليد.'),
+      ]),
+    ),
+    const SizedBox(height: 16),
+    const Text('اختر نوع المشروع', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 10),
+    Row(children: [
+      Expanded(child: _CreativeCard(icon: Icons.image_outlined, title: 'صور احترافية', subtitle: 'إعلانات، تصاميم، صور مصغرة', selected: creativeMode == 'صور', onTap: () => setState(() => creativeMode = 'صور'))),
+      const SizedBox(width: 8),
+      Expanded(child: _CreativeCard(icon: Icons.movie_creation_outlined, title: 'فيديوهات', subtitle: 'مقاطع قصيرة ومشاهد', selected: creativeMode == 'فيديو', onTap: () => setState(() => creativeMode = 'فيديو'))),
+    ]),
+    const SizedBox(height: 8),
+    _CreativeCard(icon: Icons.sports_esports_outlined, title: 'ألعاب تفاعلية', subtitle: 'أفكار، تصميم مراحل، ونماذج ألعاب', selected: creativeMode == 'ألعاب', onTap: () => setState(() => creativeMode = 'ألعاب')),
+    const SizedBox(height: 18),
+    const Text('وصف فكرتك', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    TextField(
+      controller: promptController,
+      minLines: 3,
+      maxLines: 6,
+      textDirection: TextDirection.rtl,
+      decoration: InputDecoration(
+        hintText: 'مثال: اصنع إعلاناً عمودياً أنيقاً لتطبيق تقني، بإضاءة سينمائية وألوان بنفسجية...',
+        hintTextDirection: TextDirection.rtl,
+        filled: true,
+        fillColor: surface,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    ),
+    const SizedBox(height: 12),
+    FilledButton.icon(onPressed: prepareCreativeRequest, icon: const Icon(Icons.auto_awesome), label: Text('تجهيز طلب إنشاء $creativeMode')),
+    const SizedBox(height: 12),
+    const _Notice(text: 'الشفافية: هذه الواجهة تجهّز الفكرة فقط في النسخة الحالية ولا تُنتج ملفات صور أو فيديو أو ألعاب بعد. نحتاج ربط محركات فعلية عبر خادم آمن. لا يمكن ضمان توليد غير محدود حرفياً؛ يمكن تصميم النظام بلا حدّ يومي من التطبيق مع بقاء حدود مزوّد الخدمة والتكلفة والموارد.'),
+    const SizedBox(height: 8),
+    OutlinedButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/creative_toolkit_20_projects.md'), icon: const Icon(Icons.menu_book_outlined), label: const Text('كتالوج 20 مشروعاً احترافياً للصور والفيديو والألعاب')),
+  ]);
+
+  Widget socialCenter() => ListView(padding: const EdgeInsets.all(16), children: [
+    Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF382B70), Color(0xFF202039)]), borderRadius: BorderRadius.circular(22)),
+      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Icons.campaign, color: violet, size: 30),
+        SizedBox(height: 10),
+        Text('مدير التسويق والنشر الذكي', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Text('بحث السوق، أفكار المحتوى، إنتاج الأصول، الجدولة، النشر، الردود وقياس النتائج من لوحة واحدة.'),
+      ]),
+    ),
+    const SizedBox(height: 16),
+    const Text('القنوات المستهدفة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    const _SocialChannel(icon: Icons.facebook_outlined, name: 'Facebook Pages', account: 'صفحات فيسبوك', status: 'الاتصال وصلاحية النشر تحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.camera_alt_outlined, name: 'Instagram', account: 'KWB86', status: 'صلاحية النشر تحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.music_video_outlined, name: 'TikTok', account: 'khaliedwalied403', status: 'صلاحية النشر تحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.play_circle_outline, name: 'YouTube / Shorts', account: 'Khalied Walied · @khaliedwalied-j1y', status: 'صلاحية الرفع والردود تحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.alternate_email, name: 'X', account: 'حساب X', status: 'الاتصال وصلاحية النشر تحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.work_outline, name: 'LinkedIn', account: 'ملف شخصي أو صفحة شركة', status: 'الصلاحيات تختلف حسب نوع الحساب'),
+    const _SocialChannel(icon: Icons.push_pin_outlined, name: 'Pinterest', account: 'حساب Pinterest', status: 'الاتصال وصلاحية النشر تحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.forum_outlined, name: 'Threads', account: 'حساب Threads', status: 'دعم API يحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.send_outlined, name: 'Telegram Channels', account: 'قنوات تيليجرام', status: 'البوت يحتاج إضافته وصلاحياته'),
+    const _SocialChannel(icon: Icons.calendar_month_outlined, name: 'Buffer', account: 'جسر جدولة اختياري', status: 'لازم تأكيد الربط والقنوات المدعومة'),
+    const SizedBox(height: 16),
+    const Text('قدرات المدير المطلوبة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    const _SocialCapability(icon: Icons.query_stats, title: 'قراءة السوق والمنافسين', detail: 'تحليل المواضيع والطلب والأداء، ثم ترتيب فرص المحتوى حسب الدليل'),
+    const _SocialCapability(icon: Icons.movie_creation_outlined, title: 'إنشاء الصور والفيديو', detail: 'توليد ملفات فعلية عبر محرك متصل، ثم معاينتها قبل النشر'),
+    const _SocialCapability(icon: Icons.calendar_month_outlined, title: 'جدولة مفتوحة ومتعددة القنوات', detail: 'دفعات حملات وطابور مستمر ونشر جماعي مع حدود منفصلة لكل منصة وإيقاف فوري'),
+    const _SocialCapability(icon: Icons.forum_outlined, title: 'قراءة التعليقات والردود', detail: 'صياغة الردود تلقائياً؛ مراجعة بشرية للشكاوى والمواضيع الحساسة'),
+    const _SocialCapability(icon: Icons.public_outlined, title: 'جمع المعلومات من الويب والمنصات', detail: 'بحث متعدد المصادر مع توثيق الرابط ووقت المعلومة وفصل الحقائق عن التوقعات'),
+    const _SocialCapability(icon: Icons.trending_up, title: 'وكيل فرص الدخل', detail: 'اكتشاف احتياجات الجمهور وفرص المنتجات والخدمات والتسويق بالعمولة وقياس الربح الفعلي'),
+    const _SocialCapability(icon: Icons.speed_outlined, title: 'سرعة وتكلفة ذكية', detail: 'تخزين مؤقت، جمع متوازٍ، اختيار نموذج حسب المهمة، حدود تكلفة ومزود بديل معتمد'),
+    const _SocialCapability(icon: Icons.insights_outlined, title: 'التعلم من النتائج', detail: 'مقارنة المشاهدات والاحتفاظ والتفاعل، وتحسين الخطة أسبوعياً'),
+    const SizedBox(height: 12),
+    const _Notice(text: 'الحالة الحالية: هذه لوحة موسعة وخطة تكامل وليست اتصالاً فعلياً. لم تُربط بعد صلاحيات OAuth أو محركات إنشاء الوسائط أو النشر والردود. النشر المفتوح يعني طابوراً مستمراً ودفعات وجدولة حسب حدود الخدمة؛ لا يعني تجاوز قيود المنصات أو ضمان خدمة مجانية بلا حدود. لن نعرض نجاحاً وهمياً.'),
+    const SizedBox(height: 8),
+    OutlinedButton.icon(
+      onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/social_media_operator_spec.md'),
+      icon: const Icon(Icons.menu_book_outlined),
+      label: const Text('فتح مواصفات مدير التسويق والتشغيل'),
+    ),
+    OutlinedButton.icon(
+      onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/intelligence_integrations_revenue_engine.md'),
+      icon: const Icon(Icons.insights_outlined),
+      label: const Text('خطة الذكاء وجلب المعلومات وفرص الدخل'),
+    ),
+  ]);
+
+  Widget auren() => ListView(padding: const EdgeInsets.all(16), children: [
+    const Text('إدارة مشروع AUREN', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    const Text('AUREN منصة Flutter موجهة للأفراد والشركات. سنكملها بالتوازي مع بناء NOVA.'),
+    const SizedBox(height: 14),
+    const _Metric(icon: Icons.phone_android, title: 'المنصة', value: 'Flutter / Android'),
+    const SizedBox(height: 10),
+    const _Metric(icon: Icons.cloud_outlined, title: 'الخدمات', value: 'Firebase + AI Gateway'),
+    const SizedBox(height: 16),
+    FilledButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren'), icon: const Icon(Icons.open_in_new), label: const Text('فتح مستودع AUREN على GitHub')),
+    const SizedBox(height: 8),
+    OutlinedButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/issues/282'), icon: const Icon(Icons.assignment_outlined), label: const Text('فتح خطة التنفيذ')),
+    const SizedBox(height: 14),
+    const _Notice(text: 'المستودع لا يُنسخ بالكامل داخل APK؛ التطبيق يفتح المشروع المرتبط على GitHub. سيتم بناء تكامل آمن لإدارة المستودع بدلاً من تضمين الشيفرة المصدرية أو الأسرار داخل التطبيق.'),
+  ]);
+
+  Widget activity() => ListView(padding: const EdgeInsets.all(16), children: const [
+    Text('سجل النشاط', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+    SizedBox(height: 10),
+    _Activity(icon: Icons.check_circle_outline, title: 'تم تسجيل خطة NOVA + AUREN', detail: 'GitHub Issue #282'),
+    _Activity(icon: Icons.account_tree_outlined, title: 'تم تجهيز هيكل واجهة NOVA', detail: 'لوحة رئيسية، وكلاء، استوديو الإبداع، AUREN، وسجل النشاط'),
+    _Activity(icon: Icons.hourglass_empty, title: 'تكامل محركات التوليد والخادم', detail: 'لم يُنفّذ بعد؛ يتطلب مزودات فعلية وخدمة خلفية'),
+    _Notice(text: 'سيظهر هنا سجل موثوق للعمليات بعد ربط التطبيق بالخادم. هذه العناصر حالياً توضح حالة التأسيس وليست سجلاً حياً للتنفيذ.'),
+  ]);
+}
+
+class _SocialChannel extends StatelessWidget {
+  final IconData icon;
+  final String name;
+  final String account;
+  final String status;
+  const _SocialChannel({required this.icon, required this.name, required this.account, required this.status});
+  @override
+  Widget build(BuildContext context) => Card(child: ListTile(
+    leading: CircleAvatar(backgroundColor: const Color(0xFF30284E), child: Icon(icon, color: violet)),
+    title: Text(name),
+    subtitle: Text('$account\\n$status', textDirection: TextDirection.rtl),
+    isThreeLine: true,
+    trailing: const Icon(Icons.link_off, color: Colors.orangeAccent),
+  ));
+}
+
+class _SocialCapability extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String detail;
+  const _SocialCapability({required this.icon, required this.title, required this.detail});
+  @override
+  Widget build(BuildContext context) => Card(child: ListTile(
+    leading: Icon(icon, color: violet),
+    title: Text(title, textDirection: TextDirection.rtl),
+    subtitle: Text(detail, textDirection: TextDirection.rtl),
+  ));
+}
+
+class _CreativeCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+  const _CreativeCard({required this.icon, required this.title, required this.subtitle, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Card(
+    color: selected ? const Color(0xFF30284E) : surface,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, color: violet, size: 28),
+          const SizedBox(height: 10),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 5),
+          Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          if (selected) const Padding(padding: EdgeInsets.only(top: 8), child: Chip(avatar: Icon(Icons.check, size: 16), label: Text('محدد'))),
+        ]),
+      ),
+    ),
+  );
+}
+
+class _Metric extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  const _Metric({required this.icon, required this.title, required this.value});
+  @override
+  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Icon(icon, color: violet, size: 25), const SizedBox(height: 10), Text(title, style: const TextStyle(color: Colors.white70)), const SizedBox(height: 4), Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+  ])));
+}
+
+class _Agent extends StatelessWidget {
+  final IconData icon;
+  final String name;
+  final String role;
+  const _Agent({required this.icon, required this.name, required this.role});
+  @override
+  Widget build(BuildContext context) => Card(child: ListTile(leading: CircleAvatar(backgroundColor: const Color(0xFF30284E), child: Icon(icon, color: violet)), title: Text(name), subtitle: Text(role), trailing: const Chip(label: Text('مخطط'))));
+}
+
+class _Activity extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String detail;
+  const _Activity({required this.icon, required this.title, required this.detail});
+  @override
+  Widget build(BuildContext context) => Card(child: ListTile(leading: Icon(icon, color: violet), title: Text(title, textDirection: TextDirection.rtl), subtitle: Text(detail, textDirection: TextDirection.rtl)));
+}
+
+class _Notice extends StatelessWidget {
+  final String text;
+  const _Notice({required this.text});
+  @override
+  Widget build(BuildContext context) => Container(margin: const EdgeInsets.symmetric(vertical: 8), padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: const Color(0xFF282438), borderRadius: BorderRadius.circular(14)), child: Text(text, textDirection: TextDirection.rtl));
+}
