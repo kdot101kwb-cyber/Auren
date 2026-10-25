@@ -178,6 +178,9 @@ exports.listNovaTasks = onCall(
         status:task.status,
         requiresApproval:task.requiresApproval === true,
         executionMode:task.executionMode || 'unknown',
+        result:task.result || null,
+        error:task.error || null,
+        retryCount:Number(task.retryCount) || 0,
         createdAt:task.createdAt?.toDate?.().toISOString() || null,
       };
     })};
