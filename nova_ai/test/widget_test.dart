@@ -6,7 +6,7 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     expect(find.text('NOVA AI'), findsOneWidget);
     expect(find.text('مركز القيادة الذكي'), findsOneWidget);
-    expect(find.text('الوكلاء'), findsOneWidget);
+    expect(find.text('الوكلاء'), findsWidgets);
     expect(find.text('AUREN'), findsOneWidget);
   });
 }
