@@ -2,6 +2,14 @@ name: AUREN Background Maintenance
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "test/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - ".github/workflows/auren-background-maintenance.yml"
   schedule:
     # Daily at 02:15 UTC. Scheduled workflows run against the default branch.
     - cron: "15 2 * * *"
