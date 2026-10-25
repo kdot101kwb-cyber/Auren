@@ -9,28 +9,28 @@ class IntegrationHubScreen extends StatelessWidget {
 
   static const _groups = <_IntegrationGroup>[
     _IntegrationGroup('القيادة والتنفيذ', Icons.account_tree_outlined, [
-      _Integration('AUREN AI Gateway', 'توجيه الطلبات لمزودي الذكاء الاصطناعي مع بدائل وحدود تكلفة.', 'Backend موجود جزئياً؛ ربط تطبيق NOVA لم يكتمل', 'backend', 'https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/functions/index.js'),
-      _Integration('GitHub Actions', 'مهام التطوير والاختبارات والبناء ومتابعة نتائج CI.', 'مخطط للتكامل داخل التطبيق', 'github', 'https://github.com/kdot101kwb-cyber/Auren'),
-      _Integration('Firebase', 'المصادقة، قاعدة البيانات، المهام، سجل التدقيق والتنبيهات.', 'وظائف خلفية موجودة؛ NOVA بلا Firebase SDK حالياً', 'firebase', 'https://firebase.google.com/docs/flutter/setup'),
+      _Integration('AUREN AI Gateway', 'توجيه الطلبات لمزودي الذكاء الاصطناعي مع بدائل وحدود تكلفة.', 'Backend موجود جزئياً؛ ربط تطبيق NOVA لم يكتمل', 'https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/functions/index.js'),
+      _Integration('GitHub Actions', 'مهام التطوير والاختبارات والبناء ومتابعة نتائج CI.', 'مخطط للتكامل داخل التطبيق', 'https://github.com/kdot101kwb-cyber/Auren'),
+      _Integration('Firebase', 'المصادقة، قاعدة البيانات، المهام، سجل التدقيق والتنبيهات.', 'وظائف خلفية موجودة؛ NOVA بلا Firebase SDK حالياً', 'https://firebase.google.com/docs/flutter/setup'),
     ]),
     _IntegrationGroup('البحث والفرص', Icons.travel_explore_outlined, [
-      _Integration('Web Search API', 'بحث ويب موثق بالمصادر والتواريخ لاكتشاف الفرص والتحقق منها.', 'مطلوب اختيار مزود وإضافة سر بالخادم', 'search', 'https://brave.com/search/api/'),
-      _Integration('Opportunity Monitor', 'ترتيب الفرص وتنبيه المستخدم عند ظهور إشارة قوية وحديثة.', 'محرك الخلفية موجود؛ مصدر البيانات وواجهة التنبيهات ناقصان', 'opportunity', 'https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/proactive_opportunity_monitor.md'),
+      _Integration('Web Search API', 'بحث ويب موثق بالمصادر والتواريخ لاكتشاف الفرص والتحقق منها.', 'مطلوب اختيار مزود وإضافة سر بالخادم', 'https://brave.com/search/api/'),
+      _Integration('Opportunity Monitor', 'ترتيب الفرص وتنبيه المستخدم عند ظهور إشارة قوية وحديثة.', 'محرك الخلفية موجود؛ مصدر البيانات وواجهة التنبيهات ناقصان', 'https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/proactive_opportunity_monitor.md'),
     ]),
     _IntegrationGroup('إنشاء المحتوى', Icons.movie_creation_outlined, [
-      _Integration('Canva', 'تصميم أصول تسويقية وقوالب وصور مصغرة.', 'لم يتم التحقق من اتصال API', 'canva', 'https://www.canva.com/developers/'),
-      _Integration('Image / Video Providers', 'توليد ملفات صور وفيديو فعلية من وصف المستخدم.', 'لا يوجد محرك توليد متصل في NOVA حالياً', 'media', 'https://replicate.com/'),
+      _Integration('Canva', 'تصميم أصول تسويقية وقوالب وصور مصغرة.', 'لم يتم التحقق من اتصال API', 'https://www.canva.com/developers/'),
+      _Integration('Image / Video Providers', 'توليد ملفات صور وفيديو فعلية من وصف المستخدم.', 'لا يوجد محرك توليد متصل في NOVA حالياً', 'https://replicate.com/'),
     ]),
     _IntegrationGroup('النشر والتواصل', Icons.campaign_outlined, [
-      _Integration('Buffer', 'جدولة المنشورات على القنوات المدعومة بعد تفويض الحساب.', 'غير مربوط؛ يلزم OAuth واختبار نشر', 'buffer', 'https://buffer.com/developers/api'),
-      _Integration('Meta / Instagram', 'نشر وتحليلات الحسابات المهنية المصرح بها.', 'غير مربوط؛ الأهلية ومراجعة التطبيق مطلوبة', 'meta', 'https://developers.facebook.com/docs/'),
-      _Integration('TikTok / YouTube / X', 'نشر وتحليلات حسب صلاحيات API لكل منصة.', 'كل منصة تحتاج تكاملاً وتفويضاً مستقلاً', 'social', 'https://developers.google.com/youtube/v3'),
-      _Integration('Telegram Bot', 'تنبيهات الفرص وحالة المهام والنتائج.', 'غير مربوط؛ يحتاج رمزاً سرياً بالخادم', 'telegram', 'https://core.telegram.org/bots/api'),
+      _Integration('Buffer', 'جدولة المنشورات على القنوات المدعومة بعد تفويض الحساب.', 'غير مربوط؛ يلزم OAuth واختبار نشر', 'https://buffer.com/developers/api'),
+      _Integration('Meta / Instagram', 'نشر وتحليلات الحسابات المهنية المصرح بها.', 'غير مربوط؛ الأهلية ومراجعة التطبيق مطلوبة', 'https://developers.facebook.com/docs/'),
+      _Integration('TikTok / YouTube / X', 'نشر وتحليلات حسب صلاحيات API لكل منصة.', 'كل منصة تحتاج تكاملاً وتفويضاً مستقلاً', 'https://developers.google.com/youtube/v3'),
+      _Integration('Telegram Bot', 'تنبيهات الفرص وحالة المهام والنتائج.', 'غير مربوط؛ يحتاج رمزاً سرياً بالخادم', 'https://core.telegram.org/bots/api'),
     ]),
     _IntegrationGroup('التشغيل والمال', Icons.account_balance_wallet_outlined, [
-      _Integration('n8n Automation', 'ربط الخدمات في مسارات تشغيل وإعادة محاولات موثوقة.', 'غير مربوط؛ يتطلب استضافة ومصادقة', 'n8n', 'https://n8n.io/'),
-      _Integration('Revenue & Cost Tracking', 'تسجيل التكاليف والإيرادات والربح الفعلي لكل حملة.', 'المخطط موجود جزئياً؛ لا توجد بيانات مالية متصلة', 'finance', 'https://github.com/kdot101kwb-cyber/Auren'),
-      _Integration('Email / Drive', 'حفظ المخرجات وإرسال تقارير التنفيذ بعد منح الصلاحية.', 'غير مربوط', 'workspace', 'https://developers.google.com/workspace'),
+      _Integration('n8n Automation', 'ربط الخدمات في مسارات تشغيل وإعادة محاولات موثوقة.', 'غير مربوط؛ يتطلب استضافة ومصادقة', 'https://n8n.io/'),
+      _Integration('Revenue & Cost Tracking', 'تسجيل التكاليف والإيرادات والربح الفعلي لكل حملة.', 'المخطط موجود جزئياً؛ لا توجد بيانات مالية متصلة', 'https://github.com/kdot101kwb-cyber/Auren'),
+      _Integration('Email / Drive', 'حفظ المخرجات وإرسال تقارير التنفيذ بعد منح الصلاحية.', 'غير مربوط', 'https://developers.google.com/workspace'),
     ]),
   ];
 
@@ -119,7 +119,6 @@ class _Integration {
   final String name;
   final String description;
   final String status;
-  final String key;
   final String url;
-  const _Integration(this.name, this.description, this.status, this.key, this.url);
+  const _Integration(this.name, this.description, this.status, this.url);
 }
