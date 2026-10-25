@@ -5,6 +5,7 @@ import 'features/builder/nova_app_builder_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'features/opportunities/opportunity_lab_screen.dart';
 import 'features/integrations/integration_hub_screen.dart';
+import 'features/debate/nova_debate_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -147,7 +148,7 @@ class _NovaHomeState extends State<NovaHome> {
     const _Notice(text: 'تنبيه: حالة المهام أعلاه محلية على الهاتف حالياً. التنفيذ التلقائي والمزامنة يحتاجان إلى خادم آمن وربط GitHub.'),
   ]);
 
-  Widget agents() => ListView(padding: const EdgeInsets.all(16), children: const [
+  Widget agents() => ListView(padding: const EdgeInsets.all(16), children: [
     Text('فريق NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
     SizedBox(height: 6),
     Text('وكلاء متخصصون تحت إشراف المدير الرئيسي. هذه قائمة الأدوار المخططة؛ لم يتم تفعيل التنفيذ الآلي بعد.'),
@@ -158,6 +159,11 @@ class _NovaHomeState extends State<NovaHome> {
     _Agent(icon: Icons.security, name: 'وكيل الأمان', role: 'مراجعة Firebase والصلاحيات'),
     _Agent(icon: Icons.campaign, name: 'وكيل التسويق', role: 'المحتوى والنشر وتحليل الجمهور'),
     _Agent(icon: Icons.mail, name: 'وكيل البريد', role: 'فرز الرسائل وصياغة الردود'),
+    OutlinedButton.icon(
+      onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NovaDebateScreen())),
+      icon: const Icon(Icons.balance),
+      label: const Text('فتح مجلس النقاش الاستراتيجي'),
+    ),
     _Notice(text: 'لن تُمنح الوكلاء صلاحيات غير محدودة. الربط الرسمي، أقل صلاحية لازمة، وسجل تدقيق وموافقة للعمليات الحساسة شروط أساسية.'),
   ]);
 
