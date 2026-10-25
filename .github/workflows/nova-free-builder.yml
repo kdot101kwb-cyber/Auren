@@ -1,0 +1,159 @@
+name: NOVA Free Builder Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: "Allowlisted build profile"
+        required: true
+        type: choice
+        options:
+          - flutter
+          - web
+          - static_web
+      project_path:
+        description: "Repository-relative project directory (for example nova_ai)"
+        required: true
+        default: nova_ai
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nova-free-builder-${{ github.ref }}-${{ inputs.project_path }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout selected repository revision
+        uses: actions/checkout@v4
+
+      - name: Validate target path and profile
+        id: target
+        env:
+          PROJECT_PATH: ${{ inputs.project_path }}
+          STACK: ${{ inputs.stack }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$STACK" in flutter|web|static_web) ;; *) echo "Unsupported stack"; exit 2 ;; esac
+          if [[ -z "$PROJECT_PATH" || "$PROJECT_PATH" == /* || "$PROJECT_PATH" == *".."* || "$PROJECT_PATH" == *$'\n'* ]]; then
+            echo "Unsafe project path"; exit 2
+          fi
+          if [[ ! -d "$PROJECT_PATH" ]]; then
+            echo "Project directory does not exist: $PROJECT_PATH"; exit 2
+          fi
+          echo "project_path=$PROJECT_PATH" >> "$GITHUB_OUTPUT"
+          echo "stack=$STACK" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Flutter
+        if: steps.target.outputs.stack == 'flutter'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter dependency resolution
+        if: steps.target.outputs.stack == 'flutter'
+        working-directory: ${{ steps.target.outputs.project_path }}
+        run: flutter pub get
+
+      - name: Flutter format check
+        if: steps.target.outputs.stack == 'flutter'
+        working-directory: ${{ steps.target.outputs.project_path }}
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Flutter static analysis
+        if: steps.target.outputs.stack == 'flutter'
+        working-directory: ${{ steps.target.outputs.project_path }}
+        run: flutter analyze
+
+      - name: Flutter tests
+        if: steps.target.outputs.stack == 'flutter'
+        working-directory: ${{ steps.target.outputs.project_path }}
+        run: flutter test --reporter expanded
+
+      - name: Build debug APK
+        if: steps.target.outputs.stack == 'flutter'
+        working-directory: ${{ steps.target.outputs.project_path }}
+        run: |
+          flutter create --platforms=android --org com.kwb86 --project-name nova_ai .
+          flutter build apk --debug
+
+      - name: Set up Node.js
+        if: steps.target.outputs.stack == 'web'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ steps.target.outputs.project_path }}/package-lock.json
+
+      - name: Web install, checks and build
+        if: steps.target.outputs.stack == 'web'
+        working-directory: ${{ steps.target.outputs.project_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f package.json || { echo "web profile requires package.json"; exit 2; }
+          if [[ -f package-lock.json ]]; then npm ci; else npm install --ignore-scripts; fi
+          node -e "const p=require('./package.json'); if(p.scripts?.lint) process.exit(0);"
+          npm run lint --if-present
+          npm test --if-present
+          npm run build --if-present
+          if [[ ! -d dist && ! -d build && ! -d out ]]; then
+            echo "No dist/, build/, or out/ output found after build"; exit 1
+          fi
+
+      - name: Validate static website
+        if: steps.target.outputs.stack == 'static_web'
+        env:
+          PROJECT_PATH: ${{ steps.target.outputs.project_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$PROJECT_PATH/index.html" || { echo "static_web requires index.html"; exit 2; }
+          if grep -Eiq '<script[^>]+src=["'\'' ]https?://' "$PROJECT_PATH/index.html"; then
+            echo "Warning: page references remote scripts; review supply-chain risk."
+          fi
+          mkdir -p "$RUNNER_TEMP/nova-static-site"
+          cp -R "$PROJECT_PATH"/. "$RUNNER_TEMP/nova-static-site/"
+          test -s "$RUNNER_TEMP/nova-static-site/index.html"
+
+      - name: Collect build outputs
+        if: always()
+        env:
+          PROJECT_PATH: ${{ steps.target.outputs.project_path }}
+          STACK: ${{ steps.target.outputs.stack }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/nova-report"
+          {
+            echo "NOVA Free Builder Runner"
+            echo "Commit: $GITHUB_SHA"
+            echo "Stack: ${STACK:-unknown}"
+            echo "Project: ${PROJECT_PATH:-unknown}"
+            echo "Workflow conclusion is available in GitHub Actions."
+          } > "$RUNNER_TEMP/nova-report/build-summary.txt"
+          if [[ "${STACK:-}" == "flutter" && -f "$PROJECT_PATH/build/app/outputs/flutter-apk/app-debug.apk" ]]; then
+            mkdir -p "$RUNNER_TEMP/nova-report/apk"
+            cp "$PROJECT_PATH/build/app/outputs/flutter-apk/app-debug.apk" "$RUNNER_TEMP/nova-report/apk/"
+          elif [[ "${STACK:-}" == "web" ]]; then
+            for dir in dist build out; do
+              if [[ -d "$PROJECT_PATH/$dir" ]]; then cp -R "$PROJECT_PATH/$dir" "$RUNNER_TEMP/nova-report/$dir"; fi
+            done
+          elif [[ "${STACK:-}" == "static_web" && -d "$RUNNER_TEMP/nova-static-site" ]]; then
+            cp -R "$RUNNER_TEMP/nova-static-site" "$RUNNER_TEMP/nova-report/static-site"
+          fi
+
+      - name: Upload build artifacts and summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-builder-${{ inputs.stack }}-${{ github.run_number }}
+          path: ${{ runner.temp }}/nova-report
+          if-no-files-found: warn
+          retention-days: 7
