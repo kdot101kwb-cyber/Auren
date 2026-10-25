@@ -1,0 +1,81 @@
+name: NOVA Daily AUREN Radar
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: nova-daily-auren-radar
+  cancel-in-progress: false
+
+jobs:
+  repository-radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Collect repository health signals
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p report
+          gh api --paginate "repos/$REPOSITORY/issues?state=open&per_page=100" > report/open-issues-and-prs.json
+          gh api --paginate "repos/$REPOSITORY/pulls?state=open&per_page=100" > report/open-pull-requests.json
+          gh api "repos/$REPOSITORY/actions/runs?per_page=30" > report/recent-workflow-runs.json
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          out = Path("report")
+          issues = json.loads((out / "open-issues-and-prs.json").read_text())
+          prs = json.loads((out / "open-pull-requests.json").read_text())
+          runs = json.loads((out / "recent-workflow-runs.json").read_text()).get("workflow_runs", [])
+          issues_only = [item for item in issues if "pull_request" not in item]
+          failures = [run for run in runs if run.get("conclusion") in {"failure", "timed_out", "cancelled"}]
+          lines = [
+              "# NOVA Daily AUREN Repository Radar",
+              "",
+              f"- Generated (UTC): {datetime.now(timezone.utc).isoformat()}",
+              f"- Open issues (excluding PRs): {len(issues_only)}",
+              f"- Open pull requests: {len(prs)}",
+              f"- Failed/cancelled/timed-out recent workflow runs: {len(failures)}",
+              "",
+              "## Open issues to triage",
+          ]
+          for item in sorted(issues_only, key=lambda x: (x.get("created_at", ""), x.get("number", 0)))[:30]:
+              lines.append(f"- #{item['number']} [{item.get('title', 'Untitled')}]({item.get('html_url', '')})")
+          lines += ["", "## Open pull requests"]
+          for item in prs[:30]:
+              lines.append(f"- #{item['number']} [{item.get('title', 'Untitled')}]({item.get('html_url', '')})")
+          lines += ["", "## Recent workflow failures"]
+          for run in failures[:20]:
+              lines.append(f"- [{run.get('name', 'workflow')} #{run.get('run_number', '?')}]({run.get('html_url', '')}) — {run.get('conclusion')}; branch: {run.get('head_branch')}")
+          if not failures:
+              lines.append("- No failures in the 30 most recent workflow runs returned by GitHub.")
+          lines += [
+              "",
+              "## Next action",
+              "This report is a signal collector, not an autonomous code change. Review failures and issues, create a scoped task, then implement on a branch and require CI plus review before merging.",
+              "",
+              "Market-demand research is not claimed by this workflow: that needs configured source adapters and must record source URLs, observation timestamps, geography, and evidence strength.",
+          ]
+          (out / "daily-radar.md").write_text("\n".join(lines) + "\n")
+          PY
+      - name: Upload daily radar report
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-daily-auren-radar-${{ github.run_number }}
+          path: report/
+          if-no-files-found: error
+          retention-days: 30
