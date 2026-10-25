@@ -8,7 +8,7 @@ const ALLOWED_TYPES = new Set([
 const APPROVAL_TYPES = new Set(['social_publish', 'image_generation', 'video_generation']);
 
 function normalizeNovaTaskInput(data, ErrorType = Error) {
-  const fail = (code, message) => { throw new ErrorType(message, code); };
+  const fail = (code, message) => { throw ErrorType === Error ? new ErrorType(message) : new ErrorType(code, message); };
   if (!data || typeof data !== 'object' || Array.isArray(data)) fail('invalid-argument', 'Task input must be an object.');
   const type = String(data.type || '').trim();
   const prompt = String(data.prompt || '').trim();
