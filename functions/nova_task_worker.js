@@ -9,7 +9,7 @@ const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const HIGGSFIELD_API_KEY_ID = defineSecret('HIGGSFIELD_API_KEY_ID');
 const HIGGSFIELD_API_KEY_SECRET = defineSecret('HIGGSFIELD_API_KEY_SECRET');
 const {submitVideoGeneration, getVideoGenerationStatus} = require('./nova_higgsfield_adapter');
-const {SAFE_TEXT_TYPES} = require('./nova_task_worker_policy');
+const {SAFE_TEXT_TYPES, isTaskExecutable} = require('./nova_task_worker_policy');
 const REGION = 'us-central1';
 
 async function runTextTask(prompt, type, apiKey) {
@@ -70,9 +70,7 @@ exports.processNovaTaskQueue = onSchedule(
         const ts = await tx.get(taskRef);
         if (!qs.exists || !ts.exists || qs.data()?.status !== 'queued' || ts.data()?.status !== 'queued') return;
         task = ts.data();
-        const videoApproved = task.type === 'video_generation' &&
-          task.requiresApproval === true && task.approvedBy === uid;
-        if (!SAFE_TEXT_TYPES.has(String(task.type || '')) && !videoApproved) {
+        if (!isTaskExecutable(task, uid)) {
           const reason = 'No execution adapter is configured or approval is missing for task type: ' + String(task.type || 'unknown');
           tx.update(taskRef, {status:'failed', error:reason, updatedAt:FieldValue.serverTimestamp()});
           tx.update(queueRef, {status:'failed', error:reason, updatedAt:FieldValue.serverTimestamp()});
