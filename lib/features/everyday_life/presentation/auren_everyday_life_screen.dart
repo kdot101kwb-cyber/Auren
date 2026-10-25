@@ -89,6 +89,10 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
         kind == EverydayLifeKind.householdMaintenance;
     final isSupply = kind == EverydayLifeKind.householdSupply;
     final isMaintenance = kind == EverydayLifeKind.householdMaintenance;
+    // Snapshot every field before popping the sheet. The route future resolves
+    // as the reverse animation starts, so persistence must not depend on live
+    // TextField widgets continuing to exist during that transition.
+    var formValues = <String, String>{};
     final title = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -152,8 +156,19 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                   const SizedBox(width: 12),
                   Expanded(child: FilledButton(
                     onPressed: () {
-                      if (titleController.text.trim().isNotEmpty) {
-                        Navigator.pop(sheetContext, titleController.text.trim());
+                      final enteredTitle = titleController.text.trim();
+                      if (enteredTitle.isNotEmpty) {
+                        formValues = {
+                          'title': enteredTitle,
+                          'details': detailsController.text.trim(),
+                          'category': categoryController.text.trim(),
+                          'quantity': quantityController.text.trim(),
+                          'requestedWindow': requestedWindowController.text.trim(),
+                          'providerName': providerController.text.trim(),
+                          'contact': contactController.text.trim(),
+                          'location': locationController.text.trim(),
+                        };
+                        Navigator.pop(sheetContext, enteredTitle);
                       }
                     },
                     child: const Text('حفظ محلياً'),
@@ -191,14 +206,14 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       kind: kind,
       title: title,
-      details: detailsController.text.trim(),
-      category: categoryController.text.trim(),
-      quantity: quantityController.text.trim(),
-      requestedWindow: requestedWindowController.text.trim(),
+      details: formValues['details'] ?? '',
+      category: formValues['category'] ?? '',
+      quantity: formValues['quantity'] ?? '',
+      requestedWindow: formValues['requestedWindow'] ?? '',
       createdAt: DateTime.now().toUtc().toIso8601String(),
-      providerName: providerController.text.trim(),
-      contact: contactController.text.trim(),
-      location: locationController.text.trim(),
+      providerName: formValues['providerName'] ?? '',
+      contact: formValues['contact'] ?? '',
+      location: formValues['location'] ?? '',
       informationConfirmed: false,
     );
     disposeControllersAfterSheetCloses();
