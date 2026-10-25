@@ -38,8 +38,6 @@ void main() {
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
   });
-}
-
 
   testWidgets('creative tool library shows 90 tools and filters by category', (tester) async {
     await tester.pumpWidget(MaterialApp(
