@@ -104,7 +104,7 @@ class _NovaHomeState extends State<NovaHome> {
     const _Notice(text: 'تنبيه: حالة المهام أعلاه محلية على الهاتف حالياً. التنفيذ التلقائي والمزامنة يحتاجان إلى خادم آمن وربط GitHub.'),
   ]);
 
-  Widget agents() => ListView(padding: const EdgeInsets.all(16), children: [
+  Widget agents() => ListView(padding: const EdgeInsets.all(16), children: const [
     const Text('فريق NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
     const SizedBox(height: 6),
     const Text('وكلاء متخصصون تحت إشراف المدير الرئيسي. هذه قائمة الأدوار المخططة؛ لم يتم تفعيل التنفيذ الآلي بعد.'),
