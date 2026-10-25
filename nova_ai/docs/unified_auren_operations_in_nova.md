@@ -6,7 +6,7 @@ NOVA AI is the single user-facing command center for operating AUREN. Every capa
 ## Capability map
 | Capability | NOVA entry point | Required production services | Current state |
 |---|---|---|---|
-| Executive command center | Home / agents | Authenticated task API, durable queue, orchestrator, task events | UI shell; task checkboxes are local only |
+| Executive command center | Home / agents | Authenticated task API, durable queue, orchestrator, task events | Authenticated task intake/status/approval/cancel APIs added; NOVA client and execution worker still missing |
 | AI gateway and agent routing | Manager / agent runtime | Callable/server API, provider adapters, server-side secrets, quotas, fallback policy | Backend provider code exists; NOVA client integration not complete |
 | Opportunity intelligence | Revenue lab / alerts | Search/news sources, ingestion scheduler, provenance, scoring, Firestore inbox, optional FCM | Scoring + scheduled monitor exist; ingestion and mobile inbox missing |
 | Content factory | Creative studio | LLM, image/video generation providers, asset storage, job polling/webhooks | UI only; no live media generation configured |
@@ -38,6 +38,9 @@ All agent actions should flow through one server-side orchestrator rather than c
 
 ## Recommended delivery sequence
 ### Phase 1 — Foundation
+- [x] Add authenticated callable endpoints for task submission, listing, status, owner approval and cancellation, with per-user task storage, idempotency and audit events.
+- [x] Add pure validation tests for task type, prompt bounds, idempotency key and approval requirements.
+- [ ] Connect NOVA Flutter to Firebase Auth/Functions/Firestore; no Firebase project options or Android service config are present in nova_ai yet.
 - Fix the failing backend CI and verify Flutter analyze/test/Android build.
 - Add Firebase configuration and Firebase Auth to NOVA with a clear unauthenticated state.
 - Define task/event/audit schemas and callable endpoints; add authorization and App Check.
@@ -69,4 +72,6 @@ All agent actions should flow through one server-side orchestrator rather than c
 A capability is complete only when an authenticated end-to-end test proves: request → server execution → persisted result → NOVA UI update → audit event → failure/retry behavior. A passing unit test or a visible UI alone does not establish a live integration.
 
 ## Current implementation note
+The backend now exposes `submitNovaTask`, `listNovaTasks`, `getNovaTask`, `approveNovaTask`, and `cancelNovaTask`. These persist per-user task state and audit events. They do not execute tasks by themselves: a durable worker/orchestrator still needs to claim queued tasks, call approved providers, update terminal status and record results. The Flutter app is not yet connected to these callable APIs because the `nova_ai/` app lacks Firebase SDK dependencies and project-specific Android/Flutter Firebase configuration.
+
 The NOVA Flutter package currently declares only Flutter, Cupertino icons, and url_launcher. It does not yet declare Firebase Flutter SDK packages or generated Firebase options. The new Integration Hub is a transparent status/catalog screen; its setup links do not connect accounts automatically. External providers, Firebase client configuration, OAuth consent, secrets, deployment, and live tests remain required.
