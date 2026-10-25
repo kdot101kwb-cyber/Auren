@@ -6,6 +6,7 @@ import 'features/builder/nova_app_builder_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'features/opportunities/opportunity_lab_screen.dart';
 import 'features/integrations/integration_hub_screen.dart';
+import 'features/integrations/github_ci_screen.dart';
 import 'features/debate/nova_debate_screen.dart';
 import 'features/revenue/nova_revenue_engine_screen.dart';
 import 'features/auren/auren_build_workspace_screen.dart';
@@ -132,6 +133,7 @@ class _NovaHomeState extends State<NovaHome> {
       const NovaRevenueEngineScreen(),
       const AurenBuildWorkspaceScreen(),
       CreativeToolLibraryScreen(onOpenAurenWorkspace: () => setState(() => tab = 11)),
+      const GitHubCiScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -149,6 +151,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 9, child: Text('بناء التطبيقات')),
               PopupMenuItem(value: 11, child: Text('NOVA Builder · تطوير AUREN')),
               PopupMenuItem(value: 12, child: Text('مكتبة أدوات الفيديو والصور والألعاب')),
+              PopupMenuItem(value: 13, child: Text('حالة GitHub Actions المباشرة')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
