@@ -4,6 +4,7 @@ const {onCall, HttpsError} = require('firebase-functions/v2/https');
 const {defineSecret} = require('firebase-functions/params');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 const {normalizeDebateInput, buildDebateMessages, parseModelJson} = require('./nova_debate_engine');
+const {buildDebateApprovalUpdate} = require('./nova_debate_policy');
 
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const db = getFirestore();
@@ -133,19 +134,16 @@ exports.novaApproveDebatePlan = onCall({
     const snapshot = await tx.get(ref);
     if (!snapshot.exists) throw new HttpsError('not-found', 'لم يتم العثور على سجل النقاش.');
     const record = snapshot.data() || {};
-    if (record.status !== 'awaiting_user_agreement') {
-      throw new HttpsError('failed-precondition', 'هذا النقاش ليس بانتظار الموافقة.');
-    }
-    if (!Array.isArray(record.debate?.plan) || record.debate.plan.length === 0) {
-      throw new HttpsError('failed-precondition', 'لا توجد خطة قابلة للاعتماد.');
+    let approvalUpdate;
+    try {
+      approvalUpdate = buildDebateApprovalUpdate(record, uid);
+    } catch (error) {
+      throw new HttpsError(error.code || 'failed-precondition', error.message || 'لا يمكن اعتماد هذه الخطة.');
     }
     tx.update(ref, {
-      status: 'plan_approved',
-      approvedBy: uid,
+      ...approvalUpdate,
       approvedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-      executionStarted: false,
-      executionStatus: 'blocked_adapter_not_connected',
     });
     tx.create(auditRef, {
       action: 'nova.debate.plan_approved',
