@@ -141,6 +141,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
           DropdownMenuItem(value: 'research', child: Text('بحث وتحليل')),
           DropdownMenuItem(value: 'opportunity_scan', child: Text('بحث عن فرص دخل')),
           DropdownMenuItem(value: 'content_draft', child: Text('مسودة محتوى')),
+          DropdownMenuItem(value: 'video_generation', child: Text('توليد فيديو عبر Higgsfield — مدفوع ويتطلب موافقة')),
           DropdownMenuItem(value: 'social_publish', child: Text('نشر اجتماعي — يتطلب موافقة')),
         ],
         onChanged: _busy ? null : (value) { if (value != null) setState(() => _type = value); },
@@ -184,6 +185,10 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
             if (task['result'] is Map && (task['result'] as Map)['text'] is String) ...[
               const SizedBox(height: 8),
               Text('النتيجة: ${(task['result'] as Map)['text']}', textDirection: TextDirection.rtl),
+            ],
+            if (task['result'] is Map && (task['result'] as Map)['videoUrl'] is String) ...[
+              const SizedBox(height: 8),
+              SelectableText('رابط الفيديو: ${(task['result'] as Map)['videoUrl']}', textDirection: TextDirection.ltr),
             ],
             if (task['error'] is String && (task['error'] as String).isNotEmpty) ...[
               const SizedBox(height: 8),
