@@ -79,8 +79,8 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
       final data = Map<String, dynamic>.from(response.data as Map);
       _prompt.clear();
       setState(() => _message =
-          'سُجلت المهمة: ${data['taskId']} — الحالة: ${data['status']}. '
-          'التسجيل لا يعني أن عامل التنفيذ بدأ تشغيلها.');
+          'سُجلت المهمة في قائمة الخلفية: ${data['taskId']} — الحالة: ${data['status']}. '
+          'ستتم معالجتها عند توفر العامل وإعداداته؛ التسجيل وحده لا يثبت بدء التنفيذ.');
       await _loadTasks();
     } catch (error) {
       setState(() => _message = 'فشل إرسال المهمة: $error');
@@ -111,7 +111,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
     children: [
       const Text('مركز تنفيذ NOVA', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
       const SizedBox(height: 8),
-      const Text('إرسال المهام إلى الخلفية ومتابعة حالتها. تنفيذ المهام يحتاج نشر الوظائف وإعداد عامل تشغيل مستقل.'),
+      const Text('المهام تُحفظ في الخادم وتُعالج بالخلفية حتى لو أغلقت التطبيق، بعد نشر وظائف Firebase وضبط مفتاح مزود الذكاء الاصطناعي. العامل المجدول يفحص قائمة الانتظار كل دقيقة؛ التنفيذ الفعلي حالياً محدود بمهام النص الآمنة.'),
       const SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +168,7 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
         child: Text(_message!, textDirection: TextDirection.rtl),
       ),
       const SizedBox(height: 12),
-      const Text('المهام المسجلة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      const Text('المهام المسجلة في الخادم', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       if (_tasks.isEmpty) const Padding(
         padding: EdgeInsets.symmetric(vertical: 14),
         child: Text('لا توجد مهام محمّلة بعد. اضغط تحديث القائمة بعد إعداد الاتصال.'),
