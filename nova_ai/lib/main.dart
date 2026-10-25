@@ -9,6 +9,7 @@ import 'features/integrations/integration_hub_screen.dart';
 import 'features/debate/nova_debate_screen.dart';
 import 'features/revenue/nova_revenue_engine_screen.dart';
 import 'features/auren/auren_build_workspace_screen.dart';
+import 'features/creative/creative_tool_library_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -130,6 +131,7 @@ class _NovaHomeState extends State<NovaHome> {
       const NovaAppBuilderScreen(),
       const NovaRevenueEngineScreen(),
       const AurenBuildWorkspaceScreen(),
+      CreativeToolLibraryScreen(onOpenAurenWorkspace: () => setState(() => tab = 11)),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -146,6 +148,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 8, child: Text('مركز المهام')),
               PopupMenuItem(value: 9, child: Text('بناء التطبيقات')),
               PopupMenuItem(value: 11, child: Text('NOVA Builder · تطوير AUREN')),
+              PopupMenuItem(value: 12, child: Text('مكتبة أدوات الفيديو والصور والألعاب')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
@@ -190,6 +193,8 @@ class _NovaHomeState extends State<NovaHome> {
     ]),
     const SizedBox(height: 18),
     FilledButton.icon(onPressed: () => setState(() => tab = 2), icon: const Icon(Icons.auto_awesome), label: const Text('فتح استوديو الصور والفيديو والألعاب')),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: () => setState(() => tab = 12), icon: const Icon(Icons.video_library_outlined), label: const Text('فتح مكتبة 90 أداة مجانية/محدودة')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 10), icon: const Icon(Icons.attach_money), label: const Text('فتح محرك فرص الدخل اليومي')),
     const SizedBox(height: 18),
