@@ -14,6 +14,18 @@ NOVA should become a supervised social-media operator that can research the mark
 - Buffer was considered as a scheduler, but an active account connection and posting permission are not assumed.
 - A prior plan was to publish twice daily for two months. Actual publishing must not start until the channels are connected, permissions tested, and a queue is approved.
 
+## Expanded platform coverage
+
+The product must be designed for a multi-channel publishing queue, not limited to the first three channels. Include these adapters in the integration roadmap, with each channel showing its own connection and permission state:
+
+- **Meta:** Facebook Pages and Instagram (including supported Reels formats). Facebook personal-profile posting is not assumed to be available through the Pages publishing API.
+- **Short-form/video:** TikTok and YouTube/Shorts.
+- **Text and professional networks:** X and LinkedIn (personal profile vs organization page scopes must be distinguished).
+- **Discovery and community:** Pinterest, Threads, and Telegram channels where official APIs support the requested operation.
+- **Optional scheduler bridge:** Buffer, only after OAuth/connection and the exact channel/post-format support are verified.
+
+Do not display a channel as connected just because it appears in analytics or because another app has access. Model each channel with separate states: not connected, connecting, connected-read-only, publish-enabled, degraded, revoked, and unsupported-format. Keep the platform/API capability matrix current and show when a format (such as music-backed short video) cannot be published through the selected route.
+
 ## Required capabilities
 
 ### 1. Market intelligence
@@ -32,7 +44,7 @@ NOVA should become a supervised social-media operator that can research the mark
 
 ### 3. Publishing
 - Prefer official platform APIs or a verified scheduler such as Buffer where the connected account and selected post format are supported.
-- Support draft, scheduled, publish, retry, cancel, and audit history.
+- Support draft, scheduled, publish, retry, cancel, bulk scheduling, per-channel queues, campaign-level publishing, and audit history. The owner may queue as much content as the connected service and platform limits allow; never advertise literally unlimited posts or bypass rate limits.
 - Respect each platform's API permissions, review requirements, rate limits, format rules, and music/copyright restrictions.
 - If direct publishing is unsupported, clearly say so and provide a ready-to-publish export; never simulate a successful post.
 - Start with an approved queue; allow the owner to pause all scheduled publishing immediately.
@@ -87,4 +99,4 @@ Never embed OAuth client secrets, API keys, long-lived access tokens, or service
 
 ## Operational target
 
-A proposed starting schedule is two posts per day for 60 days, subject to owner approval, platform limits, content quality, and available generation capacity. NOVA should prioritize relevance and quality over forcing a post when market signals or asset quality are weak. No system can guarantee viral reach or literally unlimited free media generation.
+A proposed starting schedule is two posts per day for 60 days across selected channels, with reusable campaign batches and a configurable queue. The owner can enable continuous scheduling, pause/resume, and per-channel limits. This is an open-ended workflow subject to API quotas, provider plan limits, platform rules, content quality, and available generation capacity—not a promise of unlimited free publishing. NOVA should prioritize relevance and quality over forcing a post when market signals or asset quality are weak. No system can guarantee viral reach or literally unlimited free media generation.
