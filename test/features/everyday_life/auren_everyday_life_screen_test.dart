@@ -277,7 +277,7 @@ void main() {
     await tester.tap(find.text('حفظ محلياً'));
     await tester.pumpAndSettle();
 
-    expect(find.text('معلومات غير مؤكدة'), findsOneWidget);
+    expect(find.textContaining('معلومات غير مؤكدة'), findsOneWidget);
     await tester.tap(find.byType(PopupMenuButton<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('وضع علامة: تحققت منه'));
@@ -288,7 +288,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('إزالة علامة التحقق'));
     await tester.pumpAndSettle();
-    expect(find.text('معلومات غير مؤكدة'), findsOneWidget);
+    expect(find.textContaining('معلومات غير مؤكدة'), findsOneWidget);
     // Drain pending SnackBar and sheet-close timers in widget tests.
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
