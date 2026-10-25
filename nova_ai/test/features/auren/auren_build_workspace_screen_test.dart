@@ -18,7 +18,7 @@ void main() {
     expect(find.text('اختبارات الجودة'), findsOneWidget);
     expect(find.text('المراقبة في الخلفية'), findsOneWidget);
     final ideasTitle = find.text('أفكار وأنظمة جديدة');
-    await tester.ensureVisible(ideasTitle);
+    await tester.scrollUntilVisible(ideasTitle, 250, scrollable: find.byType(Scrollable).first);
     expect(ideasTitle, findsOneWidget);
     expect(find.text('فتح كود AUREN'), findsOneWidget);
     expect(find.text('فحص التشغيل والاختبارات في GitHub Actions'), findsOneWidget);
