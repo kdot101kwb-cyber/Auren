@@ -1,0 +1,35 @@
+name: NOVA Daily Market Radar
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 09:15 Africa/Khartoum (UTC+3)
+    - cron: "15 6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nova-market-radar
+  cancel-in-progress: false
+
+jobs:
+  collect-public-signals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Collect public market signals
+        run: python .github/scripts/nova_market_radar.py
+      - name: Upload daily report
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-market-radar-report
+          path: reports/nova-market-radar.md
+          if-no-files-found: error
+          retention-days: 30
