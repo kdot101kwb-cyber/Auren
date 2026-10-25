@@ -92,8 +92,9 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
     // Snapshot every field before popping the sheet. The route future resolves
     // as the reverse animation starts, so persistence must not depend on live
     // TextField widgets continuing to exist during that transition.
-    var formValues = <String, String>{};
-    final title = await showModalBottomSheet<String>(
+    EverydayLifeItem? savedItem;
+    var saveFailed = false;
+    final saved = await showModalBottomSheet<EverydayLifeItem>(
       context: context,
       isScrollControlled: true,
       builder: (sheetContext) => Padding(
@@ -155,20 +156,42 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                   )),
                   const SizedBox(width: 12),
                   Expanded(child: FilledButton(
-                    onPressed: () {
+                    onPressed: () async {
                       final enteredTitle = titleController.text.trim();
-                      if (enteredTitle.isNotEmpty) {
-                        formValues = {
-                          'title': enteredTitle,
-                          'details': detailsController.text.trim(),
-                          'category': categoryController.text.trim(),
-                          'quantity': quantityController.text.trim(),
-                          'requestedWindow': requestedWindowController.text.trim(),
-                          'providerName': providerController.text.trim(),
-                          'contact': contactController.text.trim(),
-                          'location': locationController.text.trim(),
-                        };
-                        Navigator.pop(sheetContext, enteredTitle);
+                      if (enteredTitle.isEmpty) return;
+                      final item = EverydayLifeItem(
+                        id: DateTime.now().microsecondsSinceEpoch.toString(),
+                        kind: kind,
+                        title: enteredTitle,
+                        details: detailsController.text.trim(),
+                        category: categoryController.text.trim(),
+                        quantity: quantityController.text.trim(),
+                        requestedWindow: requestedWindowController.text.trim(),
+                        createdAt: DateTime.now().toUtc().toIso8601String(),
+                        providerName: providerController.text.trim(),
+                        contact: contactController.text.trim(),
+                        location: locationController.text.trim(),
+                        informationConfirmed: false,
+                      );
+                      try {
+                        // Persist before dismissing the form so the UI never
+                        // reports a save while the asynchronous write is pending.
+                        await _store.save(item);
+                        savedItem = item;
+                        if (sheetContext.mounted) {
+                          Navigator.pop(sheetContext, item);
+                        }
+                      } catch (_) {
+                        saveFailed = true;
+                        if (mounted) {
+                          ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text('تعذر الحفظ على هذا الجهاز.'),
+                              ),
+                            );
+                        }
                       }
                     },
                     child: const Text('حفظ محلياً'),
@@ -180,9 +203,7 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
         ),
       ),
     );
-    // The modal result completes as the reverse transition starts; its
-    // TextFields may still rebuild during that animation. Defer controller
-    // disposal until the closing transition has finished.
+    // Keep controllers alive through the bottom-sheet reverse transition.
     void disposeControllers() {
       titleController.dispose();
       detailsController.dispose();
@@ -194,43 +215,19 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
       requestedWindowController.dispose();
     }
 
-    void disposeControllersAfterSheetCloses() {
-      Future<void>.delayed(const Duration(milliseconds: 400), disposeControllers);
-    }
-
-    if (title == null || title.trim().isEmpty || !mounted) {
-      disposeControllersAfterSheetCloses();
+    Future<void>.delayed(const Duration(milliseconds: 400), disposeControllers);
+    if (saved == null || savedItem == null || !mounted) {
+      // A failed save leaves the form open; cancellation simply returns.
+      if (saved == null && !saveFailed) return;
       return;
     }
-    final item = EverydayLifeItem(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      kind: kind,
-      title: title,
-      details: formValues['details'] ?? '',
-      category: formValues['category'] ?? '',
-      quantity: formValues['quantity'] ?? '',
-      requestedWindow: formValues['requestedWindow'] ?? '',
-      createdAt: DateTime.now().toUtc().toIso8601String(),
-      providerName: formValues['providerName'] ?? '',
-      contact: formValues['contact'] ?? '',
-      location: formValues['location'] ?? '',
-      informationConfirmed: false,
-    );
-    disposeControllersAfterSheetCloses();
-    try {
-      await _store.save(item);
-      await _refresh();
-      if (mounted && isAppointment) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('حُفظ الطلب كمسودة فقط؛ لم يُرسل ولم يُؤكَّد أي موعد.')),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر الحفظ على هذا الجهاز.')),
-        );
-      }
+    await _refresh();
+    if (mounted && isAppointment) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حُفظ الطلب كمسودة فقط؛ لم يُرسل ولم يُؤكَّد أي موعد.'),
+        ),
+      );
     }
   }
 
