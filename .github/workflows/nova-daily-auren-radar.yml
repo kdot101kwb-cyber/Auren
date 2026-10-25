@@ -29,8 +29,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p report
-          gh api --paginate "repos/$REPOSITORY/issues?state=open&per_page=100" > report/open-issues-and-prs.json
-          gh api --paginate "repos/$REPOSITORY/pulls?state=open&per_page=100" > report/open-pull-requests.json
+          gh api "repos/$REPOSITORY/issues?state=open&per_page=100" > report/open-issues-and-prs.json
+          gh api "repos/$REPOSITORY/pulls?state=open&per_page=100" > report/open-pull-requests.json
           gh api "repos/$REPOSITORY/actions/runs?per_page=30" > report/recent-workflow-runs.json
           python - <<'PY'
           import json
