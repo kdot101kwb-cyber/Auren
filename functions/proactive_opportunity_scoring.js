@@ -25,7 +25,8 @@ function scoreOpportunitySignal(signal, nowMs = Date.now()) {
   if (!Number.isFinite(observed)) throw new TypeError('observedAt must be an ISO date');
 
   const ageDays = Math.max(0, (nowMs - observed) / 86400000);
-  const freshness = Math.max(0, 100 - ageDays * 100 / MAX_AGE_DAYS);
+  // Freshness decays by complete days; intraday timestamps remain fully fresh.
+  const freshness = Math.max(0, 100 - Math.floor(ageDays) * 100 / MAX_AGE_DAYS);
   const raw = values.demand * 0.22 + values.trend * 0.18 +
     values.monetization * 0.20 + values.evidenceStrength * 0.18 +
     trust * 0.10 + (100 - values.competition) * 0.06 +
