@@ -22,6 +22,9 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
   String? _report;
   String? _status;
   String? _error;
+  bool _signalBusy = false;
+  String? _signalMessage;
+  List<Map<String, dynamic>> _signals = [];
 
   static const _tracks = <({String title, String detail, String price, IconData icon})>[
     (title: 'خدمات الكتابة بالذكاء الاصطناعي', detail: 'وصف منتجات، كتابة إعلانية، تحرير وتدقيق', price: 'مثال \$20–50', icon: Icons.edit_note),
@@ -117,6 +120,49 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
     }
   }
 
+  Future<void> _loadSignals() async {
+    if (!NovaFirebaseRuntime.initialized || !NovaFirebaseRuntime.appCheckActivated) {
+      setState(() => _signalMessage = NovaFirebaseRuntime.initializationError ??
+          'يلزم إعداد Firebase وApp Check قبل رصد الاتجاهات.');
+      return;
+    }
+    setState(() { _signalBusy = true; _signalMessage = null; });
+    try {
+      await _ensureSignedIn();
+      final response = await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('getNovaSignalOpportunities').call();
+      final data = Map<String, dynamic>.from(response.data as Map);
+      final raw = data['ideas'];
+      final rows = raw is List
+          ? raw.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList()
+          : <Map<String, dynamic>>[];
+      if (!mounted) return;
+      setState(() {
+        _signals = rows;
+        _signalMessage = rows.isEmpty
+            ? 'لم تصل بيانات كافية؛ أعد المحاولة لاحقاً.'
+            : 'تم تحديث ' + rows.length.toString() + ' إشارات من مصادر عامة مجانية. لا توجد عملية شراء دومينات.';
+      });
+    } catch (error) {
+      if (mounted) setState(() => _signalMessage = 'تعذر رصد الاتجاهات: $error');
+    } finally {
+      if (mounted) setState(() => _signalBusy = false);
+    }
+  }
+
+  String _domainStatusLabel(Object? status) {
+    switch (status?.toString()) {
+      case 'registered':
+        return 'الدومين مسجل';
+      case 'not_found_in_registry_check':
+        return 'لم يظهر في فحص السجل — تحقق لدى المسجل';
+      case 'rate_limited_unverified':
+        return 'الفحص محدود؛ الحالة غير مؤكدة';
+      default:
+        return 'الحالة غير مؤكدة';
+    }
+  }
+
   Widget _field(String label, TextEditingController controller, {String? hint}) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
     child: TextField(
@@ -184,6 +230,38 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
         const Text('حزمة العمل اليومية من NOVA', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
         Card(child: Padding(padding: const EdgeInsets.all(14), child: SelectableText(_report!, textDirection: TextDirection.rtl))),
       ],
+      const SizedBox(height: 20),
+      const SizedBox(height: 18),
+      const Text('رصد الاتجاهات والدومينات — مجاني', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 6),
+      const Text('يفحص NOVA إشارات من Hacker News خلال أسبوعين ويجري فحص RDAP أولياً لأسماء .com. النتائج ليست توقعاً للانتشار، وتوفر الاسم وسعره النهائي يجب التحقق منهما عند مسجل الدومينات.'),
+      const SizedBox(height: 8),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          onPressed: _signalBusy ? null : _loadSignals,
+          icon: const Icon(Icons.radar),
+          label: Text(_signalBusy ? 'جاري فحص الإشارات…' : 'افحص 10 أفكار الآن'),
+        ),
+      ),
+      if (_signalMessage != null)
+        Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(_signalMessage!, textDirection: TextDirection.rtl)),
+      for (var i = 0; i < _signals.length; i++)
+        Card(child: ListTile(
+          leading: CircleAvatar(child: Text('${i + 1}')),
+          title: Text(_signals[i]['term']?.toString() ?? 'فكرة تقنية'),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'إشارات آخر 7 أيام: ${_signals[i]['recentMentions'] ?? 'غير متاح'} | الأسبوع السابق: ${_signals[i]['previousMentions'] ?? 'غير متاح'}\n'
+              'درجة الإشارة: ${_signals[i]['score'] ?? 'غير متاحة'} / 100\n'
+              'الدومين: ${_signals[i]['domain'] ?? 'غير محدد'} — ${_domainStatusLabel(_signals[i]['domainStatus'])}\n'
+              '${_signals[i]['idea'] ?? ''}',
+              textDirection: TextDirection.rtl,
+            ),
+          ),
+          isThreeLine: true,
+        )),
       const SizedBox(height: 20),
       const Text('10 مسارات دخل لاختبارها', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
       const SizedBox(height: 6),
