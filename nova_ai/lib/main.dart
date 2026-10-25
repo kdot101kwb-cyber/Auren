@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'features/opportunities/opportunity_lab_screen.dart';
 
 void main() => runApp(const NovaApp());
 
@@ -74,6 +75,7 @@ class _NovaHomeState extends State<NovaHome> {
       agents(),
       creativeStudio(),
       socialCenter(),
+      const OpportunityLabScreen(),
       auren(),
       activity(),
     ];
@@ -91,6 +93,7 @@ class _NovaHomeState extends State<NovaHome> {
           NavigationDestination(icon: Icon(Icons.smart_toy_outlined), selectedIcon: Icon(Icons.smart_toy), label: 'الوكلاء'),
           NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'الإبداع'),
           NavigationDestination(icon: Icon(Icons.campaign_outlined), selectedIcon: Icon(Icons.campaign), label: 'التسويق'),
+          NavigationDestination(icon: Icon(Icons.trending_up), selectedIcon: Icon(Icons.trending_up), label: 'فرص الدخل'),
           NavigationDestination(icon: Icon(Icons.code_outlined), selectedIcon: Icon(Icons.code), label: 'AUREN'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'النشاط'),
         ],
