@@ -16,6 +16,9 @@ const CLOUDFLARE_ACCOUNT_ID = defineSecret('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_TOKEN = defineSecret('CLOUDFLARE_API_TOKEN');
 const HF_TOKEN = defineSecret('HF_TOKEN');
 
+// NOVA strategic debate callable (authenticated, rate-limited, server-side AI key).
+Object.assign(exports, require('./nova_debate_service'));
+
 async function recordAurenAiProviderHealth(provider, ok, message) {
   await db.collection('ai_provider_health').doc(provider).set({
     lastError: ok ? '' : String(message || '').slice(0, 500),
