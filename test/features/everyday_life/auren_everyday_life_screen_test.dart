@@ -360,7 +360,10 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(Checkbox).first);
-    await tester.pumpAndSettle();
+    // A failed write shows a SnackBar; pump its finite animation directly
+    // rather than waiting for every scheduled frame in the entire screen.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(
       find.text('تعذر حفظ التغيير محلياً؛ احتفظنا بالبيانات السابقة. حاول مرة أخرى.'),
@@ -370,9 +373,9 @@ void main() {
     expect(records, hasLength(1));
     expect(records.single.completed, isFalse);
     expect(find.text('Keep this task unchanged'), findsOneWidget);
-    // Drain pending SnackBar and sheet-close timers in widget tests.
+    // Let the SnackBar animation progress without an unbounded settle wait.
     await tester.pump(const Duration(seconds: 5));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
   });
 
   testWidgets(
