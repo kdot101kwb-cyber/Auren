@@ -24,7 +24,7 @@ class EverydayLifeLocalStore {
 
   // Serialize read-modify-write operations so overlapping actions on this
   // store instance cannot overwrite one another with stale snapshots.
-  static Future<void> _mutationTail = Future<void>.value();
+  Future<void> _mutationTail = Future<void>.value();
 
   Future<T> _serializeMutation<T>(Future<T> Function() operation) {
     final result = Completer<T>();
