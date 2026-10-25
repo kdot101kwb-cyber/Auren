@@ -105,7 +105,7 @@ async function generateDailyPack(uid, preferences, dateKey) {
 }
 
 exports.configureNovaRevenueEngine = onCall(
-  {region: REGION, timeoutSeconds: 20, memory: '256MiB', enforceAppCheck: true, consumeAppCheckToken: true},
+  {region: REGION, timeoutSeconds: 55, memory: '256MiB', enforceAppCheck: true, consumeAppCheckToken: true, secrets: [OPENROUTER_API_KEY]},
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Sign in to configure the NOVA revenue engine.');
