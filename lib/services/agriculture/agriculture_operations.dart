@@ -9,13 +9,26 @@ class FarmOperationTask {
   final String status;
   final String note;
 
-  const FarmOperationTask({
-    required this.id,
-    required this.title,
+  FarmOperationTask({
+    required String id,
+    required String title,
     required this.dueAt,
-    this.status = 'planned',
-    this.note = '',
-  });
+    String status = 'planned',
+    String note = '',
+  }) : id = id.trim(),
+       title = title.trim(),
+       status = status.trim(),
+       note = note.trim() {
+    if (this.id.isEmpty || this.id.length > 128) {
+      throw ArgumentError('A valid task id is required.');
+    }
+    if (this.title.isEmpty || this.title.length > 160 || this.note.length > 1000) {
+      throw ArgumentError('Task title or note is invalid.');
+    }
+    if (!const {'planned', 'in_progress', 'completed', 'cancelled'}.contains(this.status)) {
+      throw ArgumentError.value(status, 'status', 'Unsupported status.');
+    }
+  }
 
   FarmOperationTask withStatus(String nextStatus) {
     const transitions = {
@@ -77,11 +90,26 @@ class IrrigationVolumeEstimate {
   final double depthMillimeters;
   final double volumeLiters;
 
-  const IrrigationVolumeEstimate({
+  IrrigationVolumeEstimate({
     required this.areaSquareMeters,
     required this.depthMillimeters,
     required this.volumeLiters,
-  });
+  }) {
+    if (!areaSquareMeters.isFinite ||
+        areaSquareMeters <= 0 ||
+        areaSquareMeters > 100000000) {
+      throw ArgumentError('Area must be positive and within the supported range.');
+    }
+    if (!depthMillimeters.isFinite ||
+        depthMillimeters < 0 ||
+        depthMillimeters > 1000) {
+      throw ArgumentError('Depth must be between 0 and 1000 mm.');
+    }
+    final expectedVolume = areaSquareMeters * depthMillimeters;
+    if (!volumeLiters.isFinite || volumeLiters != expectedVolume) {
+      throw ArgumentError('Volume must equal area multiplied by depth.');
+    }
+  }
 
   factory IrrigationVolumeEstimate.fromInputs({
     required double areaSquareMeters,
@@ -115,14 +143,30 @@ class HarvestStorageLot {
   final double storedQuantity;
   final double lossQuantity;
 
-  const HarvestStorageLot({
-    required this.id,
-    required this.crop,
-    required this.unit,
+  HarvestStorageLot({
+    required String id,
+    required String crop,
+    required String unit,
     required this.harvestedQuantity,
     required this.storedQuantity,
     required this.lossQuantity,
-  });
+  }) : id = id.trim(),
+       crop = crop.trim(),
+       unit = unit.trim() {
+    if (this.id.isEmpty || this.id.length > 128 ||
+        this.crop.isEmpty || this.crop.length > 120 ||
+        this.unit.isEmpty || this.unit.length > 24) {
+      throw ArgumentError('Lot identity, crop and unit are required.');
+    }
+    for (final value in [harvestedQuantity, storedQuantity, lossQuantity]) {
+      if (!value.isFinite || value < 0) {
+        throw ArgumentError('Lot quantities must be finite and non-negative.');
+      }
+    }
+    if (storedQuantity + lossQuantity > harvestedQuantity) {
+      throw ArgumentError('Stored quantity plus losses cannot exceed harvest.');
+    }
+  }
 
   double get unaccountedQuantity =>
       harvestedQuantity - storedQuantity - lossQuantity;
@@ -202,12 +246,20 @@ class ProduceTraceEvent {
   final String note;
   final String? location;
 
-  const ProduceTraceEvent({
-    required this.stage,
+  ProduceTraceEvent({
+    required String stage,
     required this.occurredAt,
-    required this.note,
-    this.location,
-  });
+    required String note,
+    String? location,
+  }) : stage = stage.trim(),
+       note = note.trim(),
+       location = location?.trim().isEmpty ?? true ? null : location?.trim() {
+    if (this.stage.isEmpty || this.stage.length > 60 ||
+        this.note.length > 1000 ||
+        (this.location?.length ?? 0) > 160) {
+      throw ArgumentError('Trace event fields are invalid.');
+    }
+  }
 
   factory ProduceTraceEvent.create({
     required String stage,
