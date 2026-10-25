@@ -21,7 +21,7 @@ class AurenOfflineSyncService {
   Future<void> start() async {
     await _subscription?.cancel();
     _subscription = _connectivity.onConnectivityChanged.listen((results) {
-      if (_hasConnection(results)) unawaited(flush());
+      if (_hasConnection(results)) unawaited(_flushAfterConnectivityChange());
     });
     final current = await _connectivity.checkConnectivity();
     if (_hasConnection(current)) await flush();
@@ -70,6 +70,17 @@ class AurenOfflineSyncService {
   Future<List<Map<String, dynamic>>> pending() async {
     final prefs = await SharedPreferences.getInstance();
     return _readQueue(prefs);
+  }
+
+  /// Best-effort background flush. Explicit calls to [flush] still surface
+  /// errors to their caller; a connectivity callback must not leak an
+  /// asynchronous error when persisted queue data is corrupt.
+  Future<void> _flushAfterConnectivityChange() async {
+    try {
+      await flush();
+    } on StateError {
+      // Preserve the queue for inspection or an explicit, user-confirmed clear.
+    }
   }
 
   Future<void> flush() async {
