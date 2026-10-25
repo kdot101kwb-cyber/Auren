@@ -23,6 +23,26 @@ void main() {
       expect(() => task.withStatus('cancelled').withStatus('planned'), throwsStateError);
     });
 
+    test('public constructor cannot bypass task validation', () {
+      expect(
+        () => FarmOperationTask(
+          id: 'task-1',
+          title: ' ',
+          dueAt: DateTime.utc(2026, 10, 24),
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => FarmOperationTask(
+          id: 'task-1',
+          title: 'Planting',
+          dueAt: DateTime.utc(2026, 10, 24),
+          status: 'unexpected',
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('rejects empty task titles and prevents reopening closed tasks', () {
       expect(
         () => FarmOperationTask.create(
@@ -48,6 +68,25 @@ void main() {
         depthMillimeters: 12,
       );
       expect(estimate.volumeLiters, 3000);
+    });
+
+    test('public constructor rejects inconsistent volume and invalid inputs', () {
+      expect(
+        () => IrrigationVolumeEstimate(
+          areaSquareMeters: 20,
+          depthMillimeters: 2,
+          volumeLiters: 999,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => IrrigationVolumeEstimate(
+          areaSquareMeters: double.infinity,
+          depthMillimeters: 2,
+          volumeLiters: double.infinity,
+        ),
+        throwsArgumentError,
+      );
     });
 
     test('accepts zero depth but rejects invalid or unbounded inputs', () {
@@ -91,6 +130,31 @@ void main() {
       expect(accounted.unaccountedQuantity, 25);
     });
 
+    test('public constructor rejects invalid identity and over-accounting', () {
+      expect(
+        () => HarvestStorageLot(
+          id: 'lot',
+          crop: 'Maize',
+          unit: 'kg',
+          harvestedQuantity: 10,
+          storedQuantity: 8,
+          lossQuantity: 3,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => HarvestStorageLot(
+          id: ' ',
+          crop: 'Maize',
+          unit: 'kg',
+          harvestedQuantity: 10,
+          storedQuantity: 0,
+          lossQuantity: 0,
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('rejects negative quantities and over-accounting', () {
       expect(
         () => HarvestStorageLot.create(
@@ -122,6 +186,26 @@ void main() {
       );
       expect(batch.batchId, 'batch-003');
       expect(batch.product, 'Sesame');
+    });
+
+    test('public event constructor validates and normalizes fields', () {
+      expect(
+        () => ProduceTraceEvent(
+          stage: ' ',
+          occurredAt: DateTime.utc(2026, 10, 20),
+          note: 'bad stage',
+        ),
+        throwsArgumentError,
+      );
+      final event = ProduceTraceEvent(
+        stage: ' harvested ',
+        occurredAt: DateTime.utc(2026, 10, 20),
+        note: ' note ',
+        location: ' Farm A ',
+      );
+      expect(event.stage, 'harvested');
+      expect(event.note, 'note');
+      expect(event.location, 'Farm A');
     });
 
     test('appends chronological events immutably', () {
