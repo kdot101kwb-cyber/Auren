@@ -4987,3 +4987,10 @@ Object.assign(module.exports, require('./nova_app_builder'));
 const novaHiggsfield = require('./nova_higgsfield_service');
 exports.submitNovaHiggsfieldVideo = novaHiggsfield.submitNovaHiggsfieldVideo;
 exports.getNovaHiggsfieldVideoStatus = novaHiggsfield.getNovaHiggsfieldVideoStatus;
+
+
+// NOVA FreeTheAI video generation; only explicitly allowlisted free-tier models can submit jobs.
+const novaFreeTheAIVideo = require('./nova_freetheai_video_service');
+exports.listNovaFreeTheAIVideoModels = novaFreeTheAIVideo.listNovaFreeTheAIVideoModels;
+exports.submitNovaFreeTheAIVideo = novaFreeTheAIVideo.submitNovaFreeTheAIVideo;
+exports.getNovaFreeTheAIVideoStatus = novaFreeTheAIVideo.getNovaFreeTheAIVideoStatus;
