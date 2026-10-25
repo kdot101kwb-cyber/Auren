@@ -13,7 +13,8 @@ void main() {
     expect(find.text('NOVA AI'), findsOneWidget);
     expect(find.text('مركز القيادة الذكي'), findsOneWidget);
     expect(find.text('الوكلاء'), findsWidgets);
-    expect(find.text('AUREN'), findsOneWidget);
+    expect(find.text('فرص الدخل'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 
   testWidgets('dashboard task completion survives app restart', (tester) async {
