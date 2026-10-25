@@ -181,6 +181,14 @@ class _NovaTaskCenterScreenState extends State<NovaTaskCenterScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 5),
             Text('${task['prompt'] ?? task['taskId'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
+            if (task['result'] is Map && (task['result'] as Map)['text'] is String) ...[
+              const SizedBox(height: 8),
+              Text('النتيجة: ${(task['result'] as Map)['text']}', textDirection: TextDirection.rtl),
+            ],
+            if (task['error'] is String && (task['error'] as String).isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('الخطأ: ${task['error']}', style: const TextStyle(color: Colors.orangeAccent), textDirection: TextDirection.rtl),
+            ],
             const SizedBox(height: 6),
             Text('المعرف: ${task['taskId'] ?? ''}', style: const TextStyle(fontSize: 11)),
             Wrap(spacing: 8, children: [
