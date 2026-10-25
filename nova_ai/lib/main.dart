@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'features/opportunities/opportunity_lab_screen.dart';
+import 'features/integrations/integration_hub_screen.dart';
 
 void main() => runApp(const NovaApp());
 
@@ -78,6 +79,7 @@ class _NovaHomeState extends State<NovaHome> {
       const OpportunityLabScreen(),
       auren(),
       activity(),
+      const IntegrationHubScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -96,6 +98,7 @@ class _NovaHomeState extends State<NovaHome> {
           NavigationDestination(icon: Icon(Icons.trending_up), selectedIcon: Icon(Icons.trending_up), label: 'فرص الدخل'),
           NavigationDestination(icon: Icon(Icons.code_outlined), selectedIcon: Icon(Icons.code), label: 'AUREN'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'النشاط'),
+          NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'الربط'),
         ],
       ),
     );
