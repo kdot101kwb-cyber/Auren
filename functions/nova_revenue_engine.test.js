@@ -38,4 +38,8 @@ test('prompt requests concrete drafts without false claims or automatic outreach
   assert.match(prompt, /Trust Wallet/);
   assert.match(prompt, /never sign transactions/i);
   assert.match(prompt, /Social content pack/);
+  assert.match(prompt, /Facebook Page\/Reels/);
+  assert.match(prompt, /Facebook Professional Dashboard/);
+  assert.match(prompt, /\(20\) setup of business profiles/);
+  assert.match(prompt, /WhatsApp Business Status/);
 });
