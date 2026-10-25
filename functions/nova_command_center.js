@@ -111,6 +111,10 @@ exports.approveNovaTask = onCall(
         approvedAt:FieldValue.serverTimestamp(),
         updatedAt:FieldValue.serverTimestamp(),
       });
+      tx.create(db.collection('nova_task_queue').doc(uid + '_' + taskId), {
+        ownerUid:uid, taskId, status:'queued', attempts:0,
+        createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+      });
       tx.create(auditRef, {
         action:'nova.task.approved',
         actorUid:uid,
