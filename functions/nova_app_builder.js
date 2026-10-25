@@ -1,0 +1,79 @@
+'use strict';
+
+const {onCall, HttpsError} = require('firebase-functions/v2/https');
+const {getFirestore, FieldValue} = require('firebase-admin/firestore');
+const {randomUUID} = require('node:crypto');
+
+const db = getFirestore();
+const REGION = 'us-central1';
+const TASKS = 'nova_build_jobs';
+const TYPES = new Set(['flutter_app', 'web_app', 'landing_page', 'debug_existing', 'redesign_existing']);
+const STACKS = new Set(['flutter', 'web', 'static_web', 'auto']);
+
+function validateBuildRequest(data) {
+  const type = String(data?.type || '');
+  const prompt = typeof data?.prompt === 'string' ? data.prompt.trim() : '';
+  const stack = String(data?.stack || 'auto');
+  if (!TYPES.has(type)) throw new HttpsError('invalid-argument', 'Unsupported build task type.');
+  if (prompt.length < 12 || prompt.length > 12000) throw new HttpsError('invalid-argument', 'Describe the project in 12–12000 characters.');
+  if (!STACKS.has(stack)) throw new HttpsError('invalid-argument', 'Unsupported technology stack.');
+  return {type, prompt, stack};
+}
+
+exports.submitNovaBuildJob = onCall(
+  {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to create a build job.');
+    const input = validateBuildRequest(request.data);
+    const id = randomUUID().replace(/-/g, '');
+    const ref = db.collection('users').doc(uid).collection(TASKS).doc(id);
+    const audit = db.collection('users').doc(uid).collection('nova_audit').doc();
+    const job = {
+      jobId:id, ownerUid:uid, ...input, status:'queued',
+      stage:'waiting_for_runner', attempts:0, maxAttempts:3,
+      acceptanceCriteria: Array.isArray(request.data?.acceptanceCriteria)
+        ? request.data.acceptanceCriteria.filter(x => typeof x === 'string').slice(0,20).map(x => x.slice(0,300))
+        : [],
+      approvalRequiredFor:['deploy','publish','merge','production_secret_change'],
+      createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+    };
+    await db.runTransaction(async tx => {
+      tx.create(ref, job);
+      tx.create(db.collection('nova_build_queue').doc(id), {
+        jobId:id, ownerUid:uid, status:'queued', attempts:0,
+        createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(),
+      });
+      tx.create(audit, {
+        action:'nova.build_job.submitted', actorUid:uid, jobId:id, taskType:input.type,
+        stack:input.stack, createdAt:FieldValue.serverTimestamp(),
+      });
+    });
+    return {
+      jobId:id, status:'queued',
+      message:'تم تسجيل المهمة. لن يبدأ بناء الكود حتى يتصل عامل بناء معزول بالطابور.',
+    };
+  }
+);
+
+exports.getNovaBuildJob = onCall(
+  {region:REGION, timeoutSeconds:15, memory:'256MiB', enforceAppCheck:true},
+  async request => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to inspect build jobs.');
+    const jobId = String(request.data?.jobId || '');
+    if (!/^[a-f0-9]{32}$/.test(jobId)) throw new HttpsError('invalid-argument', 'Invalid build job ID.');
+    const snap = await db.collection('users').doc(uid).collection(TASKS).doc(jobId).get();
+    if (!snap.exists) throw new HttpsError('not-found', 'Build job not found.');
+    const job = snap.data();
+    return {
+      jobId:snap.id, type:job.type, stack:job.stack, status:job.status, stage:job.stage,
+      attempts:job.attempts, maxAttempts:job.maxAttempts, summary:job.summary || null,
+      checks:job.checks || [], artifacts:job.artifacts || [], error:job.error || null,
+      createdAt:job.createdAt?.toDate?.().toISOString() || null,
+      updatedAt:job.updatedAt?.toDate?.().toISOString() || null,
+    };
+  }
+);
+
+exports.__testables = {validateBuildRequest, TYPES, STACKS};
