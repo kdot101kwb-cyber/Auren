@@ -1,8 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {__testables} = require('./nova_command_center');
-const {normalizeNovaTaskInput} = __testables;
+const {normalizeNovaTaskInput} = require('./nova_command_validation');
 
 test('accepts a bounded task with stable idempotency key', () => {
   const task = normalizeNovaTaskInput({type:'research',prompt:'ابحث عن فرصة',idempotencyKey:'nova_task_123456'});
