@@ -45,7 +45,9 @@ void main() {
     ));
     expect(find.textContaining('90 أداة للاستكشاف'), findsOneWidget);
 
-    await tester.tap(find.text('ألعاب'));
+    final gamesChip = find.widgetWithText(ChoiceChip, 'ألعاب');
+    await tester.ensureVisible(gamesChip);
+    await tester.tap(gamesChip);
     await tester.pumpAndSettle();
     expect(find.text('Godot'), findsOneWidget);
     expect(find.text('Shotcut'), findsNothing);
