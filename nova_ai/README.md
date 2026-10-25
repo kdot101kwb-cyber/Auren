@@ -8,6 +8,9 @@ Arabic-first Flutter control-center starter for NOVA AI agents and AUREN project
 - AUREN repository and roadmap shortcuts
 - Activity/status page with explicit prototype limitations
 
+## Creative studio
+The app now includes a UI for preparing image, video, and game-generation requests. This is a front-end flow only: it does not generate media or compile games yet. Real output requires a server-side provider adapter, secure credentials, asynchronous job tracking, file storage, and cost/abuse controls. “Unlimited” can mean no app-imposed daily cap, but provider and infrastructure limits still apply.
+
 ## Important limitations
 The app is currently a UI prototype. It does not yet execute GitHub changes, run builds remotely, manage email/social accounts, or synchronize task state. Those capabilities require a secure backend, official OAuth/API integrations, least-privilege access, and audit logs. Do not place GitHub tokens or provider API secrets in the mobile app.
 
