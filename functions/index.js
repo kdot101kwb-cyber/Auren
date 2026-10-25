@@ -4998,3 +4998,6 @@ exports.getNovaFreeTheAIVideoStatus = novaFreeTheAIVideo.getNovaFreeTheAIVideoSt
 
 // NOVA background revenue work-pack engine (drafts and plans only; no automatic outreach or publishing).
 Object.assign(module.exports, require('./nova_revenue_engine'));
+
+// NOVA free trend-signal and preliminary domain-check engine.
+Object.assign(module.exports, require('./nova_signal_engine'));
