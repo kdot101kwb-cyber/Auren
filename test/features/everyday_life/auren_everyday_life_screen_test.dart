@@ -442,7 +442,6 @@ void main() {
     // may still be completing. Drain that finite transition before asserting
     // that the form is no longer present.
     await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
 
     expect(find.text('تعذر الحفظ على هذا الجهاز.'), findsOneWidget);
     expect(await EverydayLifeLocalStore().readAll(), isEmpty);
