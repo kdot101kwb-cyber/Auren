@@ -130,8 +130,22 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
       ),
     );
     if (saved == null || !mounted || _uid != uid) return;
-    await _preferencesStore.save(uid, saved);
-    if (mounted && _uid == uid) setState(() => _preferences = saved);
+    try {
+      await _preferencesStore.save(uid, saved);
+    } catch (_) {
+      if (!mounted || _uid != uid) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تعذر حفظ تفضيلات الإشعارات. حاول مرة أخرى.'),
+        ),
+      );
+      return;
+    }
+    if (!mounted || _uid != uid) return;
+    setState(() => _preferences = saved);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم حفظ تفضيلات الإشعارات')),
+    );
   }
 
   String _category(AurenNotification n) {
