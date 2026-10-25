@@ -34,6 +34,7 @@ exports.novaStrategicDebate = onCall({
   region: 'us-central1',
   timeoutSeconds: 60,
   memory: '256MiB',
+  enforceAppCheck: true,
   secrets: [OPENROUTER_API_KEY],
 }, async (request) => {
   const uid = request.auth?.uid;
@@ -118,6 +119,7 @@ exports.novaApproveDebatePlan = onCall({
   region: 'us-central1',
   timeoutSeconds: 20,
   memory: '256MiB',
+  enforceAppCheck: true,
 }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new HttpsError('unauthenticated', 'يجب تسجيل الدخول لاعتماد الخطة.');
