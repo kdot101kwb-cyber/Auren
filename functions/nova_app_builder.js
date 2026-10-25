@@ -7,18 +7,7 @@ const {randomUUID} = require('node:crypto');
 const db = getFirestore();
 const REGION = 'us-central1';
 const TASKS = 'nova_build_jobs';
-const TYPES = new Set(['flutter_app', 'web_app', 'landing_page', 'debug_existing', 'redesign_existing']);
-const STACKS = new Set(['flutter', 'web', 'static_web', 'auto']);
-
-function validateBuildRequest(data) {
-  const type = String(data?.type || '');
-  const prompt = typeof data?.prompt === 'string' ? data.prompt.trim() : '';
-  const stack = String(data?.stack || 'auto');
-  if (!TYPES.has(type)) throw new HttpsError('invalid-argument', 'Unsupported build task type.');
-  if (prompt.length < 12 || prompt.length > 12000) throw new HttpsError('invalid-argument', 'Describe the project in 12–12000 characters.');
-  if (!STACKS.has(stack)) throw new HttpsError('invalid-argument', 'Unsupported technology stack.');
-  return {type, prompt, stack};
-}
+const {validateBuildRequest} = require('./nova_app_builder_validation');
 
 exports.submitNovaBuildJob = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
