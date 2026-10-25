@@ -1,10 +1,10 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {__testables} = require('./nova_task_worker');
+const {SAFE_TEXT_TYPES} = require('./nova_task_worker_policy');
 
 test('only safe text tasks are eligible for automatic execution', () => {
-  assert.equal(__testables.SAFE_TEXT_TYPES.has('chat'), true);
+  assert.equal(SAFE_TEXT_TYPES.has('chat'), true);
   assert.equal(__testables.SAFE_TEXT_TYPES.has('plan'), true);
   assert.equal(__testables.SAFE_TEXT_TYPES.has('research'), true);
   assert.equal(__testables.SAFE_TEXT_TYPES.has('content_draft'), true);
