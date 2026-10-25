@@ -18,11 +18,13 @@ function normalizePreferences(data = {}) {
   if (!Number.isFinite(hoursPerDay) || hoursPerDay < 1 || hoursPerDay > 12) {
     throw new Error('hoursPerDay must be between 1 and 12.');
   }
+  const walletName = String(data.walletName || 'Trust Wallet').trim().slice(0, 80);
+  const walletNetworks = String(data.walletNetworks || 'multi-chain; verify each chain in Trust Wallet').trim().slice(0, 200);
   const startingBudgetUsd = Number(data.startingBudgetUsd || 0);
   if (!Number.isFinite(startingBudgetUsd) || startingBudgetUsd < 0 || startingBudgetUsd > 100) {
     throw new Error('startingBudgetUsd must be between $0 and $100.');
   }
-  return {skills, languages, hoursPerDay, startingBudgetUsd};
+  return {skills, languages, hoursPerDay, startingBudgetUsd, walletName, walletNetworks};
 }
 
 function utcDateKey(now = new Date()) {
@@ -38,6 +40,7 @@ function buildRevenuePrompt(preferences, dateKey) {
     'Target aspiration: work toward $100/day, but label it a goal rather than forecast. Include transparent example pricing and arithmetic, and state that customer acquisition is uncertain.',
     'Produce these headings exactly: ## Today\'s focus, ## Three sellable services, ## Portfolio sample to create, ## Client outreach draft, ## Social content pack, ## Airdrop watch, ## 3-hour execution plan, ## Revenue math (not a forecast), ## Risks and next checks.',
     'Under Social content pack, prepare one original daily post/caption and short-video script each for YouTube Shorts, Instagram Reels, TikTok, and X, with hook, CTA, suggested visual, and hashtags. These are drafts only; never claim to publish or schedule them. Respect platform policies, copyright, and anti-spam rules.',
+    'Wallet context: ' + preferences.walletName + '; preferred network coverage: ' + preferences.walletNetworks + '. Never request a wallet address unless a public address is truly required for a read-only eligibility check, and explain privacy implications first.',
     'Under Airdrop watch, list only opportunities that can be supported by current official project announcements or official campaign pages. Include project, official source URL, campaign status/deadline if verified, eligibility/tasks, network, whether a fee is required, and a confidence label. If current sources cannot be verified, say so and provide a research checklist rather than inventing campaigns. Never promise token value or eligibility. Never ask for seed phrases/private keys, never sign transactions, connect wallets, pay gas/fees, or claim tokens automatically. Explain that actual receipt requires the user to claim through the verified official site and wallet support; this engine cannot transfer tokens into the wallet by itself.',
     'Under Ten income paths ranked, rank 10 distinct options by zero-cost start, likely time to first customer, skill fit, platform/payment availability checks, repeatability, and evidence needed. Include freelance copywriting, CV/LinkedIn help, short-video scripts, SEO briefs, social media packs, digital templates, translation/localization, virtual assistance, lead research, and short-form video production/repurposing. Do not imply all platforms or payouts work in every country. Under Three sellable services, choose the best three of those 10 and give scope, turnaround, illustrative price and deliverables.',
     'Outreach draft must be personalized with placeholders and must not be sent automatically. No bulk outreach.',
