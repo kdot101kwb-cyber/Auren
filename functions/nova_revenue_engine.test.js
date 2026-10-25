@@ -11,6 +11,8 @@ test('normalizes safe revenue-engine preferences and defaults', () => {
     languages: 'Arabic and English',
     hoursPerDay: 3,
     startingBudgetUsd: 0,
+    walletName: 'Trust Wallet',
+    walletNetworks: 'multi-chain; verify each chain in Trust Wallet',
   });
 });
 
@@ -32,4 +34,8 @@ test('prompt requests concrete drafts without false claims or automatic outreach
   assert.match(prompt, /must not be sent automatically/i);
   assert.match(prompt, /Revenue math/);
   assert.match(prompt, /Starting budget USD: 0/);
+  assert.match(prompt, /Airdrop watch/);
+  assert.match(prompt, /Trust Wallet/);
+  assert.match(prompt, /never sign transactions/i);
+  assert.match(prompt, /Social content pack/);
 });
