@@ -4970,4 +4970,6 @@ Object.assign(module.exports, require('./global_business_data'));
 
 // Proactive opportunity discovery and scheduled evidence-based alerts.
 Object.assign(module.exports, require('./proactive_opportunity_monitor'));
-\n// NOVA AI unified task intake and status APIs.\nObject.assign(module.exports, require('./nova_command_center'));\n
+
+// NOVA AI unified task intake and status APIs.
+Object.assign(module.exports, require('./nova_command_center'));
