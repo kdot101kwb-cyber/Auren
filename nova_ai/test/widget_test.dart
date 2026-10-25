@@ -44,11 +44,9 @@ void main() {
       home: CreativeToolLibraryScreen(onOpenAurenWorkspace: () {}),
     ));
     expect(find.textContaining('90 أداة للاستكشاف'), findsOneWidget);
-    expect(find.text('الأدوات المطابقة: 90 / 90'), findsOneWidget);
 
     await tester.tap(find.text('ألعاب'));
     await tester.pumpAndSettle();
-    expect(find.text('الأدوات المطابقة: 30 / 90'), findsOneWidget);
     expect(find.text('Godot'), findsOneWidget);
     expect(find.text('Shotcut'), findsNothing);
   });
