@@ -127,7 +127,7 @@ class _NovaAppBuilderScreenState extends State<NovaAppBuilderScreen> {
             Text('• ${check is Map ? check['name'] : check}: ${check is Map ? check['conclusion'] ?? check['status'] : ''}'),
           for (final artifact in (_job!['artifacts'] as List? ?? const []))
             if (artifact is Map && artifact['url'] is String)
-              TextButton(onPressed:() {}, child:Text('${artifact['name'] ?? 'Artifact'} — رابط محفوظ')),
+              SelectableText('${artifact['name'] ?? 'Artifact'}: ${artifact['url']}'),
         ]))),
       ],
       const SizedBox(height:10),
