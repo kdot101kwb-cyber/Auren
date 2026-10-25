@@ -4982,3 +4982,8 @@ Object.assign(module.exports, require('./nova_task_worker'));
 
 // NOVA AI app and web builder job APIs.
 Object.assign(module.exports, require('./nova_app_builder'));
+
+// NOVA Higgsfield video generation (API credentials stay server-side).
+const novaHiggsfield = require('./nova_higgsfield_service');
+exports.submitNovaHiggsfieldVideo = novaHiggsfield.submitNovaHiggsfieldVideo;
+exports.getNovaHiggsfieldVideoStatus = novaHiggsfield.getNovaHiggsfieldVideoStatus;
