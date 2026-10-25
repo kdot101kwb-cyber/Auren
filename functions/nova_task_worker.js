@@ -67,7 +67,16 @@ exports.processNovaTaskQueue = onSchedule(
         const ts = await tx.get(taskRef);
         if (!qs.exists || !ts.exists || qs.data()?.status !== 'queued' || ts.data()?.status !== 'queued') return;
         task = ts.data();
-        if (!SAFE_TEXT_TYPES.has(String(task.type || ''))) return;
+        if (!SAFE_TEXT_TYPES.has(String(task.type || ''))) {
+          const reason = 'No execution adapter is configured for task type: ' + String(task.type || 'unknown');
+          tx.update(taskRef, {status:'failed', error:reason, updatedAt:FieldValue.serverTimestamp()});
+          tx.update(queueRef, {status:'failed', error:reason, updatedAt:FieldValue.serverTimestamp()});
+          tx.create(db.collection('users').doc(uid).collection('nova_audit').doc(), {
+            action:'nova.task.blocked_no_adapter', actorUid:'nova_worker', taskId,
+            taskType:String(task.type || 'unknown'), error:reason, createdAt:FieldValue.serverTimestamp(),
+          });
+          return;
+        }
         const attempts = Number(qs.data()?.attempts || 0);
         tx.update(queueRef, {status:'running', attempts:attempts + 1, claimedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
         tx.update(taskRef, {status:'running', startedAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp(), retryCount:attempts});
