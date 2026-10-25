@@ -4967,3 +4967,6 @@ Object.assign(module.exports, require('./personal_ai_life_engine'));
 
 // Global business data ingestion and source-provenance normalization.
 Object.assign(module.exports, require('./global_business_data'));
+
+// Proactive opportunity discovery and scheduled evidence-based alerts.
+Object.assign(module.exports, require('./proactive_opportunity_monitor'));
