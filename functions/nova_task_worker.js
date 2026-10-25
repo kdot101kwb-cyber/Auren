@@ -6,7 +6,7 @@ const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 
 const db = getFirestore();
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
-const SAFE_TEXT_TYPES = new Set(['chat', 'plan', 'research', 'content_draft']);
+const {SAFE_TEXT_TYPES} = require('./nova_task_worker_policy');
 const REGION = 'us-central1';
 
 async function runTextTask(prompt, type, apiKey) {
@@ -125,5 +125,3 @@ exports.processNovaTaskQueue = onSchedule(
     }
   }
 );
-
-exports.__testables = {SAFE_TEXT_TYPES};
