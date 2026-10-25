@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nova_ai/main.dart';
+import 'package:nova_ai/features/creative/creative_tool_library_screen.dart';
 
 void main() {
   setUp(() {
@@ -36,5 +37,21 @@ void main() {
     final restartedCheckbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
+  });
+}
+
+
+  testWidgets('creative tool library shows 90 tools and filters by category', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: CreativeToolLibraryScreen(onOpenAurenWorkspace: () {}),
+    ));
+    expect(find.textContaining('90 أداة للاستكشاف'), findsOneWidget);
+    expect(find.text('الأدوات المطابقة: 90 / 90'), findsOneWidget);
+
+    await tester.tap(find.text('ألعاب'));
+    await tester.pumpAndSettle();
+    expect(find.text('الأدوات المطابقة: 30 / 90'), findsOneWidget);
+    expect(find.text('Godot'), findsOneWidget);
+    expect(find.text('Shotcut'), findsNothing);
   });
 }
