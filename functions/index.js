@@ -4973,3 +4973,6 @@ Object.assign(module.exports, require('./proactive_opportunity_monitor'));
 
 // NOVA AI unified task intake and status APIs.
 Object.assign(module.exports, require('./nova_command_center'));
+
+// NOVA AI scheduled text-task worker.
+Object.assign(module.exports, require('./nova_task_worker'));
