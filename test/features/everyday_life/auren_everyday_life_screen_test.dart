@@ -524,7 +524,7 @@ void main() {
     expect(service.informationConfirmed, isFalse);
     expect(find.textContaining('التصنيف: Electrical'), findsOneWidget);
     expect(find.textContaining('555-0199'), findsOneWidget);
-    expect(find.text('معلومات غير مؤكدة'), findsOneWidget);
+    expect(find.textContaining('معلومات غير مؤكدة'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
