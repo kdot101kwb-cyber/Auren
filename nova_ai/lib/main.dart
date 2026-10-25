@@ -132,24 +132,38 @@ class _NovaHomeState extends State<NovaHome> {
     return Scaffold(
       appBar: AppBar(
         title: const Row(children: [Icon(Icons.auto_awesome, color: violet), SizedBox(width: 9), Text('NOVA AI', style: TextStyle(fontWeight: FontWeight.w800))]),
-        actions: [IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة تأسيسية. أدوات الإبداع تحتاج ربط محركات التوليد عبر خادم آمن.')]), icon: const Icon(Icons.info_outline))],
+        actions: [
+          PopupMenuButton<int>(
+            tooltip: 'كل أقسام NOVA',
+            onSelected: (value) => setState(() => tab = value),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 3, child: Text('التسويق والنشر')),
+              PopupMenuItem(value: 5, child: Text('مشروع AUREN')),
+              PopupMenuItem(value: 6, child: Text('سجل النشاط')),
+              PopupMenuItem(value: 7, child: Text('التطبيقات المرتبطة')),
+              PopupMenuItem(value: 8, child: Text('مركز المهام')),
+              PopupMenuItem(value: 9, child: Text('بناء التطبيقات')),
+            ],
+          ),
+          IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
+        ],
       ),
       body: SafeArea(child: IndexedStack(index: tab, children: pages)),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: tab,
-        onDestinationSelected: (v) => setState(() => tab = v),
+        selectedIndex: switch (tab) {
+          1 => 1,
+          2 => 2,
+          4 => 3,
+          10 => 4,
+          _ => 0,
+        },
+        onDestinationSelected: (v) => setState(() => tab = const [0, 1, 2, 4, 10][v]),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'الرئيسية'),
           NavigationDestination(icon: Icon(Icons.smart_toy_outlined), selectedIcon: Icon(Icons.smart_toy), label: 'الوكلاء'),
           NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'الإبداع'),
-          NavigationDestination(icon: Icon(Icons.campaign_outlined), selectedIcon: Icon(Icons.campaign), label: 'التسويق'),
           NavigationDestination(icon: Icon(Icons.trending_up), selectedIcon: Icon(Icons.trending_up), label: 'فرص الدخل'),
-          NavigationDestination(icon: Icon(Icons.code_outlined), selectedIcon: Icon(Icons.code), label: 'AUREN'),
-          NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'النشاط'),
-          NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'الربط'),
-          NavigationDestination(icon: Icon(Icons.playlist_add_check_circle_outlined), selectedIcon: Icon(Icons.playlist_add_check_circle), label: 'المهام'),
-          NavigationDestination(icon: Icon(Icons.code_rounded), selectedIcon: Icon(Icons.code), label: 'المطور'),
-          NavigationDestination(icon: Icon(Icons.attach_money), selectedIcon: Icon(Icons.trending_up), label: 'دخل AI'),
+          NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'الدخل'),
         ],
       ),
     );
