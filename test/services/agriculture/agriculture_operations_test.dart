@@ -115,6 +115,15 @@ void main() {
   });
 
   group('Produce traceability', () {
+    test('trims batch identity and product before storing them', () {
+      final batch = ProduceTraceabilityBatch(
+        batchId: '  batch-003  ',
+        product: '  Sesame  ',
+      );
+      expect(batch.batchId, 'batch-003');
+      expect(batch.product, 'Sesame');
+    });
+
     test('appends chronological events immutably', () {
       final harvestedAt = DateTime.utc(2026, 10, 20);
       final packedAt = DateTime.utc(2026, 10, 21);
