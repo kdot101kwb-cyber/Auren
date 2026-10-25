@@ -135,15 +135,20 @@ exports.cancelNovaTask = onCall(
     const taskId = String(request.data?.taskId || '').trim();
     if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid task ID.');
     const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(taskId);
+    const queueRef = db.collection('nova_task_queue').doc(uid + '_' + taskId);
     const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
     return db.runTransaction(async (tx) => {
       const snap = await tx.get(taskRef);
       if (!snap.exists) throw new HttpsError('not-found', 'NOVA task not found.');
+      const queueSnap = await tx.get(queueRef);
       const task = snap.data() || {};
       if (!['queued','awaiting_approval'].includes(task.status)) {
         throw new HttpsError('failed-precondition', 'Only queued or approval-pending tasks can be cancelled.');
       }
       tx.update(taskRef, {status:'cancelled', cancelledAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+      if (queueSnap.exists && queueSnap.data()?.status === 'queued') {
+        tx.update(queueRef, {status:'cancelled', updatedAt:FieldValue.serverTimestamp()});
+      }
       tx.create(auditRef, {
         action:'nova.task.cancelled',
         actorUid:uid,
