@@ -32,8 +32,8 @@ class NovaDebateResultView extends StatelessWidget {
         ? (result['missingEvidence'] as List).map((e) => e.toString()).toList()
         : <String>[];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
+      padding: EdgeInsets.zero,
       children: [
         Card(
           child: Padding(
