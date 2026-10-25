@@ -85,6 +85,69 @@ exports.getNovaTask = onCall(
   }
 );
 
+exports.approveNovaTask = onCall(
+  {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to approve NOVA tasks.');
+    const taskId = String(request.data?.taskId || '').trim();
+    if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid task ID.');
+    const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(taskId);
+    const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(taskRef);
+      if (!snap.exists) throw new HttpsError('not-found', 'NOVA task not found.');
+      const task = snap.data() || {};
+      if (task.status !== 'awaiting_approval' || task.requiresApproval !== true) {
+        throw new HttpsError('failed-precondition', 'Task is not awaiting approval.');
+      }
+      tx.update(taskRef, {
+        status:'queued',
+        approvedBy:uid,
+        approvedAt:FieldValue.serverTimestamp(),
+        updatedAt:FieldValue.serverTimestamp(),
+      });
+      tx.create(auditRef, {
+        action:'nova.task.approved',
+        actorUid:uid,
+        taskId,
+        taskType:String(task.type || ''),
+        createdAt:FieldValue.serverTimestamp(),
+      });
+      return {ok:true, taskId, status:'queued', executionMode:task.executionMode || 'queued_backend_worker_required'};
+    });
+  }
+);
+
+exports.cancelNovaTask = onCall(
+  {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true, consumeAppCheckToken:true},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Sign in to cancel NOVA tasks.');
+    const taskId = String(request.data?.taskId || '').trim();
+    if (!/^[A-Za-z0-9_-]{12,128}$/.test(taskId)) throw new HttpsError('invalid-argument', 'Invalid task ID.');
+    const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(taskId);
+    const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
+    return db.runTransaction(async (tx) => {
+      const snap = await tx.get(taskRef);
+      if (!snap.exists) throw new HttpsError('not-found', 'NOVA task not found.');
+      const task = snap.data() || {};
+      if (!['queued','awaiting_approval'].includes(task.status)) {
+        throw new HttpsError('failed-precondition', 'Only queued or approval-pending tasks can be cancelled.');
+      }
+      tx.update(taskRef, {status:'cancelled', cancelledAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+      tx.create(auditRef, {
+        action:'nova.task.cancelled',
+        actorUid:uid,
+        taskId,
+        taskType:String(task.type || ''),
+        createdAt:FieldValue.serverTimestamp(),
+      });
+      return {ok:true, taskId, status:'cancelled'};
+    });
+  }
+);
+
 exports.listNovaTasks = onCall(
   {region:REGION, timeoutSeconds:20, memory:'256MiB', enforceAppCheck:true},
   async (request) => {
