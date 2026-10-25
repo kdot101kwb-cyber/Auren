@@ -22,26 +22,26 @@ class EverydayLifeLocalStore {
   final SharedPreferences? _preferences;
   final EverydayLifeWriteString? _writeString;
 
-  // Serialize read-modify-write operations so overlapping actions on this
-  // store instance cannot overwrite one another with stale snapshots.
-  Future<void> _mutationTail = Future<void>.value();
+  // Serialize read-modify-write operations across store instances that share
+  // the same SharedPreferences object, without coupling unrelated test/device
+  // preference instances to one global queue.
+  static final Map<SharedPreferences, Future<void>> _mutationTails = {};
 
-  Future<T> _serializeMutation<T>(Future<T> Function() operation) {
-    final result = Completer<T>();
-    final previous = _mutationTail;
+  Future<T> _serializeMutation<T>(Future<T> Function() operation) async {
+    final preferences = await _prefs;
+    final previous =
+        _mutationTails[preferences] ?? Future<void>.value();
     final next = Completer<void>();
-    _mutationTail = next.future;
-    () async {
+    _mutationTails[preferences] = next.future;
+    try {
       await previous;
-      try {
-        result.complete(await operation());
-      } catch (error, stackTrace) {
-        result.completeError(error, stackTrace);
-      } finally {
-        next.complete();
+      return await operation();
+    } finally {
+      next.complete();
+      if (identical(_mutationTails[preferences], next.future)) {
+        _mutationTails.remove(preferences);
       }
-    }();
-    return result.future;
+    }
   }
 
   Future<SharedPreferences> get _prefs async =>
