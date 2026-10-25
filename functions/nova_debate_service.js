@@ -113,3 +113,53 @@ exports.novaStrategicDebate = onCall({
     disclaimer: 'هذه مراجعة متعددة المنظورات من استدعاء نموذج واحد وليست أربعة وكلاء مستقلين. لم يبدأ التنفيذ.',
   };
 });
+
+exports.novaApproveDebatePlan = onCall({
+  region: 'us-central1',
+  timeoutSeconds: 20,
+  memory: '256MiB',
+}, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated', 'يجب تسجيل الدخول لاعتماد الخطة.');
+  const debateId = String(request.data?.debateId || '').trim();
+  if (!/^[A-Za-z0-9]{16,32}$/.test(debateId)) {
+    throw new HttpsError('invalid-argument', 'معرّف مراجعة غير صالح.');
+  }
+  const ref = db.collection('users').doc(uid).collection('novaDebates').doc(debateId);
+  const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
+  return db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(ref);
+    if (!snapshot.exists) throw new HttpsError('not-found', 'لم يتم العثور على سجل النقاش.');
+    const record = snapshot.data() || {};
+    if (record.status !== 'awaiting_user_agreement') {
+      throw new HttpsError('failed-precondition', 'هذا النقاش ليس بانتظار الموافقة.');
+    }
+    if (!Array.isArray(record.debate?.plan) || record.debate.plan.length === 0) {
+      throw new HttpsError('failed-precondition', 'لا توجد خطة قابلة للاعتماد.');
+    }
+    tx.update(ref, {
+      status: 'plan_approved',
+      approvedBy: uid,
+      approvedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      executionStarted: false,
+      executionStatus: 'blocked_adapter_not_connected',
+    });
+    tx.create(auditRef, {
+      action: 'nova.debate.plan_approved',
+      actorUid: uid,
+      debateId,
+      planStepCount: record.debate.plan.length,
+      executionStarted: false,
+      note: 'Approval recorded only; no repository changes or external side effects were executed.',
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    return {
+      status: 'plan_approved',
+      executionStarted: false,
+      executionStatus: 'blocked_adapter_not_connected',
+      message: 'تم تسجيل موافقتك. لم يبدأ التنفيذ لأن موصل تنفيذ آمن للخطة غير متصل بعد.',
+    };
+  });
+});
+
