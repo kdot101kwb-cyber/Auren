@@ -242,12 +242,14 @@ class ProduceTraceabilityBatch {
   final List<ProduceTraceEvent> events;
 
   ProduceTraceabilityBatch({
-    required this.batchId,
-    required this.product,
+    required String batchId,
+    required String product,
     List<ProduceTraceEvent> events = const [],
-  }) : events = List.unmodifiable(events) {
-    if (batchId.trim().isEmpty || batchId.length > 128 ||
-        product.trim().isEmpty || product.length > 120) {
+  }) : batchId = batchId.trim(),
+       product = product.trim(),
+       events = List.unmodifiable(events) {
+    if (this.batchId.isEmpty || this.batchId.length > 128 ||
+        this.product.isEmpty || this.product.length > 120) {
       throw ArgumentError('Batch id and product are required.');
     }
     for (var i = 1; i < this.events.length; i++) {
