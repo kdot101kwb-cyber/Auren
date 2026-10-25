@@ -4987,3 +4987,8 @@ Object.assign(module.exports, require('./nova_app_builder'));
 const novaHiggsfield = require('./nova_higgsfield_service');
 exports.submitNovaHiggsfieldVideo = novaHiggsfield.submitNovaHiggsfieldVideo;
 exports.getNovaHiggsfieldVideoStatus = novaHiggsfield.getNovaHiggsfieldVideoStatus;
+
+// NOVA Higgsfield video generation (API credentials stay server-side).
+const novaHiggsfield = require('./nova_higgsfield_service');
+exports.submitNovaHiggsfieldVideo = novaHiggsfield.submitNovaHiggsfieldVideo;
+exports.getNovaHiggsfieldVideoStatus = novaHiggsfield.getNovaHiggsfieldVideoStatus;
