@@ -22,8 +22,9 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
-    await tester.pumpAndSettle();
-    final checkbox = find.byType(CheckboxListTile).first;
+    final taskLabel = find.text('فحص حالة مستودع AUREN');
+    await tester.scrollUntilVisible(taskLabel, 250, scrollable: find.byType(Scrollable).first);
+    final checkbox = find.ancestor(of: taskLabel, matching: find.byType(CheckboxListTile));
     await tester.ensureVisible(checkbox);
     await tester.pumpAndSettle();
     await tester.tap(checkbox);
@@ -33,8 +34,9 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
-    await tester.pumpAndSettle();
-    final restartedCheckbox = find.byType(CheckboxListTile).first;
+    final restartedTaskLabel = find.text('فحص حالة مستودع AUREN');
+    await tester.scrollUntilVisible(restartedTaskLabel, 250, scrollable: find.byType(Scrollable).first);
+    final restartedCheckbox = find.ancestor(of: restartedTaskLabel, matching: find.byType(CheckboxListTile));
     await tester.ensureVisible(restartedCheckbox);
     await tester.pumpAndSettle();
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
@@ -43,12 +45,12 @@ void main() {
 
   testWidgets('creative tool library shows 90 tools and filters by category', (tester) async {
     await tester.pumpWidget(MaterialApp(
-      home: CreativeToolLibraryScreen(onOpenAurenWorkspace: () {}),
+      home: Scaffold(body: CreativeToolLibraryScreen(onOpenAurenWorkspace: () {})),
     ));
     expect(find.textContaining('90 أداة للاستكشاف'), findsOneWidget);
 
     final gamesChip = find.widgetWithText(ChoiceChip, 'ألعاب');
-    await tester.ensureVisible(gamesChip);
+    await tester.scrollUntilVisible(gamesChip, 200, scrollable: find.byType(Scrollable).first);
     await tester.tap(gamesChip);
     await tester.pumpAndSettle();
     expect(find.text('Godot'), findsOneWidget);
