@@ -73,6 +73,7 @@ class _NovaHomeState extends State<NovaHome> {
       dashboard(),
       agents(),
       creativeStudio(),
+      socialCenter(),
       auren(),
       activity(),
     ];
@@ -89,6 +90,7 @@ class _NovaHomeState extends State<NovaHome> {
           NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'الرئيسية'),
           NavigationDestination(icon: Icon(Icons.smart_toy_outlined), selectedIcon: Icon(Icons.smart_toy), label: 'الوكلاء'),
           NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'الإبداع'),
+          NavigationDestination(icon: Icon(Icons.campaign_outlined), selectedIcon: Icon(Icons.campaign), label: 'التسويق'),
           NavigationDestination(icon: Icon(Icons.code_outlined), selectedIcon: Icon(Icons.code), label: 'AUREN'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'النشاط'),
         ],
@@ -188,6 +190,42 @@ class _NovaHomeState extends State<NovaHome> {
     OutlinedButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/creative_toolkit_20_projects.md'), icon: const Icon(Icons.menu_book_outlined), label: const Text('كتالوج 20 مشروعاً احترافياً للصور والفيديو والألعاب')),
   ]);
 
+  Widget socialCenter() => ListView(padding: const EdgeInsets.all(16), children: [
+    Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF382B70), Color(0xFF202039)]), borderRadius: BorderRadius.circular(22)),
+      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Icons.campaign, color: violet, size: 30),
+        SizedBox(height: 10),
+        Text('مدير التسويق والنشر الذكي', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Text('بحث السوق، أفكار المحتوى، إنتاج الأصول، الجدولة، النشر، الردود وقياس النتائج من لوحة واحدة.'),
+      ]),
+    ),
+    const SizedBox(height: 16),
+    const Text('القنوات المستهدفة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    const _SocialChannel(icon: Icons.camera_alt_outlined, name: 'Instagram', account: 'KWB86', status: 'صلاحية النشر تحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.music_video_outlined, name: 'TikTok', account: 'khaliedwalied403', status: 'صلاحية النشر تحتاج تحققاً'),
+    const _SocialChannel(icon: Icons.play_circle_outline, name: 'YouTube', account: 'Khalied Walied · @khaliedwalied-j1y', status: 'صلاحية الرفع والردود تحتاج تحققاً'),
+    const SizedBox(height: 16),
+    const Text('قدرات المدير المطلوبة', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    const _SocialCapability(icon: Icons.query_stats, title: 'قراءة السوق والمنافسين', detail: 'تحليل المواضيع والطلب والأداء، ثم ترتيب فرص المحتوى حسب الدليل'),
+    const _SocialCapability(icon: Icons.movie_creation_outlined, title: 'إنشاء الصور والفيديو', detail: 'توليد ملفات فعلية عبر محرك متصل، ثم معاينتها قبل النشر'),
+    const _SocialCapability(icon: Icons.calendar_month_outlined, title: 'جدولة ونشر المحتوى', detail: 'مسودات ومواعيد وحالة نشر مؤكدة عبر API رسمي أو مجدول موثوق'),
+    const _SocialCapability(icon: Icons.forum_outlined, title: 'قراءة التعليقات والردود', detail: 'صياغة الردود تلقائياً؛ مراجعة بشرية للشكاوى والمواضيع الحساسة'),
+    const _SocialCapability(icon: Icons.insights_outlined, title: 'التعلم من النتائج', detail: 'مقارنة المشاهدات والاحتفاظ والتفاعل، وتحسين الخطة أسبوعياً'),
+    const SizedBox(height: 12),
+    const _Notice(text: 'الحالة الحالية: هذه لوحة وخطة تكامل. لم تُربط بعد صلاحيات OAuth أو محركات إنشاء الوسائط أو النشر والردود الفعلية. لن نعرض نجاحاً وهمياً؛ يجب ربط كل قناة رسمياً واختبار الصلاحيات قبل التنفيذ.'),
+    const SizedBox(height: 8),
+    OutlinedButton.icon(
+      onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/social_media_operator_spec.md'),
+      icon: const Icon(Icons.menu_book_outlined),
+      label: const Text('فتح مواصفات مدير التسويق والتشغيل'),
+    ),
+  ]);
+
   Widget auren() => ListView(padding: const EdgeInsets.all(16), children: [
     const Text('إدارة مشروع AUREN', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
     const SizedBox(height: 8),
@@ -212,6 +250,35 @@ class _NovaHomeState extends State<NovaHome> {
     _Activity(icon: Icons.hourglass_empty, title: 'تكامل محركات التوليد والخادم', detail: 'لم يُنفّذ بعد؛ يتطلب مزودات فعلية وخدمة خلفية'),
     _Notice(text: 'سيظهر هنا سجل موثوق للعمليات بعد ربط التطبيق بالخادم. هذه العناصر حالياً توضح حالة التأسيس وليست سجلاً حياً للتنفيذ.'),
   ]);
+}
+
+class _SocialChannel extends StatelessWidget {
+  final IconData icon;
+  final String name;
+  final String account;
+  final String status;
+  const _SocialChannel({required this.icon, required this.name, required this.account, required this.status});
+  @override
+  Widget build(BuildContext context) => Card(child: ListTile(
+    leading: CircleAvatar(backgroundColor: const Color(0xFF30284E), child: Icon(icon, color: violet)),
+    title: Text(name),
+    subtitle: Text('$account\\n$status', textDirection: TextDirection.rtl),
+    isThreeLine: true,
+    trailing: const Icon(Icons.link_off, color: Colors.orangeAccent),
+  ));
+}
+
+class _SocialCapability extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String detail;
+  const _SocialCapability({required this.icon, required this.title, required this.detail});
+  @override
+  Widget build(BuildContext context) => Card(child: ListTile(
+    leading: Icon(icon, color: violet),
+    title: Text(title, textDirection: TextDirection.rtl),
+    subtitle: Text(detail, textDirection: TextDirection.rtl),
+  ));
 }
 
 class _CreativeCard extends StatelessWidget {
