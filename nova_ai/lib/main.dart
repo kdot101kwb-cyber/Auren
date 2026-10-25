@@ -185,7 +185,7 @@ class _NovaHomeState extends State<NovaHome> {
     const SizedBox(height: 12),
     const _Notice(text: 'الشفافية: هذه الواجهة تجهّز الفكرة فقط في النسخة الحالية ولا تُنتج ملفات صور أو فيديو أو ألعاب بعد. نحتاج ربط محركات فعلية عبر خادم آمن. لا يمكن ضمان توليد غير محدود حرفياً؛ يمكن تصميم النظام بلا حدّ يومي من التطبيق مع بقاء حدود مزوّد الخدمة والتكلفة والموارد.'),
     const SizedBox(height: 8),
-    OutlinedButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/open_source_blueprint.md'), icon: const Icon(Icons.menu_book_outlined), label: const Text('خطة محركات الذكاء الاصطناعي')),
+    OutlinedButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/creative_toolkit_20_projects.md'), icon: const Icon(Icons.menu_book_outlined), label: const Text('كتالوج 20 مشروعاً احترافياً للصور والفيديو والألعاب')),
   ]);
 
   Widget auren() => ListView(padding: const EdgeInsets.all(16), children: [
