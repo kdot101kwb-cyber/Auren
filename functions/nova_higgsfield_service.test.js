@@ -1,4 +1,6 @@
 'use strict';
+const {initializeApp} = require('firebase-admin/app');
+try { initializeApp({projectId:'auren-nova-test'}); } catch (_) {}
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {normalizeVideoInput} = require('./nova_higgsfield_service');
