@@ -16,6 +16,7 @@ exports.submitNovaTask = onCall(
     const input = normalizeNovaTaskInput(request.data, HttpsError);
     const id = input.idempotencyKey;
     const taskRef = db.collection('users').doc(uid).collection(TASK_COLLECTION).doc(id);
+    const queueRef = db.collection('nova_task_queue').doc(uid + '_' + id);
     const auditRef = db.collection('users').doc(uid).collection('nova_audit').doc();
     const result = await db.runTransaction(async (tx) => {
       const existing = await tx.get(taskRef);
@@ -36,6 +37,9 @@ exports.submitNovaTask = onCall(
         updatedAt:FieldValue.serverTimestamp(),
       };
       tx.create(taskRef, task);
+      if (task.status === 'queued') {
+        tx.create(queueRef, {ownerUid:uid, taskId:id, status:'queued', attempts:0, createdAt:FieldValue.serverTimestamp(), updatedAt:FieldValue.serverTimestamp()});
+      }
       tx.create(auditRef, {
         action:'nova.task.submitted',
         actorUid:uid,
