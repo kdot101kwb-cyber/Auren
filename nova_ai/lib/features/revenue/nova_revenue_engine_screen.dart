@@ -256,7 +256,11 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
               'إشارات آخر 7 أيام: ${_signals[i]['recentMentions'] ?? 'غير متاح'} | الأسبوع السابق: ${_signals[i]['previousMentions'] ?? 'غير متاح'}\n'
               'درجة الإشارة: ${_signals[i]['score'] ?? 'غير متاحة'} / 100\n'
               'الدومين: ${_signals[i]['domain'] ?? 'غير محدد'} — ${_domainStatusLabel(_signals[i]['domainStatus'])}\n'
-              '${_signals[i]['idea'] ?? ''}',
+              '${_signals[i]['idea'] ?? ''}\n'
+              'طريقة الدخل: ${_signals[i]['monetization'] ?? 'غير محددة'}\n'
+              'سعر بداية توضيحي: ${_signals[i]['starterPriceUsd'] ?? 'غير محدد'}\n'
+              'اختبار مجاني: ${_signals[i]['zeroCostTest'] ?? 'غير محدد'}\n'
+              '${_signals[i]['domainCheckNote'] ?? 'توفر الدومين وسعره النهائي يحتاجان تأكيداً لدى المسجل.'}',
               textDirection: TextDirection.rtl,
             ),
           ),
