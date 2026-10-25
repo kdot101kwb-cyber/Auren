@@ -8,6 +8,16 @@ Arabic-first Flutter control-center starter for NOVA AI agents and AUREN project
 - AUREN repository and roadmap shortcuts
 - Activity/status page with explicit prototype limitations
 
+## Strategic debate and opposition
+
+The agents hub includes a strategic review screen backed by the Firebase callable `novaStrategicDebate`. It asks the server-side AI provider to review a decision through engineering, quality, security/privacy, and cost/performance perspectives, and returns bounded objections, alternatives, risks, missing evidence, and a plan with verification criteria. These are four perspectives from one model call, not four independent agents.
+
+- Strategy is fixed to strategic trade-off analysis; execution policy is agreement-first.
+- Requests require Firebase Authentication and are rate-limited. Debate records and approval audit entries are stored under the authenticated user's private Firestore path.
+- Configure the Firebase Secret Manager value `OPENROUTER_API_KEY` before deploying the callable. The key is never sent to the mobile app.
+- A user can explicitly approve a proposed plan; the backend records that approval. **This first slice does not execute repository changes**: the safe repository-editing executor, diff validation, and post-change CI verification still need to be connected. The UI reports this limitation rather than pretending work ran.
+- AI-generated objections and estimates are suggestions, not verified facts. Supply concrete logs, repository evidence, and test results in the context field when available.
+
 ## Creative studio
 The app now includes a UI for preparing image, video, and game-generation requests. This is a front-end flow only: it does not generate media or compile games yet. Real output requires a server-side provider adapter, secure credentials, asynchronous job tracking, file storage, and cost/abuse controls. “Unlimited” can mean no app-imposed daily cap, but provider and infrastructure limits still apply.
 
