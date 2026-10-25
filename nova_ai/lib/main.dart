@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'firebase_runtime.dart';
+import 'features/tasks/nova_task_center_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'features/opportunities/opportunity_lab_screen.dart';
 import 'features/integrations/integration_hub_screen.dart';
 
-void main() => runApp(const NovaApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NovaFirebaseRuntime.initialize();
+  runApp(const NovaApp());
+}
 
 const violet = Color(0xFF9B87FF);
 const surface = Color(0xFF191925);
@@ -80,6 +86,7 @@ class _NovaHomeState extends State<NovaHome> {
       auren(),
       activity(),
       const IntegrationHubScreen(),
+      const NovaTaskCenterScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -99,6 +106,7 @@ class _NovaHomeState extends State<NovaHome> {
           NavigationDestination(icon: Icon(Icons.code_outlined), selectedIcon: Icon(Icons.code), label: 'AUREN'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'النشاط'),
           NavigationDestination(icon: Icon(Icons.hub_outlined), selectedIcon: Icon(Icons.hub), label: 'الربط'),
+          NavigationDestination(icon: Icon(Icons.playlist_add_check_circle_outlined), selectedIcon: Icon(Icons.playlist_add_check_circle), label: 'المهام'),
         ],
       ),
     );
