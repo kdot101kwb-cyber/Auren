@@ -212,7 +212,20 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
   Future<void> _open(AurenNotification n) async {
     final uid = _uid;
     if (uid == null) return;
-    if (!n.read) await _repo.markRead(uid, n.id);
+    if (!n.read) {
+      try {
+        await _repo.markRead(uid, n.id);
+      } catch (_) {
+        // Opening the notification should remain possible if marking it read fails.
+        if (mounted && _uid == uid) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تعذر تحديث حالة الإشعار، يمكنك المحاولة لاحقاً.'),
+            ),
+          );
+        }
+      }
+    }
     // Authentication may change while markRead is awaiting the backend.
     // Do not open a prior user's conversation or notification details afterward.
     if (!mounted || _uid != uid) return;
@@ -249,7 +262,17 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
   }
 
   Future<void> _markAll(String uid) async {
-    await _repo.markAllRead(uid);
+    try {
+      await _repo.markAllRead(uid);
+    } catch (_) {
+      if (!mounted || _uid != uid) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تعذر تعليم الإشعارات كمقروءة. حاول مرة أخرى.'),
+        ),
+      );
+      return;
+    }
     if (!mounted || _uid != uid) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم تعليم كل الإشعارات كمقروءة')),
