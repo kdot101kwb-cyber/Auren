@@ -20,8 +20,12 @@ void main() {
     final ideasTitle = find.text('أفكار وأنظمة جديدة');
     await tester.scrollUntilVisible(ideasTitle, 250, scrollable: find.byType(Scrollable).first);
     expect(ideasTitle, findsOneWidget);
+    final actionsButton = find.text('فحص التشغيل والاختبارات في GitHub Actions');
+    await tester.scrollUntilVisible(actionsButton, 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('فتح كود AUREN'), findsOneWidget);
-    expect(find.text('فحص التشغيل والاختبارات في GitHub Actions'), findsOneWidget);
-    expect(find.text('مراجعة التغييرات وطلبات الدمج'), findsOneWidget);
+    expect(actionsButton, findsOneWidget);
+    final reviewButton = find.text('مراجعة التغييرات وطلبات الدمج');
+    await tester.scrollUntilVisible(reviewButton, 250, scrollable: find.byType(Scrollable).first);
+    expect(reviewButton, findsOneWidget);
   });
 }
