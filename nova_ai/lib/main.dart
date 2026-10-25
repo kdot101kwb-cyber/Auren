@@ -158,9 +158,9 @@ class _NovaHomeState extends State<NovaHome> {
     const Text('اختر نوع المشروع', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     const SizedBox(height: 10),
     Row(children: [
-      Expanded(child: _CreativeCard(icon: Icons.image_outlined, title: 'صور احترافية', subtitle: 'إعلانات، تصاميم، صور مصغرة', selected: creativeMode == 'صور', onTap: () => setState(() => creativeMode = 'صور')),
+      Expanded(child: _CreativeCard(icon: Icons.image_outlined, title: 'صور احترافية', subtitle: 'إعلانات، تصاميم، صور مصغرة', selected: creativeMode == 'صور', onTap: () => setState(() => creativeMode = 'صور'))),
       const SizedBox(width: 8),
-      Expanded(child: _CreativeCard(icon: Icons.movie_creation_outlined, title: 'فيديوهات', subtitle: 'مقاطع قصيرة ومشاهد', selected: creativeMode == 'فيديو', onTap: () => setState(() => creativeMode = 'فيديو')),
+      Expanded(child: _CreativeCard(icon: Icons.movie_creation_outlined, title: 'فيديوهات', subtitle: 'مقاطع قصيرة ومشاهد', selected: creativeMode == 'فيديو', onTap: () => setState(() => creativeMode = 'فيديو'))),
     ]),
     const SizedBox(height: 8),
     _CreativeCard(icon: Icons.sports_esports_outlined, title: 'ألعاب تفاعلية', subtitle: 'أفكار، تصميم مراحل، ونماذج ألعاب', selected: creativeMode == 'ألعاب', onTap: () => setState(() => creativeMode = 'ألعاب')),
