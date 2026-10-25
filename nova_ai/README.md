@@ -14,6 +14,9 @@ The app now includes a UI for preparing image, video, and game-generation reques
 ## Important limitations
 The app is currently a UI prototype. It does not yet execute GitHub changes, run builds remotely, manage email/social accounts, or synchronize task state. Those capabilities require a secure backend, official OAuth/API integrations, least-privilege access, and audit logs. Do not place GitHub tokens or provider API secrets in the mobile app.
 
+## Offline-first AI and GitHub research
+The architecture plan and curated review of 20 related open-source projects are in [offline-first research](docs/offline_first_and_20_projects.md). This is research and a delivery plan, not a claim that all projects or their features have been integrated. Current prototype limitations still apply.
+
 ## Build
 From this directory with Flutter stable installed:
 ```sh
