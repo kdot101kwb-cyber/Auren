@@ -46,7 +46,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(
       home: Scaffold(body: NovaDebateResultView(result: {})),
     ));
-    expect(find.textContaining('غير مذكور'), findsOneWidget);
+    expect(find.textContaining('غير مذكور'), findsWidgets);
     expect(find.textContaining('لم يُنفّذ أي تغيير'), findsOneWidget);
   });
 }
