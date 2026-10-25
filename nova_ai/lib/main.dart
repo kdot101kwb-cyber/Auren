@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_runtime.dart';
 import 'features/tasks/nova_task_center_screen.dart';
 import 'features/builder/nova_app_builder_screen.dart';
@@ -52,6 +53,41 @@ class _NovaHomeState extends State<NovaHome> {
     'تأسيس وكلاء NOVA وسجل التنفيذ',
   ];
   final done = <bool>[false, false, false, false];
+  static const _taskStateKey = 'nova.dashboard.tasks.v1';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTaskState();
+  }
+
+  Future<void> _loadTaskState() async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      final saved = preferences.getStringList(_taskStateKey);
+      if (!mounted || saved == null) return;
+      setState(() {
+        for (var i = 0; i < done.length && i < saved.length; i++) {
+          done[i] = saved[i] == '1';
+        }
+      });
+    } catch (_) {
+      // The dashboard remains usable even if local storage is unavailable.
+    }
+  }
+
+  Future<void> _setTaskDone(int index, bool value) async {
+    setState(() => done[index] = value);
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setStringList(_taskStateKey, done.map((v) => v ? '1' : '0').toList());
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر حفظ حالة المهمة على الجهاز')),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -144,7 +180,7 @@ class _NovaHomeState extends State<NovaHome> {
     const SizedBox(height: 8),
     ...List.generate(tasks.length, (i) => Card(child: CheckboxListTile(
       value: done[i],
-      onChanged: (v) => setState(() => done[i] = v ?? false),
+      onChanged: (v) => _setTaskDone(i, v ?? false),
       title: Text(tasks[i], textDirection: TextDirection.rtl),
       controlAffinity: ListTileControlAffinity.leading,
       activeColor: violet,
