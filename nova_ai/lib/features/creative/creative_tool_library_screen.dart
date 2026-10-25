@@ -45,7 +45,6 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
     _Tool('Descript','https://www.descript.com','فيديو','ويب / كمبيوتر','خطة مجانية محدودة'),
     _Tool('VEED','https://www.veed.io','فيديو','ويب','خطة مجانية محدودة'),
     _Tool('Canva Video','https://www.canva.com','فيديو','موبايل / ويب / كمبيوتر','خطة مجانية؛ عناصر Pro مستثناة'),
-    _Tool('Kdenlive Manual','https://docs.kdenlive.org','فيديو','ويب','توثيق مجاني، ليس مولّد فيديو'),
     _Tool('Olive Video Editor','https://olivevideoeditor.org','فيديو','كمبيوتر','مفتوح المصدر؛ راجع حالة الإصدار'),
     _Tool('Natron','https://natrongithub.github.io','فيديو','كمبيوتر','مفتوح المصدر للمؤثرات والتركيب'),
 
