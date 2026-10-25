@@ -199,7 +199,9 @@ class _AurenNotificationsScreenState extends State<AurenNotificationsScreen> {
     final uid = _uid;
     if (uid == null) return;
     if (!n.read) await _repo.markRead(uid, n.id);
-    if (!mounted) return;
+    // Authentication may change while markRead is awaiting the backend.
+    // Do not open a prior user's conversation or notification details afterward.
+    if (!mounted || _uid != uid) return;
     if (n.conversationId != null && n.conversationId!.isNotEmpty) {
       await Navigator.push(context, MaterialPageRoute(
         builder: (_) => MessengerScreen(conversationId: n.conversationId),
