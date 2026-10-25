@@ -38,7 +38,9 @@ void main() {
     expect(find.text('اختبار مفقود'), findsOneWidget);
     expect(find.text('خطة العمل ومعايير التحقق'), findsOneWidget);
     expect(find.textContaining('flutter test ينجح'), findsOneWidget);
-    expect(find.text('الأدلة الناقصة'), findsOneWidget);
+    final missingEvidenceTitle = find.text('الأدلة الناقصة');
+    await tester.ensureVisible(missingEvidenceTitle);
+    expect(missingEvidenceTitle, findsOneWidget);
     expect(find.textContaining('لم يُنفّذ أي تغيير'), findsOneWidget);
   });
 
