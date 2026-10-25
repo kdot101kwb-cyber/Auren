@@ -1,0 +1,75 @@
+name: AUREN Background Maintenance
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 02:15 UTC. Scheduled workflows run against the default branch.
+    - cron: "15 2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auren-background-maintenance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  flutter-quality:
+    name: Analyze and test AUREN
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+
+      - name: Record toolchain
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        id: analyze
+        continue-on-error: true
+        run: |
+          set +e
+          flutter analyze --no-fatal-warnings --no-fatal-infos 2>&1 | tee auren-analyze.log
+          status=${PIPESTATUS[0]}
+          echo "flutter_analyze_exit_code=${status}" >> auren-analyze.log
+          exit "${status}"
+
+      - name: Test
+        id: tests
+        continue-on-error: true
+        run: |
+          set +e
+          flutter test 2>&1 | tee auren-test.log
+          status=${PIPESTATUS[0]}
+          echo "flutter_test_exit_code=${status}" >> auren-test.log
+          exit "${status}"
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auren-background-diagnostics-${{ github.run_number }}
+          path: |
+            auren-analyze.log
+            auren-test.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Fail job if quality checks failed
+        if: steps.analyze.outcome == 'failure' || steps.tests.outcome == 'failure'
+        run: |
+          echo "AUREN background checks found failures. Inspect the uploaded diagnostics artifact."
+          exit 1
