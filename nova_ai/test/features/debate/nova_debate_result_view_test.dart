@@ -39,7 +39,7 @@ void main() {
     expect(find.text('خطة العمل ومعايير التحقق'), findsOneWidget);
     expect(find.textContaining('flutter test ينجح'), findsOneWidget);
     final missingEvidenceTitle = find.text('الأدلة الناقصة');
-    await tester.ensureVisible(missingEvidenceTitle);
+    await tester.scrollUntilVisible(missingEvidenceTitle, 250, scrollable: find.byType(Scrollable).first);
     expect(missingEvidenceTitle, findsOneWidget);
     expect(find.textContaining('لم يُنفّذ أي تغيير'), findsOneWidget);
   });
