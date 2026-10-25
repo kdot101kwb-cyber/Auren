@@ -58,5 +58,5 @@ test('parses plain and fenced JSON and rejects malformed model output', () => {
   assert.equal(parseModelJson('{"summary":"ok","recommendation":"support"}').summary, 'ok');
   assert.equal(parseModelJson('```json\n{"summary":"ok"}\n```').summary, 'ok');
   assert.throws(() => parseModelJson('no structured result'), /JSON صالح/);
-  assert.throws(() => parseModelJson('{"summary":'), SyntaxError);
+  assert.throws(() => parseModelJson('{"summary": }'), SyntaxError);
 });
