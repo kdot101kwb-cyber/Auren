@@ -24,16 +24,16 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
   String? _error;
 
   static const _tracks = <({String title, String detail, String price, IconData icon})>[
-    (title: 'خدمات الكتابة بالذكاء الاصطناعي', detail: 'وصف منتجات، كتابة إعلانية، تحرير وتدقيق', price: 'مثال $20–50', icon: Icons.edit_note),
-    (title: 'السيرة الذاتية وLinkedIn', detail: 'تحسين السيرة ورسائل التقديم دون اختلاق خبرة', price: 'مثال $20–60', icon: Icons.badge_outlined),
-    (title: 'سكريبتات الفيديو القصير', detail: 'فكرة + Hook + نص + دعوة للتفاعل', price: 'مثال $15–40', icon: Icons.video_library_outlined),
-    (title: 'مقالات SEO وموجزات المحتوى', detail: 'بحث كلمات مفتاحية وهيكل مقال ومراجعة الحقائق', price: 'مثال $25–75', icon: Icons.search),
-    (title: 'حزم منشورات السوشيال', detail: 'تقويم محتوى ونصوص لمنشورات متعددة', price: 'مثال $20–60', icon: Icons.campaign_outlined),
-    (title: 'تصميمات رقمية وصور مصغرة', detail: 'قوالب وإعلانات وصور مصغرة بأدوات مجانية متاحة', price: 'مثال $10–40', icon: Icons.image_outlined),
+    (title: 'خدمات الكتابة بالذكاء الاصطناعي', detail: 'وصف منتجات، كتابة إعلانية، تحرير وتدقيق', price: 'مثال \$20–50', icon: Icons.edit_note),
+    (title: 'السيرة الذاتية وLinkedIn', detail: 'تحسين السيرة ورسائل التقديم دون اختلاق خبرة', price: 'مثال \$20–60', icon: Icons.badge_outlined),
+    (title: 'سكريبتات الفيديو القصير', detail: 'فكرة + Hook + نص + دعوة للتفاعل', price: 'مثال \$15–40', icon: Icons.video_library_outlined),
+    (title: 'مقالات SEO وموجزات المحتوى', detail: 'بحث كلمات مفتاحية وهيكل مقال ومراجعة الحقائق', price: 'مثال \$25–75', icon: Icons.search),
+    (title: 'حزم منشورات السوشيال', detail: 'تقويم محتوى ونصوص لمنشورات متعددة', price: 'مثال \$20–60', icon: Icons.campaign_outlined),
+    (title: 'تصميمات رقمية وصور مصغرة', detail: 'قوالب وإعلانات وصور مصغرة بأدوات مجانية متاحة', price: 'مثال \$10–40', icon: Icons.image_outlined),
     (title: 'قوالب رقمية قابلة للبيع', detail: 'قوائم متابعة، مخططات، قوالب Notion أو ملفات PDF أصلية', price: 'السعر حسب المنتج', icon: Icons.inventory_2_outlined),
-    (title: 'ترجمة وتوطين عربي/إنجليزي', detail: 'ترجمة أولية مع تدقيق بشري ومراجعة المصطلحات', price: 'مثال $15–50', icon: Icons.translate),
-    (title: 'مساعدة افتراضية للشركات الصغيرة', detail: 'تنظيم بيانات، تلخيص مستندات، أبحاث عامة', price: 'مثال $5–20/ساعة', icon: Icons.support_agent),
-    (title: 'بحث العملاء المحتملين وتقارير السوق', detail: 'قوائم موثقة بمصادر وروابط، دون رسائل جماعية مزعجة', price: 'مثال $25–80', icon: Icons.insights_outlined),
+    (title: 'ترجمة وتوطين عربي/إنجليزي', detail: 'ترجمة أولية مع تدقيق بشري ومراجعة المصطلحات', price: 'مثال \$15–50', icon: Icons.translate),
+    (title: 'مساعدة افتراضية للشركات الصغيرة', detail: 'تنظيم بيانات، تلخيص مستندات، أبحاث عامة', price: 'مثال \$5–20/ساعة', icon: Icons.support_agent),
+    (title: 'بحث العملاء المحتملين وتقارير السوق', detail: 'قوائم موثقة بمصادر وروابط، دون رسائل جماعية مزعجة', price: 'مثال \$25–80', icon: Icons.insights_outlined),
   ];
 
   @override
@@ -138,7 +138,7 @@ class _NovaRevenueEngineScreenState extends State<NovaRevenueEngineScreen> {
           SizedBox(height: 10),
           Text('NOVA — محرك فرص الدخل', style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
-          Text('ينشئ حزمة عمل يومية فيها خدمات قابلة للبيع، عينة أعمال، رسالة تواصل للمراجعة، وخطة تنفيذ. الهدف $100 يومياً طموح وليس دخلاً مضموناً.'),
+          Text('ينشئ حزمة عمل يومية فيها خدمات قابلة للبيع، عينة أعمال، رسالة تواصل للمراجعة، وخطة تنفيذ. الهدف \$100 يومياً طموح وليس دخلاً مضموناً.'),
         ]),
       ),
       const SizedBox(height: 14),
