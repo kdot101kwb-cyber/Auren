@@ -222,6 +222,9 @@ class _NovaHomeState extends State<NovaHome> {
     const _SocialCapability(icon: Icons.movie_creation_outlined, title: 'إنشاء الصور والفيديو', detail: 'توليد ملفات فعلية عبر محرك متصل، ثم معاينتها قبل النشر'),
     const _SocialCapability(icon: Icons.calendar_month_outlined, title: 'جدولة مفتوحة ومتعددة القنوات', detail: 'دفعات حملات وطابور مستمر ونشر جماعي مع حدود منفصلة لكل منصة وإيقاف فوري'),
     const _SocialCapability(icon: Icons.forum_outlined, title: 'قراءة التعليقات والردود', detail: 'صياغة الردود تلقائياً؛ مراجعة بشرية للشكاوى والمواضيع الحساسة'),
+    const _SocialCapability(icon: Icons.public_outlined, title: 'جمع المعلومات من الويب والمنصات', detail: 'بحث متعدد المصادر مع توثيق الرابط ووقت المعلومة وفصل الحقائق عن التوقعات'),
+    const _SocialCapability(icon: Icons.trending_up, title: 'وكيل فرص الدخل', detail: 'اكتشاف احتياجات الجمهور وفرص المنتجات والخدمات والتسويق بالعمولة وقياس الربح الفعلي'),
+    const _SocialCapability(icon: Icons.speed_outlined, title: 'سرعة وتكلفة ذكية', detail: 'تخزين مؤقت، جمع متوازٍ، اختيار نموذج حسب المهمة، حدود تكلفة ومزود بديل معتمد'),
     const _SocialCapability(icon: Icons.insights_outlined, title: 'التعلم من النتائج', detail: 'مقارنة المشاهدات والاحتفاظ والتفاعل، وتحسين الخطة أسبوعياً'),
     const SizedBox(height: 12),
     const _Notice(text: 'الحالة الحالية: هذه لوحة موسعة وخطة تكامل وليست اتصالاً فعلياً. لم تُربط بعد صلاحيات OAuth أو محركات إنشاء الوسائط أو النشر والردود. النشر المفتوح يعني طابوراً مستمراً ودفعات وجدولة حسب حدود الخدمة؛ لا يعني تجاوز قيود المنصات أو ضمان خدمة مجانية بلا حدود. لن نعرض نجاحاً وهمياً.'),
@@ -230,6 +233,11 @@ class _NovaHomeState extends State<NovaHome> {
       onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/social_media_operator_spec.md'),
       icon: const Icon(Icons.menu_book_outlined),
       label: const Text('فتح مواصفات مدير التسويق والتشغيل'),
+    ),
+    OutlinedButton.icon(
+      onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/intelligence_integrations_revenue_engine.md'),
+      icon: const Icon(Icons.insights_outlined),
+      label: const Text('خطة الذكاء وجلب المعلومات وفرص الدخل'),
     ),
   ]);
 
