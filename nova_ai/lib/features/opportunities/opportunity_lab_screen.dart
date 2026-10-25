@@ -12,13 +12,19 @@ class OpportunityLabScreen extends StatefulWidget {
 class _OpportunityLabScreenState extends State<OpportunityLabScreen> {
   final _name = TextEditingController();
   final _evidence = TextEditingController();
+  final _customers = TextEditingController(text: '10');
+  final _price = TextEditingController(text: '0');
+  final _directCosts = TextEditingController(text: '0');
+  final _otherCosts = TextEditingController(text: '0');
   double _demand = 50, _trend = 50, _monetization = 50;
   double _evidenceStrength = 20, _competition = 50, _cost = 50;
   OpportunityCandidate? _result;
+  RevenueScenario? _scenario;
   String _error = '';
+  String _scenarioError = '';
 
   @override
-  void dispose() { _name.dispose(); _evidence.dispose(); super.dispose(); }
+  void dispose() { _name.dispose(); _evidence.dispose(); _customers.dispose(); _price.dispose(); _directCosts.dispose(); _otherCosts.dispose(); super.dispose(); }
 
   void _evaluate() {
     try {
@@ -33,6 +39,28 @@ class _OpportunityLabScreenState extends State<OpportunityLabScreen> {
       setState(() { _result = null; _error = error.message?.toString() ?? 'راجع البيانات المدخلة'; });
     }
   }
+
+  void _calculateScenario() {
+    try {
+      final scenario = RevenueScenario(
+        expectedCustomers: double.parse(_customers.text.trim()),
+        revenuePerCustomer: double.parse(_price.text.trim()),
+        directCosts: double.parse(_directCosts.text.trim()),
+        otherCosts: double.parse(_otherCosts.text.trim()),
+      );
+      scenario.validate();
+      setState(() { _scenario = scenario; _scenarioError = ''; });
+    } on FormatException {
+      setState(() { _scenario = null; _scenarioError = 'أدخل أرقاماً صحيحة في كل الخانات.'; });
+    } on ArgumentError catch (error) {
+      setState(() { _scenario = null; _scenarioError = error.message?.toString() ?? 'القيم غير صالحة'; });
+    }
+  }
+
+  Widget _numberField(String label, TextEditingController controller) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: TextField(controller: controller, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: label, border: const OutlineInputBorder())),
+  );
 
   Widget _scoreSlider(String label, double value, ValueChanged<double> onChanged) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -86,6 +114,23 @@ class _OpportunityLabScreenState extends State<OpportunityLabScreen> {
         Text('الدليل المسجل: ${_result!.evidence.isEmpty ? 'لم يُسجل دليل بعد' : _result!.evidence}'),
       ]))),
     ],
+    const SizedBox(height: 20),
+    const Divider(),
+    const Text('حاسبة سيناريو الإيرادات', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 6),
+    const Text('أدخل افتراضاتك بنفس العملة؛ الأرقام ليست توقعات سوقية.'),
+    const SizedBox(height: 12),
+    _numberField('عدد العملاء المتوقع (افتراض)', _customers),
+    _numberField('الإيراد لكل عميل', _price),
+    _numberField('التكاليف المباشرة', _directCosts),
+    _numberField('التكاليف الأخرى', _otherCosts),
+    FilledButton.icon(onPressed: _calculateScenario, icon: const Icon(Icons.calculate_outlined), label: const Text('احسب الإيراد والربح التقديري')),
+    if (_scenarioError.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_scenarioError, style: const TextStyle(color: Colors.orangeAccent))),
+    if (_scenario != null) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('الإيراد الإجمالي: ${_scenario!.grossRevenue.toStringAsFixed(2)}'),
+      Text('الربح/الخسارة التقديرية: ${_scenario!.estimatedProfit.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+      Text('الهامش التقديري: ${_scenario!.marginPercent.toStringAsFixed(1)}%'),
+    ]))),
     const SizedBox(height: 8),
     const Text('هذا تقييم إرشادي من المدخلات التي أدخلتها، وليس بحث سوق مباشرًا أو وعدًا بالأرباح. اجمع بيانات حقيقية وحدّث الدرجات قبل اتخاذ قرار مالي.', style: TextStyle(color: Colors.white70)),
   ]);
