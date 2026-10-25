@@ -192,6 +192,10 @@ class _AurenEverydayLifeScreenState extends State<AurenEverydayLifeScreen>
                               ),
                             );
                         }
+                        // Close the failed form after reporting the error.
+                        if (sheetContext.mounted) {
+                          Navigator.pop(sheetContext);
+                        }
                       }
                     },
                     child: const Text('حفظ محلياً'),
