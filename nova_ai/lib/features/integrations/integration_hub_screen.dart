@@ -8,6 +8,14 @@ class IntegrationHubScreen extends StatelessWidget {
   const IntegrationHubScreen({super.key});
 
   static const _groups = <_IntegrationGroup>[
+    _IntegrationGroup('تطوير التطبيقات مجاناً', Icons.code_rounded, [
+      _Integration('GitHub Copilot Free', 'إكمال الكود ومحادثة برمجية بحدود مجانية؛ مناسب للعمل على مستودع AUREN.', 'خدمة خارجية؛ يلزم فتحها وتسجيل الدخول، وليست مدمجة كـ API داخل NOVA', 'https://github.com/features/copilot'),
+      _Integration('Google Antigravity', 'بيئة تطوير بوكلاء ذكاء اصطناعي لبناء الميزات وفحص المشاريع ضمن حدود الاستخدام المتاحة.', 'خدمة خارجية؛ تحقق من إتاحة الخطة المجانية لحسابك', 'https://antigravity.google/'),
+      _Integration('Cline', 'وكيل برمجي مفتوح المصدر لتعديل الملفات وتشغيل الاختبارات بموافقتك.', 'البرنامج مجاني؛ مزود النموذج قد يفرض تكلفة، ويمكن استخدام نموذج محلي', 'https://cline.bot/'),
+      _Integration('OpenCode', 'وكيل برمجي مفتوح المصدر يدعم اختيار مزود النموذج.', 'البرنامج مجاني؛ تكلفة النموذج تعتمد على المزود أو التشغيل المحلي', 'https://opencode.ai/'),
+      _Integration('NOVA Free Builder Runner', 'يفحص Flutter أو الويب أو صفحة HTML ثابتة ويبني المخرجات ويرفعها كـ artifact عبر GitHub Actions.', 'أُضيف workflow يدوي؛ لا يولّد الكود ولا يستهلك طابور مهام Firestore تلقائياً', 'https://github.com/kdot101kwb-cyber/Auren/actions/workflows/nova-free-builder.yml'),
+      _Integration('دليل الإعداد المجاني', 'خطوات الاستخدام وحدود المجانية وسياسة تقليل أخطاء الكود.', 'توثيق داخل المستودع', 'https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/free_ai_coding_setup.md'),
+    ]),
     _IntegrationGroup('القيادة والتنفيذ', Icons.account_tree_outlined, [
       _Integration('AUREN AI Gateway', 'توجيه الطلبات لمزودي الذكاء الاصطناعي مع بدائل وحدود تكلفة.', 'Backend موجود جزئياً؛ ربط تطبيق NOVA لم يكتمل', 'https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/functions/index.js'),
       _Integration('GitHub Actions', 'مهام التطوير والاختبارات والبناء ومتابعة نتائج CI.', 'مخطط للتكامل داخل التطبيق', 'https://github.com/kdot101kwb-cyber/Auren'),
