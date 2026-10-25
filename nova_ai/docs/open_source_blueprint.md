@@ -26,6 +26,15 @@ Do not deploy every platform at once. A single secure backend with clear interfa
 7. **Persistence and audit:** task database, append-only activity events, redacted logs, cost/usage metrics and retention controls.
 8. **Approval policy:** require user confirmation before merging code, publishing content, sending messages, deleting data or changing security settings.
 
+## Creative studio: images, video, and games
+
+- **Images:** define a provider adapter interface so the backend can route requests to one or more image-generation services. Store prompt, aspect ratio, output format, provider, job ID and result URL in a job record.
+- **Video:** treat generation as an asynchronous job with progress/status polling, timeouts, retries and output storage. Video generation can be substantially more expensive than image generation.
+- **Games:** use a separate game-building pipeline: concept and mechanics brief, generated assets, code generation in an isolated workspace, automated tests, preview/build artifact, then human review. A game is more than a single generated image or prompt.
+- **Multiple engines:** keep provider adapters replaceable; select the best available engine by task, quality, latency, price and region availability. Add a fallback only when terms and output formats permit it.
+- **No false “unlimited” promise:** the app can avoid imposing its own daily cap, but provider quotas, rate limits, compute, storage and costs still apply. Add budget ceilings, per-user abuse controls, usage estimates and optional bring-your-own-key or self-hosted engines.
+- **Media safety and rights:** validate prompts and uploads, apply provider policies, respect likeness/copyright restrictions, retain provenance where possible, and let users delete generated files.
+
 ## Delivery phases
 
 ### Phase 0 — Reliable APK
