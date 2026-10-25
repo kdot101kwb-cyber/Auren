@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'nova_debate_result_view.dart';
 
 class NovaDebateScreen extends StatefulWidget {
   const NovaDebateScreen({super.key});
@@ -101,7 +101,7 @@ class _NovaDebateScreenState extends State<NovaDebateScreen> {
         const SizedBox(height: 16),
         const Text('نتيجة المراجعة', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Card(child: Padding(padding: const EdgeInsets.all(12), child: SelectableText(JsonEncoder.withIndent('  ').convert(_visibleResult), textDirection: TextDirection.ltr))),
+        NovaDebateResultView(result: _visibleResult),
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('بوابة التنفيذ', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
