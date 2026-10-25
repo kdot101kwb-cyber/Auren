@@ -41,7 +41,9 @@ void main() {
     final missingEvidenceTitle = find.text('الأدلة الناقصة');
     await tester.scrollUntilVisible(missingEvidenceTitle, 250, scrollable: find.byType(Scrollable).first);
     expect(missingEvidenceTitle, findsOneWidget);
-    expect(find.textContaining('لم يُنفّذ أي تغيير'), findsOneWidget);
+    final disclaimer = find.textContaining('لم يُنفّذ أي تغيير');
+    await tester.scrollUntilVisible(disclaimer, 250, scrollable: find.byType(Scrollable).first);
+    expect(disclaimer, findsOneWidget);
   });
 
   testWidgets('handles sparse model output without crashing', (tester) async {
