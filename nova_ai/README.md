@@ -17,6 +17,9 @@ The agents hub includes a strategic review screen backed by the Firebase callabl
 - A user can explicitly approve a proposed plan; the backend records that approval. **This first slice does not execute repository changes**: the safe repository-editing executor, diff validation, and post-change CI verification still need to be connected. The UI reports this limitation rather than pretending work ran.
 - AI-generated objections and estimates are suggestions, not verified facts. Supply concrete logs, repository evidence, and test results in the context field when available.
 
+## Creative media tool catalog
+The curated directory of open-source video, animation, 3D, and editing tools is in [creative media tool catalog](docs/creative_media_tool_catalog.md). It distinguishes directory entries from tools actually installed or connected, highlights hardware/licensing constraints, and prioritizes a $0-friendly workflow.
+
 ## Creative studio
 The app now includes a UI for preparing image, video, and game-generation requests. This is a front-end flow only: it does not generate media or compile games yet. Real output requires a server-side provider adapter, secure credentials, asynchronous job tracking, file storage, and cost/abuse controls. “Unlimited” can mean no app-imposed daily cap, but provider and infrastructure limits still apply.
 
