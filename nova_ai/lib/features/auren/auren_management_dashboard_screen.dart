@@ -331,7 +331,8 @@ class _AurenManagementDashboardScreenState
                   'الأثر: ${_value(item['impact'])}',
                   'التخفيف: ${_value(item['mitigation'])}',
                 ]),
-            if (_items('missingEvidence').isNotEmpty)
+            if (_review?['missingEvidence'] is List &&
+                (_review!['missingEvidence'] as List).isNotEmpty)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(14),
