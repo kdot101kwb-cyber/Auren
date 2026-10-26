@@ -42,6 +42,8 @@ class _NovaOfflineWorkspaceScreenState extends State<NovaOfflineWorkspaceScreen>
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_storageKey);
       final decoded = raw == null ? <dynamic>[] : jsonDecode(raw) as List<dynamic>;
+      _monthlyRevenue.text = prefs.getString('nova.offline.monthly_revenue.v1') ?? '';
+      _monthlyCosts.text = prefs.getString('nova.offline.monthly_costs.v1') ?? '';
       if (!mounted) return;
       setState(() {
         _entries = decoded.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
@@ -57,6 +59,14 @@ class _NovaOfflineWorkspaceScreenState extends State<NovaOfflineWorkspaceScreen>
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_storageKey, jsonEncode(_entries));
+  }
+
+  Future<void> _saveCalculatorInput({required bool revenue}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      revenue ? 'nova.offline.monthly_revenue.v1' : 'nova.offline.monthly_costs.v1',
+      revenue ? _monthlyRevenue.text : _monthlyCosts.text,
+    );
   }
 
   void _notify(String message) {
@@ -146,9 +156,9 @@ class _NovaOfflineWorkspaceScreenState extends State<NovaOfflineWorkspaceScreen>
           const SizedBox(height: 6),
           const Text('أدخل تقدير الإيرادات والتكاليف. الحساب محلي على الهاتف ولا يُعد توصية استثمارية.'),
           const SizedBox(height: 10),
-          TextField(controller: _monthlyRevenue, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الإيرادات المتوقعة شهرياً', border: OutlineInputBorder()), onChanged: (_) => setState(() {})),
+          TextField(controller: _monthlyRevenue, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الإيرادات المتوقعة شهرياً', border: OutlineInputBorder()), onChanged: (_) { setState(() {}); _saveCalculatorInput(revenue: true); }),
           const SizedBox(height: 8),
-          TextField(controller: _monthlyCosts, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'التكاليف المتوقعة شهرياً', border: OutlineInputBorder()), onChanged: (_) => setState(() {})),
+          TextField(controller: _monthlyCosts, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'التكاليف المتوقعة شهرياً', border: OutlineInputBorder()), onChanged: (_) { setState(() {}); _saveCalculatorInput(revenue: false); }),
           const SizedBox(height: 12),
           Text('الصافي التقديري: ${net.toStringAsFixed(2)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: net >= 0 ? Colors.greenAccent : Colors.redAccent)),
           Text(revenue > 0 ? 'هامش الصافي: ${(net / revenue * 100).toStringAsFixed(1)}%' : 'أدخل إيرادات أكبر من صفر لحساب الهامش.'),
