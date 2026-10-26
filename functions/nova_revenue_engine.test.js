@@ -43,3 +43,13 @@ test('prompt requests concrete drafts without false claims or automatic outreach
   assert.match(prompt, /\(20\) setup of business profiles/);
   assert.match(prompt, /WhatsApp Business Status/);
 });
+
+test('daily revenue prompt includes the 50-platform catalog and $0/Sudan safeguards', () => {
+  const prompt = buildNovaRevenuePrompt({hoursPerDay: 2, startingBudgetUsd: 0, languages: 'Arabic'}, '2026-10-26');
+  assert.match(prompt, /Candidate platform catalog/);
+  assert.match(prompt, /50 options/);
+  assert.match(prompt, /Fiverr/);
+  assert.match(prompt, /RapidAPI \/ Apify/);
+  assert.match(prompt, /Do not assume any platform pays out in Sudan/);
+  assert.match(prompt, /exclude any option requiring upfront spend/);
+});
