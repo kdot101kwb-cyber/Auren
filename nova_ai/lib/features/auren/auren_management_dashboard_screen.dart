@@ -21,8 +21,11 @@ class _AurenManagementDashboardScreenState
   bool _busy = false;
   bool _historyBusy = false;
   bool _dailyAutoChecked = false;
+  bool _approving = false;
   String? _error;
   String? _historyStatus;
+  String? _approvalStatus;
+  String? _debateId;
   Map<String, dynamic>? _review;
   DateTime? _reviewedAt;
   List<Map<String, dynamic>> _history = const [];
@@ -190,6 +193,7 @@ class _AurenManagementDashboardScreenState
 
       final data = Map<String, dynamic>.from(response.data as Map);
       final debate = data['debate'];
+      final debateId = data['debateId']?.toString();
       if (debate is! Map) {
         throw const FormatException('استجابة المجلس لا تحتوي على نتيجة صالحة.');
       }
@@ -197,6 +201,8 @@ class _AurenManagementDashboardScreenState
       setState(() {
         _review = Map<String, dynamic>.from(debate);
         _reviewedAt = now;
+        _debateId = (debateId != null && debateId.isNotEmpty) ? debateId : null;
+        _approvalStatus = null;
       });
       await _loadHistory();
     } on FirebaseFunctionsException catch (e) {
@@ -209,6 +215,51 @@ class _AurenManagementDashboardScreenState
       }
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _approvePlan() async {
+    final debateId = _debateId;
+    if (_approving || debateId == null) return;
+    if (!NovaFirebaseRuntime.initialized ||
+        !NovaFirebaseRuntime.appCheckActivated) {
+      setState(() {
+        _approvalStatus = 'يلزم إعداد Firebase وApp Check قبل تسجيل الموافقة.';
+      });
+      return;
+    }
+    setState(() {
+      _approving = true;
+      _approvalStatus = null;
+    });
+    try {
+      await _ensureSignedIn();
+      final response = await FirebaseFunctions.instanceFor(
+        region: 'us-central1',
+      ).httpsCallable('novaApproveDebatePlan').call(<String, dynamic>{
+        'debateId': debateId,
+      });
+      final data = Map<String, dynamic>.from(response.data as Map);
+      if (!mounted) return;
+      setState(() {
+        _approvalStatus = _value(
+          data['message'],
+          'تم استلام رد الخادم؛ تحقق من حالة الاعتماد قبل المتابعة.',
+        );
+      });
+      await _loadHistory();
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        setState(() => _approvalStatus =
+            e.message ?? 'تعذر تسجيل موافقتك على الخطة.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _approvalStatus =
+            'تعذر تسجيل الموافقة. لم يتم تنفيذ أي تغييرات على المستودع.');
+      }
+    } finally {
+      if (mounted) setState(() => _approving = false);
     }
   }
 
@@ -359,6 +410,31 @@ class _AurenManagementDashboardScreenState
                   'التحقق: ${_value(item['verification'])}',
                   'الجهد التقديري: ${_value(item['estimatedEffort'])}',
                 ]),
+            if (_debateId != null) ...[
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: _approving ? null : _approvePlan,
+                icon: _approving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.fact_check_outlined),
+                label: Text(_approving
+                    ? 'جارٍ تسجيل الموافقة...'
+                    : 'أوافق على الخطة المقترحة'),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'الموافقة تسجل قرارك فقط. لا تنفّذ تعديلات على GitHub أو تنشر التطبيق تلقائياً.',
+                textDirection: TextDirection.rtl,
+              ),
+              if (_approvalStatus != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(_approvalStatus!, textDirection: TextDirection.rtl),
+                ),
+            ],
             _reviewSection('المخاطر', 'risks', (item) => [
                   _value(item['risk']),
                   'الأثر: ${_value(item['impact'])}',
