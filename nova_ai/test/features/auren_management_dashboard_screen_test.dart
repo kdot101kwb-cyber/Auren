@@ -15,5 +15,19 @@ void main() {
     expect(find.text('الجودة ونجاح الاختبارات'), findsOneWidget);
     expect(find.text('الأمان والخصوصية'), findsOneWidget);
     expect(find.text('ابدأ اجتماع اليوم'), findsOneWidget);
+    expect(find.text('سجل اجتماعات المجلس'), findsOneWidget);
+    expect(find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'), findsOneWidget);
+  });
+
+  testWidgets('dashboard keeps the council usable when Firebase is not configured',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: AurenManagementDashboardScreen()),
+    );
+
+    expect(find.text('حالة المشروع'), findsOneWidget);
+    expect(find.text('مجلس الإدارة'), findsOneWidget);
+    expect(find.textContaining('تحتاج تحققاً مباشراً'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
