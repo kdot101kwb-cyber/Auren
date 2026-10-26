@@ -10,6 +10,12 @@ on:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
 
+# Avoid spending CI time building stale commits when several small commits land
+# in quick succession. The latest commit in this branch is the one we need.
+concurrency:
+  group: nova-android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
