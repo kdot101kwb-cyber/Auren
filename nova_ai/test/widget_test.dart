@@ -32,6 +32,7 @@ void main() {
     await tester.pumpWidget(const NovaApp());
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(task, 300, scrollable: find.byType(Scrollable).first);
     final restartedCheckbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
     final tile = tester.widget<CheckboxListTile>(restartedCheckbox);
     expect(tile.value, isTrue);
