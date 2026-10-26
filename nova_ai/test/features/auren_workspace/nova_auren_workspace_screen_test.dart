@@ -23,7 +23,10 @@ void main() {
       find.byType(TextField).last,
       'دراسة خيارات التخزين والعمل دون اتصال.',
     );
-    await tester.tap(find.text('حفظ في مساحة AUREN'));
+    final saveButton = find.text('حفظ في مساحة AUREN');
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
     await tester.pumpAndSettle();
 
     expect(find.text('إضافة مزامنة منخفضة البيانات'), findsOneWidget);
