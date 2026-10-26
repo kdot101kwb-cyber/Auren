@@ -13,9 +13,22 @@ void main() {
     expect(find.text('مركز إدارة AUREN'), findsOneWidget);
     expect(find.text('جدول اجتماع اليوم'), findsOneWidget);
     expect(find.text('الجودة ونجاح الاختبارات'), findsOneWidget);
+
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(find.text('الأمان والخصوصية'), 250, scrollable: scrollable);
     expect(find.text('الأمان والخصوصية'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('ابدأ اجتماع اليوم'), 250, scrollable: scrollable);
     expect(find.text('ابدأ اجتماع اليوم'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('سجل اجتماعات المجلس'), 250, scrollable: scrollable);
     expect(find.text('سجل اجتماعات المجلس'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'),
+      250,
+      scrollable: scrollable,
+    );
     expect(find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'), findsOneWidget);
   });
 
