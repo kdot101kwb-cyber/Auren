@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nova_ai/features/game_studio/nova_game_build_coordinator.dart';
 import 'package:nova_ai/features/game_studio/nova_game_pipeline.dart';
 import 'package:nova_ai/features/game_studio/nova_game_tool_catalog.dart';
 
@@ -12,10 +13,13 @@ void main() {
     }
   });
 
-  test('ten-tool build chain is connected across ordered build stages', () {
-    final chain = NovaGameBuildChainForTest.toolIds;
+  test('canonical ten-tool build chain is connected across ordered stages', () {
+    final chain = NovaGameBuildCoordinator.defaultToolChain;
+    final plan = NovaGameBuildCoordinator.createPlan('A 2D exploration game');
+
     expect(chain, hasLength(10));
     expect(chain.toSet(), hasLength(10));
+    expect(plan.connectedToolIds, containsAll(chain));
     for (final id in chain) {
       expect(
         NovaGameToolCatalog.tools.any((tool) => tool.id == id),
@@ -23,8 +27,9 @@ void main() {
         reason: 'Missing catalogue entry for $id',
       );
     }
-    final stageIds = NovaGamePipeline.stages.expand((stage) => stage.toolIds).toSet();
-    expect(stageIds, containsAll(chain));
+    final pipelineIds =
+        NovaGamePipeline.stages.expand((stage) => stage.toolIds).toSet();
+    expect(pipelineIds, containsAll(chain));
   });
 
   test('Godot execution is explicitly gated on a configured runner', () {
@@ -32,24 +37,11 @@ void main() {
     expect(qa, isNotNull);
     expect(qa!.status, NovaGameStageStatus.needsRunner);
     expect(qa.completionGate, contains('مضيف Godot/MCP متصل'));
-    expect(NovaGameToolCatalog.tools.every(
-      (tool) => tool.integrationStatus == NovaGameToolCatalog.statusCatalogOnly,
-    ), isTrue);
+    expect(
+      NovaGameToolCatalog.tools.every(
+        (tool) => tool.integrationStatus == NovaGameToolCatalog.statusCatalogOnly,
+      ),
+      isTrue,
+    );
   });
-}
-
-/// Mirrors the documented default chain without depending on UI code.
-class NovaGameBuildChainForTest {
-  static const toolIds = <String>[
-    'godot-engine',
-    'godot-ai-workbench',
-    'blender',
-    'blender-mcp',
-    'terrain3d',
-    'godot-jolt',
-    'limboai',
-    'dialogic',
-    'phantom-camera',
-    'meshoptimizer',
-  ];
 }
