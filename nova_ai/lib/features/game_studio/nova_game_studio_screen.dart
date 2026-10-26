@@ -10,10 +10,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'nova_game_build_plan_panel.dart';
 import 'nova_game_pipeline.dart';
 import 'nova_game_tool_catalog.dart';
 
-/// Creates a deterministic Godot starter and exposes a staged tool workflow.
+/// Creates a deterministic Godot starter and exposes the connected tool plan.
 /// Actual engine execution requires a compatible, configured build runner.
 class NovaGameStudioScreen extends StatefulWidget {
   const NovaGameStudioScreen({super.key});
@@ -276,12 +277,14 @@ func _draw() -> void:
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          NovaGameBuildPlanPanel(ideaController: idea),
+          const SizedBox(height: 12),
           Text('مسار صناعة اللعبة',
               style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 6),
           const Text(
-            'المراحل توضح كيف ستتعاون الأدوات. المراحل التي تحتاج محركاً أو MCP لا تُعتبر منفذة حتى يتصل مشغّل بناء فعلي وتنجح الاختبارات.',
+            'المراحل توضح كيف تتعاون الأدوات. المراحل التي تحتاج محركاً أو MCP لا تُعتبر منفذة حتى يتصل مشغّل بناء فعلي وتنجح الاختبارات.',
           ),
           for (final stage in NovaGamePipeline.stages)
             Card(
