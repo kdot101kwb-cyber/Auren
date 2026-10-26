@@ -25,7 +25,7 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
   static const _categories = ['All', 'Work', 'Freelance', 'Translation', 'AI & Data', 'Content'];
   static const _regions = ['Worldwide', 'Africa', 'Europe', 'Asia', 'Americas'];
   static const _countries = ['All countries', 'Sudan'];
-  static const _languages = ['All languages', 'Arabic', 'English', 'French', 'Spanish', 'Portuguese', 'German', 'Hindi', 'Swahili', 'Chinese', 'Japanese'];
+  static const _languages = ['All languages', 'Arabic', 'English', 'French', 'Spanish', 'Portuguese', 'German', 'Hindi', 'Swahili', 'Chinese', 'Japanese', 'Russian', 'Korean', 'Italian', 'Indonesian', 'Turkish', 'Bengali', 'Vietnamese', 'Thai', 'Urdu', 'Polish', 'Dutch', 'Filipino'];
 
   @override
   void initState() { super.initState(); _loadSaved(); }
@@ -53,6 +53,18 @@ class _NovaGlobalOpportunityRadarScreenState extends State<NovaGlobalOpportunity
       case 'Swahili': return 'kazi za mbali ajira';
       case 'Chinese': return '远程工作 自由职业';
       case 'Japanese': return 'リモートワーク フリーランス';
+      case 'Russian': return 'удалённая работа фриланс перевод';
+      case 'Korean': return '원격 근무 프리랜서 번역';
+      case 'Italian': return 'lavoro da remoto freelance traduzione';
+      case 'Indonesian': return 'pekerjaan jarak jauh freelance penerjemahan';
+      case 'Turkish': return 'uzaktan iş freelance çeviri';
+      case 'Bengali': return 'দূরবর্তী কাজ চাকরি অনুবাদ';
+      case 'Vietnamese': return 'việc làm từ xa freelance dịch thuật';
+      case 'Thai': return 'งานระยะไกล ฟรีแลนซ์ แปลภาษา';
+      case 'Urdu': return 'گھر سے کام فری لانس ترجمہ';
+      case 'Polish': return 'praca zdalna freelance tłumaczenie';
+      case 'Dutch': return 'remote werk freelance vertaling';
+      case 'Filipino': return 'trabaho malayuang trabaho pagsasalin';
       case 'English': return 'remote work freelance job';
       default: return '';
     }
