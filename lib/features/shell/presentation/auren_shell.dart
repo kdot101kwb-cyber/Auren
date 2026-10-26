@@ -13,14 +13,242 @@ import '../../../services/auth/auth_service.dart';
 import '../../../services/social/random_call_service.dart';
 import '../../../services/social/notification_service.dart';
 import '../../notifications/presentation/notification_center_screen.dart';
+import '../../security/presentation/nova_wifi_helper_screen.dart';
 
-class AurenShell extends StatefulWidget{const AurenShell({super.key});@override State<AurenShell> createState()=>_AurenShellState();}
-class _AurenShellState extends State<AurenShell>{
- int index=0; final pages=const[AurenHomeV2(),AurenTimelineScreen(),AurenDiscoverScreen(),AurenConversationListScreen(),AurenProfileScreen()];
- final auth=FirebaseAurenAuthService(),callService=AurenRandomCallService(),notificationService=AurenNotificationService(); StreamSubscription<QuerySnapshot<Map<String,dynamic>>>? incomingSub; final Set<String> handledIncomingCalls=<String>{}; Stream<int> unreadStream=const Stream<int>.empty(); StreamSubscription<String?>? authSub;
- @override void initState(){super.initState();authSub=auth.authStateChanges.listen((uid){incomingSub?.cancel();handledIncomingCalls.clear();if(!mounted)return;setState(()=>unreadStream=uid==null?const Stream<int>.empty():notificationService.watchUnreadCount(uid));if(uid!=null)_listenForIncomingCalls();},onError:(Object e){debugPrint('auth state error: $e');});}
- void _listenForIncomingCalls(){final uid=auth.currentUserId;if(uid==null)return;incomingSub=FirebaseFirestore.instance.collection('random_calls').where('calleeUid',isEqualTo:uid).where('status',isEqualTo:'ringing').snapshots().listen((snapshot){for(final change in snapshot.docChanges){if(change.type==DocumentChangeType.removed)continue;final data=change.doc.data();if(data==null||handledIncomingCalls.contains(change.doc.id))continue;final createdAt=data['createdAt'];if(createdAt is Timestamp&&DateTime.now().difference(createdAt.toDate()).inSeconds>60){handledIncomingCalls.add(change.doc.id);continue;}handledIncomingCalls.add(change.doc.id);_showIncomingCall(change.doc.id,data);}},onError:(Object e){debugPrint('incoming calls error: $e');});}
- Future<void> _showIncomingCall(String callId,Map<String,dynamic> data)async{if(!mounted)return;final kind=data['kind'] as String? ?? 'video';final accepted=await showDialog<bool>(context:context,barrierDismissible:false,builder:(context)=>AlertDialog(title:Text(kind=='video'?AurenLocalizations.of(context).incomingVideoCall:AurenLocalizations.of(context).incomingAudioCall),content:Text(AurenLocalizations.of(context).incomingRandomCall),actions:[TextButton(onPressed:()=>Navigator.pop(context,false),child:Text(AurenLocalizations.of(context).decline)),FilledButton(onPressed:()=>Navigator.pop(context,true),child:Text(AurenLocalizations.of(context).accept))]));if(!mounted)return;if(accepted==true){await Navigator.of(context).push(MaterialPageRoute(builder:(_)=>AurenRandomCallScreen(callId:callId,caller:false,kind:kind,otherName:'AUREN User')));}else{try{await callService.end(callId,auth.currentUserId??'unknown');}catch(_){}}}
- @override void dispose(){authSub?.cancel();incomingSub?.cancel();super.dispose();}
- @override Widget build(BuildContext context)=>Scaffold(body:Stack(children:[IndexedStack(index:index,children:pages),Positioned(top:8,right:12,child:SafeArea(child:StreamBuilder<int>(stream:unreadStream,builder:(context,snapshot){final count=snapshot.data??0;return Material(color:Theme.of(context).colorScheme.surface.withValues(alpha:.92),shape:const CircleBorder(),child:InkWell(customBorder:const CircleBorder(),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenNotificationCenterScreen())),child:SizedBox(width:48,height:48,child:Stack(alignment:Alignment.center,children:[const Icon(Icons.notifications_outlined),if(count>0)Positioned(right:4,top:3,child:Container(padding:const EdgeInsets.symmetric(horizontal:5,vertical:2),decoration:BoxDecoration(color:Theme.of(context).colorScheme.error,borderRadius:BorderRadius.circular(10)),child:Text(count>99?'99+':'$count',style:const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.bold))))]))));}))),]),floatingActionButton:index==1?FloatingActionButton(onPressed:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const AurenCreatePostScreen())),child:const Icon(Icons.add)):null,bottomNavigationBar:NavigationBar(selectedIndex:index,onDestinationSelected:(i)=>setState(()=>index=i),destinations:[NavigationDestination(icon:const Icon(Icons.home_outlined),selectedIcon:const Icon(Icons.home),label:AurenLocalizations.of(context).home),NavigationDestination(icon:const Icon(Icons.dynamic_feed_outlined),selectedIcon:const Icon(Icons.dynamic_feed),label:AurenLocalizations.of(context).pulse),NavigationDestination(icon:const Icon(Icons.explore_outlined),selectedIcon:const Icon(Icons.explore),label:AurenLocalizations.of(context).discover),NavigationDestination(icon:const Icon(Icons.chat_bubble_outline),selectedIcon:const Icon(Icons.chat_bubble),label:AurenLocalizations.of(context).messenger),NavigationDestination(icon:const Icon(Icons.person_outline),selectedIcon:const Icon(Icons.person),label:AurenLocalizations.of(context).profile)]));
+class AurenShell extends StatefulWidget {
+  const AurenShell({super.key});
+  @override
+  State<AurenShell> createState() => _AurenShellState();
+}
+
+class _AurenShellState extends State<AurenShell> {
+  int index = 0;
+  final pages = const [
+    AurenHomeV2(),
+    AurenTimelineScreen(),
+    AurenDiscoverScreen(),
+    AurenConversationListScreen(),
+    AurenProfileScreen(),
+  ];
+  final auth = FirebaseAurenAuthService();
+  final callService = AurenRandomCallService();
+  final notificationService = AurenNotificationService();
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? incomingSub;
+  final Set<String> handledIncomingCalls = <String>{};
+  Stream<int> unreadStream = const Stream<int>.empty();
+  StreamSubscription<String?>? authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    authSub = auth.authStateChanges.listen((uid) {
+      incomingSub?.cancel();
+      handledIncomingCalls.clear();
+      if (!mounted) return;
+      setState(() => unreadStream = uid == null
+          ? const Stream<int>.empty()
+          : notificationService.watchUnreadCount(uid));
+      if (uid != null) _listenForIncomingCalls();
+    }, onError: (Object e) {
+      debugPrint('auth state error: $e');
+    });
+  }
+
+  void _listenForIncomingCalls() {
+    final uid = auth.currentUserId;
+    if (uid == null) return;
+    incomingSub = FirebaseFirestore.instance
+        .collection('random_calls')
+        .where('calleeUid', isEqualTo: uid)
+        .where('status', isEqualTo: 'ringing')
+        .snapshots()
+        .listen((snapshot) {
+      for (final change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.removed) continue;
+        final data = change.doc.data();
+        if (data == null || handledIncomingCalls.contains(change.doc.id)) continue;
+        final createdAt = data['createdAt'];
+        if (createdAt is Timestamp &&
+            DateTime.now().difference(createdAt.toDate()).inSeconds > 60) {
+          handledIncomingCalls.add(change.doc.id);
+          continue;
+        }
+        handledIncomingCalls.add(change.doc.id);
+        _showIncomingCall(change.doc.id, data);
+      }
+    }, onError: (Object e) {
+      debugPrint('incoming calls error: $e');
+    });
+  }
+
+  Future<void> _showIncomingCall(String callId, Map<String, dynamic> data) async {
+    if (!mounted) return;
+    final kind = data['kind'] as String? ?? 'video';
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(kind == 'video'
+            ? AurenLocalizations.of(context).incomingVideoCall
+            : AurenLocalizations.of(context).incomingAudioCall),
+        content: Text(AurenLocalizations.of(context).incomingRandomCall),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AurenLocalizations.of(context).decline),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AurenLocalizations.of(context).accept),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (accepted == true) {
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AurenRandomCallScreen(
+          callId: callId,
+          caller: false,
+          kind: kind,
+          otherName: 'AUREN User',
+        ),
+      ));
+    } else {
+      try {
+        await callService.end(callId, auth.currentUserId ?? 'unknown');
+      } catch (_) {}
+    }
+  }
+
+  @override
+  void dispose() {
+    authSub?.cancel();
+    incomingSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Stack(
+          children: [
+            IndexedStack(index: index, children: pages),
+            Positioned(
+              top: 8,
+              right: 68,
+              child: SafeArea(
+                child: Material(
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: .92),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NovaWifiHelperScreen()),
+                    ),
+                    child: const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(Icons.wifi_find),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 12,
+              child: SafeArea(
+                child: StreamBuilder<int>(
+                  stream: unreadStream,
+                  builder: (context, snapshot) {
+                    final count = snapshot.data ?? 0;
+                    return Material(
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: .92),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AurenNotificationCenterScreen()),
+                        ),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Icon(Icons.notifications_outlined),
+                              if (count > 0)
+                                Positioned(
+                                  right: 4,
+                                  top: 3,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.error,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      count > 99 ? '99+' : '$count',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: index == 1
+            ? FloatingActionButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AurenCreatePostScreen()),
+                ),
+                child: const Icon(Icons.add),
+              )
+            : null,
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: index,
+          onDestinationSelected: (i) => setState(() => index = i),
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home),
+              label: AurenLocalizations.of(context).home,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.dynamic_feed_outlined),
+              selectedIcon: const Icon(Icons.dynamic_feed),
+              label: AurenLocalizations.of(context).pulse,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.explore_outlined),
+              selectedIcon: const Icon(Icons.explore),
+              label: AurenLocalizations.of(context).discover,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.chat_bubble_outline),
+              selectedIcon: const Icon(Icons.chat_bubble),
+              label: AurenLocalizations.of(context).messenger,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person),
+              label: AurenLocalizations.of(context).profile,
+            ),
+          ],
+        ),
+      );
 }
