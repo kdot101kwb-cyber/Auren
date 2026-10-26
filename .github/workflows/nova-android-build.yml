@@ -6,12 +6,17 @@ on:
     branches:
       - main
       - feat/nova-ai-android-app
+      - feat/nova-in-app-app-builder-toolkit
+    paths:
+      - 'nova_ai/**'
+      - '.github/workflows/nova-android-build.yml'
+  pull_request:
+    branches:
+      - main
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
 
-# Avoid spending CI time building stale commits when several small commits land
-# in quick succession. The latest commit in this branch is the one we need.
 concurrency:
   group: nova-android-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,25 +33,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
       - name: Generate Android host files
         run: flutter create --platforms=android --org com.kwb86 --project-name nova_ai .
-
       - name: Install dependencies
         run: flutter pub get
-
       - name: Analyze
         run: flutter analyze --no-fatal-infos
-
       - name: Test
         run: flutter test
-
       - name: Report Firebase build configuration
         env:
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
@@ -62,7 +61,6 @@ jobs:
             echo "NOVA_FIREBASE_CONFIGURED=false" >> "$GITHUB_ENV"
             echo "::warning::Firebase GitHub Actions variables are incomplete. APK will build, but Firebase-backed NOVA features will remain unavailable."
           fi
-
       - name: Build debug APK
         env:
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY || secrets.FIREBASE_API_KEY }}
@@ -82,16 +80,11 @@ jobs:
             fi
           fi
           flutter build apk --debug "${args[@]}"
-
       - name: Write build configuration report
         if: always()
         shell: bash
         run: |
-          if [ "${NOVA_FIREBASE_CONFIGURED:-false}" = "true" ]; then
-            state="configured"
-          else
-            state="not_configured"
-          fi
+          if [ "${NOVA_FIREBASE_CONFIGURED:-false}" = "true" ]; then state="configured"; else state="not_configured"; fi
           mkdir -p build
           cat > build/nova-build-status.txt <<EOF
           NOVA Android debug build
@@ -100,7 +93,6 @@ jobs:
           Firebase client configuration: ${state}
           Important: a successful APK build does not mean Firebase Functions are deployed or reachable.
           EOF
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -108,7 +100,6 @@ jobs:
           path: nova_ai/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 14
-
       - name: Upload build configuration report
         if: always()
         uses: actions/upload-artifact@v4
