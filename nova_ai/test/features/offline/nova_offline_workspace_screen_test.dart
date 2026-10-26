@@ -43,6 +43,12 @@ void main() {
 
     expect(find.text('الصافي التقديري: 1050.00'), findsOneWidget);
     expect(find.text('هامش الصافي: 70.0%'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaOfflineWorkspaceScreen())));
+    await tester.pumpAndSettle();
+    expect(find.text('الصافي التقديري: 1050.00'), findsOneWidget);
+    expect(find.text('هامش الصافي: 70.0%'), findsOneWidget);
   });
 
   testWidgets('requires a title before saving', (tester) async {
