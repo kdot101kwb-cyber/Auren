@@ -2,11 +2,16 @@ name: NOVA Android Build
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'nova_ai/**'
+      - '.github/workflows/nova-android-build.yml'
   push:
     branches:
       - main
       - feat/nova-ai-android-app
       - feat/nova-autonomous-workspace-market-radar
+      - feat/nova-auren-workspace-v1
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
