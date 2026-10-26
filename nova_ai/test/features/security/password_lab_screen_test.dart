@@ -21,6 +21,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: PasswordLabScreen()));
     await tester.scrollUntilVisible(find.byType(TextField), 300, scrollable: find.byType(Scrollable).first);
     await tester.enterText(find.byType(TextField), 'https://example.com');
+    await tester.scrollUntilVisible(find.text('فحص الترويسات'), 200, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('فحص الترويسات'));
     await tester.pumpAndSettle();
 
