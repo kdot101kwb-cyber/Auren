@@ -125,6 +125,24 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
     _Tool('Castle Game Engine','https://castle-engine.io','ألعاب','كمبيوتر','محرك مفتوح المصدر'),
     _Tool('Open 3D Engine','https://o3de.org','ألعاب','كمبيوتر','محرك مفتوح المصدر؛ يحتاج عتاداً مناسباً'),
 
+    // AI image control, restoration, and character illustration
+    _Tool('ControlNet','https://github.com/lllyasviel/ControlNet','صور','كمبيوتر / GPU','تحكم في التكوين والوضعيات؛ يحتاج نماذج وموارد مناسبة'),
+    _Tool('IC-Light','https://github.com/lllyasviel/IC-Light','صور','كمبيوتر / GPU','إعادة إضاءة الصور بالذكاء الاصطناعي؛ راجع متطلبات النموذج'),
+    _Tool('Real-ESRGAN','https://github.com/xinntao/Real-ESRGAN','صور','كمبيوتر / GPU','رفع دقة الصور واستعادتها؛ تحقق من الترخيص'),
+    _Tool('Krita AI Diffusion','https://github.com/Acly/krita-ai-diffusion','صور','كمبيوتر / GPU','إنشاء وتعديل الصور داخل Krita عبر محرك متوافق مثل ComfyUI'),
+
+    // Talking characters, facial animation, and lip synchronization
+    _Tool('SadTalker','https://github.com/OpenTalker/SadTalker','تحريك الوجه والشفاه','كمبيوتر / GPU','تحريك صورة وجه باستخدام الصوت؛ استخدم صوراً مصرحاً بها'),
+    _Tool('Wav2Lip','https://github.com/Rudrabha/Wav2Lip','تحريك الوجه والشفاه','كمبيوتر / GPU','مزامنة حركة الشفاه مع الكلام؛ تحقق من قيود الترخيص التجاري'),
+    _Tool('LivePortrait','https://github.com/KwaiVGI/LivePortrait','تحريك الوجه والشفاه','كمبيوتر / GPU','تحريك صورة شخصية؛ افحص ترخيص الكود والأوزان'),
+    _Tool('MuseTalk','https://github.com/TMElyralab/MuseTalk','تحريك الوجه والشفاه','كمبيوتر / GPU','مزامنة شفاه مع الصوت؛ يتطلب إعداد نموذج مناسب'),
+    _Tool('Mixamo','https://www.mixamo.com','كرتون وشخصيات','ويب','تحريك هياكل شخصيات 3D؛ تحقق من شروط الأصول'),
+
+    // Additional voice and sound-generation engines
+    _Tool('F5-TTS','https://github.com/SWivid/F5-TTS','صوت وصوت آلي','كمبيوتر / GPU','تحويل النص إلى كلام؛ افحص ترخيص النموذج والصوت'),
+    _Tool('AudioLDM 2','https://github.com/haoheliu/AudioLDM2','توليد الموسيقى والمؤثرات','كمبيوتر / GPU','توليد أصوات ومقاطع من وصف نصي؛ يتطلب موارد نموذجية'),
+    _Tool('Real-Time Voice Cloning','https://github.com/CorentinJ/Real-Time-Voice-Cloning','صوت وصوت آلي','كمبيوتر / GPU','بحث في استنساخ الصوت؛ استخدم صوتك أو موافقة صريحة فقط'),
+
     // Character, cartoon, and animation tools
     _Tool('OpenToonz','https://opentoonz.github.io/e/','كرتون وشخصيات','كمبيوتر','برنامج 2D animation مفتوح المصدر'),
     _Tool('Pencil2D','https://www.pencil2d.org','كرتون وشخصيات','كمبيوتر','رسم وتحريك ثنائي الأبعاد مفتوح المصدر'),
@@ -173,7 +191,7 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = ['الكل', 'فيديو', 'صور', 'ألعاب', 'كرتون وشخصيات', 'صوت وموسيقى', 'صوت وصوت آلي', 'مؤثرات صوتية'];
+    final categories = ['الكل', 'فيديو', 'صور', 'ألعاب', 'كرتون وشخصيات', 'صوت وموسيقى', 'صوت وصوت آلي', 'مؤثرات صوتية', 'تحريك الوجه والشفاه', 'توليد الموسيقى والمؤثرات'];
     final query = _query.trim().toLowerCase();
     final filtered = _tools.where((tool) =>
       (_category == 'الكل' || tool.category == _category) &&
