@@ -1,0 +1,23 @@
+{
+  "name": "nova-video-factory",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zero-provider Remotion MVP for NOVA vertical videos",
+  "type": "module",
+  "scripts": {
+    "render:sample": "remotion render src/index.ts NOVA_SAMPLE.mp4 --props=public/sample-props.json",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "remotion": "^4.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
