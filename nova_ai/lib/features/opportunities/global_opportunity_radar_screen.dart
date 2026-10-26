@@ -117,7 +117,6 @@ class _GlobalOpportunityRadarScreenState extends State<GlobalOpportunityRadarScr
           TextField(
             controller: _query,
             onChanged: (_) => setState(() {}),
-            textDirection: TextDirection.auto,
             decoration: InputDecoration(
               labelText: 'ابحث عن مهارة أو فرصة بأي لغة',
               hintText: 'مثال: ترجمة، remote job، transcription، traducción، 远程工作',
