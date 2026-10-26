@@ -74,21 +74,27 @@ class NovaAutonomousExecutor {
       }
 
       if (adapter == null) {
-        final blocked = step.copyWith(
-          status: NovaStepStatus.blocked,
-          evidence: 'لا توجد أداة تنفيذ موصولة لهذه الخطوة.',
+        task = _replaceStep(
+          task,
+          index,
+          step.copyWith(
+            status: NovaStepStatus.blocked,
+            evidence: 'لا توجد أداة تنفيذ موصولة لهذه الخطوة.',
+          ),
         );
-        task = _replaceStep(task, index, blocked);
         messages.add('توقفت عند: ${step.title}. لا يوجد محرك مناسب.');
         break;
       }
 
       var completed = false;
+      var cancelled = false;
       for (var attempt = 1; attempt <= maxAttemptsPerStep; attempt++) {
         if (shouldStop?.call() ?? false) {
+          cancelled = true;
           messages.add('توقف التنفيذ بطلب الإيقاف.');
           break;
         }
+
         attempts++;
         task = _replaceStep(
           task,
@@ -123,12 +129,27 @@ class NovaAutonomousExecutor {
         }
       }
 
-      if (!completed) {
-        final failed = step.copyWith(
-          status: NovaStepStatus.failed,
-          evidence: 'لم يثبت النجاح بعد $maxAttemptsPerStep محاولة.',
+      if (cancelled) {
+        task = _replaceStep(
+          task,
+          index,
+          step.copyWith(
+            status: NovaStepStatus.pending,
+            evidence: 'أوقف المستخدم التنفيذ؛ لم تُعتمد نتيجة لهذه الخطوة.',
+          ),
         );
-        task = _replaceStep(task, index, failed);
+        break;
+      }
+
+      if (!completed) {
+        task = _replaceStep(
+          task,
+          index,
+          step.copyWith(
+            status: NovaStepStatus.failed,
+            evidence: 'لم يثبت النجاح بعد $maxAttemptsPerStep محاولة.',
+          ),
+        );
         messages.add('توقف التنفيذ عند الخطوة الفاشلة ولم يتجاوزها.');
         break;
       }
