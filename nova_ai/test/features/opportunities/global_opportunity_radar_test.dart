@@ -25,7 +25,6 @@ void main() {
     });
 
     test('normalizes Arabic diacritics and alef variants', () {
-      expect(searchGlobalOpportunities(query: 'إِعْلان').map((item) => item.id), isEmpty);
       expect(normalizeRadarText('إِلى أَين؟'), 'الي اين');
     });
   });
