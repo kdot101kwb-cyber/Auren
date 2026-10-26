@@ -152,7 +152,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 8, child: Text('مركز المهام')),
               PopupMenuItem(value: 9, child: Text('بناء التطبيقات')),
               PopupMenuItem(value: 11, child: Text('NOVA Builder · تطوير AUREN')),
-              PopupMenuItem(value: 12, child: Text('مكتبة أدوات الفيديو والصور والألعاب')),
+              PopupMenuItem(value: 12, child: Text('مكتبة أدوات الفيديو والصور والكرتون والصوت')),
               PopupMenuItem(value: 13, child: Text('حالة GitHub Actions المباشرة')),
               PopupMenuItem(value: 14, child: Text('العقل التنفيذي الذاتي')), 
             ],
@@ -200,7 +200,7 @@ class _NovaHomeState extends State<NovaHome> {
     const SizedBox(height: 18),
     FilledButton.icon(onPressed: () => setState(() => tab = 2), icon: const Icon(Icons.auto_awesome), label: const Text('فتح استوديو الصور والفيديو والألعاب')),
     const SizedBox(height: 8),
-    FilledButton.icon(onPressed: () => setState(() => tab = 12), icon: const Icon(Icons.video_library_outlined), label: const Text('فتح مكتبة 90 أداة مجانية/محدودة')),
+    FilledButton.icon(onPressed: () => setState(() => tab = 12), icon: const Icon(Icons.video_library_outlined), label: const Text('فتح مكتبة أدوات الإبداع الموسعة')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 10), icon: const Icon(Icons.attach_money), label: const Text('فتح محرك فرص الدخل اليومي')),
     const SizedBox(height: 18),
@@ -279,7 +279,17 @@ class _NovaHomeState extends State<NovaHome> {
     const SizedBox(height: 12),
     const _Notice(text: 'الشفافية: هذه الواجهة تجهّز الفكرة فقط في النسخة الحالية ولا تُنتج ملفات صور أو فيديو أو ألعاب بعد. نحتاج ربط محركات فعلية عبر خادم آمن. لا يمكن ضمان توليد غير محدود حرفياً؛ يمكن تصميم النظام بلا حدّ يومي من التطبيق مع بقاء حدود مزوّد الخدمة والتكلفة والموارد.'),
     const SizedBox(height: 8),
-    OutlinedButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-ai-android-app/nova_ai/docs/creative_toolkit_20_projects.md'), icon: const Icon(Icons.menu_book_outlined), label: const Text('كتالوج 20 مشروعاً احترافياً للصور والفيديو والألعاب')),
+    FilledButton.icon(
+      onPressed: () => setState(() => tab = 12),
+      icon: const Icon(Icons.library_music_outlined),
+      label: const Text('فتح مكتبة الفيديو والصور والكرتون والصوت'),
+    ),
+    const SizedBox(height: 8),
+    OutlinedButton.icon(
+      onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/blob/feat/nova-50-tool-foundation/nova_ai/docs/creative_media_tool_catalog.md'),
+      icon: const Icon(Icons.menu_book_outlined),
+      label: const Text('فتح دليل الأدوات وملاحظات التشغيل والترخيص'),
+    ),
   ]);
 
   Widget socialCenter() => ListView(padding: const EdgeInsets.all(16), children: [
