@@ -68,7 +68,7 @@ jobs:
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
           FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
           FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
-          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'auren-90ccc' }}
           FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
         run: |
           args=()
@@ -92,7 +92,8 @@ jobs:
           else
             state="not_configured"
           fi
-          cat > nova_ai/build/nova-build-status.txt <<EOF
+          mkdir -p build
+          cat > build/nova-build-status.txt <<EOF
           NOVA Android debug build
           Commit: ${GITHUB_SHA}
           Firebase project target: auren-90ccc
