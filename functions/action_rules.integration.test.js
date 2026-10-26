@@ -253,3 +253,26 @@ test('random group requests: only waiting requests or the owner are readable', a
   await assertFails(stranger.doc('random_group_connect/grouped-private').get());
   await assertSucceeds(owner.doc('random_group_connect/grouped-private').get());
 });
+
+test('NOVA debate history is readable only by its owner and remains server-write-only', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc('users/nova-owner/novaDebates/debate123456789012').set({
+      status: 'awaiting_user_agreement',
+      executionStarted: false,
+      createdAt: firebase.firestore.Timestamp.now(),
+    });
+  });
+
+  const ownerRef = testEnv.authenticatedContext('nova-owner')
+      .firestore().doc('users/nova-owner/novaDebates/debate123456789012');
+  const otherUserRef = testEnv.authenticatedContext('nova-other')
+      .firestore().doc('users/nova-owner/novaDebates/debate123456789012');
+
+  await assertSucceeds(ownerRef.get());
+  await assertFails(otherUserRef.get());
+  await assertFails(ownerRef.set({
+    status: 'plan_approved',
+    executionStarted: true,
+  }));
+});
+
