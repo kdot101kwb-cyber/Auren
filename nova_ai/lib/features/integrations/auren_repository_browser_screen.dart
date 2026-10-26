@@ -7,7 +7,10 @@ import 'package:url_launcher/url_launcher.dart';
 /// Read-only browser for the public AUREN repository. It never embeds a token
 /// and never writes files or starts workflows.
 class AurenRepositoryBrowserScreen extends StatefulWidget {
-  const AurenRepositoryBrowserScreen({super.key});
+  const AurenRepositoryBrowserScreen({super.key, this.client});
+
+  /// Optional client for deterministic widget tests; production defaults to HTTP.
+  final http.Client? client;
 
   @override
   State<AurenRepositoryBrowserScreen> createState() =>
@@ -41,6 +44,11 @@ class _AurenRepositoryBrowserScreenState
     super.dispose();
   }
 
+  Future<http.Response> _get(Uri uri, {Map<String, String>? headers}) {
+    final client = widget.client;
+    return client == null ? http.get(uri, headers: headers) : client.get(uri, headers: headers);
+  }
+
   Future<void> _loadTree() async {
     if (_loading) return;
     setState(() {
@@ -48,7 +56,7 @@ class _AurenRepositoryBrowserScreenState
       _error = null;
     });
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse(_treeUrl),
         headers: const {
           'Accept': 'application/vnd.github+json',
@@ -98,7 +106,7 @@ class _AurenRepositoryBrowserScreenState
         '/repos/$repository/contents/${entry.path.split('/').map(Uri.encodeComponent).join('/')}',
         {'ref': branch},
       );
-      final response = await http.get(uri, headers: const {
+      final response = await _get(uri, headers: const {
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
       }).timeout(const Duration(seconds: 20));
