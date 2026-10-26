@@ -11,6 +11,7 @@ const {payloadHash, constantTimeEqual, createIdempotencyKey} = require('./action
 initializeApp();
 const db = getFirestore();
 
+const AUREN_AI_API_KEY = defineSecret('AUREN_AI_API_KEY');
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const CLOUDFLARE_ACCOUNT_ID = defineSecret('CLOUDFLARE_ACCOUNT_ID');
 const CLOUDFLARE_API_TOKEN = defineSecret('CLOUDFLARE_API_TOKEN');
