@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'devops_center_screen.dart';
 
 const _violet = Color(0xFF9B87FF);
 const _surface = Color(0xFF191925);
@@ -68,6 +69,35 @@ class IntegrationHubScreen extends StatelessWidget {
           SizedBox(height: 8),
           Text('كل خدمات AUREN والبحث والإنشاء والنشر والأتمتة تمر عبر مركز تكاملات واحد. الحالات هنا توضح الوضع المعروف في المستودع، ولا تدّعي أن أي حساب اتصل دون تحقق.'),
         ]),
+      ),
+      const SizedBox(height: 14),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(children: [
+                Icon(Icons.monitor_heart_outlined, color: _violet),
+                SizedBox(width: 8),
+                Expanded(child: Text('NOVA DevOps Center', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+              ]),
+              const SizedBox(height: 6),
+              const Text('لوحة موحدة لحالة GitHub Actions مع سجل واضح لحالة اتصال CircleCI وGitLab، وبوابات موافقة قبل التعديل أو التشغيل.'),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const NovaDevOpsCenterScreen()),
+                  ),
+                  icon: const Icon(Icons.dashboard_customize_outlined),
+                  label: const Text('فتح مركز DevOps الموحد'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       const SizedBox(height: 14),
       const Card(child: Padding(padding: EdgeInsets.all(14), child: Row(children: [
