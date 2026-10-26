@@ -10,6 +10,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('project.godot'), findsOneWidget);
     expect(find.text('main.gd'), findsOneWidget);
+    expect(find.text('main.tscn'), findsOneWidget);
     expect(find.textContaining('لم يتم تشغيل المحرك'), findsOneWidget);
   });
 
