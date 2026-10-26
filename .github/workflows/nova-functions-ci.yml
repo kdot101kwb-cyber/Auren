@@ -1,0 +1,45 @@
+name: NOVA Functions CI
+
+on:
+  push:
+    branches:
+      - feat/nova-ai-android-app
+    paths:
+      - "functions/**"
+      - ".github/workflows/nova-functions-ci.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "functions/**"
+      - ".github/workflows/nova-functions-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nova-functions-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  functions-tests:
+    name: Functions syntax and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: functions
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run backend syntax and unit tests
+        run: npm test
