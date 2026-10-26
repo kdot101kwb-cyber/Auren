@@ -104,7 +104,15 @@ jobs:
             fi
             echo "--- NOVA AI Android debug build ---" >> flutter_android_build.log
             if [ "$scaffold_status" -eq 0 ]; then
-              (cd nova_ai && flutter build apk --debug) >> flutter_android_build.log 2>&1
+              # The Flutter template may allocate an 8 GiB Gradle heap by default.
+              # CI runners can kill that daemon abruptly; cap memory and worker count.
+              if [ -f "nova_ai/android/gradle.properties" ]; then
+                sed -i 's/-Xmx8G/-Xmx2G/g; s/MaxMetaspaceSize=4G/MaxMetaspaceSize=1G/g; s/ReservedCodeCacheSize=512m/ReservedCodeCacheSize=256m/g' nova_ai/android/gradle.properties
+                printf '\norg.gradle.workers.max=2\norg.gradle.parallel=false\n' >> nova_ai/android/gradle.properties
+                echo "--- NOVA Gradle memory settings ---" >> flutter_android_build.log
+                cat nova_ai/android/gradle.properties >> flutter_android_build.log
+              fi
+              (cd nova_ai && flutter build apk --debug --no-pub) >> flutter_android_build.log 2>&1
               nova_status=$?
             else
               nova_status=$scaffold_status
