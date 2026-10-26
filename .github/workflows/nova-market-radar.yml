@@ -1,7 +1,14 @@
-name: NOVA Daily Market Radar
+name: NOVA Daily Global Opportunity Radar
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/nova-autonomous-workspace-market-radar
+    paths:
+      - '.github/scripts/nova_market_radar.py'
+      - '.github/scripts/test_nova_market_radar.py'
+      - '.github/workflows/nova-market-radar.yml'
   schedule:
     # 09:15 Africa/Khartoum (UTC+3)
     - cron: "15 6 * * *"
@@ -24,7 +31,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Collect public market signals
+      - name: Test radar parsing and multilingual tagging
+        run: python .github/scripts/test_nova_market_radar.py
+      - name: Collect multilingual public market signals
         run: python .github/scripts/nova_market_radar.py
       - name: Upload daily report
         uses: actions/upload-artifact@v4
