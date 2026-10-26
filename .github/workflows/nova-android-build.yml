@@ -87,7 +87,6 @@ jobs:
         if: always()
         shell: bash
         run: |
-          mkdir -p nova_ai/build/novа-report
           if [ "${NOVA_FIREBASE_CONFIGURED:-false}" = "true" ]; then
             state="configured"
           else
