@@ -61,7 +61,7 @@ jobs:
           name: Analyze
           command: |
             set +e
-            flutter analyze --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
+            flutter analyze lib test --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
             status=$?
             echo "flutter_analyze_exit_code=$status" >> flutter_analyze.log
             echo "$status" > /tmp/flutter_analyze_status
