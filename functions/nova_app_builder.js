@@ -65,4 +65,4 @@ exports.getNovaBuildJob = onCall(
   }
 );
 
-exports.__testables = {validateBuildRequest, TYPES, STACKS};
+exports.__testables = {validateBuildRequest};
