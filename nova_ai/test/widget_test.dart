@@ -22,6 +22,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final task = find.text('فحص حالة مستودع AUREN');
+    await tester.scrollUntilVisible(task, 300, scrollable: find.byType(Scrollable).first);
     final checkbox = find.ancestor(of: task, matching: find.byType(CheckboxListTile));
     expect(checkbox, findsOneWidget);
     await tester.tap(checkbox);
