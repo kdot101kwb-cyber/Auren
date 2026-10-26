@@ -1,0 +1,58 @@
+name: NOVA Remotion Video Worker
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/nova-ai-android-app
+    paths:
+      - "nova_ai/video_factory/remotion_worker/**"
+      - ".github/workflows/nova-remotion-video-worker.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  render-sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: nova_ai/video_factory/remotion_worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: nova_ai/video_factory/remotion_worker/package.json
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Ensure Remotion browser
+        run: npx remotion browser ensure
+
+      - name: Render sample MP4
+        run: npm run render:sample
+
+      - name: Validate MP4 exists and is non-empty
+        run: |
+          test -s NOVA_SAMPLE.mp4
+          file NOVA_SAMPLE.mp4
+          ffprobe -v error -show_entries format=duration:stream=codec_type,width,height -of json NOVA_SAMPLE.mp4 > NOVA_SAMPLE.probe.json
+          cat NOVA_SAMPLE.probe.json
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('NOVA_SAMPLE.probe.json','utf8')); if(!p.streams.some(s=>s.codec_type==='video' && s.width===1080 && s.height===1920)) process.exit(1); if(!(Number(p.format.duration)>0)) process.exit(1);"
+
+      - name: Upload validated sample video
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-remotion-sample-mp4
+          path: |
+            nova_ai/video_factory/remotion_worker/NOVA_SAMPLE.mp4
+            nova_ai/video_factory/remotion_worker/NOVA_SAMPLE.probe.json
+          if-no-files-found: error
+          retention-days: 7
