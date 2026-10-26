@@ -14,6 +14,7 @@ import '../../health/presentation/health_sports_screen.dart';
 import '../../access/presentation/access_screen.dart';
 import '../../local/presentation/local_intelligence_screen.dart';
 import '../../payments/presentation/wallet_screen.dart';
+import '../../payments/presentation/trust_wallet_monitor_screen.dart';
 import '../../stay/presentation/stay_screen.dart';
 import '../../transport/presentation/transport_screen.dart';
 import '../../food/presentation/food_screen.dart';
@@ -55,6 +56,7 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     _DiscoverItem('Business', 'شركات ومتاجر وخدمات', Icons.storefront_outlined),
     _DiscoverItem('Agriculture Intelligence', 'أسعار المحاصيل والأسواق والبيانات الزراعية عالميًا', Icons.agriculture_outlined),
     _DiscoverItem('Wallet', 'محفظة ورصيد وحدود إنفاق', Icons.account_balance_wallet_outlined),
+    _DiscoverItem('Trust Wallet', 'متابعة رصيد USDT والتحويلات على TRON للقراءة فقط', Icons.currency_bitcoin_outlined),
     _DiscoverItem('Business Growth', 'نمو، عملاء، حملات وشراكات', Icons.trending_up),
     _DiscoverItem('Entertainment', 'Series • Music • Gaming • Live', Icons.play_circle_outline),
     _DiscoverItem('AUREN Games', '50 لعبة: Ludo • Dominoes • UNO • Football • Lost World وغيرها', Icons.sports_esports),
@@ -130,6 +132,10 @@ class _AurenDiscoverScreenState extends State<AurenDiscoverScreen> {
     }
     if (item.title == 'Wallet') {
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AurenWalletScreen()));
+      return;
+    }
+    if (item.title == 'Trust Wallet') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const TrustWalletMonitorScreen()));
       return;
     }
     if (item.title == 'Local Intelligence') {
