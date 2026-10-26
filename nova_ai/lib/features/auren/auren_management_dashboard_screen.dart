@@ -20,6 +20,7 @@ class _AurenManagementDashboardScreenState
     extends State<AurenManagementDashboardScreen> {
   bool _busy = false;
   bool _historyBusy = false;
+  bool _dailyAutoChecked = false;
   String? _error;
   String? _historyStatus;
   Map<String, dynamic>? _review;
@@ -99,6 +100,7 @@ class _AurenManagementDashboardScreenState
             ? 'لا توجد اجتماعات محفوظة لهذا الحساب حتى الآن.'
             : 'آخر ${_history.length} اجتماعات محفوظة في حسابك الخاص.';
       });
+      await _maybeStartDailyMeeting(snapshot.docs);
     } catch (e) {
       if (mounted) {
         setState(() => _historyStatus =
@@ -106,6 +108,23 @@ class _AurenManagementDashboardScreenState
       }
     } finally {
       if (mounted) setState(() => _historyBusy = false);
+    }
+  }
+
+  Future<void> _maybeStartDailyMeeting(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> documents,
+  ) async {
+    if (_dailyAutoChecked || !NovaFirebaseRuntime.appCheckActivated) return;
+    _dailyAutoChecked = true;
+    final now = DateTime.now();
+    final alreadyMetToday = documents.any((document) {
+      final value = document.data()['createdAt'];
+      if (value is! Timestamp) return false;
+      final date = value.toDate().toLocal();
+      return date.year == now.year && date.month == now.month && date.day == now.day;
+    });
+    if (!alreadyMetToday && mounted) {
+      await _startDailyMeeting();
     }
   }
 
@@ -275,7 +294,7 @@ class _AurenManagementDashboardScreenState
           ),
           const SizedBox(height: 8),
           const Text(
-            'الاجتماع يولّد ملخصاً واعتراضات وبدائل وخطة قابلة للتحقق، ويحفظه الخادم في سجل حسابك. تشغيله يومياً تلقائياً حتى عند إغلاق الهاتف يحتاج جدولة خلفية موثوقة؛ زر الاجتماع هنا يعمل عند الطلب.',
+            'عند إعداد Firebase وApp Check، تحاول اللوحة عقد اجتماع واحد تلقائياً في أول فتح لها كل يوم إذا لم يوجد اجتماع مسجل لذلك اليوم. يمكنك أيضاً تشغيله يدوياً. هذا لا يعمل أثناء إغلاق التطبيق؛ الجدولة الخلفية الدائمة تحتاج خدمة مجدولة منشورة.',
             textDirection: TextDirection.rtl,
             style: TextStyle(color: Colors.white70),
           ),
