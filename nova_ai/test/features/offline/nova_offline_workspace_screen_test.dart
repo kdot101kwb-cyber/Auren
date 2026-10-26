@@ -17,6 +17,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'خطة دخل من صناعة الفيديو');
     await tester.enterText(find.byType(TextField).last, 'إعداد نموذج أولي دون اتصال');
+    await tester.ensureVisible(find.text('حفظ محلياً'));
     await tester.tap(find.text('حفظ محلياً'));
     await tester.pumpAndSettle();
 
