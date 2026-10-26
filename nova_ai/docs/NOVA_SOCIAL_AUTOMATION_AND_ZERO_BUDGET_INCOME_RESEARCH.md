@@ -44,6 +44,18 @@ Create original guides and a mailing list around one subject, then test sponsors
 ### E. Micro-SaaS / automation setup
 Use n8n or a small custom backend to solve one repetitive business task, then charge for setup/support only after customer validation. Do not assume n8n's license permits every resale/hosted-service model; review current terms first.
 
+
+## NOVA income-platform catalog (50 candidates)
+
+The server-side daily revenue prompt now includes the owner-supplied 50-platform list in `functions/nova_income_platform_catalog.js` and asks NOVA to rank only the best 5–10 candidates for the current user. It must treat the list as a research shortlist, not verified eligibility or an income forecast.
+
+- Prioritize $0 startup cost and direct client services while payment access is being verified.
+- Before recommending a marketplace or creator program, check official current rules for Sudan, identity/tax requirements, payout provider, fees, proposal/task limits, and program availability.
+- Label unknown eligibility as **UNVERIFIED**; exclude options requiring upfront fees from the immediate plan. Shopify, Etsy listing fees, Chrome Web Store registration, paid plans, and production/hosting costs are not presumed free.
+- Separate client-acquisition channels (e.g. LinkedIn) from platforms that pay creators directly.
+- Do not assume TikTok monetization thresholds, country support, or payout availability from generic social posts; confirm official rules.
+- The catalog is not proof that any account is accepted, that work is available, or that payment can be received. No applications, messages, listings, or publishing are executed by adding this catalog.
+
 ## Proposed NOVA workflow
 
 1. Daily research queue: collect public trends, relevant questions, and potential customer problems.
