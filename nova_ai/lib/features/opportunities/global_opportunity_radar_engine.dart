@@ -99,15 +99,25 @@ List<GlobalOpportunityLead> rankGlobalLeads(
 }) {
   final q = normalizeRadarText(query);
   final filtered = leads.where((lead) {
-    final countryMatch = country == 'All countries' ||
-        lead.country.toLowerCase().contains(country.toLowerCase()) ||
-        (country == 'Sudan' && lead.country.toLowerCase().contains('sudan'));
+    final place = lead.country.toLowerCase();
+    final worldwide = lead.remote || RegExp(r'worldwide|anywhere|global|all countries|remote').hasMatch(place);
+    final countryMatch = country == 'All countries' || place.contains(country.toLowerCase()) || (country == 'Sudan' && worldwide);
     if (!countryMatch) return false;
+    final regionMatch = switch (region) {
+      'Worldwide' => true,
+      'Africa' => worldwide || RegExp(r'africa|kenya|nigeria|south africa|egypt|sudan|ghana|morocco|uganda|tanzania').hasMatch(place),
+      'Europe' => worldwide || RegExp(r'europe|germany|france|spain|uk|united kingdom|ireland|poland|netherlands|portugal|italy').hasMatch(place),
+      'Asia' => worldwide || RegExp(r'asia|india|pakistan|japan|china|singapore|philippines|indonesia|uae|emirates').hasMatch(place),
+      'Americas' => worldwide || RegExp(r'america|united states|usa|canada|brazil|mexico|argentina|colombia').hasMatch(place),
+      _ => true,
+    };
+    if (!regionMatch) return false;
     if (q.isEmpty) return true;
     final haystack = normalizeRadarText(
-      '${lead.title} ${lead.description} ${lead.company} ${lead.category} ${lead.country} ${lead.language}',
+      '\${lead.title} \${lead.description} \${lead.company} \${lead.category} \${lead.country} \${lead.language}',
     );
-    return haystack.contains(q);
+    final tokens = q.split(' ').where((token) => token.length > 2).toList();
+    return tokens.isEmpty || tokens.any(haystack.contains);
   }).toList();
   int score(GlobalOpportunityLead lead) {
     var value = lead.remote ? 10 : 0;
