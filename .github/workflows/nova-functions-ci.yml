@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/nova-free-game-development-toolkit
     paths:
       - "functions/**"
       - ".github/workflows/nova-functions-ci.yml"
