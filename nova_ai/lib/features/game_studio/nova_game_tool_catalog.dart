@@ -1,12 +1,11 @@
 /// Curated free/open-source game-development toolkit for NOVA.
-
-/// These entries are a discoverable catalogue, NOT claims that the tools are
-/// installed or connected. Runtime integration requires a compatible desktop/
-
-/// build host, explicit setup, licence checks, and automated verification.
+/// Catalogue entries are not claims that dependencies are installed or connected.
 library;
 
-enum NovaGameToolKind { engine, art, aiBridge, terrain, physics, npcAi, dialogue, camera, optimization }
+enum NovaGameToolKind {
+  engine, art, aiBridge, terrain, physics, npcAi, dialogue, camera, optimization,
+  webEngine, pixelArt, materials, assets, audio, examples,
+}
 
 class NovaGameTool {
   const NovaGameTool({
@@ -74,7 +73,7 @@ class NovaGameToolCatalog {
       purpose: 'ربط مساعد الذكاء الاصطناعي بـ Blender لأتمتة عمليات النمذجة والمشهد.',
       licenseNote: 'MIT حسب بيانات المشروع؛ تحقق من الترخيص الحالي والاعتماديات.',
       integrationStatus: statusCatalogOnly,
-      compatibilityNote: 'ليس مولّد مجسمات سحابياً مستقلاً؛ يحتاج Blender ومضيف MCP ومساعداً متوافقاً.',
+      compatibilityNote: 'يحتاج Blender ومضيف MCP ومساعداً متوافقاً.',
     ),
     NovaGameTool(
       id: 'terrain3d',
@@ -94,7 +93,7 @@ class NovaGameToolCatalog {
       purpose: 'محرك فيزياء ثلاثي الأبعاد بديل لمشاريع Godot عند الحاجة.',
       licenseNote: 'مفتوح المصدر؛ افحص الترخيص والإصدار.',
       integrationStatus: statusCatalogOnly,
-      compatibilityNote: 'Godot 4.4 وما بعده يتضمن تكاملاً مع Jolt؛ لا تضف الإضافة منفصلة دون فحص الحاجة والتوافق.',
+      compatibilityNote: 'تحقق أولاً من فيزياء Jolt المدمجة في إصدار Godot المستخدم.',
     ),
     NovaGameTool(
       id: 'limboai',
@@ -104,7 +103,7 @@ class NovaGameToolCatalog {
       purpose: 'أشجار سلوك وآلات حالات لسلوك الأعداء والشخصيات غير القابلة للعب.',
       licenseNote: 'MIT حسب بيانات المشروع؛ تحقق من الإصدار المستخدم.',
       integrationStatus: statusCatalogOnly,
-      compatibilityNote: 'ذكاء سلوكي داخل اللعبة، وليس نموذجاً لغوياً أو خدمة AI مستضافة.',
+      compatibilityNote: 'ذكاء سلوكي داخل اللعبة، وليس نموذجاً لغوياً مستضافاً.',
     ),
     NovaGameTool(
       id: 'dialogic',
@@ -114,7 +113,7 @@ class NovaGameToolCatalog {
       purpose: 'إنشاء حوارات ومشاهد قصصية واختيارات متفرعة.',
       licenseNote: 'مفتوح المصدر؛ راجع الترخيص والإصدار.',
       integrationStatus: statusCatalogOnly,
-      compatibilityNote: 'يجب اختيار إصدار متوافق مع إصدار Godot للمشروع.',
+      compatibilityNote: 'يجب اختيار إصدار متوافق مع Godot.',
     ),
     NovaGameTool(
       id: 'phantom-camera',
@@ -131,10 +130,110 @@ class NovaGameToolCatalog {
       name: 'meshoptimizer',
       kind: NovaGameToolKind.optimization,
       repository: 'https://github.com/zeux/meshoptimizer',
-      purpose: 'تحسين وترتيب بيانات الشبكات الهندسية وتقليل كلفة الأصول ثلاثية الأبعاد.',
+      purpose: 'تحسين بيانات الشبكات الهندسية وتقليل كلفة الأصول ثلاثية الأبعاد.',
       licenseNote: 'MIT.',
       integrationStatus: statusCatalogOnly,
-      compatibilityNote: 'مكتبة أدوات/خوارزميات؛ ليست زر تحسين تلقائياً داخل Godot دون بناء خط معالجة وربط مناسب.',
+      compatibilityNote: 'مكتبة؛ تحتاج خط معالجة وربطاً مناسباً لتعمل داخل المحرك.',
+    ),
+    NovaGameTool(
+      id: 'godot-demo-projects',
+      name: 'Godot Demo Projects',
+      kind: NovaGameToolKind.examples,
+      repository: 'https://github.com/godotengine/godot-demo-projects',
+      purpose: 'أمثلة رسمية قابلة للدراسة كنماذج للمشاهد والحركة والفيزياء وواجهات اللعب.',
+      licenseNote: 'راجع ترخيص كل مشروع وأصل ضمن المستودع.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'اختَر مثالاً مطابقاً لإصدار Godot ثم شغّله واختبره قبل إعادة استخدامه.',
+    ),
+    NovaGameTool(
+      id: 'phaser',
+      name: 'Phaser',
+      kind: NovaGameToolKind.webEngine,
+      repository: 'https://github.com/phaserjs/phaser',
+      purpose: 'محرك JavaScript لصنع ألعاب 2D للويب؛ خيار إضافي للألعاب التي تعمل في المتصفح.',
+      licenseNote: 'MIT.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'مسار منفصل عن مشروع Godot؛ يحتاج Node.js وأدوات ويب عند البناء.',
+    ),
+    NovaGameTool(
+      id: 'bevy',
+      name: 'Bevy Engine',
+      kind: NovaGameToolKind.engine,
+      repository: 'https://github.com/bevyengine/bevy',
+      purpose: 'محرك ألعاب مفتوح المصدر مبني على Rust ونظام ECS.',
+      licenseNote: 'MIT أو Apache-2.0 وفق الترخيص المرفق.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'بديل لمحرك Godot وليس إضافة له؛ يتطلب Rust وبيئة بناء متوافقة.',
+    ),
+    NovaGameTool(
+      id: 'defold',
+      name: 'Defold',
+      kind: NovaGameToolKind.engine,
+      repository: 'https://github.com/defold/defold',
+      purpose: 'محرك مستقل لألعاب 2D مع تصدير لمنصات مدعومة.',
+      licenseNote: 'راجع ترخيص المحرك والمكونات قبل التوزيع.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'بديل مستقل عن Godot؛ تحقق من متطلبات التصدير لكل منصة.',
+    ),
+    NovaGameTool(
+      id: 'gdevelop',
+      name: 'GDevelop',
+      kind: NovaGameToolKind.engine,
+      repository: 'https://github.com/4ian/GDevelop',
+      purpose: 'منصة تطوير ألعاب بأحداث مرئية لتقليل الحاجة لكتابة الشيفرة يدوياً.',
+      licenseNote: 'المستودع مفتوح المصدر؛ راجع شروط الخدمات والميزات المستضافة منفصلة.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'مسار بناء مستقل؛ بعض الخدمات أو التصدير قد تعتمد على شروطها الخاصة.',
+    ),
+    NovaGameTool(
+      id: 'pixelorama',
+      name: 'Pixelorama',
+      kind: NovaGameToolKind.pixelArt,
+      repository: 'https://github.com/Orama-Interactive/Pixelorama',
+      purpose: 'رسم بكسل آرت وتحريك sprites للشخصيات والعناصر ثنائية الأبعاد.',
+      licenseNote: 'مفتوح المصدر؛ راجع الترخيص الحالي.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'أداة أصول منفصلة؛ يلزم تصدير الصور واستيرادها إلى المحرك.',
+    ),
+    NovaGameTool(
+      id: 'material-maker',
+      name: 'Material Maker',
+      kind: NovaGameToolKind.materials,
+      repository: 'https://github.com/RodZill4/material-maker',
+      purpose: 'إنشاء خامات ومواد إجرائية للألعاب والمشاهد ثلاثية الأبعاد.',
+      licenseNote: 'مفتوح المصدر؛ راجع الترخيص الحالي.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'يحتاج بيئة تشغيل متوافقة ثم تصدير المواد بصيغة يدعمها المحرك.',
+    ),
+    NovaGameTool(
+      id: 'libresprite',
+      name: 'LibreSprite',
+      kind: NovaGameToolKind.pixelArt,
+      repository: 'https://github.com/LibreSprite/LibreSprite',
+      purpose: 'أداة مفتوحة المصدر لرسم وتحريك pixel art وتصدير spritesheets.',
+      licenseNote: 'راجع الترخيص المرفق بالإصدار والمكونات.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'أداة منفصلة؛ لم تُربط بعد بمولّد الأصول داخل NOVA.',
+    ),
+    NovaGameTool(
+      id: 'lmms',
+      name: 'LMMS',
+      kind: NovaGameToolKind.audio,
+      repository: 'https://github.com/LMMS/lmms',
+      purpose: 'إنشاء موسيقى ومقاطع صوتية يمكن تجهيزها كأصول للعبة.',
+      licenseNote: 'GPL؛ مجاني ومفتوح المصدر.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'مسار إنتاج صوت منفصل؛ تحقق من تراخيص العينات والمكتبات التي تستخدمها.',
+    ),
+    NovaGameTool(
+      id: 'trenchbroom',
+      name: 'TrenchBroom',
+      kind: NovaGameToolKind.terrain,
+      repository: 'https://github.com/TrenchBroom/TrenchBroom',
+      purpose: 'محرر خرائط ومراحل ثلاثية الأبعاد مناسب لبعض خطوط عمل ألعاب Quake-like.',
+      licenseNote: 'مفتوح المصدر؛ راجع الترخيص الحالي.',
+      integrationStatus: statusCatalogOnly,
+      compatibilityNote: 'ليس محرر Godot عامّاً؛ يحتاج خط استيراد/تحويل متوافقاً مع نوع اللعبة.',
     ),
   ];
 
