@@ -104,4 +104,23 @@ void main() {
     expect(report.task.steps.first.status, NovaStepStatus.failed);
     expect(report.task.steps[1].status, NovaStepStatus.pending);
   });
+
+  test('user cancellation leaves an unverified step pending', () async {
+    final task = planner.plan('مهمة عامة');
+    final report = await NovaAutonomousExecutor(
+      adapters: [
+        _FakeAdapter(
+          (_) async => const NovaExecutionResult(
+            success: false,
+            summary: 'لم يكتمل',
+          ),
+          onlyStepId: task.steps.first.id,
+        ),
+      ],
+    ).run(task, shouldStop: () => true);
+
+    expect(report.attempts, 0);
+    expect(report.task.steps.first.status, NovaStepStatus.pending);
+    expect(report.task.steps.first.evidence, contains('أوقف المستخدم'));
+  });
 }
