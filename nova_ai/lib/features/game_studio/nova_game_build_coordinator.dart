@@ -1,4 +1,3 @@
-import 'nova_game_pipeline.dart';
 import 'nova_game_tool_catalog.dart';
 
 /// Builds one explicit, ordered work plan that maps a game idea to the
@@ -85,7 +84,7 @@ class NovaGameBuildCoordinator {
   NovaGameBuildCoordinator._();
 
   /// The ten-tool default chain: engine, AI bridge, assets, terrain, physics,
-  /// NPC behavior, dialogue, camera, optimization, and sample projects.
+  /// NPC behavior, dialogue, camera, and optimization.
   static const defaultToolChain = <String>[
     'godot-engine',
     'godot-ai-workbench',
@@ -107,6 +106,9 @@ class NovaGameBuildCoordinator {
     final selectedTools = defaultToolChain
         .where((id) => NovaGameToolCatalog.tools.any((tool) => tool.id == id))
         .toList(growable: false);
+    if (selectedTools.length != defaultToolChain.length) {
+      throw StateError('The game tool catalogue is missing one or more default tools.');
+    }
 
     final stages = <NovaGameBuildTask>[
       NovaGameBuildTask(
@@ -170,13 +172,6 @@ class NovaGameBuildCoordinator {
       ),
     ];
 
-    // Fail closed if an id drifts out of the catalogue: don't silently produce
-    // a plan that references tools NOVA cannot link to.
-    for (final id in selectedTools) {
-      if (!NovaGameToolCatalog.tools.any((tool) => tool.id == id)) {
-        throw StateError('Unknown game tool: $id');
-      }
-    }
     return NovaGameBuildPlan(
       idea: idea,
       engine: 'Godot 4',
