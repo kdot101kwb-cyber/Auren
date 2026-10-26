@@ -57,13 +57,21 @@ class NovaAutonomousExecutor {
     final messages = <String>[];
 
     for (var index = 0; index < task.steps.length; index++) {
+      final step = task.steps[index];
+      if (step.status == NovaStepStatus.succeeded) continue;
+
       if (shouldStop?.call() ?? false) {
+        task = _replaceStep(
+          task,
+          index,
+          step.copyWith(
+            status: NovaStepStatus.pending,
+            evidence: 'أوقف المستخدم التنفيذ؛ لم تُعتمد نتيجة لهذه الخطوة.',
+          ),
+        );
         messages.add('توقف التنفيذ بطلب الإيقاف.');
         break;
       }
-
-      final step = task.steps[index];
-      if (step.status == NovaStepStatus.succeeded) continue;
 
       NovaExecutionAdapter? adapter;
       for (final candidate in adapters) {
