@@ -32,6 +32,18 @@ void main() {
     expect(find.text('خطة دخل من صناعة الفيديو'), findsOneWidget);
   });
 
+  testWidgets('calculates estimated monthly net locally', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaOfflineWorkspaceScreen())));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'الإيرادات المتوقعة شهرياً'), '1500');
+    await tester.enterText(find.widgetWithText(TextField, 'التكاليف المتوقعة شهرياً'), '450');
+    await tester.pumpAndSettle();
+
+    expect(find.text('الصافي التقديري: 1050.00'), findsOneWidget);
+    expect(find.text('هامش الصافي: 70.0%'), findsOneWidget);
+  });
+
   testWidgets('requires a title before saving', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: Scaffold(body: NovaOfflineWorkspaceScreen())));
     await tester.pumpAndSettle();
