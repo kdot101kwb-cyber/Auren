@@ -132,6 +132,30 @@ class _TrustWalletMonitorScreenState extends State<TrustWalletMonitorScreen> {
               ),
             ),
           ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.payments_outlined),
+              title: const Text('PayPal'),
+              subtitle: const Text('مكان مخصص للربط مستقبلاً • غير متصل حالياً'),
+              trailing: const Chip(label: Text('قريباً')),
+              isThreeLine: false,
+              onTap: () => showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('ربط PayPal مستقبلاً'),
+                  content: const Text(
+                    'تم تخصيص مكان لـ PayPal في صفحة المحفظة. الربط غير مفعّل حالياً، ولن نطلب كلمة مرور PayPal أو رموز التحقق داخل التطبيق. قبل التنفيذ يجب التأكد من أن PayPal يدعم الاستلام والسحب في بلد حسابك، ثم استخدام مسار رسمي وآمن عند توفره.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('حسناً'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(24),
