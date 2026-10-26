@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - feat/nova-ai-android-app
+      - feat/nova-50-tool-foundation
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-android-build.yml'
