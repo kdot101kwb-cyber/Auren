@@ -26,6 +26,28 @@ The app is currently a UI prototype. It does not yet execute GitHub changes, run
 ## Offline-first AI and GitHub research
 The architecture plan and curated review of 20 related open-source projects are in [offline-first research](docs/offline_first_and_20_projects.md). This is research and a delivery plan, not a claim that all projects or their features have been integrated. Current prototype limitations still apply.
 
+
+## Firebase configuration for Android builds
+
+The Android workflow passes Firebase configuration into Flutter with `--dart-define`; it does not embed provider AI secrets. To configure Firebase-backed screens, a repository maintainer must add these GitHub Actions **Variables** under **Settings → Secrets and variables → Actions → Variables**:
+
+- `FIREBASE_API_KEY`
+- `FIREBASE_APP_ID`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_PROJECT_ID`
+- Optional: `FIREBASE_STORAGE_BUCKET`
+
+Use the values for the registered Android app in the intended Firebase project. These are app configuration values, not a substitute for Firebase Security Rules, Authentication, App Check, or server authorization. The workflow warns but still builds if the required variables are missing; in that case the app intentionally shows that Firebase is not configured and cloud-backed revenue/signal features cannot run.
+
+Before using the revenue engine, the Firebase project owner must also:
+1. Enable **Anonymous Authentication** if this app continues to use anonymous sign-in.
+2. Register/configure Android App Check for the app's actual distribution method and verify App Check enforcement is compatible with testing; do not disable enforcement in production merely to bypass errors.
+3. Deploy the Cloud Functions from the repository's `functions` directory after reviewing the target project and required APIs.
+4. Set `OPENROUTER_API_KEY` in Firebase Secret Manager for the server-side revenue functions. Never put this provider key in GitHub source, `--dart-define`, or the APK.
+5. Confirm Firestore rules and billing/quota limits before enabling the daily scheduler.
+
+**Deployment is not automatic from the Android build.** A green APK workflow proves the app compiled and tests passed; it does not prove Firebase is configured or deployed, that the AI provider key exists, or that a daily report can be generated. Do not enable the scheduled engine until those checks pass.
+
 ## Build and install on Android
 The repository workflow **NOVA Android Build** runs dependency resolution, static analysis, Flutter tests, and creates a debug APK. When the workflow succeeds:
 1. Open [NOVA Android Build workflow runs](https://github.com/kdot101kwb-cyber/Auren/actions/workflows/nova-android-build.yml).
