@@ -46,6 +46,13 @@ class _GitHubCiScreenState extends State<GitHubCiScreen> {
         },
       ).timeout(const Duration(seconds: 15));
 
+      if (response.statusCode == 404 || response.statusCode == 403) {
+        if (!mounted) return;
+        setState(() {
+          _error = 'تعذر الوصول إلى GitHub Actions لهذا المستودع. إذا كان AUREN خاصاً، فهذا متوقع: يلزم ربط خادمي آمن بصلاحية قراءة فقط؛ لا تضع رمز GitHub داخل التطبيق.';
+        });
+        return;
+      }
       if (response.statusCode != 200) {
         throw Exception('GitHub رجع رمز ${response.statusCode}');
       }
