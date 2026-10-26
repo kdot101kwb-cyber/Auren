@@ -12,10 +12,26 @@ void main() {
     expect(find.text('إدارة AUREN ومجلس NOVA'), findsOneWidget);
     expect(find.text('مركز إدارة AUREN'), findsOneWidget);
     expect(find.text('جدول اجتماع اليوم'), findsOneWidget);
-    expect(find.text('الجودة ونجاح الاختبارات'), findsOneWidget);
-    expect(find.text('الأمان والخصوصية'), findsOneWidget);
-    expect(find.text('ابدأ اجتماع اليوم'), findsOneWidget);
-    expect(find.text('سجل اجتماعات المجلس'), findsOneWidget);
+
+    for (final label in [
+      'الجودة ونجاح الاختبارات',
+      'الأمان والخصوصية',
+      'ابدأ اجتماع اليوم',
+      'سجل اجتماعات المجلس',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(label),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(label), findsOneWidget);
+    }
+
+    await tester.scrollUntilVisible(
+      find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'), findsOneWidget);
   });
 
