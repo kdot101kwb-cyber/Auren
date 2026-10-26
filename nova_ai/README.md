@@ -17,8 +17,10 @@ The private AUREN management dashboard includes a strategic review screen backed
 - The dashboard now exposes an explicit **Approve proposed plan** control and calls `novaApproveDebatePlan`; the backend records the decision and an audit entry. **Approval is not execution**: the safe repository-editing executor, diff validation, and post-change CI verification still need to be connected. The UI states this limitation rather than pretending work ran.
 - AI-generated objections and estimates are suggestions, not verified facts. Supply concrete logs, repository evidence, and test results in the context field when available.
 
-## Creative studio
-The app now includes a UI for preparing image, video, and game-generation requests. This is a front-end flow only: it does not generate media or compile games yet. Real output requires a server-side provider adapter, secure credentials, asynchronous job tracking, file storage, and cost/abuse controls. “Unlimited” can mean no app-imposed daily cap, but provider and infrastructure limits still apply.
+## Creative studio and NOVA Game Studio
+The creative studio includes a first local game-starter generator. Given a game idea, NOVA creates text for three Godot 4 starter files (`project.godot`, `main.tscn`, and `main.gd`) and lets the user copy each file. It also lists ten curated free/open-source game-development tools and opens their GitHub repositories.
+
+**Important boundary:** this is starter-code generation, not autonomous end-to-end game production. The Flutter app does not currently install or run Godot/Blender, create full art/audio assets, execute playtests, or export an Android APK. To reach that goal, the next stages are a sandboxed project workspace, a compatible local/remote Godot build runner, generated asset pipelines, automated test/playtest feedback, and artifact delivery. Any runner must use explicit permissions, resource limits, logs, and user approval before external actions. The current generator is local and does not require a paid AI API, but it is a deterministic starter template rather than an AI model that understands arbitrary game designs.
 
 ## Global multilingual opportunity radar
 
