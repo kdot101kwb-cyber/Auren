@@ -40,7 +40,7 @@ These are complementary components, not ten interchangeable Remotion replacement
 | # | Project | Repository | Potential use for NOVA | Zero-budget caveat |
 |---|---|---|---|---|
 | 1 | OpenMontage | https://github.com/calesthio/OpenMontage | Agent-oriented video workflow combining research, script, assets, Remotion/FFmpeg and quality checks | Full pipeline is substantial; some provider paths require paid API keys. Review AGPL-3.0 obligations before adapting code. |
-| 2 | HyperFrames | https://github.com/tjebastin/HyperFrames | HTML/CSS/GSAP motion-graphics rendering alternative for kinetic text and promo layouts | Confirm repository owner, setup, version and license before adoption; keep as an evaluated alternative, not a dependency yet. |
+| 2 | HyperFrames | https://github.com/heygen-com/hyperframes | HTML/CSS/GSAP motion-graphics rendering alternative for kinetic text and promo layouts | Confirm repository owner, setup, version and license before adoption; keep as an evaluated alternative, not a dependency yet. |
 | 3 | FFmpeg | https://github.com/FFmpeg/FFmpeg | Convert, trim, mux audio, burn subtitles, inspect and validate media | Free to run locally; codec/build licensing varies. |
 | 4 | whisper.cpp | https://github.com/ggml-org/whisper.cpp | Local transcription and subtitle timing from existing audio/video | Needs model files and CPU/RAM; model license and language quality should be checked. |
 | 5 | Kokoro | https://github.com/hexgrad/Kokoro-82M | Local text-to-speech voice generation for narration | Check model weights license, runtime and Arabic voice support; do not assume Sudanese Arabic quality. |
