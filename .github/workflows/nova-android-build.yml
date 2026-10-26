@@ -47,8 +47,41 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Report Firebase build configuration
+        env:
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+        run: |
+          if [ -n "$FIREBASE_API_KEY" ] && [ -n "$FIREBASE_APP_ID" ] && [ -n "$FIREBASE_MESSAGING_SENDER_ID" ] && [ -n "$FIREBASE_PROJECT_ID" ]; then
+            echo "NOVA_FIREBASE_CONFIGURED=true" >> "$GITHUB_ENV"
+            echo "Firebase build configuration: complete"
+          else
+            echo "NOVA_FIREBASE_CONFIGURED=false" >> "$GITHUB_ENV"
+            echo "::warning::Firebase GitHub Actions variables are incomplete. APK will build, but Firebase-backed NOVA features will remain unavailable."
+          fi
+
       - name: Build debug APK
-        run: flutter build apk --debug
+        env:
+          FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
+        run: |
+          args=()
+          if [ -n "$FIREBASE_API_KEY" ] && [ -n "$FIREBASE_APP_ID" ] && [ -n "$FIREBASE_MESSAGING_SENDER_ID" ] && [ -n "$FIREBASE_PROJECT_ID" ]; then
+            args+=("--dart-define=FIREBASE_API_KEY=$FIREBASE_API_KEY")
+            args+=("--dart-define=FIREBASE_APP_ID=$FIREBASE_APP_ID")
+            args+=("--dart-define=FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID")
+            args+=("--dart-define=FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID")
+            if [ -n "$FIREBASE_STORAGE_BUCKET" ]; then
+              args+=("--dart-define=FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET")
+            fi
+          fi
+          flutter build apk --debug "${args[@]}"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
