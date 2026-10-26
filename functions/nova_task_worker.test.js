@@ -3,11 +3,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {SAFE_TEXT_TYPES, isTaskExecutable} = require('./nova_task_worker_policy');
 
-test('only safe text tasks are eligible for automatic execution', () => {
-  assert.equal(SAFE_TEXT_TYPES.has('chat'), true);
-  assert.equal(SAFE_TEXT_TYPES.has('plan'), true);
-  assert.equal(SAFE_TEXT_TYPES.has('research'), true);
-  assert.equal(SAFE_TEXT_TYPES.has('content_draft'), true);
+test('safe research and content-drafting tasks can run autonomously', () => {
+  for (const type of ['chat', 'plan', 'research', 'content_draft', 'social_content_draft']) {
+    assert.equal(SAFE_TEXT_TYPES.has(type), true, type + ' should be an allowed text task');
+    assert.equal(isTaskExecutable({type}, 'owner-1'), true);
+  }
   assert.equal(SAFE_TEXT_TYPES.has('social_publish'), false);
   assert.equal(SAFE_TEXT_TYPES.has('image_generation'), false);
   assert.equal(SAFE_TEXT_TYPES.has('video_generation'), false);
