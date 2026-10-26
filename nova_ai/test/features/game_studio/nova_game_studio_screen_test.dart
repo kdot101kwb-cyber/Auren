@@ -11,7 +11,8 @@ void main() {
     expect(find.text('project.godot'), findsOneWidget);
     expect(find.text('main.gd'), findsOneWidget);
     expect(find.text('main.tscn'), findsOneWidget);
-    expect(find.textContaining('لم يتم تشغيل المحرك'), findsOneWidget);
+    expect(find.byKey(const Key('export_game_zip_button')), findsOneWidget);
+    expect(find.textContaining('لم يتم تشغيل Godot'), findsOneWidget);
   });
 
   testWidgets('search filters game tools', (tester) async {
