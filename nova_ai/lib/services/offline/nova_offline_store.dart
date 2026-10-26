@@ -47,8 +47,8 @@ class NovaOfflineStore {
   }
 
   Future<void> deleteTask(String id) async {
-    final tasks = await getTasks()
-      ..removeWhere((item) => item.id == id);
+    final tasks = await getTasks();
+    tasks.removeWhere((item) => item.id == id);
     await (await _prefs).setString(
       _tasksKey,
       jsonEncode(tasks.map((item) => item.toJson()).toList()),
@@ -86,8 +86,8 @@ class NovaOfflineStore {
   }
 
   Future<void> deleteIncomePlan(String id) async {
-    final plans = await getIncomePlans()
-      ..removeWhere((item) => item.id == id);
+    final plans = await getIncomePlans();
+    plans.removeWhere((item) => item.id == id);
     await (await _prefs).setString(
       _plansKey,
       jsonEncode(plans.map((item) => item.toJson()).toList()),
