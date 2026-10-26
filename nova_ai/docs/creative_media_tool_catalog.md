@@ -73,6 +73,27 @@ Use these for 2D cartoons, character design, rigging, and animation. Some produc
 
 Voice cloning/conversion must only use your own voice or voices for which you have explicit permission. Check each model, voice, music, and sound file's license separately before commercial use. Free access and quotas can change.
 
+## Additional AI creation modules
+
+### Image control and restoration
+- ControlNet: https://github.com/lllyasviel/ControlNet
+- IC-Light: https://github.com/lllyasviel/IC-Light
+- Real-ESRGAN: https://github.com/xinntao/Real-ESRGAN
+- Krita AI Diffusion: https://github.com/Acly/krita-ai-diffusion
+
+### Talking characters and lip synchronization
+- SadTalker: https://github.com/OpenTalker/SadTalker
+- Wav2Lip: https://github.com/Rudrabha/Wav2Lip
+- LivePortrait: https://github.com/KwaiVGI/LivePortrait
+- MuseTalk: https://github.com/TMElyralab/MuseTalk
+
+### Voice and sound generation
+- F5-TTS: https://github.com/SWivid/F5-TTS
+- AudioLDM 2: https://github.com/haoheliu/AudioLDM2
+- Real-Time Voice Cloning: https://github.com/CorentinJ/Real-Time-Voice-Cloning
+
+These are candidate backends, not connected NOVA features. Several require Python, compatible GPU hardware, and separately downloaded model weights. Some repositories or model weights may restrict commercial use. Talking-face and voice-conversion features must not be used to impersonate a person without permission or to create deceptive content.
+
 ## Safe implementation requirements
 
 - Show each item as a **tool directory entry** with official link, category, hardware needs, license/model-license notes, and integration status.
