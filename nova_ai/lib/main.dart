@@ -10,6 +10,7 @@ import 'features/integrations/github_ci_screen.dart';
 import 'features/debate/nova_debate_screen.dart';
 import 'features/revenue/nova_revenue_engine_screen.dart';
 import 'features/auren/auren_build_workspace_screen.dart';
+import 'features/auren/auren_management_dashboard_screen.dart';
 import 'features/creative/creative_tool_library_screen.dart';
 import 'features/brain/nova_autonomous_brain_screen.dart';
 import 'features/opportunities/global_opportunity_radar_screen.dart';
@@ -119,6 +120,12 @@ class _NovaHomeState extends State<NovaHome> {
     ));
   }
 
+  void openAurenManagementDashboard() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => const AurenManagementDashboardScreen(),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final pages = [
@@ -208,6 +215,8 @@ class _NovaHomeState extends State<NovaHome> {
     FilledButton.icon(onPressed: () => setState(() => tab = 10), icon: const Icon(Icons.attach_money), label: const Text('فتح محرك فرص الدخل اليومي')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 15), icon: const Icon(Icons.public), label: const Text('فتح الرادار العالمي متعدد اللغات')),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: openAurenManagementDashboard, icon: const Icon(Icons.account_balance), label: const Text('فتح لوحة إدارة AUREN ومجلس الإدارة')),
     const SizedBox(height: 18),
     const Text('خطة العمل التالية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     const SizedBox(height: 8),
@@ -347,6 +356,8 @@ class _NovaHomeState extends State<NovaHome> {
     const SizedBox(height: 10),
     const _Metric(icon: Icons.cloud_outlined, title: 'الخدمات', value: 'Firebase + AI Gateway'),
     const SizedBox(height: 16),
+    FilledButton.icon(onPressed: openAurenManagementDashboard, icon: const Icon(Icons.account_balance), label: const Text('فتح مجلس الإدارة اليومي')),
+    const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren'), icon: const Icon(Icons.open_in_new), label: const Text('فتح مستودع AUREN على GitHub')),
     const SizedBox(height: 8),
     OutlinedButton.icon(onPressed: () => open('https://github.com/kdot101kwb-cyber/Auren/issues/282'), icon: const Icon(Icons.assignment_outlined), label: const Text('فتح خطة التنفيذ')),
