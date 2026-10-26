@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - feat/nova-ai-android-app
+      - feat/nova-offline-income-planner
+      - feat/nova-agent-projects-catalog
     paths:
       - 'nova_ai/**'
       - '.github/workflows/nova-offline-ci.yml'
