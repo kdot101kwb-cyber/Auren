@@ -4,32 +4,28 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const firebase = require('firebase/compat/app');
-require('firebase/compat/firestore');
-const { Timestamp } = firebase.firestore;
+const { Timestamp, doc, getDoc, setDoc, updateDoc, deleteDoc, runTransaction } = require('firebase/firestore');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'auren-emulator';
 let testEnv;
 
-/** Use the modular Firestore SDK with the app supplied by a rules test context. */
+/** Wrap the modular Firestore SDK in the small reference API used by these tests. */
 function firestoreFor(context) {
-  // Use the Firestore instance from the rules test context so disabled-rules
-  // seeding and authenticated test contexts are honored consistently.
   const db = context.firestore();
-  const wrapRef = (path) => {
-    const ref = db.doc(path);
+  const wrapRef = (documentPath) => {
+    const ref = doc(db, documentPath);
     return {
       _ref: ref,
-      get: () => ref.get(),
-      set: (data) => ref.set(data),
-      update: (data) => ref.update(data),
-      delete: () => ref.delete(),
+      get: () => getDoc(ref),
+      set: (data) => setDoc(ref, data),
+      update: (data) => updateDoc(ref, data),
+      delete: () => deleteDoc(ref),
     };
   };
   return {
     doc: wrapRef,
-    runTransaction: (updateFunction) => db.runTransaction((transaction) =>
+    runTransaction: (updateFunction) => runTransaction(db, (transaction) =>
       updateFunction({
         get: (ref) => transaction.get(ref._ref),
         update: (ref, data) => transaction.update(ref._ref, data),
