@@ -20,6 +20,15 @@ The agents hub includes a strategic review screen backed by the Firebase callabl
 ## Creative studio
 The app now includes a UI for preparing image, video, and game-generation requests. This is a front-end flow only: it does not generate media or compile games yet. Real output requires a server-side provider adapter, secure credentials, asynchronous job tracking, file storage, and cost/abuse controls. “Unlimited” can mean no app-imposed daily cap, but provider and infrastructure limits still apply.
 
+## Global multilingual opportunity radar
+
+The home dashboard and all-sections menu now open **NOVA Global Opportunity Radar**. It searches public listings from Remotive and Arbeitnow, supports Unicode queries and multilingual keyword presets, ranks recent/remote listings, and stores saved leads locally on the phone.
+
+- Current sources are limited to these public job APIs; this is not an exhaustive global job index or a full translation engine.
+- Search filters are discovery aids only. Every listing must be checked at its original source for country eligibility, language, identity requirements, payment method, deadlines, and fees—especially before applying from Sudan.
+- The feature does not apply for jobs, create accounts, contact employers, or pay fees.
+- Network access is required for fresh searches. Saved listings remain available locally when offline.
+
 ## Important limitations
 The app is currently a UI prototype. It does not yet execute GitHub changes, run builds remotely, manage email/social accounts, or synchronize task state. Those capabilities require a secure backend, official OAuth/API integrations, least-privilege access, and audit logs. Do not place GitHub tokens or provider API secrets in the mobile app.
 
