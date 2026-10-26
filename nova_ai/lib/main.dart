@@ -8,6 +8,7 @@ import 'features/opportunities/opportunity_lab_screen.dart';
 import 'features/integrations/integration_hub_screen.dart';
 import 'features/debate/nova_debate_screen.dart';
 import 'features/revenue/nova_revenue_engine_screen.dart';
+import 'features/opportunities/global_opportunity_radar_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -128,6 +129,7 @@ class _NovaHomeState extends State<NovaHome> {
       const NovaTaskCenterScreen(),
       const NovaAppBuilderScreen(),
       const NovaRevenueEngineScreen(),
+      const GlobalOpportunityRadarScreen(),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -143,6 +145,7 @@ class _NovaHomeState extends State<NovaHome> {
               PopupMenuItem(value: 7, child: Text('التطبيقات المرتبطة')),
               PopupMenuItem(value: 8, child: Text('مركز المهام')),
               PopupMenuItem(value: 9, child: Text('بناء التطبيقات')),
+              PopupMenuItem(value: 11, child: Text('الرادار العالمي للفرص')),
             ],
           ),
           IconButton(onPressed: () => showAboutDialog(context: context, applicationName: 'NOVA AI', applicationVersion: '0.2.0', children: const [Text('نسخة أولية قيد التحقق. بعض الأدوات تحتاج ربط خدمات وخادم آمن.')]), icon: const Icon(Icons.info_outline)),
@@ -155,6 +158,7 @@ class _NovaHomeState extends State<NovaHome> {
           2 => 2,
           4 => 3,
           10 => 4,
+          11 => 3,
           _ => 0,
         },
         onDestinationSelected: (v) => setState(() => tab = const [0, 1, 2, 4, 10][v]),
@@ -189,6 +193,8 @@ class _NovaHomeState extends State<NovaHome> {
     FilledButton.icon(onPressed: () => setState(() => tab = 2), icon: const Icon(Icons.auto_awesome), label: const Text('فتح استوديو الصور والفيديو والألعاب')),
     const SizedBox(height: 8),
     FilledButton.icon(onPressed: () => setState(() => tab = 10), icon: const Icon(Icons.attach_money), label: const Text('فتح محرك فرص الدخل اليومي')),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: () => setState(() => tab = 11), icon: const Icon(Icons.public), label: const Text('فتح الرادار العالمي متعدد اللغات')),
     const SizedBox(height: 18),
     const Text('خطة العمل التالية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
     const SizedBox(height: 8),
