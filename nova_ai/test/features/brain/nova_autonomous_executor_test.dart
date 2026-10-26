@@ -3,13 +3,15 @@ import 'package:nova_ai/features/brain/nova_autonomous_brain.dart';
 import 'package:nova_ai/features/brain/nova_autonomous_executor.dart';
 
 class _FakeAdapter implements NovaExecutionAdapter {
-  _FakeAdapter(this.handler);
+  _FakeAdapter(this.handler, {this.onlyStepId});
 
   final Future<NovaExecutionResult> Function(NovaBrainStep step) handler;
+  final String? onlyStepId;
   int calls = 0;
 
   @override
-  bool canExecute(NovaBrainStep step) => true;
+  bool canExecute(NovaBrainStep step) =>
+      onlyStepId == null || step.id == onlyStepId;
 
   @override
   Future<NovaExecutionResult> execute(NovaBrainStep step) {
@@ -28,6 +30,7 @@ void main() {
         success: true,
         summary: 'الأداة قالت إنها نجحت',
       ),
+      onlyStepId: task.steps.first.id,
     );
 
     final report = await NovaAutonomousExecutor(
@@ -44,8 +47,10 @@ void main() {
 
   test('executor retries failures but accepts verified evidence', () async {
     final task = planner.plan('مهمة عامة');
+    var calls = 0;
     final adapter = _FakeAdapter((_) async {
-      if (adapterCalls++ == 0) {
+      calls++;
+      if (calls == 1) {
         return const NovaExecutionResult(
           success: false,
           summary: 'محاولة أولى فاشلة',
@@ -56,7 +61,7 @@ void main() {
         summary: 'التحقق نجح',
         evidence: 'https://example.com/run/123',
       );
-    });
+    }, onlyStepId: task.steps.first.id);
 
     final report = await NovaAutonomousExecutor(
       adapters: [adapter],
@@ -66,6 +71,7 @@ void main() {
     expect(report.attempts, 2);
     expect(report.task.steps.first.status, NovaStepStatus.succeeded);
     expect(report.task.steps.first.evidence, contains('https://example.com/run/123'));
+    expect(report.task.steps[1].status, NovaStepStatus.blocked);
   });
 
   test('executor blocks when no adapter supports a step', () async {
@@ -86,6 +92,7 @@ void main() {
         success: false,
         summary: 'فشل',
       ),
+      onlyStepId: task.steps.first.id,
     );
 
     final report = await NovaAutonomousExecutor(
@@ -98,5 +105,3 @@ void main() {
     expect(report.task.steps[1].status, NovaStepStatus.pending);
   });
 }
-
-var adapterCalls = 0;
