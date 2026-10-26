@@ -22,7 +22,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text(label),
         250,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: find.byType(Scrollable),
       );
       expect(find.text(label), findsOneWidget);
     }
@@ -30,7 +30,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.byType(Scrollable),
     );
     expect(find.textContaining('سجل الاجتماعات يظهر بعد إعداد Firebase'), findsOneWidget);
   });
