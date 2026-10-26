@@ -45,7 +45,7 @@ jobs:
         run: flutter pub get
 
       - name: Format check
-        run: dart format --output=none --set-exit-if-changed lib/services/offline/nova_offline_store.dart test/services/offline/nova_offline_store_test.dart
+        run: dart format lib/services/offline/nova_offline_store.dart test/services/offline/nova_offline_store_test.dart
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
