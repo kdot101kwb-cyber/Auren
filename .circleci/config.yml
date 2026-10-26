@@ -88,11 +88,17 @@ jobs:
             cat flutter_test.log
             exit 0
       - run:
-          name: Android build
+          name: Android build (AUREN and NOVA)
           command: |
             set +e
             flutter build apk --debug > flutter_android_build.log 2>&1
-            status=$?
+            auren_status=$?
+            echo "auren_android_build_exit_code=$auren_status" >> flutter_android_build.log
+            echo "--- NOVA AI Android debug build ---" >> flutter_android_build.log
+            (cd nova_ai && flutter build apk --debug) >> flutter_android_build.log 2>&1
+            nova_status=$?
+            if [ "$auren_status" -ne 0 ] || [ "$nova_status" -ne 0 ]; then status=1; else status=0; fi
+            echo "nova_android_build_exit_code=$nova_status" >> flutter_android_build.log
             echo "flutter_android_build_exit_code=$status" >> flutter_android_build.log
             echo "$status" > /tmp/flutter_android_build_status
             cat flutter_android_build.log
