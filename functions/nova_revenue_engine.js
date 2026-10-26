@@ -14,13 +14,13 @@ const RUNS_COLLECTION = 'nova_revenue_runs';
 function normalizePreferences(data = {}) {
   const skills = String(data.skills || 'AI content writing, short-form video scripts, SEO').trim().slice(0, 500);
   const languages = String(data.languages || 'Arabic and English').trim().slice(0, 120);
-  const hoursPerDay = Number(data.hoursPerDay || 3);
+  const hoursPerDay = Number(data.hoursPerDay ?? 3);
   if (!Number.isFinite(hoursPerDay) || hoursPerDay < 1 || hoursPerDay > 12) {
     throw new Error('hoursPerDay must be between 1 and 12.');
   }
   const walletName = String(data.walletName || 'Trust Wallet').trim().slice(0, 80);
   const walletNetworks = String(data.walletNetworks || 'multi-chain; verify each chain in Trust Wallet').trim().slice(0, 200);
-  const startingBudgetUsd = Number(data.startingBudgetUsd || 0);
+  const startingBudgetUsd = Number(data.startingBudgetUsd ?? 0);
   if (!Number.isFinite(startingBudgetUsd) || startingBudgetUsd < 0 || startingBudgetUsd > 100) {
     throw new Error('startingBudgetUsd must be between $0 and $100.');
   }
@@ -31,7 +31,8 @@ function utcDateKey(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
 
-function buildRevenuePrompt(preferences, dateKey) {
+function buildRevenuePrompt(preferences = {}, dateKey) {
+  preferences = normalizePreferences(preferences);
   return [
     'You are NOVA AI, a cautious freelance revenue operations assistant. Prepare a practical daily work pack, not a promise of earnings.',
     'Return concise Markdown in Arabic. Do not claim that accounts were created, jobs applied to, clients contacted, files published, or money earned.',
