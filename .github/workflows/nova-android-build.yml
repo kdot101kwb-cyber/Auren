@@ -52,7 +52,7 @@ jobs:
           FIREBASE_API_KEY: ${{ vars.FIREBASE_API_KEY }}
           FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
           FIREBASE_MESSAGING_SENDER_ID: ${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
-          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'auren-90ccc' }}
           FIREBASE_STORAGE_BUCKET: ${{ vars.FIREBASE_STORAGE_BUCKET }}
         run: |
           if [ -n "$FIREBASE_API_KEY" ] && [ -n "$FIREBASE_APP_ID" ] && [ -n "$FIREBASE_MESSAGING_SENDER_ID" ] && [ -n "$FIREBASE_PROJECT_ID" ]; then
@@ -83,10 +83,37 @@ jobs:
           fi
           flutter build apk --debug "${args[@]}"
 
+      - name: Write build configuration report
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p nova_ai/build/novа-report
+          if [ "${NOVA_FIREBASE_CONFIGURED:-false}" = "true" ]; then
+            state="configured"
+          else
+            state="not_configured"
+          fi
+          cat > nova_ai/build/nova-build-status.txt <<EOF
+          NOVA Android debug build
+          Commit: ${GITHUB_SHA}
+          Firebase project target: auren-90ccc
+          Firebase client configuration: ${state}
+          Important: a successful APK build does not mean Firebase Functions are deployed or reachable.
+          EOF
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: nova-ai-debug-apk
           path: nova_ai/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload build configuration report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-ai-build-status
+          path: nova_ai/build/nova-build-status.txt
+          if-no-files-found: ignore
           retention-days: 14
