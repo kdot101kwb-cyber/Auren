@@ -13,7 +13,8 @@ This change introduces a small device-local store for tasks and income plans.
 - SharedPreferences is appropriate for small records, not large files or secrets.
 - Break-even is a simple estimate based on the entered monthly figures; it is not a promise of earnings.
 - Global opportunities, current prices, account recovery, cloud AI, and publishing require their respective network services and permissions.
-- This patch does not yet add an on-device language model or change the dashboard UI to expose these records. Those are separate implementation steps.
+- The revenue screen now exposes a local income-plan form with save/list/delete. The general task-center UI has not yet been connected to the new task store.
+- This patch does not yet add an on-device language model.
 - Firebase initialization already catches its own errors in `firebase_runtime.dart`; verify offline launch on a real device as part of integration testing.
 
 ## Verify from `nova_ai/`
