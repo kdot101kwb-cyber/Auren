@@ -15,6 +15,27 @@ void main() {
     expect(find.text('الأمان والخصوصية'), findsOneWidget);
 
     await tester.scrollUntilVisible(
+      find.text('النمو وجذب المستخدمين'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('النمو وجذب المستخدمين'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('السوق العالمي والمنافسون'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('السوق العالمي والمنافسون'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('الإدارة القانونية والحوكمة'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('الإدارة القانونية والحوكمة'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
       find.text('فرص واقتراحات اليوم'),
       250,
       scrollable: find.byType(Scrollable).first,
