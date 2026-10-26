@@ -15,6 +15,7 @@ jobs:
           command: flutter --version && dart --version
       - run:
           name: Get dependencies
+          no_output_timeout: 30m
           command: |
             flutter pub get
             cd nova_ai && flutter pub get
@@ -24,6 +25,7 @@ jobs:
             - ~/.pub-cache
       - run:
           name: Prepare Android NDK
+          no_output_timeout: 30m
           command: |
             set -e
             SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
@@ -61,6 +63,7 @@ jobs:
             exit 0
       - run:
           name: Analyze
+          no_output_timeout: 30m
           command: |
             set +e
             flutter analyze lib test --no-fatal-warnings --no-fatal-infos > flutter_analyze.log 2>&1
@@ -75,6 +78,7 @@ jobs:
             exit 0
       - run:
           name: Test
+          no_output_timeout: 30m
           command: |
             set +e
             flutter test > flutter_test.log 2>&1
@@ -89,6 +93,7 @@ jobs:
             exit 0
       - run:
           name: Android build (AUREN and NOVA)
+          no_output_timeout: 30m
           command: |
             set +e
             flutter build apk --debug > flutter_android_build.log 2>&1
