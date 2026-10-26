@@ -69,10 +69,7 @@ class _AurenManagementDashboardScreenState
 
   Future<void> _loadHistory() async {
     if (!NovaFirebaseRuntime.initialized) {
-      if (mounted) {
-        setState(() => _historyStatus =
-            'سجل الاجتماعات يظهر بعد إعداد Firebase وتسجيل الدخول.');
-      }
+      _historyStatus = 'سجل الاجتماعات يظهر بعد إعداد Firebase وتسجيل الدخول.';
       return;
     }
     if (_historyBusy) return;
