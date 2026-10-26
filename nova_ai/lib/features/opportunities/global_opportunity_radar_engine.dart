@@ -67,6 +67,20 @@ const Map<String, List<String>> radarLocalizedTerms = {
   'translation': ['translation', 'localization', 'ترجمة', 'تعريب', 'traducción', 'traduction', 'übersetzung', 'traduzione', 'tradução', '翻译', '翻訳'],
   'data': ['data annotation', 'data labeling', 'AI evaluation', 'تقييم الذكاء الاصطناعي', 'وسم البيانات', 'anotación de datos', 'annotation de données', 'Datenannotation', 'etiquetagem de dados'],
   'content': ['content writing', 'copywriting', 'كتابة المحتوى', 'كتابة إعلانية', 'redacción', 'rédaction', 'texten', 'scrittura', 'redação'],
+  'languages': [
+    'remote', 'job', 'freelance', 'работа', 'удалённая работа', 'перевод',
+    '일자리', '원격 근무', '프리랜서', '번역',
+    'lavoro', 'lavoro da remoto', 'traduzione',
+    'pekerjaan jarak jauh', 'freelance', 'penerjemahan',
+    'uzaktan iş', 'iş ilanı', 'çeviri',
+    'দূরবর্তী কাজ', 'চাকরি', 'অনুবাদ',
+    'việc làm từ xa', 'việc làm', 'dịch thuật',
+    'งานระยะไกล', 'งาน', 'แปลภาษา',
+    'وظائف عن بعد', 'ترجمة', 'работа', 'काम',
+    'praca zdalna', 'tłumaczenie',
+    'remote werk', 'vertaling',
+    'trabaho', 'malayuang trabaho', 'pagsasalin',
+  ],
 };
 
 List<String> expandRadarQueries(String query, {String category = 'All'}) {
