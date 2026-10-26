@@ -100,7 +100,7 @@ List<GlobalOpportunityLead> rankGlobalLeads(
   final q = normalizeRadarText(query);
   final filtered = leads.where((lead) {
     final place = lead.country.toLowerCase();
-    final worldwide = lead.remote || RegExp(r'worldwide|anywhere|global|all countries|remote').hasMatch(place);
+    final worldwide = RegExp(r'worldwide|anywhere|global|all countries|worldwide eligibility not stated').hasMatch(place);
     final countryMatch = country == 'All countries' || place.contains(country.toLowerCase()) || (country == 'Sudan' && worldwide);
     if (!countryMatch) return false;
     final regionMatch = switch (region) {
