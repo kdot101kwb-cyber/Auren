@@ -11,6 +11,7 @@ import 'features/debate/nova_debate_screen.dart';
 import 'features/revenue/nova_revenue_engine_screen.dart';
 import 'features/auren/auren_build_workspace_screen.dart';
 import 'features/creative/creative_tool_library_screen.dart';
+import 'features/creative/creative_production_workflow_screen.dart';
 import 'features/brain/nova_autonomous_brain_screen.dart';
 
 Future<void> main() async {
@@ -247,6 +248,12 @@ class _NovaHomeState extends State<NovaHome> {
         SizedBox(height: 8),
         Text('جهّز أفكار الصور والفيديو والألعاب في مساحة واحدة، مع قابلية إضافة أكثر من محرك توليد.'),
       ]),
+    ),
+    const SizedBox(height: 12),
+    FilledButton.icon(
+      onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const CreativeProductionWorkflowScreen())),
+      icon: const Icon(Icons.movie_filter_outlined),
+      label: const Text('فتح خط إنتاج الصور والكرتون والصوت والفيديو'),
     ),
     const SizedBox(height: 16),
     const Text('اختر نوع المشروع', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
