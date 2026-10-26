@@ -120,7 +120,7 @@ class _AurenRepositoryBrowserScreenState
       if (entry.size > 250000) {
         throw const FormatException('الملف أكبر من حد العرض الآمن (250 KB). افتحه على GitHub.');
       }
-      final encoded = (data['content'] as String).replaceAll(RegExp(r'\\s'), '');
+      final encoded = (data['content'] as String).replaceAll(RegExp(r'\s'), '');
       final bytes = base64.decode(base64.normalize(encoded));
       final source = utf8.decode(bytes);
       if (!mounted) return;
