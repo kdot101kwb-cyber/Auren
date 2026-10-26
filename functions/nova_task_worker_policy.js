@@ -1,5 +1,5 @@
 'use strict';
-const SAFE_TEXT_TYPES = new Set(['chat', 'plan', 'research', 'content_draft']);
+const SAFE_TEXT_TYPES = new Set(['chat', 'plan', 'research', 'content_draft', 'social_content_draft']);
 
 function isTaskExecutable(task, ownerUid) {
   if (!task || typeof task !== 'object') return false;
