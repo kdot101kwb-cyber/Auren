@@ -43,11 +43,11 @@ void main() {
     expect(tile.value, isTrue);
   });
 
-  testWidgets('creative tool library shows 90 tools and filters by category', (tester) async {
+  testWidgets('creative tool library exposes expanded media categories', (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: CreativeToolLibraryScreen(onOpenAurenWorkspace: () {})),
     ));
-    expect(find.textContaining('90 أداة للاستكشاف'), findsOneWidget);
+    expect(find.textContaining('مكتبة متوسعة للفيديو والصور والألعاب والكرتون'), findsOneWidget);
 
     final gamesChip = find.widgetWithText(ChoiceChip, 'ألعاب');
     await tester.scrollUntilVisible(gamesChip, 200, scrollable: find.byType(Scrollable).first);
@@ -55,5 +55,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Godot'), findsOneWidget);
     expect(find.text('Shotcut'), findsNothing);
+
+    final characterChip = find.widgetWithText(ChoiceChip, 'كرتون وشخصيات');
+    await tester.scrollUntilVisible(characterChip, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(characterChip);
+    await tester.pumpAndSettle();
+    expect(find.text('OpenToonz'), findsOneWidget);
+    expect(find.text('Piper TTS'), findsNothing);
+
+    final audioChip = find.widgetWithText(ChoiceChip, 'صوت وصوت آلي');
+    await tester.scrollUntilVisible(audioChip, 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(audioChip);
+    await tester.pumpAndSettle();
+    expect(find.text('Piper TTS'), findsOneWidget);
+    expect(find.text('OpenToonz'), findsNothing);
   });
 }
