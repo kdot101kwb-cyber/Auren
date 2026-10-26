@@ -15,11 +15,14 @@ The owner may be offline or have the phone switched off while NOVA continues pre
 7. **Safety and policy:** rate limits, per-platform content rules, duplicate detection, audit log, emergency pause, budget cap, and configurable approval rules.
 
 ## Social channels in scope
-- Instagram account/brand: KWB86.
-- TikTok handle: khaliedwalied403.
-- YouTube channel: Khalied Walied.
+- Facebook Pages: include the owner's selected Page(s); do not assume personal-profile publishing is supported.
+- X: include the owner's authorized account; verify API tier, write permissions, and any charges before enabling publishing. Do not incur API costs without explicit approval.
+- Instagram account/brand: KWB86; verify professional-account and Page linkage requirements.
+- TikTok handle: khaliedwalied403; verify approved upload/publish API access and any required user consent.
+- YouTube channel: Khalied Walied; verify OAuth scopes and upload permission.
+- Telegram channels, LinkedIn, Pinterest, and Threads are secondary candidates, added only after a documented capability and cost check.
 - Buffer was previously discussed as a possible free scheduler. Its current availability and channel permissions must be checked at setup time; a free tier's queue limits mean it cannot be assumed to cover a two-month daily schedule.
-- Prior connection visibility in analytics tools does not prove organic publishing permission. Re-check actual publish capabilities and authorization before enabling automatic posting.
+- Analytics visibility or an account appearing in a connector does not prove publishing permission. Keep a per-platform capability matrix (read, draft, upload, publish, comments/replies, analytics, limits, and cost) and enable only verified capabilities.
 
 ## Workflows
 ### Daily content pipeline
