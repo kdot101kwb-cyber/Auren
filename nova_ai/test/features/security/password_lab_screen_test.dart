@@ -9,6 +9,7 @@ void main() {
     expect(find.text('NOVA Password Lab'), findsOneWidget);
     expect(find.text('استرداد الحسابات'), findsOneWidget);
     expect(find.text('فحص أمان Wi-Fi'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('فحص أمان موقع مصرح به'), 300, scrollable: find.byType(Scrollable).first);
     expect(find.text('فحص أمان موقع مصرح به'), findsOneWidget);
     expect(find.text('أملك هذا الموقع أو لدي إذن صريح لفحصه.'), findsOneWidget);
     expect(find.text('فحص الترويسات'), findsOneWidget);
@@ -16,6 +17,7 @@ void main() {
 
   testWidgets('website check requires explicit authorization', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: PasswordLabScreen()));
+    await tester.scrollUntilVisible(find.byType(TextField), 300, scrollable: find.byType(Scrollable).first);
     await tester.enterText(find.byType(TextField), 'https://example.com');
     await tester.tap(find.text('فحص الترويسات'));
     await tester.pumpAndSettle();
