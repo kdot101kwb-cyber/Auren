@@ -136,7 +136,6 @@ class _CreativeToolLibraryScreenState extends State<CreativeToolLibraryScreen> {
     _Tool('Wav2Lip','https://github.com/Rudrabha/Wav2Lip','تحريك الوجه والشفاه','كمبيوتر / GPU','مزامنة حركة الشفاه مع الكلام؛ تحقق من قيود الترخيص التجاري'),
     _Tool('LivePortrait','https://github.com/KwaiVGI/LivePortrait','تحريك الوجه والشفاه','كمبيوتر / GPU','تحريك صورة شخصية؛ افحص ترخيص الكود والأوزان'),
     _Tool('MuseTalk','https://github.com/TMElyralab/MuseTalk','تحريك الوجه والشفاه','كمبيوتر / GPU','مزامنة شفاه مع الصوت؛ يتطلب إعداد نموذج مناسب'),
-    _Tool('Mixamo','https://www.mixamo.com','كرتون وشخصيات','ويب','تحريك هياكل شخصيات 3D؛ تحقق من شروط الأصول'),
 
     // Additional voice and sound-generation engines
     _Tool('F5-TTS','https://github.com/SWivid/F5-TTS','صوت وصوت آلي','كمبيوتر / GPU','تحويل النص إلى كلام؛ افحص ترخيص النموذج والصوت'),
