@@ -11,7 +11,9 @@ void main() {
     expect(find.text('فحص أمان Wi-Fi'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('فحص أمان موقع مصرح به'), 300, scrollable: find.byType(Scrollable).first);
     expect(find.text('فحص أمان موقع مصرح به'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('أملك هذا الموقع أو لدي إذن صريح لفحصه.'), 250, scrollable: find.byType(Scrollable).first);
     expect(find.text('أملك هذا الموقع أو لدي إذن صريح لفحصه.'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('فحص الترويسات'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('فحص الترويسات'), findsOneWidget);
   });
 
