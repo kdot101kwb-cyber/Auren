@@ -18,7 +18,9 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: NovaGameStudioScreen()));
     await tester.enterText(find.byKey(const Key('game_tools_search')), 'Blender');
     await tester.pumpAndSettle();
-    expect(find.text('Blender'), findsOneWidget);
+    // The query field itself also contains "Blender".
+    expect(find.text('Blender'), findsNWidgets(2));
+    expect(find.text('Blender MCP'), findsOneWidget);
     expect(find.text('Godot Engine'), findsNothing);
   });
 }
