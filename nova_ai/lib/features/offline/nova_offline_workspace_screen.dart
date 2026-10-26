@@ -16,6 +16,8 @@ class _NovaOfflineWorkspaceScreenState extends State<NovaOfflineWorkspaceScreen>
   static const _storageKey = 'nova.offline.workspace.v1';
   final _title = TextEditingController();
   final _detail = TextEditingController();
+  final _monthlyRevenue = TextEditingController();
+  final _monthlyCosts = TextEditingController();
   String _category = 'خطة دخل';
   bool _loading = true;
   List<Map<String, dynamic>> _entries = [];
@@ -30,6 +32,8 @@ class _NovaOfflineWorkspaceScreenState extends State<NovaOfflineWorkspaceScreen>
   void dispose() {
     _title.dispose();
     _detail.dispose();
+    _monthlyRevenue.dispose();
+    _monthlyCosts.dispose();
     super.dispose();
   }
 
@@ -118,6 +122,9 @@ class _NovaOfflineWorkspaceScreenState extends State<NovaOfflineWorkspaceScreen>
   @override
   Widget build(BuildContext context) {
     final completed = _entries.where((entry) => entry['done'] == true).length;
+    final revenue = double.tryParse(_monthlyRevenue.text.trim().replaceAll(',', '.')) ?? 0;
+    final costs = double.tryParse(_monthlyCosts.text.trim().replaceAll(',', '.')) ?? 0;
+    final net = revenue - costs;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -133,6 +140,19 @@ class _NovaOfflineWorkspaceScreenState extends State<NovaOfflineWorkspaceScreen>
             Expanded(child: Text('السجل المحلي: ${_entries.length} عنصر • ${completed} مكتمل')),
           ]),
         )),
+        const SizedBox(height: 12),
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Text('حاسبة الدخل الشهرية دون إنترنت', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text('أدخل تقدير الإيرادات والتكاليف. الحساب محلي على الهاتف ولا يُعد توصية استثمارية.'),
+          const SizedBox(height: 10),
+          TextField(controller: _monthlyRevenue, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'الإيرادات المتوقعة شهرياً', border: OutlineInputBorder()), onChanged: (_) => setState(() {})),
+          const SizedBox(height: 8),
+          TextField(controller: _monthlyCosts, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'التكاليف المتوقعة شهرياً', border: OutlineInputBorder()), onChanged: (_) => setState(() {})),
+          const SizedBox(height: 12),
+          Text('الصافي التقديري: ${net.toStringAsFixed(2)}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: net >= 0 ? Colors.greenAccent : Colors.redAccent)),
+          Text(revenue > 0 ? 'هامش الصافي: ${(net / revenue * 100).toStringAsFixed(1)}%' : 'أدخل إيرادات أكبر من صفر لحساب الهامش.'),
+        ]))),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           value: _category,
