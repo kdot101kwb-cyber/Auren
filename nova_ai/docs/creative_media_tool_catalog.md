@@ -32,6 +32,47 @@ This catalog is a curated directory of open-source projects that NOVA can help t
 | Blender | https://www.blender.org/ | 3D production and rendering |
 | Nerfstudio | https://github.com/nerfstudio-project/nerfstudio | 3D reconstruction / NeRF |
 
+## Character, cartoon, and animation tools
+
+- OpenToonz: https://opentoonz.github.io/e/
+- Pencil2D: https://www.pencil2d.org
+- Synfig Studio: https://www.synfig.org
+- Tahoma2D: https://tahoma2d.org
+- Blender Grease Pencil: https://www.blender.org
+- Krita: https://krita.org
+- Live2D Cubism: https://www.live2d.com/en/
+- VRoid Studio: https://vroid.com/en/studio
+- Mixamo: https://www.mixamo.com
+- AccuRIG: https://actorcore.reallusion.com/auto-rig
+- Cascadeur: https://cascadeur.com
+- MakeHuman: https://www.makehumancommunity.org
+
+Use these for 2D cartoons, character design, rigging, and animation. Some products have free-tier limits or restrictions on commercial use; 3D character and animation workflows usually need a computer.
+
+## Audio, voice, music, and sound effects
+
+- Audacity: https://www.audacityteam.org
+- Ardour: https://ardour.org
+- LMMS: https://lmms.io
+- MuseScore: https://musescore.org
+- BandLab: https://www.bandlab.com
+- Suno: https://suno.com
+- Udio: https://www.udio.com
+- Stable Audio tools: https://github.com/Stability-AI/stable-audio-tools
+- AudioCraft / MusicGen: https://github.com/facebookresearch/audiocraft
+- Piper TTS: https://github.com/rhasspy/piper
+- Coqui TTS: https://github.com/coqui-ai/TTS
+- OpenVoice: https://github.com/myshell-ai/OpenVoice
+- Whisper: https://github.com/openai/whisper
+- whisper.cpp: https://github.com/ggml-org/whisper.cpp
+- RVC WebUI: https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI
+- Bark: https://github.com/suno-ai/bark
+- Freesound: https://freesound.org
+- Pixabay Music: https://pixabay.com/music/
+- BBC Sound Effects: https://sound-effects.bbcrewind.co.uk
+
+Voice cloning/conversion must only use your own voice or voices for which you have explicit permission. Check each model, voice, music, and sound file's license separately before commercial use. Free access and quotas can change.
+
 ## Safe implementation requirements
 
 - Show each item as a **tool directory entry** with official link, category, hardware needs, license/model-license notes, and integration status.
